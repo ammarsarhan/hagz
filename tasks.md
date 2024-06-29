@@ -1,6 +1,6 @@
-- Configure Prisma
+- Configure Prisma ✅
     - Set Up User & Session Models
-- Configure Vercel Postgres
+- Configure Vercel Postgres ✅
 - Configure Next-Auth
 
 - Create Register User Function
