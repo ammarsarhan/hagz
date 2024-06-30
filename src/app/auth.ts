@@ -1,8 +1,8 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { AuthError, CredentialsSignin } from 'next-auth'
+import { CredentialsSignin } from 'next-auth'
 
-import { hashPassword } from '../lib/utils'
+import { hashPassword } from '@/lib/utils'
 
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'

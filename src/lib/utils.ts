@@ -1,10 +1,12 @@
-import { hash } from "argon2"
+import { type ClassValue, clsx } from "clsx"
+// import { hash } from 'argon2'
+import { twMerge } from "tailwind-merge"
 
-export const hashPassword = async (password: string) => {
-    return await hash(password, {
-        memoryCost: 19456,
-        timeCost: 2,
-        hashLength: 32,
-        parallelism: 1
-    })
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+// Add options
+export async function hashPassword(password: string) {
+  return await password;
 }
