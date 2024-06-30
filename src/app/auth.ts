@@ -1,35 +1,62 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { hashPassword } from './lib/utils'
+import { AuthError, CredentialsSignin } from 'next-auth'
+
+import { hashPassword } from '../lib/utils'
 
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import { prisma } from '@/app/prisma'
+import { prisma } from '@/lib/prisma'
 
-export const { handlers, signIn, signOut, auth } = NextAuth ({
-    adapter: PrismaAdapter(prisma),
-    providers: [
-        Credentials ({
-            credentials: {
-                email: {},
-                password: {}
-            },
-            authorize: async (credentials) => {
-                let user = null
-                const hashed = await hashPassword(credentials.password as string)
+const providers = [
+    Credentials ({
+        credentials: {
+            email: {},
+            password: {}
+        },
+        authorize: async (credentials) => {
+            let user = null;
 
-                user = await prisma.user.findUnique({
-                    where: {
-                        email: credentials.email as string,
-                        password: hashed
-                    }
-                })
+            const {email, password} = credentials;
+            const hashed = await hashPassword(password as string);
 
-                if (!user) {
-                    throw new Error("User not found")
+            user = await prisma.user.findUnique({
+                where: {
+                    email: email as string
                 }
+            })
 
-                return user;
+            if (!user) {
+                throw new CredentialsSignin("User Not Found");
             }
-        })
-    ]
+
+            const isValidPassword = (hashed == user.password) ? true : false;
+            
+            if (!isValidPassword) {
+                throw new CredentialsSignin("Invalid Credentials");
+            }
+
+            return {
+                'email': user.email,
+                'emailVerified': user.emailVerified,
+                'name': user.name,
+                'id': user.id,
+                'image': user.image
+                // 'role': user.role
+            };
+        }
+    })
+]
+
+const pages = {
+    signIn: '/user/auth/sign-in',
+    signOut: '/user/sign-out',
+    error: '/user/auth/error',
+    verifyRequest: '/user/auth/verify-request',
+    newUser: '/user/auth/sign-up',
+}
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+    adapter: PrismaAdapter(prisma),
+    providers: providers,
+    pages: pages
 })

@@ -1,7 +1,7 @@
-export default function Home() {
-  return (
-    <main className="flex h-screen p-5">
-      Welcome, Ammar.
-    </main>
-  );
+export default function Home () {
+    return (
+        <div className="p-5">
+            <h1>Welcome, Ammar</h1>
+        </div>
+    )
 }
