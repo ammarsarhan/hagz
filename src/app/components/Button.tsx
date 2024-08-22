@@ -13,7 +13,7 @@ export default function Button ({label, variant = "primary", className, onClick}
         case "primary":
             return <button onClick={onClick} className={`${buttonStyle} bg-secondary text-primary border-[1px] border-primary`}>{label}</button>
         case "secondary":
-            return <button onClick={onClick} className={`${buttonStyle} bg-primary text-secondary`}>{label}</button>
+            return <button onClick={onClick} className={`${buttonStyle} bg-primary text-secondary border-[1px] border-primary`}>{label}</button>
         case "monochrome":
             return <button onClick={onClick} className={`${buttonStyle} bg-label-primary text-label-secondary border-[1px] border-black`}>{label}</button>
         case "inverted":

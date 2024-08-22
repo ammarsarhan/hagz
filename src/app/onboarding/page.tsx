@@ -4,30 +4,30 @@ import Link from 'next/link'
 
 import Input from '@/app/components/Input'
 import Button from '@/app/components/Button'
-import Dropdown from '@/app/components/Dropdown'
-import Carousel, { CarouselSlideType } from '@/app/components/Carousel'
 import Progress from '@/app/components/Progress'
+import Carousel, { CarouselSlideType } from '@/app/components/Carousel'
 
 import { useState, useEffect } from 'react'
 
 const Form = () => {
+    const [variant, setVariant] = useState("primary")
+
     return (
-        <div className='flex-center flex-col h-full gap-y-16 p-4'>
+        <div className='flex-center flex-col h-full gap-y-20 p-4'>
             <Input placeholder="Name" label="We are the Hagz team and you are..."/>
             <div>
                 <span className='block text-center'>& you're using Hagz as a:</span>
                 <div className='flex items-center gap-x-4 mt-4'>
-                    <Button label="A Player" variant="secondary"/>
+                    <Button label="A Player" variant={variant == "primary" ? "secondary" : "primary"} onClick={() => variant == "secondary" ? setVariant("primary") : setVariant("secondary")}/>
                     <span className='px-4'>or</span>
-                    <Button label="An Owner" variant="primary"/>
+                    <Button label="An Owner" variant={variant} onClick={() => variant == "primary" ? setVariant("secondary") : setVariant("primary")}/>
                 </div>
             </div>
             <div className='flex justify-between items-center w-full gap-x-4'>
                 <span>Do we have permission to use location? (Hagz will work a lot better)</span>
-                <select name="" className='bg-transparent text-right outline-none border-b-[1px] border-primary px-4 py-2'>
-                    <option value="">No</option>
-                    <option value="">Yes</option>
-                    <option value="">Don't Know Yet</option>
+                <select className='bg-transparent text-center outline-none border-b-[1px] border-primary px-4 py-2'>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
                 </select>
             </div>
         </div>
