@@ -6,6 +6,13 @@
     box-sizing: border-box;
 }
 
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    text-indent: 1px;
+    text-overflow: '';
+  }
+
 .flex-center {
     display: flex;
     align-items: center;

@@ -1,11 +1,38 @@
 "use client"
 
 import Link from 'next/link'
+
+import Input from '@/app/components/Input'
 import Button from '@/app/components/Button'
+import Dropdown from '@/app/components/Dropdown'
 import Carousel, { CarouselSlideType } from '@/app/components/Carousel'
 import Progress from '@/app/components/Progress'
 
 import { useState, useEffect } from 'react'
+
+const Form = () => {
+    return (
+        <div className='flex-center flex-col h-full gap-y-16 p-4'>
+            <Input placeholder="Name" label="We are the Hagz team and you are..."/>
+            <div>
+                <span className='block text-center'>& you're using Hagz as a:</span>
+                <div className='flex items-center gap-x-4 mt-4'>
+                    <Button label="A Player" variant="secondary"/>
+                    <span className='px-4'>or</span>
+                    <Button label="An Owner" variant="primary"/>
+                </div>
+            </div>
+            <div className='flex justify-between items-center w-full gap-x-4'>
+                <span>Do we have permission to use location? (Hagz will work a lot better)</span>
+                <select name="" className='bg-transparent text-right outline-none border-b-[1px] border-primary px-4 py-2'>
+                    <option value="">No</option>
+                    <option value="">Yes</option>
+                    <option value="">Don't Know Yet</option>
+                </select>
+            </div>
+        </div>
+    )
+}
 
 const slides: CarouselSlideType[] = [
     {
@@ -19,13 +46,13 @@ const slides: CarouselSlideType[] = [
         image: "/"
     },
     {
-        title: "How Does Hagz Work?",
-        description: "Hagz is for everybody. Whether you're a professional or amateur player, a manager, or a coach, we've got you covered. We offer a simple system that cater to your needs.",
-        image: "/"
+        title: "But, Enough About Us...",
+        description: "We also want to learn more about you. What is your name? Are you a player or do you manage a pitch? We want to know it all.",
+        child: <Form/>
     },
     {
-        title: "But, Enough About Us...",
-        description: "We also want to learn more about you. What is your name? Are you a player or manage a pitch? We want to know it all.",
+        title: "How Does Hagz Work?",
+        description: "Hagz is for everybody. Whether you're a professional or amateur player, a manager, or a coach, we've got you covered. We offer a simple system that cater to your needs.",
         image: "/"
     },
     {
@@ -35,7 +62,7 @@ const slides: CarouselSlideType[] = [
     },
 ]
 
-const labels = ["Welcome", "Introduction", "Features", "Quick Info", "Continue"]
+const labels = ["Welcome", "Introduction", "Quick Info", "Features", "Continue"]
 
 export default function Onboarding () {
     const [active, setActive] = useState(0);
