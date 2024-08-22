@@ -16,7 +16,7 @@ const Form = () => {
         <div className='flex-center flex-col h-full gap-y-20 p-4'>
             <Input placeholder="Name" label="We are the Hagz team and you are..."/>
             <div>
-                <span className='block text-center'>& you're using Hagz as a:</span>
+                <span className='block text-center'>& you&#39;re using Hagz as a:</span>
                 <div className='flex items-center gap-x-4 mt-4'>
                     <Button label="A Player" variant={variant == "primary" ? "secondary" : "primary"} onClick={() => variant == "secondary" ? setVariant("primary") : setVariant("secondary")}/>
                     <span className='px-4'>or</span>
