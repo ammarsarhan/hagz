@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image, { StaticImageData } from 'next/image'
 import { ReactNode } from 'react'
 
 interface CarouselProps {
@@ -9,7 +9,7 @@ interface CarouselProps {
 export type CarouselSlideType = {
     title: string;
     description: string;
-    image?: string;
+    image?: StaticImageData;
     child?: ReactNode;
 }
 
@@ -25,7 +25,7 @@ export default function Carousel ({step, slides}: CarouselProps) {
             </div>
             {
                 // If image exists, then display it
-                slides[step].image && <div className='relative'><Image fill src={slides[step].image} alt={`Slide ${step + 1} Image`} className='rounded-lg h-full w-full bg-black'/></div>
+                slides[step].image && <div className='relative'><Image fill src={slides[step].image} alt={`Slide ${step + 1} Image`} className='rounded-lg h-full w-full bg-black object-cover'/></div>
             }
             {
                 // If form exists, then display it
@@ -38,7 +38,7 @@ export default function Carousel ({step, slides}: CarouselProps) {
         <div className="h-[77.5vh] grid grid-cols-2 gap-4 p-4">
             {
                 // If image exists, then display it
-                slides[step].image && <div className='relative'><Image fill src={slides[step].image} alt={`Slide ${step + 1} Image`} className='rounded-lg h-full w-full bg-black'/></div>
+                slides[step].image && <div className='relative'><Image fill src={slides[step].image} alt={`Slide ${step + 1} Image`} className='rounded-lg h-full w-full bg-black object-cover'/></div>
             }
             {
                 // If form exists, then display it

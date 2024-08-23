@@ -9,23 +9,27 @@ import Carousel, { CarouselSlideType } from '@/app/components/Carousel'
 
 import { useState, useEffect } from 'react'
 
+import One from '@/app/assets/1.png'
+
 const Form = () => {
-    const [variant, setVariant] = useState("primary")
+    const [name, setName] = useState("")
+    const [role, setRole] = useState("user")
+    const [locationPermission, setLocationPermission] = useState(false)
 
     return (
         <div className='flex-center flex-col h-full gap-y-20 p-4'>
-            <Input placeholder="Name" label="We are the Hagz team and you are..."/>
+            <Input placeholder="Name" label="We are the Hagz team and you are..." onChange={(e) => setName(e.target.value)}/>
             <div>
-                <span className='block text-center'>& you&#39;re using Hagz as a:</span>
+                <span className='block text-center'>and {name === "" ? "you're" : `${name.replace(/ .*/,'')} is`} using Hagz as a:</span>
                 <div className='flex items-center gap-x-4 mt-4'>
-                    <Button label="A Player" variant={variant == "primary" ? "secondary" : "primary"} onClick={() => variant == "secondary" ? setVariant("primary") : setVariant("secondary")}/>
+                    <Button label="A Player" variant={role === "user" ? "secondary" : "primary"} onClick={() => setRole("user")}/>
                     <span className='px-4'>or</span>
-                    <Button label="An Owner" variant={variant} onClick={() => variant == "primary" ? setVariant("secondary") : setVariant("primary")}/>
+                    <Button label="An Owner" variant={role === "owner" ? "secondary" : "primary"} onClick={() => setRole("owner")}/>
                 </div>
             </div>
             <div className='flex justify-between items-center w-full gap-x-4'>
                 <span>Do we have permission to use location? (Hagz will work a lot better)</span>
-                <select className='bg-transparent text-center outline-none border-b-[1px] border-primary px-4 py-2'>
+                <select onChange={(e) => e.target.value === "No" ? setLocationPermission(false) : setLocationPermission(true)} className='bg-transparent text-center outline-none border-b-[1px] border-primary px-4 py-2'>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                 </select>
@@ -38,12 +42,12 @@ const slides: CarouselSlideType[] = [
     {
         title: "Hello!",
         description: "Welcome to Hagz. We're so excited to have you on board. Let's get started!",
-        image: "/"
+        image: One
     },
     {
         title: "Why Hagz?",
         description: "Simply said, because Hagz saves you time, money, and effort. We all know the feeling of having to search for available pitches and cancelling last minute. We're here to make your life easier.",
-        image: "/"
+        image: One
     },
     {
         title: "But, Enough About Us...",
@@ -53,12 +57,12 @@ const slides: CarouselSlideType[] = [
     {
         title: "How Does Hagz Work?",
         description: "Hagz is for everybody. Whether you're a professional or amateur player, a manager, or a coach, we've got you covered. We offer a simple system that cater to your needs.",
-        image: "/"
+        image: One
     },
     {
         title: "Next Steps",
         description: "So, are you ready to get started? Let's create an account and get you on your way to a hassle-free experience.",
-        image: "/"
+        image: One
     },
 ]
 
@@ -84,7 +88,6 @@ export default function Onboarding () {
         }
 
         window.addEventListener('keydown', handleKeyDown)
-
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [active])
 
@@ -113,7 +116,7 @@ export default function Onboarding () {
                 {
                     // If on the last slide, give user option to create account
                     active === slides.length - 1 &&
-                    <Link href="/sign-up">
+                    <Link href="/auth/sign-up">
                         <Button label="Let's Get Started!" variant="secondary"/>
                     </Link>
                 }

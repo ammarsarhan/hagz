@@ -26,7 +26,7 @@ export default function Progress ({current, labels, variant = "default"}: Progre
             <div className="flex-center w-5 h-5 rounded-full bg-black text-white">
                 <CheckIcon className="text-xs"/>
             </div>
-            <span className="text-sm">{label}</span>
+            <span className="text-sm hidden sm:block">{label}</span>
         </div>
     )
 
@@ -44,7 +44,7 @@ export default function Progress ({current, labels, variant = "default"}: Progre
             <div className="flex-center w-5 h-5 p-2 rounded-full border-[1px] border-gray-700 bg-white bg-opacity-20 text-primary">
                 <span className="text-xs">{index + 1}</span>
             </div>
-            <span className="text-sm">{label}</span>
+            <span className="text-sm hidden sm:block">{label}</span>
         </div>
     )
 
