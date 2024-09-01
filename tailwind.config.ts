@@ -9,7 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        
+        'primary-black': '#1C211E',
+        'primary-white': '#DCE1DE',
+        'dark-gray': '#7E8380',
+        'light-gray': '#ADB2AF',
+        'primary-green': '#004719',
+        'secondary-green': '#619D75',
+        'tertiary-green': '#257449'
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
