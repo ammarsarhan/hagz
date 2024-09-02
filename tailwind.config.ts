@@ -8,11 +8,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      gridTemplateColumns: {
+        'nav': '1fr auto 1fr'
+      },
       colors: {
         'primary-black': '#1C211E',
         'primary-white': '#DCE1DE',
         'dark-gray': '#7E8380',
-        'light-gray': '#ADB2AF',
+        'light-gray': '#D5D5D5',
         'primary-green': '#004719',
         'secondary-green': '#619D75',
         'tertiary-green': '#257449'
