@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       gridTemplateColumns: {
-        'nav': '1fr auto 1fr'
+        'details': '2fr 1fr'
       },
       colors: {
         'primary-black': '#1C211E',

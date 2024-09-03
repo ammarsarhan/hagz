@@ -6,6 +6,62 @@
     font-weight: 400;
 }
 
+.pulse-green {
+    box-shadow: 0px 0px 1px 1px #0000001a;
+    animation: pulse-green-animation 2s infinite;
+}
+  
+@keyframes pulse-green-animation {
+    0% {
+        box-shadow: 0 0 0 0px rgba(0, 255, 0, 0.2);
+    }
+    100% {
+        box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
+    }
+}
+
+.pulse-red {
+    box-shadow: 0px 0px 1px 1px #0000001a;
+    animation: pulse-red-animation 2s infinite;
+}
+  
+@keyframes pulse-red-animation {
+    0% {
+        box-shadow: 0 0 0 0px rgba(255, 0, 0, 0.2);
+    }
+    100% {
+        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+    }
+}
+
+.pulse-yellow {
+    box-shadow: 0px 0px 1px 1px #0000001a;
+    animation: pulse-yellow-animation 2s infinite;
+}
+  
+@keyframes pulse-yellow-animation {
+    0% {
+        box-shadow: 0 0 0 0px rgba(255, 204, 0, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 0, 0);
+    }
+}
+
+.pulse-gray {
+    box-shadow: 0px 0px 1px 1px #0000001a;
+    animation: pulse-gray-animation 2s infinite;
+}
+  
+@keyframes pulse-gray-animation {
+    0% {
+        box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.2);
+    }
+    100% {
+        box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+    }
+}
+
 .flex-center {
     display: flex;
     align-items: center;

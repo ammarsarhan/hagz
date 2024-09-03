@@ -3,9 +3,9 @@ import Button from '@/app/components/Button'
 
 export default function Navigation() {
     return (
-        <nav className="flex items-center justify-between border-b-[1px] border-light-gray py-5 px-10">
+        <nav className="sticky top-0 bg-white flex items-center justify-between border-b-[1px] border-light-gray py-5 px-10 z-50">
             <div className='flex items-center'>
-                <NavLink href="/"><span className='text-lg font-semibold'>حجز</span></NavLink>
+                <NavLink href="/"><span className='text-lg font-semibold text-primary-green'>حجز</span></NavLink>
             </div>
             <div className='flex gap-x-10'>
                 <div className="flex-center gap-x-10 text-sm text-dark-gray">
