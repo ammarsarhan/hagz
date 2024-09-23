@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button'
 
 export default function Navigation() {
     return (
-        <nav className="sticky top-0 bg-white flex items-center justify-between border-b-[1px] border-light-gray py-5 px-10 z-50">
+        <nav className="sticky top-0 bg-white flex items-center justify-between border-b-[1px] border-light-gray py-5 px-10 z-50 overflow-x-hidden">
             <div className='flex items-center'>
                 <NavLink href="/"><span className='text-lg font-semibold text-primary-green'>حجز</span></NavLink>
             </div>

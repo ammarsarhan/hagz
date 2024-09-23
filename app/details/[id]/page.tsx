@@ -18,7 +18,7 @@ const mock = [
 
 export default function Details () {
     return (
-        <div className="px-8 py-12 sm:p-14">
+        <div className="px-6 py-12 sm:p-14">
             <Breadcrumb/>
             <header className="flex items-start justify-between">
                 <div className="flex flex-col gap-y-5">
@@ -43,6 +43,7 @@ export default function Details () {
                 </div>
             </header>
             <main className="lg:grid grid-cols-details gap-8 my-8">
+                <Reserve price={200} size={5}/>
                 <div>
                     <Gallery title={"El Nasr Club For Armed Forces"} images={mock}/>
                     <div className="my-12">
@@ -55,12 +56,11 @@ export default function Details () {
                         <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Dolore similique eum dolores quaerat harum natus aliquid? Dolorem deserunt aut totam impedit saepe obcaecati delectus aliquam, provident tempora qui adipisci incidunt?</p>
                     </div>
                 </div>
-                <Reserve available={false} price={200} size={5}/>
             </main>
             <div className="mt-16 mb-8 lg:my-4">
                 <div className="flex items-center justify-between w-full">
                     <span className="text-lg">More pitches</span>
-                    <Link href="/search" className="text-primary-green hover:text-tertiary-green">Find More</Link>
+                    <Link href="/search" className="text-primary-green text-sm hover:text-tertiary-green">Find More</Link>
                 </div>
                 <div className="overflow-x-scroll whitespace-nowrap mt-6 [&>div]:mx-10 [&>*:first-child]:ml-4 [&>*:last-child]:mr-4">
                     {

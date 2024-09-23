@@ -1,33 +1,30 @@
 'use client'
 
-import { useEffect, useState } from "react"
-
 import Button from "@/components/ui/Button"
 import Pulse from "@/components/ui/Pulse"
 import { Calendar, Clock } from "lucide-react"
 
 interface ReserveProps {
-    available: boolean,
     price: number,
     size: number
 }
 
-export default function Reserve ({available, price, size} : ReserveProps) {    
+export default function Reserve ({price, size} : ReserveProps) {    
     return (
-        <div className="sticky top-24 h-fit w-full rounded-2xl p-5 bg-gray-100">
+        <div className="lg:sticky top-24 h-fit w-full rounded-2xl p-5 mb-8 bg-gray-100">
             <form className="flex flex-col gap-y-6">
                 <div className="flex flex-col gap-y-6 w-full rounded-xl bg-white p-5">
                     <Pulse variant={'inactive'}/>
                     <div className="flex flex-col gap-y-2">
-                        <span className="flex items-center gap-x-2 text-dark-gray"><Calendar className="inline w-4 h-4"/> Date</span>
+                        <span className="flex items-center gap-x-2 text-dark-gray text-sm"><Calendar className="inline w-4 h-4"/> Date</span>
                         <input type="text" name="day" placeholder="Reservation Date" className="w-full rounded-lg px-4 py-2 border-[1px]"/>
                     </div>
                     <div className="flex flex-col gap-y-2">
-                        <span className="flex items-center gap-x-2 text-dark-gray"><Clock className="inline w-4 h-4"/> Start</span>
+                        <span className="flex items-center gap-x-2 text-dark-gray text-sm"><Clock className="inline w-4 h-4"/> Start</span>
                         <input type="text" name="startTime" placeholder="Start Time" className="w-full rounded-lg px-4 py-2 border-[1px]"/>
                     </div>
                     <div className="flex flex-col gap-y-2">
-                        <span className="flex items-center gap-x-2 text-dark-gray"><Clock className="inline w-4 h-4"/> End</span>
+                        <span className="flex items-center gap-x-2 text-dark-gray text-sm"><Clock className="inline w-4 h-4"/> End</span>
                         <input type="text" name="endTime" placeholder="End Time" className="w-full rounded-lg px-4 py-2 border-[1px]"/>
                     </div>
                 </div>
