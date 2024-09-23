@@ -1,5 +1,5 @@
-import NavLink from '@/app/components/NavLink'
-import Button from '@/app/components/Button'
+import NavLink from '@/components/ui/NavLink'
+import Button from '@/components/ui/Button'
 
 export default function Navigation() {
     return (
