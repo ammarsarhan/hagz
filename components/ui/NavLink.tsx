@@ -6,11 +6,13 @@ import Link from "next/link"
 
 interface NavLinkProps {
     href: string,
+    className?: string,
     children?: ReactNode
 }
 
-export default function NavLink ({ href, children }: NavLinkProps) {
-    const pathname = usePathname()
+export default function NavLink ({ href, className = "", children }: NavLinkProps) {
+    const pathname = usePathname();
+    const styles = `link ${pathname === href ? 'active ' : ''}${className}`;
 
-    return <Link className={`link ${pathname === href ? 'active' : ''}`} href={href}>{children}</Link>
+    return <Link className={styles.trim()} href={href}>{children}</Link>
 }

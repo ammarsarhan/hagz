@@ -7,7 +7,7 @@ export default function Navigation() {
             <div className='flex items-center'>
                 <NavLink href="/"><span className='text-lg font-semibold text-primary-green'>حجز</span></NavLink>
             </div>
-            {/* <div className='flex gap-x-10'>
+            <div className='flex gap-x-10'>
                 <div className="flex-center gap-x-10 text-sm text-dark-gray">
                     <NavLink href="/">Home</NavLink>
                     <NavLink href="/search">Search</NavLink>
@@ -18,7 +18,7 @@ export default function Navigation() {
                     <NavLink href="/auth/sign-in"><Button variant="secondary">Sign In</Button></NavLink>
                     <NavLink href="/auth/register"><Button variant="primary">Register</Button></NavLink>
                 </div>
-            </div> */}
+            </div>
         </nav>
     )
 }

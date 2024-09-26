@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import Button from "@/components/ui/Button"
 import Breadcrumb from "@/components/ui/Breadcrumb"
+import Copyright from "@/components/ui/Copyright"
 import Gallery from "@/components/Gallery"
 import Reserve from "@/components/Reserve"
 import Amenities from "@/components/Amenities"
@@ -18,7 +19,7 @@ const mock = [
 
 export default function Details () {
     return (
-        <div className="px-5 pt-12 pb-6 sm:p-14">
+        <div className="px-5 pt-12 pb-6 sm:px-14 sm:pt-14 sm:pb-12">
             <Breadcrumb/>
             <header className="flex items-start justify-between">
                 <div className="flex flex-col gap-y-5">
@@ -68,6 +69,7 @@ export default function Details () {
                     }
                 </div>
             </div>
+            <Copyright/>
         </div>
     )
 }
