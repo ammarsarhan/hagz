@@ -33,7 +33,9 @@ export default function Sidebar () {
                         <span className="flex items-center gap-x-2"><Settings className="w-4 h-4"/>Settings</span>
                         <ul className="flex flex-col gap-4 text-dark-gray py-4">
                             <li><NavLink href="/dashboard/settings/details" className="sidebar-link">Pitch Details</NavLink></li>
-                            <li><NavLink href="/dashboard/settings/linking" className="sidebar-link">Account</NavLink></li>
+                            <li><NavLink href="/dashboard/settings/notifications" className="sidebar-link">Notifications</NavLink></li>
+                            <li><NavLink href="/dashboard/settings/security" className="sidebar-link">Privacy & Security</NavLink></li>
+                            <li><NavLink href="/dashboard/settings/linking" className="sidebar-link">Account Linking</NavLink></li>
                         </ul>
                     </div>
                 </div>
