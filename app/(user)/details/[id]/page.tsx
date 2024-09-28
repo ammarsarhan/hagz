@@ -47,10 +47,10 @@ export default function Details () {
                 <Reserve price={200} size={5}/>
                 <div>
                     <Gallery title={"El Nasr Club For Armed Forces"} images={mock}/>
-                    <div className="my-8 sm:my-12">
+                    <div className="my-8">
                         <Amenities items={10}/>
                     </div>
-                    <div className="my-8 sm:my-12 lg:w-3/4">
+                    <div className="my-8 lg:w-3/4">
                         <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Dolore similique eum dolores quaerat harum natus aliquid? Dolorem deserunt aut totam impedit saepe obcaecati delectus aliquam, provident tempora qui adipisci incidunt?</p>
                         <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Dolore similique eum dolores quaerat harum natus aliquid? Dolorem deserunt aut totam impedit saepe obcaecati delectus aliquam, provident tempora qui adipisci incidunt?</p>
                         <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Dolore similique eum dolores quaerat harum natus aliquid? Dolorem deserunt aut totam impedit saepe obcaecati delectus aliquam, provident tempora qui adipisci incidunt?</p>

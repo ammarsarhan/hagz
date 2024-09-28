@@ -1,11 +1,11 @@
 import { ChevronRight, Calendar, Wallet, Settings } from "lucide-react";
 
 import NavLink from "@/components/ui/NavLink";
-import Selector from "@/components/ui/Selector";
+import Selector from "@/components/dashboard/Selector";
 
 export default function Sidebar () {
     return (
-        <aside className="flex flex-col h-screen py-4 px-7 border-r-[1px] bg-gray-100">
+        <aside className="flex-col h-screen p-6 border-r-[1px] bg-gray-100 w-80 hidden lg:flex fixed lg:static">
             <div className='flex items-center mt-2 mb-4'>
                 <NavLink href="/"><span className='text-lg font-semibold text-primary-green'>حجز</span></NavLink>
             </div>
@@ -24,7 +24,7 @@ export default function Sidebar () {
                     <div className="border-b-[1px]">
                         <span className="flex items-center gap-x-2"><Wallet className="w-4 h-4"/>Sales</span>
                         <ul className="flex flex-col gap-4 text-dark-gray py-4">
-                            <li><NavLink href="/dashboard/sales" className="sidebar-link">Overview</NavLink></li>
+                            <li><NavLink href="/dashboard/sales" className="sidebar-link">Tracker</NavLink></li>
                             <li><NavLink href="/dashboard/sales/pricing" className="sidebar-link">Pricing Schema</NavLink></li>
                             <li><NavLink href="/dashboard/sales/billing" className="sidebar-link">Billing</NavLink></li>
                         </ul>
@@ -35,12 +35,11 @@ export default function Sidebar () {
                             <li><NavLink href="/dashboard/settings/details" className="sidebar-link">Pitch Details</NavLink></li>
                             <li><NavLink href="/dashboard/settings/notifications" className="sidebar-link">Notifications</NavLink></li>
                             <li><NavLink href="/dashboard/settings/security" className="sidebar-link">Privacy & Security</NavLink></li>
-                            <li><NavLink href="/dashboard/settings/linking" className="sidebar-link">Account Linking</NavLink></li>
                         </ul>
                     </div>
                 </div>
             </div>
-            <div className="text-xs text-dark-gray mt-auto pt-4">
+            <div className="text-xs text-dark-gray mt-auto pt-4 pb-2">
                 <span>© 2024 Hagz. All rights reserved.</span>
             </div>
         </aside>
