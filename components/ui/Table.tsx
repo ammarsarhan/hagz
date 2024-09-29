@@ -11,7 +11,7 @@ export default function Table ({headers, data} : TableProps) {
             <div className="table-row text-dark-gray">
                 {
                     headers.map((header, index) => (
-                        <div key={index} className="hidden p-2 sm:table-cell first:table-cell last:table-cell border-b-[1px] border-r-[1px] last:border-r-0">{header}</div>
+                        <div key={index} className="hidden p-2 sm:table-cell first:table-cell last:table-cell border-b-[1px]">{header}</div>
                     ))
                 }
             </div>
@@ -22,13 +22,13 @@ export default function Table ({headers, data} : TableProps) {
                             labels.map((label, index) => {
                                 if (index === 0) {
                                     return (
-                                        <div className="table-cell p-2 border-b-[1px] border-r-[1px]">
+                                        <div className="table-cell p-2 border-b-[1px]">
                                             <Link className='hover:underline hover:text-primary-green' href={"/"}>{label}</Link>
                                         </div>
                                     )
                                 }
                                 return (
-                                    <div className="hidden sm:table-cell p-2 first:table-cell last:table-cell border-b-[1px] border-r-[1px] last:border-r-0">
+                                    <div className="hidden sm:table-cell p-2 first:table-cell last:table-cell border-b-[1px]">
                                         {label}
                                     </div>
                                 )

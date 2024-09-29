@@ -11,7 +11,7 @@ export default function Sales () {
             <div className='flex items-center gap-4'>
                 <div className='w-8 h-8 bg-black rounded-full'></div>
                 <div className='flex flex-col gap-1 my-4'>
-                    <span className='font-medium text-xl'>Your sales progess, Ammar</span>
+                    <span className='font-semibold text-xl'>Your sales progess, Ammar</span>
                     <span className='text-dark-gray text-sm'>As of: {getDayName()} - {getDate()}</span>
                 </div>
             </div>
@@ -30,7 +30,7 @@ export default function Sales () {
                 </div>
                 <div className='flex flex-col gap-4 my-2'>
                     <span className='text-sm text-dark-gray'>Statistics</span>
-                    <LabelCardGroup cards={[{title: "Overall feedback by users", value: "+50%", variant: "positive"}, {title: "Recurring users", value: "23", variant: "positive"}, {title: "Bonuses", value: "0%", variant: "neutral"}, {title: "Reservation retention", value: "-4%", variant: "negative"}]}/>
+                    <LabelCardGroup cards={[{title: "Overall feedback by users", value: "+50%", variant: "positive"}, {title: "Recurring users", value: "23", variant: "positive"}, {title: "Hours reserved", value: "300", variant: "neutral"}, {title: "Reservation retention", value: "-4%", variant: "negative"}]}/>
                 </div>
             </div>
             <div className='flex flex-col gap-4 my-2'>

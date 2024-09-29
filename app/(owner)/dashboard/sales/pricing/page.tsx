@@ -18,10 +18,42 @@ export default function Pricing () {
     const priceFormat = getCurrencyFormat(total);
     const totalFormat = isDiscountChecked ? getCurrencyFormat(total - discount + 10) : getCurrencyFormat(total + 10);
 
+    const validateInputs = () => {
+        if (isNaN(total) || isNaN(deposit) || isNaN(discount) || total <= 0) {
+            return true;
+        }
+
+        if (isDepositChecked && deposit <= 0) {
+            return true;
+        }
+
+        if (isDiscountChecked && discount <= 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    useEffect(() => {
+        if (total <= 0) {
+            setIsDepositChecked(false);
+            setIsDiscountChecked(false);
+        }
+    }, [total]);
+
+    useEffect(() => {
+        isDepositChecked == false && setDeposit(0);
+    }, [isDepositChecked]);
+
+    useEffect(() => {
+        isDiscountChecked == false && setDiscount(0);
+    }, [isDiscountChecked]);
+
     return (
         <>
             <div className='my-4'>
-                <span className='font-medium text-xl'>Pricing Schemas</span>
+                <span className='font-semibold text-xl block'>Pricing Schemas</span>
+                <span className="text-dark-gray block text-sm mt-2">Create, edit, add, or remove pricing plans for your customers.</span>
             </div>
             <div className='flex flex-col gap-4 my-2'>
                 <span className='text-sm text-dark-gray'>Your Current Active Plan</span>
@@ -37,7 +69,7 @@ export default function Pricing () {
             </div>
             <div className='flex flex-col gap-4 my-2'>
                 <span className='text-sm text-dark-gray'>Add Plan</span>
-                <form action="" className="flex flex-col gap-4 md:max-w-[50%]">
+                <form action="" className="flex flex-col gap-4 md:max-w-[50%] border-[1px] p-5 rounded-xl">
                     <div className="text-sm">
                         <span className="block">Price</span>
                         <input type="text" placeholder="Price" className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => setTotal(Number(e.target.value))}/>
@@ -45,11 +77,11 @@ export default function Pricing () {
                     <div className="text-sm flex items-center flex-wrap gap-x-10 gap-y-2">
                         <div className="flex items-center gap-2">
                             <span className="block">Set Deposit?</span>
-                            <input type="checkbox" name="Deposit" disabled={total <= 0} checked={isDepositChecked} onChange={() => setIsDepositChecked(!isDepositChecked)}/>
+                            <input type="checkbox" name="Deposit" disabled={total <= 0 || isNaN(total)} checked={isDepositChecked} onChange={() => setIsDepositChecked(!isDepositChecked)}/>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="block">Add Discount?</span>
-                            <input type="checkbox" name="Discount" disabled={total <= 0} checked={isDiscountChecked} onChange={() => setIsDiscountChecked(!isDiscountChecked)}/>
+                            <input type="checkbox" name="Discount" disabled={total <= 0 || isNaN(total)} checked={isDiscountChecked} onChange={() => setIsDiscountChecked(!isDiscountChecked)}/>
                         </div>
                     </div>
                     <div className="text-sm flex flex-col gap-4">
@@ -57,39 +89,39 @@ export default function Pricing () {
                             isDepositChecked &&
                             <div>
                                 <span className="block">Deposit</span>
-                                <input type="text" placeholder="Deposit Value" value={deposit} className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => setDeposit(Number(e.target.value))}/>
+                                <input type="text" placeholder="Deposit Value" className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => setDeposit(Number(e.target.value))}/>
                             </div>
                         }
                         {
                             isDiscountChecked &&
                             <div>
                                 <span className="block">Discount</span>
-                                <input type="text" placeholder="Discount Value" value={discount} className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => {setDiscount(Number(e.target.value))}}/>
+                                <input type="text" placeholder="Discount Value" className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => setDiscount(Number(e.target.value))}/>
                             </div>
                         }
                     </div>
                     <div className="flex flex-col gap-y-2 text-sm">
                         <div className="flex items-center justify-between">
                             <span>Price</span>
-                            <span>{isNaN(total) || isNaN(deposit) || isNaN(discount) ? "N/A" : priceFormat}</span>
+                            <span>{validateInputs() ? "N/A" : priceFormat}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span>Service Fee</span>
-                            <span>{isNaN(total) || isNaN(deposit) || isNaN(discount) ? "N/A" : "EGP 10.00"}</span>
+                            <span>{validateInputs() ? "N/A" : "EGP 10.00"}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span>Total (per hr)</span>
-                            <span>{isNaN(total) || isNaN(deposit) || isNaN(discount) ? "N/A" : `${totalFormat} ${(isDiscountChecked && total <= 0) ? `(-${(discount/total * 100).toFixed(2)}%)` : ""}`}</span>
+                            <span>{validateInputs() ? "N/A" : `${totalFormat} ${(isDiscountChecked && total >= 0) ? `(-${(discount/total * 100).toFixed(2)}%)` : ""}`}</span>
                         </div>
                     </div>
                     {
                         isDepositChecked &&
                         <div className="flex items-center justify-between text-sm text-dark-gray">
                             <span>To Be Collected</span>
-                            <span>{getCurrencyFormat((total - discount + 10) - deposit)}</span>
+                            <span>{validateInputs() ? "N/A" : getCurrencyFormat((total - discount + 10) - deposit)}</span>
                         </div>
                     }
-                    <Button variant="disabled" className="my-4 py-[0.875rem]">Create Plan</Button>
+                    <Button variant={!validateInputs() ? "color" : "disabled"} className="my-4 py-[0.875rem]">Create Plan</Button>
                 </form>
             </div>
         </>

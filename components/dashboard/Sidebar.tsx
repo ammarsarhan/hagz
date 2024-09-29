@@ -2,15 +2,16 @@ import { ChevronRight, Calendar, Wallet, Settings } from "lucide-react";
 
 import NavLink from "@/components/ui/NavLink";
 import Selector from "@/components/dashboard/Selector";
+import Profile from "@/components/dashboard/Profile";
 
 export default function Sidebar () {
     return (
-        <aside className="flex-col h-screen p-6 border-r-[1px] bg-gray-100 w-80 hidden lg:flex fixed lg:static">
+        <aside className="flex-col h-screen p-6 border-r-[1px] bg-gray-100 w-[22rem] hidden lg:flex fixed lg:static">
             <div className='flex items-center mt-2 mb-4'>
                 <NavLink href="/"><span className='text-lg font-semibold text-primary-green'>حجز</span></NavLink>
             </div>
+            <Selector/>
             <div className="overflow-y-scroll">
-                <Selector/>
                 <div className="flex flex-col gap-y-6 my-6 text-sm">
                     <div className="border-b-[1px]">
                         <span className="flex items-center gap-x-2"><Calendar className="w-4 h-4"/>Reservations</span>
@@ -39,8 +40,8 @@ export default function Sidebar () {
                     </div>
                 </div>
             </div>
-            <div className="text-xs text-dark-gray mt-auto pt-4 pb-2">
-                <span>© 2024 Hagz. All rights reserved.</span>
+            <div className="mt-auto">
+                <Profile/>
             </div>
         </aside>
     )
