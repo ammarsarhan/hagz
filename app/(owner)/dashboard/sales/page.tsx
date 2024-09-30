@@ -2,19 +2,21 @@ import Table from '@/components/ui/Table';
 import Card from '@/components/dashboard/Card';
 import ProgressCard from '@/components/dashboard/ProgressCard';
 import LabelCardGroup from '@/components/dashboard/LabelCard';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 import getDate, { getDayName } from '@/utils/date';
 
 export default function Sales () {
     return (
-        <>        
+        <>
+            <Breadcrumbs labels={[{label: "Sales", href: "/dashboard/sales"}]} className="mt-4"/>
             <div className='flex items-center gap-4'>
                 <div className='w-8 h-8 bg-black rounded-full'></div>
                 <div className='flex flex-col gap-1 my-4'>
                     <span className='font-semibold text-xl'>Your sales progess, Ammar</span>
                     <span className='text-dark-gray text-sm'>As of: {getDayName()} - {getDate()}</span>
                 </div>
-            </div>
+            </div>        
             <div className='flex flex-col gap-4 my-2'>
                 <span className='text-sm text-dark-gray'>Overview</span>
                 <div className='flex flex-wrap items-center gap-4'>

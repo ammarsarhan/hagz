@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import SchemaCard from "@/components/dashboard/SchemaCard"
 import Button from "@/components/ui/Button"
+import Breadcrumbs from "@/components/ui/Breadcrumbs"
 
 import getCurrencyFormat from "@/utils/currency";
 
@@ -51,6 +52,7 @@ export default function Pricing () {
 
     return (
         <>
+            <Breadcrumbs labels={[{label: "Sales", href: "/dashboard/sales"}, {label: "Pricing", href: "/dashboard/sales/pricing"}]} className="mt-4"/>
             <div className='my-4'>
                 <span className='font-semibold text-xl block'>Pricing Schemas</span>
                 <span className="text-dark-gray block text-sm mt-2">Create, edit, add, or remove pricing plans for your customers.</span>
@@ -71,7 +73,7 @@ export default function Pricing () {
                 <span className='text-sm text-dark-gray'>Add Plan</span>
                 <form action="" className="flex flex-col gap-4 md:max-w-[50%] border-[1px] p-5 rounded-xl">
                     <div className="text-sm">
-                        <span className="block">Price</span>
+                        <span className="block">Price*</span>
                         <input type="text" placeholder="Price" className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => setTotal(Number(e.target.value))}/>
                     </div>
                     <div className="text-sm flex items-center flex-wrap gap-x-10 gap-y-2">

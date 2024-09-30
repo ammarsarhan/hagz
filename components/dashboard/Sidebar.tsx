@@ -1,4 +1,4 @@
-import { ChevronRight, Calendar, Wallet, Settings } from "lucide-react";
+import { Calendar, Wallet, Settings } from "lucide-react";
 
 import NavLink from "@/components/ui/NavLink";
 import Selector from "@/components/dashboard/Selector";
@@ -10,7 +10,7 @@ export default function Sidebar () {
             <div className='flex items-center mt-2 mb-4'>
                 <NavLink href="/"><span className='text-lg font-semibold text-primary-green'>حجز</span></NavLink>
             </div>
-            <Selector/>
+            <Selector value="El Nasr Football Club" description="Alexandria, Egypt" icon={<div className="bg-primary-green w-full h-full rounded-sm"></div>}/>
             <div className="overflow-y-scroll">
                 <div className="flex flex-col gap-y-6 my-6 text-sm">
                     <div className="border-b-[1px]">

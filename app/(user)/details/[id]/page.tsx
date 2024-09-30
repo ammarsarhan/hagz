@@ -2,7 +2,7 @@ import { Star, Share, MoreHorizontal } from "lucide-react"
 import Link from "next/link"
 
 import Button from "@/components/ui/Button"
-import Breadcrumb from "@/components/ui/Breadcrumb"
+import Breadcrumbs from "@/components/ui/Breadcrumbs"
 import Copyright from "@/components/ui/Copyright"
 import Gallery from "@/components/Gallery"
 import Reserve from "@/components/Reserve"
@@ -20,8 +20,8 @@ const mock = [
 export default function Details () {
     return (
         <div className="px-5 pt-12 pb-6 sm:px-14 sm:pt-14 sm:pb-12">
-            <Breadcrumb/>
-            <header className="flex items-start justify-between">
+            <Breadcrumbs labels={[{label: "Home", href: "/"}, {label: "Search", href: "/search"}, {label: "Details", href: "/details"}]}/>
+            <header className="flex items-start justify-between mt-6">
                 <div className="flex flex-col gap-y-5">
                     <h1 className="text-4xl font-semibold">El Nasr Club For Armed Forces</h1>
                     <h1 className="text-4xl font-semibold">(نادي النصر للقوات المسلحة)</h1>

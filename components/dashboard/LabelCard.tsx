@@ -22,7 +22,7 @@ export function LabelCard ({title, value, variant} : LabelCardProps) {
             return (
                 <div className="flex justify-between gap-24 p-5 border-[1px] rounded-xl text-sm">
                     <span className="text-dark-gray">{title}</span>
-                    <span className="text-primary-green">{value}</span>
+                    <span className="text-green-700">{value}</span>
                 </div>
             )
         case 'negative':

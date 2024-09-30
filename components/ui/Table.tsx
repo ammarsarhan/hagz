@@ -22,7 +22,7 @@ export default function Table ({headers, data} : TableProps) {
                             labels.map((label, index) => {
                                 if (index === 0) {
                                     return (
-                                        <div className="table-cell p-2 border-b-[1px]">
+                                        <div className="table-cell px-2 py-4 border-b-[1px]">
                                             <Link className='hover:underline hover:text-primary-green' href={"/"}>{label}</Link>
                                         </div>
                                     )
