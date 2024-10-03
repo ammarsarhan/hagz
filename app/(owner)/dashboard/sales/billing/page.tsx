@@ -1,6 +1,9 @@
 import Breadcrumbs from "@/components/ui/Breadcrumbs"
 import Selector from "@/components/dashboard/Selector"
 import Link from "next/link"
+
+import { getNextBillableWeek } from "@/utils/date"
+
 import { Edit, CreditCard, CheckCircle2 } from "lucide-react"
 
 export default function Billing () {
@@ -22,23 +25,23 @@ export default function Billing () {
                             </div>
                             <CheckCircle2 className="w-[18px] h-[18px] text-green-700"/>
                         </div>
-                        <div className="flex flex-col gap-y-3">
+                        <div className="flex flex-col gap-y-5">
                              <div className="flex flex-col gap-2 flex-1">
                                 <span className="text-dark-gray">Card Holder</span>
-                                <input type="text" placeholder="Card Holder" value={"Ammar Sarhan"} className="py-2 px-3 border-[1px] rounded-lg"/>
+                                <input readOnly type="text" placeholder="Card Holder" value={"Ammar Sarhan"} className="py-2 px-3 border-[1px] rounded-lg"/>
                             </div>
                              <div className="flex flex-col gap-2 flex-1">
                                 <span className="text-dark-gray">Credit/Debit Card Number</span>
-                                <input type="text" placeholder="Card Number" value={"0000-1111-2222-3333"} className="py-2 px-3 border-[1px] rounded-lg"/>
+                                <input readOnly type="text" placeholder="Card Number" value={"0000-1111-2222-3333"} className="py-2 px-3 border-[1px] rounded-lg"/>
                             </div>
-                            <div className="flex flex-wrap gap-x-8">
+                            <div className="flex flex-wrap gap-x-8 gap-y-5">
                                 <div className="flex flex-col gap-2 flex-1">
                                     <span className="text-dark-gray">Expiration Month & Year</span>
-                                    <input type="text" placeholder="Expiration Date" value={"05/2027"} className="py-2 px-3 border-[1px] rounded-lg"/>
+                                    <input readOnly type="text" placeholder="Expiration Date" value={"05/2027"} className="py-2 px-3 border-[1px] rounded-lg"/>
                                 </div>
                                 <div className="flex flex-col gap-2 flex-1">
                                     <span className="text-dark-gray">CVC</span>
-                                    <input type="text" placeholder="Security Code" value={"737"} className="py-2 px-3 border-[1px] rounded-lg"/>
+                                    <input readOnly type="text" placeholder="Security Code" value={"737"} className="py-2 px-3 border-[1px] rounded-lg"/>
                                 </div>
                             </div>
                         </div>
@@ -87,12 +90,8 @@ export default function Billing () {
                 </div>
             </div>
             <div className="text-sm my-4">
-                <span className="text-dark-gray">Next Scheduled Payment</span>
-                <div className="flex itmes-center justify-around">
-                    <div>
-
-                    </div>
-                </div>
+                <span className="text-dark-gray block">Next Scheduled Payment</span>
+                <span className="block my-1">Your next payment is to be delivered on: {getNextBillableWeek()}.</span>
             </div>
         </>
     )

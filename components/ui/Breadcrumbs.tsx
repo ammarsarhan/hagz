@@ -25,12 +25,12 @@ export default function Breadcrumbs({labels, className} : BreadcrumbsProps) {
                     }
 
                     return (
-                        <>
-                            <Link href={item.href} key={index}>
+                        <div className="flex items-center gap-x-2" key={index}>
+                            <Link href={item.href}>
                                 <span className="hover:underline">{item.label}</span>
                             </Link>
                             <ChevronRight className="w-4 h-4"/>
-                        </>
+                        </div>
                     )
                 })
             }
