@@ -4,7 +4,7 @@ import ProgressCard from '@/components/dashboard/ProgressCard';
 import LabelCardGroup from '@/components/dashboard/LabelCard';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
-import getDate, { getDayName } from '@/utils/date';
+import getDate, { getDayName, today } from '@/utils/date';
 
 export default function Sales () {
     return (
@@ -14,7 +14,7 @@ export default function Sales () {
                 <div className='w-8 h-8 bg-black rounded-full'></div>
                 <div className='flex flex-col gap-1 my-4'>
                     <span className='font-semibold text-xl'>Your sales progess, Ammar</span>
-                    <span className='text-dark-gray text-sm'>As of: {getDayName()} - {getDate()}</span>
+                    <span className='text-dark-gray text-sm'>As of: {getDayName(today)} - {getDate()}</span>
                 </div>
             </div>        
             <div className='flex flex-col gap-4 my-2'>

@@ -71,7 +71,7 @@ export default function Pricing () {
             </div>
             <div className='flex flex-col gap-4 my-2'>
                 <span className='text-sm text-dark-gray'>Add Plan</span>
-                <form action="" className="flex flex-col gap-4 md:max-w-[50%] border-[1px] p-5 rounded-xl">
+                <form action="" className="flex flex-col gap-4 md:max-w-[50%] border-[1px] p-5 rounded-md">
                     <div className="text-sm">
                         <span className="block">Price*</span>
                         <input type="text" placeholder="Price" className="w-full my-2 px-4 py-2 border-[1px] rounded-xl" onChange={(e) => setTotal(Number(e.target.value))}/>

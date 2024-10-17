@@ -24,7 +24,7 @@ export default function Card ({title, value, currency, percentage}: CardProps) {
 
     if (currency) {
         return (
-            <div className="flex flex-col gap-3 py-5 pl-5 pr-20 border-[1px] rounded-xl text-sm">
+            <div className="flex flex-col gap-3 py-5 pl-5 pr-20 border-[1px] rounded-md text-sm">
                 <span className="text-dark-gray">{title}</span>
                 <div>
                     <span className="block text-lg font-medium">{currencyFormat}</span>
@@ -40,7 +40,7 @@ export default function Card ({title, value, currency, percentage}: CardProps) {
     }
     if (value) {
         return (
-            <div className="flex flex-col gap-3 py-5 pl-5 pr-20 border-[1px] rounded-xl text-sm">
+            <div className="flex flex-col gap-3 py-5 pl-5 pr-20 border-[1px] rounded-md text-sm">
                 <span className="text-dark-gray">{title}</span>
                 <div>
                     <span className="block text-lg font-medium">{value}</span>

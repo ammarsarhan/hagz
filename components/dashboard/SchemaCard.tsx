@@ -7,7 +7,7 @@ interface SchemaCardProps {
 export default function SchemaCard ({active = true} : SchemaCardProps) {
     if (active) {
         return (
-            <div className="inline-flex flex-col text-sm p-5 border-[1px] rounded-xl w-fit">
+            <div className="inline-flex flex-col text-sm p-8 border-[1px] rounded-md w-fit">
                 <div className="flex justify-between mb-6">
                     <span className="font-medium">Plan A</span>
                 </div>
@@ -42,7 +42,7 @@ export default function SchemaCard ({active = true} : SchemaCardProps) {
     }
 
     return (
-        <div className="relative inline-flex flex-col text-sm p-5 border-[1px] rounded-xl w-fit">
+        <div className="relative inline-flex flex-col text-sm p-8 border-[1px] rounded-md w-fit">
             <div className="flex justify-between mb-6">
                 <span className="font-medium">Plan B</span>
                 <button className="flex items-center gap-1">

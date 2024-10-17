@@ -19,7 +19,6 @@ export default function Sidebar () {
                             <li><NavLink href="/dashboard/reservations" className="sidebar-link">Planner</NavLink></li>
                             <li><NavLink href="/dashboard/reservations/completed" className="sidebar-link">Completed</NavLink></li>
                             <li><NavLink href="/dashboard/reservations/pending" className="sidebar-link">Pending</NavLink></li>
-                            <li><NavLink href="/dashboard/reservations/recurring" className="sidebar-link">Recurring</NavLink></li>
                         </ul>
                     </div>
                     <div className="border-b-[1px]">

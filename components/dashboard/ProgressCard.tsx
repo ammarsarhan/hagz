@@ -5,7 +5,7 @@ interface ProgressCardProps {
 
 export default function ProgressCard ({title, value} : ProgressCardProps) {
     return (
-        <div className="flex flex-col gap-7 p-5 border-[1px] rounded-xl text-sm w-96">
+        <div className="flex flex-col gap-7 p-5 border-[1px] rounded-md text-sm w-96">
         <span className="text-dark-gray">{title}</span>
         <div className="flex-center relative h-72">
             <div className="absolute h-72 w-72 rounded-full border-8 border-gray-100"></div>

@@ -1,6 +1,9 @@
 import type { Config } from "tailwindcss";
+import { safelist } from "./utils/color";
 
 const config: Config = {
+  mode: 'jit',
+  safelist: safelist,
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",

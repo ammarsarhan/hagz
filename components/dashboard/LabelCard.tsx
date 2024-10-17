@@ -20,21 +20,21 @@ export function LabelCard ({title, value, variant} : LabelCardProps) {
     switch (variant) {
         case 'positive':
             return (
-                <div className="flex justify-between gap-24 p-5 border-[1px] rounded-xl text-sm">
+                <div className="flex justify-between gap-24 p-5 border-[1px] rounded-md text-sm">
                     <span className="text-dark-gray">{title}</span>
                     <span className="text-green-700">{value}</span>
                 </div>
             )
         case 'negative':
             return (
-                <div className="flex justify-between gap-24 p-5 border-[1px] rounded-xl text-sm">
+                <div className="flex justify-between gap-24 p-5 border-[1px] rounded-md text-sm">
                     <span className="text-dark-gray">{title}</span>
                     <span className="text-red-500">{value}</span>
                 </div>
             )
         case 'neutral':
             return (
-                <div className="flex justify-between gap-24 p-5 border-[1px] rounded-xl text-sm">
+                <div className="flex justify-between gap-24 p-5 border-[1px] rounded-md text-sm">
                     <span className="text-dark-gray">{title}</span>
                     <span>{value}</span>
                 </div>

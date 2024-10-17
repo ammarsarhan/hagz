@@ -1,33 +1,66 @@
-import Switch from "@/components/ui/Switch"
-import { getMonth, getYear } from "@/utils/date"
+"use client";
 
-import { MoreHorizontal, Plus, ChevronRight, ChevronLeft } from "lucide-react"
+import { useState } from "react";
+import { today } from "@/utils/date";
+
+import UtilityBar from "@/components/dashboard/UtilityBar";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import ViewSwitch from "@/components/ui/ViewSwitch";
+
+import DailyView from "@/components/dashboard/DailyView";
+import MonthlyView from "@/components/dashboard/MonthlyView";
+
+import { Reservation } from "@/utils/types/reservation";
+
+const reservations = [
+    {id: "#2832468249", start: new Date(2024, 9, 11, 0, 0), end: new Date(2024, 9, 11, 2, 0), recurring: false}, 
+    {id: "#2832468249", start: new Date(2024, 9, 11, 4, 0), end: new Date(2024, 9, 11, 5, 0), recurring: true}, 
+    {id: "#2832468249", start: new Date(2024, 9, 11, 7, 0), end: new Date(2024, 9, 11, 9, 0), recurring: false},
+    {id: "#2832468249", start: new Date(2024, 9, 11, 9, 0), end: new Date(2024, 9, 11, 9, 0), recurring: false},
+    {id: "#2832468249", start: new Date(2024, 9, 11, 11, 0), end: new Date(2024, 9, 11, 9, 0), recurring: false},
+    {id: "#2832468249", start: new Date(2024, 9, 11, 13, 0), end: new Date(2024, 9, 11, 9, 0), recurring: false},
+    {id: "#2832468249", start: new Date(2024, 9, 11, 17, 0), end: new Date(2024, 9, 11, 9, 0), recurring: true},
+    {id: "#2832468249", start: new Date(2024, 9, 11, 23, 0), end: new Date(2024, 9, 11, 9, 0), recurring: false},
+]
 
 export default function Reservations () {
+    const [activeDate, setActiveDate] = useState(today);
+    const [activeView, setActiveView] = useState(0);
+    const [currentReservations, setCurrentReservations] = useState<Reservation[]>(reservations);
+
+    // Have to be able to open empty calendar cells in case of /dashboard/reservations
+    // We want to be able to add a new reservation on empty days
+
     return (
         <>
-            <div className="flex flex-col sm:flex-row flex-wrap justify-between items-center gap-y-4 py-4">
-                <div className="flex items-center gap-x-4">
-                    <button>
-                        <ChevronLeft className="w-5 h-5"/>
-                    </button>
-                    <span className="text-dark-gray text-base">{getMonth()} {getYear()}</span>
-                    <button>
-                        <ChevronRight className="w-5 h-5"/>
-                    </button>
+            <Breadcrumbs labels={[{label: "Reservations", href: "/dashboard/reservations"}]} className="mt-4"/>
+            <div className='flex flex-col pt-4'>
+                <span className='font-semibold text-xl block'>Active</span>
+                <div className="mt-2">
+                    <ViewSwitch 
+                        active={activeView} 
+                        onChange={(index) => setActiveView(index)}
+                    />
                 </div>
-                <div className="flex items-center gap-x-8">
-                    <Switch options={["Daily", "Weekly", "Monthly"]} active={1}/>
-                    <div className="fixed bottom-6 right-6 sm:static flex items-center gap-x-4">
-                        <button>
-                            <MoreHorizontal className="w-5 h-5"/>
-                        </button>
-                        <button>
-                            <Plus className="w-5 h-5"/>
-                        </button>
-                    </div>
-                </div>
+                <UtilityBar date={activeDate} variant={activeView} color="slate"/>
             </div>
+            {
+                activeView === 0 && 
+                <DailyView 
+                    date={activeDate} 
+                    reservations={currentReservations} 
+                    color="slate"
+                />
+            }
+            {
+                activeView === 1 && 
+                <MonthlyView 
+                    date={activeDate} 
+                    reservations={[1, 5, 7, 11, 13, 14, 16, 18, 19, 24, 27, 30]} 
+                    color="slate"
+                    onChange={(date) => {setActiveDate(date); setActiveView(0);}}
+                />
+            }
         </>
     )
 }
