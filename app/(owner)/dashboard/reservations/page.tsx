@@ -10,7 +10,7 @@ import ViewSwitch from "@/components/ui/ViewSwitch";
 import DailyView from "@/components/dashboard/DailyView";
 import MonthlyView from "@/components/dashboard/MonthlyView";
 
-import { Reservation } from "@/utils/types/reservation";
+import Reservation from "@/utils/types/reservation";
 
 const reservations = [
     {id: "#2832468249", start: new Date(2024, 9, 11, 0, 0), end: new Date(2024, 9, 11, 2, 0), recurring: false}, 
@@ -35,7 +35,7 @@ export default function Reservations () {
         <>
             <Breadcrumbs labels={[{label: "Reservations", href: "/dashboard/reservations"}]} className="mt-4"/>
             <div className='flex flex-col pt-4'>
-                <span className='font-semibold text-xl block'>Active</span>
+                <span className='font-semibold text-xl block'>All</span>
                 <div className="mt-2">
                     <ViewSwitch 
                         active={activeView} 

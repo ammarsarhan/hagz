@@ -73,8 +73,6 @@ export default function DailyView ({date, reservations, color} : {
     for (let i = 0; i <= 23; i++) {
         reservationCells[i] ? null : reservationCells[i] = null;
     }
-    
-    console.log(colors)
 
     return (
         <div className="table table-fixed text-sm pb-2">

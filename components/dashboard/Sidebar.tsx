@@ -16,9 +16,9 @@ export default function Sidebar () {
                     <div className="border-b-[1px]">
                         <span className="flex items-center gap-x-2"><Calendar className="w-4 h-4"/>Reservations</span>
                         <ul className="flex flex-col gap-4 text-dark-gray py-4">
-                            <li><NavLink href="/dashboard/reservations" className="sidebar-link">Planner</NavLink></li>
-                            <li><NavLink href="/dashboard/reservations/completed" className="sidebar-link">Completed</NavLink></li>
-                            <li><NavLink href="/dashboard/reservations/pending" className="sidebar-link">Pending</NavLink></li>
+                            <li><NavLink href="/dashboard/reservations" className="sidebar-link">All</NavLink></li>
+                            <li><NavLink href="/dashboard/reservations/scheduled" className="sidebar-link">Scheduled</NavLink></li>
+                            <li><NavLink href="/dashboard/reservations/done" className="sidebar-link">Done</NavLink></li>
                         </ul>
                     </div>
                     <div className="border-b-[1px]">
