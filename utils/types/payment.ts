@@ -12,6 +12,13 @@ interface Wallet {
     phoneNumber: number;
 }
 
+export interface PricingPlan {
+    name: string;
+    price: number;
+    deposit?: number;
+    discount?: number;
+}
+
 export interface PaymentMethod {
     type: "cash" | "card" | "wallet";
     firstName: string;

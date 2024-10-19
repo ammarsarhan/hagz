@@ -22,13 +22,13 @@ export default function Table ({headers, data} : TableProps) {
                             labels.map((label, index) => {
                                 if (index === 0) {
                                     return (
-                                        <div className="table-cell px-2 py-6 border-b-[1px]">
+                                        <div className="table-cell px-2 py-6 border-b-[1px]" key={index}>
                                             <Link className='hover:underline hover:text-primary-green' href={"/"}>{label}</Link>
                                         </div>
                                     )
                                 }
                                 return (
-                                    <div className="hidden sm:table-cell p-2 first:table-cell last:table-cell border-b-[1px]">
+                                    <div key={index} className="hidden sm:table-cell p-2 first:table-cell last:table-cell border-b-[1px]">
                                         {label}
                                     </div>
                                 )

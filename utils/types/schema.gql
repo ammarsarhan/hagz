@@ -1,0 +1,154 @@
+enum PreferenceType {
+    PHONE
+    SMS
+    EMAIL
+}
+
+enum UserStatusType {
+    ACTIVE
+    VERIFIED
+    SUSPENDED
+}
+
+enum ActionStatusType {
+  PENDING
+  DONE
+  CANCELLED
+}
+
+enum PaymentType {
+  cash
+  card
+  wallet
+}
+
+enum Amenity { 
+  Indoors
+  BallProvided
+  Seating
+  NightLights
+  Parking
+  Showers
+  ChangingRooms
+  Cafeteria
+  FirstAid
+  Security
+}
+
+enum PitchType {
+  SG
+  AG
+  FG
+  TF
+}
+
+enum PitchSize {
+  FIVE_A_SIDE
+  SEVEN_A_SIDE
+  FULL
+}
+
+type User {
+    id: ID;
+    firstName: String;
+    lastName: String;
+    email: String;
+    phone: Int;
+    password: String;
+    profilePicture: String | null;
+    reservations: Reservation[];
+    activePaymentMethod: PaymentMethod;
+    paymentMethods: PaymentMethod[];
+    paymentHistory: Payment[];
+    location: Location;
+    preferences: PreferenceType;
+    status: StatusType;
+}
+
+type Owner {
+    id: ID;
+    firstName: String;
+    lastName: String;
+    company: String | null;
+    email: String;
+    phone: Int;
+    password: String;
+    profilePicture: String | null;
+    pitches: Pitch[];
+    activePaymentMethod: PaymentMethod;
+    paymentMethods: PaymentMethod[];
+    paymentHistory: Payment[];
+    location: Location;
+    preferences: PreferenceType;
+    status: StatusType;
+}
+
+type Card {
+    cardNumber: Int;
+    cvc: Int;
+    expiration: String;
+}
+
+type Wallet {
+    service: String;
+    phoneNumber: Int;
+}
+
+type PricingPlan {
+    name: String;
+    price: Int;
+    deposit: Int | null;
+    discount: Int | null;
+}
+
+type PaymentMethod {
+    type: PaymentType;
+    firstName: String;
+    lastName: String;
+    details: Card | Wallet | null;
+    billing: Location;
+}
+
+type Payment {
+    reservation: Reservation;
+    amount: Int;
+    date: String;
+    method: PaymentMethod;
+    status: ActionStatusType;
+}
+
+type Pitch {
+    uid: ID;
+    name: String;
+    images: String[];
+    location: Location;
+    type: PitchType;
+    size: PitchSize;
+    plan: PricingPlan;
+    pricingPlans: PricingPlan[];
+    rating: int;
+    owner: Owner;
+    amenities: Amenity[];
+    reservations: Reservation[];
+}
+
+type Location {
+    longitude: Int;
+    latitude: Int;
+    building?: String;
+    street: String;
+    address: String;
+    city?: String;
+    governorate: String;
+}
+
+type Reservation {
+    id: String;
+    start: String;
+    end: String;
+    reserver: User;
+    recurring: Boolean;
+    payment: Payment | null;
+    pitch: Pitch;
+    status: ActionStatusType;
+}
