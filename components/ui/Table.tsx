@@ -16,8 +16,8 @@ export default function Table ({headers, data} : TableProps) {
                 }
             </div>
             {
-                data.map((labels) => (
-                    <div className="table-row hover:cursor-pointer hover:bg-gray-100 transition-all">
+                data.map((labels, row) => (
+                    <div className="table-row hover:cursor-pointer hover:bg-gray-100 transition-all" key={row}>
                         {
                             labels.map((label, index) => {
                                 if (index === 0) {
