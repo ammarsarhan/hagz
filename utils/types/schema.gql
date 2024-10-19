@@ -11,41 +11,41 @@ enum UserStatusType {
 }
 
 enum ActionStatusType {
-  PENDING
-  DONE
-  CANCELLED
+    PENDING
+    DONE
+    CANCELLED
 }
 
 enum PaymentType {
-  cash
-  card
-  wallet
-}
-
-enum Amenity { 
-  Indoors
-  BallProvided
-  Seating
-  NightLights
-  Parking
-  Showers
-  ChangingRooms
-  Cafeteria
-  FirstAid
-  Security
+    CASH
+    CARD
+    WALLET
 }
 
 enum PitchType {
-  SG
-  AG
-  FG
-  TF
+    SG
+    AG
+    FG
+    TF
 }
 
 enum PitchSize {
-  FIVE_A_SIDE
-  SEVEN_A_SIDE
-  FULL
+    FIVE_A_SIDE
+    SEVEN_A_SIDE
+    FULL
+}
+
+enum Amenity { 
+    Indoors
+    BallProvided
+    Seating
+    NightLights
+    Parking
+    Showers
+    ChangingRooms
+    Cafeteria
+    FirstAid
+    Security
 }
 
 type User {
@@ -126,7 +126,7 @@ type Pitch {
     size: PitchSize;
     plan: PricingPlan;
     pricingPlans: PricingPlan[];
-    rating: int;
+    rating: Int;
     owner: Owner;
     amenities: Amenity[];
     reservations: Reservation[];

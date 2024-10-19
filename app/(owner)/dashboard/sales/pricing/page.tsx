@@ -66,7 +66,9 @@ export default function Pricing () {
             <div className='flex flex-col gap-4 my-2'>
                 <span className='text-sm text-dark-gray'>Inactive Plans</span>
                 <div className="overflow-x-scroll whitespace-nowrap [&>div]:mx-5 [&>*:first-child]:ml-0 [&>*:last-child]:mr-0">
-                    {Array(5).fill(<SchemaCard active={false}/>)}
+                    {
+                        Array(5).map(index => <SchemaCard active={false} key={index}/>)
+                    }
                 </div>
             </div>
             <div className='flex flex-col gap-4 my-2'>
