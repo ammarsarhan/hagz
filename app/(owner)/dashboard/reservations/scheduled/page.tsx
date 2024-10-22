@@ -10,8 +10,6 @@ import ViewSwitch from "@/components/ui/ViewSwitch";
 import DailyView from "@/components/dashboard/DailyView";
 import MonthlyView from "@/components/dashboard/MonthlyView";
 
-import Reservation from "@/utils/types/reservation";
-
 const reservations = [
     {id: "#2832468249", start: new Date(2024, 9, 11, 0, 0), end: new Date(2024, 9, 11, 2, 0), recurring: false}, 
     {id: "#2832468249", start: new Date(2024, 9, 11, 1, 0), end: new Date(2024, 9, 11, 5, 0), recurring: false}, 
@@ -26,7 +24,7 @@ const reservations = [
 export default function Pending () {
     const [activeDate, setActiveDate] = useState(today);
     const [activeView, setActiveView] = useState(0);
-    const [currentReservations, setCurrentReservations] = useState<Reservation[]>(reservations);
+    const [currentReservations, setCurrentReservations] = useState<{id: string, start: Date, end: Date, recurring: boolean}[]>(reservations);
 
     return (
         <>

@@ -29,31 +29,33 @@ enum PitchType {
     TF
 }
 
-enum PitchSize {
+enum PitchSizeType {
     FIVE_A_SIDE
     SEVEN_A_SIDE
     FULL
 }
 
 enum Amenity { 
-    Indoors
-    BallProvided
-    Seating
-    NightLights
-    Parking
-    Showers
-    ChangingRooms
-    Cafeteria
-    FirstAid
-    Security
+    INDOORS
+    BALL_PROVIDED
+    SEATING
+    NIGHT_LIGHTS
+    PARKING
+    SHOWERS
+    CHANGING_ROOMS
+    CAFETERIA
+    FIRSTAID
+    SECURITY
 }
+
+# User Types
 
 type User {
     id: ID;
     firstName: String;
     lastName: String;
     email: String;
-    phone: Int;
+    phone: String;
     password: String;
     profilePicture: String | null;
     reservations: Reservation[];
@@ -71,7 +73,7 @@ type Owner {
     lastName: String;
     company: String | null;
     email: String;
-    phone: Int;
+    phone: String;
     password: String;
     profilePicture: String | null;
     pitches: Pitch[];
@@ -83,6 +85,7 @@ type Owner {
     status: StatusType;
 }
 
+# Payment Method Types
 type Card {
     cardNumber: Int;
     cvc: Int;
@@ -91,7 +94,7 @@ type Card {
 
 type Wallet {
     service: String;
-    phoneNumber: Int;
+    phoneNumber: String;
 }
 
 type PricingPlan {
@@ -117,29 +120,20 @@ type Payment {
     status: ActionStatusType;
 }
 
+# Pitch & Reservation Types
 type Pitch {
     uid: ID;
     name: String;
     images: String[];
     location: Location;
     type: PitchType;
-    size: PitchSize;
+    size: PitchSizeType;
     plan: PricingPlan;
     pricingPlans: PricingPlan[];
     rating: Int;
     owner: Owner;
     amenities: Amenity[];
     reservations: Reservation[];
-}
-
-type Location {
-    longitude: Int;
-    latitude: Int;
-    building?: String;
-    street: String;
-    address: String;
-    city?: String;
-    governorate: String;
 }
 
 type Reservation {
@@ -151,4 +145,15 @@ type Reservation {
     payment: Payment | null;
     pitch: Pitch;
     status: ActionStatusType;
+}
+
+# Location Type
+type Location {
+    longitude: Int;
+    latitude: Int;
+    building?: String;
+    street: String;
+    address: String;
+    city?: String;
+    governorate: String;
 }

@@ -6,9 +6,10 @@ interface ButtonProps {
     children?: ReactNode,
     className?: string,
     style?: object
+    type?: "submit" | "reset" | "button" | undefined
 }
 
-export default function Button ({ variant, onClick, children, className, style }: ButtonProps) {
+export default function Button ({ variant, onClick, children, className, style, type }: ButtonProps) {
     let buttonStyle = "px-6 py-3 rounded-full text-sm hover:bg-opacity-90 transition-all ";
 
     switch (variant) {
@@ -27,5 +28,5 @@ export default function Button ({ variant, onClick, children, className, style }
     }
 
     className && (buttonStyle += ` ${className}`);
-    return <button onClick={onClick} className={buttonStyle} disabled={variant === "disabled"} style={style}>{children}</button>
+    return <button type={type} onClick={onClick} className={buttonStyle} disabled={variant === "disabled"} style={style}>{children}</button>
 }

@@ -1,4 +1,5 @@
-import { Reservation } from "@/utils/types/reservation";
+type Reservation = { id: string, start: Date, end: Date, recurring: boolean };
+
 import { hours } from "@/utils/date";
 import { colors } from "@/utils/color";
 
