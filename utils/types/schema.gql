@@ -32,7 +32,7 @@ enum PitchType {
 enum PitchSizeType {
     FIVE_A_SIDE
     SEVEN_A_SIDE
-    FULL
+    ELEVEL_A_SIDE
 }
 
 enum Amenity { 
@@ -49,7 +49,6 @@ enum Amenity {
 }
 
 # User Types
-
 type User {
     id: ID;
     firstName: String;
@@ -124,10 +123,11 @@ type Payment {
 type Pitch {
     uid: ID;
     name: String;
+    description: String;
     images: String[];
     location: Location;
-    type: PitchType;
-    size: PitchSizeType;
+    groundType: PitchType;
+    pitchSize: PitchSizeType;
     plan: PricingPlan;
     pricingPlans: PricingPlan[];
     rating: Int;

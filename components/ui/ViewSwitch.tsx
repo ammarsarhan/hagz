@@ -65,7 +65,6 @@ export default function ViewSwitch ({active, onChange} : ViewSwitchProps) {
         {label: "Daily", icon: <Calendar className="w-4 h-4"/>}, 
         {label: "Monthly", icon: <CalendarDays className="w-4 h-4"/>}
     ];
-
     
     return (
         <div className="flex items-center justify-between text-[0.8rem] text-dark-gray border-b-[1px] gap-x-4">
