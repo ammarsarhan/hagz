@@ -1,5 +1,7 @@
 import AppLocation from "@/utils/types/location";
 
+export type PaymentMethodType = "Cash" | "Card" | "Wallet";
+
 export type Card = {
     cardNumber: string;
     cvc: string;
@@ -21,7 +23,7 @@ export interface PricingPlan {
 }
 
 export interface PaymentMethod {
-    type: "Cash" | "Card" | "Wallet";
+    type: PaymentMethodType;
     recieverName: string;
     details: Card | Wallet | Cash;
 }

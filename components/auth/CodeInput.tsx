@@ -1,7 +1,7 @@
 'use client'
 import React, { useRef, useState, KeyboardEvent, BaseSyntheticEvent } from 'react'
 
-export default function OTP({code, onSubmit} : {code: number, onSubmit: (validated: boolean) => void}) {
+export default function CodeInput({code, onSubmit} : {code: number, onSubmit: (validated: boolean) => void}) {
   const [arrayValue, setArrayValue] = useState<(string | number)[]>(['', '', '', ''])
   const [maskedValue, setMaskedValue] = useState<(string | number)[]>(['', '', '', ''])
   const [attempts, setAttempts] = useState(1);

@@ -1,11 +1,9 @@
 import AppLocation from '@/utils/types/location';
 import { PricingPlan } from '@/utils/types/payment';
 
-export interface Amenity {
+export type Amenity = "Indoors" | "BallProvided" | "Seating" | "NightLights" | "Parking" | "Showers" | "ChangingRooms" | "Cafeteria" | "FirstAid" | "Security";
 
-}
-
-export default interface Pitch {
+export default interface PitchType {
     id: string;
     name: string;
     description: string;

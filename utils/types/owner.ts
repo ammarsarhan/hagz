@@ -1,6 +1,7 @@
 import Payment, { PaymentMethod } from '@/utils/types/payment';
 import AppLocation from '@/utils/types/location';
-import Pitch from '@/utils/types/pitch'
+
+export type PreferencesType = "Email" | "SMS" | "Phone";
 
 export default interface Owner {
     id: string;
@@ -16,7 +17,7 @@ export default interface Owner {
     paymentMethods: PaymentMethod[];
     paymentHistory: Payment[];
     location: AppLocation;
-    preferences: "Email" | "SMS" | "Phone";
+    preferences: PreferencesType;
     phoneStatus: "Inactive" | "Verified" | "Suspended";
     emailStatus: "Inactive" | "Verified" | "Suspended";
 }
