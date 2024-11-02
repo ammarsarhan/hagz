@@ -136,22 +136,28 @@ export default function SignUp () {
 
     const onSubmit = (e: FormEvent) => {
         e.preventDefault();
-        context.actions.next();
-
-        let account: Owner;
-
+        
+        if (context.properties.currentIndex === 2) {
+            context.actions.setLoading();
+            // Handle API call to create user and log them in
+            
+            return;
+        }
+        
         if (context.properties.currentIndex === context.properties.steps.length - 2) {
-            account = {
+            let account = {
                 id: "",
                 profilePicture: "",
                 pitches: [],
-                paymentMethods: [context.data.activePaymentMethod],
                 paymentHistory: [],
+                paymentMethods: [context.data.activePaymentMethod],
                 ...context.data
             } as Owner;
-
+            
             console.log(account);
         }
+
+        context.actions.next();
     }
 
     return (

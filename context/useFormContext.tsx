@@ -12,11 +12,14 @@ import { PaymentMethod } from "@/utils/types/payment";
 interface FormProperties {
     currentIndex: number,
     steps: ReactNode[],
+    pending: boolean,
 }
 
 interface FormActions {
     next: () => void,
     back: () => void,
+    traverse: (index: number) => void,
+    setLoading: () => void
 }
 
 interface FormType {
@@ -71,6 +74,7 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
 
     const [data, setData] = useState(initalData);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [pending, setPending] = useState(false);
 
     const steps = [
         <Basics key={0}/>,
@@ -114,6 +118,16 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
         }
     }
 
+    function traverse(index: number) {
+        setCurrentIndex(index);
+    }
+
+    function setLoading() {
+        setPending(prevData => {
+            return !prevData;
+        })
+    }
+
     return (
       <FormContext.Provider 
         value={{
@@ -121,10 +135,13 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
             properties: {
                 currentIndex: currentIndex,
                 steps: steps,
+                pending: pending,
             }, 
             actions: {
                 next: next,
                 back: back,
+                traverse: traverse,
+                setLoading: setLoading,
             },
             updateData: updateData,
             updateBilling: updateBilling,

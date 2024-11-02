@@ -2,11 +2,11 @@ import { ReactNode } from "react"
 
 interface ButtonProps {
     variant: string,
-    onClick?: () => void,
     children?: ReactNode,
     className?: string,
     style?: object
     type?: "submit" | "reset" | "button" | undefined
+    onClick?: () => void,
 }
 
 export default function Button ({ variant, onClick, children, className, style, type }: ButtonProps) {
@@ -19,6 +19,9 @@ export default function Button ({ variant, onClick, children, className, style, 
         case "secondary":
             buttonStyle += "border-[1px] border-primary-black bg-primary-black text-white";
             break;
+        case "pending":
+            buttonStyle += "border-[1px] bg-gray-100 text-black cursor-wait hover:!bg-opacity-100";
+            break;
         case "disabled":
             buttonStyle += "border-[1px] bg-light-gray text-black cursor-auto";
             break;
@@ -28,5 +31,14 @@ export default function Button ({ variant, onClick, children, className, style, 
     }
 
     className && (buttonStyle += ` ${className}`);
-    return <button type={type} onClick={onClick} className={buttonStyle} disabled={variant === "disabled"} style={style}>{children}</button>
+    return (
+        <button 
+            type={type} 
+            onClick={onClick} 
+            className={buttonStyle} 
+            disabled={variant === "disabled" || variant === "pending"} 
+            style={style}>
+                {variant === "pending" ? "Loading" : children}
+        </button>
+    )
 }

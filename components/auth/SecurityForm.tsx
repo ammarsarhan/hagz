@@ -64,13 +64,7 @@ export default function Security () {
                             />
                         <span>Show password</span>
                     </div>
-                    <div className="flex gap-3 flex-col">
-                        <span className="text-dark-gray">2 Factor Authentication</span>
-                        <div className="flex flex-col items-center justify-between gap-x-10 gap-y-4 lg:flex-row">
-                            <p className="text-dark-gray w-full lg:w-1/2">A one-time code will be sent to the phone number provided on the previous step. This code will be valid for 1 second. Make sure to enter it correctly within the specified time-frame.</p>
-                            <Button variant="primary" className="w-full lg:w-1/2" type="button">Send Code</Button>
-                        </div>
-                    </div>
+                    <span className="text-dark-gray">Note: Choose your password wisely, as it will be a direct access method to your reservation history and payment methods. Make sure to use an uncommon value with different letter, number, and special character combinations!</span>
                 </div>
             </div>
         </div>

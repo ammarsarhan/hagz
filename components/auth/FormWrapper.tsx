@@ -22,13 +22,14 @@ export default function FormWrapper () {
             {context.properties.steps[context.properties.currentIndex]}
             <div className="flex gap-x-4">
                 {
-                    context.properties.currentIndex != 0 || 
-                    context.properties.currentIndex === context.properties.steps.length - 1 &&
+                    context.properties.currentIndex != 0 && 
+                    context.properties.currentIndex < context.properties.steps.length - 1 &&
+                    !context.properties.pending &&
                     <Button variant="primary" className="!px-20" onClick={context.actions.back} type="button">Back</Button>
                 }
                 {
                     context.properties.currentIndex != context.properties.steps.length - 1 &&
-                    <Button variant="color" className="!px-20" type="submit">
+                    <Button variant={context.properties.pending ? "pending" : "color"} className="!px-20" type="submit">
                         Next
                     </Button>
                 }
