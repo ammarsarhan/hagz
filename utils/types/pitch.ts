@@ -1,7 +1,7 @@
 import AppLocation from '@/utils/types/location';
 import { PricingPlan } from '@/utils/types/payment';
 
-export type Amenity = "Indoors" | "BallProvided" | "Seating" | "NightLights" | "Parking" | "Showers" | "ChangingRooms" | "Cafeteria" | "FirstAid" | "Security";
+export type Amenity = "Indoors" | "Ball Provided" | "Seating" | "Night Lights" | "Parking" | "Showers" | "Changing Rooms" | "Cafeteria" | "First Aid" | "Security";
 
 export default interface PitchType {
     id: string;

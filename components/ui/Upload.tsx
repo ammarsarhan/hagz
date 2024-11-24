@@ -31,13 +31,13 @@ export function UploadModal ({
     if (active) {
         return (
             <div className="fixed flex-center w-full h-full top-0 left-0 bg-slate-900 bg-opacity-25 text-sm">
-                <div className="sm:w-full md:w-2/3 lg:w-1/2 my-4 px-8 pt-10 pb-5 rounded-md bg-white overflow-y-scroll h-full sm:h-auto">
+                <div className="relative sm:w-full md:w-2/3 lg:w-1/2 my-4 px-8 pt-10 pb-5 rounded-md bg-white overflow-y-scroll h-full sm:h-auto">
                     <div className="flex items-start justify-between gap-x-4 pb-6">
                         <div>
                             <h3 className="text-base font-medium mb-1">{title}</h3>
                             <p className="text-dark-gray">{label}</p>
                         </div>
-                        <button onClick={closeModal} type="button"><X className="w-5 h-5"/></button>
+                        <button onClick={closeModal} type="button" className="absolute top-6 right-6"><X className="w-5 h-5 text-dark-gray"/></button>
                     </div>
                     <div className="flex-center flex-col gap-y-1 h-[50vh] border-[1px] rounded-md mb-4">
                         <span className="font-medium">Drag and drop image files to upload</span>

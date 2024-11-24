@@ -1,4 +1,3 @@
-import Button from "@/components/ui/Button";
 import { useFormContext } from "@/context/useFormContext";
 import { useState, ChangeEvent } from "react";
 
@@ -62,7 +61,7 @@ export default function Security () {
                             checked={showPassword} 
                             onChange={() => setShowPassword((prevValue) => prevValue ? false : true)}
                             />
-                        <span>Show password</span>
+                        <span onClick={() => setShowPassword((prevValue) => prevValue ? false : true)}>Show password</span>
                     </div>
                     <span className="text-dark-gray">Note: Choose your password wisely, as it will be a direct access method to your reservation history and payment methods. Make sure to use an uncommon value with different letter, number, and special character combinations!</span>
                 </div>

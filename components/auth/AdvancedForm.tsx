@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFormContext } from "@/context/useFormContext";
 import UploadTrigger, { UploadModal } from "@/components/ui/Upload";
 import AppLocation from "@/utils/types/location";
@@ -20,6 +20,11 @@ export default function Advanced () {
             }
         });
     }
+
+    useEffect(() => {
+        context.actions.setRenderBack(true);
+        context.actions.setRenderNext(true);
+    }, [])
 
     return (
         <>

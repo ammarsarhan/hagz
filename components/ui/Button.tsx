@@ -10,7 +10,7 @@ interface ButtonProps {
 }
 
 export default function Button ({ variant, onClick, children, className, style, type }: ButtonProps) {
-    let buttonStyle = "px-6 py-3 rounded-full text-sm hover:bg-opacity-90 transition-all ";
+    let buttonStyle = "px-6 py-3 rounded-full text-sm hover:bg-opacity-90 transition-color ";
 
     switch (variant) {
         case "primary":

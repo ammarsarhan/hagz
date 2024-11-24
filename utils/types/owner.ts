@@ -7,11 +7,11 @@ export default interface Owner {
     id: string;
     firstName: string;
     lastName: string;
-    company: string | null;
+    company?: string | null;
     email: string;
     phone: string;
     password: string;
-    profilePicture: string | null;
+    profilePicture?: string | null;
     pitches: string[];
     activePaymentMethod: PaymentMethod;
     paymentMethods: PaymentMethod[];

@@ -1,0 +1,8 @@
+{
+    "Template": {
+        "TemplateName": "OwnerVerification",
+        "SubjectPart": "Greetings, {{name}}! - Please verify your email address to start using Hagz.",
+        "TextPart": "Hello {{name}},\n\nPlease verify your email address by clicking on the link below:\n\n{{verification_link}}\n\nIf you did not request this verification, you can safely ignore this email.\n\nThank you!\n\nThe Hagz Team",
+        "HtmlPart": "<html><body><p>Hello {{name}},</p><p>Please verify your email address by clicking on the link below:</p><p><a href=\"{{verification_link}}\">Verify Your Email Address</a></p><p>If you did not request this verification, you can safely ignore this email.</p><p>Thank you!<br>The Hagz Team</p></body></html>"
+    }
+}

@@ -1,5 +1,6 @@
 "use client";
 import { OwnerFormProvider } from "@/context/useFormContext";
+import { PitchContextProvider } from "@/context/usePitchContext";
 
 export default function CreateOwnerLayout ({
   children,
@@ -8,7 +9,9 @@ export default function CreateOwnerLayout ({
 }>) {
   return (
     <OwnerFormProvider>
+      <PitchContextProvider>
         {children}
+      </PitchContextProvider>
     </OwnerFormProvider>
   );
 }

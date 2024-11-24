@@ -1,8 +1,14 @@
 import { useFormContext } from "@/context/useFormContext"
 import { PreferencesType } from "@/utils/types/owner";
+import { useEffect } from "react";
 
 export default function Basics () {
     const context = useFormContext();
+
+    useEffect(() => {
+        context.actions.setRenderBack(false);
+        context.actions.setRenderNext(true);
+    }, [])
 
     const handlePhoneChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/[^0-9]/g, '');
@@ -29,7 +35,9 @@ export default function Basics () {
                                 value={context.data.firstName} 
                                 onChange={e => context.updateData({firstName: e.target.value})} 
                                 type="text" 
-                                required placeholder="First Name" className="py-2 px-3 border-[1px] rounded-lg"
+                                required 
+                                placeholder="First Name" 
+                                className="py-2 px-3 border-[1px] rounded-lg"
                             />
                         </div>
                         <div className="flex flex-col gap-2 flex-1">
@@ -75,6 +83,7 @@ export default function Basics () {
                             maxLength={13}
                             placeholder="Phone" 
                             className="py-2 px-3 border-[1px] rounded-lg"
+                            required
                         />
                     </div>
                     <div className="flex items-center justify-between my-2 gap-x-4">

@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PitchSizeType {
+  Five
+  Seven
+  Eleven
+}
+
+enum GroundType {
+  SG
+  AG
+  FG
+  TF
+}
+
+enum PaymentMethodType {
+  Cash
+  Card
+  Wallet
+}
+
+enum PreferencesType {
+  Email
+  SMS
+  Phone
+}
+
+enum ActionStatus {
+  Inactive
+  Verified
+  Suspended
+  Error
+}
+
+enum PaymentStatus {
+  Pending
+  Done
+  Cancelled
+  Error
+}
+
+enum Amenity {
+  Indoors
+  BallProvided
+  Seating
+  NightLights
+  Parking
+  Showers
+  ChangingRooms
+  Cafeteria
+  FirstAid
+  Security
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  ownerId       String
+  reservationId String        @unique
+  amount        Float
+  date          DateTime
+  method        Json // PaymentMethod
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  status        PaymentStatus
+  owner         Owner         @relation(fields: [ownerId], references: [id])
+  reservation   Reservation   @relation(fields: [reservationId], references: [id])
+}
+
+model Reservation {
+  id      String   @id @default(uuid())
+  pitchId String
+  pitch   Pitch    @relation(fields: [pitchId], references: [id])
+  payment Payment?
+}
+
+model Pitch {
+  id                String        @id @default(uuid())
+  name              String
+  description       String
+  groundType        GroundType
+  pitchSize         PitchSizeType
+  images            String[]
+  location          Json // AppLocation
+  rating            Int
+  amenities         Amenity[]
+  activePricingPlan Json // PricingPlan
+  pricingPlans      Json[] // PricingPlan[]
+  reservations      Reservation[]
+  ownerId           String
+  owner             Owner         @relation(fields: [ownerId], references: [id])
+}
+
+model Owner {
+  id                  String          @id @unique @default(cuid())
+  firstName           String
+  lastName            String
+  company             String?
+  email               String          @unique
+  phone               String          @unique
+  password            String
+  profilePicture      String?
+  pitches             Pitch[]
+  activePaymentMethod Json? // PaymentMethod
+  paymentMethods      Json[] // PaymentMethod[]
+  paymentHistory      Payment[]
+  location            Json // AppLocation
+  preferences         PreferencesType
+  phoneStatus         ActionStatus
+  emailStatus         ActionStatus
+  verificationId      String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}

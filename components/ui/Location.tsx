@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { MapPin, X } from "lucide-react";
-import { useFormContext } from "@/context/useFormContext";
 
 import Button from "@/components/ui/Button";
 import AppLocation from '@/utils/types/location'
@@ -9,25 +8,13 @@ interface LocationModalProps {
     active: boolean
     description: string,
     source: AppLocation,
+    onChange: (fields: Partial<AppLocation>) => void,
     closeModal: () => void
 }
 
-export function LocationModal ({active, description, source, closeModal} : LocationModalProps) {
-    const context = useFormContext();
-
+export function LocationModal ({active, description, source, onChange, closeModal} : LocationModalProps) {
     const [error, setError] = useState("");
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    
-    const updateLocation = (fields: Partial<AppLocation>) => {
-        context.updateBilling({
-            details: {
-                location: {
-                    ...source,
-                    ...fields
-                } 
-            }
-        })
-    }
 
     const handleError = (message: string) => {
         setError(message);
@@ -43,24 +30,39 @@ export function LocationModal ({active, description, source, closeModal} : Locat
     }
 
     const handleAddClicked = () => {
-        if ((source.street === "" || source.address === "" || source.governorate === "") && source.googleMapsLink === "") {
-            handleError("Please fill in the required fields");
+        if (source.latitude && !source.longitude) {
+            handleError("Please enter a longitude value.");
             return;
-        } else if (source.longitude && source.longitude < -180 || source.longitude && source.longitude > 180) {
+        }
+        
+        if (source.longitude && !source.latitude) {
+            handleError("Please enter a latitude value.");
+            return;
+        }
+        
+        if (source.longitude && source.longitude < -180 || source.longitude && source.longitude > 180) {
             handleError("Longitude must be between -180 and 180.")
             return;
-        } else if (source.latitude && source.latitude < -90 || source.latitude && source.latitude > 90) {
+        }
+        
+        if (source.latitude && source.latitude < -90 || source.latitude && source.latitude > 90) {
             handleError("Latitude must be between -90 and 90.")
             return;
-        } else if (source.googleMapsLink) {
+        }
+
+        if ((source.street == "" || source.address == "" || source.governorate == "")) {
+            handleError("Please fill in the required fields");
+            return;
+        }
+        
+        if (source.googleMapsLink) {
             const regex = /^(https?:\/\/)?(www\.)?(google\.com\/maps|maps\.google\.com|goo\.gl)\/.+$/i;
             if (!regex.test(source.googleMapsLink)) {
                 handleError("Please enter a valid Google Maps link.")
                 return;
-            };
+            }
         }
 
-        setError("");
         closeModal();
     }
 
@@ -81,24 +83,22 @@ export function LocationModal ({active, description, source, closeModal} : Locat
                             <div className="flex flex-col flex-1 gap-y-2">
                                 <span>Longitude</span>
                                 <input 
-                                    value={source.longitude || ""}
-                                    onChange={e => updateLocation({longitude: parseFloat(e.target.value)})}
                                     min={-180}
                                     max={180}
                                     step={0.0001}
                                     type="text"
                                     onKeyDown={e => {
                                         if (e.key === "e") e.preventDefault()
-                                    }} 
+                                    }}
                                     placeholder="Longitude (Optional)" 
                                     className="py-2 px-3 border-[1px] rounded-lg"
+                                    value={source.longitude}
+                                    onChange={(e) => onChange({longitude: parseFloat(e.target.value) || undefined})}
                                 />
                             </div>
                             <div className="flex flex-col flex-1 gap-y-2">
                                 <span>Latitude</span>
                                 <input 
-                                    value={source.latitude || ""}
-                                    onChange={e => updateLocation({latitude: parseFloat(e.target.value)})}
                                     min={-90}
                                     max={90}
                                     step={0.0001}
@@ -108,71 +108,76 @@ export function LocationModal ({active, description, source, closeModal} : Locat
                                     }} 
                                     placeholder="Longitude (Optional)" 
                                     className="py-2 px-3 border-[1px] rounded-lg"
+                                    value={source.latitude}
+                                    onChange={(e) => onChange({latitude: parseFloat(e.target.value)})}
                                 />
                             </div>
                         </div>
                         <div className="flex flex-col gap-y-2">
                             <span>Building</span>
                             <input 
-                                value={source.building}
-                                onChange={e => updateLocation({building: e.target.value})}
                                 type="text" 
                                 placeholder="Building Name (Optional)" 
                                 className="py-2 px-3 border-[1px] rounded-lg"
+                                value={source.building}
+                                onChange={(e) => onChange({building: e.target.value})}
                             />
                         </div>
                         <div className="flex flex-col gap-y-2">
-                            <span>Street</span>
-                            <input 
-                                value={source.street}
-                                onChange={e => updateLocation({street: e.target.value})}
+                            <span>Street*</span>
+                            <input
                                 type="text" 
                                 placeholder="Street Name" 
                                 className="py-2 px-3 border-[1px] rounded-lg"
+                                value={source.street}
+                                onChange={(e) => onChange({street: e.target.value})}
                             />
                         </div>
                         <div className="flex flex-col gap-y-2">
-                            <span>Address</span>
-                            <input 
-                                value={source.address}
-                                onChange={e => updateLocation({address: e.target.value})}
+                            <span>Address*</span>
+                            <input
                                 type="text" 
                                 placeholder="Address" 
-                                className="py-2 px-3 border-[1px] rounded-lg"/>
+                                className="py-2 px-3 border-[1px] rounded-lg"
+                                value={source.address}
+                                onChange={(e) => onChange({address: e.target.value})}
+                            />
                         </div>
                         <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
                             <div className="flex flex-col flex-1 gap-y-2">
                                 <span>City</span>
-                                <input 
-                                    value={source.city}
-                                    onChange={e => updateLocation({city: e.target.value})}
+                                <input
                                     type="text" 
                                     placeholder="City (Optional)" 
-                                    className="py-2 px-3 border-[1px] rounded-lg"/>
+                                    className="py-2 px-3 border-[1px] rounded-lg"
+                                    value={source.city}
+                                    onChange={(e) => onChange({city: e.target.value})}
+                                />
                             </div>
                             <div className="flex flex-col flex-1 gap-y-2">
-                                <span>Governorate</span>
-                                <input 
-                                    value={source.governorate}
-                                    onChange={e => updateLocation({governorate: e.target.value})}
+                                <span>Governorate*</span>
+                                <input
                                     type="text" 
                                     placeholder="Governorate" 
-                                    className="py-2 px-3 border-[1px] rounded-lg"/>
+                                    className="py-2 px-3 border-[1px] rounded-lg"
+                                    value={source.governorate}
+                                    onChange={(e) => onChange({governorate: e.target.value})}
+                                />
                             </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-x-4 py-6 border-b-[1px]">
                         <span>Google Maps Link: </span>
-                        <input 
-                            value={source.googleMapsLink}
-                            onChange={e => updateLocation({googleMapsLink: e.target.value})}
+                        <input
                             type="text" 
                             placeholder="Insert link (⌘+v)" 
                             className="py-2 px-3 border-[1px] rounded-lg flex-1"
+                            value={source.googleMapsLink}
+                            onChange={(e) => onChange({googleMapsLink: e.target.value})}
                         />
                     </div>
                     <div className="flex items-center justify-end pt-4">
-                        <Button variant="color" type="button" onClick={handleAddClicked}>Add Location</Button>
+                        <Button variant="color" type="button" onClick={handleAddClicked}>Save Location</Button>
                     </div>
                 </div>
             </div>
