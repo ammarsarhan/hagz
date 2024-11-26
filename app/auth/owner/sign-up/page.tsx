@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent } from "react";
+import { FormEvent, useEffect } from "react";
 import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import { User, Mail, Lock, MapPin, CheckSquare, GalleryThumbnails, NotebookTabs } from "lucide-react";
 
@@ -182,44 +182,61 @@ export default function SignUp () {
         formContext.actions.next();
     }
 
-    if (authContext.data.role === "Owner") {
-        return;
-    }
+    useEffect(() => {
+        if (authContext.data.role == "Owner") {
+            const invalidateRefreshToken = async () => {
+                await fetch("/api/auth/owner/sign-out", {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                authContext.actions.setAccessToken(null);
+                authContext.actions.setUser(null);
+                authContext.actions.setRole(undefined);
+            
+                return;
+            }
+    
+            invalidateRefreshToken();
+        }
+    }, [])    
 
-    return (
-        <div className="flex h-screen">
-            <aside className="hidden lg:block w-1/3 ml-4 my-4 p-6 rounded-md bg-gray-100 overflow-y-scroll">
-                <div className="flex flex-col gap-y-8 w-full h-full">
-                    <div className="mb-8">
-                        Logo
-                    </div>
-                    <div className="flex flex-col flex-1 justify-between w-full h-full gap-y-20">
-                        <div className="flex flex-col gap-y-8">
-                            {
-                                indicators.map((el, index) => {
-                                    return (
-                                        <Indicator 
-                                            active={index === formContext.properties.currentIndex} 
-                                            title={el.title} description={el.description} 
-                                            image={el.image} 
-                                            key={index}
-                                        />
-                                    )
-                                })
-                            }
+    if (authContext.data.role != "Owner") {
+        return (
+            <div className="flex h-screen">
+                <aside className="hidden lg:block w-1/3 ml-4 my-4 p-6 rounded-md bg-gray-100 overflow-y-scroll">
+                    <div className="flex flex-col gap-y-8 w-full h-full">
+                        <div className="mb-8">
+                            Logo
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <NavLink href="/" className="hover:text-blue-800 transition-none">Back to home</NavLink>
-                            <NavLink href="/auth/owner/sign-in" className="hover:text-blue-800 transition-all">Sign In</NavLink>
+                        <div className="flex flex-col flex-1 justify-between w-full h-full gap-y-20">
+                            <div className="flex flex-col gap-y-8">
+                                {
+                                    indicators.map((el, index) => {
+                                        return (
+                                            <Indicator 
+                                                active={index === formContext.properties.currentIndex} 
+                                                title={el.title} description={el.description} 
+                                                image={el.image} 
+                                                key={index}
+                                            />
+                                        )
+                                    })
+                                }
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <NavLink href="/" className="hover:text-blue-800 transition-none">Back to home</NavLink>
+                                <NavLink href="/auth/owner/sign-in" className="hover:text-blue-800 transition-all">Sign In</NavLink>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </aside>
-            <main className="w-full lg:w-2/3 p-5">
-                <form className="h-full relative" onSubmit={onSubmit}>
-                    <FormWrapper/>
-                </form>
-            </main>
-        </div>
-    )
+                </aside>
+                <main className="w-full lg:w-2/3 p-5">
+                    <form className="h-full relative" onSubmit={onSubmit}>
+                        <FormWrapper/>
+                    </form>
+                </main>
+            </div>
+        )
+    }
 }

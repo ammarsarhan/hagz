@@ -7,7 +7,6 @@ import { OwnerAccessTokenType } from '@/utils/types/tokens';
 import useAuthContext from '@/context/useAuthContext';
 
 import Button from '@/components/ui/Button';
-import Loading from '@/components/ui/Loading';
 import Link from 'next/link';
 
 export default function SignIn () {
@@ -76,22 +75,16 @@ export default function SignIn () {
 
     useEffect(() => {
         if (authContext.data.role == "Owner") {
-            console.log("Owner is already logged in. Logging them out.");
-
             const invalidateRefreshToken = async () => {
                 await fetch("/api/auth/owner/sign-out", {
                     method: 'POST',
                     credentials: 'include'
                 });
-    
-                console.log("Invalidated refresh token. Logging out user.");
-                console.log("Setting authcontext data to null.");
                 
                 authContext.actions.setAccessToken(null);
                 authContext.actions.setUser(null);
                 authContext.actions.setRole(undefined);
-                
-                console.log("Set authcontext data to null.");
+            
                 return;
             }
     

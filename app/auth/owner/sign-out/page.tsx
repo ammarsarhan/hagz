@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation";
+import Loading from "@/components/ui/Loading";
 
 export default function SignOut () {
     const router = useRouter();
@@ -29,7 +30,7 @@ export default function SignOut () {
             {
                 error ?
                 <span>{error}</span> :
-                <></>
+                <Loading/>
             }
         </div>
     )

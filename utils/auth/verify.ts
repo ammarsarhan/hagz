@@ -40,13 +40,10 @@ export async function sendOwnerVerificationEmail (name: string, email: string, t
         TemplateData: JSON.stringify(data)
     }
 
-    console.log(data, email);
-
     ses.sendTemplatedEmail(options, (error, data) => {
         if (error) {
             return error.message;
         }
-        console.log(data);
         return data.MessageId;
     })
 }

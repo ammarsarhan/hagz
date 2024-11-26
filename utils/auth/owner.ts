@@ -221,8 +221,6 @@ export async function authenticateOwnerWithCredentials (email: string, password:
             }
         }
 
-        console.log(ownerToken);
-
         return {
             message: "Authenticated user successfully!",
             accessToken: accessToken,

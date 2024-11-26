@@ -61,7 +61,6 @@ export function AuthContextProvider({children} : {children: ReactNode}) {
             const response = await request.json();
 
             if (!response.token) {
-                router.push('/auth/owner/sign-in');
                 setLoading(false);
                 return;
             }
@@ -79,10 +78,6 @@ export function AuthContextProvider({children} : {children: ReactNode}) {
             requestAccessToken();
         }
     }, [])
-
-    useEffect(() => {
-        console.log("Set new access token:", accessToken)
-    }, [accessToken])
 
     return (
         <AuthContext.Provider value={{
