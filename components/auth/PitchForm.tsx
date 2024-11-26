@@ -1,15 +1,15 @@
 import LocationTrigger, { LocationModal } from "@/components/ui/Location"
-import { useFormContext } from "@/context/useFormContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button"
 import AppLocation from '@/utils/types/location';
 
 import { ArrowLeft } from "lucide-react";
-import { usePitchContext } from "@/context/usePitchContext";
+import usePitchFormContext from "@/context/usePitchFormContext";
 
 export default function Pitch () {
-    const ownerContext = useFormContext();
-    const pitchContext = usePitchContext();
+    const ownerContext = useOwnerFormContext();
+    const pitchContext = usePitchFormContext();
 
     const [locationOpen, setLocationOpen] = useState(false);
 

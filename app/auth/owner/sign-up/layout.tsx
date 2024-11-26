@@ -1,6 +1,7 @@
 "use client";
-import { OwnerFormProvider } from "@/context/useFormContext";
-import { PitchContextProvider } from "@/context/usePitchContext";
+
+import { OwnerFormContextProvider } from "@/context/useOwnerFormContext";
+import { PitchContextFormProvider } from "@/context/usePitchFormContext";
 
 export default function CreateOwnerLayout ({
   children,
@@ -8,10 +9,10 @@ export default function CreateOwnerLayout ({
   children: React.ReactNode;
 }>) {
   return (
-    <OwnerFormProvider>
-      <PitchContextProvider>
+    <OwnerFormContextProvider>
+      <PitchContextFormProvider>
         {children}
-      </PitchContextProvider>
-    </OwnerFormProvider>
+      </PitchContextFormProvider>
+    </OwnerFormContextProvider>
   );
 }

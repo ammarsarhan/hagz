@@ -1,17 +1,26 @@
-import { useFormContext } from "@/context/useFormContext"
-import { sendOwnerVerificationEmail } from '@/utils/auth/verify';
+import { useOwnerFormContext } from "@/context/useOwnerFormContext"
 import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Loading from '@/components/ui/Loading';
 
-export default function Verify () {
-    const [isLoading, setIsLoading] = useState(false);
-    const context = useFormContext();
+import Cookies from "js-cookie";
+import { CreationTokenType } from "@/utils/types/tokens";
+import { decode } from 'jsonwebtoken';
 
-    const name = localStorage.getItem("ownerFormName") || context.data.firstName as string;
-    const email = localStorage.getItem("ownerFormEmail") || context.data.email as string;
+export default function Verify () {
+    const context = useOwnerFormContext();
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
+        let decoded: CreationTokenType | undefined = undefined;
+        const creationCookie = Cookies.get("creationToken");
+    
+        if (creationCookie) {
+            decoded = decode(creationCookie) as CreationTokenType;
+        }
+        
+        const email = decoded?.email || context.data.email as string;
+
         context.actions.setRenderBack(false);
         context.actions.setRenderNext(false);
 
@@ -50,7 +59,7 @@ export default function Verify () {
         }
 
         checkValidity();
-    }, [context, email])
+    }, [context])
 
     return (
         <div className="text-sm text-center mt-2 w-2/3">

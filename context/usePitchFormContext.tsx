@@ -11,35 +11,35 @@ interface PitchContextType {
     setMode: (mode: "Create" | "Link" | "Initial") => void
 }
 
-const PitchContext = createContext<PitchContextType | undefined>(undefined);
+const PitchFormContext = createContext<PitchContextType | undefined>(undefined);
 
-export function usePitchContext() {
-    const context = useContext(PitchContext);
+export default function usePitchFormContext() {
+    const context = useContext(PitchFormContext);
 
     if (context === undefined) {
-        throw new Error("usePitchContext must be initialized with a PitchContext");
+        throw new Error("usePitchFormContext must be initialized with a PitchFormContext");
     }
 
     return context;
 }
 
-export const PitchContextProvider = ({children} : {children: ReactNode}) => {
+export const PitchContextFormProvider = ({children} : {children: ReactNode}) => {
     const initialData: PitchType = {
         id: "",
-        name: "El Nasr Football Club",
-        description: "lorem lorem",
+        name: "",
+        description: "",
         groundType: "AG",
         pitchSize: "5-A-Side",
         images: [],
         location: {
-            street: "4th Nasr Street",
-            address: "Smouha",
-            governorate: "Alexandria"
+            street: "",
+            address: "",
+            governorate: ""
         },
         rating: 0,
-        amenities: ["Night Lights"],
+        amenities: [],
         activePricingPlan: {
-            price: 250,
+            price: 100,
             deposit: null,
             discount: null,
         },
@@ -52,7 +52,7 @@ export const PitchContextProvider = ({children} : {children: ReactNode}) => {
     const [mode, setMode] = useState<"Create" | "Link" | "Initial">("Initial");
 
     return (
-        <PitchContext.Provider value={{
+        <PitchFormContext.Provider value={{
             data: pitchData,
             location: pitchData.location!,
             mode: mode,
@@ -61,6 +61,6 @@ export const PitchContextProvider = ({children} : {children: ReactNode}) => {
             setMode: (mode) => setMode(mode)
         }}>
             {children}
-        </PitchContext.Provider>
+        </PitchFormContext.Provider>
       );
 };

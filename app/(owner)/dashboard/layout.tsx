@@ -1,10 +1,23 @@
+"use client"
+
 import Sidebar from '@/components/dashboard/Sidebar';
+import useAuthContext from '@/context/useAuthContext';
+import { useRouter } from 'next/navigation';
+import Loading from '@/components/ui/Loading';
 
 export default function DashboardLayout ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const context = useAuthContext();
+  const router = useRouter();
+
+  if (context.data.role !== 'Owner') {
+    router.push('/auth/owner/sign-in');
+    return;
+  }
+
   return (
     <div className='flex flex-1'>
       <Sidebar/>

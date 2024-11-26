@@ -1,12 +1,13 @@
 import { ChangeEvent, useState } from "react";
-import { useFormContext } from "@/context/useFormContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import { PaymentMethodType, Wallet, Card, Cash } from "@/utils/types/payment";
 
 import LocationTrigger, { LocationModal } from "@/components/ui/Location";
 import Link from "next/link";
 
 export default function Billing () {
-    const context = useFormContext();
+    const context = useOwnerFormContext();
+    
     const card = context.data.activePaymentMethod?.details as Card;
     const wallet = context.data.activePaymentMethod?.details as Wallet;
     const cash = context.data.activePaymentMethod?.details as Cash;

@@ -9,3 +9,12 @@ export default async function hashPassword(password: string) {
         throw error;
     }
 }
+
+export async function comparePassword(input: string, hash: string) {
+    try {
+        const result = await bcrypt.compare(input, hash);
+        return result;
+    } catch (error) {
+        return false;
+    }
+}

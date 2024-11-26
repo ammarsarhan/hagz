@@ -1,8 +1,8 @@
-import { useFormContext } from "@/context/useFormContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import { useState, ChangeEvent } from "react";
 
 export default function Security () {
-    const context = useFormContext();
+    const context = useOwnerFormContext();
     const [showPassword, setShowPassword] = useState(false);
 
     const handlePasswordChanged = (e: ChangeEvent<HTMLInputElement>) => {

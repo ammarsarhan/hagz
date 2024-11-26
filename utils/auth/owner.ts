@@ -1,9 +1,14 @@
 import Owner from "@/utils/types/owner";
-import hashPassword from "@/utils/hash";
+import hashPassword, { comparePassword } from "@/utils/hash";
 import prisma, { handlePrismaError } from "@/utils/db";
 import { sign } from "jsonwebtoken";
 import { z } from "zod";
-import { isOwnerVerified, sendOwnerVerificationEmail } from "@/utils/auth/verify";
+import { sendOwnerVerificationEmail } from "@/utils/auth/verify";
+
+const ownerAuthSchema = z.object({
+    email: z.string().email({message: "Please provide a valid email address."}),
+    password: z.string().min(8, {message: "Please provide a valid password."}),
+})
 
 const ownerFieldSchema = z.object({
     firstName: z.string().min(1, {message: "First name field must not be empty"}).max(50, {message: "First name must contain 50 characters at most"}).regex(/^[A-Za-z]+$/, {
@@ -120,9 +125,9 @@ export async function createOwnerWithCredentials(fields: Partial<Owner> & Pick<O
         });
 
         sendOwnerVerificationEmail(owner.firstName, owner.email);
-
+        
         return {
-            message: "",
+            message: "Created owner account successfully!",
             status: 200
         };
 
@@ -133,4 +138,84 @@ export async function createOwnerWithCredentials(fields: Partial<Owner> & Pick<O
         }
     }
     
+}
+
+export function generateAccessToken (name: string, email: string, id: string) {
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+        throw new Error("Invalid email: Please provide a valid email address.");
+    }
+      
+    const [localPart, domain] = email.split("@");
+    const firstLetter = localPart[0];
+    const maskedEmail = `${firstLetter}****@${domain}`;
+
+    const token = sign({name, email: maskedEmail, id, role: "Owner"}, process.env.JWT_SECRET as string, {expiresIn: "15m"});
+    return token;
+}
+
+export function generateRefreshToken (id: string) {
+    const token = sign({id}, process.env.JWT_SECRET as string, {expiresIn: "30d"});
+    return token;
+}
+
+export async function authenticateOwnerWithCredentials (email: string, password: string) {
+    const validation = ownerAuthSchema.safeParse({email, password});
+    if (!validation.success) {
+        return {
+            message: validation.error.issues[0].message,
+            status: 400
+        }
+    }
+
+    try {
+        const owner = await prisma.owner.findUnique({
+            where: {
+                email: email
+            }
+        })
+
+        if (!owner) {
+            return {
+                message: "Could not find account with specified credentials. Please try again.",
+                status: 404
+            }
+        }
+
+        if (owner.emailStatus == "Inactive") {
+            return {
+                message: "Owner account has not been verified. Please check your email for a verification link.",
+                status: 403
+            }
+        }
+
+        if (owner.emailStatus == "Suspended") {
+            return {
+                message: "Owner account has been suspended. Please contact customer support for more information.",
+                status: 403
+            }
+        }
+        
+        const authenticate = await comparePassword(password, owner.password);
+        if (authenticate != true) {
+            return {
+                message: "Could not find account with specified credentials. Please try again.",
+                status: 404
+            }
+        }
+
+        const accessToken = generateAccessToken(owner.firstName, owner.email, owner.id);
+        const refreshToken = generateRefreshToken(owner.id);
+
+        return {
+            message: "Authenticated user successfully!",
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            status: 200
+        }
+    } catch (error) {
+        return {
+            message: handlePrismaError(error as Error),
+            status: 400
+        }
+    }
 }

@@ -1,8 +1,8 @@
 import Button from "@/components/ui/Button";
-import { useFormContext } from "@/context/useFormContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 
 export default function FormWrapper () {
-    const context = useFormContext();
+    const context = useOwnerFormContext();
 
     const labels = [
         {title: "Create a free account", subtitle: "We'll need some information to get you up and running."},

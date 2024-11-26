@@ -1,9 +1,9 @@
-import { useFormContext } from "@/context/useFormContext"
+import { useOwnerFormContext } from "@/context/useOwnerFormContext"
 import { PreferencesType } from "@/utils/types/owner";
 import { useEffect } from "react";
 
 export default function Basics () {
-    const context = useFormContext();
+    const context = useOwnerFormContext();
 
     useEffect(() => {
         context.actions.setRenderBack(false);

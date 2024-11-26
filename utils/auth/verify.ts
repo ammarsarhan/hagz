@@ -1,6 +1,6 @@
 import { verify, sign, JwtPayload, JsonWebTokenError } from "jsonwebtoken";
 import prisma from "@/utils/db";
-import SES from 'aws-sdk/clients/ses';
+import { SES } from "aws-sdk";
 import { v4 as uuidv4 } from 'uuid';
 
 export async function sendOwnerVerificationEmail (name: string, email: string, token?: string) {
@@ -17,13 +17,13 @@ export async function sendOwnerVerificationEmail (name: string, email: string, t
         email: email
     }, process.env.JWT_SECRET as string, 
     {
-        expiresIn: "15m",
+        expiresIn: "30m",
         jwtid: jti
     });
 
     const link = `http://localhost:3000/api/auth/owner/verify?id=${jti}&token=${token}`;
     const ses = new SES({
-        region: 'eu-central-1'
+        region: 'eu-central-1',
     });
 
     const data = {
@@ -40,10 +40,13 @@ export async function sendOwnerVerificationEmail (name: string, email: string, t
         TemplateData: JSON.stringify(data)
     }
 
+    console.log(data, email);
+
     ses.sendTemplatedEmail(options, (error, data) => {
         if (error) {
             return error.message;
         }
+        console.log(data);
         return data.MessageId;
     })
 }
@@ -88,7 +91,7 @@ export async function verifyOwner(id: string, token: string) {
 
         if (owner.verificationId != id) {
             return {
-                message: "This verification token has already expired. Please request a new one.",
+                message: "This verification link has already expired. Please request a new one.",
                 result: false
             }
         }

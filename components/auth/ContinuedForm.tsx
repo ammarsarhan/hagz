@@ -2,12 +2,12 @@ import UploadTrigger, { UploadModal } from "@/components/ui/Upload";
 import AmenitiesTrigger, { AmenitiesModal } from "@/components/ui/Amenities";
 import Button from "@/components/ui/Button";
 import { useEffect, useState } from "react";
-import { useFormContext } from "@/context/useFormContext";
-import { usePitchContext } from "@/context/usePitchContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
+import usePitchFormContext from "@/context/usePitchFormContext";
 
 export default function Continued () {
-    const ownerContext = useFormContext();
-    const pitchContext = usePitchContext();
+    const ownerContext = useOwnerFormContext();
+    const pitchContext = usePitchFormContext();
 
     const [uploadOpen, setUploadOpen] = useState(false);
     const [amenitiesOpen, setAmenitiesOpen] = useState(false);

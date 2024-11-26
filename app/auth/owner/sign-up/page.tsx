@@ -1,21 +1,24 @@
 "use client"
 
 import { FormEvent } from "react";
-import { useFormContext } from "@/context/useFormContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import { User, Mail, Lock, MapPin, CheckSquare, GalleryThumbnails, NotebookTabs } from "lucide-react";
 
 import NavLink from "@/components/ui/NavLink";
 import Indicator from '@/components/auth/Indicator';
 import FormWrapper from '@/components/auth/FormWrapper';
-import CodeInput from '@/components/auth/CodeInput';
 
-import Owner from "@/utils/types/owner";
-import { checkIfOwnerExists } from "@/utils/auth/owner";
-import { usePitchContext } from "@/context/usePitchContext";
+import usePitchFormContext from "@/context/usePitchFormContext";
+import useAuthContext from "@/context/useAuthContext";
+
+import { decode } from "jsonwebtoken";
+import { CreationTokenType } from "@/utils/types/tokens";
+import Cookies from "js-cookie";
 
 export default function SignUp () {
-    const context = useFormContext();
-    const pitchContext = usePitchContext();
+    const formContext = useOwnerFormContext();
+    const pitchContext = usePitchFormContext();
+    const authContext = useAuthContext();
 
     const indicators = [
         {title: "Basics", description: "Getting to know each other", image: <div className="p-2 rounded-md bg-white border-[1px]"><User className="w-4 h-4"/></div>},
@@ -30,22 +33,22 @@ export default function SignUp () {
     const onSubmit = (e: FormEvent) => {
         e.preventDefault();
 
-        if (context.properties.currentIndex === 2) {
-            context.actions.setLoading();
-            context.actions.setRenderBack(false);
+        if (formContext.properties.currentIndex === 2) {
+            formContext.actions.setLoading();
+            formContext.actions.setRenderBack(false);
 
             fetch("/api/auth/owner/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(context.data)
+                body: JSON.stringify(formContext.data)
             })
             .then(response => {
                 if (response.status === 500) {
-                    context.actions.setError("Could not connect to server. Please check your connectivity.");
-                    context.actions.setLoading();
-                    context.actions.setRenderBack(true);
+                    formContext.actions.setError("Could not connect to server. Please check your connectivity.");
+                    formContext.actions.setLoading();
+                    formContext.actions.setRenderBack(true);
                     return;
                 }
                 return response.json()
@@ -54,69 +57,81 @@ export default function SignUp () {
                 if (!data) return;
 
                 if (data.status === 403 || data.status === 400) {
-                    context.actions.traverse(0);
-                    context.actions.setError(data.message);
-                    context.actions.setLoading();
+                    formContext.actions.traverse(0);
+                    formContext.actions.setError(data.message);
+                    formContext.actions.setLoading();
                     return;
                 }
 
                 if (data.status != 200) {
-                    context.actions.setError(data.message);
-                    context.actions.setLoading();
-                    context.actions.setRenderBack(true);
+                    formContext.actions.setError(data.message);
+                    formContext.actions.setLoading();
+                    formContext.actions.setRenderBack(true);
                     return;
                 }
 
-                context.actions.setLoading();
-                context.actions.next();
+                formContext.actions.setLoading();
+                formContext.actions.next();
             })
             .catch((error: Error) => {
-                context.actions.setError(error.message);
-                context.actions.setLoading();
+                formContext.actions.setError(error.message);
+                formContext.actions.setLoading();
             })
             return;
         }
 
-        if (context.properties.currentIndex === 4 && pitchContext.mode === "Create") {
+        if (formContext.properties.currentIndex === 4 && pitchContext.mode === "Create") {
             const source = pitchContext.location;
             
             if (source.latitude && !source.longitude) {
-                context.actions.setError("Location must contain either both or neither coordinates.");
+                formContext.actions.setError("Location must contain either both or neither coordinates.");
                 return;
             }
             
             if (source.longitude && !source.latitude) {
-                context.actions.setError("Location must contain either both or neither coordinates.");
+                formContext.actions.setError("Location must contain either both or neither coordinates.");
                 return;
             }
             
             if (source.longitude && source.longitude < -180 || source.longitude && source.longitude > 180) {
-                context.actions.setError("Location longitude must be between -180 and 180.")
+                formContext.actions.setError("Location longitude must be between -180 and 180.")
                 return;
             }
             
             if (source.latitude && source.latitude < -90 || source.latitude && source.latitude > 90) {
-                context.actions.setError("Location latitude must be between -90 and 90.")
+                formContext.actions.setError("Location latitude must be between -90 and 90.")
                 return;
             }
     
             if ((source.street == "" || source.address == "" || source.governorate == "")) {
-                context.actions.setError("You must set a valid pitch location.")
+                formContext.actions.setError("You must set a valid pitch location.")
                 return;
             }
             
             if (source.googleMapsLink) {
                 const regex = /^(https?:\/\/)?(www\.)?(google\.com\/maps|maps\.google\.com|goo\.gl)\/.+$/i;
                 if (!regex.test(source.googleMapsLink)) {
-                    context.actions.setError("Please enter a valid Google Maps link.")
+                    formContext.actions.setError("Please enter a valid Google Maps link.")
                     return;
                 }
             }
         }
 
-        if (context.properties.currentIndex === 5) {
-            context.actions.setLoading();
-            context.actions.setRenderBack(false);
+        if (formContext.properties.currentIndex === 5) {
+            formContext.actions.setLoading();
+            formContext.actions.setRenderBack(false);
+
+            let decoded: CreationTokenType | undefined = undefined;
+            const creationCookie = Cookies.get("creationToken");
+
+            if (creationCookie) {
+                decoded = decode(creationCookie) as CreationTokenType;
+            } else {
+                formContext.actions.setError("Could not find creation token. Please try again.");
+                formContext.actions.setLoading();
+                formContext.actions.setRenderBack(true);
+                return;
+            }
 
             fetch("/api/pitch/create/", {
                 method: "POST",
@@ -124,15 +139,15 @@ export default function SignUp () {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    email: localStorage.getItem("ownerFormEmail"),
+                    email: decoded?.email,
                     pitch: pitchContext.data
                 })
             })
             .then(response => {
                 if (response.status === 500) {
-                    context.actions.setError("Could not connect to server. Please check your connectivity.");
-                    context.actions.setLoading();
-                    context.actions.setRenderBack(true);
+                    formContext.actions.setError("Could not connect to server. Please check your connectivity.");
+                    formContext.actions.setLoading();
+                    formContext.actions.setRenderBack(true);
                     return;
                 }
                 return response.json()
@@ -141,30 +156,38 @@ export default function SignUp () {
                 if (!data) return;
 
                 if (data.status === 403 || data.status === 400) {
-                    context.actions.traverse(4);
-                    context.actions.setError(data.message);
-                    context.actions.setLoading();
+                    formContext.actions.traverse(4);
+                    formContext.actions.setError(data.message);
+                    formContext.actions.setLoading();
                     return;
                 }
 
                 if (data.status != 200) {
-                    context.actions.setError(data.message);
-                    context.actions.setLoading();
-                    context.actions.setRenderBack(true);
+                    formContext.actions.setError(data.message);
+                    formContext.actions.setLoading();
+                    formContext.actions.setRenderBack(true);
                     return;
                 }
 
-                context.actions.setLoading();
-                context.actions.next();
+                formContext.actions.setLoading();
+                formContext.actions.next();
             })
             .catch((error: Error) => {
-                context.actions.setError(error.message);
-                context.actions.setLoading();
+                formContext.actions.setError(error.message);
+                formContext.actions.setLoading();
             })
             return;
         }
 
-        context.actions.next();
+        formContext.actions.next();
+    }
+
+    if (authContext.data.role === "Owner") {
+        return (
+            <div className="flex-center h-screen text-sm">
+                <span>Handle wanting to sign up while logged in.</span>
+            </div>
+        )
     }
 
     return (
@@ -180,7 +203,7 @@ export default function SignUp () {
                                 indicators.map((el, index) => {
                                     return (
                                         <Indicator 
-                                            active={index === context.properties.currentIndex} 
+                                            active={index === formContext.properties.currentIndex} 
                                             title={el.title} description={el.description} 
                                             image={el.image} 
                                             key={index}

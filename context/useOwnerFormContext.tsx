@@ -8,7 +8,11 @@ import Continued from "@/components/auth/ContinuedForm";
 
 import Cookies from "js-cookie";
 import Owner from "@/utils/types/owner";
+import { decode } from "jsonwebtoken";
 import { createContext, ReactNode, useContext, useState, useRef, useEffect } from "react";
+import { CreationTokenType } from "@/utils/types/tokens";
+import Loading from "@/components/ui/Loading";
+import usePrevious from "@/hooks/usePrevious";
 
 interface FormProperties {
     currentIndex: number,
@@ -36,24 +40,31 @@ interface FormType {
     updateData: (fields: Partial<Owner>) => void
 }
 
-export const FormContext = createContext<FormType | undefined>(undefined);
+export const OwnerFormContext = createContext<FormType | undefined>(undefined);
 
-export function useFormContext() {
-    const context = useContext(FormContext);
+export function useOwnerFormContext() {
+    const context = useContext(OwnerFormContext);
 
     if (context === undefined) {
-        throw new Error("useFormContext must be initialized with a FormContext");
+        throw new Error("useOwnerFormContext must be initialized with an OwnerFormContext");
     }
 
     return context;
 }
 
-export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
+export const OwnerFormContextProvider = ({children} : {children: ReactNode}) => {
+    let decoded: CreationTokenType | undefined = undefined;
+    const creationCookie = Cookies.get("creationToken");
+
+    if (creationCookie) {
+        decoded = decode(creationCookie) as CreationTokenType;
+    }
+
     let initalData: Partial<Owner> = {
-        firstName: localStorage.getItem("ownerFormName") || "",
+        firstName: decoded?.name || "",
         lastName: "",
         company: "",
-        email: localStorage.getItem("ownerFormEmail") || "",
+        email: decoded?.email || "",
         phone: "",
         password: "",
         location: {
@@ -67,11 +78,12 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
         phoneStatus: "Inactive",
         emailStatus: "Inactive",
     }
-    
-    const localIndex = parseInt(localStorage.getItem("ownerFormIndex") || "0");
-    const [currentIndex, setCurrentIndex] = useState(localIndex);
+
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const previousIndex = usePrevious(currentIndex);
+
     const [data, setData] = useState(initalData);
-    
+    const [overlay, setOverlay] = useState(true);
     const [pending, setPending] = useState(false);
     const [renderBack, setRenderBack] = useState(false);
     const [renderNext, setRenderNext] = useState(false);
@@ -80,14 +92,19 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        if (currentIndex === 3) {
-            console.log("Token:", Cookies.get("ownerToken"));
-            
-            localStorage.setItem("ownerFormName", data.firstName as string);
-            localStorage.setItem("ownerFormEmail", data.email as string);
-            localStorage.setItem("ownerFormIndex", currentIndex.toString());
+        if (decoded) {
+            setCurrentIndex(3);
+        } else {
+            setCurrentIndex(0);
         }
-    }, [currentIndex, data]);
+        setOverlay(false);
+    }, [])
+
+    useEffect(() => {
+        if (previousIndex < currentIndex) {
+            setMessage("");
+        }
+    }, [currentIndex])
 
     const steps = [
         <Basics key={0}/>,
@@ -144,7 +161,7 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
     }
 
     return (
-      <FormContext.Provider 
+      <OwnerFormContext.Provider 
         value={{
             data: data, 
             properties: {
@@ -166,7 +183,9 @@ export const OwnerFormProvider = ({children} : {children: ReactNode}) => {
             },
             updateData: updateData
         }}>
-        {children}
-      </FormContext.Provider>
+            {
+                overlay ? <div className="fixed w-screen h-screen bg-white flex-center"><Loading/></div> : children
+            }
+      </OwnerFormContext.Provider>
     );
   };

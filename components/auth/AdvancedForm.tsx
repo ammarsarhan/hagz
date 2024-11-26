@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useFormContext } from "@/context/useFormContext";
+import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import UploadTrigger, { UploadModal } from "@/components/ui/Upload";
 import AppLocation from "@/utils/types/location";
 
 export default function Advanced () {
     const [openUpload, setOpenUpload] = useState(false);
 
-    const context = useFormContext();
+    const context = useOwnerFormContext();
     const source = context.data.location;
     
     const updateLocation = (fields: Partial<AppLocation>) => {
