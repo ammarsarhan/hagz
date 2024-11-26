@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { OwnerAccessTokenType } from "@/utils/types/tokens"
 import { decode } from "jsonwebtoken"
 import { createContext, ReactNode, useState, useContext, useEffect } from "react"
@@ -19,9 +20,9 @@ interface AuthContextDataType {
 }
 
 interface AuthContextActionsType {
-    setAccessToken: (token: string) => void,
-    setUser: (user: AuthUser) => void,
-    setRole: (role: "Owner" | "User") => void,
+    setAccessToken: (token: string | null) => void,
+    setUser: (user: AuthUser | null) => void,
+    setRole: (role: "Owner" | "User" | undefined) => void,
     setLoading: (loading: boolean) => void
 }
 
@@ -92,9 +93,9 @@ export function AuthContextProvider({children} : {children: ReactNode}) {
                 loading: loading
             },
             actions: {
-                setAccessToken: (token: string) => setAccessToken(token),
-                setUser: (user: AuthUser) => setUserData(user),
-                setRole: (role: "Owner" | "User") => setRole(role),
+                setAccessToken: (token: string | null) => setAccessToken(token),
+                setUser: (user: AuthUser | null) => setUserData(user),
+                setRole: (role: "Owner" | "User" | undefined) => setRole(role),
                 setLoading: (loading: boolean) => setLoading(loading)
             }
         }}>

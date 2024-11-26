@@ -183,11 +183,7 @@ export default function SignUp () {
     }
 
     if (authContext.data.role === "Owner") {
-        return (
-            <div className="flex-center h-screen text-sm">
-                <span>Handle wanting to sign up while logged in.</span>
-            </div>
-        )
+        return;
     }
 
     return (

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Settings } from "lucide-react"
+import { LogOut } from "lucide-react"
 
 export default function Profile ({email} : {email: string}) {
     return (
@@ -10,9 +10,9 @@ export default function Profile ({email} : {email: string}) {
                     <span>{email}</span>
                 </div>
             </Link>
-            <button>
-                <Settings className="w-4 h-4"/>
-            </button>
+            <Link href="/auth/owner/sign-out">
+                <LogOut className="w-4 h-4"/>
+            </Link>
         </div>
     )
 }

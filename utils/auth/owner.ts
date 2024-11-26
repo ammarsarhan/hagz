@@ -206,6 +206,23 @@ export async function authenticateOwnerWithCredentials (email: string, password:
         const accessToken = generateAccessToken(owner.firstName, owner.email, owner.id);
         const refreshToken = generateRefreshToken(owner.id);
 
+        const ownerToken = await prisma.ownerToken.create({
+            data: {
+                ownerId: owner.id,
+                token: refreshToken,
+                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }
+        });
+
+        if (!ownerToken) {
+            return {
+                message: "An error occurred while generating tokens. Please try again.",
+                status: 500
+            }
+        }
+
+        console.log(ownerToken);
+
         return {
             message: "Authenticated user successfully!",
             accessToken: accessToken,
