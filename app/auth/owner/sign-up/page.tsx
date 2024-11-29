@@ -204,7 +204,7 @@ export default function SignUp () {
     if (authContext.data.role != "Owner") {
         return (
             <div className="flex h-screen">
-                <aside className="hidden lg:block w-1/3 ml-4 my-4 p-6 rounded-md bg-gray-100 overflow-y-scroll">
+                <aside className="hidden lg:block w-1/3 m-4 p-6 rounded-md bg-gray-100 overflow-y-scroll">
                     <div className="flex flex-col gap-y-8 w-full h-full">
                         <div className="mb-8">
                             Logo

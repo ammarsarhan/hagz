@@ -1,17 +1,24 @@
 import { verify, sign, JwtPayload, JsonWebTokenError } from "jsonwebtoken";
 import prisma from "@/utils/db";
-import { SES } from "aws-sdk";
 import { v4 as uuidv4 } from 'uuid';
+import { createTransport } from "nodemailer";
 
 export async function sendOwnerVerificationEmail (name: string, email: string, token?: string) {
     const jti = uuidv4();
 
-    await prisma.owner.update({
-        where: { email },
-        data: {
-            verificationId: jti
+    try {
+        await prisma.owner.update({
+            where: { email },
+            data: {
+                verificationId: jti
+            }
+        })
+    } catch (error) {
+        return {
+            message: "Could not generate verification link. Please try again later.",
+            result: false
         }
-    })
+    }
 
     token = sign({
         email: email
@@ -22,30 +29,47 @@ export async function sendOwnerVerificationEmail (name: string, email: string, t
     });
 
     const link = `http://localhost:3000/api/auth/owner/verify?id=${jti}&token=${token}`;
-    const ses = new SES({
-        region: 'eu-central-1',
-    });
+    console.log(link);
 
-    const data = {
-        name: name,
-        verification_link: link
-    };
+    // const transporter = createTransport({
+    //     service: "gmail",
+    //     auth: {
+    //         user: process.env.EMAIL_USERNAME,
+    //         pass: process.env.EMAIL_PASSWORD,
+    //     }
+    // })
 
-    const options = {
-        Source: "ammarsarhan06@gmail.com",
-        Destination: {
-            ToAddresses: [email]
-        },
-        Template: "OwnerVerification",
-        TemplateData: JSON.stringify(data)
+    // const mailOptions = {
+    //     from: process.env.EMAIL_USERNAME,
+    //     to: email,
+    //     subject: 'Welcome to Hagz - Verify Your Email Address',
+    //     html: `
+    //       <p>Thank you for signing up!</p>
+    //       <p>Please click the link below to verify your email address:</p>
+    //       <a href="${link}">Verify Email</a>
+    //     `,
+    // };
+
+    // transporter.sendMail(mailOptions, (error, info) => {
+    //     if (error) {
+    //         console.log("Error occurred while sending email.", error)
+    //         return {
+    //             message: `Could not send verification email. Returned with error: ${error.message}`,
+    //             result: false
+    //         }
+    //     } else {
+    //         console.log("Sent email successfully.")
+    //         return {
+    //             message: `Verification link has been sent to your email. Returned with message: ${info.response}`,
+    //             result: true
+    //         };
+    //     }
+    // })
+
+    return {
+        message: "An unexpected error has occurred.",
+        result: false
     }
-
-    ses.sendTemplatedEmail(options, (error, data) => {
-        if (error) {
-            return error.message;
-        }
-        return data.MessageId;
-    })
 }
 
 export async function isOwnerVerified(email: string) {

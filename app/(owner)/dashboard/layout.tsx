@@ -1,9 +1,10 @@
 "use client"
 
-import Sidebar from '@/components/dashboard/Sidebar';
+import { DashboardContextProvider } from '@/context/useDashboardContext';
 import useAuthContext from '@/context/useAuthContext';
+import Sidebar from '@/components/dashboard/Sidebar';
+
 import { useRouter } from 'next/navigation';
-import Loading from '@/components/ui/Loading';
 
 export default function DashboardLayout ({
   children,
@@ -19,11 +20,13 @@ export default function DashboardLayout ({
   }
 
   return (
-    <div className='flex flex-1'>
-      <Sidebar/>
-      <main className='flex flex-col flex-1 gap-2 px-5 sm:px-10 py-5 h-screen overflow-y-scroll'>
-        {children}
-      </main>
-    </div>
+    <DashboardContextProvider>
+      <div className='flex flex-1'>
+        <Sidebar/>
+        <main className='flex flex-col flex-1 gap-2 px-5 sm:px-10 py-5 h-screen overflow-y-scroll'>
+          {children}
+        </main>
+      </div>
+    </DashboardContextProvider>
   );
 }

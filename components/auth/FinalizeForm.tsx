@@ -4,9 +4,14 @@ import Button from "@/components/ui/Button";
 import { useOwnerFormContext } from "@/context/useOwnerFormContext";
 import { useEffect } from "react";
 import Link from "next/link";
+import Cookies from "js-cookie";
 
 export default function Finalize() {
     const context = useOwnerFormContext();
+    
+    useEffect(() => {
+        Cookies.remove("creationToken");
+    }, [])
     
     useEffect(() => {
         context.actions.setRenderNext(false);

@@ -1,5 +1,6 @@
 import AppLocation from '@/utils/types/location';
 import { PricingPlan } from '@/utils/types/payment';
+import { ReactNode } from 'react';
 
 export type Amenity = "Indoors" | "Ball Provided" | "Seating" | "Night Lights" | "Parking" | "Showers" | "Changing Rooms" | "Cafeteria" | "First Aid" | "Security";
 
@@ -17,4 +18,10 @@ export default interface PitchType {
     pricingPlans: PricingPlan[];
     reservations: string[];
     ownerId: string;
+}
+
+export interface DashboardPitchOptionType {
+    value: string;
+    description: string;
+    icon: ReactNode;
 }

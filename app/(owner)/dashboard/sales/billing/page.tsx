@@ -21,7 +21,7 @@ export default function Billing () {
                         <span className="block">Method</span>
                         <div className="flex items-center justify-between gap-x-2">
                             <div className="w-72">
-                                <Selector value="Credit Card" icon={<CreditCard className="w-4 h-4"/>} gap={3}/>
+                                <Selector options={[{value: "Credit Card", icon: <CreditCard className="w-4 h-4"/>, description: ""}]} selected={0} gap={3}/>
                             </div>
                             <CheckCircle2 className="w-[18px] h-[18px] text-green-700"/>
                         </div>

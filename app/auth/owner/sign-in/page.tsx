@@ -73,71 +73,69 @@ export default function SignIn () {
         }
     }
 
-    useEffect(() => {
-        if (authContext.data.role == "Owner") {
-            const invalidateRefreshToken = async () => {
-                await fetch("/api/auth/owner/sign-out", {
-                    method: 'POST',
-                    credentials: 'include'
-                });
+    // useEffect(() => {
+    //     if (authContext.data.role == "Owner") {
+    //         const invalidateRefreshToken = async () => {
+    //             await fetch("/api/auth/owner/sign-out", {
+    //                 method: 'POST',
+    //                 credentials: 'include'
+    //             });
                 
-                authContext.actions.setAccessToken(null);
-                authContext.actions.setUser(null);
-                authContext.actions.setRole(undefined);
+    //             authContext.actions.setAccessToken(null);
+    //             authContext.actions.setUser(null);
+    //             authContext.actions.setRole(undefined);
             
-                return;
-            }
+    //             return;
+    //         }
     
-            invalidateRefreshToken();
-        }
-    }, [])    
+    //         invalidateRefreshToken();
+    //     }
+    // }, [])
 
-    if (authContext.data.role != "Owner") {
-        return (
-            <form onSubmit={handleSubmit} className='w-full h-screen flex-center flex-col gap-y-4'>
-                {error && <h6 className="text-red-600 text-sm w-3/4 text-center">{error}</h6>}
-                <div className="flex-center flex-col gap-y-2 text-center w-4/5">
-                    <h1 className="text-2xl font-medium">Sign In</h1>
-                    <h6 className="text-sm text-dark-gray">Log into Hagz as an owner to manage your pitches and reservations</h6>
+    return (
+        <form onSubmit={handleSubmit} className='w-full h-screen flex-center flex-col gap-y-4'>
+            {error && <h6 className="text-red-600 text-sm w-3/4 text-center">{error}</h6>}
+            <div className="flex-center flex-col gap-y-2 text-center w-4/5">
+                <h1 className="text-2xl font-medium">Sign In</h1>
+                <h6 className="text-sm text-dark-gray">Log into Hagz as an owner to manage your pitches and reservations</h6>
+            </div>
+            <div className="flex-center flex-col text-sm gap-y-6 px-16 my-4 w-full lg:w-1/2" onSubmit={handleSubmit}>
+                <div className="flex flex-col gap-2 flex-1 w-full">
+                    <span className="text-dark-gray">Email Address</span>
+                    <input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        type="email" 
+                        placeholder="Email" 
+                        className="py-2 px-3 border-[1px] rounded-lg max-w-1/2"
+                        required
+                    />
                 </div>
-                <div className="flex-center flex-col text-sm gap-y-6 px-16 my-4 w-full lg:w-1/2" onSubmit={handleSubmit}>
-                    <div className="flex flex-col gap-2 flex-1 w-full">
-                        <span className="text-dark-gray">Email Address</span>
-                        <input
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            type="email" 
-                            placeholder="Email" 
-                            className="py-2 px-3 border-[1px] rounded-lg max-w-1/2"
-                            required
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2 flex-1 w-full">
-                        <span className="text-dark-gray">Password</span>
-                        <input
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            type={unveil ? "text" : "password"} 
-                            placeholder="Password" 
-                            className="py-2 px-3 border-[1px] rounded-lg max-w-1/2"
-                            required 
-                        />
-                        <div className='flex gap-x-2 items-center mt-2'>
-                            <input type="checkbox" checked={unveil} onChange={() => setUnveil(!unveil)} />
-                            <span onClick={() => setUnveil(!unveil)}>Show Password</span>
-                        </div>
-                    </div>
-                    <div className='flex flex-col sm:flex-row justify-between gap-x-8 gap-y-2 mt-2'>
-                        <Link className='underline h-fit w-fit' href={''}>Forgot your password?</Link>
-                        <p className='flex-1 text-dark-gray'>Note: entering a wrong password more than <span className='text-black'>5 times</span> will result in a temporary lock on log-in attempts. If you can not remember your account password, please use the link.</p>
+                <div className="flex flex-col gap-2 flex-1 w-full">
+                    <span className="text-dark-gray">Password</span>
+                    <input
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        type={unveil ? "text" : "password"} 
+                        placeholder="Password" 
+                        className="py-2 px-3 border-[1px] rounded-lg max-w-1/2"
+                        required 
+                    />
+                    <div className='flex gap-x-2 items-center mt-2'>
+                        <input type="checkbox" checked={unveil} onChange={() => setUnveil(!unveil)} />
+                        <span onClick={() => setUnveil(!unveil)}>Show Password</span>
                     </div>
                 </div>
-                <div className="flex gap-x-4">
-                    <Button variant={pending ? "pending" : "color"} className="!px-20" type="submit">
-                        Login
-                    </Button>
+                <div className='flex flex-col sm:flex-row justify-between gap-x-8 gap-y-2 mt-2'>
+                    <Link className='underline h-fit w-fit' href={''}>Forgot your password?</Link>
+                    <p className='flex-1 text-dark-gray'>Note: entering a wrong password more than <span className='text-black'>5 times</span> will result in a temporary lock on log-in attempts. If you can not remember your account password, please use the link.</p>
                 </div>
-            </form>
-        )
-    }
+            </div>
+            <div className="flex gap-x-4">
+                <Button variant={pending ? "pending" : "color"} className="!px-20" type="submit">
+                    Login
+                </Button>
+            </div>
+        </form>
+    )
 }

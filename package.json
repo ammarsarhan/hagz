@@ -11,7 +11,7 @@
   "dependencies": {
     "@prisma/client": "^5.21.1",
     "@types/js-cookie": "^3.0.6",
-    "aws-sdk": "^2.1691.0",
+    "@types/nodemailer": "^6.4.17",
     "bcrypt": "^5.1.1",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
@@ -22,6 +22,7 @@
     "prisma": "^5.21.1",
     "react": "^18",
     "react-dom": "^18",
+    "react-loading-skeleton": "^3.5.0",
     "uuid": "^11.0.3",
     "zod": "^3.23.8"
   },

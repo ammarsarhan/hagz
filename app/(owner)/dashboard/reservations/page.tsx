@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { today } from "@/utils/date";
 
 import UtilityBar from "@/components/dashboard/UtilityBar";
@@ -28,7 +28,7 @@ export default function Reservations () {
 
     // Have to be able to open empty calendar cells in case of /dashboard/reservations
     // We want to be able to add a new reservation on empty days
-
+    
     return (
         <>
             <Breadcrumbs labels={[{label: "Reservations", href: "/dashboard/reservations"}]} className="mt-4"/>

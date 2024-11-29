@@ -4,53 +4,24 @@ import { useState } from "react";
 
 function AddTrigger () {
     const [overlayOpen, setOverlayOpen] = useState(false);
-    const switchOverlay = () => overlayOpen ? setOverlayOpen(false) : setOverlayOpen(true);
 
     return (
-        <>
-            <button 
-                className="flex items-center gap-2 my-3" onClick={() => switchOverlay()}>
-                <CalendarPlus className="w-4 h-4"/>
-                Add
-            </button>
-            {
-                overlayOpen &&
-                <div className="absolute flex-center w-full h-full top-0 left-0">
-                    <div className="w-full h-full absolute bg-gray-400 bg-opacity-50 z-10" onClick={() => switchOverlay()}></div>
-                    <div className="bg-white text-black rounded-md w-1/2 h-3/4 z-20 p-8">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[0.9rem]">Create Reservation</span>
-                            <button onClick={() => switchOverlay()}>
-                                <X className="w-[1.125rem] h-[1.125rem]"/>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
-        </>
+        <button 
+            className="flex items-center gap-2 my-3" onClick={() => setOverlayOpen(!overlayOpen)}>
+            <CalendarPlus className="w-4 h-4"/>
+            Add
+        </button>
     )
 }
 
 function ModifyTrigger () {
     const [overlayOpen, setOverlayOpen] = useState(false);
-    const switchOverlay = () => overlayOpen ? setOverlayOpen(false) : setOverlayOpen(true);
 
     return (
-        <>
-            <button className="flex items-center gap-2 my-3" onClick={() => switchOverlay()}>
-                <CalendarCog className="w-4 h-4"/>
-                Modify
-            </button>
-            {
-                overlayOpen &&
-                <div className="absolute flex-center w-full h-full top-0 left-0">
-                    <div className="w-full h-full absolute bg-gray-400 bg-opacity-50 z-10" onClick={() => switchOverlay()}></div>
-                    <div className="bg-white text-black rounded-md w-3/4 h-3/4 z-20 p-5">
-                        
-                    </div>
-                </div>
-            }
-        </>
+        <button className="flex items-center gap-2 my-3" onClick={() => setOverlayOpen(!overlayOpen)}>
+            <CalendarCog className="w-4 h-4"/>
+            Modify
+        </button>
     )
 }
 

@@ -1,4 +1,4 @@
-import prisma from "@/utils/db";
+import prisma, { handlePrismaError } from "@/utils/db";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST (req: NextRequest) {
@@ -20,13 +20,13 @@ export async function POST (req: NextRequest) {
             return NextResponse.json({message: "Invalid refresh token. Unable to log out.", status: 400}, {status: 400});
         }
     
-        const invalidToken = await prisma.ownerToken.update({
+        const revokedToken = await prisma.ownerToken.update({
             where: { token: refreshToken },
             data: { revoked: true }
         });
     
-        if (!invalidToken) {
-            return NextResponse.json({message: "An error occurred while logging out. Please try again.", status: 500}, {status: 500});
+        if (!revokedToken) {
+            return NextResponse.json({message: "An error has occurred while connecting to the database. Please check your network and try again.", status: 500}, {status: 500});
         }
     
         const response = NextResponse.json({message: "Successfully logged out.", status: 200}, {status: 200});
@@ -34,6 +34,7 @@ export async function POST (req: NextRequest) {
         
         return response;
     } catch (error) {
-        return NextResponse.json({message: "An error occurred while logging out. Please try again.", status: 500}, {status: 500});
+        let message = error as Error;
+        return NextResponse.json({message: handlePrismaError(message), status: 500}, {status: 500});
     }
 }

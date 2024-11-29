@@ -124,7 +124,14 @@ export async function createOwnerWithCredentials(fields: Partial<Owner> & Pick<O
             }
         });
 
-        sendOwnerVerificationEmail(owner.firstName, owner.email);
+        const sendEmail = await sendOwnerVerificationEmail(owner.firstName, owner.email);
+
+        if (!sendEmail.result) {
+            return {
+                message: sendEmail.message,
+                status: 500
+            };
+        }
         
         return {
             message: "Created owner account successfully!",
