@@ -1,0 +1,18 @@
+import { sign, verify } from "jsonwebtoken";
+
+interface TokenPayloadType {
+    id: string;
+}
+
+const accessKey = process.env.ACCESS_SECRET_KEY || "";
+const refreshKey = process.env.REFRESH_SECRET_KEY || "";
+
+export function generateAccessToken(data: TokenPayloadType) {
+    const token = sign(data, accessKey, {expiresIn: "30m"});
+    return token;
+}
+
+export function generateRefreshToken(data: TokenPayloadType) {
+    const token = sign(data, refreshKey, {expiresIn: "7d"});
+    return token;
+}

@@ -1,5 +1,30 @@
-import { checkIfUserExistsAlready, createUserWithCredentials } from '../repositories/userRepository';
 import * as z from 'zod';
+import { checkIfUserExistsAlready, createUserWithCredentials, fetchUserByEmail } from '../repositories/userRepository';
+import { compare } from 'bcrypt';
+import { generateAccessToken, generateRefreshToken } from '../utils/token';
+
+export async function signInUserWithCredentials(email: string, password: string) {
+    if (!email || !password) {
+        throw new Error('Insufficient parameters provided to sign in user.'); 
+    }
+
+    const user = await fetchUserByEmail(email);
+
+    if (!user) {
+        throw new Error('Invalid credentials provided. Please try again.');
+    }
+
+    const match = await compare(password, user.password);
+
+    if (!match) {
+        throw new Error('Invalid credentials provided. Please try again.');
+    }
+
+    const accessToken = generateAccessToken({id: user.id});
+    const refreshToken = generateRefreshToken({id: user.id});
+    
+    return {accessToken, refreshToken};
+}
 
 export async function signUpUserWithCredentials(name: string, email: string, password: string) {
     if (!name || !email || !password) {
