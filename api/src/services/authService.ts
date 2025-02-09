@@ -1,7 +1,9 @@
 import * as z from 'zod';
-import { checkIfUserExistsAlready, createUserWithCredentials, fetchUserByEmail } from '../repositories/userRepository';
 import { compare } from 'bcrypt';
-import { generateAccessToken, generateRefreshToken } from '../utils/token';
+import { generateAccessToken, generateRefreshToken, generateVerificationToken, TokenPayloadType } from '../utils/token';
+import { checkIfUserExistsAlready, checkIfUserVerifiedAlready, createUserWithCredentials, fetchUserByEmail, setUserAccountStatus, setUserVerificationToken } from '../repositories/userRepository';
+import { sendUserVerificationEmail } from './mailService';
+import { verify } from 'jsonwebtoken';
 
 export async function signInUserWithCredentials(email: string, password: string) {
     if (!email || !password) {
@@ -9,11 +11,6 @@ export async function signInUserWithCredentials(email: string, password: string)
     }
 
     const user = await fetchUserByEmail(email);
-
-    if (!user) {
-        throw new Error('Invalid credentials provided. Please try again.');
-    }
-
     const match = await compare(password, user.password);
 
     if (!match) {
@@ -51,5 +48,44 @@ export async function signUpUserWithCredentials(name: string, email: string, pas
         throw new Error("User with specified email already exists. Please use a different email address.");
     }
 
-    await createUserWithCredentials(parsed.data.name, parsed.data.email, parsed.data.password);
+    const user = await createUserWithCredentials(parsed.data.name, parsed.data.email, parsed.data.password);
+    await handleSendUserVerification(user.email);
+}
+
+export async function handleSendUserVerification(email: string) {
+    const schema = z.object({
+        email: z.string({ message: "Insufficient parameters provided. Please provide a valid email address." }).email("Insufficient parameters provided. Please provide a valid email address."),
+    })
+
+    const parse = schema.safeParse({ email });
+
+    if (parse.error) {
+        throw new Error(parse.error.errors[0].message); 
+    }
+    
+    const user = await fetchUserByEmail(email);
+
+    const verificationToken = generateVerificationToken({id: user.id});
+    await setUserVerificationToken(user.id, verificationToken);
+
+    const link = `http://localhost:3000/api/auth/user/verify?token=${verificationToken}`;
+    console.log(link);
+    await sendUserVerificationEmail(email, link);
+}
+
+export async function verifyUserByToken(token: string) {
+    verify(token, process.env.VERIFICATION_SECRET_KEY || "", async (error: any, user: any) => {
+        if (error) {
+            throw new Error("Invalid verification token provided.")
+        }
+
+        const targetId = user.id;
+        const match = await checkIfUserVerifiedAlready(targetId);
+        
+        if (match) {
+            throw new Error("Specified user account has already been verified.")
+        }
+
+        await setUserAccountStatus(targetId);
+    });
 }

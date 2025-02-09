@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { signInUserWithCredentials, signUpUserWithCredentials } from "../services/authService";
+import { handleSendUserVerification, verifyUserByToken, signInUserWithCredentials, signUpUserWithCredentials } from "../services/authService";
 
 export async function signInUser(req: Request, res: Response) {
     try {
@@ -14,9 +14,11 @@ export async function signInUser(req: Request, res: Response) {
             signed: true
         });
 
-        res.status(200).json({message: tokens.accessToken});
+        res.status(200).json({ success: true, message: "User signed in successfully.", data: {
+            accessToken: tokens.accessToken
+        }});
     } catch (error: any) {
-        res.status(400).json({message: error.message});
+        res.status(400).json({ success: false, message: error.message });
     }
 }
 
@@ -24,8 +26,33 @@ export async function signUpUser(req: Request, res: Response) {
     try {
         const { name, email, password } = req.body;
         await signUpUserWithCredentials(name, email, password);
-        res.status(200).json({message: "Successfully created new user account!"});
+        res.status(200).json({ success: true, message: "Created new user account successfully."});
     } catch (error: any) {
-        res.status(400).json({message: error.message});
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function sendUserVerificationEmail(req: Request, res: Response) {
+    try {
+        const { email } = req.body;
+        await handleSendUserVerification(email);
+        res.status(200).json({ success: true, message: "Verification email sent to specified address successfully." });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function verifyUser(req: Request, res: Response) {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            throw new Error("No verification token provided. Unable to verify user.")
+        }
+
+        await verifyUserByToken(token as string);
+        res.status(200).json({ success: true, message: "Verified user account email address successfully." })
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message })
     }
 }
