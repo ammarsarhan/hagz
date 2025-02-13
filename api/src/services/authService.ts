@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { compare } from 'bcrypt';
-import { generateAccessToken, generateRefreshToken, generateVerificationToken, TokenPayloadType } from '../utils/token';
+import { generateAccessToken, generateRefreshToken, generateVerificationToken } from '../utils/token';
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready, createUserWithCredentials, fetchUserByEmail, setUserAccountStatus, setUserVerificationToken } from '../repositories/userRepository';
 import { sendUserVerificationEmail } from './mailService';
 import { verify } from 'jsonwebtoken';
@@ -17,10 +17,10 @@ export async function signInUserWithCredentials(email: string, password: string)
         throw new Error('Invalid credentials provided. Please try again.');
     }
 
-    const accessToken = generateAccessToken({id: user.id});
-    const refreshToken = generateRefreshToken({id: user.id});
+    const accessToken = generateAccessToken({id: user.id, type: "User"});
+    const refreshToken = generateRefreshToken({id: user.id, type: "User"});
     
-    return {accessToken, refreshToken};
+    return { accessToken, refreshToken };
 }
 
 export async function signUpUserWithCredentials(name: string, email: string, password: string) {
@@ -65,27 +65,31 @@ export async function handleSendUserVerification(email: string) {
     
     const user = await fetchUserByEmail(email);
 
-    const verificationToken = generateVerificationToken({id: user.id});
+    const verificationToken = generateVerificationToken({id: user.id, type: "User"});
     await setUserVerificationToken(user.id, verificationToken);
 
     const link = `http://localhost:3000/api/auth/user/verify?token=${verificationToken}`;
-    console.log(link);
     await sendUserVerificationEmail(email, link);
 }
 
 export async function verifyUserByToken(token: string) {
-    verify(token, process.env.VERIFICATION_SECRET_KEY || "", async (error: any, user: any) => {
-        if (error) {
-            throw new Error("Invalid verification token provided.")
+    try {
+        const decoded = verify(token, process.env.VERIFICATION_SECRET_KEY || "");
+
+        if (typeof decoded == "object") {
+            const target = decoded.id;
+            const match = await checkIfUserVerifiedAlready(target);
+
+            if (match) {
+                throw new Error("Specified user account has already been verified.");
+            }
+
+            await setUserAccountStatus(target);
+        } else {
+            throw new Error("Invalid verification token provided.");
         }
 
-        const targetId = user.id;
-        const match = await checkIfUserVerifiedAlready(targetId);
-        
-        if (match) {
-            throw new Error("Specified user account has already been verified.")
-        }
-
-        await setUserAccountStatus(targetId);
-    });
+    } catch (error: any) {
+        throw new Error(`Could not verify user. ${error.message}`);
+    }
 }

@@ -10,13 +10,18 @@ export async function signInUser(req: Request, res: Response) {
             maxAge: 1000 * 60 * 60 * 24 * 7, 
             httpOnly: true, 
             secure: true, 
-            sameSite: 'none',
+            sameSite: 'lax',
             signed: true
         });
 
-        res.status(200).json({ success: true, message: "User signed in successfully.", data: {
-            accessToken: tokens.accessToken
-        }});
+        res.cookie('accessToken', tokens.accessToken, {
+            maxAge: 1000 * 60 * 30,
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax'
+        })
+
+        res.status(200).json({ success: true, message: "User signed in successfully."});
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

@@ -7,19 +7,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserAccountStatus {
+enum AccountStatus {
   UNVERIFIED
   ACTIVE
   SUSPENDED
   DELETED
 }
 
+enum AccessRole {
+  READ
+  WRITE
+  ADMIN
+}
+
 model User {
   id                String            @id @default(cuid())
   name              String
   email             String            @unique
+  phone             String            @unique
   password          String
-  accountStatus     UserAccountStatus @default(UNVERIFIED)
+  accountStatus     AccountStatus     @default(UNVERIFIED)
+  verificationToken String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model Owner {
+  id                String            @id @default(cuid())
+  name              String
+  email             String            @unique
+  phone             String            @unique
+  password          String
+  company           String?
+  profilePicture    String?
+  accountStatus     AccountStatus     @default(UNVERIFIED)
+  accessRole        AccessRole        @default(READ)
   verificationToken String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
