@@ -142,3 +142,14 @@ export async function verifyOwner(req: Request, res: Response) {
         res.status(400).json({ success: false, message: error.message })
     }
 }
+
+export async function signOut(req: Request, res: Response) {
+    try {
+        res.clearCookie('refreshToken');
+        res.clearCookie('accessToken');
+
+        res.status(200).json({ success: true, message: "Signed out in-use account successfully."});
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
