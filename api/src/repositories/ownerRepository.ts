@@ -1,11 +1,11 @@
 import { hash } from "bcrypt";
 import prisma from "../utils/db";
 
-export async function createUserWithCredentials(name: string, email: string, phone: string, password: string) {
+export async function createOwnerWithCredentials(name: string, email: string, phone: string, password: string) {
     try {
         const hashed = await hash(password, 10);
 
-        const user = await prisma.user.create({
+        const owner = await prisma.owner.create({
             data: {
                 name: name,
                 email: email,
@@ -14,51 +14,15 @@ export async function createUserWithCredentials(name: string, email: string, pho
             }
         });
 
-        return user;
+        return owner;
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function fetchUserByEmail(email: string) {
+export async function checkIfOwnerExistsAlready (email: string, phone?: string) {
     try {
-        const user = await prisma.user.findUnique({
-            where: {
-                email: email
-            }
-        })
-
-        if (!user) {
-            throw new Error("Invalid credentials provided. Please try again.")
-        }
-
-        return user;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
-};
-
-export async function fetchUserById(id: string) {
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                id: id
-            }
-        })
-
-        if (!user) {
-            throw new Error("Invalid credentials provided. Please try again.")
-        }
-
-        return user;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
-};
-
-export async function checkIfUserExistsAlready (email: string, phone?: string) {
-    try {
-        const user = await prisma.user.findFirst({
+        const owner = await prisma.owner.findFirst({
             where: {
                 OR: [
                     { email: email },
@@ -67,7 +31,7 @@ export async function checkIfUserExistsAlready (email: string, phone?: string) {
             }
         });
 
-        if (user) {
+        if (owner) {
             return true;
         }
         
@@ -77,28 +41,64 @@ export async function checkIfUserExistsAlready (email: string, phone?: string) {
     }
 }
 
-export async function checkIfUserVerifiedAlready (id: string) {
+export async function fetchOwnerByEmail(email: string) {
     try {
-        const user = await prisma.user.findUnique({
+        const owner = await prisma.owner.findUnique({
+            where: {
+                email: email
+            }
+        })
+
+        if (!owner) {
+            throw new Error("Invalid credentials provided. Please try again.")
+        }
+
+        return owner;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export async function fetchOwnerById(id: string) {
+    try {
+        const owner = await prisma.owner.findUnique({
+            where: {
+                id: id
+            }
+        })
+
+        if (!owner) {
+            throw new Error("Invalid credentials provided. Please try again.")
+        }
+
+        return owner;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export async function checkIfOwnerVerifiedAlready (id: string) {
+    try {
+        const owner = await prisma.owner.findUnique({
             where: {
                 id: id,
                 accountStatus: "ACTIVE"
             }
         });
 
-        if (user) {
-            return true
+        if (owner) {
+            return true;
         } else {
-            return false
+            return false;
         };
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function setUserVerificationToken(id: string, token: string) {
+export async function setOwnerVerificationToken(id: string, token: string) {
     try {
-        await prisma.user.update({
+        await prisma.owner.update({
             where: {
                 id: id
             },
@@ -111,9 +111,9 @@ export async function setUserVerificationToken(id: string, token: string) {
     }
 }
 
-export async function setUserAccountStatus(id: string) {
+export async function setOwnerAccountStatus(id: string) {
     try {
-        await prisma.user.update({
+        await prisma.owner.update({
             where: {
                 id: id
             },

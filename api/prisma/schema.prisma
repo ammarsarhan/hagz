@@ -14,35 +14,27 @@ enum AccountStatus {
   DELETED
 }
 
-enum AccessRole {
-  READ
-  WRITE
-  ADMIN
-}
-
 model User {
-  id                String            @id @default(cuid())
+  id                String        @id @default(cuid())
   name              String
-  email             String            @unique
-  phone             String            @unique
+  email             String        @unique
+  phone             String        @unique
   password          String
-  accountStatus     AccountStatus     @default(UNVERIFIED)
+  accountStatus     AccountStatus @default(UNVERIFIED)
   verificationToken String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model Owner {
-  id                String            @id @default(cuid())
+  id                String        @id @default(cuid())
   name              String
-  email             String            @unique
-  phone             String            @unique
+  email             String        @unique
+  phone             String        @unique
   password          String
   company           String?
-  profilePicture    String?
-  accountStatus     AccountStatus     @default(UNVERIFIED)
-  accessRole        AccessRole        @default(READ)
+  accountStatus     AccountStatus @default(UNVERIFIED)
   verificationToken String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
