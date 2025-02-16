@@ -14,6 +14,42 @@ enum AccountStatus {
   DELETED
 }
 
+enum PitchStatus {
+  ACTIVE
+  MAINTENANCE
+  CLOSED
+}
+
+enum PitchPolicy {
+  DEFAULT
+  EXTENDED
+  SHORT
+}
+
+enum PitchSize {
+  FIVE_A_SIDE
+  SEVEN_A_SIDE
+  ELEVEN_A_SIDE
+}
+
+enum PitchSurface {
+  GRASS
+  ARTIFICIAL
+}
+
+enum Amenity {
+  INDOORS
+  BALL_PROVIDED
+  SEATING
+  NIGHT_LIGHTS
+  PARKING
+  SHOWERS
+  CHANGING_ROOMS
+  CAFETERIA
+  FIRST_AID
+  SECURITY
+}
+
 model User {
   id                String        @id @default(cuid())
   name              String
@@ -35,6 +71,29 @@ model Owner {
   company           String?
   accountStatus     AccountStatus @default(UNVERIFIED)
   verificationToken String?
+  pitches           Pitch[]
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+}
+
+model Pitch {
+  id             String                               @id @default(cuid())
+  ownerId        String
+  name           String
+  description    String
+  size           PitchSize
+  surface        PitchSurface
+  amenities      Amenity[]
+  images         String[]
+  price          Float
+  coordinates    Unsupported("geometry(Point, 4326)")
+  status         PitchStatus                          @default(ACTIVE)
+  policy         PitchPolicy                          @default(DEFAULT)
+  minimumSession Int                                  @default(1)
+  maximumSession Int                                  @default(3)
+  createdAt      DateTime                             @default(now())
+  owner          Owner                                @relation(fields: [ownerId], references: [id])
+  updatedAt      DateTime                             @updatedAt
+
+  @@index([coordinates], name: "location_idx", type: Gist)
 }
