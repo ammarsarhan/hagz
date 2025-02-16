@@ -16,6 +16,11 @@ refresh.post('/user', (req: Request, res: Response) => {
 
         if (typeof decoded == "object") {
             decoded as TokenPayloadType;
+
+            if (decoded.type !== "User") {
+                throw new Error("Invalid token type. Please sign in again as a user.");
+            }
+
             const accessToken = generateAccessToken({id: decoded.id, type: "User"});
     
             res.cookie("accessToken", accessToken, {
@@ -46,6 +51,11 @@ refresh.post('/owner', (req: Request, res: Response) => {
 
         if (typeof decoded == "object") {
             decoded as TokenPayloadType;
+
+            if (decoded.type !== "Owner") {
+                throw new Error("Invalid token type. Please sign in again as an owner.");
+            }
+
             const accessToken = generateAccessToken({id: decoded.id, type: "Owner"});
     
             res.cookie("accessToken", accessToken, {

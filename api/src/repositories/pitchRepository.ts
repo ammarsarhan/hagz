@@ -1,16 +1,5 @@
 import prisma from "../utils/db";
-
-type PitchCreateResponse = {
-    id: string;
-};
-
-type PitchCreateRequest = {
-    name: string, 
-    description: string, 
-    owner: string, 
-    longitude: number, 
-    latitude: number
-}
+import { PitchCreateResponseType, PitchCreateRequestType } from "../types/pitch";
 
 export async function getPitch(id: string) {
     try {
@@ -30,11 +19,27 @@ export async function getPitch(id: string) {
     }
 }
 
-export async function createPitch(pitch: PitchCreateRequest) {
+export async function createPitch(pitch: PitchCreateRequestType) {
     try {
-        const data: PitchCreateResponse[] = await prisma.$queryRaw`
-            INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "coordinates", "createdAt", "updatedAt") 
-            VALUES (gen_random_uuid(), ${pitch.owner}, ${pitch.name}, ${pitch.description}, ST_SetSRID(ST_MakePoint(${pitch.longitude}, ${pitch.latitude}), 4326), NOW(), NOW())
+        const data: PitchCreateResponseType[] = await prisma.$queryRaw`
+            INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt") 
+            VALUES (
+                gen_random_uuid(), 
+                ${pitch.owner}, 
+                ${pitch.name},
+                ${pitch.description}, 
+                ${pitch.size}::"PitchSize", 
+                ${pitch.surface}::"PitchSurface", 
+                ${pitch.amenities}::"PitchAmenity"[], 
+                ${pitch.images}::text[], 
+                ${pitch.price}, 
+                ST_SetSRID(ST_MakePoint(${pitch.coordinates.longitude}, ${pitch.coordinates.latitude}), 4326), 
+                ${pitch.policy}::"PitchPolicy", 
+                ${pitch.minimumSession}, 
+                ${pitch.maximumSession}, 
+                NOW(), 
+                NOW()
+            )
             RETURNING id;
         `;
         

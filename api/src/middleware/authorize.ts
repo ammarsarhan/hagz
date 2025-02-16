@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { verify } from "jsonwebtoken";
 import { TokenPayloadType } from "../utils/token";
+import { checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
+import { checkIfUserVerifiedAlready } from "../repositories/userRepository";
 
 export function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.cookies.accessToken;
@@ -55,5 +57,32 @@ export function authorizeOwnerAccessToken(req: Request, res: Response, next: Nex
         next();
     } catch (error: any) {
         res.status(403).json({ success: false, message: `Could not validate acceess token. ${error.message}` });
+    }
+}
+
+export async function authorizeVerificationStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+        const id = req.user.id;
+        const type = req.user.type;
+    
+        if (!id || !type) {
+            throw new Error("ID or type not provided within the request. Both parameters is required to verify account status.");
+        }  
+
+        let isVerified: boolean = false;
+
+        if (type === "User") {
+            isVerified = await checkIfUserVerifiedAlready(id);
+        } else {
+            isVerified = await checkIfOwnerVerifiedAlready(id);
+        }
+        
+        if (!isVerified) {
+            throw new Error("Account is not verified. Please verify your account to access this resource.");
+        }
+
+        next();
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
     }
 }
