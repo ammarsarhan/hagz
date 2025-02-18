@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createPitchWithDetails, fetchPitchById, getPitchesByCursor, getPitchesWithinRadius, updatePitchField } from "../services/pitchService";
+import { createPitchWithDetails, fetchPitchById, getPitchesWithinRadius, updatePitchField } from "../services/pitchService";
 import { z } from "zod";
 
 export async function handleQueryPitches(req: Request, res: Response) {
@@ -71,10 +71,6 @@ export async function handleUpdatePitch(req: Request, res: Response) {
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
-
-    // check if field is within valid field array
-    // handle update pitch by checking if owner id is the specified pitch id's owner id
-    // validate data to be set based on the update field
 }
 
 export async function handleCreatePitchRequest(req: Request, res: Response) {

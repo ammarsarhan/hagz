@@ -28,7 +28,7 @@ export function authorizeUserAccessToken(req: Request, res: Response, next: Next
 
         next();
     } catch (error: any) {
-        res.status(403).json({ success: false, message: `Could not validate acceess token. ${error.message}` });
+        res.status(403).json({ success: false, message: `Could not validate access token. ${error.message}` });
     }
 }
 
@@ -56,7 +56,7 @@ export function authorizeOwnerAccessToken(req: Request, res: Response, next: Nex
 
         next();
     } catch (error: any) {
-        res.status(403).json({ success: false, message: `Could not validate acceess token. ${error.message}` });
+        res.status(403).json({ success: false, message: `Could not validate access token. ${error.message}` });
     }
 }
 

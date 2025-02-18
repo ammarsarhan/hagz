@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export type PitchStatusType = "ACTIVE" | "MAINTENANCE" | "CLOSED";
 export type PitchPolicyType = "DEFAULT" | "EXTENDED" | "SHORT";
 export type PitchSizeType = "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE";
@@ -34,6 +32,7 @@ export type PitchCreateResponseType = {
         longitude: number,
         latitude: number
     },
+    status: PitchStatusType,
     size: PitchSizeType,
     surface: PitchSurfaceType,
     amenities: PitchAmenityType[],

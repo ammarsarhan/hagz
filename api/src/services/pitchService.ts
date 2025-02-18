@@ -108,7 +108,7 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
 
         field = mapping[field] || field;
 
-        const fields = ["name", "description", "longitude", "latitude", "size", "surface", "amenities", "images", "price", "policy", "minimumSession", "maximumSession"];
+        const fields = ["name", "description", "longitude", "latitude", "size", "surface", "status", "amenities", "images", "price", "policy", "minimumSession", "maximumSession"];
         const numericFields = ["longitude", "latitude", "price", "minimumSession", "maximumSession"];
 
         let formattedValue: string | number = value;
@@ -142,6 +142,7 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
             owner: z.string().min(1, { message: "Owner ID cannot be empty." }),
             longitude: z.number().min(-180, { message: "Longitude cannot be smaller than -180." }).max(180, { message: "Longitude cannot be larger than 180." }).refine(dp, { message: "Longitude must have at least 4 decimal places." }),
             latitude: z.number().min(-90, { message: "Latitude cannot be smaller than -90." }).max(90, { message: "Latitude cannot be larger than 90." }).refine(dp, { message: "Latitude must have at least 4 decimal places." }),
+            status: z.enum(["ACTIVE", "MAINTENANCE", "CLOSED"], { message: "Selected pitch status must be one of available options." }),
             size: z.enum(["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"], { message: "Selected pitch size must be one of available options." }),
             surface: z.enum(["GRASS", "ARTIFICIAL"], { message: "Selected ground type must be one of available options." }),
             amenities: z.array(z.enum(["INDOORS", "BALL_PROVIDED", "SEATING", "NIGHT_LIGHTS", "PARKING", "SHOWERS", "CHANGING_ROOMS", "CAFETERIA", "FIRST_AID", "SECURITY"], { message: "Selected amenity must be one of available options." })),
