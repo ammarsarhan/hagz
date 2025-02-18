@@ -23,5 +23,23 @@ export type PitchCreateRequestType = {
 }
 
 export type PitchCreateResponseType = {
-    id: string
+    id: string,
+    ownerId: string,
+    name: string,
+    description: string,
+    owner: string,
+    coordinates: {
+        longitude: number,
+        latitude: number
+    },
+    size: PitchSizeType,
+    surface: PitchSurfaceType,
+    amenities: PitchAmenityType[],
+    images: string[],
+    price: number,
+    policy: PitchPolicyType,
+    minimumSession: number,
+    maximumSession: number,
+    createdAt: string,
+    updatedAt: string
 }

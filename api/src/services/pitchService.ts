@@ -1,7 +1,6 @@
 import * as z from 'zod';
-import { createPitch, getPitch } from '../repositories/pitchRepository';
+import { createPitch, getPitch, queryByLocation } from '../repositories/pitchRepository';
 import { PitchCreateRequestType } from '../types/pitch';
-
 
 export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, policy, minimumSession, maximumSession } : PitchCreateRequestType) {
     try {
@@ -15,7 +14,7 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             surface: z.enum(["GRASS", "ARTIFICIAL"], { message: "Selected ground type must be one of available options." }),
             amenities: z.array(z.enum(["INDOORS", "BALL_PROVIDED", "SEATING", "NIGHT_LIGHTS", "PARKING", "SHOWERS", "CHANGING_ROOMS", "CAFETERIA", "FIRST_AID", "SECURITY"], { message: "Selected amenity must be one of available options." })),
             images: z.array(z.string().url({ message: "Images must be a list of valid URLs." }), { message: "Images must be a list of valid URLs." }),
-            price: z.number().nonnegative("Price may not be a negative number."),
+            price: z.number().nonnegative("Hourly rate may not be a negative number.").min(100, { message: "Hourly rate must be 100 EGP at least." }).max(1000, { message: "Hourly rate must be 1000 EGP at most." }),
             policy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Policy must be one of available options." }),
             minimumSession: z.number().min(1).max(2),
             maximumSession: z.number().min(2).max(6)
@@ -48,12 +47,52 @@ export async function createPitchWithDetails({ name, description, owner, coordin
         return id;
     } catch (error: any) {
         throw new Error(error.message);
+    } 
+}
+
+export async function getPitchesWithinRadius(longitude: number, latitude: number, radius: number) {
+    const dp = (value: number) => {
+        return value.toString().match(/^-?\d+\.\d{4,}$/) !== null;
+    };
+
+    try {
+        const schema = z.object({
+            longitude: z.number({ message: "Please provide a valid longitude." }).min(-180, "Longitude must be within -180 and 180.").max(180, "Longitude must be within -180 and 180.").refine(dp, { message: "Longitude must have at least 4 decimal places." }),
+            latitude: z.number({ message: "Please provide a valid latitude." }).min(-90, "Latitude must be within -90 and 90.").max(90, "Latitude must be within -90 and 90.").refine(dp, { message: "Longitude must have at least 4 decimal places." }),
+            radius: z.number({ message: "Please provide a valid radius." }).min(1, "Radius must be within 1 and 10.").max(10, "Radius must be within 1 and 10.")
+        })
+        
+        const parsed = schema.safeParse({ longitude, latitude, radius });
+        
+        if (!parsed.success) {
+            throw new Error(parsed.error.errors[0].message);
+        }
+
+        const pitches = await queryByLocation(longitude, latitude, radius);
+        return pitches;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function getPitchesByCursor(cursor: string, limit: number) {
+    try {
+
+    } catch (error: any) {
+        throw new Error(error.message);
     }
 }
 
 export async function fetchPitchById(id: string) {
     try {
-        const pitch = await getPitch(id);
+        const idSchema = z.string({ message: "No string provided to fetch pitch." }).uuid({ message: "Invalid UUID provided for search. Please provide a valid pitch ID." });
+        const parsed = idSchema.safeParse(id);
+
+        if (!parsed.success) {
+            throw new Error(parsed.error.errors[0].message);
+        }
+
+        const pitch = await getPitch(parsed.data);
         return pitch;
     } catch (error: any) {
         throw new Error(error.message);

@@ -1,11 +1,63 @@
 import { Request, Response } from "express";
-import { createPitchWithDetails, fetchPitchById } from "../services/pitchService";
+import { createPitchWithDetails, fetchPitchById, getPitchesByCursor, getPitchesWithinRadius } from "../services/pitchService";
+import * as z from 'zod';
 
-export async function handleFetchPitches(req: Request, res: Response) {
-    // takes in pin and radius params
-    // takes in cursor and limit
-    const params = req.query;
-    res.send(params);
+export async function handleQueryPitches(req: Request, res: Response) {
+    try {
+        const params = req.query;
+    
+        if (!(params.longitude && params.latitude && params.radius) && !params.cursor) {
+            throw new Error("Please provide a valid cursor or pin & radius combination.")
+        }
+     
+        if (params.longitude && params.latitude && params.radius) {
+            const lng = Number(params.longitude);
+            const lat = Number(params.latitude);
+
+            const radius = Number(params.radius) || 1;
+                        
+            const pitches = await getPitchesWithinRadius(lng, lat, radius);
+            res.status(200).json({ success: true, message: "Fetched all pitches within specified radius.", data: pitches });
+            return;
+        }
+    
+        if (params.cursor) {
+            const cursor = params.cursor;
+            const limit = 5;
+
+            const schema = z.object({
+                cursor: z.string().uuid("Invalid UUID provided for cursor. Please provide a valid pitch ID.")
+            })
+
+            const parsed = schema.safeParse({ cursor })
+    
+            if (!parsed.success) {
+                throw new Error(parsed.error.errors[0].message);
+            }
+
+            const pitches = await getPitchesByCursor(parsed.data.cursor, limit);
+            res.status(200).json({ success: true, message: "Fetched pitches for specified cursor index.", data: pitches });
+            return;
+        }
+
+        throw new Error("Please provide a valid pin and radius/cursor and limit combination.")
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: `Failed to fetch pitch data. ${error.message}` });
+    }
+}
+
+export async function handleSearchPitches(req: Request, res: Response) {
+    try {
+        const query = req.query.keywords;
+
+        if (!query) {
+            throw new Error("Please provide valid keywords to search for pitches.")
+        }
+
+        res.send("Handle full text search from here on out.")
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message })
+    }
 }
 
 export async function handleFetchPitch(req: Request, res: Response) {
@@ -17,7 +69,7 @@ export async function handleFetchPitch(req: Request, res: Response) {
         }
     
         const pitch = await fetchPitchById(id);
-        res.status(200).json({success: true, message: pitch});
+        res.status(200).json({success: true, message: "Fetched pitch data successfully!", data: pitch });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -68,7 +120,7 @@ export async function handleCreatePitchRequest(req: Request, res: Response) {
         }
 
         const pitch = await createPitchWithDetails({...data});
-        res.status(200).json({success: true, message: `Created new pitch successfully with ID: ${pitch}.`});
+        res.status(200).json({success: true, message: "Created pitch successfully!", data: pitch });
     } catch (error: any) {
         res.status(400).json({success: false, message: `Failed to create new pitch. ${error.message}`})
     }
