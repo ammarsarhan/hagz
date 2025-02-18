@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 
 import auth from './routes/auth';
 import refresh from './routes/refresh';

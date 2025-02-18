@@ -1,46 +1,22 @@
 import { Request, Response } from "express";
-import { createPitchWithDetails, fetchPitchById, getPitchesByCursor, getPitchesWithinRadius } from "../services/pitchService";
-import * as z from 'zod';
+import { createPitchWithDetails, fetchPitchById, getPitchesByCursor, getPitchesWithinRadius, updatePitchField } from "../services/pitchService";
+import { z } from "zod";
 
 export async function handleQueryPitches(req: Request, res: Response) {
     try {
         const params = req.query;
     
-        if (!(params.longitude && params.latitude && params.radius) && !params.cursor) {
-            throw new Error("Please provide a valid cursor or pin & radius combination.")
-        }
-     
-        if (params.longitude && params.latitude && params.radius) {
-            const lng = Number(params.longitude);
-            const lat = Number(params.latitude);
-
-            const radius = Number(params.radius) || 1;
-                        
-            const pitches = await getPitchesWithinRadius(lng, lat, radius);
-            res.status(200).json({ success: true, message: "Fetched all pitches within specified radius.", data: pitches });
-            return;
-        }
-    
-        if (params.cursor) {
-            const cursor = params.cursor;
-            const limit = 5;
-
-            const schema = z.object({
-                cursor: z.string().uuid("Invalid UUID provided for cursor. Please provide a valid pitch ID.")
-            })
-
-            const parsed = schema.safeParse({ cursor })
-    
-            if (!parsed.success) {
-                throw new Error(parsed.error.errors[0].message);
-            }
-
-            const pitches = await getPitchesByCursor(parsed.data.cursor, limit);
-            res.status(200).json({ success: true, message: "Fetched pitches for specified cursor index.", data: pitches });
-            return;
+        if (!(params.longitude && params.latitude && params.radius)) {
+            throw new Error("Please provide a valid longitude/latitude & radius combination.")
         }
 
-        throw new Error("Please provide a valid pin and radius/cursor and limit combination.")
+        const lng = Number(params.longitude);
+        const lat = Number(params.latitude);
+
+        const radius = Number(params.radius) || 1;
+        
+        const pitches = await getPitchesWithinRadius(lng, lat, radius);
+        res.status(200).json({ success: true, message: "Fetched all pitches within specified radius.", data: pitches });
     } catch (error: any) {
         res.status(400).json({ success: false, message: `Failed to fetch pitch data. ${error.message}` });
     }
@@ -54,7 +30,11 @@ export async function handleSearchPitches(req: Request, res: Response) {
             throw new Error("Please provide valid keywords to search for pitches.")
         }
 
-        res.send("Handle full text search from here on out.")
+        // Need to paginate data for home page
+        // What if we have a route that can return all pitches paginated
+        // OR return filtered data paginated?
+
+        res.send("Handle searching for pitches from here.")
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message })
     }
@@ -76,7 +56,25 @@ export async function handleFetchPitch(req: Request, res: Response) {
 }
 
 export async function handleUpdatePitch(req: Request, res: Response) {
+    try {
+        const id = req.params.id;
+        const field = req.params.field;
+        const value = req.body.value;
+        
+        if (!value) {
+            throw new Error("Please provide a value for the field to be set.")
+        }
 
+        const updated = await updatePitchField(id, req.user.id, field, value);
+        res.status(200).json({success: true, message: "Updated pitch data successfully!", data: updated });
+
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+
+    // check if field is within valid field array
+    // handle update pitch by checking if owner id is the specified pitch id's owner id
+    // validate data to be set based on the update field
 }
 
 export async function handleCreatePitchRequest(req: Request, res: Response) {

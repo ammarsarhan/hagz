@@ -11,7 +11,7 @@ function formatResult(data: any) {
         };
     });
 
-    return data as PitchCreateResponseType;
+    return data as PitchCreateResponseType[];
 };
 
 export async function getPitch(id: string) {
@@ -29,7 +29,7 @@ export async function getPitch(id: string) {
             throw new Error("Could not find pitch with specified credentials.");
         }
 
-        return formatResult(pitch);
+        return formatResult(pitch)[0];
     } catch (error: any) {
         throw new Error(`Could not fetch pitch. ${error.message}`)
     }
@@ -90,6 +90,73 @@ export async function queryByLocation(lng: number, lat: number, radius: number) 
     }
 }
 
-export async function fetchPitchPageData(cursor: string, limit: number) {
-    
+export async function updateField(id: string, ownerId: string, field: string, value: any) {
+    try {
+        const pitch = await getPitch(id);
+        
+        if (!pitch) {
+            throw new Error("The requested pitch does not exist.");
+        }
+
+        if (pitch.ownerId !== ownerId) {
+            throw new Error("You do not have the required permissions to access this service.");
+        }
+
+        if (field == "longitude" || field == "latitude") {
+            const setLongitude = field === "longitude" ? value : pitch.coordinates.longitude;
+            const setLatitude = field === "latitude" ? value : pitch.coordinates.latitude;
+
+            const updated = await prisma.$queryRawUnsafe(
+                `
+                    UPDATE "Pitch"
+                    SET "coordinates" = ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                    WHERE "id" = $3
+                    RETURNING 
+                        "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
+                        ST_AsGeoJSON("coordinates")::text as "coordinates",
+                        "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt";
+                `,
+                setLongitude, setLatitude, id
+            );
+
+
+            if (!updated) {
+                throw new Error("Could not update pitch location. Please try again later.")
+            }
+
+            return formatResult(updated);
+        } else {
+            const updated = await prisma.pitch.update({
+                where: {
+                    id: id
+                },
+                data: {
+                    [field]: value
+                },
+                include: {
+                    owner: true
+                }
+            })
+
+            if (!updated) {
+                throw new Error("Could not update pitch data. Please try again later.")
+            }
+
+            const formatted = {
+                ...updated,
+                owner: updated.owner.id,
+                coordinates: {
+                    longitude: pitch.coordinates.longitude,
+                    latitude: pitch.coordinates.latitude
+                },
+                createdAt: updated.createdAt.toISOString(),
+                updatedAt: updated.updatedAt.toISOString(),
+            };
+
+            return formatted as PitchCreateResponseType;
+        }
+
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
 }
