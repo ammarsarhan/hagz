@@ -95,5 +95,5 @@ model Pitch {
   updatedAt      DateTime                             @updatedAt
   owner          Owner                                @relation(fields: [ownerId], references: [id])
 
-  @@index([coordinates], name: "location_idx", type: Gist)
+  @@index([coordinates], name: "coordinates_idx", type: Gist)
 }

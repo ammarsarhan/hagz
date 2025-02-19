@@ -4,6 +4,7 @@ import { handleCreatePitchRequest, handleFetchPitch, handleSearchPitches, handle
 
 const pitch = Router();
 
+// pitch.get('/get', async (req, res) => handleGetRecommendedPitches(req, res))
 pitch.get('/search', async (req, res) => handleSearchPitches(req, res));
 pitch.get("/query", async (req, res) => handleQueryPitches(req, res));
 pitch.post('/create', authorizeOwnerAccessToken, authorizeVerificationStatus, async (req, res) => handleCreatePitchRequest(req, res));

@@ -1,6 +1,13 @@
 import { Request, Response } from "express";
-import { createPitchWithDetails, fetchPitchById, getPitchesWithinRadius, updatePitchField } from "../services/pitchService";
-import { z } from "zod";
+import { createPitchWithDetails, fetchPitchById, getPitchesWithinRadius, updatePitchField, searchForPitches } from "../services/pitchService";
+
+// export async function handleGetRecommendedPitches(req: Request, res: Response) {
+//     try {
+//         res.send("Handle fetching recommended pitches from here.")
+//     } catch (error: any) {
+//         res.status(400).json({ success: false, message: error.message });
+//     }
+// }
 
 export async function handleQueryPitches(req: Request, res: Response) {
     try {
@@ -24,17 +31,13 @@ export async function handleQueryPitches(req: Request, res: Response) {
 
 export async function handleSearchPitches(req: Request, res: Response) {
     try {
-        const query = req.query.keywords;
+        const query = req.query.keywords as string;
 
         if (!query) {
             throw new Error("Please provide valid keywords to search for pitches.")
         }
-
-        // Need to paginate data for home page
-        // What if we have a route that can return all pitches paginated
-        // OR return filtered data paginated?
-
-        res.send("Handle searching for pitches from here.")
+        const data = await searchForPitches(query);
+        res.status(200).json({ success: true, message: "Fetched all pitches matching the search query.", data: data });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message })
     }

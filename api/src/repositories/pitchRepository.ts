@@ -1,7 +1,7 @@
 import prisma from "../utils/db";
 import { PitchCreateResponseType, PitchCreateRequestType } from "../types/pitch";
 
-function formatResult(data: any) {
+function formatRawQueryResult(data: any) {
     data.map((el: any) => {
         const point = JSON.parse(el.coordinates);
 
@@ -29,7 +29,7 @@ export async function getPitch(id: string) {
             throw new Error("Could not find pitch with specified credentials.");
         }
 
-        return formatResult(pitch)[0];
+        return formatRawQueryResult(pitch)[0];
     } catch (error: any) {
         throw new Error(`Could not fetch pitch. ${error.message}`)
     }
@@ -67,7 +67,7 @@ export async function createPitch(pitch: PitchCreateRequestType) {
             throw new Error("Failed to create new pitch. Please try again later.");
         }
 
-        return formatResult(data);
+        return formatRawQueryResult(data);
     } catch (error: any) {
         throw new Error(error.message);
     }
@@ -84,7 +84,7 @@ export async function queryByLocation(lng: number, lat: number, radius: number) 
             WHERE ST_DWithin("coordinates", ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326), ${radius});
         `;
 
-        return formatResult(pitches);
+        return formatRawQueryResult(pitches);
     } catch (error: any) {
         throw new Error(error.message);
     }
@@ -124,7 +124,7 @@ export async function updateField(id: string, ownerId: string, field: string, va
                 throw new Error("Could not update pitch location. Please try again later.")
             }
 
-            return formatResult(updated);
+            return formatRawQueryResult(updated);
         } else {
             const updated = await prisma.pitch.update({
                 where: {
@@ -156,6 +156,28 @@ export async function updateField(id: string, ownerId: string, field: string, va
             return formatted as PitchCreateResponseType;
         }
 
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function searchPitches(keywords: string) {
+    try {
+        const pitches = await prisma.$queryRaw`
+            SELECT
+                "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
+                ST_AsGeoJSON("coordinates")::text as "coordinates",
+                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+            FROM "Pitch"
+            WHERE search @@ to_tsquery('english', ${keywords})
+            ORDER BY ts_rank(search, to_tsquery('english', ${keywords})) DESC;
+        `;
+    
+        if (!pitches) {
+            throw new Error("Failed to search for pitches. Please try again later.");
+        }
+    
+        return formatRawQueryResult(pitches);
     } catch (error: any) {
         throw new Error(error.message);
     }

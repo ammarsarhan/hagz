@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { createPitch, getPitch, queryByLocation, updateField } from '../repositories/pitchRepository';
+import { createPitch, getPitch, queryByLocation, updateField, searchPitches } from '../repositories/pitchRepository';
 import { PitchCreateRequestType } from '../types/pitch';
 
 export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, policy, minimumSession, maximumSession } : PitchCreateRequestType) {
@@ -171,4 +171,18 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
     } catch (error: any) {
         throw new Error(error.message);
     }
+}
+
+export async function searchForPitches(keywords: string) {  
+    const schema = z.string().min(1, { message: "Please provide at least one character to search for pitches." }).max(100, { message: "Search query may be up to 100 characters at most." });
+    const parsed = schema.safeParse(keywords);
+
+    if (!parsed.success) {
+        throw new Error(`Failed to search for pitch with specified keywords: ${parsed.error.errors[0].message}`);
+    }
+
+    const formatted = parsed.data.trim().split(/\s+/).map((word) => `${word}:*`).join(" & ");
+
+    const results = await searchPitches(formatted);
+    return results;
 }
