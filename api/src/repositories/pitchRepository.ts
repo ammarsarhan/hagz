@@ -103,7 +103,7 @@ export async function getPitchesByCursor(cursor: string, limit: number) {
             ORDER BY "updatedAt" DESC, "id" DESC
             LIMIT ${limit};
         `
-        
+
         return formatRawQueryResult(pitches);
     } catch (error: any) {
         throw new Error(error.message);

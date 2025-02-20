@@ -103,7 +103,7 @@ export async function getPaginatedPitches(id: string, limit: number) {
 
         return {
             pitches: pitches,
-            cursor: cursor
+            cursor: cursor,
         };
     } catch (error: any) {
         throw new Error(error.message);
