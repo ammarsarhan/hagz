@@ -73,6 +73,43 @@ export async function createPitch(pitch: PitchCreateRequestType) {
     }
 }
 
+export async function getInitialPitches(limit: number) {
+    try {
+        const pitches = await prisma.$queryRaw`
+            SELECT
+                "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
+                ST_AsGeoJSON("coordinates")::text as "coordinates",
+                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+            FROM "Pitch"
+            ORDER BY "updatedAt" DESC
+            LIMIT ${limit};
+        `;
+
+        return formatRawQueryResult(pitches);
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function getPitchesByCursor(cursor: string, limit: number) {
+    try {
+        const pitches = await prisma.$queryRaw`
+            SELECT
+                "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
+                ST_AsGeoJSON("coordinates")::text as "coordinates",
+                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+            FROM "Pitch"
+            WHERE "updatedAt" < CAST(${cursor} AS TIMESTAMP)
+            ORDER BY "updatedAt" DESC, "id" DESC
+            LIMIT ${limit};
+        `
+        
+        return formatRawQueryResult(pitches);
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
 export async function queryByLocation(lng: number, lat: number, radius: number) {
     try {    
         const pitches = await prisma.$queryRaw`

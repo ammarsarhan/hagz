@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { createPitch, getPitch, queryByLocation, updateField, searchPitches } from '../repositories/pitchRepository';
+import { createPitch, getPitch, getInitialPitches, getPitchesByCursor, queryByLocation, updateField, searchPitches } from '../repositories/pitchRepository';
 import { PitchCreateRequestType } from '../types/pitch';
 
 export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, policy, minimumSession, maximumSession } : PitchCreateRequestType) {
@@ -21,7 +21,7 @@ export async function createPitchWithDetails({ name, description, owner, coordin
         }).refine(data => data.minimumSession < data.maximumSession, {
             message: "Minimum reservation duration cannot be larger than maximum reservation duration.",
             path: ["maximumSession"]
-        })
+        });
 
         const parsed = schema.safeParse({
             name: name,
@@ -75,9 +75,36 @@ export async function getPitchesWithinRadius(longitude: number, latitude: number
     }
 }
 
-export async function getPitchesByCursor(cursor: string, limit: number) {
+export async function getPaginatedPitches(id: string, limit: number) {
     try {
+        const schema = z.object({
+            cursor: z.string({ message: "Please provide a valid timestamp to fetch pitches." }).datetime({ message: "Invalid timestamp provided for cursor. Please provide a valid timestamp." }).optional(),
+            limit: z.number({ message: "Please provide a valid limit to fetch pitches." }).min(1, { message: "Limit must at least be 1." }).max(10, { message: "Limit must at most be 10." }).nonnegative("Limit must be a non-negative number.")
+        })
 
+        const parsed = schema.safeParse({ cursor: id, limit });
+
+        if (!parsed.success) {
+            throw new Error("Failed to fetch pitches. " + parsed.error.errors[0].message);
+        }
+
+        if (!parsed.data.cursor) {
+            const pitches = await getInitialPitches(parsed.data.limit);
+            const cursor = pitches.length > 0 ? pitches[pitches.length - 1].updatedAt : null;
+    
+            return {
+                pitches: pitches,
+                cursor: cursor
+            };
+        }
+    
+        const pitches = await getPitchesByCursor(parsed.data.cursor, parsed.data.limit);
+        const cursor = pitches.length > 0 ? pitches[pitches.length - 1].updatedAt : null;
+
+        return {
+            pitches: pitches,
+            cursor: cursor
+        };
     } catch (error: any) {
         throw new Error(error.message);
     }

@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { authorizeVerificationStatus, authorizeOwnerAccessToken } from "../middleware/authorize";
-import { handleCreatePitchRequest, handleFetchPitch, handleSearchPitches, handleQueryPitches, handleUpdatePitch } from "../controllers/pitchController";
+import { handleCreatePitchRequest, handleGetPitches, handleFetchPitch, handleSearchPitches, handleQueryPitches, handleUpdatePitch } from "../controllers/pitchController";
 
 const pitch = Router();
 
-// pitch.get('/get', async (req, res) => handleGetRecommendedPitches(req, res))
+pitch.get('/get', async (req, res) => handleGetPitches(req, res));
 pitch.get('/search', async (req, res) => handleSearchPitches(req, res));
 pitch.get("/query", async (req, res) => handleQueryPitches(req, res));
 pitch.post('/create', authorizeOwnerAccessToken, authorizeVerificationStatus, async (req, res) => handleCreatePitchRequest(req, res));

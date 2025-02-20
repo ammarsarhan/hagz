@@ -30,7 +30,7 @@ export function authorizeUserAccessToken(req: Request, res: Response, next: Next
     } catch (error: any) {
         res.status(403).json({ success: false, message: `Could not validate access token. ${error.message}` });
     }
-}
+};
 
 export function authorizeOwnerAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.cookies.accessToken;
@@ -58,7 +58,7 @@ export function authorizeOwnerAccessToken(req: Request, res: Response, next: Nex
     } catch (error: any) {
         res.status(403).json({ success: false, message: `Could not validate access token. ${error.message}` });
     }
-}
+};
 
 export async function authorizeVerificationStatus(req: Request, res: Response, next: NextFunction) {
     try {
@@ -85,4 +85,4 @@ export async function authorizeVerificationStatus(req: Request, res: Response, n
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
-}
+};

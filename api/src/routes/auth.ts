@@ -10,7 +10,6 @@ import {
     verifyOwner,
     signOut
 } from "../controllers/authController";
-// import { authorizeUserAccessToken, authorizeOwnerAccessToken} from "../middleware/authorize";
 
 const auth = Router();
 

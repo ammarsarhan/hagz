@@ -1,13 +1,5 @@
 import { Request, Response } from "express";
-import { createPitchWithDetails, fetchPitchById, getPitchesWithinRadius, updatePitchField, searchForPitches } from "../services/pitchService";
-
-// export async function handleGetRecommendedPitches(req: Request, res: Response) {
-//     try {
-//         res.send("Handle fetching recommended pitches from here.")
-//     } catch (error: any) {
-//         res.status(400).json({ success: false, message: error.message });
-//     }
-// }
+import { createPitchWithDetails, getPaginatedPitches, fetchPitchById, getPitchesWithinRadius, updatePitchField, searchForPitches } from "../services/pitchService";
 
 export async function handleQueryPitches(req: Request, res: Response) {
     try {
@@ -40,6 +32,23 @@ export async function handleSearchPitches(req: Request, res: Response) {
         res.status(200).json({ success: true, message: "Fetched all pitches matching the search query.", data: data });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message })
+    }
+}
+
+export async function handleGetPitches(req: Request, res: Response) {
+    try {
+        const limit = Number(req.query.limit) || 10;
+        const cursor = req.query.timestamp as string;
+        
+        const data = await getPaginatedPitches(cursor, limit);
+
+        res.status(200).json({ 
+            success: true, 
+            message: `Fetched ${data.pitches.length} pitches successfully.`, 
+            data: data 
+        });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
     }
 }
 
