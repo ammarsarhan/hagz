@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { verify } from "jsonwebtoken";
-import { TokenPayloadType } from "../utils/token";
 import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
+import { TokenPayloadType } from "../utils/token";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.cookies.accessToken;

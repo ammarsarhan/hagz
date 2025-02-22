@@ -1,6 +1,6 @@
 import prisma from "../utils/db";
 
-export async function createReservation({ pitchId, name, phone, startDate, endDate, userId } : { pitchId: string, name: string, phone: string, startDate: Date, endDate: Date, userId?: string }) {
+export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : { pitchId: string, name: string, phone: string, startDate: Date, endDate: Date, userId?: string, createdBy: "USER" | "OWNER" }) {
     try {
         const dateConflict = await checkReservationDateConflict(pitchId, startDate, endDate);
 
@@ -15,7 +15,8 @@ export async function createReservation({ pitchId, name, phone, startDate, endDa
                 reserveePhone: phone,
                 startDate,
                 endDate,
-                userId
+                userId,
+                createdBy
             }
         });
 

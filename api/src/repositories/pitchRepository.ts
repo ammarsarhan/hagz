@@ -1,5 +1,6 @@
 import prisma from "../utils/db";
 import { PitchCreateRequestType, PitchResponseType } from "../types/pitch";
+import cuid from "cuid";
 
 function formatRawQueryResult(data: any) {
     data.map((el: any) => {
@@ -40,7 +41,7 @@ export async function createPitch(pitch: PitchCreateRequestType) {
         const data: any = await prisma.$queryRaw`
             INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt") 
             VALUES (
-                gen_random_uuid(), 
+                ${cuid()}, 
                 ${pitch.owner}, 
                 ${pitch.name},
                 ${pitch.description}, 

@@ -18,7 +18,7 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             policy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Policy must be one of available options." }),
             minimumSession: z.number().min(1).max(2),
             maximumSession: z.number().min(2).max(6)
-        }).refine(data => data.minimumSession < data.maximumSession, {
+        }).refine(data => data.minimumSession <= data.maximumSession, {
             message: "Minimum reservation duration cannot be larger than maximum reservation duration.",
             path: ["maximumSession"]
         });
@@ -112,7 +112,7 @@ export async function getPaginatedPitches(id: string, limit: number) {
 
 export async function fetchPitchById(id: string) {
     try {
-        const idSchema = z.string({ message: "No string provided to fetch pitch." }).uuid({ message: "Invalid UUID provided for search. Please provide a valid pitch ID." });
+        const idSchema = z.string({ message: "No string provided to fetch pitch." }).cuid({ message: "Invalid CUID provided for search. Please provide a valid pitch ID." });
         const parsed = idSchema.safeParse(id);
 
         if (!parsed.success) {
@@ -141,7 +141,7 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
         let formattedValue: string | number = value;
     
         const inputSchema = z.object({
-            id: z.string({ message: "Please provide a valid pitch ID." }).uuid("Please provide a valid pitch ID to update the following property."),
+            id: z.string({ message: "Please provide a valid pitch ID." }).cuid("Please provide a valid pitch ID to update the following property."),
             field: z.enum(fields as [string, ...string[]], { message: "Please provide a valid pitch update field." })
         })
     
