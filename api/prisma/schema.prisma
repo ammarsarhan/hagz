@@ -19,6 +19,21 @@ enum AccountStatus {
   DELETED
 }
 
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  MANUAL
+  PAID
+  REFUNDED
+}
+
 enum PitchStatus {
   ACTIVE
   MAINTENANCE
@@ -107,16 +122,18 @@ model Pitch {
 }
 
 model Reservation {
-  id            String      @id @default(uuid())
+  id            String            @id @default(uuid())
   pitchId       String
   userId        String?
   reserveeName  String
   reserveePhone String
   startDate     DateTime
   endDate       DateTime
-  pitch         Pitch       @relation(fields: [pitchId], references: [id])
-  user          User?       @relation(fields: [userId], references: [id])
+  status        ReservationStatus @default(PENDING)
+  paymentStatus PaymentStatus     @default(PENDING)
+  pitch         Pitch             @relation(fields: [pitchId], references: [id])
+  user          User?             @relation(fields: [userId], references: [id])
   createdBy     AccountType
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 }

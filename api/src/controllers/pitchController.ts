@@ -54,7 +54,7 @@ export async function handleGetPitches(req: Request, res: Response) {
 
 export async function handleFetchPitch(req: Request, res: Response) {
     try {
-        const id = req.params.id;
+        const id = req.params.pitch;
     
         if (!id) {
             throw new Error("Please provide a valid pitch id to fetch data.")
@@ -69,7 +69,7 @@ export async function handleFetchPitch(req: Request, res: Response) {
 
 export async function handleUpdatePitch(req: Request, res: Response) {
     try {
-        const id = req.params.id;
+        const id = req.params.pitch;
         const field = req.params.field;
         const value = req.body.value;
         

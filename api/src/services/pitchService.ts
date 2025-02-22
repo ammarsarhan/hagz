@@ -79,7 +79,7 @@ export async function getPaginatedPitches(id: string, limit: number) {
     try {
         const schema = z.object({
             cursor: z.string({ message: "Please provide a valid timestamp to fetch pitches." }).datetime({ message: "Invalid timestamp provided for cursor. Please provide a valid timestamp." }).optional(),
-            limit: z.number({ message: "Please provide a valid limit to fetch pitches." }).min(1, { message: "Limit must at least be 1." }).max(10, { message: "Limit must at most be 10." }).nonnegative("Limit must be a non-negative number.")
+            limit: z.number({ message: "Please provide a valid limit to fetch pitches." }).int("Number must be a valid integer.").min(1, { message: "Limit must at least be 1." }).max(10, { message: "Limit must at most be 10." }).nonnegative("Limit must be a non-negative number.")
         })
 
         const parsed = schema.safeParse({ cursor: id, limit });
