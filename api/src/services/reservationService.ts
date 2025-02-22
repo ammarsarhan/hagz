@@ -1,7 +1,17 @@
 import { z } from "zod";
 import { User } from "@prisma/client";
 
-import { createReservation, getReservation, getAllUserReservations, getScheduledUserReservations, getDoneUserReservations } from "../repositories/reservationRepository";
+import { 
+    createReservation, 
+    getReservation, 
+    getAllUserReservations, 
+    getScheduledUserReservations, 
+    getDoneUserReservations, 
+    getAllPitchReservations, 
+    getScheduledPitchReservations, 
+    getDonePitchReservations 
+} from "../repositories/reservationRepository";
+
 import { fetchUserById, checkIfUserExistsAlready, fetchUserByPhone } from "../repositories/userRepository";
 import { getPitch } from "../repositories/pitchRepository";
 
@@ -57,7 +67,7 @@ export async function createUserReservation(pitchId: string, userId: string, sta
     }
 }
 
-export async function createOwnerReservation(ownerId: string, pitchId: string, name: string, phone: string, startDate: Date, endDate: Date) {
+export async function createOwnerReservation(pitchId: string, name: string, phone: string, startDate: Date, endDate: Date) {
     try {
         let user: User | null = null;
 
@@ -65,14 +75,6 @@ export async function createOwnerReservation(ownerId: string, pitchId: string, n
         if (match) user = await fetchUserByPhone(phone);
 
         const pitch = await getPitch(pitchId);
-
-        if (!pitch) {
-            throw new Error("Failed to create reservation. Could not find user or pitch with the specified credentials.");
-        }
-        
-        if (pitch.ownerId != ownerId) {
-            throw new Error("You are not authorized to create reservations for the following pitch. Please sign in with valid credentials and try again later.");
-        }
 
         const schema = z.object({
             pitchId: z.string().cuid("Please provide a valid CUID for the pitch ID."),
@@ -136,7 +138,7 @@ export async function fetchReservation(reservationId: string, userId: string, us
     }
 }
 
-export async function fetchAllReservations(id: string, cursor: string, limit: number) {
+export async function fetchAllReservations(id: string, cursor: string, limit: number, userType: "User" | "Owner") {
     try {
         const schema = z.object({
             cursor: z.string({ message: "Please provide a valid cursor." }).uuid("Please provide a valid pitch UUID for the cursor.").optional(),
@@ -147,21 +149,33 @@ export async function fetchAllReservations(id: string, cursor: string, limit: nu
 
         if (!parsed.success) {
             throw new Error(parsed.error.errors[0].message);
-        }
+        };
 
-        const reservations = await getAllUserReservations(id, parsed.data.limit, parsed.data.cursor);
-        const last = reservations[reservations.length - 1];
+        if (userType == "User") {
+            const reservations = await getAllUserReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+    
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
+        };
 
-        return {
-            reservations: reservations,
-            cursor: last ? last.id : null
+        if (userType == "Owner") {
+            const reservations = await getAllPitchReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
         };
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function fetchScheduledReservations(id: string, cursor: string, limit: number) {
+export async function fetchScheduledReservations(id: string, cursor: string, limit: number, userType: "User" | "Owner") {
     try {
         const schema = z.object({
             cursor: z.string({ message: "Please provide a valid cursor." }).uuid("Please provide a valid pitch UUID for the cursor.").optional(),
@@ -173,20 +187,67 @@ export async function fetchScheduledReservations(id: string, cursor: string, lim
         if (!parsed.success) {
             throw new Error(parsed.error.errors[0].message);
         }
+        if (userType == "User") {
+            const reservations = await getScheduledUserReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+    
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
+        };
 
-        const reservations = await getScheduledUserReservations(id, parsed.data.limit, parsed.data.cursor);
-        const last = reservations[reservations.length - 1];
+        if (userType == "Owner") {
+            const reservations = await getScheduledPitchReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
 
-        return {
-            reservations: reservations,
-            cursor: last ? last.id : null
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
         };
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function fetchDoneReservations(id: string, cursor: string, limit: number) {
+export async function fetchDoneReservations(id: string, cursor: string, limit: number, userType: "User" | "Owner") {
+    try {
+        const schema = z.object({
+            cursor: z.string({ message: "Please provide a valid cursor." }).uuid("Please provide a valid pitch UUID for the cursor.").optional(),
+            limit: z.number({ message: "Please provide a valid limit to fetch pitches." }).int("Limit must be a valid integer.").min(5, { message: "Limit must at least be 5." }).max(10, { message: "Limit must at most be 10." }).nonnegative("Limit must be a non-negative number.")
+        })
+
+        const parsed = schema.safeParse({ cursor, limit });
+
+        if (!parsed.success) {
+            throw new Error(parsed.error.errors[0].message);
+        }
+        if (userType == "User") {
+            const reservations = await getDoneUserReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+    
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
+        };
+
+        if (userType == "Owner") {
+            const reservations = await getDonePitchReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
+        };
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function fetchAllPitchReservations(id: string, cursor: string, limit: number, userType: "User" | "Owner") {
     try {
         const schema = z.object({
             cursor: z.string({ message: "Please provide a valid cursor." }).uuid("Please provide a valid pitch UUID for the cursor.").optional(),
@@ -199,13 +260,25 @@ export async function fetchDoneReservations(id: string, cursor: string, limit: n
             throw new Error(parsed.error.errors[0].message);
         }
 
-        const reservations = await getDoneUserReservations(id, parsed.data.limit, parsed.data.cursor);
-        const last = reservations[reservations.length - 1];
+        if (userType == "User") {
+            const reservations = await getAllUserReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+    
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
+        }
 
-        return {
-            reservations: reservations,
-            cursor: last ? last.id : null
-        };
+        if (userType == "Owner") {
+            const reservations = await getAllPitchReservations(id, parsed.data.limit, parsed.data.cursor);
+            const last = reservations[reservations.length - 1];
+
+            return {
+                reservations: reservations,
+                cursor: last ? last.id : null
+            };
+        }
     } catch (error: any) {
         throw new Error(error.message);
     }

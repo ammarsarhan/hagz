@@ -112,3 +112,63 @@ export async function getDoneUserReservations(id: string, limit: number, cursor?
 
     return reservations;
 }
+
+export async function getAllPitchReservations(id: string, limit: number, cursor?: string) {
+    try {
+        const reservations = await prisma.reservation.findMany({
+            where: { pitchId: id },
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { updatedAt: 'desc' },
+            take: limit,
+            skip: cursor ? 1 : 0
+        })
+
+        return reservations;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function getScheduledPitchReservations(id: string, limit: number, cursor?: string) {
+    try {
+        const reservations = await prisma.reservation.findMany({
+            where: { 
+                pitchId: id,
+                OR: [
+                    { status: "PENDING" },
+                    { status: "CONFIRMED" }
+                ]
+            },
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { updatedAt: 'desc' },
+            take: limit,
+            skip: cursor ? 1 : 0
+        })
+
+        return reservations;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function getDonePitchReservations(id: string, limit: number, cursor?: string) {
+    try {
+        const reservations = await prisma.reservation.findMany({
+            where: { 
+                pitchId: id,
+                OR: [
+                    { status: "IN_PROGRESS" },
+                    { status: "DONE" }
+                ]
+            },
+            cursor: cursor ? { id: cursor } : undefined,
+            orderBy: { updatedAt: 'desc' },
+            take: limit,
+            skip: cursor ? 1 : 0
+        })
+
+        return reservations;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}

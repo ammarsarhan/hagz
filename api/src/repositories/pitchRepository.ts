@@ -238,3 +238,25 @@ export async function checkIfPitchExists(id: string) {
         throw new Error(error.message);
     }
 }
+
+export async function validatePitchOwnership(id: string, ownerId: string) {
+    try {
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: id
+            }
+        });
+
+        if (!pitch) {
+            return false;
+        }
+
+        if (pitch.ownerId !== ownerId) {
+            return false;
+        }
+
+        return true;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}

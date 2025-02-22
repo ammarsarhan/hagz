@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { verify } from "jsonwebtoken";
 import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
+import { validatePitchOwnership } from "../repositories/pitchRepository";
 import { TokenPayloadType } from "../utils/token";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
@@ -102,3 +103,26 @@ export async function authorizeVerificationStatus(req: Request, res: Response, n
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+export async function authorizePitchOwnership(req: Request, res: Response, next: NextFunction) {
+    try {
+        const pitch = req.params.pitch;
+        const user = req.user;
+
+        if (!pitch || !user) {
+            res.status(400).json({ success: false, message: "Either pitch or owner credentials not provided correctly. Please try again later." });
+            return;
+        }
+
+        const match = await validatePitchOwnership(pitch, user.id); 
+
+        if (!match) {
+            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again later." });
+            return;
+        }
+        
+        next();
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}

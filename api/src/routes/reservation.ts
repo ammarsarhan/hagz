@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { authorizeUserAccessToken, authorizeOwnerAccessToken, authorizeVerificationStatus } from "../middleware/authorize";
 import { 
-    handleCreateUserReservation, 
-    handleCreateOwnerReservation, 
+    handleCreateUserReservation,
     handleFetchReservation, 
     handleFetchAllReservations,
     handleFetchScheduledReservations,
@@ -11,9 +10,7 @@ import {
 
 const reservation = Router();
 
-reservation.post("/user/create", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleCreateUserReservation(req, res));
-reservation.post("/owner/create", authorizeOwnerAccessToken, authorizeVerificationStatus, (req, res) => handleCreateOwnerReservation(req, res));
-
+reservation.post("/create", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleCreateUserReservation(req, res));
 reservation.get("/all", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchAllReservations(req, res));
 reservation.get("/scheduled", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchScheduledReservations(req, res));
 reservation.get("/done", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchDoneReservations(req, res));

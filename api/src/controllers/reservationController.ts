@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 
-import { checkIfPitchExists, getPitch } from "../repositories/pitchRepository";
+import { checkIfPitchExists } from "../repositories/pitchRepository";
 import { 
     createUserReservation, 
     createOwnerReservation, 
     fetchReservation, 
     fetchAllReservations, 
     fetchScheduledReservations,
-    fetchDoneReservations
+    fetchDoneReservations,
+    fetchAllPitchReservations
  } from "../services/reservationService";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
@@ -45,8 +46,8 @@ export async function handleCreateUserReservation(req: Request, res: Response) {
 
 export async function handleCreateOwnerReservation(req: Request, res: Response) {
     try {
-        const { pitchId, name, phone, startDate, endDate } = req.body;
-        const ownerId = req.user.id;
+        const { name, phone, startDate, endDate } = req.body;
+        const pitchId = req.params.pitch;
         
         if (!pitchId || !name || !phone || !startDate || !endDate) {
             res.status(400).json({ success: false, message: "Please provide a valid pitch ID, name, phone number, start date, and end date." });
@@ -63,7 +64,7 @@ export async function handleCreateOwnerReservation(req: Request, res: Response) 
         const start = new Date(startDate);
         const end = new Date(endDate);
 
-        const reservation = await createOwnerReservation(ownerId, pitchId, name, phone, start, end);
+        const reservation = await createOwnerReservation(pitchId, name, phone, start, end);
 
         if (!reservation) {
             res.status(400).json({ success: false, message: "Failed to create reservation." });
@@ -78,30 +79,22 @@ export async function handleCreateOwnerReservation(req: Request, res: Response) 
 
 export async function handleFetchReservation(req: Request, res: Response) {
     try {
-        const reservationId = req.params.reservation;
-        const pitchId = req.params.pitch;
+        const pitch = req.params.pitch;
+        const id = req.params.reservation;
         const user = req.user;
     
-        if (pitchId && user.type == "Owner") {
-            const pitch = await getPitch(pitchId);
-
-            if (!pitch) {
-                res.status(404).json({ success: false, message: "Failed to fetch reservation details. Could not find pitch with the specified ID." });
-                return;
-            }
-
-            if (pitch.ownerId != user.id) {
-                res.status(403).json({ success: false, message: "You are not authorized to view this reservation." });
-                return;
-            }
-        }
-
-        if (!reservationId) {
+        if (!id) {
             res.status(400).json({ success: false, message: "Please provide a valid ID to fetch reservation details." });
             return;
         }
+        
+        const reservation = await fetchReservation(id, user.id, user.type);
+        
+        if (pitch && reservation.pitchId !== pitch) {
+            res.status(404).json({ success: false, message: "Could not find a reservation with the specified credentials." });
+            return;
+        }
 
-        const reservation = await fetchReservation(reservationId, user.id, user.type);
         res.status(200).json({ success: true, message: "Fetched reservation details successfully.", data: reservation });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
@@ -117,10 +110,19 @@ export async function handleFetchAllReservations(req: Request, res: Response) {
         const limit = Number(req.query.limit) || 5;
 
         if (userType == "User") {
-            const reservations = await fetchAllReservations(userId, cursor, limit);
-            res.status(200).json({ success: true, message: "Fetched all user reservations successfully.", data: reservations });
+            const data = await fetchAllReservations(userId, cursor, limit, userType);
+            res.status(200).json({ success: true, message: "Fetched all user reservations successfully.", data: data });
             return;
         }
+
+        if (userType == "Owner") {
+            const pitch = req.params.pitch;
+            const data = await fetchAllReservations(pitch, cursor, limit, userType);
+
+            res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
+            return;
+        }
+
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -135,8 +137,16 @@ export async function handleFetchScheduledReservations(req: Request, res: Respon
         const limit = Number(req.query.limit) || 5;
 
         if (userType == "User") {
-            const reservations = await fetchScheduledReservations(userId, cursor, limit);
-            res.status(200).json({ success: true, message: "Fetched scheduled user reservations successfully.", data: reservations });
+            const data = await fetchScheduledReservations(userId, cursor, limit, userType);
+            res.status(200).json({ success: true, message: "Fetched scheduled user reservations successfully.", data: data });
+            return;
+        }
+
+        if (userType == "Owner") {
+            const pitch = req.params.pitch;
+            const data = await fetchScheduledReservations(pitch, cursor, limit, userType);
+
+            res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
             return;
         }
     } catch (error: any) {
@@ -153,8 +163,16 @@ export async function handleFetchDoneReservations(req: Request, res: Response) {
         const limit = Number(req.query.limit) || 5;
 
         if (userType == "User") {
-            const reservations = await fetchDoneReservations(userId, cursor, limit);
+            const reservations = await fetchDoneReservations(userId, cursor, limit, userType);
             res.status(200).json({ success: true, message: "Fetched scheduled user reservations successfully.", data: reservations });
+            return;
+        }
+
+        if (userType == "Owner") {
+            const pitch = req.params.pitch;
+            const data = await fetchDoneReservations(pitch, cursor, limit, userType);
+
+            res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
             return;
         }
     } catch (error: any) {
