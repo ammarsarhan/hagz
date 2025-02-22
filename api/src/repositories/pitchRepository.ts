@@ -243,17 +243,14 @@ export async function validatePitchOwnership(id: string, ownerId: string) {
     try {
         const pitch = await prisma.pitch.findUnique({
             where: {
-                id: id
+                id: id,
+                ownerId: ownerId
             }
         });
 
         if (!pitch) {
             return false;
-        }
-
-        if (pitch.ownerId !== ownerId) {
-            return false;
-        }
+        };
 
         return true;
     } catch (error: any) {

@@ -8,7 +8,7 @@ import {
     getScheduledUserReservations, 
     getDoneUserReservations, 
     getAllPitchReservations, 
-    getScheduledPitchReservations, 
+    getScheduledPitchReservations,
     getDonePitchReservations,
     checkIfReservationExists,
     setReservationToken,
@@ -20,7 +20,7 @@ import { getPitch } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
 import { sendReservationVerificationEmail } from "./mailService";
-import { generateReservationToken, TokenDataType, TokenPayloadType } from "../utils/token";
+import { generateReservationToken } from "../utils/token";
 import { verify } from "jsonwebtoken";
 
 export async function createUserReservation(pitchId: string, userId: string, startDate: Date, endDate: Date) {
@@ -132,7 +132,7 @@ export async function createOwnerReservation(pitchId: string, name: string, phon
     }
 }
 
-export async function fetchReservation(reservationId: string, userId: string, userType: "User" | "Owner") {
+export async function fetchReservation(reservationId: string) {
     try {
         const schema = z.string().uuid("Please provide a valid UUID for the reservation ID.");
         const parsed = schema.safeParse(reservationId);
@@ -142,11 +142,6 @@ export async function fetchReservation(reservationId: string, userId: string, us
         }
 
         const reservation = await getReservation(parsed.data);
-
-        if (userType == "User" && reservation.userId != userId) {
-            throw new Error("You are not authorized to view the details of this reservation. To access this reservation please sign in as the user that created it.");
-        }
-
         return reservation;
     } catch (error: any) {
         throw new Error(error.message);

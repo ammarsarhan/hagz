@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { verify } from "jsonwebtoken";
+
 import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
 import { validatePitchOwnership } from "../repositories/pitchRepository";
+import { validateReservationOwnership } from "../repositories/reservationRepository";
 import { TokenPayloadType } from "../utils/token";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
@@ -115,6 +117,29 @@ export async function authorizePitchOwnership(req: Request, res: Response, next:
         }
 
         const match = await validatePitchOwnership(pitch, user.id); 
+
+        if (!match) {
+            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again later." });
+            return;
+        }
+        
+        next();
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function authorizeReservationOwnership(req: Request, res: Response, next: NextFunction) {
+    try {
+        const reservation = req.params.reservation;
+        const user = req.user;
+
+        if (!reservation || !user) {
+            res.status(400).json({ success: false, message: "Either reservation or user credentials not provided correctly. Please try again later." });
+            return;
+        }
+
+        const match = await validateReservationOwnership(reservation, user.id, user.type); 
 
         if (!match) {
             res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again later." });

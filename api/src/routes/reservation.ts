@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authorizeUserAccessToken, authorizeVerificationStatus } from "../middleware/authorize";
+import { authorizeReservationOwnership, authorizeUserAccessToken, authorizeVerificationStatus } from "../middleware/authorize";
 import { 
     handleCreateUserReservation,
     handleFetchReservation, 
@@ -16,6 +16,6 @@ reservation.get("/all", authorizeUserAccessToken, authorizeVerificationStatus, (
 reservation.get("/scheduled", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchScheduledReservations(req, res));
 reservation.get("/done", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchDoneReservations(req, res));
 reservation.get("/verify", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleVerifyReservation(req, res));
-reservation.get("/:reservation", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchReservation(req, res));
+reservation.get("/:reservation", authorizeUserAccessToken, authorizeVerificationStatus, authorizeReservationOwnership, (req, res) => handleFetchReservation(req, res));
 
 export default reservation;

@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import { z } from 'zod';
 import { createPitch, getPitch, getInitialPitches, getPitchesByCursor, queryByLocation, updateField, searchPitches } from '../repositories/pitchRepository';
 import { PitchCreateRequestType } from '../types/pitch';
 

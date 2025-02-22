@@ -228,3 +228,26 @@ export async function updateReservationVerification(id: string, token: string) {
         throw new Error(error.message);
     }
 }
+
+export async function validateReservationOwnership(id: string, userId: string, userType: "User" | "Owner") {
+    try {
+        const reservation = await prisma.reservation.findUnique({
+            where: {
+                id: id,
+                userId: userType == "User" ? userId : undefined,
+                pitch: {
+                    ownerId: userType == "Owner" ? userId : undefined
+                }
+            }
+        })
+
+        if (reservation) {
+            return true;
+        } else {
+            return false;
+        }
+
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}

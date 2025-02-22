@@ -90,7 +90,7 @@ export async function handleFetchReservation(req: Request, res: Response) {
             return;
         }
         
-        const reservation = await fetchReservation(id, user.id, user.type);
+        const reservation = await fetchReservation(id);
         
         if (pitch && reservation.pitchId !== pitch) {
             res.status(404).json({ success: false, message: "Could not find a reservation with the specified credentials." });
