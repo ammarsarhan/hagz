@@ -110,7 +110,6 @@ export async function verifyUserByToken(token: string) {
         } else {
             throw new Error("Invalid verification token provided.");
         }
-
     } catch (error: any) {
         throw new Error(`Could not verify user. ${error.message}`);
     }

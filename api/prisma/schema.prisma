@@ -7,6 +7,85 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                String        @id @default(cuid())
+  name              String
+  email             String        @unique
+  password          String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  verificationToken String?
+  phone             String        @unique
+  accountStatus     AccountStatus @default(UNVERIFIED)
+  Reservation       Reservation[]
+}
+
+model Owner {
+  id                String        @id @default(cuid())
+  name              String
+  email             String        @unique
+  phone             String        @unique
+  password          String
+  company           String?
+  accountStatus     AccountStatus @default(UNVERIFIED)
+  verificationToken String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  pitches           Pitch[]
+}
+
+model Pitch {
+  id             String                   @id @default(cuid())
+  ownerId        String
+  name           String
+  description    String
+  coordinates    Unsupported("geometry")
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  images         String[]
+  maximumSession Int                      @default(3)
+  minimumSession Int                      @default(1)
+  policy         PitchPolicy              @default(DEFAULT)
+  price          Float
+  size           PitchSize
+  status         PitchStatus              @default(ACTIVE)
+  surface        PitchSurface
+  amenities      PitchAmenity[]
+  search         Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, name)"))
+  owner          Owner                    @relation(fields: [ownerId], references: [id])
+  Reservation    Reservation[]
+
+  @@index([coordinates], map: "coordinates_idx", type: Gist)
+  @@index([search], map: "search_idx", type: Gin)
+}
+
+model Reservation {
+  id                String            @id @default(uuid())
+  pitchId           String
+  userId            String?
+  reserveeName      String
+  reserveePhone     String
+  startDate         DateTime
+  endDate           DateTime
+  verificationToken String?
+  createdAt         DateTime          @default(now())
+  createdBy         AccountType
+  updatedAt         DateTime          @updatedAt
+  paymentStatus     PaymentStatus     @default(PENDING)
+  status            ReservationStatus @default(PENDING)
+  pitch             Pitch             @relation(fields: [pitchId], references: [id])
+  user              User?             @relation(fields: [userId], references: [id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
 enum AccountType {
   USER
   OWNER
@@ -68,72 +147,4 @@ enum PitchAmenity {
   CAFETERIA
   FIRST_AID
   SECURITY
-}
-
-model User {
-  id                String        @id @default(cuid())
-  name              String
-  email             String        @unique
-  phone             String        @unique
-  password          String
-  accountStatus     AccountStatus @default(UNVERIFIED)
-  verificationToken String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  Reservation       Reservation[]
-}
-
-model Owner {
-  id                String        @id @default(cuid())
-  name              String
-  email             String        @unique
-  phone             String        @unique
-  password          String
-  company           String?
-  accountStatus     AccountStatus @default(UNVERIFIED)
-  verificationToken String?
-  pitches           Pitch[]
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-}
-
-model Pitch {
-  id             String                               @id @default(cuid())
-  ownerId        String
-  name           String
-  search         Unsupported("tsvector")
-  description    String
-  size           PitchSize
-  surface        PitchSurface
-  amenities      PitchAmenity[]
-  images         String[]
-  price          Float
-  coordinates    Unsupported("geometry(Point, 4326)")
-  status         PitchStatus                          @default(ACTIVE)
-  policy         PitchPolicy                          @default(DEFAULT)
-  minimumSession Int                                  @default(1)
-  maximumSession Int                                  @default(3)
-  createdAt      DateTime                             @default(now())
-  updatedAt      DateTime                             @updatedAt
-  owner          Owner                                @relation(fields: [ownerId], references: [id])
-  Reservation    Reservation[]
-
-  @@index([coordinates], name: "coordinates_idx", type: Gist)
-}
-
-model Reservation {
-  id            String            @id @default(uuid())
-  pitchId       String
-  userId        String?
-  reserveeName  String
-  reserveePhone String
-  startDate     DateTime
-  endDate       DateTime
-  status        ReservationStatus @default(PENDING)
-  paymentStatus PaymentStatus     @default(PENDING)
-  pitch         Pitch             @relation(fields: [pitchId], references: [id])
-  user          User?             @relation(fields: [userId], references: [id])
-  createdBy     AccountType
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
 }

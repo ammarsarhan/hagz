@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { authorizeUserAccessToken, authorizeOwnerAccessToken, authorizeVerificationStatus } from "../middleware/authorize";
+import { authorizeUserAccessToken, authorizeVerificationStatus } from "../middleware/authorize";
 import { 
     handleCreateUserReservation,
     handleFetchReservation, 
     handleFetchAllReservations,
     handleFetchScheduledReservations,
-    handleFetchDoneReservations
+    handleFetchDoneReservations,
+    handleVerifyReservation
  } from "../controllers/reservationController";
 
 const reservation = Router();
@@ -14,6 +15,7 @@ reservation.post("/create", authorizeUserAccessToken, authorizeVerificationStatu
 reservation.get("/all", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchAllReservations(req, res));
 reservation.get("/scheduled", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchScheduledReservations(req, res));
 reservation.get("/done", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchDoneReservations(req, res));
+reservation.get("/verify", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleVerifyReservation(req, res));
 reservation.get("/:reservation", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchReservation(req, res));
 
 export default reservation;

@@ -1,5 +1,21 @@
 import prisma from "../utils/db";
 
+export async function checkIfReservationExists(id: string, pitch?: string) {
+    try {
+        const reservation = await prisma.reservation.findUnique({
+            where: {
+                id: id,
+                pitchId: pitch ? pitch : undefined
+            }
+        });
+
+        if (reservation) return true;
+        return false;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
 export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : { pitchId: string, name: string, phone: string, startDate: Date, endDate: Date, userId?: string, createdBy: "USER" | "OWNER" }) {
     try {
         const dateConflict = await checkReservationDateConflict(pitchId, startDate, endDate);
@@ -168,6 +184,46 @@ export async function getDonePitchReservations(id: string, limit: number, cursor
         })
 
         return reservations;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function setReservationToken(id: string, token: string) {
+    try {
+        const reservation = await prisma.reservation.update({
+            where: { id },
+            data: { verificationToken: token }
+        });
+
+        if (!reservation) {
+            throw new Error("Failed to set reservation token.");
+        }
+
+        return reservation;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function updateReservationVerification(id: string, token: string) {
+    try {
+        const reservation = await prisma.reservation.update({
+            where: {
+                id: id,
+                verificationToken: token
+            },
+            data: {
+                status: "CONFIRMED",
+                verificationToken: null
+            }
+        })
+
+        if (!reservation) {
+            throw new Error("Failed to verify reservation. Please try again later.");
+        }
+
+        return reservation;
     } catch (error: any) {
         throw new Error(error.message);
     }

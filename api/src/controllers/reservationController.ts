@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { checkIfPitchExists } from "../repositories/pitchRepository";
+
 import { 
     createUserReservation, 
     createOwnerReservation, 
@@ -8,8 +9,9 @@ import {
     fetchAllReservations, 
     fetchScheduledReservations,
     fetchDoneReservations,
-    fetchAllPitchReservations
- } from "../services/reservationService";
+    generateTokenAndNotifyUser,
+    verifyReservation
+} from "../services/reservationService";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
     try {
@@ -49,8 +51,8 @@ export async function handleCreateOwnerReservation(req: Request, res: Response) 
         const { name, phone, startDate, endDate } = req.body;
         const pitchId = req.params.pitch;
         
-        if (!pitchId || !name || !phone || !startDate || !endDate) {
-            res.status(400).json({ success: false, message: "Please provide a valid pitch ID, name, phone number, start date, and end date." });
+        if (!name || !phone || !startDate || !endDate) {
+            res.status(400).json({ success: false, message: "Please provide a valid name, phone number, start date, and end date." });
             return;
         }
 
@@ -175,6 +177,37 @@ export async function handleFetchDoneReservations(req: Request, res: Response) {
             res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
             return;
         }
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function handleSendReservationEmail(req: Request, res: Response) {
+    try {
+        const { pitch, reservation } = req.params;
+
+        if (!pitch || !reservation) {
+            res.status(400).json({ success: false, message: "Please provide a valid pitch and reservation ID." });
+            return;
+        }
+
+        await generateTokenAndNotifyUser(pitch, reservation);
+        res.status(200).json({ success: true, message: "Reservation verification email re-sent successfully." });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function handleVerifyReservation(req: Request, res: Response) {
+    try {
+        const token = req.query.token as string;
+        
+        if (!token) {
+            throw new Error("Please provide a valid token to verify the reservation.");
+        }
+
+        const data = await verifyReservation(token);
+        res.status(200).json({ success: true, message: "Your reservation has been verified successfully!", data: data });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

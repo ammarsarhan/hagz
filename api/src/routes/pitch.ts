@@ -13,7 +13,8 @@ import {
     handleFetchAllReservations, 
     handleFetchScheduledReservations, 
     handleFetchReservation, 
-    handleFetchDoneReservations 
+    handleFetchDoneReservations,
+    handleSendReservationEmail
 } from "../controllers/reservationController";
 
 const pitch = Router();
@@ -31,5 +32,6 @@ pitch.get('/:pitch/reservations/scheduled', authorizeOwnerAccessToken, authorize
 pitch.get('/:pitch/reservations/done', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleFetchDoneReservations(req, res));
 pitch.post('/:pitch/reservations/create', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleCreateOwnerReservation(req, res));
 pitch.get('/:pitch/reservations/:reservation', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleFetchReservation(req, res));
+pitch.post('/:pitch/reservations/:reservation/verify', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleSendReservationEmail(req, res));
 
 export default pitch;
