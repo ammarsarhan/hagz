@@ -1,5 +1,5 @@
 import prisma from "../utils/db";
-import { PitchCreateResponseType, PitchCreateRequestType } from "../types/pitch";
+import { PitchCreateRequestType, PitchResponseType } from "../types/pitch";
 
 function formatRawQueryResult(data: any) {
     data.map((el: any) => {
@@ -11,7 +11,7 @@ function formatRawQueryResult(data: any) {
         };
     });
 
-    return data as PitchCreateResponseType[];
+    return data as PitchResponseType[];
 };
 
 export async function getPitch(id: string) {
@@ -190,7 +190,7 @@ export async function updateField(id: string, ownerId: string, field: string, va
                 updatedAt: updated.updatedAt.toISOString(),
             };
 
-            return formatted as PitchCreateResponseType;
+            return formatted as PitchResponseType;
         }
 
     } catch (error: any) {
@@ -215,6 +215,24 @@ export async function searchPitches(keywords: string) {
         }
     
         return formatRawQueryResult(pitches);
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function checkIfPitchExists(id: string) {
+    try {
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: id
+            }
+        });
+
+        if (!pitch) {
+            return false;
+        }
+
+        return true;
     } catch (error: any) {
         throw new Error(error.message);
     }

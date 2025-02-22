@@ -1,14 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { verify } from "jsonwebtoken";
 import { TokenPayloadType } from "../utils/token";
-import { checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
-import { checkIfUserVerifiedAlready } from "../repositories/userRepository";
+import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
+import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
 
-export function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
+export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.cookies.accessToken;
 
     if (!accessToken) {
         res.status(401).json({ success: false, message: "Access token not provided. Cannot access this resource." });
+        return;
     }
 
     try {
@@ -19,6 +20,13 @@ export function authorizeUserAccessToken(req: Request, res: Response, next: Next
 
             if (decoded.type !== "User") {
                 throw new Error("Access token provided is not for a user account. Cannot access this resource.");
+            }
+
+            const exists = await checkIfUserExistsAlready({id: decoded.id});
+
+            if (!exists) {
+                res.clearCookie("refreshToken");
+                throw new Error("The ID provided with the refresh token does not belong to a user account. Please sign up or sign in to access this resource.");
             }
 
             req.user = {...decoded};
@@ -32,11 +40,12 @@ export function authorizeUserAccessToken(req: Request, res: Response, next: Next
     }
 };
 
-export function authorizeOwnerAccessToken(req: Request, res: Response, next: NextFunction) {
+export async function authorizeOwnerAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.cookies.accessToken;
 
     if (!accessToken) {
         res.status(401).json({ success: false, message: "Access token not provided. Cannot access this resource." });
+        return;
     }
 
     try {
@@ -47,6 +56,13 @@ export function authorizeOwnerAccessToken(req: Request, res: Response, next: Nex
 
             if (decoded.type !== "Owner") {
                 throw new Error("Access token provided is not for a owner account. Cannot access this resource.");
+            }
+
+            const exists = await checkIfOwnerExistsAlready({ id: decoded.id });
+
+            if (!exists) {
+                res.clearCookie("refreshToken");
+                throw new Error("The ID provided with the refresh token does not belong to an owner account. Please sign up or sign in to access this resource.");
             }
 
             req.user = {...decoded};
@@ -69,7 +85,7 @@ export async function authorizeVerificationStatus(req: Request, res: Response, n
             throw new Error("ID or type not provided within the request. Both parameters is required to verify account status.");
         }  
 
-        let isVerified: boolean = false;
+        let isVerified = false;
 
         if (type === "User") {
             isVerified = await checkIfUserVerifiedAlready(id);

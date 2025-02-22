@@ -20,13 +20,14 @@ export async function createOwnerWithCredentials(name: string, email: string, ph
     }
 }
 
-export async function checkIfOwnerExistsAlready (email: string, phone?: string) {
+export async function checkIfOwnerExistsAlready ({ email, phone, id }: { email?: string, phone?: string, id?: string }) {
     try {
         const owner = await prisma.owner.findFirst({
             where: {
                 OR: [
-                    { email: email },
-                    phone ? { phone: phone } : {}
+                    email ? { email: email } : {},
+                    phone ? { phone: phone } : {},
+                    id ? { id: id } : {}
                 ]
             }
         });

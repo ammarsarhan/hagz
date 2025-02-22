@@ -22,7 +22,7 @@ export type PitchCreateRequestType = {
     maximumSession: number
 }
 
-export type PitchCreateResponseType = {
+export type PitchResponseType = {
     id: string,
     ownerId: string,
     name: string,

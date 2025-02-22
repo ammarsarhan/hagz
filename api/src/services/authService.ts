@@ -21,13 +21,13 @@ import {
 } from '../repositories/ownerRepository';
 
 async function checkIfAccountExists(email: string, phone: string) {
-    const userMatch = await checkIfUserExistsAlready(email, phone);
+    const userMatch = await checkIfUserExistsAlready({ email, phone });
 
     if (userMatch) {
         throw new Error("Owner with specified email or phone already exists. Please use a different email address or phone number.");
     }
 
-    const ownerMatch = await checkIfOwnerExistsAlready(email, phone);
+    const ownerMatch = await checkIfOwnerExistsAlready({ email, phone });
 
     if (ownerMatch) {
         throw new Error("Owner with specified email or phone already exists. Please use a different email address or phone number.");

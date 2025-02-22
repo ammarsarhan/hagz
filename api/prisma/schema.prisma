@@ -60,6 +60,7 @@ model User {
   verificationToken String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  Reservation       Reservation[]
 }
 
 model Owner {
@@ -80,6 +81,7 @@ model Pitch {
   id             String                               @id @default(cuid())
   ownerId        String
   name           String
+  search         Unsupported("tsvector")
   description    String
   size           PitchSize
   surface        PitchSurface
@@ -94,6 +96,19 @@ model Pitch {
   createdAt      DateTime                             @default(now())
   updatedAt      DateTime                             @updatedAt
   owner          Owner                                @relation(fields: [ownerId], references: [id])
+  Reservation    Reservation[]
 
   @@index([coordinates], name: "coordinates_idx", type: Gist)
+}
+
+model Reservation {
+  id            String   @id @default(cuid())
+  pitchId       String
+  userId        String?
+  reserveeName  String
+  reserveePhone String
+  startDate     DateTime
+  endDate       DateTime
+  pitch         Pitch    @relation(fields: [pitchId], references: [id])
+  user          User?    @relation(fields: [userId], references: [id])
 }

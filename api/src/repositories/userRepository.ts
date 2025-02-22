@@ -56,13 +56,32 @@ export async function fetchUserById(id: string) {
     }
 };
 
-export async function checkIfUserExistsAlready (email: string, phone?: string) {
+export async function fetchUserByPhone(phone: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                phone: phone
+            }
+        })
+
+        if (!user) {
+            throw new Error("Invalid credentials provided. Please try again.")
+        }
+
+        return user;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function checkIfUserExistsAlready ({ email, phone, id }: { email?: string, phone?: string, id?: string }) {
     try {
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
-                    { email: email },
-                    phone ? { phone: phone } : {}
+                    email ? { email: email } : {},
+                    phone ? { phone: phone } : {},
+                    id ? { id: id } : {}
                 ]
             }
         });

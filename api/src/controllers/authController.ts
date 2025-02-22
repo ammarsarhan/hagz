@@ -77,7 +77,7 @@ export async function signInOwner(req: Request, res: Response) {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            throw new Error('Insufficient parameters provided to sign in user.'); 
+            throw new Error('Insufficient parameters provided to sign in owner.'); 
         }
 
         const tokens = await signInOwnerWithCredentials(email, password);
