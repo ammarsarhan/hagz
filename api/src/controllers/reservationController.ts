@@ -1,16 +1,13 @@
 import { Request, Response } from "express";
-
 import { checkIfPitchExists } from "../repositories/pitchRepository";
 
 import { 
-    createUserReservation, 
-    createOwnerReservation, 
+    createUserReservation,
     fetchReservation, 
     fetchAllReservations, 
     fetchScheduledReservations,
     fetchDoneReservations,
-    generateTokenAndNotifyUser,
-    verifyReservation
+    createOwnerReservation
 } from "../services/reservationService";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
@@ -34,30 +31,24 @@ export async function handleCreateUserReservation(req: Request, res: Response) {
         const end = new Date(endDate);
 
         const reservation = await createUserReservation(pitchId, userId, start, end);
-
-        if (!reservation) {
-            res.status(400).json({ success: false, message: "Failed to create reservation." });
-            return;
-        }
-
         res.status(201).json({ success: true, message: "Reservation created successfully.", data: reservation });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
 }
 
-export async function handleCreateOwnerReservation(req: Request, res: Response) {
+export async function handleCreatePitchReservation(req: Request, res: Response) {
     try {
-        const { name, phone, startDate, endDate } = req.body;
-        const pitchId = req.params.pitch;
-        
-        if (!name || !phone || !startDate || !endDate) {
-            res.status(400).json({ success: false, message: "Please provide a valid name, phone number, start date, and end date." });
+        const id = req.params.pitch;
+        const { reserveeName, reserveePhone, startDate, endDate } = req.body;
+
+        if (!id || !reserveeName || !reserveePhone || !startDate || !endDate) {
+            res.status(400).json({ success: false, message: "Please provide a valid reservee name, phone, start date, and end date." })
             return;
-        }
+        };
 
-        const pitch = await checkIfPitchExists(pitchId);
-
+        const pitch = await checkIfPitchExists(id);
+    
         if (!pitch) {
             res.status(404).json({ success: false, message: "Failed to create reservation. Could not find pitch with the specified ID." });
             return;
@@ -66,13 +57,7 @@ export async function handleCreateOwnerReservation(req: Request, res: Response) 
         const start = new Date(startDate);
         const end = new Date(endDate);
 
-        const reservation = await createOwnerReservation(pitchId, name, phone, start, end);
-
-        if (!reservation) {
-            res.status(400).json({ success: false, message: "Failed to create reservation." });
-            return;
-        }
-
+        const reservation = await createOwnerReservation(id, reserveeName, reserveePhone, start, end);
         res.status(201).json({ success: true, message: "Reservation created successfully.", data: reservation });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
@@ -177,37 +162,6 @@ export async function handleFetchDoneReservations(req: Request, res: Response) {
             res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
             return;
         }
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-}
-
-export async function handleSendReservationEmail(req: Request, res: Response) {
-    try {
-        const { pitch, reservation } = req.params;
-
-        if (!pitch || !reservation) {
-            res.status(400).json({ success: false, message: "Please provide a valid pitch and reservation ID." });
-            return;
-        }
-
-        await generateTokenAndNotifyUser(pitch, reservation);
-        res.status(200).json({ success: true, message: "Reservation verification email re-sent successfully." });
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-}
-
-export async function handleVerifyReservation(req: Request, res: Response) {
-    try {
-        const token = req.query.token as string;
-        
-        if (!token) {
-            throw new Error("Please provide a valid token to verify the reservation.");
-        }
-
-        const data = await verifyReservation(token);
-        res.status(200).json({ success: true, message: "Your reservation has been verified successfully!", data: data });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

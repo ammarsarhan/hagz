@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { createPitch, getPitch, getInitialPitches, getPitchesByCursor, queryByLocation, updateField, searchPitches } from '../repositories/pitchRepository';
 import { PitchCreateRequestType } from '../types/pitch';
 
-export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, policy, minimumSession, maximumSession } : PitchCreateRequestType) {
+export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, settings, minimumSession, maximumSession } : PitchCreateRequestType) {
     try {
         const schema = z.object({
             name: z.string().min(5, { message: "Pitch name must include at least 5 characters." }).max(50, { message: "Pitch name must be limited to 50 characters at most." }),
@@ -15,7 +15,10 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             amenities: z.array(z.enum(["INDOORS", "BALL_PROVIDED", "SEATING", "NIGHT_LIGHTS", "PARKING", "SHOWERS", "CHANGING_ROOMS", "CAFETERIA", "FIRST_AID", "SECURITY"], { message: "Selected amenity must be one of available options." })),
             images: z.array(z.string().url({ message: "Images must be a list of valid URLs." }), { message: "Images must be a list of valid URLs." }),
             price: z.number().nonnegative("Hourly rate may not be a negative number.").min(100, { message: "Hourly rate must be 100 EGP at least." }).max(1000, { message: "Hourly rate must be 1000 EGP at most." }),
-            policy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Policy must be one of available options." }),
+            settings: z.object({
+                paymentPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Payment policy must be one of available options." }),
+                refundPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT", "FULL"], { message: "Refund policy must be one of available options." }),
+            }, { message: "Settings must be an object with all required properties." }),
             minimumSession: z.number().min(1).max(2),
             maximumSession: z.number().min(2).max(6)
         }).refine(data => data.minimumSession <= data.maximumSession, {
@@ -34,7 +37,7 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             amenities: amenities,
             images: images,
             price: price,
-            policy: policy,
+            settings: settings,
             minimumSession: minimumSession,
             maximumSession: maximumSession
         });
@@ -126,7 +129,7 @@ export async function fetchPitchById(id: string) {
     }
 }
 
-export async function updatePitchField(id: string, ownerId: string, field: string, value: string) {
+export async function updatePitchField(id: string, field: string, value: string) {
     try {
         const mapping: Record<string, string> = {
             "minimum-session": "minimumSession",
@@ -135,7 +138,7 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
 
         field = mapping[field] || field;
 
-        const fields = ["name", "description", "longitude", "latitude", "size", "surface", "status", "amenities", "images", "price", "policy", "minimumSession", "maximumSession"];
+        const fields = ["name", "description", "longitude", "latitude", "size", "surface", "status", "amenities", "images", "price", "settings", "minimumSession", "maximumSession"];
         const numericFields = ["longitude", "latitude", "price", "minimumSession", "maximumSession"];
 
         let formattedValue: string | number = value;
@@ -175,7 +178,10 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
             amenities: z.array(z.enum(["INDOORS", "BALL_PROVIDED", "SEATING", "NIGHT_LIGHTS", "PARKING", "SHOWERS", "CHANGING_ROOMS", "CAFETERIA", "FIRST_AID", "SECURITY"], { message: "Selected amenity must be one of available options." })),
             images: z.array(z.string().url({ message: "Images must be a list of valid URLs." }), { message: "Images must be a list of valid URLs." }),
             price: z.number().nonnegative("Hourly rate may not be a negative number.").min(100, { message: "Hourly rate must be 100 EGP at least." }).max(1000, { message: "Hourly rate must be 1000 EGP at most." }),
-            policy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Policy must be one of available options." }),
+            settings: z.object({
+                paymentPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Payment policy must be one of available options." }),
+                refundPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT", "FULL"], { message: "Refund policy must be one of available options." }),
+            }, { message: "Settings must be an object with all required properties." }),
             minimumSession: z.number().min(1).max(2),
             maximumSession: z.number().min(2).max(6)
         })
@@ -193,7 +199,7 @@ export async function updatePitchField(id: string, ownerId: string, field: strin
             throw new Error(parsedValue.error.errors[0].message);
         }
 
-        const updated = await updateField(id, ownerId, field, parsedValue.data);
+        const updated = await updateField(id, field, parsedValue.data);
         return updated;
     } catch (error: any) {
         throw new Error(error.message);

@@ -5,9 +5,8 @@ import {
     handleFetchReservation, 
     handleFetchAllReservations,
     handleFetchScheduledReservations,
-    handleFetchDoneReservations,
-    handleVerifyReservation
- } from "../controllers/reservationController";
+    handleFetchDoneReservations
+} from "../controllers/reservationController";
 
 const reservation = Router();
 
@@ -15,7 +14,7 @@ reservation.post("/create", authorizeUserAccessToken, authorizeVerificationStatu
 reservation.get("/all", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchAllReservations(req, res));
 reservation.get("/scheduled", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchScheduledReservations(req, res));
 reservation.get("/done", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchDoneReservations(req, res));
-reservation.get("/verify", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleVerifyReservation(req, res));
+
 reservation.get("/:reservation", authorizeUserAccessToken, authorizeVerificationStatus, authorizeReservationOwnership, (req, res) => handleFetchReservation(req, res));
 
 export default reservation;

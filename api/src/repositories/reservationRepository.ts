@@ -1,4 +1,6 @@
+import { AccountType } from "@prisma/client";
 import prisma from "../utils/db";
+import { getPitch } from "./pitchRepository";
 
 export async function checkIfReservationExists(id: string, pitch?: string) {
     try {
@@ -16,7 +18,7 @@ export async function checkIfReservationExists(id: string, pitch?: string) {
     }
 }
 
-export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : { pitchId: string, name: string, phone: string, startDate: Date, endDate: Date, userId?: string, createdBy: "USER" | "OWNER" }) {
+export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : { pitchId: string, name: string, phone: string, startDate: Date, endDate: Date, userId?: string, createdBy: AccountType }) {
     try {
         const dateConflict = await checkReservationDateConflict(pitchId, startDate, endDate);
 
@@ -46,24 +48,18 @@ export async function createReservation({ pitchId, name, phone, startDate, endDa
     }
 }
 
-export async function checkReservationDateConflict(id: string, startDate: Date, endDate: Date): Promise<Boolean> {
-    const match = await prisma.reservation.findFirst({
-        where: {
-            pitchId: id,
-            startDate: { lt: endDate },
-            endDate: { gt: startDate }
-        }
-    })
-
-    if (match) return true;
-    return false;
-}
-
 export async function getReservation(id: string) {
     try {
         const reservation = await prisma.reservation.findUnique({
             where: {
                 id
+            },
+            include: {
+                pitch: {
+                    select: {
+                        ownerId: true
+                    }
+                }
             }
         });
 
@@ -75,6 +71,21 @@ export async function getReservation(id: string) {
     } catch (error: any) {
         throw new Error(error.message);
     }
+}
+
+export async function checkReservationDateConflict(id: string, startDate: Date, endDate: Date): Promise<Boolean> {
+    const pitch = await getPitch(id);
+    
+    const match = await prisma.reservation.findFirst({
+        where: {
+            pitchId: id,
+            startDate: { lt: endDate },
+            endDate: { gt: startDate }
+        }
+    })
+
+    if (match) return true;
+    return false;
 }
 
 export async function getAllUserReservations(id: string, limit: number, cursor?: string) {
@@ -99,7 +110,7 @@ export async function getScheduledUserReservations(id: string, limit: number, cu
             userId: id,
             OR: [
                 { status: "PENDING" },
-                { status: "CONFIRMED" }
+                { status: "CONFIRMED" },
             ]
         },
         cursor: cursor ? { id: cursor } : undefined,
@@ -184,69 +195,6 @@ export async function getDonePitchReservations(id: string, limit: number, cursor
         })
 
         return reservations;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
-}
-
-export async function setReservationToken(id: string, token: string) {
-    try {
-        const reservation = await prisma.reservation.update({
-            where: { id },
-            data: { verificationToken: token }
-        });
-
-        if (!reservation) {
-            throw new Error("Failed to set reservation token.");
-        }
-
-        return reservation;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
-}
-
-export async function updateReservationVerification(id: string, token: string) {
-    try {
-        const reservation = await prisma.reservation.update({
-            where: {
-                id: id,
-                verificationToken: token
-            },
-            data: {
-                status: "CONFIRMED",
-                verificationToken: null
-            }
-        })
-
-        if (!reservation) {
-            throw new Error("Failed to verify reservation. Please try again later.");
-        }
-
-        return reservation;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
-}
-
-export async function validateReservationOwnership(id: string, userId: string, userType: "User" | "Owner") {
-    try {
-        const reservation = await prisma.reservation.findUnique({
-            where: {
-                id: id,
-                userId: userType == "User" ? userId : undefined,
-                pitch: {
-                    ownerId: userType == "Owner" ? userId : undefined
-                }
-            }
-        })
-
-        if (reservation) {
-            return true;
-        } else {
-            return false;
-        }
-
     } catch (error: any) {
         throw new Error(error.message);
     }

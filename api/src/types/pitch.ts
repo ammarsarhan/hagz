@@ -1,8 +1,9 @@
-export type PitchStatusType = "ACTIVE" | "MAINTENANCE" | "CLOSED";
-export type PitchPolicyType = "DEFAULT" | "EXTENDED" | "SHORT";
-export type PitchSizeType = "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE";
-export type PitchSurfaceType = "GRASS" | "ARTIFICIAL";
-export type PitchAmenityType = "INDOORS" | "BALL_PROVIDED" | "SEATING" | "NIGHT_LIGHTS" | "PARKING" | "SHOWERS" | "CHANGING_ROOMS" | "CAFETERIA" | "FIRST_AID" | "SECURITY";
+import { PitchStatus, PitchSurface, PitchSize, PitchAmenity } from "@prisma/client";
+
+export type PitchSettingsType = {
+    paymentPolicy: string,
+    refundPolicy: string
+}
 
 export type PitchCreateRequestType = {
     name: string,
@@ -12,12 +13,12 @@ export type PitchCreateRequestType = {
         longitude: number,
         latitude: number
     },
-    size: PitchSizeType,
-    surface: PitchSurfaceType,
-    amenities: PitchAmenityType[],
+    size: PitchSize,
+    surface: PitchSurface,
+    amenities: PitchAmenity[],
     images: string[],
     price: number,
-    policy: PitchPolicyType,
+    settings: PitchSettingsType,
     minimumSession: number,
     maximumSession: number
 }
@@ -32,13 +33,13 @@ export type PitchResponseType = {
         longitude: number,
         latitude: number
     },
-    status: PitchStatusType,
-    size: PitchSizeType,
-    surface: PitchSurfaceType,
-    amenities: PitchAmenityType[],
+    status: PitchStatus,
+    size: PitchSize,
+    surface: PitchSurface,
+    amenities: PitchAmenity[],
     images: string[],
     price: number,
-    policy: PitchPolicyType,
+    settings: PitchSettingsType,
     minimumSession: number,
     maximumSession: number,
     createdAt: string,

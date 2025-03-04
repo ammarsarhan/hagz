@@ -1,15 +1,18 @@
 import prisma from "../utils/db";
-import { PitchCreateRequestType, PitchResponseType } from "../types/pitch";
 import cuid from "cuid";
+import { z } from 'zod';
+import { PitchCreateRequestType, PitchResponseType } from "../types/pitch";
 
 function formatRawQueryResult(data: any) {
     data.map((el: any) => {
-        const point = JSON.parse(el.coordinates);
-
-        el.coordinates = {
-            longitude: point.coordinates[0],
-            latitude: point.coordinates[1]
-        };
+        if (el.coordinates != null) {
+            const point = JSON.parse(el.coordinates);
+    
+            el.coordinates = {
+                longitude: point.coordinates[0],
+                latitude: point.coordinates[1]
+            };
+        }
     });
 
     return data as PitchResponseType[];
@@ -21,7 +24,7 @@ export async function getPitch(id: string) {
             SELECT
                 "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                 ST_AsGeoJSON("coordinates")::text as "coordinates",
-                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+                "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"
             FROM "Pitch"
             WHERE "id" = ${id};
         `;
@@ -36,10 +39,52 @@ export async function getPitch(id: string) {
     }
 }
 
+export async function getPitchData(id: string, fields: any[]) {
+    try {
+        const fieldSchema = z.array(z.enum(["id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"]));
+        const parsed = fieldSchema.safeParse(fields);
+
+        if (!parsed.success) {
+            throw new Error("Please provide a valid field for the specified pitch.");
+        }
+
+        const formatFields = (fields: string[]) => {
+            let formatted: string = "";
+            
+            fields.map(field => {
+                if (field == "coordinates") {
+                    formatted += `ST_AsGeoJSON("coordinates")::text as "coordinates", `;
+                    return;
+                }
+
+                formatted += `"${field}", `;
+            })
+
+            formatted = formatted.slice(0, -2);
+            return formatted;
+        }
+
+        const formatted = formatFields(parsed.data);
+        const data: any[] = await prisma.$queryRawUnsafe(`
+            SELECT ${formatted}
+            FROM "Pitch"
+            WHERE "id" = $1;
+        `, id);
+
+        if (data.length < 1) {
+            throw new Error("Could not find pitch details for the specified credentials.");
+        }
+
+        return formatRawQueryResult(data)[0];
+    } catch (error: any) {
+        throw new Error(`Could not fetch pitch data for specified fields. ${error.message}`)
+    }
+}
+
 export async function createPitch(pitch: PitchCreateRequestType) {
     try {
         const data: any = await prisma.$queryRaw`
-            INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt") 
+            INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt") 
             VALUES (
                 ${cuid()}, 
                 ${pitch.owner}, 
@@ -51,7 +96,7 @@ export async function createPitch(pitch: PitchCreateRequestType) {
                 ${pitch.images}::text[], 
                 ${pitch.price}, 
                 ST_SetSRID(ST_MakePoint(${pitch.coordinates.longitude}, ${pitch.coordinates.latitude}), 4326), 
-                ${pitch.policy}::"PitchPolicy", 
+                ${pitch.settings},
                 ${pitch.minimumSession}, 
                 ${pitch.maximumSession}, 
                 NOW(), 
@@ -61,7 +106,7 @@ export async function createPitch(pitch: PitchCreateRequestType) {
             RETURNING
                 "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                 ST_AsGeoJSON("coordinates")::text as "coordinates",
-                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt";
+                "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt";
         `;
         
         if (data.length < 1) {
@@ -80,7 +125,7 @@ export async function getInitialPitches(limit: number) {
             SELECT
                 "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                 ST_AsGeoJSON("coordinates")::text as "coordinates",
-                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+                "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"
             FROM "Pitch"
             ORDER BY "updatedAt" DESC
             LIMIT ${limit};
@@ -98,7 +143,7 @@ export async function getPitchesByCursor(cursor: string, limit: number) {
             SELECT
                 "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                 ST_AsGeoJSON("coordinates")::text as "coordinates",
-                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+                "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"
             FROM "Pitch"
             WHERE "updatedAt" < CAST(${cursor} AS TIMESTAMP)
             ORDER BY "updatedAt" DESC, "id" DESC
@@ -117,7 +162,7 @@ export async function queryByLocation(lng: number, lat: number, radius: number) 
             SELECT
                 "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                 ST_AsGeoJSON("coordinates")::text as "coordinates",
-                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+                "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"
             FROM "Pitch"
             WHERE ST_DWithin("coordinates", ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326), ${radius});
         `;
@@ -128,16 +173,12 @@ export async function queryByLocation(lng: number, lat: number, radius: number) 
     }
 }
 
-export async function updateField(id: string, ownerId: string, field: string, value: any) {
+export async function updateField(id: string, field: string, value: any) {
     try {
-        const pitch = await getPitch(id);
+        const pitch = await getPitchData(id, ["coordinates"]);
         
         if (!pitch) {
             throw new Error("The requested pitch does not exist.");
-        }
-
-        if (pitch.ownerId !== ownerId) {
-            throw new Error("You do not have the required permissions to access this service.");
         }
 
         if (field == "longitude" || field == "latitude") {
@@ -152,7 +193,7 @@ export async function updateField(id: string, ownerId: string, field: string, va
                     RETURNING 
                         "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                         ST_AsGeoJSON("coordinates")::text as "coordinates",
-                        "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt";
+                        "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt";
                 `,
                 setLongitude, setLatitude, id
             );
@@ -205,7 +246,7 @@ export async function searchPitches(keywords: string) {
             SELECT
                 "id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", 
                 ST_AsGeoJSON("coordinates")::text as "coordinates",
-                "policy", "minimumSession", "maximumSession", "createdAt", "updatedAt"
+                "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"
             FROM "Pitch"
             WHERE search @@ to_tsquery('english', ${keywords})
             ORDER BY ts_rank(search, to_tsquery('english', ${keywords})) DESC;

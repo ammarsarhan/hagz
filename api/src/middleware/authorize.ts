@@ -4,7 +4,7 @@ import { verify } from "jsonwebtoken";
 import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
 import { validatePitchOwnership } from "../repositories/pitchRepository";
-import { validateReservationOwnership } from "../repositories/reservationRepository";
+import { checkIfReservationExists, getReservation } from "../repositories/reservationRepository";
 import { TokenPayloadType } from "../utils/token";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
@@ -108,7 +108,7 @@ export async function authorizeVerificationStatus(req: Request, res: Response, n
 
 export async function authorizePitchOwnership(req: Request, res: Response, next: NextFunction) {
     try {
-        const pitch = req.params.pitch;
+        const { pitch, reservation } = req.params;
         const user = req.user;
 
         if (!pitch || !user) {
@@ -119,30 +119,44 @@ export async function authorizePitchOwnership(req: Request, res: Response, next:
         const match = await validatePitchOwnership(pitch, user.id); 
 
         if (!match) {
-            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again later." });
+            res.status(403).json({ success: false, message: "Either the following resource does not exist or you do not have the permissions to access it. Please provide valid credentials and try again later." });
             return;
+        }
+
+        if (reservation) {
+            const match = await checkIfReservationExists(reservation, pitch);
+
+            if (!match) {
+                res.status(404).json({ success: false, message: "Failed to fetch reservation. Could not find resource." });
+                return;
+            }
         }
         
         next();
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
-}
+};
 
 export async function authorizeReservationOwnership(req: Request, res: Response, next: NextFunction) {
     try {
-        const reservation = req.params.reservation;
+        const id = req.params.reservation;
         const user = req.user;
 
-        if (!reservation || !user) {
+        if (!id || !user) {
             res.status(400).json({ success: false, message: "Either reservation or user credentials not provided correctly. Please try again later." });
             return;
         }
 
-        const match = await validateReservationOwnership(reservation, user.id, user.type); 
+        const reservation = await getReservation(id);
 
-        if (!match) {
-            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again later." });
+        if (user.type == "User" && reservation.userId !== user.id) {
+            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again." });
+            return;
+        }
+
+        if (user.type == "Owner" && reservation.pitch.ownerId !== user.id) {
+            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again." });
             return;
         }
         
@@ -150,4 +164,4 @@ export async function authorizeReservationOwnership(req: Request, res: Response,
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
-}
+};

@@ -45,12 +45,12 @@ model Pitch {
   images         String[]
   maximumSession Int                      @default(3)
   minimumSession Int                      @default(1)
-  policy         PitchPolicy              @default(DEFAULT)
   price          Float
   size           PitchSize
   status         PitchStatus              @default(ACTIVE)
   surface        PitchSurface
   amenities      PitchAmenity[]
+  settings       Json
   search         Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, name)"))
   owner          Owner                    @relation(fields: [ownerId], references: [id])
   Reservation    Reservation[]
@@ -68,22 +68,25 @@ model Reservation {
   startDate         DateTime
   endDate           DateTime
   verificationToken String?
+  isApproved        Boolean           @default(false)
   createdAt         DateTime          @default(now())
   createdBy         AccountType
   updatedAt         DateTime          @updatedAt
-  paymentStatus     PaymentStatus     @default(PENDING)
   status            ReservationStatus @default(PENDING)
   pitch             Pitch             @relation(fields: [pitchId], references: [id])
   user              User?             @relation(fields: [userId], references: [id])
+  payment           Payment?
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model spatial_ref_sys {
-  srid      Int     @id
-  auth_name String? @db.VarChar(256)
-  auth_srid Int?
-  srtext    String? @db.VarChar(2048)
-  proj4text String? @db.VarChar(2048)
+model Payment {
+  id            String        @id @default(uuid())
+  reservationId String        @unique
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  expiryDate    DateTime
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  reservation   Reservation   @relation(fields: [reservationId], references: [id])
 }
 
 enum AccountType {
@@ -108,21 +111,16 @@ enum ReservationStatus {
 
 enum PaymentStatus {
   PENDING
-  MANUAL
   PAID
   REFUNDED
+  EXPIRED
+  CANCELLED
 }
 
 enum PitchStatus {
   ACTIVE
   MAINTENANCE
   CLOSED
-}
-
-enum PitchPolicy {
-  DEFAULT
-  EXTENDED
-  SHORT
 }
 
 enum PitchSize {
