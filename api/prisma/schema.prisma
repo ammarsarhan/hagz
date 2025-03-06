@@ -69,9 +69,10 @@ model Reservation {
   endDate           DateTime
   verificationToken String?
   isApproved        Boolean           @default(false)
+  approvalExpiry    DateTime?
   createdAt         DateTime          @default(now())
-  createdBy         AccountType
   updatedAt         DateTime          @updatedAt
+  createdBy         AccountType
   status            ReservationStatus @default(PENDING)
   pitch             Pitch             @relation(fields: [pitchId], references: [id])
   user              User?             @relation(fields: [userId], references: [id])

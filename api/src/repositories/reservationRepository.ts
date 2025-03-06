@@ -1,6 +1,18 @@
-import { AccountType } from "@prisma/client";
 import prisma from "../utils/db";
-import { getPitch } from "./pitchRepository";
+import { z } from "zod";
+import { AccountType } from "@prisma/client";
+import { getPitchData } from "./pitchRepository";
+import { PitchSettingsType } from "../types/pitch";
+
+type CreateReservationType = { 
+    pitchId: string, 
+    name: string, 
+    phone: string, 
+    startDate: Date, 
+    endDate: Date, 
+    createdBy: AccountType 
+    userId?: string
+}
 
 export async function checkIfReservationExists(id: string, pitch?: string) {
     try {
@@ -18,13 +30,13 @@ export async function checkIfReservationExists(id: string, pitch?: string) {
     }
 }
 
-export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : { pitchId: string, name: string, phone: string, startDate: Date, endDate: Date, userId?: string, createdBy: AccountType }) {
+export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : CreateReservationType) {
     try {
-        const dateConflict = await checkReservationDateConflict(pitchId, startDate, endDate);
-
-        if (dateConflict) {
-            throw new Error("Could not reserve for the specified date. Please pick an empty reservation slot.");
-        }
+        const pitch = await getPitchData(pitchId, ["settings"]);
+        const settings = pitch.settings as PitchSettingsType;
+        const paymentPolicy = settings.paymentPolicy;
+  
+        await checkReservationDateConflict(pitchId, startDate, endDate, paymentPolicy);
 
         const reservation = await prisma.reservation.create({
             data: {
@@ -34,13 +46,17 @@ export async function createReservation({ pitchId, name, phone, startDate, endDa
                 startDate,
                 endDate,
                 userId,
-                createdBy
+                createdBy,
+                isApproved: true
+            },
+            include: {
+                pitch: true
             }
         });
 
         if (!reservation) {
             throw new Error("Failed to create reservation.");
-        }
+        };
     
         return reservation;
     } catch (error: any) {
@@ -73,9 +89,110 @@ export async function getReservation(id: string) {
     }
 }
 
-export async function checkReservationDateConflict(id: string, startDate: Date, endDate: Date): Promise<Boolean> {
-    const pitch = await getPitch(id);
+export async function getReservationData(id: string, fields: string[]) {
+    try {
+        const fieldSchema = z.array(z.enum(["id", "pitchId", "userId", "ownerId", "reserveeName", "reserveePhone", "startDate", "endDate", "verificationToken", "isApproved", "approvalExpiry", "createdAt", "updatedAt", "createdBy", "status"]));
+        const parsed = fieldSchema.safeParse(fields);
+
+        if (!parsed.success) {
+            throw new Error("Invalid fields provided. Unable to fetch reservation specific data.");
+        }
+        
+        const reservation = await prisma.reservation.findUnique({
+            where: {
+                id
+            }, 
+            select: {
+                id: parsed.data.includes("id"),
+                pitchId: parsed.data.includes("pitchId"),
+                userId: parsed.data.includes("userId"),
+                reserveeName: parsed.data.includes("reserveeName"),
+                reserveePhone: parsed.data.includes("reserveePhone"),
+                startDate: parsed.data.includes("startDate"),
+                endDate: parsed.data.includes("endDate"),
+                verificationToken: parsed.data.includes("verificationToken"),
+                isApproved: parsed.data.includes("isApproved"),
+                approvalExpiry: parsed.data.includes("approvalExpiry"),
+                createdAt: parsed.data.includes("createdAt"),
+                updatedAt: parsed.data.includes("updatedAt"),
+                createdBy: parsed.data.includes("createdBy"),
+                status: parsed.data.includes("status"),
+                pitch: {
+                    select: {
+                        ownerId: parsed.data.includes("ownerId")
+                    }
+                }
+            }
+        })
+
+        if (!reservation) {
+            throw new Error("Could not find reservation with the specified ID.");
+        }
+
+        return reservation;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function approveReservation(id: string) {
+    try {
+        const now = new Date();
+        const reservation = await getReservationData(id, ["isApproved", "approvalExpiry"]);
+
+        if (reservation.isApproved) {
+            throw new Error("Failed to approve reservation. Reservation has already been approved.");
+        }
+
+        if (reservation.approvalExpiry == null || reservation.approvalExpiry >= now) {
+            throw new Error("Failed to approve reservation. Reservation approval window has expired, automatically cancelling the reservation.");
+        }
+
+        const updated = await prisma.reservation.update({
+            where: { id },
+            data: {
+                isApproved: true
+            }
+        });
+
+        return updated;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function checkReservationDateConflict(id: string, startDate: Date, endDate: Date, policy: "SHORT" | "DEFAULT" | "EXTENDED"): Promise<Boolean> {
+    const now = new Date();
+
+    const expiryDate = new Date(startDate);
+    expiryDate.setUTCHours(expiryDate.getUTCHours() - 1);
+
+    let limitFactor = 0;
+
+    switch (policy) {
+        case "SHORT":
+            limitFactor = 1;
+            break;
+        case "DEFAULT":
+            limitFactor = 2;
+            break;
+        case "EXTENDED":
+            limitFactor = 3;
+            break;
+    }
     
+    const limitDate = new Date(expiryDate);
+    limitDate.setUTCHours(limitDate.getUTCHours() - limitFactor);
+
+    if (startDate < now) {
+        throw new Error("Could not reserve for the specified date. Please pick an upcoming date.");
+    };
+
+    if (limitDate < now) {
+        throw new Error(`Could not reserve for the specified date. Pitch policy requires that user have a ${limitFactor + 1} hour payment grace period.`);
+    };
+    
+
     const match = await prisma.reservation.findFirst({
         where: {
             pitchId: id,
@@ -84,7 +201,10 @@ export async function checkReservationDateConflict(id: string, startDate: Date, 
         }
     })
 
-    if (match) return true;
+    if (match) {
+        throw new Error("Could not reserve for the specified date. Please pick an empty reservation slot.");
+    }
+
     return false;
 }
 

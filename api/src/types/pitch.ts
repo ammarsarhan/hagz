@@ -1,8 +1,9 @@
 import { PitchStatus, PitchSurface, PitchSize, PitchAmenity } from "@prisma/client";
 
 export type PitchSettingsType = {
-    paymentPolicy: string,
-    refundPolicy: string
+    automaticApproval: boolean,
+    paymentPolicy: "SHORT" | "DEFAULT" | "EXTENDED",
+    refundPolicy: "SHORT" | "DEFAULT" | "EXTENDED" | "FULL"
 }
 
 export type PitchCreateRequestType = {

@@ -14,7 +14,7 @@ function formatRawQueryResult(data: any) {
             };
         }
     });
-
+    
     return data as PitchResponseType[];
 };
 
@@ -39,9 +39,9 @@ export async function getPitch(id: string) {
     }
 }
 
-export async function getPitchData(id: string, fields: any[]) {
+export async function getPitchData(id: string, fields: string[]) {
     try {
-        const fieldSchema = z.array(z.enum(["id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt"]));
+        const fieldSchema = z.array(z.enum(["id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "settings", "minimumSession", "maximumSession", "approvalExpiry", "createdAt", "updatedAt"]));
         const parsed = fieldSchema.safeParse(fields);
 
         if (!parsed.success) {
@@ -75,7 +75,7 @@ export async function getPitchData(id: string, fields: any[]) {
             throw new Error("Could not find pitch details for the specified credentials.");
         }
 
-        return formatRawQueryResult(data)[0];
+        return data[0];
     } catch (error: any) {
         throw new Error(`Could not fetch pitch data for specified fields. ${error.message}`)
     }
@@ -98,7 +98,7 @@ export async function createPitch(pitch: PitchCreateRequestType) {
                 ST_SetSRID(ST_MakePoint(${pitch.coordinates.longitude}, ${pitch.coordinates.latitude}), 4326), 
                 ${pitch.settings},
                 ${pitch.minimumSession}, 
-                ${pitch.maximumSession}, 
+                ${pitch.maximumSession},
                 NOW(), 
                 NOW()
             )

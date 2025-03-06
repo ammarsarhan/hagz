@@ -8,7 +8,8 @@ import {
     getDoneUserReservations, 
     getAllPitchReservations, 
     getScheduledPitchReservations,
-    getDonePitchReservations
+    getDonePitchReservations,
+    getReservationData
 } from "../repositories/reservationRepository";
 
 import { checkIfUserExistsAlready, fetchUserById } from "../repositories/userRepository";
@@ -32,6 +33,7 @@ export async function createUserReservation(pitchId: string, userId: string, sta
             startDate: z.date({ message: "Please provide a valid start date." }),
             endDate: z.date({ message: "Please provide a valid end date." }),
             userId: z.string().cuid("Please provide a valid CUID for the user ID.").optional(),
+            createdBy: z.enum(["USER", "OWNER"])
         }).refine(data => data.startDate < data.endDate, {
             message: "Start date may not be before or equal to the end date. Please choose a valid date range.",
         });
@@ -42,7 +44,8 @@ export async function createUserReservation(pitchId: string, userId: string, sta
             phone: user.phone,
             startDate,
             endDate,
-            userId: user.id
+            userId: user.id,
+            createdBy: "USER"
          });
 
         if (!parsed.success) {
@@ -59,7 +62,7 @@ export async function createUserReservation(pitchId: string, userId: string, sta
             }
         }
 
-        const reservation = await createReservation({ ...parsed.data, createdBy: "USER" });
+        const reservation = await createReservation({ ...parsed.data });
         return reservation;
     } catch (error: any) {
         throw new Error(error.message);
@@ -73,7 +76,8 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             name: z.string({ message: "Please provide a reservee name." }).min(2, { message: "Name must contain at least 2 characters." }).max(100, { message: "Name may not have more than 100 characters." }),
             phone: z.string().regex(/^\d{4}-\d{3}-\d{4}$/, "Please provide a valid phone number."),
             startDate: z.date({ message: "Please provide a valid start date." }),
-            endDate: z.date({ message: "Please provide a valid end date." })
+            endDate: z.date({ message: "Please provide a valid end date." }),
+            createdBy: z.enum(["USER", "OWNER"])
         }).refine(data => data.startDate < data.endDate, {
             message: "Start date may not be before or equal to the end date. Please choose a valid date range.",
         });
@@ -83,7 +87,8 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             name: reserveeName,
             phone: reserveePhone,
             startDate,
-            endDate
+            endDate,
+            createdBy: "OWNER"
          });
 
         if (!parsed.success) {
@@ -108,7 +113,7 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             }
         }
 
-        const reservation = await createReservation({...parsed.data, createdBy: "OWNER"});
+        const reservation = await createReservation({...parsed.data});
         return reservation;
     } catch (error: any) {
         throw new Error(error.message);

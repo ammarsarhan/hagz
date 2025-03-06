@@ -4,7 +4,7 @@ import { verify } from "jsonwebtoken";
 import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
 import { validatePitchOwnership } from "../repositories/pitchRepository";
-import { checkIfReservationExists, getReservation } from "../repositories/reservationRepository";
+import { checkIfReservationExists, getReservation, getReservationData } from "../repositories/reservationRepository";
 import { TokenPayloadType } from "../utils/token";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
@@ -148,7 +148,7 @@ export async function authorizeReservationOwnership(req: Request, res: Response,
             return;
         }
 
-        const reservation = await getReservation(id);
+        const reservation = await getReservationData(id, ["userId", "ownerId"]);
 
         if (user.type == "User" && reservation.userId !== user.id) {
             res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again." });
