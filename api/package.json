@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": " node index.js",
     "build": "tsc",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "worker": "nodemon --ext ts --watch workers --exec 'ts-node' src/workers/*.ts"
   },
   "author": "Ammar Sarhan",
   "license": "ISC",
@@ -17,10 +18,12 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/nodemailer": "^6.4.17",
     "bcrypt": "^5.1.1",
+    "bullmq": "^5.41.7",
     "cookie-parser": "^1.4.7",
     "cuid": "^3.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "ioredis": "^5.6.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.10.0",
     "zod": "^3.24.1"

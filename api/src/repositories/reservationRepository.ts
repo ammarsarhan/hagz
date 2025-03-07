@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AccountType } from "@prisma/client";
 import { getPitchData } from "./pitchRepository";
 import { PitchSettingsType } from "../types/pitch";
+import { handlePaymentCreation } from "../services/paymentService";
 
 type CreateReservationType = { 
     pitchId: string, 
@@ -34,8 +35,8 @@ export async function createReservation({ pitchId, name, phone, startDate, endDa
     try {
         const pitch = await getPitchData(pitchId, ["settings"]);
         const settings = pitch.settings as PitchSettingsType;
+
         const paymentPolicy = settings.paymentPolicy;
-  
         await checkReservationDateConflict(pitchId, startDate, endDate, paymentPolicy);
 
         const reservation = await prisma.reservation.create({
@@ -161,23 +162,20 @@ export async function approveReservation(id: string) {
     }
 }
 
-export async function checkReservationDateConflict(id: string, startDate: Date, endDate: Date, policy: "SHORT" | "DEFAULT" | "EXTENDED"): Promise<Boolean> {
+export async function checkReservationDateConflict(id: string, startDate: Date, endDate: Date, policy: "SHORT" | "DEFAULT" | "EXTENDED") {
     const now = new Date();
 
     const expiryDate = new Date(startDate);
     expiryDate.setUTCHours(expiryDate.getUTCHours() - 1);
 
-    let limitFactor = 0;
+    let limitFactor = 1;
 
     switch (policy) {
         case "SHORT":
-            limitFactor = 1;
-            break;
-        case "DEFAULT":
-            limitFactor = 2;
+            limitFactor = 0;
             break;
         case "EXTENDED":
-            limitFactor = 3;
+            limitFactor = 2;
             break;
     }
     
@@ -189,7 +187,7 @@ export async function checkReservationDateConflict(id: string, startDate: Date, 
     };
 
     if (limitDate < now) {
-        throw new Error(`Could not reserve for the specified date. Pitch policy requires that user have a ${limitFactor + 1} hour payment grace period.`);
+        throw new Error(`Could not reserve for the specified date. Pitch policy requires that reservation be created at least one hour before the reservation.${limitFactor != 0 ? ` And user have a ${limitFactor} hour payment grace period.` : ""}`);
     };
     
 
@@ -204,8 +202,6 @@ export async function checkReservationDateConflict(id: string, startDate: Date, 
     if (match) {
         throw new Error("Could not reserve for the specified date. Please pick an empty reservation slot.");
     }
-
-    return false;
 }
 
 export async function getAllUserReservations(id: string, limit: number, cursor?: string) {

@@ -16,6 +16,7 @@ import { checkIfUserExistsAlready, fetchUserById } from "../repositories/userRep
 import { getPitch } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
+import { createReservationJobs } from "../queues/reservationQueue";
 
 export async function createUserReservation(pitchId: string, userId: string, startDate: Date, endDate: Date) {
     try {
@@ -113,7 +114,9 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             }
         }
 
-        const reservation = await createReservation({...parsed.data});
+        const reservation = await createReservation({ ...parsed.data });
+        await createReservationJobs(reservation.id, reservation.startDate, reservation.endDate);
+
         return reservation;
     } catch (error: any) {
         throw new Error(error.message);

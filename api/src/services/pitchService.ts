@@ -17,8 +17,8 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             price: z.number().nonnegative("Hourly rate may not be a negative number.").min(100, { message: "Hourly rate must be 100 EGP at least." }).max(1000, { message: "Hourly rate must be 1000 EGP at most." }),
             settings: z.object({
                 automaticApproval: z.boolean({ message: "Automatic approval must be a boolean value." }).default(true),
-                paymentPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Payment policy must be one of available options." }),
-                refundPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT", "FULL"], { message: "Refund policy must be one of available options." }),
+                paymentPolicy: z.enum(["SHORT", "DEFAULT", "EXTENDED"], { message: "Payment policy must be one of available options." }),
+                refundPolicy: z.enum(["SHORT", "DEFAULT", "EXTENDED", "FULL"], { message: "Refund policy must be one of available options." }),
             }, { message: "Settings must be an object with all required properties." }),
             minimumSession: z.number().min(1).max(2).default(1),
             maximumSession: z.number().min(2).max(6).default(6)
@@ -180,8 +180,8 @@ export async function updatePitchField(id: string, field: string, value: string)
             images: z.array(z.string().url({ message: "Images must be a list of valid URLs." }), { message: "Images must be a list of valid URLs." }),
             price: z.number().nonnegative("Hourly rate may not be a negative number.").min(100, { message: "Hourly rate must be 100 EGP at least." }).max(1000, { message: "Hourly rate must be 1000 EGP at most." }),
             settings: z.object({
-                automaticApproval: z.boolean(),
-                paymentPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT"], { message: "Payment policy must be one of available options." }),
+                automaticApproval: z.boolean({ message: "Automatic approval must be provided as either true or false." }),
+                paymentPolicy: z.enum(["SHORT", "DEFAULT", "EXTENDED"], { message: "Payment policy must be one of available options." }),
                 refundPolicy: z.enum(["DEFAULT", "EXTENDED", "SHORT", "FULL"], { message: "Refund policy must be one of available options." }),
             }, { message: "Settings must be an object with all required properties." }),
             minimumSession: z.number().min(1).max(2),
