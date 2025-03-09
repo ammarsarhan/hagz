@@ -3,7 +3,6 @@ import { z } from "zod";
 import { AccountType } from "@prisma/client";
 import { getPitchData } from "./pitchRepository";
 import { PitchSettingsType } from "../types/pitch";
-import { handlePaymentCreation } from "../services/paymentService";
 
 type CreateReservationType = { 
     pitchId: string, 
@@ -92,7 +91,7 @@ export async function getReservation(id: string) {
 
 export async function getReservationData(id: string, fields: string[]) {
     try {
-        const fieldSchema = z.array(z.enum(["id", "pitchId", "userId", "ownerId", "reserveeName", "reserveePhone", "startDate", "endDate", "verificationToken", "isApproved", "approvalExpiry", "createdAt", "updatedAt", "createdBy", "status"]));
+        const fieldSchema = z.array(z.enum(["*", "paymentId", "pitchId", "userId", "ownerId", "reserveeName", "reserveePhone", "startDate", "endDate", "verificationToken", "isApproved", "approvalExpiry", "createdAt", "updatedAt", "createdBy", "status"])).nonempty();
         const parsed = fieldSchema.safeParse(fields);
 
         if (!parsed.success) {
@@ -104,8 +103,7 @@ export async function getReservationData(id: string, fields: string[]) {
                 id
             }, 
             select: {
-                id: parsed.data.includes("id"),
-                pitchId: parsed.data.includes("pitchId"),
+                id: true,
                 userId: parsed.data.includes("userId"),
                 reserveeName: parsed.data.includes("reserveeName"),
                 reserveePhone: parsed.data.includes("reserveePhone"),
@@ -120,7 +118,13 @@ export async function getReservationData(id: string, fields: string[]) {
                 status: parsed.data.includes("status"),
                 pitch: {
                     select: {
+                        id: true,
                         ownerId: parsed.data.includes("ownerId")
+                    }
+                },
+                payment: {
+                    select: {
+                        id: true
                     }
                 }
             }

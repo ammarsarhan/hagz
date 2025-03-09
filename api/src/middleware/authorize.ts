@@ -4,7 +4,7 @@ import { verify } from "jsonwebtoken";
 import { checkIfOwnerExistsAlready, checkIfOwnerVerifiedAlready } from "../repositories/ownerRepository";
 import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../repositories/userRepository";
 import { validatePitchOwnership } from "../repositories/pitchRepository";
-import { checkIfReservationExists, getReservation, getReservationData } from "../repositories/reservationRepository";
+import { checkIfReservationExists, getReservationData } from "../repositories/reservationRepository";
 import { TokenPayloadType } from "../utils/token";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {

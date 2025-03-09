@@ -41,7 +41,7 @@ export async function getPitch(id: string) {
 
 export async function getPitchData(id: string, fields: string[]) {
     try {
-        const fieldSchema = z.array(z.enum(["id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "settings", "minimumSession", "maximumSession", "approvalExpiry", "createdAt", "updatedAt"]));
+        const fieldSchema = z.array(z.enum(["id", "ownerId", "name", "description", "size", "surface", "amenities", "images", "price", "coordinates", "settings", "minimumSession", "maximumSession", "approvalExpiry", "createdAt", "updatedAt"])).nonempty();
         const parsed = fieldSchema.safeParse(fields);
 
         if (!parsed.success) {

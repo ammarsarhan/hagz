@@ -1,6 +1,7 @@
-import prisma from '../utils/db';
-import { redis } from '../utils/redis';
 import { Worker } from 'bullmq';
+import { getReservationData } from '../repositories/reservationRepository';
+import prisma from '../utils/db';
+import redis from '../utils/redis';
 
 const options = {
     connection: redis,
@@ -8,7 +9,14 @@ const options = {
 };
 
 const handleStartReservation = async (id: string) => {
-    const reservation = await prisma.reservation.update({
+    const reservation = await getReservationData(id, ["status"]);
+
+    if (reservation.status != "PENDING") {
+        console.log("Failed to set reservation to start. Reservation is already cancelled.");    
+        return;
+    }
+
+    const updated = await prisma.reservation.update({
         where: {
             id: id
         },
@@ -17,13 +25,22 @@ const handleStartReservation = async (id: string) => {
         }
     })
 
-    if (!reservation) {
-        throw new Error("Could not update reservation to start.");
+    console.log("[ReservationWorker] Reservation started:", id);
+
+    if (!updated) {
+        throw new Error("Could not update reservation to start. Please handle this manually.");
     }
 }
 
 const handleEndReservation = async (id: string) => {
-    const reservation = await prisma.reservation.update({
+    const reservation = await getReservationData(id, ["status"]);
+
+    if (reservation.status != "IN_PROGRESS") {
+        console.log("Failed to set reservation to end. Reservation has not started yet.");    
+        return;
+    }
+
+    const updated = await prisma.reservation.update({
         where: {
             id: id
         },
@@ -32,41 +49,64 @@ const handleEndReservation = async (id: string) => {
         }
     })
 
-    if (!reservation) {
-        throw new Error("Could not update reservation to complete.");
+    console.log("[ReservationWorker] Reservation ended:", id);
+
+    if (!updated) {
+        throw new Error("Could not update reservation to complete. Please handle this manually.");
     }
 }
 
-const handleCancelReservation = async (id: string) => {
-    const reservation = await prisma.reservation.update({
-        where: {
-            id: id
-        },
-        data: {
-            status: "CANCELLED"
+const handleExpireReservation = async (id: string) => {
+    const reservation = await getReservationData(id, ["status"]);
+
+    if (reservation.status != "CONFIRMED") {
+        const updated = await prisma.reservation.update({
+            where: {
+                id: id
+            },
+            data: {
+                status: "CANCELLED"
+            }
+        })
+
+        console.log("[ReservationWorker] Reservation has not been confirmed yet. Cancelling:", id);
+    
+        if (!updated) {
+            throw new Error("Could not update reservation to cancel. Please handle this manually.");
         }
-    })
-
-    if (!reservation) {
-        throw new Error("Could not update reservation to cancel.");
     }
 }
+
+// const handleDeleteReservation = async (id: string) => {
+//     const reservation = await prisma.reservation.delete({
+//         where: {
+//             id: id
+//         }
+//     })
+
+//     if (!reservation) {
+//         throw new Error("Could not delete reservation. Please handle this manually.");
+//     }
+// }
 
 const reservationWorker = new Worker('reservationQueue', async (job) => {
     try {
-        const data = job.data;
+        const id = job.data.id;
         const type = job.name;
     
         switch (type) {
             case "start":
-                await handleStartReservation(data.id);
+                await handleStartReservation(id);
                 break;
             case "end":
-                await handleEndReservation(data.id);
+                await handleEndReservation(id);
                 break;
-            case "cancel":
-                await handleCancelReservation(data.id);
+            case "expire":
+                await handleExpireReservation(id);
                 break;
+            // case "delete":
+            //     await handleDeleteReservation(id);
+            //     break;
         };
     } catch (error: any) {
         throw new Error(error.message);

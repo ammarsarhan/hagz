@@ -8,8 +8,7 @@ import {
     getDoneUserReservations, 
     getAllPitchReservations, 
     getScheduledPitchReservations,
-    getDonePitchReservations,
-    getReservationData
+    getDonePitchReservations
 } from "../repositories/reservationRepository";
 
 import { checkIfUserExistsAlready, fetchUserById } from "../repositories/userRepository";
@@ -17,6 +16,8 @@ import { getPitch } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
 import { createReservationJobs } from "../queues/reservationQueue";
+import { createPaymentRequest } from "./paymentService";
+import { PitchSettingsType } from "../types/pitch";
 
 export async function createUserReservation(pitchId: string, userId: string, startDate: Date, endDate: Date) {
     try {
@@ -97,6 +98,8 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
         }
 
         const pitch = await getPitch(pitchId);
+        pitch.settings as PitchSettingsType;
+        
         const match = await checkIfUserExistsAlready({ phone: parsed.data.phone });
 
         if (match) {
@@ -112,12 +115,13 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             } else {
                 throw new Error(`Reservation duration must be between ${pitch.minimumSession} and ${pitch.maximumSession} hours long.`);
             }
-        }
+        };
 
         const reservation = await createReservation({ ...parsed.data });
-        await createReservationJobs(reservation.id, reservation.startDate, reservation.endDate);
+        await createReservationJobs(reservation.id, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
+        const payment = await createPaymentRequest(reservation.id, pitch.price, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
 
-        return reservation;
+        return { reservation, payment };
     } catch (error: any) {
         throw new Error(error.message);
     }

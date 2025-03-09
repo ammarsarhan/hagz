@@ -8,7 +8,7 @@
     "start": " node index.js",
     "build": "tsc",
     "dev": "nodemon",
-    "worker": "nodemon --ext ts --watch workers --exec 'ts-node' src/workers/*.ts"
+    "worker": "nodemon --ext ts --watch workers --exec 'ts-node' src/workers/reservationWorker.ts & nodemon --ext ts --watch workers --exec 'ts-node' src/workers/paymentWorker.ts"
   },
   "author": "Ammar Sarhan",
   "license": "ISC",
