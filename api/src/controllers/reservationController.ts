@@ -40,7 +40,7 @@ export async function handleCreateUserReservation(req: Request, res: Response) {
 export async function handleCreatePitchReservation(req: Request, res: Response) {
     try {
         const id = req.params.pitch;
-        const { reserveeName, reserveePhone, startDate, endDate } = req.body;
+        const { reserveeName, reserveePhone, startDate, endDate, isManual } = req.body;
 
         if (!id || !reserveeName || !reserveePhone || !startDate || !endDate) {
             res.status(400).json({ success: false, message: "Please provide a valid reservee name, phone, start date, and end date." })
@@ -57,7 +57,7 @@ export async function handleCreatePitchReservation(req: Request, res: Response) 
         const start = new Date(startDate);
         const end = new Date(endDate);
 
-        const reservation = await createOwnerReservation(id, reserveeName, reserveePhone, start, end);
+        const reservation = await createOwnerReservation(id, reserveeName, reserveePhone, start, end, isManual);
         res.status(201).json({ success: true, message: "Reservation created successfully.", data: reservation });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });

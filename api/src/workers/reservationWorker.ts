@@ -11,7 +11,7 @@ const options = {
 const handleStartReservation = async (id: string) => {
     const reservation = await getReservationData(id, ["status"]);
 
-    if (reservation.status != "PENDING") {
+    if (reservation.status != "CONFIRMED") {
         console.log("Failed to set reservation to start. Reservation is already cancelled.");    
         return;
     }
@@ -69,25 +69,13 @@ const handleExpireReservation = async (id: string) => {
             }
         })
 
-        console.log("[ReservationWorker] Reservation has not been confirmed yet. Cancelling:", id);
+        console.log("[ReservationWorker] Reservation cancelled:", id);
     
         if (!updated) {
             throw new Error("Could not update reservation to cancel. Please handle this manually.");
         }
     }
 }
-
-// const handleDeleteReservation = async (id: string) => {
-//     const reservation = await prisma.reservation.delete({
-//         where: {
-//             id: id
-//         }
-//     })
-
-//     if (!reservation) {
-//         throw new Error("Could not delete reservation. Please handle this manually.");
-//     }
-// }
 
 const reservationWorker = new Worker('reservationQueue', async (job) => {
     try {
@@ -104,9 +92,6 @@ const reservationWorker = new Worker('reservationQueue', async (job) => {
             case "expire":
                 await handleExpireReservation(id);
                 break;
-            // case "delete":
-            //     await handleDeleteReservation(id);
-            //     break;
         };
     } catch (error: any) {
         throw new Error(error.message);

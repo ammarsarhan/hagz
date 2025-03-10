@@ -30,12 +30,12 @@ function getPaymentAmount(startDate: Date, endDate: Date, rate: number) {
     }
 }
 
-export async function createPaymentRequest(reservation: string, rate: number, startDate: Date, endDate: Date, policy: "SHORT" | "DEFAULT" | "EXTENDED") {
+export async function initiatePayment(reservation: string, rate: number, startDate: Date, endDate: Date, policy: "SHORT" | "DEFAULT" | "EXTENDED", isManual?: boolean) {
     try {
         const expiryDate = getPaymentExpiryDate(startDate, policy);
         const amount = getPaymentAmount(startDate, endDate, rate);
     
-        const payment = await createPayment(reservation, amount, expiryDate);
+        const payment = await createPayment(reservation, amount, expiryDate, isManual);
         await createPaymentJob(payment.id, payment.expiryDate);
         
         return payment;

@@ -16,7 +16,7 @@ import { getPitch } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
 import { createReservationJobs } from "../queues/reservationQueue";
-import { createPaymentRequest } from "./paymentService";
+import { initiatePayment } from "./paymentService";
 import { PitchSettingsType } from "../types/pitch";
 
 export async function createUserReservation(pitchId: string, userId: string, startDate: Date, endDate: Date) {
@@ -65,13 +65,16 @@ export async function createUserReservation(pitchId: string, userId: string, sta
         }
 
         const reservation = await createReservation({ ...parsed.data });
-        return reservation;
+        await createReservationJobs(reservation.id, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
+        const payment = await initiatePayment(reservation.id, pitch.price, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
+
+        return { reservation, payment };
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function createOwnerReservation(pitchId: string, reserveeName: string, reserveePhone: string, startDate: Date, endDate: Date) {
+export async function createOwnerReservation(pitchId: string, reserveeName: string, reserveePhone: string, startDate: Date, endDate: Date, isManual?: boolean) {
     try {
         const schema = z.object({
             pitchId: z.string().cuid("Please provide a valid CUID for the pitch ID."),
@@ -119,7 +122,7 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
 
         const reservation = await createReservation({ ...parsed.data });
         await createReservationJobs(reservation.id, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
-        const payment = await createPaymentRequest(reservation.id, pitch.price, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
+        const payment = await initiatePayment(reservation.id, pitch.price, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy, isManual);
 
         return { reservation, payment };
     } catch (error: any) {

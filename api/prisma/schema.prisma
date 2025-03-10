@@ -67,7 +67,6 @@ model Reservation {
   reserveePhone     String
   startDate         DateTime
   endDate           DateTime
-  verificationToken String?
   isApproved        Boolean           @default(false)
   approvalExpiry    DateTime?
   createdAt         DateTime          @default(now())
@@ -84,6 +83,7 @@ model Payment {
   reservationId String        @unique
   amount        Float
   status        PaymentStatus @default(PENDING)
+  manual        Boolean       @default(false)
   expiryDate    DateTime
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

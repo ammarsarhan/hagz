@@ -91,7 +91,7 @@ export async function getReservation(id: string) {
 
 export async function getReservationData(id: string, fields: string[]) {
     try {
-        const fieldSchema = z.array(z.enum(["*", "paymentId", "pitchId", "userId", "ownerId", "reserveeName", "reserveePhone", "startDate", "endDate", "verificationToken", "isApproved", "approvalExpiry", "createdAt", "updatedAt", "createdBy", "status"])).nonempty();
+        const fieldSchema = z.array(z.enum(["*", "paymentId", "pitchId", "userId", "ownerId", "reserveeName", "reserveePhone", "startDate", "endDate", "isApproved", "approvalExpiry", "createdAt", "updatedAt", "createdBy", "status"])).nonempty();
         const parsed = fieldSchema.safeParse(fields);
 
         if (!parsed.success) {
@@ -109,7 +109,6 @@ export async function getReservationData(id: string, fields: string[]) {
                 reserveePhone: parsed.data.includes("reserveePhone"),
                 startDate: parsed.data.includes("startDate"),
                 endDate: parsed.data.includes("endDate"),
-                verificationToken: parsed.data.includes("verificationToken"),
                 isApproved: parsed.data.includes("isApproved"),
                 approvalExpiry: parsed.data.includes("approvalExpiry"),
                 createdAt: parsed.data.includes("createdAt"),

@@ -73,13 +73,14 @@ export async function getPaymentData(id: string, fields: string[]) {
     }
 }
 
-export async function createPayment(reservation: string, amount: number, expiryDate: Date) {
+export async function createPayment(reservation: string, amount: number, expiryDate: Date, manual?: boolean) {
     try {
         const payment = await prisma.payment.create({
             data: {
                 reservationId: reservation,
                 amount,
-                expiryDate
+                expiryDate,
+                manual
             }
         });
 

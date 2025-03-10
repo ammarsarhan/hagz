@@ -7,15 +7,9 @@ export interface TokenDataType {
 
 export type TokenPayloadType = TokenDataType & JwtPayload;
 
-const reservationKey = process.env.RESERVATION_SECRET_KEY || "";
 const verificationKey = process.env.VERIFICATION_SECRET_KEY || "";
 const accessKey = process.env.ACCESS_SECRET_KEY || "";
 const refreshKey = process.env.REFRESH_SECRET_KEY || "";
-
-export function generateReservationToken(data: TokenDataType) {
-    const token = sign(data, reservationKey, {expiresIn: "15m"});
-    return token;
-}
 
 export function generateVerificationToken(data: TokenDataType) {
     const token = sign(data, verificationKey, {expiresIn: "15m"});
