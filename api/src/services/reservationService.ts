@@ -8,11 +8,12 @@ import {
     getDoneUserReservations, 
     getAllPitchReservations, 
     getScheduledPitchReservations,
-    getDonePitchReservations
+    getDonePitchReservations,
+    getReservationData
 } from "../repositories/reservationRepository";
 
 import { checkIfUserExistsAlready, fetchUserById } from "../repositories/userRepository";
-import { getPitch } from "../repositories/pitchRepository";
+import { getPitch, getPitchData } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
 import { createReservationJobs } from "../queues/reservationQueue";
@@ -82,6 +83,7 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             phone: z.string().regex(/^\d{4}-\d{3}-\d{4}$/, "Please provide a valid phone number."),
             startDate: z.date({ message: "Please provide a valid start date." }),
             endDate: z.date({ message: "Please provide a valid end date." }),
+            isManual: z.boolean({ message: "Please provide a valid boolean value for manual reservation." }).optional(),
             createdBy: z.enum(["USER", "OWNER"])
         }).refine(data => data.startDate < data.endDate, {
             message: "Start date may not be before or equal to the end date. Please choose a valid date range.",
@@ -93,6 +95,7 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
             phone: reserveePhone,
             startDate,
             endDate,
+            isManual,
             createdBy: "OWNER"
          });
 
@@ -122,7 +125,7 @@ export async function createOwnerReservation(pitchId: string, reserveeName: stri
 
         const reservation = await createReservation({ ...parsed.data });
         await createReservationJobs(reservation.id, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy);
-        const payment = await initiatePayment(reservation.id, pitch.price, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy, isManual);
+        const payment = await initiatePayment(reservation.id, pitch.price, reservation.startDate, reservation.endDate, pitch.settings.paymentPolicy, parsed.data.isManual);
 
         return { reservation, payment };
     } catch (error: any) {
@@ -287,6 +290,15 @@ export async function fetchAllPitchReservations(id: string, cursor: string, limi
                 cursor: last ? last.id : null
             };
         }
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function voidReservation(id: string) {
+    try {
+        const reservation = await getReservationData(id, ["status"]);
+        
     } catch (error: any) {
         throw new Error(error.message);
     }

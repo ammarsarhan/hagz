@@ -7,8 +7,10 @@ import {
     fetchAllReservations, 
     fetchScheduledReservations,
     fetchDoneReservations,
-    createOwnerReservation
+    createOwnerReservation,
+    voidReservation
 } from "../services/reservationService";
+import { getReservationData } from "repositories/reservationRepository";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
     try {
@@ -162,6 +164,14 @@ export async function handleFetchDoneReservations(req: Request, res: Response) {
             res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
             return;
         }
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function handleCancelReservation(req: Request, res: Response) {
+    try {
+        const id = req.params.reservation;
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

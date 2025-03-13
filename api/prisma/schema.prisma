@@ -83,7 +83,8 @@ model Payment {
   reservationId String        @unique
   amount        Float
   status        PaymentStatus @default(PENDING)
-  manual        Boolean       @default(false)
+  isManual      Boolean       @default(false)
+  voidDate      DateTime
   expiryDate    DateTime
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -116,6 +117,7 @@ enum PaymentStatus {
   REFUNDED
   EXPIRED
   CANCELLED
+  MANUAL
 }
 
 enum PitchStatus {

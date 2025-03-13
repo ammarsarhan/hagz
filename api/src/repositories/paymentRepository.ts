@@ -1,9 +1,9 @@
 import { z } from "zod";
 import prisma from "../utils/db";
 
-export function getPayment(id: string) {
+export async function getPayment(id: string) {
     try {
-        const payment = prisma.payment.findUnique({
+        const payment = await prisma.payment.findUnique({
             where: {
                 id: id
             },
@@ -39,12 +39,12 @@ export function getPayment(id: string) {
 
 export async function getPaymentData(id: string, fields: string[]) {
     try {
-        const fieldSchema = z.array(z.enum(["*", "amount", "status", "expiryDate", "createdAt", "updatedAt"])).nonempty();
+        const fieldSchema = z.array(z.enum(["*", "userId", "ownerId", "pitchId", "amount", "status", "expiryDate", "isManual", "createdAt", "updatedAt"])).nonempty();
         const parsed = fieldSchema.safeParse(fields);
 
         if (!parsed.success) {
             throw new Error("Invalid fields provided. Unable to fetch reservation specific data.");
-        }
+        };
 
         const payment = await prisma.payment.findUnique({
             where: { id },
@@ -53,15 +53,24 @@ export async function getPaymentData(id: string, fields: string[]) {
                 amount: parsed.data.includes("amount"),
                 status: parsed.data.includes("status"),
                 expiryDate: parsed.data.includes("expiryDate"),
+                isManual: parsed.data.includes("isManual"),
                 createdAt: parsed.data.includes("createdAt"),
                 updatedAt: parsed.data.includes("updatedAt"),
                 reservation: {
                     select: {
-                        id: true
+                        id: true,
+                        userId: parsed.data.includes("userId"),
+                        pitchId: parsed.data.includes("pitchId"),
+                        pitch: {
+                            select: {
+                                id: true,
+                                ownerId: parsed.data.includes("ownerId")
+                            }
+                        }
                     }
                 }
             }
-        })
+        });
 
         if (!payment) {
             throw new Error("Could not fetch payment data. Failed to find payment with the specified credentials.");
@@ -73,19 +82,42 @@ export async function getPaymentData(id: string, fields: string[]) {
     }
 }
 
-export async function createPayment(reservation: string, amount: number, expiryDate: Date, manual?: boolean) {
+export async function createPayment(reservation: string, amount: number, expiryDate: Date, voidDate: Date, isManual?: boolean) {
     try {
+        const status = isManual ? "MANUAL" : "PENDING";
+
         const payment = await prisma.payment.create({
             data: {
                 reservationId: reservation,
                 amount,
                 expiryDate,
-                manual
+                voidDate,
+                status,
+                isManual
             }
         });
 
         if (!payment) {
             throw new Error("Failed to create payment successfully. Could not create payment.");
+        }
+
+        return payment;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function cancelPayment(id: string) {
+    try {
+        const payment = await prisma.payment.update({
+            where: { id },
+            data: {
+                status: "CANCELLED"
+            }
+        })
+
+        if (!payment) {
+            throw new Error("Failed to cancel payment. Please try again later.")
         }
 
         return payment;

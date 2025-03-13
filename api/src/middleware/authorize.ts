@@ -6,6 +6,7 @@ import { checkIfUserExistsAlready, checkIfUserVerifiedAlready } from "../reposit
 import { validatePitchOwnership } from "../repositories/pitchRepository";
 import { checkIfReservationExists, getReservationData } from "../repositories/reservationRepository";
 import { TokenPayloadType } from "../utils/token";
+import { getPaymentData } from "../repositories/paymentRepository";
 
 export async function authorizeUserAccessToken(req: Request, res: Response, next: NextFunction) {
     const accessToken = req.cookies.accessToken;
@@ -165,3 +166,65 @@ export async function authorizeReservationOwnership(req: Request, res: Response,
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+export async function authorizeReservationValidity(req: Request, res: Response, next: NextFunction) {
+    try {
+        const id = req.params.reservation;
+        const reservation = await getReservationData(id, ["status"]);
+
+        if (reservation.status == "CANCELLED") {
+            res.status(403).json({ success: false, message: "This reservation has already been cancelled. To make changes or edit this resource, please contact customer support." });
+            return;
+        }
+
+        next();
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function authorizePaymentOwnership(req: Request, res: Response, next: NextFunction) {
+    try {
+        const pitch = req.params.pitch;
+        const id = req.params.payment;
+        const user = req.user;
+
+        if (!id || !user) {
+            throw new Error("Either payment or user credentials provided correctly. Please try again later.");
+        }
+
+        const payment = await getPaymentData(id, ["userId", "ownerId", "pitchId"]);
+
+        if (user.type == "User" && payment.reservation.userId !== user.id) {
+            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again." });
+            return;
+        }
+
+        if (user.type == "Owner" && (payment.reservation.pitch.ownerId !== user.id || payment.reservation.pitchId !== pitch)) {
+            res.status(403).json({ success: false, message: "You are not authorized to access this resource. Please sign in with valid credentials and try again." });
+            return;
+        }
+
+        next();
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function authorizePaymentValidity(req: Request, res: Response, next: NextFunction) {
+    try {
+        const now = new Date();
+        const id = req.params.payment;
+        
+        const payment = await getPaymentData(id, ["status", "expiryDate"]);
+
+        if (payment.status == "EXPIRED" || payment.expiryDate > now) {
+            res.status(403).json({ success: false, message: "This payment has already been expired. To make changes or edit this resource, please contact customer support." });
+            return;
+        }
+        
+        next();
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}

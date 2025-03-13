@@ -10,7 +10,8 @@ type CreateReservationType = {
     phone: string, 
     startDate: Date, 
     endDate: Date, 
-    createdBy: AccountType 
+    createdBy: AccountType,
+    isManual?: boolean,
     userId?: string
 }
 
@@ -30,13 +31,15 @@ export async function checkIfReservationExists(id: string, pitch?: string) {
     }
 }
 
-export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, createdBy } : CreateReservationType) {
+export async function createReservation({ pitchId, name, phone, startDate, endDate, userId, isManual, createdBy } : CreateReservationType) {
     try {
         const pitch = await getPitchData(pitchId, ["settings"]);
         const settings = pitch.settings as PitchSettingsType;
 
         const paymentPolicy = settings.paymentPolicy;
         await checkReservationDateConflict(pitchId, startDate, endDate, paymentPolicy);
+
+        const status = isManual ? "CONFIRMED" : "PENDING";
 
         const reservation = await prisma.reservation.create({
             data: {
@@ -47,6 +50,7 @@ export async function createReservation({ pitchId, name, phone, startDate, endDa
                 endDate,
                 userId,
                 createdBy,
+                status,
                 isApproved: true
             },
             include: {

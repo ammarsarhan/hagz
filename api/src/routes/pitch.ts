@@ -9,6 +9,7 @@ import {
     handleUpdatePitch,
     handleFetchPitchSettings
 } from "../controllers/pitchController";
+
 import { 
     handleFetchAllReservations, 
     handleFetchScheduledReservations, 
@@ -16,6 +17,8 @@ import {
     handleFetchDoneReservations,
     handleCreatePitchReservation
 } from "../controllers/reservationController";
+
+import { handleFetchPayment } from "../controllers/paymentController";
 
 const pitch = Router();
 
@@ -34,5 +37,7 @@ pitch.get('/:pitch/reservations/:reservation', authorizeOwnerAccessToken, author
 pitch.get('/:pitch/settings', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleFetchPitchSettings(req, res));
 pitch.patch('/:pitch/update/:field', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleUpdatePitch(req, res));
 pitch.post('/:pitch/reservations/create', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleCreatePitchReservation(req, res));
+
+pitch.get('/:pitch/payments/:payment', authorizeOwnerAccessToken, authorizeVerificationStatus, authorizePitchOwnership, async (req, res) => handleFetchPayment(req, res));
 
 export default pitch;

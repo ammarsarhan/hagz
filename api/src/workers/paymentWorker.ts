@@ -11,9 +11,9 @@ const options = {
 const paymentWorker = new Worker('paymentQueue', async job => {
     try {
         const id = job.data.id;
-        const payment = await getPaymentData(id, ["status"]);
+        const payment = await getPaymentData(id, ["status", "isManual"]);
 
-        if (payment.status != "PAID") {
+        if (!payment.isManual && payment.status != "PAID") {
             const payment = await prisma.payment.update({
                 where: { id },
                 data: { status: "EXPIRED" }

@@ -36,7 +36,7 @@ const handleEndReservation = async (id: string) => {
     const reservation = await getReservationData(id, ["status"]);
 
     if (reservation.status != "IN_PROGRESS") {
-        console.log("Failed to set reservation to end. Reservation has not started yet.");    
+        console.log("Failed to set reservation to end. Reservation is not in progress.");    
         return;
     }
 
