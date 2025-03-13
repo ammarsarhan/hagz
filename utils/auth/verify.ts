@@ -1,7 +1,8 @@
 import { verify, sign, JwtPayload, JsonWebTokenError } from "jsonwebtoken";
 import prisma from "@/utils/db";
 import { v4 as uuidv4 } from 'uuid';
-import { createTransport } from "nodemailer";
+import { NextRequest, NextResponse } from "next/server";
+import { OwnerAccessTokenType } from "@/utils/types/tokens";
 
 export async function sendOwnerVerificationEmail (name: string, email: string, token?: string) {
     const jti = uuidv4();
@@ -82,6 +83,27 @@ export async function isOwnerVerified(email: string) {
     }
 
     return false;
+}
+
+export function validateAccessTokenFromRequest(request: NextRequest) {
+    const accessHeader = request.headers.get("Authorization");
+
+    if (!accessHeader || !accessHeader.startsWith('Bearer ')) {
+        return NextResponse.json({ message: 'Unauthorized', status: 401 }, { status: 401 });
+    }
+
+    const accessToken = accessHeader.split('Bearer ')[1];
+
+    if (!accessToken) {
+        return NextResponse.redirect("/auth/owner/sign-in");
+    }
+
+    const data = verify(accessToken, process.env.JWT_SECRET as string) as OwnerAccessTokenType;
+    if (!data) {
+        return NextResponse.redirect("/auth/owner/sign-in");
+    }
+
+    return data;
 }
 
 export async function verifyOwner(id: string, token: string) {

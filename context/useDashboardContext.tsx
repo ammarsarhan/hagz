@@ -5,9 +5,7 @@ import useAuthContext from "@/context/useAuthContext";
 
 interface DashboardContextDataType {
     activePitchIndex: number,
-    pitchOptions: {
-        value: string, description: string, icon: ReactNode
-    }[],
+    pitchOptions: DashboardPitchOptionType[],
     loading: boolean
 }
 
@@ -42,7 +40,7 @@ export function DashboardContextProvider({children} : {children: ReactNode}) {
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const pitches = await fetch("/api/owner/pitches", {
+            const pitches = await fetch("/api/owner/options", {
                 headers: new Headers({
                     "Authorization": `Bearer ${auth.data.accessToken}`
                 })
@@ -52,9 +50,11 @@ export function DashboardContextProvider({children} : {children: ReactNode}) {
             if (data.pitches) {
                 data.pitches.map((pitch: PitchType) => {
                     let option: DashboardPitchOptionType = {
+                        id: pitch.id,
                         value: pitch.name,
                         description: `${pitch.location.governorate}, Egypt`,
-                        icon: null
+                        price: pitch.activePricingPlan.price,
+                        icon: null,
                     };
 
                     setPitchOptions(previous => ([...previous, option]));

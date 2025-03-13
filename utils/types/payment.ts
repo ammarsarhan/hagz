@@ -1,5 +1,6 @@
 import AppLocation from "@/utils/types/location";
 
+export type PaymentStatus = "Pending" | "Done" | "Cancelled" | "Error";
 export type PaymentMethodType = "Cash" | "Card" | "Wallet";
 
 export type Card = {
@@ -28,10 +29,34 @@ export interface PaymentMethod {
     details: Card | Wallet | Cash;
 }
 
+// model Payment {
+//     id            String        @id @default(uuid())
+//     ownerId       String
+//     reservationId String        @unique
+//     amount        Float
+//     date          DateTime
+//     method        Json // PaymentMethod
+//     createdAt     DateTime      @default(now())
+//     updatedAt     DateTime      @updatedAt
+//     status        PaymentStatus
+//     owner         Owner         @relation(fields: [ownerId], references: [id])
+//     reservation   Reservation   @relation(fields: [reservationId], references: [id])
+//   }
+  
+// model Reservation {
+//     id      String   @id @default(uuid())
+//     pitchId String
+//     pitch   Pitch    @relation(fields: [pitchId], references: [id])
+//     payment Payment?
+// }
+
 export default interface Payment {
-    reservation: string;
+    id: string;
+    ownerId: string;
+    reservationId: string;
+    total: number;
     amount: number;
-    date: string;
+    date: Date;
     method: PaymentMethod;
-    status: "Pending" | "Done" | "Cancelled";
+    status: PaymentStatus;
 }

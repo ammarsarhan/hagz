@@ -49,7 +49,6 @@ export function AuthContextProvider({children} : {children: ReactNode}) {
     const [role, setRole] = useState<"Owner" | "User" | undefined>(undefined);
 
     const [loading, setLoading] = useState(true);
-    const router = useRouter();
 
     useEffect(() => {
         const requestAccessToken = async () => {

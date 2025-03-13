@@ -8,11 +8,12 @@ import Continued from "@/components/auth/ContinuedForm";
 
 import Cookies from "js-cookie";
 import Owner from "@/utils/types/owner";
+import Loading from "@/components/ui/Loading";
+import usePrevious from "@/hooks/usePrevious";
+
 import { decode } from "jsonwebtoken";
 import { createContext, ReactNode, useContext, useState, useRef, useEffect } from "react";
 import { CreationTokenType } from "@/utils/types/tokens";
-import Loading from "@/components/ui/Loading";
-import usePrevious from "@/hooks/usePrevious";
 
 interface FormProperties {
     currentIndex: number,

@@ -2,9 +2,12 @@ export const today = new Date();
 export const hours = ["12:00 AM", "01:00 AM", "02:00 AM", "03:00 AM", "04:00 AM", "05:00 AM", "06:00 AM", "07:00 AM",  "08:00 AM",  "09:00 AM", "10:00 AM",  "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM", "09:00 PM", "10:00 PM", "11:00 PM"];
 export const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// 1, 2, 3, 4, 5, 6, 7
+export function addHours(date: Date, hours: number) {
+    const result = date.setTime(date.getTime() + (hours * 60 * 60 * 1000));
+    return new Date(result);
+}
 
-export const addDays = function (date: Date, days: number) {
+export function addDays(date: Date, days: number) {
     var result = new Date(date);
     result.setDate(result.getDate() + days);
     return result;
@@ -42,6 +45,19 @@ export function getWeekdays(date: Date) {
     }
 
     return weekdays;
+}
+
+export function getMonthDays(date: Date) {
+    let days: Date[] = [];
+
+    const monthEnd = new Date(date.getFullYear(), date.getMonth(), 0).getDate();
+    
+    for (let i = 1; i <= monthEnd - 1; i++) {
+        const temp = new Date(date.getFullYear(), date.getMonth(), i);
+        days.push(temp);
+    }
+    
+    return days;
 }
 
 export function getCalendar(date: Date) {
@@ -94,4 +110,25 @@ export function getNextBillableWeek() {
             return temp.toLocaleDateString('en-US');
         }
     }
+}
+
+export function isDate(day: Date, comparator: Date) {
+    return day.toLocaleDateString() === comparator.toLocaleDateString();
+}
+
+export function getLocaleDate(dateString: string) {
+    let temp = new Date(dateString);
+    return new Date(temp.getTime() - temp.getTimezoneOffset() * 60000);
+}
+
+export function getRecurringDates(date: Date, count: number) {
+    let dates = [date];
+    let currentDate = date;
+
+    for (let i = 1; i <= count; i++) {
+        currentDate = addDays(currentDate, 7);
+        dates.push(currentDate);
+    }
+
+    return dates;
 }

@@ -1,25 +1,13 @@
 import prisma from "@/utils/db";
 
-import { OwnerAccessTokenType } from "@/utils/types/tokens";
-import { verify } from "jsonwebtoken";
+import { validateAccessTokenFromRequest } from "@/utils/auth/verify";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET (req: NextRequest) {
-    const accessHeader = req.headers.get("Authorization");
+    const data = validateAccessTokenFromRequest(req);
 
-    if (!accessHeader || !accessHeader.startsWith('Bearer ')) {
-        return NextResponse.json({ message: 'Unauthorized', status: 401 }, { status: 401 });
-    }
-
-    const accessToken = accessHeader.split('Bearer ')[1];
-
-    if (!accessToken) {
-        return NextResponse.redirect("/auth/owner/sign-in");
-    }
-
-    const data = verify(accessToken, process.env.JWT_SECRET as string) as OwnerAccessTokenType;
-    if (!data) {
-        return NextResponse.redirect("/auth/owner/sign-in");
+    if (data instanceof NextResponse) {
+        return data;
     }
 
     try {
@@ -28,7 +16,14 @@ export async function GET (req: NextRequest) {
                 id: data.id
             },
             select: {
-                pitches: true
+                pitches: {
+                    select: {
+                        id: true,
+                        name: true,
+                        location: true,
+                        activePricingPlan: true
+                    }
+                }
             }
         })
     

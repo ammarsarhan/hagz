@@ -8,6 +8,7 @@ import SelectorTrigger, { SelectorModal } from "@/components/dashboard/Selector"
 import Profile from "@/components/dashboard/Profile";
 import Skeleton from "react-loading-skeleton";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const SidebarSkeleton = () => {
     return (
@@ -20,12 +21,18 @@ const SidebarSkeleton = () => {
 export default function Sidebar () {
     const authContext = useAuthContext();
     const dashboardContext = useDashboardContext();
+    const router = useRouter();
     
     const loading = dashboardContext.data.loading;
     const index = dashboardContext.data.activePitchIndex;
     const options = dashboardContext.data.pitchOptions;
 
     const [openSelector, setOpenSelector] = useState(false);
+
+    const handlePitchChanged = () => {
+        setOpenSelector(false);
+        router.push(`/dashboard/reservations`);
+    }
 
     if (authContext.data.user) {        
         return (
@@ -36,10 +43,10 @@ export default function Sidebar () {
                         active={index}
                         options={options}
                         handleSelect={(index: number) => dashboardContext.actions.setActivePitchIndex(index)}
-                        handleClose={() => setOpenSelector(false)}
+                        handleClose={() => handlePitchChanged()}
                     />
                 }
-                <aside className="flex-col h-screen p-6 border-r-[1px] bg-gray-100 w-[22rem] hidden lg:flex fixed lg:static">
+                <aside className="flex-col h-screen p-6 border-r-[1px] bg-gray-100 w-[22rem] hidden lg:flex fixed">
                     {
                         loading ?
                         <Skeleton className="h-4 my-6"/> :

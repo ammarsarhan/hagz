@@ -38,6 +38,14 @@ enum PreferencesType {
   Phone
 }
 
+enum ReservationStatus {
+  Pending
+  Confirmed
+  Completed
+  Cancelled
+  Error
+}
+
 enum ActionStatus {
   Inactive
   Verified
@@ -66,10 +74,11 @@ enum Amenity {
 }
 
 model Payment {
-  id            String        @id @default(uuid())
+  id            String        @id @default(cuid())
   ownerId       String
   reservationId String        @unique
   amount        Float
+  total         Float
   date          DateTime
   method        Json // PaymentMethod
   createdAt     DateTime      @default(now())
@@ -80,14 +89,24 @@ model Payment {
 }
 
 model Reservation {
-  id      String   @id @default(uuid())
-  pitchId String
-  pitch   Pitch    @relation(fields: [pitchId], references: [id])
-  payment Payment?
+  reserveeName    String
+  reserveeEmail   String?
+  reserveePhone   String
+  id              String            @id @default(cuid())
+  pitchId         String
+  startDate       DateTime
+  endDate         DateTime
+  recurring       Boolean           @default(false)
+  recurringDates  DateTime[]
+  isLocked        Boolean           @default(true)
+  additionalNotes String?
+  status          ReservationStatus
+  pitch           Pitch             @relation(fields: [pitchId], references: [id])
+  payment         Payment?
 }
 
 model Pitch {
-  id                String        @id @default(uuid())
+  id                String        @id @default(cuid())
   name              String
   description       String
   groundType        GroundType
@@ -104,7 +123,7 @@ model Pitch {
 }
 
 model Owner {
-  id                  String          @id @unique @default(cuid())
+  id                  String          @id @unique @default(uuid())
   firstName           String
   lastName            String
   company             String?

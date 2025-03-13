@@ -2,10 +2,6 @@ import { weekdays, getCalendar } from "@/utils/date";
 import { usePathname } from "next/navigation";
 import { colors } from "@/utils/color";
 
-// When we click any of the active cells, we want to: 
-// 1) Change the activeDate of the parent component
-// 2) Change the activeView of the parent component to 0
-
 interface MonthlyViewProps {
     date: Date, 
     reservations: Number[], 
