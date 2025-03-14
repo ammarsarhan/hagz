@@ -167,22 +167,6 @@ export async function authorizeReservationOwnership(req: Request, res: Response,
     }
 };
 
-export async function authorizeReservationValidity(req: Request, res: Response, next: NextFunction) {
-    try {
-        const id = req.params.reservation;
-        const reservation = await getReservationData(id, ["status"]);
-
-        if (reservation.status == "CANCELLED") {
-            res.status(403).json({ success: false, message: "This reservation has already been cancelled. To make changes or edit this resource, please contact customer support." });
-            return;
-        }
-
-        next();
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-}
-
 export async function authorizePaymentOwnership(req: Request, res: Response, next: NextFunction) {
     try {
         const pitch = req.params.pitch;
@@ -205,24 +189,6 @@ export async function authorizePaymentOwnership(req: Request, res: Response, nex
             return;
         }
 
-        next();
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-}
-
-export async function authorizePaymentValidity(req: Request, res: Response, next: NextFunction) {
-    try {
-        const now = new Date();
-        const id = req.params.payment;
-        
-        const payment = await getPaymentData(id, ["status", "expiryDate"]);
-
-        if (payment.status == "EXPIRED" || payment.expiryDate > now) {
-            res.status(403).json({ success: false, message: "This payment has already been expired. To make changes or edit this resource, please contact customer support." });
-            return;
-        }
-        
         next();
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });

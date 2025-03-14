@@ -9,16 +9,18 @@ import {
     getAllPitchReservations, 
     getScheduledPitchReservations,
     getDonePitchReservations,
-    getReservationData
+    getReservationData,
+    cancelReservation
 } from "../repositories/reservationRepository";
 
 import { checkIfUserExistsAlready, fetchUserById } from "../repositories/userRepository";
-import { getPitch, getPitchData } from "../repositories/pitchRepository";
+import { getPitch } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
 import { createReservationJobs } from "../queues/reservationQueue";
-import { initiatePayment } from "./paymentService";
+import { initiatePayment, refundPayment, voidPayment } from "./paymentService";
 import { PitchSettingsType } from "../types/pitch";
+import { getPaymentData } from "../repositories/paymentRepository";
 
 export async function createUserReservation(pitchId: string, userId: string, startDate: Date, endDate: Date) {
     try {
@@ -295,10 +297,47 @@ export async function fetchAllPitchReservations(id: string, cursor: string, limi
     }
 }
 
-export async function voidReservation(id: string) {
+export async function cancelPendingReservation(id: string) {
     try {
-        const reservation = await getReservationData(id, ["status"]);
+        const reservation = await getReservationData(id, ["*"]);
+
+        if (!reservation.payment?.id) {
+            throw new Error("Could not find the payment associated with the reservation. Please handle this manually.");
+        }
+
+        const payment = await getPaymentData(reservation.payment.id, ["status", "isManual"]);
         
+        if (payment.status == "MANUAL" || payment.isManual) {
+            throw new Error("Cannot cancel/refund manual reservations. Please handle this manually.");
+        }
+
+        const voided = await voidPayment(payment.id);
+        const updated = await cancelReservation(id);
+
+        return { reservation: updated, payment: voided };
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function cancelReservationWithRefund(id: string) {
+    try {
+        const reservation = await getReservationData(id, ["*"]);
+
+        if (!reservation.payment?.id) {
+            throw new Error("Could not find the payment associated with the reservation. Please handle this manually.");
+        }
+
+        const payment = await getPaymentData(reservation.payment.id, ["status", "isManual"]);
+        
+        if (payment.status == "MANUAL" || payment.isManual) {
+            throw new Error("Cannot cancel/refund manual reservations. Please handle this manually.");
+        }
+
+        const refunded = await refundPayment(payment.id);
+        const updated = await cancelReservation(id);
+
+        return { reservation: updated, payment: refunded };
     } catch (error: any) {
         throw new Error(error.message);
     }

@@ -322,3 +322,22 @@ export async function getDonePitchReservations(id: string, limit: number, cursor
         throw new Error(error.message);
     }
 }
+
+export async function cancelReservation(id: string) {
+    try {
+        const updated = await prisma.reservation.update({
+            where: { id },
+            data: {
+                status: "CANCELLED"
+            }
+        })
+
+        if (!updated) {
+            throw new Error("Failed to cancel reservation. Please try again later.");
+        }
+
+        return updated;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}

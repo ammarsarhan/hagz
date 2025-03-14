@@ -1,5 +1,6 @@
 import { createPayment, getPaymentData, cancelPayment } from "../repositories/paymentRepository";
 import { createPaymentJob } from "../queues/paymentQueue";
+import prisma from "../utils/db";
 
 export function getPaymentExpiryDate(startDate: Date, policy: "SHORT" | "DEFAULT" | "EXTENDED") {
     const paymentExpiry = new Date(startDate);
@@ -81,23 +82,37 @@ export async function processPayment(id: string) {
             throw new Error("Failed to process payment. Payment is not in a state where processing was anticipated.");
         }
 
-        console.log("Handle payment processing for payment:", id);
+        // TO-DO: Implement payment processing logic here
+        // For now, we will just update the payment status to "PAID"
+        const updated = await prisma.payment.update({
+            where: { id },
+            data: {
+                status: "PAID"
+            }
+        })
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function voidActivePayment(id: string) {
+export async function voidPayment(id: string) {
     try {
-        const payment = await getPaymentData(id, ["status", "isManual"]);
-
-        if (payment.status != "PENDING") {
-            throw new Error("Failed to cancel payment. Payment may not be cancelled if it is no longer pending.");
-        }
-
-        const updated = await cancelPayment(id);
+        // TO-DO: Implement payment voiding logic here
+        // For now, we will just update the payment status to "CANCELLED"
+        const updated = await cancelPayment(id, false);
         return updated;
     } catch (error: any) {
         throw new Error(error.message);
-    }
+    };
+}
+
+export async function refundPayment(id: string) {
+    try {
+        // TO-DO: Implement payment voiding logic here
+        // For now, we will just update the payment status to "REFUNDED"
+        const updated = await cancelPayment(id, true);
+        return updated;
+    } catch (error: any) {
+        throw new Error(error.message);
+    };
 }

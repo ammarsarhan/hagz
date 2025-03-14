@@ -8,7 +8,8 @@ import {
     fetchScheduledReservations,
     fetchDoneReservations,
     createOwnerReservation,
-    voidReservation
+    cancelPendingReservation,
+    cancelReservationWithRefund
 } from "../services/reservationService";
 import { getReservationData } from "repositories/reservationRepository";
 
@@ -172,6 +173,26 @@ export async function handleFetchDoneReservations(req: Request, res: Response) {
 export async function handleCancelReservation(req: Request, res: Response) {
     try {
         const id = req.params.reservation;
+        const reservation = await getReservationData(id, ["status"]);
+
+        const status = reservation.status;
+
+        if (status == "CANCELLED") {
+            res.status(400).json({ success: false, message: "Failed to cancel reservation. Reservation has already been cancelled." });
+            return;
+        };
+
+        if (status == "PENDING") {
+            const updated = await cancelPendingReservation(id);
+            res.status(200).json({ success: true, message: "Cancelled pending reservation successfully.", data: updated });
+            return;
+        };
+
+        if (status == "CONFIRMED") {
+            const updated = await cancelReservationWithRefund(id);
+            res.status(200).json({ success: true, message: "Cancelled confirmed reservation successfully and issued refund.", data: updated });
+            return;
+        };
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

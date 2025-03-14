@@ -107,12 +107,12 @@ export async function createPayment(reservation: string, amount: number, expiryD
     }
 }
 
-export async function cancelPayment(id: string) {
+export async function cancelPayment(id: string, refund?: boolean) {
     try {
         const payment = await prisma.payment.update({
             where: { id },
-            data: {
-                status: "CANCELLED"
+            data: { 
+                status: refund ? "REFUNDED" : "CANCELLED"
             }
         })
 
