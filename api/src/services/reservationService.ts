@@ -10,6 +10,7 @@ import {
     getScheduledPitchReservations,
     getDonePitchReservations,
     getReservationData,
+    confirmReservation,
     cancelReservation
 } from "../repositories/reservationRepository";
 
@@ -18,7 +19,7 @@ import { getPitch } from "../repositories/pitchRepository";
 
 import { getTimeDifference } from "../utils/date";
 import { createReservationJobs } from "../queues/reservationQueue";
-import { initiatePayment, refundPayment, voidPayment } from "./paymentService";
+import { initiatePayment, processPayment, refundPayment, voidPayment } from "./paymentService";
 import { PitchSettingsType } from "../types/pitch";
 import { getPaymentData } from "../repositories/paymentRepository";
 
@@ -292,6 +293,17 @@ export async function fetchAllPitchReservations(id: string, cursor: string, limi
                 cursor: last ? last.id : null
             };
         }
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function processReservationPayment(reservationId: string, paymentId: string) {
+    try {   
+        const payment = await processPayment(paymentId);
+        const reservation = await confirmReservation(reservationId);
+
+        return { payment, reservation };
     } catch (error: any) {
         throw new Error(error.message);
     }

@@ -8,12 +8,14 @@ import {
     fetchScheduledReservations,
     fetchDoneReservations,
     createOwnerReservation,
+    processReservationPayment,
     cancelPendingReservation,
     cancelReservationWithRefund
 } from "../services/reservationService";
 
 import { getReservationData } from "../repositories/reservationRepository";
 import { getPaymentData } from "repositories/paymentRepository";
+import { processPayment } from "services/paymentService";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
     try {
@@ -167,6 +169,33 @@ export async function handleFetchDoneReservations(req: Request, res: Response) {
             res.status(200).json({ success: true, message: "Fetched all pitch reservations successfully.", data: data });
             return;
         }
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+}
+
+export async function handlePayReservation(req: Request, res: Response) {
+    try {
+        const now = new Date();
+
+        const id = req.params.reservation;
+        const reservation = await getReservationData(id, ["status"]);
+
+        if (!reservation.payment?.id) {
+            res.status(400).json({ success: false, message: "Failed to process payment. Reservation does not have a payment associated with it." });
+            return;
+        }
+
+        const payment = await getPaymentData(reservation.payment.id, ["status", "expiryDate"]);
+
+        if (reservation.status != "PENDING" || payment.status != "PENDING" || payment.expiryDate < now) {
+            res.status(400).json({ success: false, message: "Failed to process payment. Reservation is not in a state where payment was anticipated." });
+            return; 
+        }
+
+        const data = await processReservationPayment(id, payment.id);
+
+        res.status(200).json({ success: true, message: "Processed payment request successfully and confirmed reservation.", data: data });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

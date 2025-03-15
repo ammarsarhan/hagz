@@ -90,6 +90,8 @@ export async function processPayment(id: string) {
                 status: "PAID"
             }
         })
+
+        return updated;
     } catch (error: any) {
         throw new Error(error.message);
     }

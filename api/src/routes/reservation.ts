@@ -6,6 +6,7 @@ import {
     handleFetchAllReservations,
     handleFetchScheduledReservations,
     handleFetchDoneReservations,
+    handlePayReservation,
     handleCancelReservation
 } from "../controllers/reservationController";
 
@@ -17,6 +18,7 @@ reservation.get("/scheduled", authorizeUserAccessToken, authorizeVerificationSta
 reservation.get("/done", authorizeUserAccessToken, authorizeVerificationStatus, (req, res) => handleFetchDoneReservations(req, res));
 
 reservation.get("/:reservation", authorizeUserAccessToken, authorizeVerificationStatus, authorizeReservationOwnership, (req, res) => handleFetchReservation(req, res));
+reservation.post("/:reservation/pay", authorizeUserAccessToken, authorizeVerificationStatus, authorizeReservationOwnership, (req, res) => handlePayReservation(req, res));
 reservation.post("/:reservation/cancel", authorizeUserAccessToken, authorizeVerificationStatus, authorizeReservationOwnership, (req, res) => handleCancelReservation(req, res));
 
 export default reservation;
