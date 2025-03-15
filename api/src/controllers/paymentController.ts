@@ -32,7 +32,7 @@ export async function handleProcessPayment(req: Request, res: Response) {
             throw new Error("Could not update payment status to PAID.")
         }
 
-        res.status(200).json({ success: true, message: "Paid for reservation successfully.", data: payment })
+        res.status(200).json({ success: true, message: "Processed reservation payment successfully.", data: payment })
         return;
 
         // To-Do Later: Hook this up to Fawry or Paymob

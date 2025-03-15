@@ -202,7 +202,10 @@ export async function checkReservationDateConflict(id: string, startDate: Date, 
         where: {
             pitchId: id,
             startDate: { lt: endDate },
-            endDate: { gt: startDate }
+            endDate: { gt: startDate },
+            status: {
+                not: "CANCELLED"
+            }
         }
     })
 
