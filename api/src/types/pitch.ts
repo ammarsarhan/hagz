@@ -11,7 +11,7 @@ export type PitchLocationType = {
     district: string,
     city: string,
     governorate: string,
-    country: string
+    country: string,
     postalCode?: number
 }
 
@@ -51,6 +51,7 @@ export type PitchResponseType = {
     images: string[],
     price: number,
     settings: PitchSettingsType,
+    location: PitchLocationType,
     minimumSession: number,
     maximumSession: number,
     createdAt: string,
