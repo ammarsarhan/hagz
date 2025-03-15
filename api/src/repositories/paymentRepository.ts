@@ -39,7 +39,7 @@ export async function getPayment(id: string) {
 
 export async function getPaymentData(id: string, fields: string[]) {
     try {
-        const fieldSchema = z.array(z.enum(["*", "userId", "ownerId", "pitchId", "amount", "status", "expiryDate", "isManual", "createdAt", "updatedAt"])).nonempty();
+        const fieldSchema = z.array(z.enum(["*", "userId", "ownerId", "pitchId", "amount", "status", "voidDate", "expiryDate", "isManual", "createdAt", "updatedAt"])).nonempty();
         const parsed = fieldSchema.safeParse(fields);
 
         if (!parsed.success) {
@@ -52,6 +52,7 @@ export async function getPaymentData(id: string, fields: string[]) {
                 id: true,
                 amount: parsed.data.includes("amount"),
                 status: parsed.data.includes("status"),
+                voidDate: parsed.data.includes("voidDate"),
                 expiryDate: parsed.data.includes("expiryDate"),
                 isManual: parsed.data.includes("isManual"),
                 createdAt: parsed.data.includes("createdAt"),

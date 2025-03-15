@@ -11,7 +11,9 @@ import {
     cancelPendingReservation,
     cancelReservationWithRefund
 } from "../services/reservationService";
-import { getReservationData } from "repositories/reservationRepository";
+
+import { getReservationData } from "../repositories/reservationRepository";
+import { getPaymentData } from "repositories/paymentRepository";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
     try {
@@ -175,20 +177,23 @@ export async function handleCancelReservation(req: Request, res: Response) {
         const id = req.params.reservation;
         const reservation = await getReservationData(id, ["status"]);
 
-        const status = reservation.status;
-
-        if (status == "CANCELLED") {
+        if (reservation.status == "CANCELLED") {
             res.status(400).json({ success: false, message: "Failed to cancel reservation. Reservation has already been cancelled." });
             return;
         };
 
-        if (status == "PENDING") {
+        if (reservation.status == "IN_PROGRESS" || reservation.status == "DONE") {
+            res.status(400).json({ success: false, message: "Failed to cancel reservation. Reservation is in progress or has already been completed." });
+            return;
+        }
+
+        if (reservation.status == "PENDING") {
             const updated = await cancelPendingReservation(id);
             res.status(200).json({ success: true, message: "Cancelled pending reservation successfully.", data: updated });
             return;
         };
 
-        if (status == "CONFIRMED") {
+        if (reservation.status == "CONFIRMED") {
             const updated = await cancelReservationWithRefund(id);
             res.status(200).json({ success: true, message: "Cancelled confirmed reservation successfully and issued refund.", data: updated });
             return;

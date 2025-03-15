@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getPayment } from "../repositories/paymentRepository";
+import { getPayment, getPaymentData } from "../repositories/paymentRepository";
 import prisma from "../utils/db";
 
 export async function handleFetchPayment(req: Request, res: Response) {
@@ -15,6 +15,11 @@ export async function handleFetchPayment(req: Request, res: Response) {
 export async function handleProcessPayment(req: Request, res: Response) {
     try {
         const id = req.params.payment;
+        const data = await getPaymentData(id, ["status"]);
+
+        if (data.status != "PENDING") {
+            res.status(400).json({ success: false, message: "Failed to process payment. Current payment status is not pending." });
+        }
 
         const payment = await prisma.payment.update({
             where: { id },

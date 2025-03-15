@@ -97,8 +97,15 @@ export async function processPayment(id: string) {
 
 export async function voidPayment(id: string) {
     try {
+        const now = new Date();
         // TO-DO: Implement payment voiding logic here
-        // For now, we will just update the payment status to "CANCELLED"
+        // For now, we will just update the payment status to "CANCELLED" if current hasn't reached voidDate
+        const payment = await getPaymentData(id, ["voidDate"]);
+
+        if (payment.voidDate >= now) {
+            throw new Error("Failed to void payment. Payment has already reached the void date and may no longer accept cancellationa as per pitch policy.");
+        }
+
         const updated = await cancelPayment(id, false);
         return updated;
     } catch (error: any) {
@@ -108,8 +115,15 @@ export async function voidPayment(id: string) {
 
 export async function refundPayment(id: string) {
     try {
+        const now = new Date();
         // TO-DO: Implement payment voiding logic here
-        // For now, we will just update the payment status to "REFUNDED"
+        // For now, we will just update the payment status to "REFUNDED" if current hasn't reached voidDate
+        const payment = await getPaymentData(id, ["voidDate"]);
+
+        if (payment.voidDate >= now) {
+            throw new Error("Failed to initate payment refund. Payment has already reached the void date and may no longer accept cancellationa as per pitch policy.");
+        }
+
         const updated = await cancelPayment(id, true);
         return updated;
     } catch (error: any) {
