@@ -11,7 +11,7 @@ export async function createReservationJobs(id: string, startDate: Date, endDate
 
     await reservationQueue.add("expire", { id: id }, 
         {
-            delay: expiryDelay,
+            delay: 20000,
             attempts: 3,
             backoff: { type: "exponential", delay: 2000 },
             removeOnComplete: true
@@ -20,7 +20,7 @@ export async function createReservationJobs(id: string, startDate: Date, endDate
 
     await reservationQueue.add("start", { id: id }, 
         {
-            delay: startDelay,
+            delay: 35000,
             attempts: 3,
             backoff: { type: "exponential", delay: 2000 },
             removeOnComplete: true
@@ -29,7 +29,7 @@ export async function createReservationJobs(id: string, startDate: Date, endDate
 
     await reservationQueue.add("end", { id: id }, 
         {
-            delay: endDelay,
+            delay: 40000,
             attempts: 3,
             backoff: { type: "exponential", delay: 2000 },
             removeOnComplete: true

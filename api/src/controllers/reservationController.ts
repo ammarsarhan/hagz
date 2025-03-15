@@ -14,8 +14,7 @@ import {
 } from "../services/reservationService";
 
 import { getReservationData } from "../repositories/reservationRepository";
-import { getPaymentData } from "repositories/paymentRepository";
-import { processPayment } from "services/paymentService";
+import { getPaymentData } from "../repositories/paymentRepository";
 
 export async function handleCreateUserReservation(req: Request, res: Response) {
     try {

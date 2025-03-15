@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { createPitch, getPitch, getInitialPitches, getPitchesByCursor, queryByLocation, updateField, searchPitches } from '../repositories/pitchRepository';
 import { PitchCreateRequestType } from '../types/pitch';
 
-export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, settings, minimumSession, maximumSession } : PitchCreateRequestType) {
+export async function createPitchWithDetails({ name, description, owner, coordinates, size, surface, amenities, images, price, settings, location, minimumSession, maximumSession } : PitchCreateRequestType) {
     try {
         const schema = z.object({
             name: z.string().min(5, { message: "Pitch name must include at least 5 characters." }).max(50, { message: "Pitch name must be limited to 50 characters at most." }),
@@ -18,8 +18,16 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             settings: z.object({
                 automaticApproval: z.boolean({ message: "Automatic approval must be a boolean value." }).default(true),
                 paymentPolicy: z.enum(["SHORT", "DEFAULT", "EXTENDED"], { message: "Payment policy must be one of available options." }),
-                refundPolicy: z.enum(["SHORT", "DEFAULT", "EXTENDED", "FULL"], { message: "Refund policy must be one of available options." }),
+                refundPolicy: z.enum(["PARTIAL", "FULL"], { message: "Refund policy must be one of available options." }),
             }, { message: "Settings must be an object with all required properties." }),
+            location: z.object({
+                street: z.string({ message: "Street name must be a valid string." }).min(5, { message: "Street name must include at least 5 characters." }),
+                district: z.string({ message: "District name must be a valid string." }).min(5, { message: "District name must include at least 5 characters." }),
+                city: z.string({ message: "City name must be a valid string." }).min(5, { message: "City name must include at least 5 characters." }),
+                governorate: z.string({ message: "Governorate name must be a valid string." }).min(5, { message: "Governorate name must include at least 5 characters." }),
+                country: z.string({ message: "Country name must be a valid string." }).min(5, { message: "Country name must include at least 5 characters." }),
+                postalCode: z.number({ message: "Postal code must be a valid number." }).int({ message: "Postal code must be a valid integer." }).min(1000, { message: "Postal code must be at least 4 digits." }).max(9999, { message: "Postal code must be at most 4 digits." }).optional()
+            }),
             minimumSession: z.number().min(1).max(2).default(1),
             maximumSession: z.number().min(2).max(6).default(6)
         }).refine(data => data.minimumSession <= data.maximumSession, {
@@ -39,6 +47,7 @@ export async function createPitchWithDetails({ name, description, owner, coordin
             images: images,
             price: price,
             settings: settings,
+            location: location,
             minimumSession: minimumSession,
             maximumSession: maximumSession
         });

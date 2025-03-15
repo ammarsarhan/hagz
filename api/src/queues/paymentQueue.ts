@@ -7,7 +7,7 @@ export async function createPaymentJob(id: string, paymentExpiry: Date) {
     const paymentDelay = paymentExpiry.getTime() - now.getTime();
 
     paymentQueue.add("expire", { id: id }, {
-        delay: paymentDelay,
+        delay: 20000,
         attempts: 3,
         backoff: { type: "exponential", delay: 2000 },
         removeOnComplete: true

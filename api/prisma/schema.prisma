@@ -50,6 +50,7 @@ model Pitch {
   status         PitchStatus              @default(ACTIVE)
   surface        PitchSurface
   amenities      PitchAmenity[]
+  location       Json
   settings       Json
   search         Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, name)"))
   owner          Owner                    @relation(fields: [ownerId], references: [id])

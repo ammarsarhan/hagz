@@ -3,7 +3,16 @@ import { PitchStatus, PitchSurface, PitchSize, PitchAmenity } from "@prisma/clie
 export type PitchSettingsType = {
     automaticApproval: boolean,
     paymentPolicy: "SHORT" | "DEFAULT" | "EXTENDED",
-    refundPolicy: "SHORT" | "DEFAULT" | "EXTENDED" | "FULL"
+    refundPolicy: "PARTIAL" | "FULL"
+}
+
+export type PitchLocationType = {
+    street: string,
+    district: string,
+    city: string,
+    governorate: string,
+    country: string
+    postalCode?: number
 }
 
 export type PitchCreateRequestType = {
@@ -20,6 +29,7 @@ export type PitchCreateRequestType = {
     images: string[],
     price: number,
     settings: PitchSettingsType,
+    location: PitchLocationType,
     minimumSession: number,
     maximumSession: number
 }

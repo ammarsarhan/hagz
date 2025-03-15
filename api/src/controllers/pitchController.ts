@@ -94,7 +94,7 @@ export async function handleCreatePitchRequest(req: Request, res: Response) {
             throw new Error("No Owner ID provided within the request. Owner ID is required to create a pitch.");
         }
 
-        if (!req.body.name || !req.body.description || !req.body.longitude || !req.body.latitude || !req.body.size || !req.body.surface || !req.body.amenities || !req.body.images || !req.body.price || !req.body.settings || !req.body.minimumSession || !req.body.maximumSession) {
+        if (!req.body.name || !req.body.description || !req.body.longitude || !req.body.latitude || !req.body.size || !req.body.surface || !req.body.amenities || !req.body.images || !req.body.price || !req.body.settings || !req.body.location || !req.body.minimumSession || !req.body.maximumSession) {
             throw new Error("Please provide all required parameters.")
         }
 
@@ -122,6 +122,7 @@ export async function handleCreatePitchRequest(req: Request, res: Response) {
             images: req.body.images,
             price: price,
             settings: req.body.settings,
+            location: req.body.location,
             minimumSession: minimumSession,
             maximumSession: maximumSession
         }
