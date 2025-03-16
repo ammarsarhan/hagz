@@ -1,7 +1,12 @@
+import { UserNavigation } from "@/components/navigation";
+
 export default function Home() {
   return (
-    <div>
-      <h1>Welcome to Hagz</h1>
-    </div>
+    <>
+      <UserNavigation/>
+      <div>
+        <h1></h1>
+      </div>
+    </>
   );
 }
