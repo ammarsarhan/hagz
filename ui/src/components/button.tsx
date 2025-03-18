@@ -1,31 +1,36 @@
 import { ReactNode } from "react";
 
 interface ButtonProps {
-    variant: "Primary" | "Secondary" | "Outline" | "Mono" | "None"
+    variant: "primary" | "secondary" | "outline" | "mono" | "none"
     children: ReactNode
-
+    className?: string
+    onClick?: () => void
 }
 
-export default function Button({ children, variant } : ButtonProps) {
-    let style = "";
+export default function Button({ children, variant, className, onClick } : ButtonProps) {
+    let style = "rounded-md px-4 py-2 transition-all ease-in-out cursor-pointer";
+
+    if (className) {
+        style.concat(className, " ");
+    };
 
     switch (variant) {
-        case "Primary":
-            style += ""
+        case "primary":
+            style = style.concat(" ", "bg-black text-white hover:bg-gray-800");
             break;
-        case "Secondary":
-            style += ""
+        case "secondary":
+            style = style.concat(" ", "bg-black text-white");
             break;
-        case "Outline":
-            style += ""
+        case "outline":
+            style = style.concat(" ", "bg-white text-black border-[1px] hover:bg-gray-50");
             break;
-        case "Mono":
-            style += ""
+        case "mono":
+            style = style.concat(" ", "bg-black text-white");
             break;
     }
 
     return (
-        <button className={style}>
+        <button className={style} onClick={onClick}>
             {children}
         </button>
     )

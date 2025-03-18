@@ -5,7 +5,7 @@ export default function Home() {
     <>
       <UserNavigation/>
       <div>
-        <h1></h1>
+        <h1>actual app view</h1>
       </div>
     </>
   );

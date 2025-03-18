@@ -56,7 +56,7 @@ export async function signUpUserWithCredentials(name: string, email: string, pho
         password: z.string().min(8, "Password must be at least 8 characters.").max(4096, "Password must be less than 100 characters.").regex(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).*$/, 
             "Must contain at least one uppercase letter, one lowercase letter, and one number."
         ),
-    })
+    });
 
     const parsed = schema.safeParse({name, email, phone, password});
 

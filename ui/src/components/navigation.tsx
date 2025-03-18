@@ -1,18 +1,39 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Button from "@/components/button";
 
 export function UserNavigation() {
+    const path = usePathname();
+    const getLinkStyle = (link: string) => path == link ? "text-gray-900" : "text-gray-500";
+
     return (
-        <nav className="px-6 py-4 flex items-center justify-between border-b-[1px]">
+        <nav className="px-6 py-4 flex items-center justify-between relative">
             <div>
                 <Link href={"/"}>
                     <span className="font-semibold">Hagz</span>
                 </Link>
             </div>
-            <div>
-                links
+            <div className="flex items-center gap-x-8 text-sm absolute left-1/2 -translate-x-1/2">
+                <Link href={"/"} className={getLinkStyle("/")}>Home</Link>
+                <Link href={"/search"} className={getLinkStyle("/search")}>Search</Link>
+                <Link href={"/featured"} className={getLinkStyle("/featured")}>Featured</Link>
+                <Link href={"/search"} className={getLinkStyle("/search")}>Reserve</Link>
+                <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
             </div>
-            <div>
-                
+            <div className="flex items-center gap-x-4">
+                <Link href={"/auth/user/log-in"} className="text-xs">
+                    <Button variant="primary">
+                        Log In
+                    </Button>
+                </Link>
+                <Link href={"/auth/user/sign-up"} className="text-xs">
+                    <Button variant="outline">
+                        Sign Up
+                    </Button>
+                </Link>
+
             </div>
         </nav>
     )
