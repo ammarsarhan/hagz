@@ -37,3 +37,13 @@ export function UserNavigation() {
         </nav>
     )
 }
+
+export function AuthNavigation() {
+    return (
+        <nav className="absolute top-5 left-6 z-50">
+            <Link href={"/"}>
+                <span className="font-semibold">Hagz</span>
+            </Link>
+        </nav>
+    )
+}

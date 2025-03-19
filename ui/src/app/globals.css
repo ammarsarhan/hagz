@@ -15,3 +15,9 @@ body {
 button {
   cursor: pointer;
 }
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
