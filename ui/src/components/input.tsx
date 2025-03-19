@@ -12,7 +12,7 @@ interface InputProps {
 }
 
 export default function Input({ placeholder, className }: InputProps) {
-    let style = "w-full px-2 py-1 rounded-md border-[1px]";
+    let style = "w-full px-3 py-1 rounded-md border-[1px]";
 
     if (className) {
         style = style.concat(" ", className);
