@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect } from "react"
+import { FormEvent, useCallback } from "react"
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import Button from "@/components/button";
-import useMultistepForm from "./hook";
+import FormContextProvider, { useFormContext } from "@/context/form";
 
 const First = () => {
     return (
@@ -39,17 +39,47 @@ const Third = () => {
         });
 
         const data = await res.json();
-        console.log(data);
         return data;
     }, []);
 
-    useEffect(() => {
-        sendEmail("something");
-    }, [sendEmail]);
+    return <></>
+}
+
+const Form = () => {
+    const { step, loading, disabled, renderBack, renderNext, next, previous } = useFormContext();
+    
+    const onSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        console.log(e);
+    }
 
     return (
-        <>
-        </>
+        <form className={`flex-center flex-col h-full border-r-[1px] px-8 ${disabled ? "gap-y-8" : "gap-y-12"}`} onSubmit={onSubmit}>
+            <div className="flex-center flex-col text-center">
+                <h1 className="text-2xl mb-2">{step.label}</h1>
+                <p className="text-sm text-gray-500">{step.description}</p>
+            </div>
+            <div className="flex-center flex-col gap-y-5 w-full">
+                {step.component}
+            </div>
+            {
+                !disabled &&
+                <div className="flex items-center justify-center gap-x-6 w-full">
+                    {
+                        renderBack() &&
+                        <Button className="w-1/3 py-3 rounded-lg text-sm" variant="outline" onClick={previous}>
+                            { !loading && "Previous" }
+                        </Button>
+                    }
+                    {
+                        renderNext() &&
+                        <Button className="w-1/3 py-3 rounded-lg text-sm" onClick={next}>
+                            { !loading && "Next" }
+                        </Button>
+                    }
+                </div>
+            }
+        </form>
     )
 }
 
@@ -72,37 +102,11 @@ export default function Signup() {
         },
     ];
 
-    const { step, index, previous, next } = useMultistepForm(steps);
-
-    const onSubmit = (e: FormEvent) => {
-        e.preventDefault();
-    }
-
     return (
         <div className="grid grid-cols-2 h-screen">
-            <form className="flex-center flex-col gap-y-12 h-full border-r-[1px] px-8" onSubmit={onSubmit}>
-                <div className="flex-center flex-col text-center">
-                    <h1 className="text-2xl mb-2">{step.label}</h1>
-                    <p className="text-sm text-gray-500 w-4/5">{step.description}</p>
-                </div>
-                <div className="flex-center flex-col gap-y-5 w-full">
-                    {step.component}
-                </div>
-                <div className="flex items-center justify-center gap-x-6 w-full">
-                    {
-                        index != 0 &&
-                        <Button className="w-1/3 py-3 rounded-lg text-sm" variant="outline" onClick={previous}>
-                            Previous
-                        </Button>
-                    }
-                    {
-                        index <= steps.length &&
-                        <Button className="w-1/3 py-3 rounded-lg text-sm" onClick={next}>
-                            Next
-                        </Button>
-                    }
-                </div>
-            </form>
+            <FormContextProvider steps={steps}>
+                <Form/>
+            </FormContextProvider>
             <div className="h-full"></div>
         </div>
     )
