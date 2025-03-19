@@ -12,7 +12,7 @@ interface InputProps {
 }
 
 export default function Input({ placeholder, className }: InputProps) {
-    let style = "w-full px-2 rounded-md border-[1px]";
+    let style = "w-full px-2 py-1 rounded-md border-[1px]";
 
     if (className) {
         style = style.concat(" ", className);
@@ -26,15 +26,21 @@ export default function Input({ placeholder, className }: InputProps) {
 export function InputGroup({ label, placeholder, className }: InputGroupProps) {
     return (
         <div className="w-full">
-            <span>{label}</span>
+            <span className="block text-sm mb-1">{label}</span>
             <Input placeholder={placeholder} className={className}/>
         </div>
     )
 }
 
-export function InputGroupContainer({ children } : { children: ReactNode }) {
+export function InputGroupContainer({ children, className } : { children: ReactNode, className?: string }) {
+    let style = "flex items-center gap-x-6 w-full";
+    
+    if (className) {
+        style = style.concat(" ", className);
+    }
+
     return (
-        <div className="flex items-center gap-x-6">
+        <div className={style}>
             { children }
         </div>
     )
