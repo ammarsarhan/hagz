@@ -8,9 +8,12 @@ import reservation from './routes/reservation';
 import payment from './routes/payment';
 
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(cors());
 
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
