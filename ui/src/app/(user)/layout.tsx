@@ -1,12 +1,14 @@
 import { UserNavigation } from "@/components/navigation";
 
-export default function Home() {
+export default function UserLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <>
       <UserNavigation/>
-      <div>
-        <h1>actual app view</h1>
-      </div>
+      {children}
     </>
   );
 }
