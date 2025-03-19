@@ -71,20 +71,18 @@ export async function signUpUserWithCredentials(name: string, email: string, pho
 }
 
 export async function handleSendUserVerification(email: string) {
-    const schema = z.object({
-        email: z.string({ message: "Insufficient parameters provided. Please provide a valid email address." }).email("Insufficient parameters provided. Please provide a valid email address."),
-    })
+    const schema = z.string({ message: "Insufficient parameters provided. Please provide a valid email address." }).email("Insufficient parameters provided. Please provide a valid email address.")
 
-    const parse = schema.safeParse({ email });
+    const parse = schema.safeParse(email);
 
     if (parse.error) {
         throw new Error(parse.error.errors[0].message); 
     }
-    
-    const user = await fetchUserByEmail(email);
 
-    if (user.accountStatus === "ACTIVE") {
-        throw new Error("Could not send verification email. Specified user account has already been verified.");
+    const user = await fetchUserByEmail(parse.data);
+
+    if (user.accountStatus != "UNVERIFIED") {
+        throw new Error("Could not send verification email. Specified user account is no longer unverified.");
     }
 
     const verificationToken = generateVerificationToken({id: user.id, type: "User"});
