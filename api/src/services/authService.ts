@@ -80,7 +80,7 @@ export async function handleSendUserVerification(email: string) {
     const user = await fetchUserByEmail(parse.data);
 
     if (user.accountStatus != "UNVERIFIED") {
-        throw new Error("Could not send verification email. Specified user account is no longer unverified.");
+        throw new Error("Could not send verification email. Specified user account has already been verified.");
     }
 
     const verificationToken = generateVerificationToken({id: user.id, type: "User"});

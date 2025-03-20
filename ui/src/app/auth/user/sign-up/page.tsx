@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef, useState } from "react"
+import { ChangeEvent, Dispatch, FormEvent, RefObject, SetStateAction, useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link";
 import { z } from "zod";
 
@@ -15,6 +15,18 @@ interface FormDataType {
     phone: string,
     password: string,
     confirmPassword: string
+}
+
+const setErrorWithTimeout = (message: string, setError: Dispatch<SetStateAction<string | null>>, ref: RefObject<NodeJS.Timeout | null>) => {
+    setError(message);
+
+    if (ref.current) {
+        clearTimeout(ref.current);
+    };
+
+    ref.current = setTimeout(() => {
+        setError(null);
+    }, 3000);
 }
 
 const First = () => {
@@ -94,31 +106,65 @@ const Second = () => {
 }
 
 const Third = () => {
-    const { data } = useFormContext<FormDataType>();
-    const timeout = 30;
-    const masked = data.email.replace(/(?<=.{3}).(?=[^@]*?@)/g, "*");
+    const { data, loading, setError, setLoading } = useFormContext<FormDataType>();
+    const timeout = 59;
+
+    const target = data.email;
+    const masked = target.replace(/(?<=.{3}).(?=[^@]*?@)/g, "*");
 
     const [disabled, setDisabled] = useState(false);
     const [count, setCount] = useState(timeout);
+
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const formatCount = (time: number) => {
         return time < 10 ? `00:0${time}` : `00:${time}`;
     }
 
+    const sendEmail = useCallback(async (email: string) => {
+        setLoading(true);
+
+        const res = await fetch("http://localhost:3000/api/auth/user/verify/send", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": ' application/json'
+            },
+            body: JSON.stringify({ email: email })
+        });
+
+        const result = await res.json();
+        
+        if (!result.success) {
+            setErrorWithTimeout(result.message, setError, timeoutRef);
+        };
+
+        setLoading(false);
+        return result;
+    }, [setError, setLoading]);
+
     const resendEmail = async () => {
-        setDisabled(true);
-        setCount(timeout);
+        const message = await sendEmail(target);
 
-        const interval = setInterval(() => {
-            setCount(prev => prev - 1);
-        }, 1000);
-
-        setTimeout(() => {
-            clearInterval(interval);
-            setDisabled(false);
+        if (message.success) {
+            setDisabled(true);
             setCount(timeout);
-        }, timeout * 1000);
-    }
+    
+            const interval = setInterval(() => {
+                setCount(prev => prev - 1);
+            }, 1000);
+    
+            setTimeout(() => {
+                clearInterval(interval);
+                setDisabled(false);
+                setCount(timeout);
+            }, timeout * 1000);
+        }
+    };
+
+    useEffect(() => {
+        sendEmail(target);
+    }, [])
 
     return (
         <>
@@ -129,10 +175,11 @@ const Third = () => {
             <div className="flex-center w-full mt-4">
                 <Button 
                     className="w-full max-w-1/2 py-3 text-sm"   
-                    disabled={disabled} 
+                    disabled={disabled || loading} 
                     onClick={resendEmail}
                 >
-                    {!disabled ? "Re-send email" : `${formatCount(count)}`}
+                    { disabled ? `${formatCount(count)}` : (!loading && "Re-send email") }
+                    { loading && "Loading..." }
                 </Button>
             </div>
         </>
@@ -164,18 +211,6 @@ const Form = () => {
         return message;
     }
 
-    const setErrorWithTimeout = (message: string) => {
-        setError(message);
-
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-        };
-
-        timeoutRef.current = setTimeout(() => {
-            setError(null);
-        }, 3000);
-    }
-
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const schema = step.schema;
@@ -184,7 +219,8 @@ const Form = () => {
             const parsed = schema.safeParse(data);
 
             if (!parsed.success) {
-                setErrorWithTimeout(parsed.error.errors[0].message);
+                const message = parsed.error.errors[0].message;
+                setErrorWithTimeout(message, setError, timeoutRef);
                 return;
             };
         };
@@ -194,7 +230,7 @@ const Form = () => {
             const res = await createUser();
 
             if (res.success == false) {
-                setErrorWithTimeout(res.message);
+                setErrorWithTimeout(res.message, setError, timeoutRef);
                 setLoading(false);
                 return;
             }
