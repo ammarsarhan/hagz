@@ -1,10 +1,11 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback } from "react"
+import { ChangeEvent, FormEvent, useCallback, useRef } from "react"
 import { z } from "zod";
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import Button from "@/components/button";
 import FormContextProvider, { useFormContext } from "@/context/form";
+import Link from "next/link";
 
 interface FormDataType {
     firstName: string,
@@ -68,31 +69,18 @@ const Second = () => {
                 value={data.confirmPassword}
                 type="password"
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, confirmPassword: e.target.value })}
-            />  
+            />
         </>
     )
 }
 
 const Third = () => {
-    const sendEmail = useCallback(async (email: string) => {
-        const res = await fetch('http://127.0.0.1:3000/api/auth/user/verify/send', {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-type": "application/json"
-            },
-            body: JSON.stringify({ email: email })
-        });
-
-        const data = await res.json();
-        return data;
-    }, []);
-
     return <></>
 }
 
 const Form = () => {
-    const { step, loading, disabled, data, error, renderBack, renderNext, next, previous, setError } = useFormContext<FormDataType>();
+    const { index, step, loading, disabled, data, error, renderBack, renderNext, next, previous, setError } = useFormContext<FormDataType>();
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const onSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -103,6 +91,15 @@ const Form = () => {
             
             if (!parsed.success) {
                 setError(parsed.error.errors[0].message);
+
+                if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                };
+
+                timeoutRef.current = setTimeout(() => {
+                    setError(null);
+                }, 3000);
+
                 return;
             };
         }
@@ -137,6 +134,10 @@ const Form = () => {
                     }
                 </div>
             }
+            {
+                index == 0 &&
+                <span className="text-sm text-gray-500">Already have an account? <Link href="/auth/user/log-in" className="text-blue-900">Log in.</Link></span>
+            }
         </form>
     )
 }
@@ -157,8 +158,8 @@ export default function Signup() {
             description: "Create a new account to start reserving with Hagz!",
             component: <First/>,
             schema: z.object({
-                firstName: z.string().nonempty("First name is required.").min(2, "First name must be at least 2 characters.").max(50, "First name must be less than 50 characters."),
-                lastName: z.string().nonempty("Last name is required.").min(2, "Last name must be at least 2 characters.").max(50, "Last name must be less than 50 characters."),
+                firstName: z.string().nonempty("Please use a valid first name.").min(2, "First name must be at least 2 characters.").max(50, "First name must be less than 50 characters."),
+                lastName: z.string().nonempty("Please use a valid last name.").min(2, "Last name must be at least 2 characters.").max(50, "Last name must be less than 50 characters."),
                 email: z.string().email("Please use a valid email address."),
                 phone: z.string().regex(/^[0-9]{4}-[0-9]{3}-[0-9]{4}$/, "Please match the specified phone number format."),
             })
@@ -169,8 +170,8 @@ export default function Signup() {
             component: <Second/>,
             schema: z.object({
                 password: z.string({ message: "Please enter valid text for the password." }).nonempty("Password is required.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters."),
-                confirmPassword: z.string({ message: "Please enter valid text for the confirm password." }).nonempty("Confirm password is required.").refine((data) => data === initial.password, { message: "Both passwords must match one another. Please try again." })
-            })
+                confirmPassword: z.string({ message: "Please enter valid text for the confirm password." }).nonempty("Confirm password is required.")
+            }).refine(data => data.password === data.confirmPassword, { message: "Passwords do not match. Both passwords must match one another.", path: ["confirmPassword"] })
         },
         {
             label: "Verify Your Account",

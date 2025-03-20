@@ -1,11 +1,11 @@
 import { ReactNode, useState, useContext, createContext, SetStateAction, Dispatch } from "react";
-import { ZodObject } from "zod";
+import { ZodEffects, ZodObject } from "zod";
 
 interface StepType {
     label: string,
     description: string,
     component: ReactNode,
-    schema?: ZodObject<any>
+    schema?: ZodObject<any> | ZodEffects<ZodObject<any>>
 }
 
 interface FormContextType<T> {
@@ -14,14 +14,14 @@ interface FormContextType<T> {
     loading: boolean,
     disabled: boolean,
     data: T,
-    error: string,
+    error: string | null,
     renderBack: () => boolean,
     renderNext: () => boolean,
     next: () => void,
     previous: () => void,
     setLoading: Dispatch<SetStateAction<boolean>>,
     setData: Dispatch<SetStateAction<T>>,
-    setError: Dispatch<SetStateAction<string>>
+    setError: Dispatch<SetStateAction<string | null>>
 }
 
 const FormContext = createContext<FormContextType<any> | undefined>(undefined);
@@ -38,7 +38,7 @@ export function useFormContext<T>() {
 
 export default function FormContextProvider<T>({ children, steps, initial } : { children: ReactNode, steps: StepType[], initial: T }) {
     const [data, setData] = useState<T>(initial);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<string | null>(null);
     const [index, setIndex] = useState(0);
     const [loading, setLoading] = useState(false);
     const step = steps[index];
