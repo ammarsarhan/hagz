@@ -58,7 +58,12 @@ export default function FormContextProvider<T>({ children, steps, initial } : { 
     const disabled = index == steps.length - 1;
 
     const renderBack = () => {
-        const renderable = index != 0 ? true : false;
+        let renderable = index != 0 ? true : false;
+
+        if (loading) {
+            renderable = false;
+        }
+
         return renderable;
     }
 

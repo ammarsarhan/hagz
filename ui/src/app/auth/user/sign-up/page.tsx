@@ -1,11 +1,12 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useRef } from "react"
+import Link from "next/link";
 import { z } from "zod";
+
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import Button from "@/components/button";
 import FormContextProvider, { useFormContext } from "@/context/form";
-import Link from "next/link";
 
 interface FormDataType {
     firstName: string,
@@ -92,7 +93,7 @@ const Third = () => {
 }
 
 const Form = () => {
-    const { index, step, loading, disabled, data, error, renderBack, renderNext, next, previous, setError } = useFormContext<FormDataType>();
+    const { index, step, loading, disabled, data, error, renderBack, renderNext, next, previous, setError, setLoading } = useFormContext<FormDataType>();
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const onSubmit = (e: FormEvent) => {
@@ -117,6 +118,11 @@ const Form = () => {
             };
         }
 
+        if (index == 1) {
+            setLoading(true);
+            return;
+        }
+
         next();
     }
 
@@ -135,14 +141,21 @@ const Form = () => {
                 <div className="flex items-center justify-center gap-x-6 w-full">
                     {
                         renderBack() &&
-                        <Button className="w-1/3 py-3 rounded-lg text-sm" variant="outline" onClick={previous}>
-                            { !loading && "Previous" }
+                        <Button 
+                            className="w-1/3 py-3 rounded-lg text-sm" 
+                            variant="outline" 
+                            onClick={previous}
+                        >
+                            Previous
                         </Button>
                     }
                     {
                         renderNext() &&
-                        <Button className="w-1/3 py-3 rounded-lg text-sm">
-                            { !loading && "Next" }
+                        <Button 
+                            className="w-1/3 py-3 rounded-lg text-sm" 
+                            disabled={loading}
+                        >
+                            { !loading ? "Next" : "Loading..." }
                         </Button>
                     }
                 </div>
@@ -182,8 +195,8 @@ export default function Signup() {
             description: "Choose a password to secure your account. Password must be at least 8 characters and contain a combination of characters and letters.",
             component: <Second/>,
             schema: z.object({
-                password: z.string({ message: "Please enter valid text for the password." }).nonempty("Password is required.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters."),
-                confirmPassword: z.string({ message: "Please enter valid text for the confirm password." }).nonempty("Confirm password is required.")
+                password: z.string().nonempty("Please enter a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, { message: "Password must contain at least one letter, one number, and one special character." }),
+                confirmPassword: z.string().nonempty("Confirm password is required.")
             }).refine(data => data.password === data.confirmPassword, { message: "Passwords do not match. Both passwords must match one another.", path: ["confirmPassword"] })
         },
         {
