@@ -23,9 +23,12 @@ export function useAuthContext() {
 
 export default function AuthContextProvider({ children } : { children: ReactNode }) {
     const [user, setUser] = useState<UserType | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const fetchUser = async () => {
         try {
+            setLoading(true);
+
             const res = await fetch("http://localhost:3000/api/user", {
                 method: "GET",
                 headers: {
@@ -37,6 +40,8 @@ export default function AuthContextProvider({ children } : { children: ReactNode
 
             const result = await res.json();
             setUser(result.data);
+
+            setLoading(false);
         } catch (error: any) {
             console.log(error.message);
         };
@@ -73,9 +78,22 @@ export default function AuthContextProvider({ children } : { children: ReactNode
 
     const signOut = async () => {
         try {
-            const res = await fetch("http://localhost:3000/api/auth/sign-out", {})
+            const res = await fetch("http://localhost:3000/api/auth/sign-out", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                credentials: "include"
+            })
             const data = await res.json();
-            return data;
+
+            if (!data.success) {
+                alert("Handle this by making a global modal component that takes in an error message.");
+                return;
+            };
+
+            setUser(null);
         } catch (error: any) {
             console.log(error.message);
         }
@@ -83,7 +101,7 @@ export default function AuthContextProvider({ children } : { children: ReactNode
 
     return (
         <AuthContext.Provider value={{ user, signInWithCredentials, signOut }}>
-            {children}
+            {!loading && children}
         </AuthContext.Provider>
     )
 }

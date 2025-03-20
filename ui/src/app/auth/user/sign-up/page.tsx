@@ -7,6 +7,7 @@ import { z } from "zod";
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import Button from "@/components/button";
 import FormContextProvider, { useFormContext } from "@/context/form";
+import { useAuthContext } from "@/context/auth";
 
 interface FormDataType {
     firstName: string,
@@ -187,6 +188,7 @@ const Third = () => {
 }
 
 const Form = () => {
+    const { signInWithCredentials } = useAuthContext();
     const { index, step, loading, disabled, data, error, renderBack, renderNext, next, previous, setError, setLoading } = useFormContext<FormDataType>();
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -229,8 +231,16 @@ const Form = () => {
             setLoading(true);
             const res = await createUser();
 
-            if (res.success == false) {
+            if (!res.success) {
                 setErrorWithTimeout(res.message, setError, timeoutRef);
+                setLoading(false);
+                return;
+            }
+
+            const auth = await signInWithCredentials(data.email, data.password);
+
+            if (!auth.success) {
+                setErrorWithTimeout(auth.message, setError, timeoutRef);
                 setLoading(false);
                 return;
             }
