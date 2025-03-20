@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback, useRef } from "react"
+import { ChangeEvent, FormEvent, useRef } from "react"
 import { z } from "zod";
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import Button from "@/components/button";
@@ -18,6 +18,19 @@ interface FormDataType {
 
 const First = () => {
     const { data, setData } = useFormContext<FormDataType>();
+
+    const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.replace(/\D/g, "");
+
+        if (value.length > 4) {
+            value = value.slice(0, 4) + "-" + value.slice(4);
+        }
+        if (value.length > 8) {
+            value = value.slice(0, 8) + "-" + value.slice(8);
+        }
+
+        setData({ ...data, phone: value });
+    };
 
     return (
         <>
@@ -45,7 +58,7 @@ const First = () => {
                 label="Phone Number" 
                 placeholder="Phone (xxxx-xxx-xxxx)" 
                 value={data.phone} 
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, phone: e.target.value })}
+                onChange={handlePhoneChange}
             />
         </>
     )
