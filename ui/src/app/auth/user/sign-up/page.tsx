@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef } from "react"
+import { ChangeEvent, FormEvent, useRef, useState } from "react"
 import Link from "next/link";
 import { z } from "zod";
 
@@ -67,13 +67,14 @@ const First = () => {
 
 const Second = () => {
     const { data, setData } = useFormContext<FormDataType>();
-
+    const [reveal, setReveal] = useState(false);
+    
     return (
         <>
             <InputGroup 
                 label="Password" 
                 placeholder="Password"
-                type="password"
+                type={reveal ? "text" : "password"}
                 value={data.password}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, password: e.target.value })}
             />
@@ -81,9 +82,13 @@ const Second = () => {
                 label="Confirm Password" 
                 placeholder="Re-enter Password"
                 value={data.confirmPassword}
-                type="password"
+                type={reveal ? "text" : "password"}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, confirmPassword: e.target.value })}
             />
+            <div className="flex items-center w-full">
+                <input type="checkbox" className="mr-2" checked={reveal} onChange={() => setReveal(!reveal)}/>
+                <span className="text-sm" onClick={() => setReveal(!reveal)}>Show Password</span>
+            </div>
         </>
     )
 }
