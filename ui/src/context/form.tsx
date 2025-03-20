@@ -1,9 +1,11 @@
 import { ReactNode, useState, useContext, createContext, SetStateAction, Dispatch } from "react";
+import { ZodObject } from "zod";
 
 interface StepType {
     label: string,
     description: string,
-    component: ReactNode
+    component: ReactNode,
+    schema?: ZodObject<any>
 }
 
 interface FormContextType<T> {
@@ -12,15 +14,16 @@ interface FormContextType<T> {
     loading: boolean,
     disabled: boolean,
     data: T,
+    error: string,
     renderBack: () => boolean,
     renderNext: () => boolean,
     next: () => void,
     previous: () => void,
     setLoading: Dispatch<SetStateAction<boolean>>,
-    setData: Dispatch<SetStateAction<T>>
+    setData: Dispatch<SetStateAction<T>>,
+    setError: Dispatch<SetStateAction<string>>
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const FormContext = createContext<FormContextType<any> | undefined>(undefined);
 
 export function useFormContext<T>() {
@@ -35,6 +38,7 @@ export function useFormContext<T>() {
 
 export default function FormContextProvider<T>({ children, steps, initial } : { children: ReactNode, steps: StepType[], initial: T }) {
     const [data, setData] = useState<T>(initial);
+    const [error, setError] = useState("");
     const [index, setIndex] = useState(0);
     const [loading, setLoading] = useState(false);
     const step = steps[index];
@@ -69,13 +73,15 @@ export default function FormContextProvider<T>({ children, steps, initial } : { 
             index, 
             loading, 
             disabled, 
-            data, 
+            data,
+            error,
             renderBack, 
             renderNext, 
             next, 
             previous, 
             setLoading, 
-            setData 
+            setData,
+            setError
         }}>
             {children}
         </FormContext.Provider>
