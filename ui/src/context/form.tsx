@@ -1,4 +1,4 @@
-import { ReactNode, useState, useContext, createContext } from "react";
+import { ReactNode, useState, useContext, createContext, SetStateAction, Dispatch } from "react";
 
 interface StepType {
     label: string,
@@ -6,22 +6,25 @@ interface StepType {
     component: ReactNode
 }
 
-interface FormContextType {
+interface FormContextType<T> {
     step: StepType,
     index: number,
     loading: boolean,
     disabled: boolean,
+    data: T,
     renderBack: () => boolean,
     renderNext: () => boolean,
     next: () => void,
     previous: () => void,
-    setLoading: (loading: boolean) => void
+    setLoading: Dispatch<SetStateAction<boolean>>,
+    setData: Dispatch<SetStateAction<T>>
 }
 
-const FormContext = createContext<FormContextType | undefined>(undefined);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const FormContext = createContext<FormContextType<any> | undefined>(undefined);
 
-export function useFormContext() {
-    const context = useContext(FormContext);
+export function useFormContext<T>() {
+    const context = useContext(FormContext) as FormContextType<T>;
 
     if (!context) {
         throw new Error("useFormContext must be used within a FormContextProvider");
@@ -30,7 +33,8 @@ export function useFormContext() {
     return context;
 }
 
-export default function FormContextProvider({ children, steps } : { children: ReactNode, steps: StepType[] }) {
+export default function FormContextProvider<T>({ children, steps, initial } : { children: ReactNode, steps: StepType[], initial: T }) {
+    const [data, setData] = useState<T>(initial);
     const [index, setIndex] = useState(0);
     const [loading, setLoading] = useState(false);
     const step = steps[index];
@@ -60,7 +64,19 @@ export default function FormContextProvider({ children, steps } : { children: Re
     }
 
     return (
-        <FormContext.Provider value={{ step, index, loading, disabled, renderBack, renderNext, next, previous, setLoading }}>
+        <FormContext.Provider value={{ 
+            step, 
+            index, 
+            loading, 
+            disabled, 
+            data, 
+            renderBack, 
+            renderNext, 
+            next, 
+            previous, 
+            setLoading, 
+            setData 
+        }}>
             {children}
         </FormContext.Provider>
     )

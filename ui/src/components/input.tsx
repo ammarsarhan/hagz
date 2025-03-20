@@ -1,17 +1,23 @@
-import { ReactNode } from "react"
+import { ChangeEvent, ReactNode } from "react"
 
 interface InputGroupProps {
     label: string,
     placeholder: string,
+    value: string,
+    onChange: (e: ChangeEvent<HTMLInputElement>) => void,
+    type?: string,
     className?: string
 }
 
 interface InputProps {
     placeholder: string,
+    value: string,
+    onChange: (e: ChangeEvent<HTMLInputElement>) => void,
+    type?: string,
     className?: string
 }
 
-export default function Input({ placeholder, className }: InputProps) {
+export default function Input({ placeholder, className, value, type = "text", onChange }: InputProps) {
     let style = "w-full px-3 py-1 rounded-md border-[1px]";
 
     if (className) {
@@ -19,15 +25,15 @@ export default function Input({ placeholder, className }: InputProps) {
     }
 
     return (
-        <input type="text" className={style} placeholder={placeholder}/>
+        <input type={type} className={style} placeholder={placeholder} value={value} onChange={onChange}/>
     )
 }
 
-export function InputGroup({ label, placeholder, className }: InputGroupProps) {
+export function InputGroup({ label, placeholder, value, onChange, type = "text", className }: InputGroupProps) {
     return (
         <div className="w-full">
             <span className="block text-sm mb-1">{label}</span>
-            <Input placeholder={placeholder} className={className}/>
+            <Input placeholder={placeholder} className={className} value={value} type={type} onChange={onChange}/>
         </div>
     )
 }

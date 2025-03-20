@@ -1,28 +1,73 @@
 "use client";
 
-import { FormEvent, useCallback } from "react"
+import { ChangeEvent, FormEvent, useCallback } from "react"
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import Button from "@/components/button";
 import FormContextProvider, { useFormContext } from "@/context/form";
 
+interface FormDataType {
+    firstName: string,
+    lastName: string,
+    email: string,
+    phone: string,
+    password: string,
+    confirmPassword: string
+}
+
 const First = () => {
+    const { data, setData } = useFormContext<FormDataType>();
+
     return (
         <>
             <InputGroupContainer>
-                <InputGroup label="First Name" placeholder="First Name"/>
-                <InputGroup label="Last Name" placeholder="Last Name"/>
+                <InputGroup 
+                    label="First Name" 
+                    placeholder="First Name" 
+                    value={data.firstName} 
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, firstName: e.target.value })}
+                />
+                <InputGroup 
+                    label="Last Name" 
+                    placeholder="Last Name" 
+                    value={data.lastName} 
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, lastName: e.target.value })}
+                />
             </InputGroupContainer>
-            <InputGroup label="Email Address" placeholder="Email"/>
-            <InputGroup label="Phone Number" placeholder="Phone (xxxx-xxx-xxxx)"/>
+            <InputGroup 
+                label="Email" 
+                placeholder="Email Address" 
+                value={data.email} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, email: e.target.value })}
+            />
+            <InputGroup 
+                label="Phone Number" 
+                placeholder="Phone (xxxx-xxx-xxxx)" 
+                value={data.phone} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, phone: e.target.value })}
+            />
         </>
     )
 };
 
 const Second = () => {
+    const { data, setData } = useFormContext<FormDataType>();
+
     return (
         <>
-            <InputGroup label="Password" placeholder="Password"/>
-            <InputGroup label="Confirm Password" placeholder="Re-enter Password"/>  
+            <InputGroup 
+                label="Password" 
+                placeholder="Password"
+                type="password"
+                value={data.password}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, password: e.target.value })}
+            />
+            <InputGroup 
+                label="Confirm Password" 
+                placeholder="Re-enter Password"
+                value={data.confirmPassword}
+                type="password"
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setData({ ...data, confirmPassword: e.target.value })}
+            />  
         </>
     )
 }
@@ -47,7 +92,7 @@ const Third = () => {
 
 const Form = () => {
     const { step, loading, disabled, renderBack, renderNext, next, previous } = useFormContext();
-    
+
     const onSubmit = (e: FormEvent) => {
         e.preventDefault();
         console.log(e);
@@ -84,6 +129,15 @@ const Form = () => {
 }
 
 export default function Signup() {
+    const initial: FormDataType = {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: ""
+    };
+
     const steps = [
         {
             label: "Create A New Account",
@@ -104,7 +158,7 @@ export default function Signup() {
 
     return (
         <div className="grid grid-cols-2 h-screen">
-            <FormContextProvider steps={steps}>
+            <FormContextProvider steps={steps} initial={initial}>
                 <Form/>
             </FormContextProvider>
             <div className="h-full"></div>
