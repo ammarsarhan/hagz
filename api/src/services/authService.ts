@@ -45,7 +45,7 @@ export async function signInUserWithCredentials(email: string, password: string)
     const accessToken = generateAccessToken({id: user.id, type: "User"});
     const refreshToken = generateRefreshToken({id: user.id, type: "User"});
     
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, user };
 }
 
 export async function signUpUserWithCredentials(name: string, email: string, phone: string, password: string) {

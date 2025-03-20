@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { handleSendUserVerification, verifyUserByToken, signInUserWithCredentials, signUpUserWithCredentials, signUpOwnerWithCredentials, handleSendOwnerVerification, verifyOwnerByToken, signInOwnerWithCredentials } from "../services/authService";
+import { maskEmail, maskPhone } from "../utils/mask";
 
 export async function signInUser(req: Request, res: Response) {
     try {
@@ -9,24 +10,32 @@ export async function signInUser(req: Request, res: Response) {
             throw new Error('Insufficient parameters provided to sign in user.'); 
         }
 
-        const tokens = await signInUserWithCredentials(email, password);
+        const data = await signInUserWithCredentials(email, password);
         
-        res.cookie('refreshToken', tokens.refreshToken, {
+        res.cookie('refreshToken', data.refreshToken, {
             maxAge: 1000 * 60 * 60 * 24 * 7, 
             httpOnly: true, 
             secure: true, 
-            sameSite: 'lax',
+            sameSite: 'none',
             signed: true
         });
 
-        res.cookie('accessToken', tokens.accessToken, {
+        res.cookie('accessToken', data.accessToken, {
             maxAge: 1000 * 60 * 30,
             httpOnly: true,
             secure: true,
-            sameSite: 'lax'
+            sameSite: 'none'
         })
 
-        res.status(200).json({ success: true, message: "User signed in successfully."});
+        res.status(200).json({ success: true, message: "User signed in successfully.", 
+            data: {
+                id: data.user.id,
+                name: data.user.name,
+                email: maskEmail(data.user.email),
+                phone: maskPhone(data.user.phone),
+                status: data.user.accountStatus
+            }
+        });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

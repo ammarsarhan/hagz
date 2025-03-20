@@ -1,11 +1,14 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/button";
+import { usePathname } from "next/navigation";
+import { useAuthContext } from "@/context/auth";
+import ProfileAvatar from "./profile";
 
 export function UserNavigation() {
     const path = usePathname();
+    const { user } = useAuthContext();
     const getLinkStyle = (link: string) => path == link ? "text-gray-900" : "text-gray-500";
 
     return (
@@ -22,18 +25,23 @@ export function UserNavigation() {
                 <Link href={"/policy"} className={getLinkStyle("/policy")}>Policy</Link>
                 <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
             </div>
-            <div className="flex items-center gap-x-4">
-                <Link href={"/auth/user/log-in"} className="text-xs">
-                    <Button variant="primary">
-                        Log In
-                    </Button>
-                </Link>
-                <Link href={"/auth/user/sign-up"} className="text-xs">
-                    <Button variant="outline">
-                        Sign Up
-                    </Button>
-                </Link>
-            </div>
+            {
+                user ? <ProfileAvatar iniital={user.name.slice(0, 1)}/> :
+                <>
+                    <div className="flex items-center gap-x-4">
+                        <Link href={"/auth/user/log-in"} className="text-xs">
+                            <Button variant="primary">
+                                Log In
+                            </Button>
+                        </Link>
+                        <Link href={"/auth/user/sign-up"} className="text-xs">
+                            <Button variant="outline">
+                                Sign Up
+                            </Button>
+                        </Link>
+                    </div>
+                </>
+            }
         </nav>
     )
 }
