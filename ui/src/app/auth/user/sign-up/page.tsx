@@ -94,46 +94,118 @@ const Second = () => {
 }
 
 const Third = () => {
-    return <></>
+    const { data } = useFormContext<FormDataType>();
+    const timeout = 30;
+    const masked = data.email.replace(/(?<=.{3}).(?=[^@]*?@)/g, "*");
+
+    const [disabled, setDisabled] = useState(false);
+    const [count, setCount] = useState(timeout);
+
+    const formatCount = (time: number) => {
+        return time < 10 ? `00:0${time}` : `00:${time}`;
+    }
+
+    const resendEmail = async () => {
+        setDisabled(true);
+        setCount(timeout);
+
+        const interval = setInterval(() => {
+            setCount(prev => prev - 1);
+        }, 1000);
+
+        setTimeout(() => {
+            clearInterval(interval);
+            setDisabled(false);
+            setCount(timeout);
+        }, timeout * 1000);
+    }
+
+    return (
+        <>
+            <div className="text-center">
+                <p className="text-sm text-gray-500">We&apos;ve sent an email at the provided address:</p>
+                <p>{masked}</p>
+            </div>
+            <div className="flex-center w-full mt-4">
+                <Button 
+                    className="w-full max-w-1/2 py-3 text-sm"   
+                    disabled={disabled} 
+                    onClick={resendEmail}
+                >
+                    {!disabled ? "Re-send email" : `${formatCount(count)}`}
+                </Button>
+            </div>
+        </>
+    )
 }
 
 const Form = () => {
     const { index, step, loading, disabled, data, error, renderBack, renderNext, next, previous, setError, setLoading } = useFormContext<FormDataType>();
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const onSubmit = (e: FormEvent) => {
+    const createUser = async () => {
+        const body = {
+            name: `${data.firstName} ${data.lastName}`,
+            email: data.email,
+            phone: data.phone,
+            password: data.password
+        }
+
+        const res = await fetch("http://localhost:3000/api/auth/user/sign-up", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": ' application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        const message = await res.json();
+        return message;
+    }
+
+    const setErrorWithTimeout = (message: string) => {
+        setError(message);
+
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        };
+
+        timeoutRef.current = setTimeout(() => {
+            setError(null);
+        }, 3000);
+    }
+
+    const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const schema = step.schema;
 
         if (schema) {
             const parsed = schema.safeParse(data);
-            
+
             if (!parsed.success) {
-                setError(parsed.error.errors[0].message);
-
-                if (timeoutRef.current) {
-                    clearTimeout(timeoutRef.current);
-                };
-
-                timeoutRef.current = setTimeout(() => {
-                    setError(null);
-                }, 3000);
-
+                setErrorWithTimeout(parsed.error.errors[0].message);
                 return;
             };
-        }
+        };
 
         if (index == 1) {
             setLoading(true);
-            return;
-        }
+            const res = await createUser();
+
+            if (res.success == false) {
+                setErrorWithTimeout(res.message);
+                setLoading(false);
+                return;
+            }
+        };
 
         next();
     }
 
     return (
         <form className={`flex-center flex-col h-full border-r-[1px] px-8 ${disabled ? "gap-y-8" : "gap-y-12"}`} onSubmit={onSubmit}>
-            <span className="text-sm text-red-500">{error}</span>
+            <span className="text-sm text-center text-red-500">{error}</span>
             <div className="flex-center flex-col text-center">
                 <h1 className="text-2xl mb-2">{step.label}</h1>
                 <p className="text-sm text-gray-500">{step.description}</p>
@@ -200,13 +272,13 @@ export default function Signup() {
             description: "Choose a password to secure your account. Password must be at least 8 characters and contain a combination of characters and letters.",
             component: <Second/>,
             schema: z.object({
-                password: z.string().nonempty("Please enter a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, { message: "Password must contain at least one letter, one number, and one special character." }),
+                password: z.string().nonempty("Please enter a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/, { message: "Password must contain at least one uppercase letter, one number, and one special character." }),
                 confirmPassword: z.string().nonempty("Confirm password is required.")
             }).refine(data => data.password === data.confirmPassword, { message: "Passwords do not match. Both passwords must match one another.", path: ["confirmPassword"] })
         },
         {
             label: "Verify Your Account",
-            description: "An email has been sent to the provided email address. Please follow the link sent to complete your sign up.",
+            description: "Your account has been created successfully! Please verify your account to start reserving with Hagz.",
             component: <Third/>
         },
     ];

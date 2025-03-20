@@ -53,9 +53,7 @@ export async function signUpUserWithCredentials(name: string, email: string, pho
         name: z.string(),
         email: z.string().email("Please provide a valid email address."),
         phone: z.string().regex(/^\d{4}-\d{3}-\d{4}$/, "Please provide a valid phone number."),
-        password: z.string().min(8, "Password must be at least 8 characters.").max(4096, "Password must be less than 100 characters.").regex(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).*$/, 
-            "Must contain at least one uppercase letter, one lowercase letter, and one number."
-        ),
+        password: z.string().nonempty("Please provide a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/, { message: "Password must contain at least one uppercase letter, one number, and one special character." }),
     });
 
     const parsed = schema.safeParse({name, email, phone, password});
@@ -143,9 +141,7 @@ export async function signUpOwnerWithCredentials(name: string, email: string, ph
             name: z.string(),
             email: z.string().email("Please provide a valid email address."),
             phone: z.string().regex(/^\d{4}-\d{3}-\d{4}$/, "Please provide a valid phone number."),
-            password: z.string().min(8, "Password must be at least 8 characters.").max(4096, "Password must be less than 100 characters.").regex(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).*$/, 
-                "Must contain at least one uppercase letter, one lowercase letter, and one number."
-            ),
+            password: z.string().nonempty("Please provide a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/, { message: "Password must contain at least one uppercase letter, one number, and one special character." })
         })
     
         const parsed = schema.safeParse({name, email, phone, password});
