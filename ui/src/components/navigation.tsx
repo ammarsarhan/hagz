@@ -26,7 +26,7 @@ export function UserNavigation() {
                 <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
             </div>
             {
-                user ? <ProfileAvatar iniital={user.name.slice(0, 1)}/> :
+                user ? <ProfileAvatar/> :
                 <>
                     <div className="flex items-center gap-x-4">
                         <Link href={"/auth/user/log-in"} className="text-xs">

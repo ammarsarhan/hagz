@@ -4,7 +4,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import UserType from "@/types/user";
 
 interface AuthContextType {
-    user: any | null,
+    user: UserType | null,
     signInWithCredentials: (email: string, password: string) => Promise<any>
     signOut: () => Promise<any>
 }
