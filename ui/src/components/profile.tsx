@@ -35,7 +35,7 @@ export default function ProfileAvatar() {
                     <div className="flex flex-col border-b-[1px]">
                         <button className="flex items-center gap-x-2 text-gray-700 px-4 py-2 hover:bg-gray-100 m-1" onClick={async () => await signOut()}>
                             <LogOut className="w-4 h-4"/>
-                            <span>Sign Out</span>
+                            <span>Sign out</span>
                         </button>
                     </div>
                 </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Button from "@/components/button";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/context/auth";
-import ProfileAvatar from "./profile";
+import Button from "@/components/button";
+import Banner from "@/components/banner";
+import ProfileAvatar from "@/components/profile";
 
 export function UserNavigation() {
     const path = usePathname();
@@ -12,37 +13,45 @@ export function UserNavigation() {
     const getLinkStyle = (link: string) => path == link ? "text-gray-900" : "text-gray-500";
 
     return (
-        <nav className="px-6 py-4 flex items-center justify-between relative">
-            <div>
-                <Link href={"/"}>
-                    <span className="font-semibold">Hagz</span>
-                </Link>
-            </div>
-            <div className="flex items-center gap-x-8 text-sm absolute left-1/2 -translate-x-1/2">
-                <Link href={"/"} className={getLinkStyle("/")}>Home</Link>
-                <Link href={"/featured"} className={getLinkStyle("/featured")}>Featured</Link>
-                <Link href={"/search"} className={getLinkStyle("/search")}>Search</Link>
-                <Link href={"/policy"} className={getLinkStyle("/policy")}>Policy</Link>
-                <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
-            </div>
+        <>
             {
-                user ? <ProfileAvatar/> :
-                <>
-                    <div className="flex items-center gap-x-4">
-                        <Link href={"/auth/user/log-in"} className="text-xs">
-                            <Button variant="primary">
-                                Log In
-                            </Button>
-                        </Link>
-                        <Link href={"/auth/user/sign-up"} className="text-xs">
-                            <Button variant="outline">
-                                Sign Up
-                            </Button>
-                        </Link>
-                    </div>
-                </>
+                user?.status == "UNVERIFIED" &&
+                <Banner>
+                    <span>You have not verified your account yet. Please <Link href={"/profile/verify"} className="text-blue-800 underline">verify</Link> your account to start reserving!</span>
+                </Banner>
             }
-        </nav>
+            <nav className="px-6 py-4 flex items-center justify-between relative">
+                <div>
+                    <Link href={"/"}>
+                        <span className="font-semibold">Hagz</span>
+                    </Link>
+                </div>
+                <div className="flex items-center gap-x-8 text-sm absolute left-1/2 -translate-x-1/2">
+                    <Link href={"/"} className={getLinkStyle("/")}>Home</Link>
+                    <Link href={"/featured"} className={getLinkStyle("/featured")}>Featured</Link>
+                    <Link href={"/search"} className={getLinkStyle("/search")}>Search</Link>
+                    <Link href={"/policy"} className={getLinkStyle("/policy")}>Policy</Link>
+                    <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
+                </div>
+                {
+                    user ? <ProfileAvatar/> :
+                    <>
+                        <div className="flex items-center gap-x-4">
+                            <Link href={"/auth/user/log-in"} className="text-xs">
+                                <Button variant="primary">
+                                    Log In
+                                </Button>
+                            </Link>
+                            <Link href={"/auth/user/sign-up"} className="text-xs">
+                                <Button variant="outline">
+                                    Sign Up
+                                </Button>
+                            </Link>
+                        </div>
+                    </>
+                }
+            </nav>
+        </>
     )
 }
 
