@@ -28,8 +28,8 @@ export function UserNavigation() {
                 </div>
                 <div className="flex items-center gap-x-8 text-sm absolute left-1/2 -translate-x-1/2">
                     <Link href={"/"} className={getLinkStyle("/")}>Home</Link>
-                    <Link href={"/featured"} className={getLinkStyle("/featured")}>Featured</Link>
                     <Link href={"/search"} className={getLinkStyle("/search")}>Search</Link>
+                    <Link href={"/reserve"} className={getLinkStyle("/reserve")}>Reserve</Link>
                     <Link href={"/policy"} className={getLinkStyle("/policy")}>Policy</Link>
                     <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
                 </div>
