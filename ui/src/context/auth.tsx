@@ -27,8 +27,6 @@ export default function AuthContextProvider({ children } : { children: ReactNode
 
     const refreshTokens = async () => {
         try {
-            setLoading(true);
-
             await fetch("http://localhost:3000/api/refresh/user", {
                 method: "POST",
                 headers: {
@@ -37,8 +35,6 @@ export default function AuthContextProvider({ children } : { children: ReactNode
                 },
                 credentials: "include"
             });
-
-            setLoading(false);
         } catch (error: any) {
             console.log(error.message);
         }

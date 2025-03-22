@@ -14,7 +14,7 @@ export default function ProfileAvatar() {
                     </Link>
                     <ChevronDown className="w-3 h-3"/>
                 </div>
-                <div className="absolute right-0 bottom-0 translate-y-[calc(100%+0.25rem)] w-48 flex flex-col rounded-md bg-white border-[1px] text-[0.825rem] invisible group-hover:visible">
+                <div className="absolute right-0 bottom-0 translate-y-[calc(100%+0.25rem)] w-48 flex flex-col rounded-md bg-white border-[1px] text-[0.825rem] invisible group-hover:visible z-50">
                     <div className="flex flex-col border-b-[1px]">
                         <Link className="flex items-center gap-x-2 text-gray-700 px-4 py-2 hover:bg-gray-100 mx-1 mt-1" href="/user/profile">
                             <User className="w-4 h-4"/>
