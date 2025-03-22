@@ -1,30 +1,11 @@
-import { ReactNode } from "react";
+import Filter from "@/components/filter";
 
-interface ReserveStepType {
-    title: string;
-    component: ReactNode;
-}
-
-export function ReserveStep ({ step } : { step: ReserveStepType }) {
+export default function Reserve() {
     return (
-        <div className="h-full flex-center flex-col">
-            {step.title}
-            {step.component}
+        <div className="flex h-full mb-4">
+            <div className="w-full">
+            </div>
+            <Filter/>
         </div>
     )
 };
-
-export default function Reserve() {
-    const steps = [
-        {
-            title: "Pick a date",
-            component: <div></div>
-        }
-    ]
-
-    return (
-        <div className="h-full">
-            <ReserveStep step={steps[0]}/>
-        </div>
-    )
-}

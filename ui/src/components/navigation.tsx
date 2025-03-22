@@ -20,7 +20,7 @@ export function UserNavigation() {
                     <span>You have not verified your account yet. Please <Link href={"/profile/verify"} className="text-blue-800 underline">verify</Link> your account to start reserving!</span>
                 </Banner>
             }
-            <nav className="px-6 py-4 flex items-center justify-between relative">
+            <nav className="px-6 py-4 flex items-center justify-between">
                 <div>
                     <Link href={"/"}>
                         <span className="font-semibold">Hagz</span>
