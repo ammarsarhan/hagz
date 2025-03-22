@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+
 import Input, { InputGroup } from "@/components/input";
 import Button from "@/components/button";
-import { z } from "zod";
+import { X } from "lucide-react";
 
 interface BaseFilterSectionProps {
     label: string;
@@ -11,23 +11,16 @@ interface BaseFilterSectionProps {
 interface OptionsFilter extends BaseFilterSectionProps {
     type: "range" | "checkbox";
     options: string[];
-    value: any;
-    onChange: (value: any) => void;
 }
 
 interface InputFilter extends BaseFilterSectionProps {
-    value: any;
-    onChange: (value: any) => void;
     type: "input";
     options?: never;
 }
 
-type FilterSectionProps = OptionsFilter | InputFilter & {
-    value: any;
-    onChange: (value: any) => void;
-};
+type FilterSectionProps = OptionsFilter | InputFilter;
 
-const FilterSection = ({ label, type, options, value, onChange }: FilterSectionProps) => {
+const FilterSection = ({ label, type, options }: FilterSectionProps) => {
     if (type === "range" && options.length !== 2) {
         throw new Error("Range filter must have exactly 2 options");
     }
@@ -41,13 +34,6 @@ const FilterSection = ({ label, type, options, value, onChange }: FilterSectionP
                         <div className="flex items-center gap-x-2 text-sm" key={index}>
                             <input
                                 type="checkbox"
-                                checked={value.includes(option)}
-                                onChange={(e) => {
-                                    const newValue = e.target.checked
-                                        ? [...value, option]
-                                        : value.filter((v: string) => v !== option);
-                                    onChange(newValue);
-                                }}
                             />
                             <span>{option}</span>
                         </div>
@@ -59,14 +45,10 @@ const FilterSection = ({ label, type, options, value, onChange }: FilterSectionP
                             <InputGroup
                                 key={index}
                                 placeholder={label}
-                                value={value[index] || ""}
-                                onChange={(e) => {
-                                    const newValue = [...value];
-                                    newValue[index] = e.target.value;
-                                    onChange(newValue);
-                                }}
                                 label={label}
                                 className="text-sm"
+                                value=""
+                                onChange={() => null}
                             />
                         ))}
                     </div>
@@ -75,10 +57,10 @@ const FilterSection = ({ label, type, options, value, onChange }: FilterSectionP
                 {type === "input" && (
                     <Input
                         placeholder={label}
-                        value={value}
-                        onChange={(e) => onChange(e.target.value)}
                         type="date"
                         className="text-sm"
+                        value=""
+                        onChange={() => null}
                     />
                 )}
             </div>
@@ -87,89 +69,46 @@ const FilterSection = ({ label, type, options, value, onChange }: FilterSectionP
 };
 
 export default function Filter() {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const [previous, setPrevious] = useState({
-        date: "",
-        timeRange: ["", ""],
-        priceRange: ["", ""],
-        groundSize: [],
-        groundSurface: [],
-        amenities: [],
-    });
-
-    const [filters, setFilters] = useState(previous);
-    const [changed, setChanged] = useState(false);
-
-    useEffect(() => {
-        setChanged(JSON.stringify(filters) !== JSON.stringify(previous));
-    }, [filters, previous]);
-
-    const schema = z.object({
-        date: z.string().date().optional(),
-        
-    })
-
-    const setErrorWithTimeout = (message: string) => {
-        alert(message);
-    }
-
-    const validateFilters = () => {
-        const parsed = schema.safeParse(filters);
-        
-        if (!parsed.success) {
-            setErrorWithTimeout(parsed.error.errors[0].message);
-        }
-
-        return parsed.data;
-    }
-
-    const applyFilter = () => {
-        setLoading(true);
-
-        setPrevious(filters);
-        setChanged(false);
-
-        setLoading(false);
-    };
-
     return (
-        <div className="w-96 border-l-[1px] h-full overflow-y-scroll py-3 px-4 flex flex-col justify-between gap-y-5">
-            <div className="flex flex-col gap-y-5">
+        <div className="w-96 border-l-[1px] h-full py-3 px-4 flex flex-col justify-between gap-y-5">
+            <div className="flex items-center justify-between">
+                <span>Filters</span>
+                <button className="text-gray-500"><X className="w-4 h-4"/></button>
+            </div>
+            <div className="flex flex-col gap-y-5 overflow-y-scroll flex-grow">
                 <FilterSection
                     label="Date"
                     type="input"
-                    value={filters.date}
-                    onChange={(value) => setFilters((prev) => ({ ...prev, date: value }))}
                 />
                 <FilterSection
                     label="Time Range"
                     type="range"
                     options={["From", "To"]}
-                    value={filters.timeRange}
-                    onChange={(value) => setFilters((prev) => ({ ...prev, timeRange: value }))}
                 />
                 <FilterSection
                     label="Price Range"
                     type="range"
                     options={["Minimum", "Maximum"]}
-                    value={filters.priceRange}
-                    onChange={(value) => setFilters((prev) => ({ ...prev, priceRange: value }))}
+                />
+                <FilterSection
+                    label="Price Range"
+                    type="range"
+                    options={["Minimum", "Maximum"]}
+                />
+                <FilterSection
+                    label="Price Range"
+                    type="range"
+                    options={["Minimum", "Maximum"]}
                 />
                 <FilterSection
                     label="Ground Size"
                     type="checkbox"
                     options={["5-a-side", "7-a-side", "11-a-side"]}
-                    value={filters.groundSize}
-                    onChange={(value) => setFilters((prev) => ({ ...prev, groundSize: value }))}
                 />
                 <FilterSection
                     label="Ground Surface"
                     type="checkbox"
                     options={["Natural", "Artificial", "Turf"]}
-                    value={filters.groundSurface}
-                    onChange={(value) => setFilters((prev) => ({ ...prev, groundSurface: value }))}
                 />
                 <FilterSection
                     label="Amenities"
@@ -186,13 +125,11 @@ export default function Filter() {
                         "First Aid",
                         "Security",
                     ]}
-                    value={filters.amenities}
-                    onChange={(value) => setFilters((prev) => ({ ...prev, amenities: value }))}
                 />
             </div>
             <div>
-                <Button className="w-full text-sm" variant={changed ? "primary" : "disabled"} onClick={applyFilter}>
-                    {loading ? "Loading..." : "Apply Filters"}
+                <Button className="w-full text-sm" variant="disabled">
+                    Apply Filters
                 </Button>
             </div>
         </div>

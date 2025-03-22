@@ -25,9 +25,29 @@ export default function AuthContextProvider({ children } : { children: ReactNode
     const [user, setUser] = useState<UserType | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const refreshTokens = async () => {
+        try {
+            setLoading(true);
+
+            await fetch("http://localhost:3000/api/refresh/user", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                credentials: "include"
+            });
+
+            setLoading(false);
+        } catch (error: any) {
+            console.log(error.message);
+        }
+    }
+
     const fetchUser = async () => {
         try {
             setLoading(true);
+            await refreshTokens();
 
             const res = await fetch("http://localhost:3000/api/user", {
                 method: "GET",
