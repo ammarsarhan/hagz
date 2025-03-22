@@ -55,7 +55,14 @@ export default function Login() {
         if (!res.success) {
             setErrorWithTimeout(res.message);
             setLoading(false);
+            return;
         };
+
+        if (res.data.status == "SUSPENDED" || res.data.status == "DELETED") {
+            setErrorWithTimeout("This account has either been suspended or deleted. Please contact customer support for more information.");
+            setLoading(false);
+            return;
+        }
 
         router.push("/");
     }

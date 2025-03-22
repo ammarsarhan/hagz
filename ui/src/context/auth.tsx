@@ -61,11 +61,15 @@ export default function AuthContextProvider({ children } : { children: ReactNode
                 },
                 credentials: "include",
                 body: JSON.stringify({ email, password })
-            })
+            });
 
             const result = await res.json();
             
             if (!result.success) {
+                return result;
+            }
+
+            if (result.data.status == "SUSPENDED" || result.data.status == "DELETED") {
                 return result;
             }
 

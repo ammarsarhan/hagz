@@ -139,6 +139,8 @@ const Third = () => {
         if (!result.success) {
             setErrorWithTimeout(result.message, setError, timeoutRef);
         };
+        
+        console.log("Send email:", result);
 
         setLoading(false);
         return result;
