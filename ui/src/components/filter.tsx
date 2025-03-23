@@ -1,7 +1,7 @@
 "use client";
 
 import Input, { InputGroup } from "@/components/input";
-import Button from "@/components/button";
+import { useFilterContext } from "@/context/filter";
 import { X } from "lucide-react";
 
 interface BaseFilterSectionProps {
@@ -69,69 +69,71 @@ const FilterSection = ({ label, type, options }: FilterSectionProps) => {
 };
 
 export default function Filter() {
-    return (
-        <div className="w-96 border-l-[1px] h-full py-3 px-4 flex flex-col justify-between gap-y-5">
-            <div className="flex items-center justify-between">
-                <span>Filters</span>
-                <button className="text-gray-500"><X className="w-4 h-4"/></button>
+    const { open, setOpen } = useFilterContext();
+
+    if (open) {
+        return (
+            <div className="fixed top-0 left-0 z-50 h-screen w-screen flex-center bg-black/30">
+                <div className="p-6 bg-white rounded-md w-1/3">
+                    <div className="flex items-center justify-between">
+                        <span>Filters</span>
+                        <button onClick={() => setOpen(false)}><X className="w-4 h-4"/></button>
+                    </div>
+                </div>
             </div>
-            <div className="flex flex-col gap-y-5 overflow-y-scroll flex-grow">
-                <FilterSection
-                    label="Date"
-                    type="input"
-                />
-                <FilterSection
-                    label="Time Range"
-                    type="range"
-                    options={["From", "To"]}
-                />
-                <FilterSection
-                    label="Price Range"
-                    type="range"
-                    options={["Minimum", "Maximum"]}
-                />
-                <FilterSection
-                    label="Price Range"
-                    type="range"
-                    options={["Minimum", "Maximum"]}
-                />
-                <FilterSection
-                    label="Price Range"
-                    type="range"
-                    options={["Minimum", "Maximum"]}
-                />
-                <FilterSection
-                    label="Ground Size"
-                    type="checkbox"
-                    options={["5-a-side", "7-a-side", "11-a-side"]}
-                />
-                <FilterSection
-                    label="Ground Surface"
-                    type="checkbox"
-                    options={["Natural", "Artificial", "Turf"]}
-                />
-                <FilterSection
-                    label="Amenities"
-                    type="checkbox"
-                    options={[
-                        "Indoors",
-                        "Ball",
-                        "Seating",
-                        "Night Lights",
-                        "Parking",
-                        "Showers",
-                        "Lockers",
-                        "Cafeteria",
-                        "First Aid",
-                        "Security",
-                    ]}
-                />
-            </div>
-            <div>
-                <Button className="w-full text-sm" variant="disabled">
-                    Apply Filters
-                </Button>
-            </div>
-        </div>
-    );
+        );
+    }
 }
+
+// <div className="flex flex-col gap-y-6 max-h-[75vh] overflow-y-scroll">
+// <FilterSection
+//     label="Date"
+//     type="input"
+// />
+// <FilterSection
+//     label="Time Range"
+//     type="range"
+//     options={["From", "To"]}
+// />
+// <FilterSection
+//     label="Price Range"
+//     type="range"
+//     options={["Minimum", "Maximum"]}
+// />
+// <FilterSection
+//     label="Price Range"
+//     type="range"
+//     options={["Minimum", "Maximum"]}
+// />
+// <FilterSection
+//     label="Price Range"
+//     type="range"
+//     options={["Minimum", "Maximum"]}
+// />
+// <FilterSection
+//     label="Ground Size"
+//     type="checkbox"
+//     options={["5-a-side", "7-a-side", "11-a-side"]}
+// />
+// <FilterSection
+//     label="Ground Surface"
+//     type="checkbox"
+//     options={["Natural", "Artificial", "Turf"]}
+// />
+// <FilterSection
+//     label="Amenities"
+//     type="checkbox"
+//     options={[
+//         "Indoors",
+//         "Ball",
+//         "Seating",
+//         "Night Lights",
+//         "Parking",
+//         "Showers",
+//         "Lockers",
+//         "Cafeteria",
+//         "First Aid",
+//         "Security",
+//     ]}
+// />
+// </div>

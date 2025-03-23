@@ -24,7 +24,7 @@ export default function Button({ children, variant = "primary", className, disab
             style = style.concat(" ", "bg-black text-white hover:bg-gray-800");
             break;
         case "secondary":
-            style = style.concat(" ", "bg-black text-white");
+            style = style.concat(" ", "bg-blue-800 text-white hover:bg-blue-700");
             break;
         case "outline":
             style = style.concat(" ", "bg-white text-black border-[1px] hover:bg-gray-50");

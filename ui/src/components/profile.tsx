@@ -9,10 +9,10 @@ export default function ProfileAvatar() {
         return (
             <div className="group relative">
                 <div className="flex items-center gap-x-1 cursor-pointer">
+                    <ChevronDown className="w-3 h-3"/>
                     <Link className="flex-center rounded-full text-sm w-8 h-8 border-[1px]" href={"/user/profile"}>
                         {user.name.slice(0, 1)}
                     </Link>
-                    <ChevronDown className="w-3 h-3"/>
                 </div>
                 <div className="absolute right-0 bottom-0 translate-y-[calc(100%+0.25rem)] w-48 flex flex-col rounded-md bg-white border-[1px] text-[0.825rem] invisible group-hover:visible z-50">
                     <div className="flex flex-col border-b-[1px]">
