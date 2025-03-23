@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 interface ButtonProps {
     children: ReactNode
     disabled?: boolean
-    variant?: "primary" | "secondary" | "outline" | "mono" | "none" | "disabled"
+    variant?: "primary" | "secondary" | "outline" | "mono" | "none" | "disabled" | "destructive"
     className?: string
     onClick?: () => void
 }
@@ -34,6 +34,9 @@ export default function Button({ children, variant = "primary", className, disab
             break;
         case "disabled":
             style = style.concat(" ", "bg-gray-700 text-white");
+            break;
+        case "destructive":
+            style = style.concat(" ", "border-red-600! bg-red-50 text-red-600 border-[1px] hover:bg-red-100");
             break;
     }
 

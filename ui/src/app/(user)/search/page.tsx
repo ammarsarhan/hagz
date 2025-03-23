@@ -13,7 +13,7 @@ export default function Search() {
 
     const handleSwitchView = () => {
         setView(view == "grid" ? "map" : "grid");
-    }
+    };
 
     return (
         <div className="flex h-full mb-4 relative">

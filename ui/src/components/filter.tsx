@@ -1,16 +1,16 @@
 "use client";
 
-import { FilterSlideType, useFilterContext } from "@/context/filter";
-import { SlidersHorizontal, X, DollarSign, Calendar, MapPin, Settings, Notebook } from "lucide-react";
 import { ReactNode } from "react";
+import { useFilterContext } from "@/context/filter";
+import { SlidersHorizontal, X, DollarSign, Calendar, MapPin, Settings, Notebook } from "lucide-react";
 
-const FilterSlideToggle = ({ label, icon } : { label: string, icon: ReactNode }) => {
-    const { currentSlide, setCurrentSlide } = useFilterContext();
+const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: ReactNode, index: number }) => {
+    const { slides, slide, setSlide } = useFilterContext();
 
     return (
         <button 
-            className={`flex items-center gap-x-[0.375rem] text-sm px-2 py-1 ${currentSlide == label && "border-b-2 border-blue-800! text-blue-800"}`}
-            onClick={() => setCurrentSlide(label as FilterSlideType)}
+            className={`flex items-center gap-x-[0.375rem] text-sm px-2 py-1 ${slide.name == label && "border-b-2 border-blue-800! text-blue-800"}`}
+            onClick={() => setSlide(slides[index])}
         >
             {icon}
             {label}
@@ -19,7 +19,30 @@ const FilterSlideToggle = ({ label, icon } : { label: string, icon: ReactNode })
 }
 
 export default function Filter() {
-    const { open, currentSlide, setOpen } = useFilterContext();
+    const { open, slide, setOpen } = useFilterContext();
+
+    const toggles = [
+        {
+            label: "Date",
+            icon: <Calendar className="w-4 h-4 text-gray-500"/>
+        },
+        {
+            label: "Price",
+            icon: <DollarSign className="w-4 h-4 text-gray-500"/>
+        },
+        {
+            label: "Location",
+            icon: <MapPin className="w-4 h-4 text-gray-500"/>
+        },
+        {
+            label: "Ground",
+            icon: <Settings className="w-4 h-4 text-gray-500"/>
+        },
+        {
+            label: "Amenities",
+            icon: <Notebook className="w-4 h-4 text-gray-500"/>
+        }
+    ]
 
     if (open) {
         return (
@@ -30,11 +53,14 @@ export default function Filter() {
                         <button onClick={() => setOpen(false)}><X className="w-4 h-4"/></button>
                     </div>
                     <div className="px-2 flex items-center justify-between gap-x-8 border-b-[1px]">
-                        <FilterSlideToggle label="Date" icon={<Calendar className="w-3 h-3"/>}/>
-                        <FilterSlideToggle label="Price" icon={<DollarSign className="w-3 h-3"/>}/>
-                        <FilterSlideToggle label="Location" icon={<MapPin className="w-3 h-3"/>}/>
-                        <FilterSlideToggle label="Ground" icon={<Settings className="w-3 h-3"/>}/>
-                        <FilterSlideToggle label="Amenities" icon={<Notebook className="w-3 h-3"/>}/>
+                        {   
+                            toggles.map((toggle, index) => (
+                                <FilterSlideToggle label={toggle.label} icon={toggle.icon} index={index} key={index}/>
+                            ))
+                        }
+                    </div>
+                    <div className="py-4">
+                        {slide.component}
                     </div>
                 </div>
             </div>
