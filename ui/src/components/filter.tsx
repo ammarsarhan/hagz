@@ -1,18 +1,25 @@
 "use client";
 
 import { ReactNode } from "react";
-import { useFilterContext } from "@/context/filter";
-import Button from "@/components/button";
-import { SlidersHorizontal, X, DollarSign, Calendar, MapPin, Settings, Notebook } from "lucide-react";
 import _ from "lodash";
 
+import { useFilterContext } from "@/context/filter";
+import Button from "@/components/button";
+
+import { SlidersHorizontal, X, DollarSign, Calendar, MapPin, Settings, Notebook } from "lucide-react";
+
 const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: ReactNode, index: number }) => {
-    const { slides, slide, setSlide } = useFilterContext();
+    const { slides, slide, setSlide, setError } = useFilterContext();
+
+    const handleSwitchSlide = () => {
+        setError(null);
+        setSlide(slides[index]);
+    }
 
     return (
         <button 
             className={`flex items-center gap-x-[0.375rem] text-sm px-2 py-1 ${slide.name == label && "border-b-2 border-blue-800! text-blue-800"}`}
-            onClick={() => setSlide(slides[index])}
+            onClick={handleSwitchSlide}
         >
             {icon}
             {label}
@@ -21,7 +28,7 @@ const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: React
 }
 
 export default function Filter() {
-    const { open, slide, setOpen, isChanged, saveChanges, resetChanges, temp } = useFilterContext();
+    const { open, slide, setOpen, isChanged, saveChanges, resetChanges, temp, error } = useFilterContext();
 
     const allowReset = !_.isEqual({
         targetDate: "",
@@ -32,7 +39,7 @@ export default function Filter() {
         searchRadius: 1,
         groundSize: ["5-a-side", "7-a-side", "11-a-side"],
         groundSurface: ["Artificial Grass", "Natural Grass"],
-        amenities: ["Indoors"]
+        amenities: []
     }, temp);
 
     const toggles = [
@@ -74,6 +81,7 @@ export default function Filter() {
                         }
                     </div>
                     <div className="py-4">
+                        <span className="text-sm text-red-600 my-2">{error}</span>
                         {slide.component}
                     </div>
                     <div className="border-t-[1px] pt-4 flex items-center justify-between">   
@@ -88,10 +96,7 @@ export default function Filter() {
                             className="text-xs"
                             variant={isChanged ? "primary" : "disabled"} 
                             disabled={!isChanged} 
-                            onClick={() => {
-                                saveChanges(); 
-                                setOpen(false)
-                            }}
+                            onClick={saveChanges}
                         >
                             Save Changes
                         </Button>

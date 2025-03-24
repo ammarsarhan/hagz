@@ -1,8 +1,8 @@
 "use client";
 
 import _ from "lodash";
-import { useContext, createContext, ReactNode, useState, useEffect } from "react";
-import { z } from "zod";
+import { useContext, createContext, ReactNode, useState, useEffect, useRef } from "react";
+import { toUTCDate, getHourDifference } from "@/utils/date";
 
 export type FilterSlideNameType = "Day" | "Price" | "Location" | "Ground" | "Amenities";
 export type GroundSizeFilterType = "5-a-side" | "7-a-side" | "11-a-side";
@@ -27,6 +27,8 @@ interface FilterContextType {
     isChanged: boolean;
     saveChanges: () => void;
     resetChanges: () => void;
+    error: string | null;
+    setError: (message: string | null) => void;
 }
 
 interface FilterType {
@@ -40,36 +42,6 @@ interface FilterType {
     groundSurface: GroundSurfaceFilterType[];
     amenities: AmenityFilterType[];
 }
-
-const toUTCDate = (date: string, time: string) => {
-    const [year, month, day] = date.split("-").map(Number);
-    const [hours, minutes] = time.split(":").map(Number);
-    return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
-};
-
-const filterSchema = z.object({
-    targetDate: z.string().default(new Date().toISOString()).refine(date => !isNaN(Date.parse(date)), {
-        message: "Invalid date format. Use YYYY-MM-DD.",
-    }),
-    startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format. Use HH:MM.").default("00:00"),
-    endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format. Use HH:MM.").default("23:00"),
-    minimumPrice: z.number().min(100, "Minimum price must be non-negative.").max(900, "Minimum price must be 900 EGP at most."),
-    maximumPrice: z.number().min(200, "Maximum price must be non-negative.").max(1000, "Minimum price must be 1000 EGP at most."),
-    searchRadius: z.number().min(1, "Search radius must be at least 1.").max(10, "Search radius must be 10 at most."),
-    groundSize: z.array(z.enum(["5-a-side", "7-a-side", "11-a-side"] as const)).min(1, { message: "At least one ground size option must be selected." }),
-    groundSurface: z.array(z.enum(["Artificial Grass", "Natural Grass"] as const)).min(1, { message: "At least one ground surface option must be selected." }),
-    amenities: z.array(z.enum([
-        "Indoors", "Ball Provided", "Seating", "Night Lights", "Parking",
-        "Showers", "Changing Rooms", "Cafeteria", "First Aid", "Security"
-    ] as const)),
-}).refine(data => {
-    const start = toUTCDate(data.targetDate, data.startTime);
-    const end = toUTCDate(data.targetDate, data.endTime);
-    return start < end;
-}, {
-    message: "End time must be after start time.",
-    path: ["endTime"],
-});
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
@@ -86,6 +58,9 @@ export function useFilterContext() {
 export default function FilterContextProvider({ children, slides }: { children: ReactNode, slides: FilterSlideType[] }) {
     const [open, setOpen] = useState(false);
     const [slide, setSlide] = useState<FilterSlideType>(slides[0]);
+    const [error, setError] = useState<string | null>(null);
+
+    const timeout = useRef<NodeJS.Timeout | null>(null);
 
     const initial = {
         targetDate: "",
@@ -96,7 +71,7 @@ export default function FilterContextProvider({ children, slides }: { children: 
         searchRadius: 1,
         groundSize: ["5-a-side", "7-a-side", "11-a-side"],
         groundSurface: ["Artificial Grass", "Natural Grass"],
-        amenities: ["Indoors"]
+        amenities: []
     } as FilterType;
 
     const [temp, setTemp] = useState(initial);
@@ -109,8 +84,127 @@ export default function FilterContextProvider({ children, slides }: { children: 
         setIsChanged(changed)
     }, [data, temp]);
 
+    const validateFilterData = () => {
+        const now = new Date();
+        const { 
+            targetDate, 
+            startTime, 
+            endTime, 
+            minimumPrice, 
+            maximumPrice, 
+            searchRadius,
+            groundSize,
+            groundSurface
+        } = temp;
+
+        if (targetDate != "" && startTime == "" || targetDate != "" && endTime == "") {
+            return {
+                success: false,
+                message: "You may not pick a date without selecting both start and end time.",
+                targetIndex: 0
+            }
+        }
+
+        if (targetDate == "" && startTime != "" || targetDate == "" && endTime != "") {
+            return {
+                success: false,
+                message: "You may not pick a start or end time without selecting a date.",
+                targetIndex: 0
+            }
+        }
+
+        let startDate = toUTCDate(now.toISOString(), "00:00");
+        let endDate = toUTCDate(now.toISOString(), "23:59");
+
+        if (startTime != "" || endTime != "") {
+            startDate = toUTCDate(targetDate, startTime);
+            endDate = toUTCDate(targetDate, endTime);
+        };
+
+        if (startDate <= now || endDate <= now) {
+            return {
+                success: false,
+                message: "Both start and end time must be upcoming.",
+                targetIndex: 0
+            };
+        }
+
+        if (startDate >= endDate) {
+            return {
+                success: false,
+                message: "Start time may not be after the end time.",
+                targetIndex: 0
+            };
+        }
+
+        if (getHourDifference(endDate, startDate) < 1 || getHourDifference(endDate, startDate) > 6) {
+            return {
+                success: false,
+                message: "The duration of the booking must be between 1 and 6 hours.",
+                targetIndex: 0
+            };
+        }
+
+        if (minimumPrice >= maximumPrice) {
+            return {
+                success: false,
+                message: "Minimum price may not be greater than or equal to the maximum price.",
+                targetIndex: 1
+            }
+        }
+
+        if (searchRadius < 1 || searchRadius > 10) {
+            return {
+                success: false,
+                message: "Search radius must be between 1 and 10 kilometers. Please select a valid radius.",
+                targetIndex: 2
+            }
+        }
+
+        if (groundSize.length < 1) {
+            return {
+                success: false,
+                message: "You must select at least one option from ground sizes.",
+                targetIndex: 3
+            }
+        }
+
+        if (groundSurface.length < 1) {
+            return {
+                success: false,
+                message: "You must select at least one option from ground surfaces.",
+                targetIndex: 3
+            }
+        }
+
+        return {
+            success: true
+        }
+    }
+
+    const setErrorWithTimeout = (message: string) => {
+        setError(message);
+
+        if (timeout.current) {
+            clearTimeout(timeout.current);
+        }
+
+        timeout.current = setTimeout(() => {
+            setError(null);
+        }, 3000);
+    };
+
     const saveChanges = () => {
+        const parse = validateFilterData();
+
+        if (!parse.success) {
+            setSlide(slides[parse.targetIndex!])
+            setErrorWithTimeout(parse.message!);
+            return;
+        }
+
         setData(temp);
+        setOpen(false);
     }
     
     const resetChanges = () => {
@@ -131,7 +225,9 @@ export default function FilterContextProvider({ children, slides }: { children: 
             setData,
             isChanged,
             saveChanges,
-            resetChanges
+            resetChanges,
+            error,
+            setError
         }}>
             {children}
         </FilterContext.Provider>
