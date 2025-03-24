@@ -1,8 +1,9 @@
 "use client";
 
-import { useContext, createContext, ReactNode, useState } from "react";
+import _ from "lodash";
+import { useContext, createContext, ReactNode, useState, useEffect } from "react";
 
-export type FilterSlideNameType = "Date" | "Price" | "Location" | "Ground" | "Amenities";
+export type FilterSlideNameType = "Day" | "Price" | "Location" | "Ground" | "Amenities";
 export type GroundSizeFilterType = "5-a-side" | "7-a-side" | "11-a-side";
 export type GroundSurfaceFilterType = "Artificial Grass" | "Natural Grass";
 export type AmenityFilterType = "Indoors" | "Ball Provided" | "Seating" | "Night Lights" | "Parking" | "Showers" | "Changing Rooms" | "Cafeteria" | "First Aid" | "Security";
@@ -22,6 +23,9 @@ interface FilterContextType {
     setTemp: (data: FilterType) => void;
     data: FilterType;
     setData: (data: FilterType) => void;
+    isChanged: boolean;
+    saveChanges: () => void;
+    resetChanges: () => void;
 }
 
 interface FilterType {
@@ -67,6 +71,26 @@ export default function FilterContextProvider({ children, slides }: { children: 
     const [temp, setTemp] = useState(initial);
     const [data, setData] = useState(initial);
 
+    const [isChanged, setIsChanged] = useState(false);
+
+    useEffect(() => {
+        const changed = !_.isEqual(temp, data);
+        setIsChanged(changed)
+    }, [data, temp])
+
+    const validateChanges = () => {
+        console.log("Validated changes.");
+    };
+
+    const saveChanges = () => {
+        validateChanges();
+        console.log("Changes saved.");
+    }
+    
+    const resetChanges = () => {
+        setTemp(data);
+    }
+
     return (
         <FilterContext.Provider value={{
             slides,
@@ -77,7 +101,10 @@ export default function FilterContextProvider({ children, slides }: { children: 
             temp,
             setTemp,
             data,
-            setData
+            setData,
+            isChanged,
+            saveChanges,
+            resetChanges
         }}>
             {children}
         </FilterContext.Provider>

@@ -162,7 +162,7 @@ const AmenityButton = ({ label } : { label: AmenityFilterType }) => {
   const baseStyle = "text-sm px-3 py-1 border-[1px] rounded-md";
 
   const addAmenity = () => {
-    const updated = temp.amenities;
+    const updated = [...temp.amenities];
     updated.push(label);
 
     setTemp({
@@ -172,7 +172,7 @@ const AmenityButton = ({ label } : { label: AmenityFilterType }) => {
   };
 
   const removeAmenity = () => {
-    let updated = temp.amenities;
+    let updated = [...temp.amenities];
     updated = updated.filter((item) => item !== label);
 
     setTemp({

@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { useFilterContext } from "@/context/filter";
+import Button from "@/components/button";
 import { SlidersHorizontal, X, DollarSign, Calendar, MapPin, Settings, Notebook } from "lucide-react";
 
 const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: ReactNode, index: number }) => {
@@ -19,11 +20,11 @@ const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: React
 }
 
 export default function Filter() {
-    const { open, slide, setOpen } = useFilterContext();
+    const { open, slide, setOpen, isChanged, saveChanges, resetChanges } = useFilterContext();
 
     const toggles = [
         {
-            label: "Date",
+            label: "Day",
             icon: <Calendar className="w-4 h-4 text-gray-500"/>
         },
         {
@@ -61,6 +62,23 @@ export default function Filter() {
                     </div>
                     <div className="py-4">
                         {slide.component}
+                    </div>
+                    <div className="border-t-[1px] pt-4 flex items-center justify-between">   
+                        <button 
+                            className={`text-sm ${isChanged ? "text-blue-800 hover:underline" : "text-gray-500 cursor-auto!"}`} 
+                            disabled={!isChanged} 
+                            onClick={resetChanges}
+                        >
+                            Reset
+                        </button>
+                        <Button 
+                            className="text-xs"
+                            variant={isChanged ? "primary" : "disabled"} 
+                            disabled={!isChanged} 
+                            onClick={saveChanges}
+                        >
+                            Save Changes
+                        </Button>
                     </div>
                 </div>
             </div>
