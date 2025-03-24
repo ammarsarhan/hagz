@@ -78,13 +78,9 @@ export default function FilterContextProvider({ children, slides }: { children: 
         setIsChanged(changed)
     }, [data, temp])
 
-    const validateChanges = () => {
-        console.log("Validated changes.");
-    };
-
     const saveChanges = () => {
-        validateChanges();
-        console.log("Changes saved.");
+        setData(temp);
+        setOpen(false);
     }
     
     const resetChanges = () => {
