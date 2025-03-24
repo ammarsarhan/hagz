@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { useFilterContext } from "@/context/filter";
 import Button from "@/components/button";
 import { SlidersHorizontal, X, DollarSign, Calendar, MapPin, Settings, Notebook } from "lucide-react";
+import _ from "lodash";
 
 const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: ReactNode, index: number }) => {
     const { slides, slide, setSlide } = useFilterContext();
@@ -20,7 +21,19 @@ const FilterSlideToggle = ({ label, icon, index } : { label: string, icon: React
 }
 
 export default function Filter() {
-    const { open, slide, setOpen, isChanged, saveChanges, resetChanges } = useFilterContext();
+    const { open, slide, setOpen, isChanged, saveChanges, resetChanges, temp } = useFilterContext();
+
+    const allowReset = !_.isEqual({
+        targetDate: "",
+        startTime: "",
+        endTime: "",
+        minimumPrice: 100,
+        maximumPrice: 1000,
+        searchRadius: 1,
+        groundSize: ["5-a-side", "7-a-side", "11-a-side"],
+        groundSurface: ["Artificial Grass", "Natural Grass"],
+        amenities: ["Indoors"]
+    }, temp);
 
     const toggles = [
         {
@@ -45,21 +58,13 @@ export default function Filter() {
         }
     ]
 
-    const handleCloseModal = () => {
-        if (isChanged) {
-            resetChanges();
-        }
-
-        setOpen(false);
-    };
-
     if (open) {
         return (
             <div className="fixed top-0 left-0 z-50 h-screen w-screen flex-center bg-black/30">
                 <div className="p-6 bg-white rounded-md min-w-96 w-2xl mx-4">
                     <div className="flex items-center justify-between pb-3">
                         <span className="flex items-center text-sm gap-x-2"><SlidersHorizontal className="w-4 h-4 text-gray-500"/> Filters</span>
-                        <button onClick={handleCloseModal}><X className="w-4 h-4"/></button>
+                        <button onClick={() => setOpen(false)}><X className="w-4 h-4"/></button>
                     </div>
                     <div className="px-2 flex items-center justify-between gap-x-8 border-b-[1px]">
                         {   
@@ -73,8 +78,8 @@ export default function Filter() {
                     </div>
                     <div className="border-t-[1px] pt-4 flex items-center justify-between">   
                         <button 
-                            className={`text-sm ${isChanged ? "text-blue-800 hover:underline" : "text-gray-500 cursor-auto!"}`} 
-                            disabled={!isChanged} 
+                            className={`text-sm ${allowReset ? "text-blue-800 hover:underline" : "text-gray-500 cursor-auto!"}`} 
+                            disabled={!allowReset} 
                             onClick={resetChanges}
                         >
                             Reset
@@ -83,7 +88,10 @@ export default function Filter() {
                             className="text-xs"
                             variant={isChanged ? "primary" : "disabled"} 
                             disabled={!isChanged} 
-                            onClick={saveChanges}
+                            onClick={() => {
+                                saveChanges(); 
+                                setOpen(false)
+                            }}
                         >
                             Save Changes
                         </Button>

@@ -2,6 +2,7 @@
 
 import _ from "lodash";
 import { useContext, createContext, ReactNode, useState, useEffect } from "react";
+import { z } from "zod";
 
 export type FilterSlideNameType = "Day" | "Price" | "Location" | "Ground" | "Amenities";
 export type GroundSizeFilterType = "5-a-side" | "7-a-side" | "11-a-side";
@@ -40,6 +41,36 @@ interface FilterType {
     amenities: AmenityFilterType[];
 }
 
+const toUTCDate = (date: string, time: string) => {
+    const [year, month, day] = date.split("-").map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
+    return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
+};
+
+const filterSchema = z.object({
+    targetDate: z.string().default(new Date().toISOString()).refine(date => !isNaN(Date.parse(date)), {
+        message: "Invalid date format. Use YYYY-MM-DD.",
+    }),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format. Use HH:MM.").default("00:00"),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format. Use HH:MM.").default("23:00"),
+    minimumPrice: z.number().min(100, "Minimum price must be non-negative.").max(900, "Minimum price must be 900 EGP at most."),
+    maximumPrice: z.number().min(200, "Maximum price must be non-negative.").max(1000, "Minimum price must be 1000 EGP at most."),
+    searchRadius: z.number().min(1, "Search radius must be at least 1.").max(10, "Search radius must be 10 at most."),
+    groundSize: z.array(z.enum(["5-a-side", "7-a-side", "11-a-side"] as const)).min(1, { message: "At least one ground size option must be selected." }),
+    groundSurface: z.array(z.enum(["Artificial Grass", "Natural Grass"] as const)).min(1, { message: "At least one ground surface option must be selected." }),
+    amenities: z.array(z.enum([
+        "Indoors", "Ball Provided", "Seating", "Night Lights", "Parking",
+        "Showers", "Changing Rooms", "Cafeteria", "First Aid", "Security"
+    ] as const)),
+}).refine(data => {
+    const start = toUTCDate(data.targetDate, data.startTime);
+    const end = toUTCDate(data.targetDate, data.endTime);
+    return start < end;
+}, {
+    message: "End time must be after start time.",
+    path: ["endTime"],
+});
+
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export function useFilterContext() {
@@ -76,15 +107,15 @@ export default function FilterContextProvider({ children, slides }: { children: 
     useEffect(() => {
         const changed = !_.isEqual(temp, data);
         setIsChanged(changed)
-    }, [data, temp])
+    }, [data, temp]);
 
     const saveChanges = () => {
         setData(temp);
-        setOpen(false);
     }
     
     const resetChanges = () => {
-        setTemp(data);
+        setTemp(initial);
+        setData(initial);
     }
 
     return (
