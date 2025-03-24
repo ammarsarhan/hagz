@@ -1,146 +1,68 @@
 import { Request, Response } from "express";
-import { createPitchWithDetails, getPaginatedPitches, fetchPitchById, getPitchesWithinRadius, updatePitchField, searchForPitches } from "../services/pitchService";
-import { getPitchData } from "../repositories/pitchRepository";
+import { createPitch, getPitch } from "../repositories/pitchRepository";
+import { z } from "zod";
 
-export async function handleQueryPitches(req: Request, res: Response) {
+export async function handleCreatePitch(req: Request, res: Response) {
     try {
-        const params = req.query;
-    
-        if (!(params.longitude && params.latitude && params.radius)) {
-            throw new Error("Please provide a valid longitude/latitude & radius combination.")
+        const options = req.body;
+        const { name, description, longitude, latitude, amenities, images, price, settings, location, minimumSession, maximumSession } = options;
+
+        if (!name || !description || !longitude || !latitude || !amenities || !images || !price || !settings || !location || !minimumSession || !maximumSession) {
+            throw new Error("Please make sure all of the required fields are not empty.");
         }
 
-        const lng = Number(params.longitude);
-        const lat = Number(params.latitude);
-
-        const radius = Number(params.radius) || 1;
-        
-        const pitches = await getPitchesWithinRadius(lng, lat, radius);
-        res.status(200).json({ success: true, message: "Fetched all pitches within specified radius.", data: pitches });
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: `Failed to fetch pitch data. ${error.message}` });
-    }
-}
-
-export async function handleSearchPitches(req: Request, res: Response) {
-    try {
-        const query = req.query.keywords as string;
-
-        if (!query) {
-            throw new Error("Please provide valid keywords to search for pitches.")
-        }
-        const data = await searchForPitches(query);
-        res.status(200).json({ success: true, message: "Fetched all pitches matching the search query.", data: data });
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message })
-    }
-}
-
-export async function handleGetPitches(req: Request, res: Response) {
-    try {
-        const limit = Number(req.query.limit) || 10;
-        const cursor = req.query.timestamp as string;
-        
-        const data = await getPaginatedPitches(cursor, limit);
-
-        res.status(200).json({ 
-            success: true, 
-            message: `Fetched ${data.pitches.length} pitches successfully.`, 
-            data: data 
+        const schema = z.object({
+            name: z.string().min(5, { message: "Pitch name must include at least 5 characters." }).max(50, { message: "Pitch name must be limited to 50 characters at most." }),
+            description: z.string(),
+            owner: z.string().min(1, { message: "Owner ID cannot be empty." }),
+            longitude: z.number().min(-180, { message: "Longitude cannot be smaller than -180." }).max(180, { message: "Longitude cannot be larger than 180." }),
+            latitude: z.number().min(-90, { message: "Latitude cannot be smaller than -90." }).max(90, { message: "Latitude cannot be larger than 90." }),
+            amenities: z.array(z.enum(["INDOORS", "BALL_PROVIDED", "SEATING", "NIGHT_LIGHTS", "PARKING", "SHOWERS", "CHANGING_ROOMS", "CAFETERIA", "FIRST_AID", "SECURITY"], { message: "Selected amenity must be one of available options." })),
+            images: z.array(z.string().url({ message: "Images must be a list of valid URLs." }), { message: "Images must be a list of valid URLs." }),
+            price: z.number().nonnegative("Hourly rate may not be a negative number.").min(100, { message: "Hourly rate must be 100 EGP at least." }).max(1000, { message: "Hourly rate must be 1000 EGP at most." }),
+            settings: z.object({
+                automaticApproval: z.boolean({ message: "Automatic approval must be a boolean value." }).default(true),
+                paymentPolicy: z.enum(["SHORT", "DEFAULT", "EXTENDED"], { message: "Payment policy must be one of available options." }),
+                refundPolicy: z.enum(["PARTIAL", "FULL"], { message: "Refund policy must be one of available options." }),
+            }, { message: "Settings must be an object with all required properties." }),
+            location: z.object({
+                street: z.string({ message: "Street name must be a valid string." }).min(5, { message: "Street name must include at least 5 characters." }),
+                district: z.string({ message: "District name must be a valid string." }).min(5, { message: "District name must include at least 5 characters." }),
+                city: z.string({ message: "City name must be a valid string." }).min(5, { message: "City name must include at least 5 characters." }),
+                governorate: z.string({ message: "Governorate name must be a valid string." }).min(5, { message: "Governorate name must include at least 5 characters." }),
+                country: z.string({ message: "Country name must be a valid string." }).min(5, { message: "Country name must include at least 5 characters." }),
+                postalCode: z.number({ message: "Postal code must be a valid number." }).int({ message: "Postal code must be a valid integer." }).min(1000, { message: "Postal code must be at least 4 digits." }).max(9999, { message: "Postal code must be at most 4 digits." }).optional(),
+                externalLink: z.string({ message: "Google Maps link must be a valid URL." }).url({ message: "Google Maps link must be a valid URL." }).regex(/^(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps)\/[^\s]+$/, "Please enter a valid Google Maps link.").optional()
+            }),
+            minimumSession: z.number().min(1).max(2).default(1),
+            maximumSession: z.number().min(2).max(6).default(6)
+        }).refine(data => data.minimumSession <= data.maximumSession, {
+            message: "Minimum reservation duration cannot be larger than maximum reservation duration.",
+            path: ["maximumSession"]
         });
+
+        const parsed = schema.safeParse({ ...options, owner: req.user.id });
+
+        if (!parsed.success) {
+            throw new Error(parsed.error.errors[0].message);
+        };
+
+        const pitch = await createPitch({...parsed.data, ownerId: req.user.id});
+        res.status(200).json({ success: true, data: pitch });
     } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
+        res.status(400).json({ success: false, error: error.message });
     }
 }
 
-export async function handleFetchPitch(req: Request, res: Response) {
+export async function handleGetPitch(req: Request, res: Response) {
     try {
         const id = req.params.pitch;
-    
-        if (!id) {
-            throw new Error("Please provide a valid pitch id to fetch data.")
-        }
-    
-        const pitch = await fetchPitchById(id);
-        res.status(200).json({success: true, message: "Fetched pitch data successfully!", data: pitch });
+        const pitch = await getPitch(id);
+        res.status(200).json({ success: true, data: pitch });
     } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
+        res.status(400).json({ success: false, error: error.message });
     }
 }
 
-export async function handleUpdatePitch(req: Request, res: Response) {
-    try {
-        const id = req.params.pitch;
-        const field = req.params.field;
-        const value = req.body.value;
-        
-        if (!value) {
-            throw new Error("Please provide a value for the field to be set.")
-        }
-
-        const updated = await updatePitchField(id, field, value);
-        res.status(200).json({success: true, message: "Updated pitch data successfully!", data: updated });
-
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
-    }
-}
-
-export async function handleCreatePitchRequest(req: Request, res: Response) {
-    try {
-        const ownerId = req.user.id;
-
-        if (!ownerId) {
-            throw new Error("No Owner ID provided within the request. Owner ID is required to create a pitch.");
-        }
-
-        if (!req.body.name || !req.body.description || !req.body.longitude || !req.body.latitude || !req.body.size || !req.body.surface || !req.body.amenities || !req.body.images || !req.body.price || !req.body.settings || !req.body.location || !req.body.minimumSession || !req.body.maximumSession) {
-            throw new Error("Please provide all required parameters.")
-        }
-
-        const longitude = parseFloat(req.body.longitude);
-        const latitude = parseFloat(req.body.latitude);
-        const price = parseFloat(req.body.price);
-        const minimumSession = parseInt(req.body.minimumSession);
-        const maximumSession = parseInt(req.body.maximumSession);
-
-        if (!longitude || !latitude || !price || !minimumSession || !maximumSession) {
-            throw new Error("Please provide valid numbers for the required parameters.")
-        }
-
-        const data = {
-            name: req.body.name,
-            description: req.body.description,
-            owner: ownerId,
-            coordinates: {
-                longitude: longitude,
-                latitude: latitude
-            },
-            size: req.body.size,
-            surface: req.body.surface,
-            amenities: req.body.amenities,
-            images: req.body.images,
-            price: price,
-            settings: req.body.settings,
-            location: req.body.location,
-            minimumSession: minimumSession,
-            maximumSession: maximumSession
-        }
-
-        const pitch = await createPitchWithDetails({...data});
-        res.status(200).json({success: true, message: "Created pitch successfully!", data: pitch });
-    } catch (error: any) {
-        res.status(400).json({success: false, message: `Failed to create new pitch. ${error.message}`})
-    }
-}
-
-export async function handleFetchPitchSettings(req: Request, res: Response) {
-    try {
-        const pitchId = req.params.pitch;
-        const data = await getPitchData(pitchId, ["settings", "coordinates"]);
-        
-        res.status(200).json({ success: true, message: "Fetched pitch settings successfully!", data: data });
-    } catch (error: any) {
-        res.status(400).json({ success: false, message: `Failed to fetch pitch settings. ${error.message}` })
-    }
-}
+// size: z.enum(["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"], { message: "Selected pitch size must be one of available options." }),
+// surface: z.enum(["GRASS", "ARTIFICIAL"], { message: "Selected ground type must be one of available options." }),

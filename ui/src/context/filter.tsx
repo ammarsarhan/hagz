@@ -156,7 +156,7 @@ export default function FilterContextProvider({ children, slides }: { children: 
         if (searchRadius < 1 || searchRadius > 10) {
             return {
                 success: false,
-                message: "Search radius must be between 1 and 10 kilometers. Please select a valid radius.",
+                message: "Search radius must be between 1 and 10 kilometers.",
                 targetIndex: 2
             }
         }

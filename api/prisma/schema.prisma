@@ -34,6 +34,20 @@ model Owner {
   pitches           Pitch[]
 }
 
+model Ground {
+  id           String        @id @default(cuid())
+  pitchId      String
+  index        Int           @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  images       String[]
+  size         GroundSize
+  surface      GroundSurface
+  status       GroundStatus  @default(ACTIVE)
+  pitch        Pitch         @relation(fields: [pitchId], references: [id])
+  reservations Reservation[]
+}
+
 model Pitch {
   id             String                   @id @default(cuid())
   ownerId        String
@@ -43,40 +57,37 @@ model Pitch {
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
   images         String[]
-  maximumSession Int                      @default(3)
   minimumSession Int                      @default(1)
+  maximumSession Int                      @default(6)
   price          Float
-  size           PitchSize
-  status         PitchStatus              @default(ACTIVE)
-  surface        PitchSurface
   amenities      PitchAmenity[]
   location       Json
   settings       Json
   search         Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, name)"))
   owner          Owner                    @relation(fields: [ownerId], references: [id])
-  Reservation    Reservation[]
+  grounds        Ground[]
 
   @@index([coordinates], map: "coordinates_idx", type: Gist)
   @@index([search], map: "search_idx", type: Gin)
 }
 
 model Reservation {
-  id                String            @id @default(uuid())
-  pitchId           String
-  userId            String?
-  reserveeName      String
-  reserveePhone     String
-  startDate         DateTime
-  endDate           DateTime
-  isApproved        Boolean           @default(false)
-  approvalExpiry    DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  createdBy         AccountType
-  status            ReservationStatus @default(PENDING)
-  pitch             Pitch             @relation(fields: [pitchId], references: [id])
-  user              User?             @relation(fields: [userId], references: [id])
-  payment           Payment?
+  id             String            @id @default(uuid())
+  groundId       String
+  userId         String?
+  reserveeName   String
+  reserveePhone  String
+  startDate      DateTime
+  endDate        DateTime
+  isApproved     Boolean           @default(false)
+  approvalExpiry DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  createdBy      AccountType
+  status         ReservationStatus @default(PENDING)
+  ground         Ground            @relation(fields: [groundId], references: [id])
+  user           User?             @relation(fields: [userId], references: [id])
+  payment        Payment?
 }
 
 model Payment {
@@ -121,20 +132,20 @@ enum PaymentStatus {
   MANUAL
 }
 
-enum PitchStatus {
+enum GroundStatus {
   ACTIVE
   MAINTENANCE
   CLOSED
 }
 
-enum PitchSize {
+enum GroundSize {
   FIVE_A_SIDE
   SEVEN_A_SIDE
   ELEVEN_A_SIDE
 }
 
-enum PitchSurface {
-  GRASS
+enum GroundSurface {
+  NATURAL
   ARTIFICIAL
 }
 
