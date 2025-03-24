@@ -6,15 +6,16 @@ import Filter from "@/components/filter";
 import FilterContextProvider, { AmenityFilterType, FilterSlideType, GroundSizeFilterType, GroundSurfaceFilterType, useFilterContext } from "@/context/filter";
 import { CircleDollarSign } from "lucide-react";
 
-const Date = () => {
-  const { data, setData } = useFilterContext();
+const Day = () => {
+  const { temp, setTemp } = useFilterContext();
+  const now = new Date();
 
   const handleStartTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
     const time = e.target.value;
     const hour = time.split(":")[0];
     const parsed = `${hour}:00`;
     
-    setData({...data, startTime: parsed});
+    setTemp({...temp, startTime: parsed});
   }
 
   const handleEndTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -22,31 +23,31 @@ const Date = () => {
     const hour = time.split(":")[0];
     const parsed = `${hour}:00`;
 
-    setData({...data, endTime: parsed});
+    setTemp({...temp, endTime: parsed});
   }
 
   return (
     <div className="flex flex-col gap-y-6 py-2">
-      <InputGroup label={"Select Date"} type="date" placeholder={"Day"} value={data.targetDate} onChange={(e) => setData({...data, targetDate: e.target.value})} />
+      <InputGroup label={"Select Date"} type="date" placeholder={"Day"} value={temp.targetDate} onChange={(e) => setTemp({...temp, targetDate: e.target.value})} min={now.toISOString()}/>
       <InputGroupContainer>
-        <InputGroup label={"Start Time"} type="time" placeholder={"Start Time"} value={data.startTime} onChange={handleStartTimeChange} onClear={() => setData({...data, startTime: ""})}/>
-        <InputGroup label={"End Time"} type="time" placeholder={"End Time"} value={data.endTime} onChange={handleEndTimeChange} onClear={() => setData({...data, endTime: ""})}/>
+        <InputGroup label={"Start Time"} type="time" placeholder={"Start Time"} value={temp.startTime} onChange={handleStartTimeChange} onClear={() => setTemp({...temp, startTime: ""})}/>
+        <InputGroup label={"End Time"} type="time" placeholder={"End Time"} value={temp.endTime} onChange={handleEndTimeChange} onClear={() => setTemp({...temp, endTime: ""})}/>
       </InputGroupContainer>
     </div>
   )
 };
 
 const Price = () => {
-  const { data, setData } = useFilterContext();
+  const { temp, setTemp } = useFilterContext();
 
   const onMinChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
-    setData({...data, minimumPrice: value});
+    setTemp({...temp, minimumPrice: value});
   }
   
   const onMaxChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
-    setData({...data, maximumPrice: value});
+    setTemp({...temp, maximumPrice: value});
   }
 
   return (
@@ -55,18 +56,18 @@ const Price = () => {
       <div className="w-full flex items-center justify-between gap-x-16 bg-gray-100 rounded-full border-[1px] text-sm">
         <div className="flex items-center gap-x-2 flex-1 py-2 px-4 bg-white rounded-full shadow">
           <CircleDollarSign className="w-4 h-4 text-gray-500"/>
-          Min: {data.minimumPrice} EGP
+          Min: {temp.minimumPrice} EGP
         </div>
         <div className="flex items-center gap-x-2 flex-1 py-2 px-4 bg-white rounded-full shadow">
           <CircleDollarSign className="w-4 h-4 text-gray-500"/>
-          Max: {data.maximumPrice} EGP
+          Max: {temp.maximumPrice} EGP
         </div>
       </div>
       <InputRange 
         minimum={100} 
         maximum={1000} 
-        minValue={data.minimumPrice} 
-        maxValue={data.maximumPrice} 
+        minValue={temp.minimumPrice} 
+        maxValue={temp.maximumPrice} 
         onMinChange={onMinChange}
         onMaxChange={onMaxChange}
         className="mt-4 mb-6"
@@ -76,14 +77,11 @@ const Price = () => {
 }
 
 const Location = () => {
-  const { data, setData } = useFilterContext();
+  const { temp, setTemp } = useFilterContext();
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
-
-    if (value >= 1 || value <= 10) {
-      setData({...data, searchRadius: value});
-    }
+    setTemp({...temp, searchRadius: value});
   }
 
   return (
@@ -92,28 +90,28 @@ const Location = () => {
         <span>Search Radius</span>
         <p className="text-gray-500 text-[0.825rem]">(Between 1 to 10 KMs)</p>
       </div>
-      <input type="number" min={1} max={10} placeholder="Radius (in KMs)" className="border-b-[1px] text-sm px-2 py-1 w-30" value={data.searchRadius} onChange={onChange}/>
+      <input type="number" min={1} max={10} placeholder="Radius (in KMs)" className="border-b-[1px] text-sm px-2 py-1 w-30" value={temp.searchRadius} onChange={onChange}/>
     </div>
   )
 }
 
 const Ground = () => {
-  const { data, setData } = useFilterContext();
+  const { temp, setTemp } = useFilterContext();
 
   const handleSelectSize = (size: GroundSizeFilterType) => {
-    if (data.groundSize.includes(size)) {
-      const temp = data.groundSize.filter((item) => item !== size);
-      setData({...data, groundSize: temp});
+    if (temp.groundSize.includes(size)) {
+      const updated = temp.groundSize.filter((item) => item !== size);
+      setTemp({...temp, groundSize: updated});
     } else {
-      setData({...data, groundSize: [...data.groundSize, size]});
+      setTemp({...temp, groundSize: [...temp.groundSize, size]});
     }
   };
 
   const handleSelectSurface = (surface: GroundSurfaceFilterType) => {
-    if (data.groundSurface.includes(surface)) {
-      setData({...data, groundSurface: data.groundSurface.filter((item) => item !== surface)});
+    if (temp.groundSurface.includes(surface)) {
+      setTemp({...temp, groundSurface: temp.groundSurface.filter((item) => item !== surface)});
     } else {
-      setData({...data, groundSurface: [...data.groundSurface, surface]});
+      setTemp({...temp, groundSurface: [...temp.groundSurface, surface]});
     }
   }
 
@@ -126,15 +124,15 @@ const Ground = () => {
         </div>
         <div>
           <div className="text-sm flex items-center gap-x-2">
-            <input type="checkbox" checked={data.groundSize.includes('5-a-side')} onChange={() => handleSelectSize("5-a-side")}/>
+            <input type="checkbox" checked={temp.groundSize.includes('5-a-side')} onChange={() => handleSelectSize("5-a-side")}/>
             <label>5-a-side</label>
           </div>
           <div className="text-sm flex items-center gap-x-2">
-            <input type="checkbox" checked={data.groundSize.includes('7-a-side')} onChange={() => handleSelectSize("7-a-side")}/>
+            <input type="checkbox" checked={temp.groundSize.includes('7-a-side')} onChange={() => handleSelectSize("7-a-side")}/>
             <label>7-a-side</label>
           </div>
           <div className="text-sm flex items-center gap-x-2">
-            <input type="checkbox" checked={data.groundSize.includes('11-a-side')} onChange={() => handleSelectSize("11-a-side")}/>
+            <input type="checkbox" checked={temp.groundSize.includes('11-a-side')} onChange={() => handleSelectSize("11-a-side")}/>
             <label>11-a-side</label>
           </div>
         </div>
@@ -146,11 +144,11 @@ const Ground = () => {
         </div>
         <div>
           <div className="text-sm flex items-center gap-x-2">
-            <input type="checkbox" checked={data.groundSurface.includes('Artificial Grass')} onChange={() => handleSelectSurface('Artificial Grass')}/>
+            <input type="checkbox" checked={temp.groundSurface.includes('Artificial Grass')} onChange={() => handleSelectSurface('Artificial Grass')}/>
             <label>Artificial Grass</label>
           </div>
           <div className="text-sm flex items-center gap-x-2">
-            <input type="checkbox" checked={data.groundSurface.includes('Natural Grass')} onChange={() => handleSelectSurface('Natural Grass')}/>
+            <input type="checkbox" checked={temp.groundSurface.includes('Natural Grass')} onChange={() => handleSelectSurface('Natural Grass')}/>
             <label>Natural Grass</label>
           </div>
         </div>
@@ -160,30 +158,30 @@ const Ground = () => {
 }
 
 const AmenityButton = ({ label } : { label: AmenityFilterType }) => {
-  const { data, setData } = useFilterContext();
-  const baseStyle = "text-sm px-2 py-1 border-[1px] rounded-md";
+  const { temp, setTemp } = useFilterContext();
+  const baseStyle = "text-sm px-3 py-1 border-[1px] rounded-md";
 
   const addAmenity = () => {
-    const temp = data.amenities;
-    temp.push(label);
+    const updated = temp.amenities;
+    updated.push(label);
 
-    setData({
-      ...data,
-      amenities: temp
+    setTemp({
+      ...temp,
+      amenities: updated
     });
   };
 
   const removeAmenity = () => {
-    let temp = data.amenities;
-    temp = temp.filter((item) => item !== label);
+    let updated = temp.amenities;
+    updated = updated.filter((item) => item !== label);
 
-    setData({
-      ...data,
-      amenities: temp
+    setTemp({
+      ...temp,
+      amenities: updated
     });
   }
 
-  if (data.amenities.includes(label)) {
+  if (temp.amenities.includes(label)) {
     return (
       <button className={`${baseStyle} bg-gray-100`} onClick={removeAmenity}>
         {label}
@@ -199,13 +197,15 @@ const AmenityButton = ({ label } : { label: AmenityFilterType }) => {
 }
 
 const Amenities = () => {
+  const { temp } = useFilterContext();
+
   const labels = [
     "Indoors", "Ball Provided", "Seating", "Night Lights", "Parking", "Showers", "Changing Rooms", "Cafeteria", "First Aid", "Security"
   ] as AmenityFilterType[];
 
   return (
     <div className="mt-2 flex flex-col gap-y-3">
-      <span className="text-sm text-gray-500">Select Amenities:</span>
+      <span className="text-sm text-gray-500">Select Amenities ({temp.amenities.length}):</span>
       <div className="flex flex-wrap gap-x-4 gap-y-2 border-[1px] p-2 rounded-sm">
         {
           labels.map((label, index) => {
@@ -224,8 +224,8 @@ export default function SearchLayout({
 }>) {
   const slides = [
     {
-      name: "Date",
-      component: <Date/>
+      name: "Day",
+      component: <Day/>
     },
     {
       name: "Price",

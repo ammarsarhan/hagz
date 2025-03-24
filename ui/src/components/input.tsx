@@ -7,6 +7,8 @@ interface InputGroupProps {
     onChange: (e: ChangeEvent<HTMLInputElement>) => void,
     type?: string,
     className?: string
+    min?: string,
+    max?: string,
     onClear?: () => void
 }
 
@@ -15,6 +17,8 @@ interface InputProps {
     value: string,
     onChange: (e: ChangeEvent<HTMLInputElement>) => void,
     type?: string,
+    min?: string,
+    max?: string,
     className?: string
 }
 
@@ -28,7 +32,7 @@ interface InputRangeProps {
     className?: string
 }
 
-export default function Input({ placeholder, className, value, type = "text", onChange }: InputProps) {
+export default function Input({ placeholder, className, value, type = "text", onChange, min, max }: InputProps) {
     let style = "w-full px-3 py-1 rounded-md border-[1px]";
 
     if (className) {
@@ -36,11 +40,11 @@ export default function Input({ placeholder, className, value, type = "text", on
     }
 
     return (
-        <input type={type} className={style} placeholder={placeholder} value={value} onChange={onChange}/>
+        <input type={type} className={style} placeholder={placeholder} value={value} onChange={onChange} min={min} max={max}/>
     )
 }
 
-export function InputGroup({ label, placeholder, value, onChange, type = "text", className, onClear }: InputGroupProps) {
+export function InputGroup({ label, placeholder, value, min, max, onChange, type = "text", className, onClear }: InputGroupProps) {
     return (
         <div className="w-full">
             {
@@ -51,7 +55,7 @@ export function InputGroup({ label, placeholder, value, onChange, type = "text",
                 </div> :
                 <span className="block text-sm mb-1">{label}</span>
             }
-            <Input placeholder={placeholder} className={className} value={value} type={type} onChange={onChange}/>
+            <Input placeholder={placeholder} className={className} value={value} type={type} onChange={onChange} min={min} max={max}/>
         </div>
     )
 }

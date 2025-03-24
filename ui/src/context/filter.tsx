@@ -18,6 +18,8 @@ interface FilterContextType {
     setOpen: (open: boolean) => void;
     slide: FilterSlideType;
     setSlide: (slide: FilterSlideType) => void;
+    temp: FilterType;
+    setTemp: (data: FilterType) => void;
     data: FilterType;
     setData: (data: FilterType) => void;
 }
@@ -50,7 +52,7 @@ export default function FilterContextProvider({ children, slides }: { children: 
     const [open, setOpen] = useState(false);
     const [slide, setSlide] = useState<FilterSlideType>(slides[0]);
 
-    const [data, setData] = useState<FilterType>({
+    const initial = {
         targetDate: "",
         startTime: "",
         endTime: "",
@@ -60,7 +62,10 @@ export default function FilterContextProvider({ children, slides }: { children: 
         groundSize: ["5-a-side", "7-a-side", "11-a-side"],
         groundSurface: ["Artificial Grass", "Natural Grass"],
         amenities: ["Indoors"]
-    });
+    } as FilterType;
+
+    const [temp, setTemp] = useState(initial);
+    const [data, setData] = useState(initial);
 
     return (
         <FilterContext.Provider value={{
@@ -69,6 +74,8 @@ export default function FilterContextProvider({ children, slides }: { children: 
             setOpen,
             slide,
             setSlide,
+            temp,
+            setTemp,
             data,
             setData
         }}>
