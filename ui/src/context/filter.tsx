@@ -5,6 +5,7 @@ import { useContext, createContext, ReactNode, useState } from "react";
 export type FilterSlideNameType = "Date" | "Price" | "Location" | "Ground" | "Amenities";
 export type GroundSizeFilterType = "5-a-side" | "7-a-side" | "11-a-side";
 export type GroundSurfaceFilterType = "Artificial Grass" | "Natural Grass";
+export type AmenityFilterType = "Indoors" | "Ball Provided" | "Seating" | "Night Lights" | "Parking" | "Showers" | "Changing Rooms" | "Cafeteria" | "First Aid" | "Security";
 
 export type FilterSlideType = {
     name: FilterSlideNameType,
@@ -30,6 +31,7 @@ interface FilterType {
     searchRadius: number;
     groundSize: GroundSizeFilterType[];
     groundSurface: GroundSurfaceFilterType[];
+    amenities: AmenityFilterType[];
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -56,7 +58,8 @@ export default function FilterContextProvider({ children, slides }: { children: 
         maximumPrice: 1000,
         searchRadius: 1,
         groundSize: ["5-a-side", "7-a-side", "11-a-side"],
-        groundSurface: ["Artificial Grass", "Natural Grass"]
+        groundSurface: ["Artificial Grass", "Natural Grass"],
+        amenities: ["Indoors"]
     });
 
     return (

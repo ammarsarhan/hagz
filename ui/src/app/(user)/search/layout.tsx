@@ -3,7 +3,7 @@
 import { ChangeEvent } from "react";
 import { InputGroup, InputGroupContainer, InputRange } from "@/components/input";
 import Filter from "@/components/filter";
-import FilterContextProvider, { FilterSlideType, GroundSizeFilterType, GroundSurfaceFilterType, useFilterContext } from "@/context/filter";
+import FilterContextProvider, { AmenityFilterType, FilterSlideType, GroundSizeFilterType, GroundSurfaceFilterType, useFilterContext } from "@/context/filter";
 import { CircleDollarSign } from "lucide-react";
 
 const Date = () => {
@@ -159,10 +159,60 @@ const Ground = () => {
   )
 }
 
-const Amenities = () => {
+const AmenityButton = ({ label } : { label: AmenityFilterType }) => {
+  const { data, setData } = useFilterContext();
+  const baseStyle = "text-sm px-2 py-1 border-[1px] rounded-md";
+
+  const addAmenity = () => {
+    const temp = data.amenities;
+    temp.push(label);
+
+    setData({
+      ...data,
+      amenities: temp
+    });
+  };
+
+  const removeAmenity = () => {
+    let temp = data.amenities;
+    temp = temp.filter((item) => item !== label);
+
+    setData({
+      ...data,
+      amenities: temp
+    });
+  }
+
+  if (data.amenities.includes(label)) {
+    return (
+      <button className={`${baseStyle} bg-gray-100`} onClick={removeAmenity}>
+        {label}
+      </button>
+    )
+  }
+
   return (
-    <div>
-      amenities
+    <button className={baseStyle} onClick={addAmenity}>
+      {label}
+    </button>
+  )
+}
+
+const Amenities = () => {
+  const labels = [
+    "Indoors", "Ball Provided", "Seating", "Night Lights", "Parking", "Showers", "Changing Rooms", "Cafeteria", "First Aid", "Security"
+  ] as AmenityFilterType[];
+
+  return (
+    <div className="mt-2 flex flex-col gap-y-3">
+      <span className="text-sm text-gray-500">Select Amenities:</span>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 border-[1px] p-2 rounded-sm">
+        {
+          labels.map((label, index) => {
+            return <AmenityButton label={label} key={index}/>
+          })
+        }
+      </div>
     </div>
   )
 }

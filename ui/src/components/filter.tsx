@@ -47,7 +47,7 @@ export default function Filter() {
     if (open) {
         return (
             <div className="fixed top-0 left-0 z-50 h-screen w-screen flex-center bg-black/30">
-                <div className="p-6 bg-white rounded-md min-w-96">
+                <div className="p-6 bg-white rounded-md min-w-96 w-2xl mx-4">
                     <div className="flex items-center justify-between pb-3">
                         <span className="flex items-center text-sm gap-x-2"><SlidersHorizontal className="w-4 h-4 text-gray-500"/> Filters</span>
                         <button onClick={() => setOpen(false)}><X className="w-4 h-4"/></button>
