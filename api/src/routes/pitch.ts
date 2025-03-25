@@ -10,7 +10,7 @@ pitch.get("/", async (req, res) => handleFetchPitches(req, res));
 pitch.post("/create", authorizeOwnerAccessToken, authorizeVerificationStatus, async (req, res) => handleCreatePitch(req, res));
 pitch.get("/:pitch", async (req, res) => handleGetPitch(req, res));
 
-pitch.post("/:pitch/ground/create", async (req, res) => handleCreateGround(req, res));
+pitch.post("/:pitch/ground/create", authorizeOwnerAccessToken, authorizeVerificationStatus, async (req, res) => handleCreateGround(req, res));
 pitch.get("/:pitch/ground/:ground", async (req, res) => handleGetGround(req, res));
 pitch.get("/:pitch/grounds", async (req, res) => handleFetchGrounds(req, res));
 

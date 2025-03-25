@@ -41,6 +41,7 @@ model Ground {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   images       String[]
+  price        Float
   size         GroundSize
   surface      GroundSurface
   status       GroundStatus  @default(ACTIVE)
@@ -59,7 +60,6 @@ model Pitch {
   images         String[]
   minimumSession Int                      @default(1)
   maximumSession Int                      @default(6)
-  price          Float
   amenities      PitchAmenity[]
   location       Json
   settings       Json
