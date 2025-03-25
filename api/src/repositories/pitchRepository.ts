@@ -1,6 +1,6 @@
 import cuid from "cuid";
 import prisma from "../utils/db";
-import { PitchAmenity } from "@prisma/client";
+import { GroundSize, GroundSurface, PitchAmenity } from "@prisma/client";
 import { getPitchPriceRange } from "./groundRepository";
 
 type PitchLocation = {
@@ -31,6 +31,89 @@ type BasePitchQueryResponse = {
 };
 
 type PitchQueryResponse = BasePitchQueryResponse & { description: string };
+
+type FiltersType = {
+    startDate: string | null,
+    endDate: string | null,
+    minimumPrice: number,
+    maximumPrice: number,
+    target: {
+        longitude: number | null,
+        latitude: number | null
+    },
+    radius: number | null,
+    size: GroundSize[],
+    surface: GroundSurface[],
+    amenities: PitchAmenity[]
+}
+
+const buildQuery = ({ limit, cursor, startDate, endDate, minimumPrice, maximumPrice, target, radius, size, surface, amenities } : { limit: number, cursor?: string } & FiltersType) => {
+    let where: string[] = [];
+    let params: any[] = [];
+
+    let index = 1;
+
+    let query = `
+        SELECT DISTINCT "p"."id", "p"."name", "p"."images", "p"."amenities", 
+                        "p"."location", "p"."updatedAt", ST_AsGeoJSON("p"."coordinates")::text as "coordinates"
+        FROM "Pitch" AS p
+        JOIN "Ground" AS g ON "g"."pitchId" = "p"."id"
+        LEFT JOIN "Reservation" AS r 
+            ON "r"."groundId" = "g"."id"
+            AND "r"."status" IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS')
+    `;
+
+    if (cursor) {
+        where.push(`"p"."updatedAt" < $${index}::TIMESTAMP`);
+        params.push(cursor);
+        index += 1;
+    }
+
+    if (startDate && endDate) {
+        where.push(`("r"."id" IS NULL OR NOT ("r"."startDate" < $${index}::TIMESTAMP AND "r"."endDate" > $${index + 1}::TIMESTAMP))`);
+        params.push(endDate, startDate);
+        index += 2;
+    };
+
+    if (minimumPrice && maximumPrice) {
+        where.push(`"g"."price" >= $${index} AND "g"."price" <= $${index + 1}`);
+        params.push(minimumPrice, maximumPrice);
+        index += 2;
+    }
+
+    if (radius && target.longitude && target.latitude) {
+        where.push(`ST_DWithin("p"."coordinates", ST_SetSRID(ST_MakePoint($${index}, $${index + 1}), 4326), $${index + 2})`);
+        params.push(target.longitude, target.latitude, radius);
+        index += 3;
+    }
+
+    if (size.length > 0) {
+        where.push(`"g"."size" = ANY($${index}::"GroundSize"[])`);
+        params.push(size);
+        index += 1;
+    }
+
+    if (surface.length > 0) {
+        where.push(`"g"."surface" = ANY($${index}::"GroundSurface"[])`);
+        params.push(surface);
+        index += 1;
+    }
+
+    if (amenities.length > 0) {
+        where.push(`"p"."amenities" @> $${index}::"PitchAmenity"[]`);
+        params.push(amenities);
+        index += 1;
+    }
+
+    if (where.length > 0) {
+        query += " WHERE " + where.join(" AND ");
+    }
+
+    query += ` ORDER BY "p"."updatedAt" DESC LIMIT $${index}`;
+    params.push(limit);
+
+    return { query, params };
+}
 
 export async function createPitch(data: {
     ownerId: string,
@@ -104,54 +187,35 @@ export async function getPitch(id: string) {
     }
 }
 
-export async function fetchInitialPitches(limit: number) {
+export async function fetchInitialPitches(limit: number, filters: FiltersType) {
     try {
-        const query = await prisma.$queryRaw`
-            SELECT "id", "name", "images", "amenities", "location", "updatedAt", ST_AsGeoJSON("coordinates")::text as "coordinates"
-            FROM "Pitch"
-            ORDER BY "updatedAt" DESC
-            LIMIT ${limit};
-        ` as BasePitchQueryResponse[];
+        const { query, params } = buildQuery({ limit, ...filters });
+        const result = await prisma.$queryRawUnsafe(query, ...params) as BasePitchQueryResponse[];
 
-        if (query.length < 1) {
-            return [];
+        for (const pitch of result) {
+            pitch.coordinates = JSON.parse(pitch.coordinates);
+            pitch.priceRange = await getPitchPriceRange(pitch.id);
         }
 
-        for (const pitch of query) {
-            pitch.coordinates = JSON.parse(pitch.coordinates);
-    
-            const price = await getPitchPriceRange(pitch.id);
-            pitch.priceRange = price;
-        };
-        
-        return query;
+        return result;
     } catch (error: any) {
         throw new Error(error.message);
     }
 }
 
-export async function fetchPitchesWithCursor(limit: number, cursor: string) {
+export async function fetchPitchesWithCursor(limit: number, cursor: string, filters: FiltersType) {
     try {
-        const query = await prisma.$queryRaw`
-            SELECT "id", "name", "images", "amenities", "location", "updatedAt", ST_AsGeoJSON("coordinates")::text as "coordinates"
-            FROM "Pitch"
-            WHERE "updatedAt" < CAST(${cursor} AS TIMESTAMP)
-            ORDER BY "updatedAt" DESC
-            LIMIT ${limit};
-        ` as BasePitchQueryResponse[];
+        const { query, params } = buildQuery({ limit, cursor, ...filters })
+        const result = await prisma.$queryRawUnsafe(query, ...params) as BasePitchQueryResponse[];
 
-        if (query.length < 1) {
-            return []
-        };
-
-        for (const pitch of query) {
+        for (const pitch of result) {
             pitch.coordinates = JSON.parse(pitch.coordinates);
     
             const price = await getPitchPriceRange(pitch.id);
             pitch.priceRange = price;
         };
 
-        return query;
+        return result;
     } catch (error: any) {
         throw new Error(error.message);
     }

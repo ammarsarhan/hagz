@@ -37,7 +37,7 @@ model Owner {
 model Ground {
   id           String        @id @default(cuid())
   pitchId      String
-  index        Int           @default(autoincrement())
+  index        Int
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   images       String[]

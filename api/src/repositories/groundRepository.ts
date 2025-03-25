@@ -7,6 +7,13 @@ export async function createGround(data: { ownerId: string, pitchId: string, pri
             where: {
                 id: data.pitchId,
                 ownerId: data.ownerId
+            },
+            include: {
+                grounds: {
+                    select: {
+                        id: true
+                    }
+                }
             }
         });
 
@@ -16,6 +23,7 @@ export async function createGround(data: { ownerId: string, pitchId: string, pri
 
         const ground = await prisma.ground.create({
             data: { 
+                index: pitch.grounds.length == 0 ? 1 : pitch.grounds.length + 1,
                 pitchId: data.pitchId,
                 price: data.price,
                 images: data.images,
