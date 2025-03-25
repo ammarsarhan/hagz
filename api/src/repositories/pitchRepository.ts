@@ -18,16 +18,18 @@ type PitchSettings = {
     refundPolicy: "PARTIAL" | "FULL"
 };
 
-type PitchQueryResponse = {
+type BasePitchQueryResponse = {
     id: string,
     name: string,
-    description: string,
     images: string[],
     price: number,
     amenities: PitchAmenity[],
     location: PitchLocation,
-    coordinates: string
-};
+    coordinates: string,
+    updatedAt: string
+}
+
+type PitchQueryResponse = BasePitchQueryResponse & { description: string };
 
 export async function createPitch(data: {
     ownerId: string,
@@ -83,7 +85,7 @@ export async function createPitch(data: {
 export async function getPitch(id: string) {
     try {
         const query = await prisma.$queryRaw`
-            SELECT "id", "name", "description", "images", "price", "amenities", "location", ST_AsGeoJSON("coordinates")::text as "coordinates"
+            SELECT "id", "name", "description", "images", "price", "amenities", "location", "updatedAt", ST_AsGeoJSON("coordinates")::text as "coordinates"
             FROM "Pitch" 
             WHERE "id" = ${id}
         ` as PitchQueryResponse[];
@@ -96,6 +98,53 @@ export async function getPitch(id: string) {
         result.coordinates = JSON.parse(result.coordinates);
 
         return result;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function fetchInitialPitches(limit: number) {
+    try {
+        const query = await prisma.$queryRaw`
+            SELECT "id", "name", "images", "price", "amenities", "location", "updatedAt", ST_AsGeoJSON("coordinates")::text as "coordinates"
+            FROM "Pitch"
+            ORDER BY "updatedAt" DESC
+            LIMIT ${limit};
+        ` as BasePitchQueryResponse[];
+
+        if (query.length < 1) {
+            return [];
+        }
+
+        query.map(pitch => {
+            pitch.coordinates = JSON.parse(pitch.coordinates);
+        });
+
+        return query;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+}
+
+export async function fetchPitchesWithCursor(limit: number, cursor: string) {
+    try {
+        const query = await prisma.$queryRaw`
+            SELECT "id", "name", "images", "price", "amenities", "location", "updatedAt", ST_AsGeoJSON("coordinates")::text as "coordinates"
+            FROM "Pitch"
+            WHERE "updatedAt" < CAST(${cursor} AS TIMESTAMP)
+            ORDER BY "updatedAt" DESC
+            LIMIT ${limit};
+        ` as BasePitchQueryResponse[];
+
+        if (query.length < 1) {
+            return []
+        }
+
+        query.map(pitch => {
+            pitch.coordinates = JSON.parse(pitch.coordinates);
+        })
+
+        return query;
     } catch (error: any) {
         throw new Error(error.message);
     }

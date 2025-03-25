@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
-import { createPitch, getPitch } from "../repositories/pitchRepository";
+import { createPitch, fetchInitialPitches, fetchPitchesWithCursor, getPitch } from "../repositories/pitchRepository";
+import { createGround } from "../repositories/groundRepository";
 import { z } from "zod";
 
 export async function handleCreatePitch(req: Request, res: Response) {
     try {
         const options = req.body;
-        const { name, description, longitude, latitude, amenities, images, price, settings, location, minimumSession, maximumSession } = options;
+        const { name, description, longitude, latitude, amenities, images, price, settings, location, minimumSession, maximumSession, size, surface } = options;
 
         if (!name || !description || !longitude || !latitude || !amenities || !images || !price || !settings || !location || !minimumSession || !maximumSession) {
             throw new Error("Please make sure all of the required fields are not empty.");
@@ -35,7 +36,10 @@ export async function handleCreatePitch(req: Request, res: Response) {
                 externalLink: z.string({ message: "Google Maps link must be a valid URL." }).url({ message: "Google Maps link must be a valid URL." }).regex(/^(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps)\/[^\s]+$/, "Please enter a valid Google Maps link.").optional()
             }),
             minimumSession: z.number().min(1).max(2).default(1),
-            maximumSession: z.number().min(2).max(6).default(6)
+            maximumSession: z.number().min(2).max(6).default(6),
+            size: z.enum(["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"], { message: "Selected pitch size must be one of available options." }),
+            surface: z.enum(["GRASS", "ARTIFICIAL"], { message: "Selected ground type must be one of available options." }),
+            groundImages: z.array(z.string().url({ message: "Ground images must be a list of valid URLs." }), { message: "Ground images must be a list of valid URLs." })
         }).refine(data => data.minimumSession <= data.maximumSession, {
             message: "Minimum reservation duration cannot be larger than maximum reservation duration.",
             path: ["maximumSession"]
@@ -47,10 +51,15 @@ export async function handleCreatePitch(req: Request, res: Response) {
             throw new Error(parsed.error.errors[0].message);
         };
 
-        const pitch = await createPitch({...parsed.data, ownerId: req.user.id});
-        res.status(200).json({ success: true, data: pitch });
+        const pitch = await createPitch({ ...parsed.data, ownerId: req.user.id });
+        const ground = await createGround({ pitchId: pitch.id, images: parsed.data.groundImages, size, surface });
+        
+        res.status(200).json({ success: true, data: {
+            pitch,
+            ground
+        }});
     } catch (error: any) {
-        res.status(400).json({ success: false, error: error.message });
+        res.status(400).json({ success: false, message: error.message });
     }
 }
 
@@ -60,9 +69,70 @@ export async function handleGetPitch(req: Request, res: Response) {
         const pitch = await getPitch(id);
         res.status(200).json({ success: true, data: pitch });
     } catch (error: any) {
-        res.status(400).json({ success: false, error: error.message });
+        res.status(400).json({ success: false, message: error.message });
     }
 }
 
-// size: z.enum(["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"], { message: "Selected pitch size must be one of available options." }),
-// surface: z.enum(["GRASS", "ARTIFICIAL"], { message: "Selected ground type must be one of available options." }),
+export async function handleFetchPitches(req: Request, res: Response) {
+    try {
+        const { limit, cursor } = req.query;
+
+        if (!limit) {
+            throw new Error("Invalid request. Query limit was not provided in request.")
+        }
+
+        const schema = z.object({
+            limit: z.number({ message: "Please provide a valid integer for the query." }).nonnegative("Query limit may not be negative.").min(5, { message: "Query limit must be 5 at minimum." }).max(10, { message: "Query limit must be 10 at most." }),
+            cursor: z.string().datetime("Invalid query cursor provided. Please provide a valid timestamp.").optional()
+        })
+
+        const parsed = schema.safeParse({
+            limit: Number(limit),
+            cursor: cursor
+        });
+
+        if (!parsed.success) {
+            throw new Error(parsed.error.errors[0].message);
+        };
+
+        const options = parsed.data;
+
+        if (options.limit && !options.cursor) {
+            const pitches = await fetchInitialPitches(options.limit);
+            const lastIndex = pitches.length - 1
+            
+            if (pitches.length < 1) {
+                res.status(200).json({ success: true, data: { pitches: [], cursor: null }});
+                return;
+            }
+
+            const data = {
+                pitches: pitches,
+                cursor: new Date(pitches[lastIndex].updatedAt)
+            }
+
+            res.status(200).json({ success: true, data: data });
+            return;
+        }
+
+        if (options.limit && options.cursor) {
+            const pitches = await fetchPitchesWithCursor(options.limit, options.cursor);
+            const lastIndex = pitches.length - 1;
+
+            if (pitches.length < 1) {
+                res.status(200).json({ success: true, data: { pitches: [], cursor: null }});
+                return;
+            }
+            
+            const data = {
+                pitches: pitches,
+                cursor: new Date(pitches[lastIndex].updatedAt)
+            };
+
+            res.status(200).json({ success: true, data: data });
+            return;
+        }
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message })
+    }
+}
