@@ -77,20 +77,27 @@ const Price = () => {
 }
 
 const Location = () => {
-  const { temp, setTemp } = useFilterContext();
+  const { temp, setTemp, data } = useFilterContext();
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
-    setTemp({...temp, searchRadius: value});
+    setTemp({...temp, searchRadius: value == 0 ? null : value});
   }
 
+  const isLocation = data.location.latitude && data.location.longitude;
+
   return (
-    <div className="flex items-center justify-between gap-x-8 mt-2">
-      <div className="text-sm">
-        <span>Search Radius</span>
-        <p className="text-gray-500 text-[0.825rem]">(Between 1 to 10 KMs)</p>
+    <div className="mt-2 flex flex-col gap-y-4">
+      <div className="flex items-center justify-between gap-x-8">
+        <div className="text-sm">
+          <span>Search Radius</span>
+          <p className="text-gray-500 text-[0.825rem]">(Between 1 to 10 KMs)</p>
+        </div>
+        <input type="number" min={1} max={10} placeholder="Radius (in KMs)" className="border-b-[1px] text-sm px-2 py-1 w-36" value={temp.searchRadius || ""} onChange={onChange}/>
       </div>
-      <input type="number" min={1} max={10} placeholder="Radius (in KMs)" className="border-b-[1px] text-sm px-2 py-1 w-30" value={temp.searchRadius} onChange={onChange}/>
+      <div className="flex items-center justify-between gap-x-8 text-sm">
+        <span>Pin location: {isLocation ? `${data.location.longitude}, ${data.location.latitude}` : "N/A"}</span>
+      </div>
     </div>
   )
 }

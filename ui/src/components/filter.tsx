@@ -36,7 +36,7 @@ export default function Filter() {
         endTime: "",
         minimumPrice: 100,
         maximumPrice: 1000,
-        searchRadius: 1,
+        searchRadius: null,
         groundSize: ["5-a-side", "7-a-side", "11-a-side"],
         groundSurface: ["Artificial Grass", "Natural Grass"],
         amenities: []

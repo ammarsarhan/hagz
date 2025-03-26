@@ -1,19 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Button from "@/components/button";
 import Input from "@/components/input";
-import { useFilterContext } from "@/context/filter";
+import { DataFilterType, useFilterContext } from "@/context/filter";
+
+const buildQueryUrl = (filters: DataFilterType) => {
+    const { startDate, endDate, minimumPrice, maximumPrice, location, radius, size, surface, amenities } = filters;
+    let url = `http://localhost:3000/api/pitch?limit=10&startDate=${startDate}&endDate=${endDate}&minimumprice=${minimumPrice}&maximumprice=${maximumPrice}`;
+    
+    if (location.longitude && location.latitude && radius) {
+        url += `&longitude=${location.longitude}&latitude=${location.latitude}&radius=${radius}`;
+    }
+
+    size.forEach(item => url += `&size=${item}`);
+    surface.forEach(item => url += `&surface=${item}`);
+    amenities.forEach(item => url += `&amenities=${item}`);
+
+    return url;
+}
 
 export default function Search() {
-    const { setOpen } = useFilterContext();
+    const { setOpen, data } = useFilterContext();
     const [view, setView] = useState<"grid" | "map">("grid");
     const [query, setQuery] = useState("");
 
     const handleSwitchView = () => {
         setView(view == "grid" ? "map" : "grid");
     };
+
+    const fetchPitches = useCallback(async () => {
+        const url = buildQueryUrl(data);
+        console.log(url);
+    }, [data]);
+
+    useEffect(() => {
+        fetchPitches();
+    }, [fetchPitches])
 
     return (
         <div className="flex h-full mb-4 relative">

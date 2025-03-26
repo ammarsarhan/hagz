@@ -54,7 +54,6 @@ model Pitch {
   ownerId        String
   name           String
   description    String
-  coordinates    Unsupported("geometry")
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
   images         String[]
@@ -63,6 +62,7 @@ model Pitch {
   amenities      PitchAmenity[]
   location       Json
   settings       Json
+  coordinates    Unsupported("geometry")
   search         Unsupported("tsvector")? @default(dbgenerated("to_tsvector('english'::regconfig, name)"))
   owner          Owner                    @relation(fields: [ownerId], references: [id])
   grounds        Ground[]
@@ -79,8 +79,6 @@ model Reservation {
   reserveePhone  String
   startDate      DateTime
   endDate        DateTime
-  isApproved     Boolean           @default(false)
-  approvalExpiry DateTime?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   createdBy      AccountType

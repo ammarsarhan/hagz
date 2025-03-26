@@ -2,12 +2,18 @@
 
 import _ from "lodash";
 import { useContext, createContext, ReactNode, useState, useEffect, useRef } from "react";
-import { toUTCDate, getHourDifference } from "@/utils/date";
+import { toUTCDate, getHourDifference, getDay } from "@/utils/date";
+import { getKeyFromValue } from "@/utils/map";
+import { getClientLocation } from "@/utils/location";
 
 export type FilterSlideNameType = "Day" | "Price" | "Location" | "Ground" | "Amenities";
 export type GroundSizeFilterType = "5-a-side" | "7-a-side" | "11-a-side";
 export type GroundSurfaceFilterType = "Artificial Grass" | "Natural Grass";
 export type AmenityFilterType = "Indoors" | "Ball Provided" | "Seating" | "Night Lights" | "Parking" | "Showers" | "Changing Rooms" | "Cafeteria" | "First Aid" | "Security";
+
+export type GroundSizeType = "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE";
+export type GroundSurfaceType = "ARTIFICIAL" | "NATURAL";
+export type AmenityType = "INDOORS" | "BALL_PROVIDED" | "SEATING" | "NIGHT_LIGHTS" | "PARKING" | "SHOWERS" | "CHANGING_ROOMS" | "CAFETERIA" | "FIRST_AID" | "SECURITY";
 
 export type FilterSlideType = {
     name: FilterSlideNameType,
@@ -22,8 +28,8 @@ interface FilterContextType {
     setSlide: (slide: FilterSlideType) => void;
     temp: FilterType;
     setTemp: (data: FilterType) => void;
-    data: FilterType;
-    setData: (data: FilterType) => void;
+    data: DataFilterType;
+    setData: (data: DataFilterType) => void;
     isChanged: boolean;
     saveChanges: () => void;
     resetChanges: () => void;
@@ -37,10 +43,117 @@ interface FilterType {
     endTime: string;
     minimumPrice: number;
     maximumPrice: number;
-    searchRadius: number;
+    searchRadius: number | null;
     groundSize: GroundSizeFilterType[];
     groundSurface: GroundSurfaceFilterType[];
     amenities: AmenityFilterType[];
+}
+
+export interface DataFilterType {
+    startDate: string;
+    endDate: string;
+    minimumPrice: number;
+    maximumPrice: number;
+    location: {
+        longitude: number | null;
+        latitude: number | null;
+    };
+    radius: number | null;
+    size: GroundSizeType[];
+    surface: GroundSurfaceType[];
+    amenities: AmenityType[];
+}
+
+const sizeMap = new Map<GroundSizeFilterType, GroundSizeType>([
+    ["5-a-side", "FIVE_A_SIDE"],
+    ["7-a-side", "SEVEN_A_SIDE"],
+    ["11-a-side", "ELEVEN_A_SIDE"]
+]);
+
+const surfaceMap = new Map<GroundSurfaceFilterType, GroundSurfaceType>([
+    ["Artificial Grass", "ARTIFICIAL"],
+    ["Natural Grass", "NATURAL"]
+]);
+
+const amenityMap = new Map<AmenityFilterType, AmenityType>([
+    ["Indoors", "INDOORS"],
+    ["Ball Provided", "BALL_PROVIDED"],
+    ["Seating", "SEATING"],
+    ["Night Lights", "NIGHT_LIGHTS"],
+    ["Parking", "PARKING"],
+    ["Showers", "SHOWERS"],
+    ["Changing Rooms", "CHANGING_ROOMS"],
+    ["Cafeteria", "CAFETERIA"],
+    ["First Aid", "FIRST_AID"],
+    ["Security", "SECURITY"]
+]);
+
+const parseFilters = (filter: FilterType): DataFilterType => {
+    const { minimumPrice, maximumPrice, searchRadius, groundSize, groundSurface, amenities } = filter;
+    let { targetDate, startTime, endTime } = filter;
+
+    targetDate = targetDate == "" ? new Date().toISOString() : targetDate;
+    startTime = startTime == "" ? "00:00" : startTime;
+    endTime = endTime == "" ? "23:59" : endTime;
+
+    targetDate = getDay(new Date(targetDate));
+
+    const startDate = toUTCDate(targetDate, startTime).toISOString();
+    const endDate = toUTCDate(targetDate, endTime).toISOString();
+
+    const size = groundSize.map(size => sizeMap.get(size)!);
+    const surface = groundSurface.map(surface => surfaceMap.get(surface)!);
+    const pitchAmenities = amenities.map(amenity => amenityMap.get(amenity)!);
+
+    return {
+        startDate,
+        endDate,
+        minimumPrice,
+        maximumPrice,
+        location: {
+            longitude: null,
+            latitude: null
+        },
+        radius: searchRadius || null,
+        size,
+        surface,
+        amenities: pitchAmenities
+    };
+}
+
+const getFilterFromData = (data: DataFilterType): FilterType => {
+    const { startDate, endDate, minimumPrice, maximumPrice, radius, size, surface, amenities } = data;
+
+    const now = new Date().toISOString().split("T")[0];
+    let targetDate = new Date(startDate).toISOString().split("T")[0];
+
+    let startTime = new Date(startDate).toISOString().split("T")[1];
+    let endTime = new Date(endDate).toISOString().split("T")[1]; 
+
+    startTime = startTime.split(":")[0] + ":" + startTime.split(":")[1];
+    endTime = endTime.split(":")[0] + ":" + endTime.split(":")[1];
+    
+    if (startTime == "00:00" && endTime == "23:59" && targetDate == now) {
+        startTime = "";
+        endTime = "";
+        targetDate = "";
+    }
+    
+    const groundSize = size.map(el => getKeyFromValue<GroundSizeType, GroundSizeFilterType>(sizeMap, el)!);
+    const groundSurface = surface.map(el => getKeyFromValue<GroundSurfaceType, GroundSurfaceFilterType>(surfaceMap, el)!);
+    const pitchAmenities = amenities.map(el => getKeyFromValue<AmenityType, AmenityFilterType>(amenityMap, el)!);
+
+    return {
+        targetDate,
+        startTime,
+        endTime,
+        minimumPrice,
+        maximumPrice,
+        searchRadius: radius,
+        groundSize,
+        groundSurface,
+        amenities: pitchAmenities
+    };
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -68,19 +181,20 @@ export default function FilterContextProvider({ children, slides }: { children: 
         endTime: "",
         minimumPrice: 100,
         maximumPrice: 1000,
-        searchRadius: 1,
+        searchRadius: null,
         groundSize: ["5-a-side", "7-a-side", "11-a-side"],
         groundSurface: ["Artificial Grass", "Natural Grass"],
         amenities: []
     } as FilterType;
 
     const [temp, setTemp] = useState(initial);
-    const [data, setData] = useState(initial);
+    const [data, setData] = useState(parseFilters(initial));
 
     const [isChanged, setIsChanged] = useState(false);
 
     useEffect(() => {
-        const changed = !_.isEqual(temp, data);
+        const comparator = getFilterFromData(data);
+        const changed = !_.isEqual(temp, comparator);
         setIsChanged(changed)
     }, [data, temp]);
 
@@ -91,12 +205,12 @@ export default function FilterContextProvider({ children, slides }: { children: 
             startTime, 
             endTime, 
             minimumPrice, 
-            maximumPrice, 
+            maximumPrice,
             searchRadius,
             groundSize,
             groundSurface
         } = temp;
-
+        
         if (targetDate != "" && startTime == "" || targetDate != "" && endTime == "") {
             return {
                 success: false,
@@ -153,10 +267,10 @@ export default function FilterContextProvider({ children, slides }: { children: 
             }
         }
 
-        if (searchRadius < 1 || searchRadius > 10) {
+        if (searchRadius && (searchRadius < 1 || searchRadius > 10)) {
             return {
                 success: false,
-                message: "Search radius must be between 1 and 10 kilometers.",
+                message: "Search radius must either be between 1 and 10 kilometers.",
                 targetIndex: 2
             }
         }
@@ -194,7 +308,7 @@ export default function FilterContextProvider({ children, slides }: { children: 
         }, 3000);
     };
 
-    const saveChanges = () => {
+    const saveChanges = async () => {
         const parse = validateFilterData();
 
         if (!parse.success) {
@@ -203,13 +317,35 @@ export default function FilterContextProvider({ children, slides }: { children: 
             return;
         }
 
-        setData(temp);
+        let location : {
+            latitude: number | null,
+            longitude: number | null
+        } = {
+            latitude: null,
+            longitude: null
+        };
+
+        if (temp.searchRadius != null) {
+            const request = await getClientLocation() as { latitude: number, longitude: number, error: string | null };
+
+            if (request.error) {
+                setErrorWithTimeout(request.error);
+                return;
+            }
+
+            location = { longitude: request.longitude, latitude: request.latitude };
+        }
+        
+        const parsed = parseFilters(temp);
+        parsed.location = location;
+
+        setData(parsed);
         setOpen(false);
     }
     
     const resetChanges = () => {
         setTemp(initial);
-        setData(initial);
+        setData(parseFilters(initial));
     }
 
     return (
