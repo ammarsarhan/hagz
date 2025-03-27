@@ -22,18 +22,8 @@ interface InputProps {
     className?: string
 }
 
-interface InputRangeProps {
-    minimum: number, 
-    maximum: number, 
-    minValue: number, 
-    maxValue: number, 
-    onMinChange: (e: ChangeEvent<HTMLInputElement>) => void,
-    onMaxChange: (e: ChangeEvent<HTMLInputElement>) => void,
-    className?: string
-}
-
 export default function Input({ placeholder, className, value, type = "text", onChange, min, max }: InputProps) {
-    let style = "w-full px-3 py-1 rounded-md border-[1px]";
+    let style = "w-full py-1 border-b-[1px] outline-none";
 
     if (className) {
         style = style.concat(" ", className);
@@ -50,10 +40,10 @@ export function InputGroup({ label, placeholder, value, min, max, onChange, type
             {
                 onClear ?
                 <div className="flex items-center justify-between gap-x-8">
-                    <span className="block text-sm mb-1">{label}</span>
+                    <span className="block text-sm mb-1 text-gray-500">{label}</span>
                     <button className="text-blue-800 text-xs mr-1 hover:underline" onClick={onClear}>Clear</button>
                 </div> :
-                <span className="block text-sm mb-1">{label}</span>
+                <span className="block text-sm mb-1 text-gray-500">{label}</span>
             }
             <Input placeholder={placeholder} className={className} value={value} type={type} onChange={onChange} min={min} max={max}/>
         </div>
@@ -70,17 +60,6 @@ export function InputGroupContainer({ children, className } : { children: ReactN
     return (
         <div className={style}>
             { children }
-        </div>
-    )
-}
-
-export function InputRange({ minimum, maximum, minValue, onMinChange, maxValue, onMaxChange, className } : InputRangeProps) {
-    return (
-        <div className={`flex flex-col w-full ${className}`}>
-            <div className="relative">
-                <input type="range" value={minValue} onChange={onMinChange} min={minimum} max={maxValue} className="outline-none appearance-none h-0.5 w-full pointer-events-none bg-gray-300 absolute"/>
-                <input type="range" value={maxValue} onChange={onMaxChange} min={minimum} max={maximum} className="outline-none appearance-none h-0.5 w-full pointer-events-none absolute"/>
-            </div>
         </div>
     )
 }

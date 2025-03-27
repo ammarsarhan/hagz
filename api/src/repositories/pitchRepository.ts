@@ -50,7 +50,6 @@ type FiltersType = {
 const buildQuery = ({ limit, cursor, startDate, endDate, minimumPrice, maximumPrice, target, radius, size, surface, amenities } : { limit: number, cursor?: string } & FiltersType) => {
     let where: string[] = [];
     let params: any[] = [];
-
     let index = 1;
 
     let query = `
@@ -66,51 +65,59 @@ const buildQuery = ({ limit, cursor, startDate, endDate, minimumPrice, maximumPr
     if (cursor) {
         where.push(`"p"."updatedAt" < $${index}::TIMESTAMP`);
         params.push(cursor);
-        index += 1;
+        index++;
     }
 
     if (startDate && endDate) {
         where.push(`("r"."id" IS NULL OR NOT ("r"."startDate" < $${index}::TIMESTAMP AND "r"."endDate" > $${index + 1}::TIMESTAMP))`);
         params.push(endDate, startDate);
         index += 2;
-    };
-
-    if (minimumPrice && maximumPrice) {
-        where.push(`"g"."price" >= $${index} AND "g"."price" <= $${index + 1}`);
-        params.push(minimumPrice, maximumPrice);
-        index += 2;
     }
 
-    if (radius && target.longitude && target.latitude) {
+    if (minimumPrice && maximumPrice) {
+        where.push(`
+            EXISTS (
+                SELECT * FROM "Ground" AS g
+                WHERE g."pitchId" = p."id"
+                AND g."price" BETWEEN $${index} AND $${index + 1}
+            )
+        `);
+        params.push(minimumPrice, maximumPrice);
+        index += 2;
+    };
+
+    if (radius && target?.longitude && target?.latitude) {
         where.push(`ST_DWithin("p"."coordinates", ST_SetSRID(ST_MakePoint($${index}, $${index + 1}), 4326), $${index + 2})`);
         params.push(target.longitude, target.latitude, radius);
         index += 3;
     }
 
-    if (size.length > 0) {
+    if (size?.length) {
         where.push(`"g"."size" = ANY($${index}::"GroundSize"[])`);
         params.push(size);
-        index += 1;
+        index++;
     }
 
-    if (surface.length > 0) {
+    if (surface?.length) {
         where.push(`"g"."surface" = ANY($${index}::"GroundSurface"[])`);
         params.push(surface);
-        index += 1;
+        index++;
     }
 
-    if (amenities.length > 0) {
+    if (amenities?.length) {
         where.push(`"p"."amenities" @> $${index}::"PitchAmenity"[]`);
         params.push(amenities);
-        index += 1;
+        index++;
     }
 
-    if (where.length > 0) {
+    if (where.length) {
         query += " WHERE " + where.join(" AND ");
     }
 
     query += ` ORDER BY "p"."updatedAt" DESC LIMIT $${index}`;
     params.push(limit);
+
+    console.log(query, params);
 
     return { query, params };
 }

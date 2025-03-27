@@ -2,56 +2,49 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuthContext } from "@/context/auth";
+
 import Button from "@/components/button";
-import Banner from "@/components/banner";
-import ProfileAvatar from "@/components/profile";
+import { useAuthContext } from "@/context/auth";
+
+import { Menu } from "lucide-react";
 
 export function UserNavigation() {
     const path = usePathname();
     const { user } = useAuthContext();
-    const getLinkStyle = (link: string) => path == link ? "text-gray-900" : "text-gray-500";
+    
+    const isActiveStyle = (pathname: string) => path === pathname ? "text-black hidden cursor-default" : "text-gray-500 hover:underline hidden";
 
     return (
-        <>
-            {
-                user?.status == "UNVERIFIED" &&
-                <Banner>
-                    <span>You have not verified your account yet. Please <Link href={"/profile/verify"} className="text-blue-800 underline">verify</Link> your account to start reserving!</span>
-                </Banner>
-            }
-            <nav className="px-6 py-3 flex items-center justify-between">
-                <div>
-                    <Link href={"/"}>
-                        <span className="font-semibold">Hagz</span>
-                    </Link>
-                </div>
-                <div className="flex items-center gap-x-8 text-sm absolute left-1/2 -translate-x-1/2">
-                    <Link href={"/"} className={getLinkStyle("/")}>Home</Link>
-                    <Link href={"/featured"} className={getLinkStyle("/featured")}>Featured</Link>
-                    <Link href={"/search"} className={getLinkStyle("/search")}>Search</Link>
-                    <Link href={"/policy"} className={getLinkStyle("/policy")}>Policy</Link>
-                    <Link href={"/faq"} className={getLinkStyle("/faq")}>FAQs</Link>
-                </div>
+        <nav className="flex items-center justify-between p-6 relative">
+            <div className="flex items-center gap-x-5">
+                <button>
+                    <Menu className="w-5 h-5"/>
+                </button>
+                <Link href={"/"} className="lg:absolute lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2">
+                    <span className="font-semibold">Hagz</span>
+                </Link>
+            </div>
+            <div className="flex items-center gap-x-6 text-sm">
+                <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
+                <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
+                <Link href={'/faq'} className={`${isActiveStyle('/faq')} sm:inline`}>FAQs</Link>
                 {
-                    user ? <ProfileAvatar/> :
-                    <>
-                        <div className="flex items-center gap-x-4">
-                            <Link href={"/auth/user/log-in"} className="text-xs">
-                                <Button variant="primary">
-                                    Log In
-                                </Button>
+                    user ? 
+                        <Link href={'/user/dashboard'} className="w-8 h-8 flex-center border-[1px] rounded-full text-gray-500 hover:border-gray-300! hover:text-black hover:bg-gray-50 transition-all ml-2">
+                            <span>{user.name.slice(0, 1)}</span>
+                        </Link>
+                    : 
+                        <div className="ml-2 flex items-center gap-x-2">
+                            <Link href={'/auth/user/sign-up'} className="hidden sm:inline">
+                                <Button variant="outline" className="text-xs rounded-sm">Sign Up</Button>
                             </Link>
-                            <Link href={"/auth/user/sign-up"} className="text-xs">
-                                <Button variant="outline">
-                                    Sign Up
-                                </Button>
+                            <Link href={'/auth/user/log-in'}>
+                                <Button className="text-xs rounded-sm">Log In</Button>
                             </Link>
                         </div>
-                    </>
                 }
-            </nav>
-        </>
+            </div>
+        </nav>
     )
 }
 

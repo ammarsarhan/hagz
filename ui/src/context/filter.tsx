@@ -2,6 +2,7 @@
 
 import _ from "lodash";
 import { useContext, createContext, ReactNode, useState, useEffect, useRef } from "react";
+
 import { toUTCDate, getHourDifference, getDay } from "@/utils/date";
 import { getKeyFromValue } from "@/utils/map";
 import { getClientLocation } from "@/utils/location";
@@ -15,26 +16,19 @@ export type GroundSizeType = "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE";
 export type GroundSurfaceType = "ARTIFICIAL" | "NATURAL";
 export type AmenityType = "INDOORS" | "BALL_PROVIDED" | "SEATING" | "NIGHT_LIGHTS" | "PARKING" | "SHOWERS" | "CHANGING_ROOMS" | "CAFETERIA" | "FIRST_AID" | "SECURITY";
 
-export type FilterSlideType = {
-    name: FilterSlideNameType,
-    component: ReactNode
-};
-
 interface FilterContextType {
-    slides: FilterSlideType[];
     open: boolean;
     setOpen: (open: boolean) => void;
-    slide: FilterSlideType;
-    setSlide: (slide: FilterSlideType) => void;
     temp: FilterType;
     setTemp: (data: FilterType) => void;
     data: DataFilterType;
     setData: (data: DataFilterType) => void;
     isChanged: boolean;
-    saveChanges: () => void;
-    resetChanges: () => void;
     error: string | null;
     setError: (message: string | null) => void;
+    loading: boolean;
+    save: () => void;
+    reset: () => void;
 }
 
 interface FilterType {
@@ -64,18 +58,18 @@ export interface DataFilterType {
     amenities: AmenityType[];
 }
 
-const sizeMap = new Map<GroundSizeFilterType, GroundSizeType>([
+export const sizeMap = new Map<GroundSizeFilterType, GroundSizeType>([
     ["5-a-side", "FIVE_A_SIDE"],
     ["7-a-side", "SEVEN_A_SIDE"],
     ["11-a-side", "ELEVEN_A_SIDE"]
 ]);
 
-const surfaceMap = new Map<GroundSurfaceFilterType, GroundSurfaceType>([
+export const surfaceMap = new Map<GroundSurfaceFilterType, GroundSurfaceType>([
     ["Artificial Grass", "ARTIFICIAL"],
     ["Natural Grass", "NATURAL"]
 ]);
 
-const amenityMap = new Map<AmenityFilterType, AmenityType>([
+export const amenityMap = new Map<AmenityFilterType, AmenityType>([
     ["Indoors", "INDOORS"],
     ["Ball Provided", "BALL_PROVIDED"],
     ["Seating", "SEATING"],
@@ -87,6 +81,21 @@ const amenityMap = new Map<AmenityFilterType, AmenityType>([
     ["First Aid", "FIRST_AID"],
     ["Security", "SECURITY"]
 ]);
+
+export function buildQueryUrl (filters: DataFilterType) {
+    const { startDate, endDate, minimumPrice, maximumPrice, location, radius, size, surface, amenities } = filters;
+    let url = `http://localhost:3000/api/pitch?limit=10&startDate=${startDate}&endDate=${endDate}&min=${minimumPrice}&max=${maximumPrice}`;
+    
+    if (location.longitude && location.latitude && radius) {
+        url += `&longitude=${location.longitude}&latitude=${location.latitude}&radius=${radius}`;
+    }
+
+    size.forEach(item => url += `&size=${item}`);
+    surface.forEach(item => url += `&surface=${item}`);
+    amenities.forEach(item => url += `&amenities=${item}`);
+
+    return url;
+}
 
 const parseFilters = (filter: FilterType): DataFilterType => {
     const { minimumPrice, maximumPrice, searchRadius, groundSize, groundSurface, amenities } = filter;
@@ -168,9 +177,9 @@ export function useFilterContext() {
     return context;
 }
 
-export default function FilterContextProvider({ children, slides }: { children: ReactNode, slides: FilterSlideType[] }) {
+export default function FilterContextProvider({ children }: { children: ReactNode }) {
     const [open, setOpen] = useState(false);
-    const [slide, setSlide] = useState<FilterSlideType>(slides[0]);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const timeout = useRef<NodeJS.Timeout | null>(null);
@@ -246,48 +255,49 @@ export default function FilterContextProvider({ children, slides }: { children: 
         if (startDate >= endDate) {
             return {
                 success: false,
-                message: "Start time may not be after the end time.",
-                targetIndex: 0
+                message: "Start time may not be after the end time."
             };
         }
 
         if (getHourDifference(endDate, startDate) < 1 || getHourDifference(endDate, startDate) > 6) {
             return {
                 success: false,
-                message: "The duration of the booking must be between 1 and 6 hours.",
-                targetIndex: 0
+                message: "The duration of the booking must be between 1 and 6 hours."
             };
+        }
+
+        if (minimumPrice < 100 || maximumPrice > 1000) {
+            return {
+                success: false,
+                message: "Price range must be between 100 and 1000 EGP."
+            }
         }
 
         if (minimumPrice >= maximumPrice) {
             return {
                 success: false,
-                message: "Minimum price may not be greater than or equal to the maximum price.",
-                targetIndex: 1
+                message: "Minimum price may not be greater than or equal to the maximum price."
             }
         }
 
         if (searchRadius && (searchRadius < 1 || searchRadius > 10)) {
             return {
                 success: false,
-                message: "Search radius must either be between 1 and 10 kilometers.",
-                targetIndex: 2
+                message: "Search radius must either be between 1 and 10 kilometers."
             }
         }
 
         if (groundSize.length < 1) {
             return {
                 success: false,
-                message: "You must select at least one option from ground sizes.",
-                targetIndex: 3
+                message: "You must select at least one option from ground sizes."
             }
         }
 
         if (groundSurface.length < 1) {
             return {
                 success: false,
-                message: "You must select at least one option from ground surfaces.",
-                targetIndex: 3
+                message: "You must select at least one option from ground surfaces."
             }
         }
 
@@ -308,12 +318,13 @@ export default function FilterContextProvider({ children, slides }: { children: 
         }, 3000);
     };
 
-    const saveChanges = async () => {
+    const save = async () => {
+        setLoading(true);
         const parse = validateFilterData();
 
         if (!parse.success) {
-            setSlide(slides[parse.targetIndex!])
             setErrorWithTimeout(parse.message!);
+            setLoading(false);
             return;
         }
 
@@ -341,29 +352,28 @@ export default function FilterContextProvider({ children, slides }: { children: 
 
         setData(parsed);
         setOpen(false);
+        setLoading(false);
     }
     
-    const resetChanges = () => {
+    const reset = () => {
         setTemp(initial);
         setData(parseFilters(initial));
     }
 
     return (
         <FilterContext.Provider value={{
-            slides,
             open,
             setOpen,
-            slide,
-            setSlide,
             temp,
             setTemp,
             data,
             setData,
             isChanged,
-            saveChanges,
-            resetChanges,
             error,
-            setError
+            setError,
+            loading,
+            save,
+            reset,
         }}>
             {children}
         </FilterContext.Provider>

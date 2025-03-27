@@ -95,7 +95,7 @@ export default function Login() {
                     <input type="checkbox" className="mr-2" checked={reveal} onChange={() => setReveal(!reveal)}/>
                     <span className="text-sm" onClick={() => setReveal(!reveal)}>Show Password</span>
                 </div>
-                <Button className="w-1/3 py-3 rounded-lg text-sm" disabled={loading}>{loading ? "Loading..." : "Sign in"}</Button>
+                <Button className="w-1/3 py-3 text-sm" disabled={loading}>{loading ? "Loading..." : "Sign in"}</Button>
                 <span className="text-sm text-gray-500 mt-4">Don&apos;t have an account? Create one now! <Link href="/auth/user/sign-up" className="text-blue-900">Sign up.</Link></span>
             </form>
             <div>

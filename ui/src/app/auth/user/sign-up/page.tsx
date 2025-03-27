@@ -267,7 +267,7 @@ const Form = () => {
                     {
                         renderBack() &&
                         <Button 
-                            className="w-1/3 py-3 rounded-lg text-sm" 
+                            className="w-1/3 py-3 text-sm" 
                             variant="outline" 
                             onClick={previous}
                         >
@@ -277,7 +277,7 @@ const Form = () => {
                     {
                         renderNext() &&
                         <Button 
-                            className="w-1/3 py-3 rounded-lg text-sm" 
+                            className="w-1/3 py-3 text-sm" 
                             disabled={loading}
                         >
                             { !loading ? "Next" : "Loading..." }

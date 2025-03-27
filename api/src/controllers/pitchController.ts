@@ -68,7 +68,7 @@ export async function handleGetPitch(req: Request, res: Response) {
 
 export async function handleFetchPitches(req: Request, res: Response) {
     try {
-        const { limit, cursor, startDate, endDate, minimumPrice, maximumPrice, longitude, latitude, radius, size, surface, amenities } = req.query;
+        const { limit, cursor, startDate, endDate, min, max, longitude, latitude, radius, size, surface, amenities } = req.query;
 
         let groundSize: GroundSize[] = [];
         let groundSurface: GroundSurface[] = [];
@@ -149,12 +149,12 @@ export async function handleFetchPitches(req: Request, res: Response) {
         };
         
         const parsed = schema.safeParse({
-            limit: Number(limit),
+            limit: limit ? parseInt(limit as string) : 10,
             cursor: cursor,
             startDate,
             endDate,
-            minimumPrice: Number(minimumPrice || 100),
-            maximumPrice: Number(maximumPrice || 1000),
+            minimumPrice: min !== undefined && min !== "" ? parseFloat(min as string) : 100,
+            maximumPrice: max !== undefined && max !== "" ? parseFloat(max as string) : 1000,
             target: {
                 longitude: Number(longitude) || undefined,
                 latitude: Number(latitude) || undefined

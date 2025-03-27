@@ -9,7 +9,7 @@ interface ButtonProps {
 }
 
 export default function Button({ children, variant = "primary", className, disabled = false, onClick } : ButtonProps) {
-    let style = "rounded-md px-4 py-2 transition-all ease-in-out cursor-pointer";
+    let style = "px-4 py-2 transition-all ease-in-out cursor-pointer";
 
     if (className) {
         style = style.concat(" ", className);
