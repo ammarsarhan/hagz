@@ -1,4 +1,4 @@
-import { AmenityFilterType, amenityMap, AmenityType } from "@/context/filter"
+import { amenityMap, AmenityType } from "@/context/filter"
 import { getKeyFromValue } from "@/utils/map"
 import getCurrencyString from "@/utils/currency"
 import Image from "next/image"
@@ -67,8 +67,4 @@ export default function Grid ({ data, loading } : { data : GridCardProps[], load
             }
         </div>
     )
-}
-
-function getValueFromKey(arg0: string) {
-    throw new Error("Function not implemented.")
 }
