@@ -59,14 +59,14 @@ const Price = () => {
 }
 
 const Location = () => {
-    const { temp, setTemp, data } = useFilterContext();
+    const { temp, setTemp, options } = useFilterContext();
   
     const onChange = (e: ChangeEvent<HTMLInputElement>) => {
       const value = Number(e.target.value);
       setTemp({...temp, searchRadius: value == 0 ? null : value});
     }
   
-    const isLocation = data.location.latitude && data.location.longitude;
+    const isLocation = options.location.latitude && options.location.longitude;
   
     return (
       <div className="flex flex-col gap-y-6">
@@ -78,7 +78,7 @@ const Location = () => {
           <input type="number" min={1} max={10} placeholder="Radius (in KMs)" className="border-b-[1px] text-sm px-2 py-1 w-36 outline-none" value={temp.searchRadius || ""} onChange={onChange}/>
         </div>
         <div className="flex items-center justify-between gap-x-8 text-sm">
-          <span>Pin location: {isLocation ? `${data.location.longitude?.toFixed(2)}, ${data.location.latitude?.toFixed(2)}` : "N/A"}</span>
+          <span>Pin location: {isLocation ? `${options.location.longitude?.toFixed(2)}, ${options.location.latitude?.toFixed(2)}` : "N/A"}</span>
         </div>
       </div>
     )
@@ -262,7 +262,7 @@ export default function Filter () {
             <div className="fixed top-0 left-0 z-50 h-screen w-screen bg-black/30">
                 <div className="w-full md:w-96 bg-white h-full px-6 py-8 overflow-y-scroll" ref={filter}>
                     <div className="flex items-center justify-between gap-x-16 mb-6">
-                        <span className="text-lg">Filters</span>
+                        <span>Filters</span>
                         <button onClick={() => setOpen(false)}>
                             <X className="w-4 h-4 text-gray-500"/>
                         </button>

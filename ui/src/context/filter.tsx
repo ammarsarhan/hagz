@@ -21,8 +21,8 @@ interface FilterContextType {
     setOpen: (open: boolean) => void;
     temp: FilterType;
     setTemp: (data: FilterType) => void;
-    data: DataFilterType;
-    setData: (data: DataFilterType) => void;
+    options: DataFilterType;
+    setOptions: (data: DataFilterType) => void;
     isChanged: boolean;
     error: string | null;
     setError: (message: string | null) => void;
@@ -197,15 +197,15 @@ export default function FilterContextProvider({ children }: { children: ReactNod
     } as FilterType;
 
     const [temp, setTemp] = useState(initial);
-    const [data, setData] = useState(parseFilters(initial));
+    const [options, setOptions] = useState(parseFilters(initial));
 
     const [isChanged, setIsChanged] = useState(false);
 
     useEffect(() => {
-        const comparator = getFilterFromData(data);
+        const comparator = getFilterFromData(options);
         const changed = !_.isEqual(temp, comparator);
         setIsChanged(changed)
-    }, [data, temp]);
+    }, [options, temp]);
 
     const validateFilterData = () => {
         const now = new Date();
@@ -350,14 +350,14 @@ export default function FilterContextProvider({ children }: { children: ReactNod
         const parsed = parseFilters(temp);
         parsed.location = location;
 
-        setData(parsed);
+        setOptions(parsed);
         setOpen(false);
         setLoading(false);
     }
     
     const reset = () => {
         setTemp(initial);
-        setData(parseFilters(initial));
+        setOptions(parseFilters(initial));
     }
 
     return (
@@ -366,8 +366,8 @@ export default function FilterContextProvider({ children }: { children: ReactNod
             setOpen,
             temp,
             setTemp,
-            data,
-            setData,
+            options,
+            setOptions,
             isChanged,
             error,
             setError,

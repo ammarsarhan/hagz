@@ -27,7 +27,8 @@ type BasePitchQueryResponse = {
     amenities: PitchAmenity[],
     location: PitchLocation,
     coordinates: string,
-    updatedAt: string
+    updatedAt: string,
+    grounds: number
 };
 
 type PitchQueryResponse = BasePitchQueryResponse & { description: string };
@@ -54,7 +55,8 @@ const buildQuery = ({ limit, cursor, startDate, endDate, minimumPrice, maximumPr
 
     let query = `
         SELECT DISTINCT "p"."id", "p"."name", "p"."images", "p"."amenities", 
-                        "p"."location", "p"."updatedAt", ST_AsGeoJSON("p"."coordinates")::text as "coordinates"
+                        "p"."location", "p"."updatedAt", ST_AsGeoJSON("p"."coordinates")::text as "coordinates",
+                        COUNT("g"."id")::INTEGER AS "grounds"
         FROM "Pitch" AS p
         JOIN "Ground" AS g ON "g"."pitchId" = "p"."id"
         LEFT JOIN "Reservation" AS r 
@@ -114,10 +116,8 @@ const buildQuery = ({ limit, cursor, startDate, endDate, minimumPrice, maximumPr
         query += " WHERE " + where.join(" AND ");
     }
 
-    query += ` ORDER BY "p"."updatedAt" DESC LIMIT $${index}`;
+    query += ` GROUP BY "p"."id" ORDER BY "p"."updatedAt" DESC LIMIT $${index}`;
     params.push(limit);
-
-    console.log(query, params);
 
     return { query, params };
 }
