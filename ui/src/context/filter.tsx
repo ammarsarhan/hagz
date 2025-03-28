@@ -7,11 +7,13 @@ import { toUTCDate, getHourDifference, getDay } from "@/utils/date";
 import { getKeyFromValue } from "@/utils/map";
 import { getClientLocation } from "@/utils/location";
 
+export type GroundStatusDisplayType = "Active" | "Maintenance" | "Closed";
 export type FilterSlideNameType = "Day" | "Price" | "Location" | "Ground" | "Amenities";
 export type GroundSizeFilterType = "5-a-side" | "7-a-side" | "11-a-side";
 export type GroundSurfaceFilterType = "Artificial Grass" | "Natural Grass";
 export type AmenityFilterType = "Indoors" | "Ball Provided" | "Seating" | "Night Lights" | "Parking" | "Showers" | "Changing Rooms" | "Cafeteria" | "First Aid" | "Security";
 
+export type GroundStatusType = "ACTIVE" | "MAINTENANCE" | "CLOSED";
 export type GroundSizeType = "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE";
 export type GroundSurfaceType = "ARTIFICIAL" | "NATURAL";
 export type AmenityType = "INDOORS" | "BALL_PROVIDED" | "SEATING" | "NIGHT_LIGHTS" | "PARKING" | "SHOWERS" | "CHANGING_ROOMS" | "CAFETERIA" | "FIRST_AID" | "SECURITY";
@@ -67,6 +69,12 @@ export const sizeMap = new Map<GroundSizeFilterType, GroundSizeType>([
 export const surfaceMap = new Map<GroundSurfaceFilterType, GroundSurfaceType>([
     ["Artificial Grass", "ARTIFICIAL"],
     ["Natural Grass", "NATURAL"]
+]);
+
+export const statusMap = new Map<GroundStatusDisplayType, GroundStatusType>([
+    ["Active", "ACTIVE"],
+    ["Maintenance", "MAINTENANCE"],
+    ["Closed", "CLOSED"]
 ]);
 
 export const amenityMap = new Map<AmenityFilterType, AmenityType>([

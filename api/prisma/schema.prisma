@@ -59,6 +59,8 @@ model Pitch {
   images         String[]
   minimumSession Int                      @default(1)
   maximumSession Int                      @default(6)
+  openFrom       String                   @default("00:00")
+  openTo         String                   @default("23:59")
   amenities      PitchAmenity[]
   location       Json
   settings       Json

@@ -42,9 +42,9 @@ export async function handleCreateGround(req: Request, res: Response) {
 
 export async function handleGetGround(req: Request, res: Response) {
     try {
-        const id = req.params.ground;
+        const index = parseInt(req.params.ground);
         const pitchId = req.params.pitch;
-        const ground = await getGround(id, pitchId);
+        const ground = await getGround(index, pitchId);
 
         res.status(200).json({ success: true, data: ground });
     } catch (error: any) {

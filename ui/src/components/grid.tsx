@@ -4,6 +4,8 @@ import getCurrencyString from "@/utils/currency"
 import Image from "next/image"
 import Link from "next/link"
 
+import Skeleton from 'react-loading-skeleton'
+
 export interface GridCardProps {
     id: string,
     name: string,
@@ -57,13 +59,27 @@ export function GridCard ({ id, name, images, amenities, priceRange, location, g
     )
 }
 
+export function GridCardSkeleton() {
+    return (
+        <div className="flex-center">
+            <div className="w-80">
+                <Skeleton className="h-80 rounded-none!"/>
+                <div className="flex flex-col mt-5">
+                    <span className="mb-1"><Skeleton className="rounded-none!"/></span>
+                    <span className="mb-2"><Skeleton className="rounded-none!"/></span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function Grid ({ data, loading } : { data : GridCardProps[], loading: boolean }) {
     return (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(325px,1fr))] gap-x-2 gap-y-8">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(325px,1fr))] gap-x-2 gap-y-8 mb-6">
             {
                 !loading ?
                 data.map((item, index) => <GridCard {...item} key={index}/>) :
-                <p>Loading...</p>
+                Array(8).fill(0).map((_, index) => <GridCardSkeleton key={index}/>)
             }
         </div>
     )

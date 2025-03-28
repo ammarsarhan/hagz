@@ -42,12 +42,12 @@ export async function createGround(data: { ownerId: string, pitchId: string, pri
     }
 }
 
-export async function getGround(id: string, pitchId?: string) {
+export async function getGround(index: number, pitchId?: string) {
     try {
-        const ground = await prisma.ground.findUnique({
+        const ground = await prisma.ground.findFirst({
             where: {
-                id,
-                pitchId
+                pitchId,
+                index
             }
         })
 

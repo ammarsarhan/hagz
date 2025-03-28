@@ -173,9 +173,17 @@ export async function createPitch(data: {
 export async function getPitch(id: string) {
     try {
         const query = await prisma.$queryRaw`
-            SELECT "id", "name", "description", "images", "amenities", "location", "updatedAt", ST_AsGeoJSON("coordinates")::text as "coordinates"
-            FROM "Pitch" 
-            WHERE "id" = ${id}
+            SELECT 
+                "p"."id", "p"."name", "p"."description", "p"."images", 
+                "p"."amenities", "p"."location", "p"."updatedAt", 
+                "p"."minimumSession", "p"."maximumSession", "p"."openFrom", "p"."openTo",
+                ST_AsGeoJSON("p"."coordinates")::text AS "coordinates",
+                COUNT("g"."id")::INTEGER AS "grounds"
+            FROM "Pitch" AS p
+            LEFT JOIN "Ground" AS g ON "g"."pitchId" = "p"."id"
+            WHERE "p"."id" = ${id}
+            GROUP BY "p"."id", "p"."name", "p"."description", "p"."images", 
+                "p"."amenities", "p"."location", "p"."updatedAt", "p"."coordinates"
         ` as PitchQueryResponse[];
 
         if (query.length < 1) {
