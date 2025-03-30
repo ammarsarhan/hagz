@@ -55,9 +55,9 @@ export default function TimeRows({ data } : { data: TimeRowType[] }) {
                 <span className="text-sm">Key</span>
                 <div className="flex items-center justify-center md:justify-normal gap-x-2 my-2">
                     <div className="w-5 h-5 rounded-md bg-blue-800"></div>
-                    <span className="text-xs">Reserved</span>
+                    <span className="text-sm">Reserved</span>
                     <div className="w-5 h-5 rounded-md bg-gray-200 ml-4"></div>
-                    <span className="text-xs">Available</span>
+                    <span className="text-sm">Available</span>
                 </div>
             </div>
             <div className="grid grid-cols-[repeat(24, minmax(0, 1fr))] w-80 md:w-auto md:grid-cols-8 gap-y-6 gap-x-8">

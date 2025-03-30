@@ -5,16 +5,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 
-import { AmenityType } from "@/context/filter";
+import { amenityMap, AmenityType } from "@/context/filter";
+import { InputGroup } from "@/components/input";
 import Button from "@/components/button";
 import TimeRows, { TimeRowType } from "@/components/time";
 import getCurrencyString from "@/utils/currency";
-import { getDisplaySize, getDisplayStatus, getDisplaySurface } from "@/utils/map";
+import { getDisplaySize, getDisplayStatus, getDisplaySurface, getKeyFromValue } from "@/utils/map";
 import { convertHourFormat } from "@/utils/date";
 import { ChevronRight, X } from "lucide-react";
 
 import Skeleton from "react-loading-skeleton";
-import { InputGroup } from "@/components/input";
 
 interface PitchData {
     amenities: AmenityType[],
@@ -299,7 +299,7 @@ export default function Pitch () {
                                         <p>
                                             {
                                                 pitch.amenities.length > 0 ?
-                                                pitch.amenities.map((amenity, i) => <span key={index}>{`${amenity}${i < pitch.amenities.length - 1 ? ", " : ""}`}</span>) :
+                                                pitch.amenities.map((amenity, i) => <span key={index}>{`${getKeyFromValue(amenityMap, amenity)}${i < pitch.amenities.length - 1 ? ", " : ""}`}</span>) :
                                                 "None"
                                             }
                                         </p>
