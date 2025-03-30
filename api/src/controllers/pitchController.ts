@@ -6,7 +6,7 @@ import { Ground, GroundSize, GroundSurface, PitchAmenity } from "@prisma/client"
 export async function handleCreatePitch(req: Request, res: Response) {
     try {
         const options = req.body;
-        const { name, description, longitude, latitude, amenities, images, settings, location, minimumSession, maximumSession } = options;
+        const { name, description, longitude, latitude, amenities, images, settings, location, minimumSession, maximumSession, openFrom, openTo } = options;
 
         if (!name || !description || !longitude || !latitude || !amenities || !images || !settings || !location || !minimumSession || !maximumSession) {
             throw new Error("Please make sure all of the required fields are not empty.");
@@ -35,7 +35,9 @@ export async function handleCreatePitch(req: Request, res: Response) {
                 externalLink: z.string({ message: "Google Maps link must be a valid URL." }).url({ message: "Google Maps link must be a valid URL." }).regex(/^(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps)\/[^\s]+$/, "Please enter a valid Google Maps link.").optional()
             }),
             minimumSession: z.number().min(1).max(2).default(1),
-            maximumSession: z.number().min(2).max(6).default(6)
+            maximumSession: z.number().min(2).max(6).default(6),
+            openFrom: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format for openFrom field. Use HH:mm"),
+            openTo: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format for openTo field. Use HH:mm")
         }).refine(data => data.minimumSession <= data.maximumSession, {
             message: "Minimum reservation duration cannot be larger than maximum reservation duration.",
             path: ["maximumSession"]

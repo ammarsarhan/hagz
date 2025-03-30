@@ -366,6 +366,7 @@ export default function FilterContextProvider({ children }: { children: ReactNod
     const reset = () => {
         setTemp(initial);
         setOptions(parseFilters(initial));
+        setOpen(false);
     }
 
     return (

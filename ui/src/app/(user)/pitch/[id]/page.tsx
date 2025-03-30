@@ -1,7 +1,8 @@
 "use client";
 
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import { AmenityType } from "@/context/filter";
 import Button from "@/components/button";
 import getCurrencyString from "@/utils/currency";
@@ -9,6 +10,7 @@ import { getDisplaySize, getDisplayStatus, getDisplaySurface } from "@/utils/map
 import { Calendar, ChevronRight, X } from "lucide-react";
 import { InputGroup, InputGroupContainer } from "@/components/input";
 import { convertHourFormat, getHourDifference, isWithinRange, toUTCDate } from "@/utils/date";
+import Link from "next/link";
 
 interface PitchData {
     amenities: AmenityType[],
@@ -34,6 +36,9 @@ interface PitchData {
     priceRange: [number, number],
     openFrom: string,
     openTo: string,
+    paymentPolicy: "SHORT" | "DEFAULT" | "EXTENDED",
+    refundPolicy: "PARTIAL" | "FULL",
+    automaticApproval: boolean,
     updatedAt: string
 }
 
@@ -50,7 +55,7 @@ interface GroundData {
     updatedAt: string
 }
 
-const Availability = ({ onClose, min, max, openingTime, closingTime } : { onClose : () => void, min: number, max: number, openingTime: string, closingTime: string }) => {
+const Availability = ({ onClose, min, max, openingTime, closingTime, pitch, ground } : { onClose : () => void, min: number, max: number, openingTime: string, closingTime: string, pitch: string, ground: number }) => {
     const now = new Date();
 
     const [loading, setLoading] = useState(false);
@@ -93,11 +98,21 @@ const Availability = ({ onClose, min, max, openingTime, closingTime } : { onClos
         setEndTime(parsed);
     }
 
-    const fetchReservations = useCallback(async (startDate: Date, endDate: Date) => {
+    const checkReservations = useCallback(async (startDate: Date, endDate: Date) => {
         setLoading(true);
-        console.log(startDate, endDate);
+        
+        const res = await fetch(`http://localhost:3000/api/pitch/${pitch}/ground/${ground}/reserve/available?start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
+        const result = await res.json();
+
+        if (!result.success) {
+            setErrorWithTimeout(result.message);
+            return;
+        }
+
+        console.log(result.data);
+
         setLoading(false);
-    }, []);
+    }, [ground, pitch]);
 
     const checkAvailability = () => {
         if (targetDate == "") {
@@ -143,19 +158,17 @@ const Availability = ({ onClose, min, max, openingTime, closingTime } : { onClos
             return;
         }
 
-        fetchReservations(startDate, endDate);
+        checkReservations(startDate, endDate);
     }
 
     return (
         <div className="flex-center fixed top-0 left-0 z-50 h-screen w-screen bg-black/30">
             <div className="p-6 bg-white rounded-md min-w-96 w-2xl mx-4">
-                <div className="flex items-center justify-between pb-3">
-                    <span className="flex items-center text-sm gap-x-2"><Calendar className="w-4 h-4 text-gray-500"/> Check Availability</span>
+                <div className="flex items-start justify-end gap-x-4">
                     <button onClick={onClose}><X className="w-4 h-4"/></button>
                 </div>
                 <div>
-                    <p className="text-sm text-gray-500 w-full sm:w-3/4 mt-2 mb-4">Select a specified time range between 1 to 6 hours to check if reservations are available.</p>
-                    <div className="flex flex-col gap-y-4 mt-4">
+                    <div className="flex flex-col gap-y-4 mt-2">
                         <span className="text-sm text-red-600">{error}</span>
                         <InputGroup label={"Day"} type="date" placeholder={"Select a day"} value={targetDate} onChange={handleSetTargetDate}/>
                         <InputGroupContainer>
@@ -172,6 +185,27 @@ const Availability = ({ onClose, min, max, openingTime, closingTime } : { onClos
     )
 };
 
+const GroundSelect = ({ i, selected, setIndex, ground } : { i: number, selected: boolean, setIndex: (i: number) => void, ground: GroundData }) => {
+    return (
+        <button className={`p-4 rounded-sm flex flex-col gap-y-4 ${selected ? "bg-gray-200" : ""}`} disabled={selected} onClick={() => setIndex(i)}>
+            <div className="w-40 h-40 bg-gray-300 relative">
+                <Image src={ground.images[0]} alt={`Ground ${ground.index} Main Image`} fill className="absolute"/>
+            </div>
+            <div className="text-sm [&>span]:block [&>span]:text-left">
+                <span>
+                    Ground {ground.index}
+                </span>
+                <span>
+                    {getCurrencyString(ground.price)}
+                </span>
+                <span>
+                    {getDisplaySize(ground.size)}
+                </span>
+            </div>
+        </button>
+    )
+}
+
 export default function Pitch () {
     const { id } = useParams();
     
@@ -179,6 +213,8 @@ export default function Pitch () {
     const [index, setIndex] = useState(0);
     const [pitch, setPitch] = useState<PitchData | null>(null);
     const [grounds, setGrounds] = useState<GroundData[]>([]);
+
+    const [policy, setPolicy] = useState<ReactNode[]>([]);
 
     const [availabilityOpen, setAvailabilityOpen] = useState(false);
 
@@ -215,6 +251,37 @@ export default function Pitch () {
         fetchGrounds();
     }, [fetchPitch, fetchGrounds]);
 
+    useEffect(() => {
+        if (pitch && policy.length < 3) {
+            setPolicy(prev => [...prev, 
+                pitch.automaticApproval ? 
+                <p className="text-sm" key={2}>Reservations are <span className="underline">automatically</span> approved.</p> : 
+                <p className="text-sm" key={2}>Reservations have to be <span className="underline">manually approved</span> by the pitch.</p>
+            ]);
+
+            switch (pitch.paymentPolicy) {
+                case "SHORT":
+                    setPolicy(prev => [...prev, <p className="text-sm" key={0}>This pitch has a short-term payment policy. This allows you more leniency when making reservations. Payment expires 15 minutes before the reservation start time.</p>]);
+                    break;
+                case "DEFAULT":
+                    setPolicy(prev => [...prev, <p className="text-sm" key={0}>This pitch has a <span className="underline">normal</span> payment policy. This allows you moderate leniency when making reservations. Payment expires 30 minutes before the reservation start time.</p>]);
+                    break;
+                case "EXTENDED":
+                    setPolicy(prev => [...prev,<p className="text-sm" key={0}>This pitch has an extended payment policy. This allows you less leniency when making reservations. Payment expires 1 hour before the reservation start time.</p>]);
+                    break;
+            }
+
+            switch (pitch.refundPolicy) {
+                case "PARTIAL":
+                    setPolicy(prev => [...prev, <p className="text-sm" key={1}>This pitch has a <span className="underline">partial</span> refund policy. Refunds requested within 2 hours of the reservation will only recieve half of the total amount paid.</p>]);
+                    break;
+                case "FULL":
+                    setPolicy(prev => [...prev, <p className="text-sm" key={1}>This pitch has a <span className="underline">full</span> refund policy. All refunds requested will recieve the full amount given that the refund expiry date has not been reached.</p>]);
+                    break;
+            }
+        }
+    }, [pitch, policy.length])
+
     return (
         !loading && pitch && grounds.length > 0 &&
         <>
@@ -226,6 +293,8 @@ export default function Pitch () {
                     max={pitch.maximumSession}
                     openingTime={pitch.openFrom}
                     closingTime={pitch.openTo}
+                    pitch={id as string}
+                    ground={index}
                 /> 
             }
             <div className="w-full text-sm px-4 flex flex-wrap items-center gap-x-2 mb-4">
@@ -237,9 +306,9 @@ export default function Pitch () {
                 <ChevronRight className="w-3 h-3 text-gray-500"/>
                 <span>Ground {index + 1}</span>
             </div>
-            <div className="lg:grid grid-cols-2 h-full">
+            <div className="lg:grid grid-cols-2">
                 <div className="flex flex-col justify-between">
-                    <div className="flex flex-col gap-y-2 px-4 pb-6">
+                    <div className="flex flex-col gap-y-2 px-6 pb-6 pt-3">
                         <div className="flex-col-reverse sm:flex-row flex flex-wrap items-start justify-between gap-x-16 gap-y-3 sm:gap-y-2 mb-2">
                             <h1 className="text-3xl leading-10">{pitch.name} <br/> Ground {index + 1}</h1>
                             <div className="text-xs border-[1px] rounded-md px-3 py-1">{pitch.grounds > 1 ? `${pitch.grounds} Grounds` : `${pitch.grounds} Ground`}</div>
@@ -248,18 +317,13 @@ export default function Pitch () {
                         <p className="text-sm my-2">{pitch.description}</p>
                         <div className="mt-2">
                             <span className="text-sm text-gray-500 block mb-3">Select Ground:</span>
-                            <div className="flex flex-wrap gap-x-10 gap-y-4 items-center">
+                            <div className={`flex flex-wrap gap-x-10 gap-y-4 items-center ${grounds.length > 2 ? "justify-around" : "justify-start"}`}>
                                 {
                                     grounds.map((ground, i) => {
                                         const selected = i === index;
 
                                         return (
-                                            <button key={i} className={`px-3 py-2 rounded-md border-[1px] relative flex flex-col text-sm ${selected ? "bg-gray-100" : ""}`} onClick={() => setIndex(i)}>
-                                                <span className={`w-5 h-5 text-white absolute -top-2 -right-2 rounded-full text-xs flex-center ${selected ? "bg-gray-600" : "bg-black"}`}>{i + 1}</span>
-                                                <span className="text-left">{getCurrencyString(ground.price)}</span>
-                                                <span className="text-left">{getDisplaySize(ground.size)}</span>
-                                                <span>{getDisplaySurface(ground.surface)}</span>
-                                            </button>
+                                            <GroundSelect i={i} selected={selected} setIndex={(i) => setIndex(i)} ground={ground} key={i}/>
                                         )
                                     })
                                 }
@@ -308,6 +372,15 @@ export default function Pitch () {
                                         <span className="block">{convertHourFormat(pitch.openFrom)} to {convertHourFormat(pitch.openTo)}</span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <span className="text-sm text-gray-500">Pitch Policy:</span>
+                            <div className="flex flex-col gap-y-2 mt-2">
+                                {
+                                    policy.map(item => <>{item}</>)
+                                }
+                                <span className="text-sm">For more information, please visit the <Link href="/help" className="text-blue-800 hover:underline">help</Link> section.</span>
                             </div>
                         </div>
                     </div>

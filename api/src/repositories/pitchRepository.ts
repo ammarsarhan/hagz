@@ -28,7 +28,14 @@ type BasePitchQueryResponse = {
     location: PitchLocation,
     coordinates: string,
     updatedAt: string,
-    grounds: number
+    grounds: number,
+    minimumSession: number,
+    maximumSession: number,
+    openFrom: string,
+    openTo: string,
+    automaticApproval: boolean,
+    paymentPolicy: "SHORT" | "DEFAULT" | "EXTENDED",
+    refundPolicy: "PARTIAL" | "FULL"
 };
 
 type PitchQueryResponse = BasePitchQueryResponse & { description: string };
@@ -70,6 +77,7 @@ const buildQuery = ({ limit, cursor, startDate, endDate, minimumPrice, maximumPr
         index++;
     }
 
+    // handle checking if open and close times are valid here?
     if (startDate && endDate) {
         where.push(`("r"."id" IS NULL OR NOT ("r"."startDate" < $${index}::TIMESTAMP AND "r"."endDate" > $${index + 1}::TIMESTAMP))`);
         params.push(endDate, startDate);
@@ -133,11 +141,13 @@ export async function createPitch(data: {
     minimumSession: number,
     maximumSession: number
     location: PitchLocation,
-    settings: PitchSettings
+    settings: PitchSettings,
+    openFrom: string,
+    openTo: string
 }) {
     try {
         const query = await prisma.$queryRaw`
-            INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "coordinates", "images", "amenities", "location", "settings", "minimumSession", "maximumSession", "createdAt", "updatedAt")
+            INSERT INTO "Pitch" ("id", "ownerId", "name", "description", "coordinates", "images", "amenities", "location", "settings", "minimumSession", "maximumSession", "openFrom", "openTo", "createdAt", "updatedAt")
             VALUES (
                 ${cuid()},
                 ${data.ownerId},
@@ -150,11 +160,13 @@ export async function createPitch(data: {
                 ${data.settings},
                 ${data.minimumSession},
                 ${data.maximumSession},
+                ${data.openFrom},
+                ${data.openTo},
                 NOW(),
                 NOW()
             )
             RETURNING 
-                "id", "name", "description", "images", "amenities", "location", ST_AsGeoJSON("coordinates")::text as "coordinates";
+                "id", "name", "description", "images", "amenities", "location", ST_AsGeoJSON("coordinates")::text as "coordinates", "minimumSession", "maximumSession", "openFrom", "openTo";
         ` as PitchQueryResponse[];
 
         if (query.length < 1) {
@@ -178,7 +190,10 @@ export async function getPitch(id: string) {
                 "p"."amenities", "p"."location", "p"."updatedAt", 
                 "p"."minimumSession", "p"."maximumSession", "p"."openFrom", "p"."openTo",
                 ST_AsGeoJSON("p"."coordinates")::text AS "coordinates",
-                COUNT("g"."id")::INTEGER AS "grounds"
+                COUNT("g"."id")::INTEGER AS "grounds",
+                "p"."settings"->>'automaticApproval' AS "automaticApproval",
+                "p"."settings"->>'paymentPolicy' AS "paymentPolicy",
+                "p"."settings"->>'refundPolicy' AS "refundPolicy"
             FROM "Pitch" AS p
             LEFT JOIN "Ground" AS g ON "g"."pitchId" = "p"."id"
             WHERE "p"."id" = ${id}
