@@ -1,20 +1,20 @@
 import prisma from "../utils/db";
 
-export async function checkReservationConflict(pitch: string, ground: number, startDate: Date, endDate: Date) {
-    try {
-        const match = await prisma.reservation.findFirst({
-            where: {
-                ground: {
-                    pitchId: pitch,
-                    index: ground
-                },
-                startDate: { lt: endDate },
-                endDate: { gt: startDate }
+export async function getReservations(pitch: string, index: number, start: Date, end: Date) {
+    const reservations = await prisma.reservation.findMany({
+        where: {
+            ground: {
+                pitchId: pitch,
+                index: index
+            },
+            startDate: {
+                gte: start
+            },
+            endDate: {
+                lte: end
             }
-        });
+        }
+    });
 
-        return !!match;
-    } catch (error: any) {
-        throw new Error(error.message);
-    }
+    return reservations;
 }

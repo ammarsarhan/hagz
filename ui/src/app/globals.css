@@ -60,3 +60,16 @@ input[type=range]::-webkit-slider-thumb:active {
   box-shadow: 0 0 3px #387bbe, 0 0 9px #387bbe;
   -webkit-box-shadow: 0 0 3px #387bbe, 0 0 9px #387bbe;
 }
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 20px rgba(0, 0, 0, 0);
+  }
+}

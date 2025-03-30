@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getGround, createGround, getPitchGrounds } from "../repositories/groundRepository";
-import { checkReservationConflict } from "../repositories/reservationRepository";
+import { getReservations } from "../repositories/reservationRepository";
 import { z } from "zod";
 
 export async function handleCreateGround(req: Request, res: Response) {
@@ -66,22 +66,21 @@ export async function handleFetchGrounds(req: Request, res: Response) {
 export async function handleCheckAvailability(req: Request, res: Response) {
     try {
         const { pitch, ground } = req.params;
-        const { start, end } = req.query;
+        const { date } = req.query;
 
-        if (!start || !end) {
-            throw new Error("Please make sure all of the required fields are not empty.");
+        if (!date) {
+            throw new Error("Please provide a valid target date.");
         }
 
         const groundIndex = parseInt(ground);
-        const startDate = new Date(start as string);
-        const endDate = new Date(end as string);
+        
+        const start = new Date(date as string);
+        const end = new Date(date as string);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
 
-        const match = await checkReservationConflict(pitch, groundIndex, startDate, endDate);
-
-        res.status(200).json({ success: true, data: {
-                isReserved: match
-            } 
-        });
+        const data = await getReservations(pitch, groundIndex, start, end);
+        res.status(200).json({ success: true, data: data });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }

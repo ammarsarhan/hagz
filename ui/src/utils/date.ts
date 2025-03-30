@@ -17,10 +17,15 @@ export function convertHourFormat(time: string) {
     return `${hours}:${String(minutes).padStart(2, '0')} ${period}`;
 }
 
-export function getHourDifference (start: Date, end: Date) {
+export function getHourDifference(start: Date, end: Date) {
     return Math.abs(end.getTime() - start.getTime()) / 36e5;
 }
 
 export function isWithinRange(startTime: string, endTime: string, openingTime: string, closingTime: string) {
     return startTime >= openingTime && endTime <= closingTime
+}
+
+export function getDaysFromMonthIndex(index: number, year: number) {
+    const days = new Date(year, index + 1, 0).getUTCDate();
+    return days + 1;
 }

@@ -12,7 +12,7 @@ pitch.get("/:pitch", async (req, res) => handleGetPitch(req, res));
 
 pitch.post("/:pitch/ground/create", authorizeOwnerAccessToken, authorizeVerificationStatus, async (req, res) => handleCreateGround(req, res));
 pitch.get("/:pitch/ground/:ground", async (req, res) => handleGetGround(req, res));
-pitch.get("/:pitch/ground/:ground/reserve/available", async (req, res) => handleCheckAvailability(req, res));
+pitch.get("/:pitch/ground/:ground/availability", async (req, res) => handleCheckAvailability(req, res));
 pitch.get("/:pitch/grounds", async (req, res) => handleFetchGrounds(req, res));
 
 export default pitch;

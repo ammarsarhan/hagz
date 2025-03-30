@@ -1,16 +1,20 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { ChangeEvent, ReactNode, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
+import { useParams } from "next/navigation";
+
 import { AmenityType } from "@/context/filter";
 import Button from "@/components/button";
+import TimeRows, { TimeRowType } from "@/components/time";
 import getCurrencyString from "@/utils/currency";
 import { getDisplaySize, getDisplayStatus, getDisplaySurface } from "@/utils/map";
-import { Calendar, ChevronRight, X } from "lucide-react";
-import { InputGroup, InputGroupContainer } from "@/components/input";
-import { convertHourFormat, getHourDifference, isWithinRange, toUTCDate } from "@/utils/date";
-import Link from "next/link";
+import { convertHourFormat } from "@/utils/date";
+import { ChevronRight, X } from "lucide-react";
+
+import Skeleton from "react-loading-skeleton";
+import { InputGroup } from "@/components/input";
 
 interface PitchData {
     amenities: AmenityType[],
@@ -55,130 +59,78 @@ interface GroundData {
     updatedAt: string
 }
 
-const Availability = ({ onClose, min, max, openingTime, closingTime, pitch, ground } : { onClose : () => void, min: number, max: number, openingTime: string, closingTime: string, pitch: string, ground: number }) => {
-    const now = new Date();
+const Availability = ({ id, index, onClose } : { id: string, index: number, onClose : () => void }) => {
+    const now = new Date().toISOString().split("T")[0];
 
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [target, setTarget] = useState(now);
+    const [data, setData] = useState<TimeRowType[]>([]);
 
-    const setErrorWithTimeout = (message: string) => {
-        setError(message);
+    const handleChangeDate = (e: ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        const difference = new Date(value).getTime() - new Date(now).getTime();
 
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
+        if (difference > 0) {
+            setTarget(value);
         };
-    
-        timeoutRef.current = setTimeout(() => {
-            setError(null);
-        }, 3000);
     }
 
-    const [targetDate, setTargetDate] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
-
-    const handleSetTargetDate = (e: ChangeEvent<HTMLInputElement>) => {
-        setTargetDate(e.target.value);
-    }
-    
-    const handleSetStartTime = (e: ChangeEvent<HTMLInputElement>) => {
-        const time = e.target.value;
-        const hour = time.split(":")[0];
-        const parsed = `${hour}:00`;
-        
-        setStartTime(parsed);
-    }
-
-    const handleSetEndTime = (e: ChangeEvent<HTMLInputElement>) => {
-        const time = e.target.value;
-        const hour = time.split(":")[0];
-        const parsed = `${hour}:00`;
-        
-        setEndTime(parsed);
-    }
-
-    const checkReservations = useCallback(async (startDate: Date, endDate: Date) => {
-        setLoading(true);
-        
-        const res = await fetch(`http://localhost:3000/api/pitch/${pitch}/ground/${ground}/reserve/available?start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
+    const fetchData = useCallback(async () => {
+        const res = await fetch(`http://localhost:3000/api/pitch/${id}/ground/${index}/availability?date=${target}`);
         const result = await res.json();
 
         if (!result.success) {
-            setErrorWithTimeout(result.message);
+            console.log(result.message);
             return;
         }
 
         console.log(result.data);
+        setData([
+            {
+                id: "1",
+                startTime: "10:00",
+                endTime: "13:00"
+            },
+            {
+                id: "2",
+                startTime: "17:00",
+                endTime: "18:00"
+            },
+            {
+                id: "3",
+                startTime: "18:00",
+                endTime: "19:00"
+            },
+            {
+                id: "5",
+                startTime: "21:00",
+                endTime: "23:59"
+            }
+        ]);
+    }, [target, id, index]);
 
+    useEffect(() => {
+        setLoading(true);
+        fetchData();
         setLoading(false);
-    }, [ground, pitch]);
-
-    const checkAvailability = () => {
-        if (targetDate == "") {
-            setErrorWithTimeout("Please select a day to check reservations.")
-            return;
-        }
-
-        if (targetDate != "" && startTime == "" || targetDate != "" && endTime == "") {
-            setErrorWithTimeout("You may not pick a date without selecting both start and end time.");
-            return;
-        }
-
-        if (targetDate == "" && startTime != "" || targetDate == "" && endTime != "") {
-            setErrorWithTimeout("You may not pick a start or end time without selecting a date.");
-            return;
-        }
-
-        let startDate = toUTCDate(now.toISOString(), "00:00");
-        let endDate = toUTCDate(now.toISOString(), "23:59");
-
-        if (startTime != "" || endTime != "") {
-            startDate = toUTCDate(targetDate, startTime);
-            endDate = toUTCDate(targetDate, endTime);
-        };
-
-        if (startDate <= now || endDate <= now) {
-            setErrorWithTimeout("Both start and end time must be upcoming.");
-            return;
-        }
-
-        if (startDate >= endDate) {
-            setErrorWithTimeout("Start time may not be after the end time.");
-            return;
-        }
-
-        if (!isWithinRange(startTime, endTime, openingTime, closingTime)) {
-            setErrorWithTimeout("Start time and end time must be within the open pitch hours.");
-            return;
-        }
-
-        if (getHourDifference(startDate, endDate) < min || getHourDifference(startDate, endDate) > max) {
-            setErrorWithTimeout(`Difference may only be between ${min} to ${max} hours.`);
-            return;
-        }
-
-        checkReservations(startDate, endDate);
-    }
+    }, [fetchData]);
 
     return (
         <div className="flex-center fixed top-0 left-0 z-50 h-screen w-screen bg-black/30">
-            <div className="p-6 bg-white rounded-md min-w-96 w-2xl mx-4">
-                <div className="flex items-start justify-end gap-x-4">
+            <div className="p-6 bg-white rounded-md mx-4">
+                <div className="flex items-center justify-between gap-x-16 mb-4">
+                    <span className="text-sm">Available Reservations</span>
                     <button onClick={onClose}><X className="w-4 h-4"/></button>
                 </div>
-                <div>
-                    <div className="flex flex-col gap-y-4 mt-2">
-                        <span className="text-sm text-red-600">{error}</span>
-                        <InputGroup label={"Day"} type="date" placeholder={"Select a day"} value={targetDate} onChange={handleSetTargetDate}/>
-                        <InputGroupContainer>
-                            <InputGroup label={"Start Time"} type="time" placeholder={"Select a start time"} value={startTime} onChange={handleSetStartTime}/>
-                            <InputGroup label={"End Time"} type="time" placeholder={"Select an end time"} value={endTime} onChange={handleSetEndTime}/>
-                        </InputGroupContainer>
-                    </div>
-                    <div className="flex justify-end">
-                        <Button className="text-xs py-3 mt-8" variant={loading ? "disabled" : "primary"} onClick={checkAvailability} disabled={loading}>Check availability</Button>
-                    </div>
+                <div className="mb-4">
+                    <InputGroup label={"Select date"} type="date" placeholder={""} value={target} onChange={handleChangeDate} />
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                    {
+                        loading ?
+                        Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-10 mb-2"/>) :
+                        <TimeRows data={data}/>
+                    }
                 </div>
             </div>
         </div>
@@ -286,16 +238,7 @@ export default function Pitch () {
         !loading && pitch && grounds.length > 0 &&
         <>
             { 
-                availabilityOpen && 
-                <Availability 
-                    onClose={() => setAvailabilityOpen(false)} 
-                    min={pitch.minimumSession} 
-                    max={pitch.maximumSession}
-                    openingTime={pitch.openFrom}
-                    closingTime={pitch.openTo}
-                    pitch={id as string}
-                    ground={index}
-                /> 
+                availabilityOpen && <Availability id={id as string} index={index} onClose={() => setAvailabilityOpen(false)} /> 
             }
             <div className="w-full text-sm px-4 flex flex-wrap items-center gap-x-2 mb-4">
                 <span className="text-gray-500">Pitch</span>
@@ -317,7 +260,7 @@ export default function Pitch () {
                         <p className="text-sm my-2">{pitch.description}</p>
                         <div className="mt-2">
                             <span className="text-sm text-gray-500 block mb-3">Select Ground:</span>
-                            <div className={`flex flex-wrap gap-x-10 gap-y-4 items-center ${grounds.length > 2 ? "justify-around" : "justify-start"}`}>
+                            <div className={`flex flex-wrap gap-x-10 gap-y-4 items-center ${grounds.length > 2 ? "justify-around" : "justify-center md:justify-start"}`}>
                                 {
                                     grounds.map((ground, i) => {
                                         const selected = i === index;
@@ -378,7 +321,7 @@ export default function Pitch () {
                             <span className="text-sm text-gray-500">Pitch Policy:</span>
                             <div className="flex flex-col gap-y-2 mt-2">
                                 {
-                                    policy.map(item => <>{item}</>)
+                                    policy.map((item, index) => <div key={index}>{item}</div>)
                                 }
                                 <span className="text-sm">For more information, please visit the <Link href="/help" className="text-blue-800 hover:underline">help</Link> section.</span>
                             </div>
