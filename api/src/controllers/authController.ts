@@ -89,9 +89,9 @@ export async function signInOwner(req: Request, res: Response) {
             throw new Error('Insufficient parameters provided to sign in owner.'); 
         }
 
-        const tokens = await signInOwnerWithCredentials(email, password);
+        const data = await signInOwnerWithCredentials(email, password);
         
-        res.cookie('refreshToken', tokens.refreshToken, {
+        res.cookie('refreshToken', data.refreshToken, {
             maxAge: 1000 * 60 * 60 * 24 * 7, 
             httpOnly: true, 
             secure: true, 
@@ -99,14 +99,20 @@ export async function signInOwner(req: Request, res: Response) {
             signed: true
         });
 
-        res.cookie('accessToken', tokens.accessToken, {
+        res.cookie('accessToken', data.accessToken, {
             maxAge: 1000 * 60 * 30,
             httpOnly: true,
             secure: true,
             sameSite: 'lax'
         })
 
-        res.status(200).json({ success: true, message: "Owner signed in successfully."});
+        res.status(200).json({ success: true, message: "Owner signed in successfully.", data: {
+            id: data.owner.id,
+            name: data.owner.name,
+            email: maskEmail(data.owner.email),
+            phone: maskPhone(data.owner.phone),
+            status: data.owner.accountStatus
+        }});
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -114,13 +120,13 @@ export async function signInOwner(req: Request, res: Response) {
 
 export async function signUpOwner(req: Request, res: Response) {
     try {
-        const { name, email, phone, password } = req.body;
+        const { name, company, email, phone, secondaryPhone, password, location } = req.body;
 
-        if (!name || !email || !phone || !password) {
+        if (!name || !email || !phone || !secondaryPhone || !password || !location) {
             throw new Error('Insufficient parameters provided to create owner.'); 
         }
 
-        await signUpOwnerWithCredentials(name, email, phone, password);
+        await signUpOwnerWithCredentials(name, company, email, phone, secondaryPhone, password, location);
         res.status(200).json({ success: true, message: "Created new owner account successfully."});
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });

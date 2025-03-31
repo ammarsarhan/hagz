@@ -9,20 +9,22 @@ interface InputGroupProps {
     className?: string
     min?: string,
     max?: string,
-    onClear?: () => void
+    onClear?: () => void,
+    readOnly?: boolean
 }
 
 interface InputProps {
     placeholder: string,
     value: string,
     onChange: (e: ChangeEvent<HTMLInputElement>) => void,
+    readOnly?: boolean,
     type?: string,
     min?: string,
     max?: string,
     className?: string
 }
 
-export default function Input({ placeholder, className, value, type = "text", onChange, min, max }: InputProps) {
+export default function Input({ placeholder, className, value, type = "text", onChange, min, max, readOnly = false } : InputProps) {
     let style = "w-full py-1 border-b-[1px] outline-none";
 
     if (className) {
@@ -30,11 +32,20 @@ export default function Input({ placeholder, className, value, type = "text", on
     }
 
     return (
-        <input type={type} className={style} placeholder={placeholder} value={value} onChange={onChange} min={min} max={max}/>
+        <input 
+            type={type} 
+            className={style}
+            placeholder={placeholder} 
+            value={value} 
+            onChange={onChange} 
+            min={min} 
+            max={max} 
+            readOnly={readOnly}
+        />
     )
 }
 
-export function InputGroup({ label, placeholder, value, min, max, onChange, type = "text", className, onClear }: InputGroupProps) {
+export function InputGroup({ label, placeholder, value, min, max, onChange, type = "text", className, onClear, readOnly } : InputGroupProps) {
     return (
         <div className="w-full">
             {
@@ -45,7 +56,7 @@ export function InputGroup({ label, placeholder, value, min, max, onChange, type
                 </div> :
                 <span className="block text-sm mb-1 text-gray-500">{label}</span>
             }
-            <Input placeholder={placeholder} className={className} value={value} type={type} onChange={onChange} min={min} max={max}/>
+            <Input placeholder={placeholder} className={className} value={value} type={type} onChange={onChange} min={min} max={max} readOnly={readOnly}/>
         </div>
     )
 }

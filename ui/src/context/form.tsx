@@ -1,4 +1,4 @@
-import { ReactNode, useState, useContext, createContext, SetStateAction, Dispatch } from "react";
+import { ReactNode, useState, useContext, createContext, SetStateAction, Dispatch, useEffect } from "react";
 import { ZodEffects, ZodObject } from "zod";
 
 interface StepType {
@@ -41,17 +41,18 @@ export default function FormContextProvider<T>({ children, steps, initial } : { 
     const [error, setError] = useState<string | null>(null);
     const [index, setIndex] = useState(0);
     const [loading, setLoading] = useState(false);
+
     const step = steps[index];
 
     const next = () => {
         if (index < steps.length - 1) {
-            setIndex(index + 1);
+            setIndex((prev) => prev + 1);
         }
     }
 
     const previous = () => {
-        if (index <= steps.length - 1) {
-            setIndex(index - 1);
+        if (index > 0) {
+            setIndex((prev) => prev - 1);
         }
     }
 

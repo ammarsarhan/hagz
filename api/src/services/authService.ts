@@ -63,9 +63,7 @@ export async function signUpUserWithCredentials(name: string, email: string, pho
     }
 
     await checkIfAccountExists(email, phone);
-
-    const user = await createUserWithCredentials(parsed.data.name, parsed.data.email, parsed.data.phone, parsed.data.password);
-    await handleSendUserVerification(user.email);
+    await createUserWithCredentials(parsed.data.name, parsed.data.email, parsed.data.phone, parsed.data.password);
 }
 
 export async function handleSendUserVerification(email: string) {
@@ -135,25 +133,32 @@ export async function handleSendOwnerVerification(email: string) {
     await sendOwnerVerificationEmail(email, link);
 }
 
-export async function signUpOwnerWithCredentials(name: string, email: string, phone: string, password: string) {
+export async function signUpOwnerWithCredentials(name: string, company: string, email: string, phone: string, secondaryPhone: string, password: string, location: any) {
     try {
         const schema = z.object({
             name: z.string(),
-            email: z.string().email("Please provide a valid email address."),
-            phone: z.string().regex(/^\d{4}-\d{3}-\d{4}$/, "Please provide a valid phone number."),
-            password: z.string().nonempty("Please provide a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/, { message: "Password must contain at least one uppercase letter, one number, and one special character." })
+            company: z.string().min(2, "Company name must be at least two characters long.").max(50, "Company name may not be longer than 50 characters.").optional().or(z.literal('')),
+            email: z.string().email("Please use a valid email address."),
+            phone: z.string().regex(/^[0-9]{4}-[0-9]{3}-[0-9]{4}$/, "Please match the specified phone number format."),
+            secondaryPhone: z.string().regex(/^[0-9]{4}-[0-9]{3}-[0-9]{4}$/, "Please match the specified phone number format."),
+            password: z.string().nonempty("Please enter a valid password.").min(8, "Password must be at least 8 characters.").max(255, "Password must be less than 255 characters.").regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/, { message: "Password must contain at least one uppercase letter, one number, and one special character." }),
+            location: z.object({
+                street: z.string({ message: "Please provide a valid string for street." }).min(5, { message: "Street name must include at least 5 characters." }).max(255, { message: "Street name may not be longer than 255 characters." }),
+                district: z.string({ message: "Please provide a valid string for district." }).min(3, { message: "District name must include at least 3 characters." }).max(255, { message: "District name may not be longer than 50 characters." }),
+                city: z.string({ message: "Please provide a valid string for city." }).min(3, { message: "City name must include at least 3 characters." }).max(255, { message: "City name may not be longer than 50 characters." }),
+                governorate: z.string({ message: "Please provide a valid string for governorate." }).min(3, { message: "Governorate name must include at least 3 characters." }).max(255, { message: "Governorate name may not be longer than 50 characters." }),
+                country: z.string({ message: "Please provide a valid string for country." }).min(3, { message: "Country name must include at least 3 characters." }).max(50, { message: "Country name may not be longer than 50 characters." })
+            })
         })
     
-        const parsed = schema.safeParse({name, email, phone, password});
+        const parsed = schema.safeParse({ name, company, email, phone, secondaryPhone, password, location });
     
         if (!parsed.success) {
             throw new Error(parsed.error.errors[0].message);
         }
     
         await checkIfAccountExists(email, phone);
-    
-        const owner = await createOwnerWithCredentials(parsed.data.name, parsed.data.email, parsed.data.phone, parsed.data.password);
-        await handleSendOwnerVerification(owner.email);
+        await createOwnerWithCredentials(parsed.data.name, parsed.data.company, parsed.data.email, parsed.data.phone, parsed.data.secondaryPhone, parsed.data.password, parsed.data.location);
     } catch (error: any) {
         throw new Error(`Could not create new owner. ${error.message}`);
     }
@@ -170,7 +175,7 @@ export async function signInOwnerWithCredentials(email: string, password: string
     const accessToken = generateAccessToken({id: owner.id, type: "Owner"});
     const refreshToken = generateRefreshToken({id: owner.id, type: "Owner"});
     
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, owner };
 }
 
 export async function verifyOwnerByToken(token: string) {

@@ -1,8 +1,9 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express from 'express';
 
 import auth from './routes/auth';
 import user from './routes/user';
+import owner from './routes/owner';
 import refresh from './routes/refresh';
 import pitch from './routes/pitch';
 
@@ -22,6 +23,7 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use('/api/auth', auth);
 app.use('/api/user', user);
+app.use('/api/owner', owner);
 app.use('/api/refresh', refresh);
 app.use('/api/pitch', pitch);
 

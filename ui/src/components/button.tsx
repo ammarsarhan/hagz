@@ -5,10 +5,11 @@ interface ButtonProps {
     disabled?: boolean
     variant?: "primary" | "secondary" | "outline" | "mono" | "none" | "disabled" | "destructive"
     className?: string
+    type?: "button" | "submit" | "reset"
     onClick?: () => void
 }
 
-export default function Button({ children, variant = "primary", className, disabled = false, onClick } : ButtonProps) {
+export default function Button({ children, variant = "primary", className, disabled = false, onClick, type } : ButtonProps) {
     let style = "px-4 py-2 transition-all ease-in-out cursor-pointer rounded-sm";
 
     if (className) {
@@ -41,7 +42,7 @@ export default function Button({ children, variant = "primary", className, disab
     }
 
     return (
-        <button className={style} onClick={onClick} disabled={disabled}>
+        <button className={style} onClick={onClick} disabled={disabled} type={type}>
             {children}
         </button>
     )

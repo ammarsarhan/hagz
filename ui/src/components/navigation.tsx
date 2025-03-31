@@ -10,7 +10,7 @@ import { Menu } from "lucide-react";
 
 export function UserNavigation() {
     const path = usePathname();
-    const { user } = useAuthContext();
+    const { user, owner } = useAuthContext();
     
     const isActiveStyle = (pathname: string) => path === pathname ? "text-black hidden cursor-default" : "text-gray-500 hover:underline hidden";
 
@@ -25,23 +25,33 @@ export function UserNavigation() {
                 </Link>
             </div>
             <div className="flex items-center gap-x-6 text-sm">
-                <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
-                <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
-                <Link href={'/faq'} className={`${isActiveStyle('/faq')} sm:inline`}>FAQs</Link>
                 {
                     user ? 
-                        <Link href={'/user/dashboard'} className="w-8 h-8 flex-center border-[1px] rounded-full text-gray-500 hover:border-gray-300! hover:text-black hover:bg-gray-50 transition-all ml-2">
-                            <span>{user.name.slice(0, 1)}</span>
-                        </Link>
-                    : 
-                        <div className="ml-2 flex items-center gap-x-2">
-                            <Link href={'/auth/user/sign-up'} className="hidden sm:inline">
-                                <Button variant="outline" className="text-xs rounded-sm">Sign Up</Button>
+                        <>
+                            <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
+                            <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
+                            <Link href={'/faq'} className={`${isActiveStyle('/faq')} sm:inline`}>FAQs</Link>
+                            <Link href={'/user/dashboard'} className="w-8 h-8 flex-center border-[1px] rounded-full text-gray-500 hover:border-gray-300! hover:text-black hover:bg-gray-50 transition-all ml-2">
+                                <span>{user.name.slice(0, 1)}</span>
                             </Link>
-                            <Link href={'/auth/user/log-in'}>
-                                <Button className="text-xs rounded-sm">Log In</Button>
-                            </Link>
-                        </div>
+                        </>
+                    :
+                    owner ?
+                        <Link href={'/owner/dashboard'} className="text-gray-500 hover:underline">Your Dashboard</Link> 
+                    :
+                        <>
+                            <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
+                            <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
+                            <Link href={'/faq'} className={`${isActiveStyle('/faq')} sm:inline`}>FAQs</Link>
+                            <div className="ml-2 flex items-center gap-x-2">
+                                <Link href={'/auth/user/sign-up'} className="hidden sm:inline">
+                                    <Button variant="outline" className="text-xs rounded-sm">Sign Up</Button>
+                                </Link>
+                                <Link href={'/auth/user/log-in'}>
+                                    <Button className="text-xs rounded-sm">Log In</Button>
+                                </Link>
+                            </div>
+                        </>
                 }
             </div>
         </nav>

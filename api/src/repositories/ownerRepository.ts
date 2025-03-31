@@ -1,16 +1,19 @@
 import { hash } from "bcrypt";
 import prisma from "../utils/db";
 
-export async function createOwnerWithCredentials(name: string, email: string, phone: string, password: string) {
+export async function createOwnerWithCredentials(name: string, company: string | undefined, email: string, phone: string, secondaryPhone: string, password: string, location: any) {
     try {
         const hashed = await hash(password, 10);
 
         const owner = await prisma.owner.create({
             data: {
-                name: name,
-                email: email,
-                phone: phone,
-                password: hashed
+                name,
+                company,
+                email,
+                phone,
+                secondaryPhone,
+                password: hashed,
+                location: location
             }
         });
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import UserType from "@/types/user";
 
 interface AuthContextType {
     user: UserType | null,
-    signInWithCredentials: (email: string, password: string) => Promise<any>
+    owner: UserType | null,
+    signInWithCredentials: (email: string, password: string, isOwner?: boolean) => Promise<any>
     signOut: () => Promise<any>
 }
 
@@ -23,11 +24,13 @@ export function useAuthContext() {
 
 export default function AuthContextProvider({ children } : { children: ReactNode }) {
     const [user, setUser] = useState<UserType | null>(null);
+    const [owner, setOwner] = useState<UserType | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const refreshTokens = async () => {
+    const refreshTokens = async (isOwner: boolean) => {
         try {
-            await fetch("http://localhost:3000/api/refresh/user", {
+            console.log("Fetching tokens:")
+            await fetch(`http://localhost:3000/api/refresh/${isOwner ? "owner" : "user"}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -35,17 +38,20 @@ export default function AuthContextProvider({ children } : { children: ReactNode
                 },
                 credentials: "include"
             });
+            console.log("Tokens fetched successfully for: " + (isOwner ? "owner." : "user."));
         } catch (error: any) {
             console.log(error.message);
         }
     }
 
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async (isOwner: boolean) => {
         try {
             setLoading(true);
-            await refreshTokens();
+            await refreshTokens(isOwner);
 
-            const res = await fetch("http://localhost:3000/api/user", {
+            console.log("Getting user data for" + (isOwner ? " owner." : " user."));
+
+            const res = await fetch(`http://localhost:3000/api/${isOwner ? "owner" : "user"}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -55,21 +61,30 @@ export default function AuthContextProvider({ children } : { children: ReactNode
             })
 
             const result = await res.json();
-            setUser(result.data);
+            console.log(result);
+
+            if (isOwner) {
+                setOwner(result.data);
+                console.log("set owner data.")
+            } else {
+                setUser(result.data);
+                console.log("set user data.")
+            };
 
             setLoading(false);
         } catch (error: any) {
             console.log(error.message);
         };
-    }
+    }, []);
 
     useEffect(() => {
-        fetchUser();
-    }, [])
+        fetchUser(false);
+        fetchUser(true);
+    }, [fetchUser])
 
-    const signInWithCredentials = async (email: string, password: string) => {
+    const signInWithCredentials = async (email: string, password: string, isOwner?: boolean) => {
         try {
-            const res = await fetch("http://localhost:3000/api/auth/user/sign-in", {
+            const res = await fetch(`http://localhost:3000/api/auth/${isOwner ? "owner" : "user"}/sign-in`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -84,12 +99,17 @@ export default function AuthContextProvider({ children } : { children: ReactNode
             if (!result.success) {
                 return result;
             }
-
+            
             if (result.data.status == "SUSPENDED" || result.data.status == "DELETED") {
                 return result;
             }
 
-            setUser(result.data);
+            if (isOwner) {
+                setOwner(result.data);
+            } else {
+                setUser(result.data);
+            };
+
             return result;
         } catch (error: any) {
             console.log(error.message);
@@ -109,7 +129,6 @@ export default function AuthContextProvider({ children } : { children: ReactNode
             const data = await res.json();
 
             if (!data.success) {
-                alert("Handle this by making a global modal component that takes in an error message.");
                 return;
             };
 
@@ -120,7 +139,7 @@ export default function AuthContextProvider({ children } : { children: ReactNode
     }
 
     return (
-        <AuthContext.Provider value={{ user, signInWithCredentials, signOut }}>
+        <AuthContext.Provider value={{ user, owner, signInWithCredentials, signOut }}>
             {!loading && children}
         </AuthContext.Provider>
     )
