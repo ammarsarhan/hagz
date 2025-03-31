@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import UserType from "@/types/user";
 
 interface AuthContextType {
@@ -27,60 +27,49 @@ export default function AuthContextProvider({ children } : { children: ReactNode
     const [owner, setOwner] = useState<UserType | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const refreshTokens = async (isOwner: boolean) => {
-        try {
-            console.log("Fetching tokens:")
-            await fetch(`http://localhost:3000/api/refresh/${isOwner ? "owner" : "user"}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                credentials: "include"
-            });
-            console.log("Tokens fetched successfully for: " + (isOwner ? "owner." : "user."));
-        } catch (error: any) {
-            console.log(error.message);
-        }
-    }
-
-    const fetchUser = useCallback(async (isOwner: boolean) => {
+    const refreshUser = async () => {
         try {
             setLoading(true);
-            await refreshTokens(isOwner);
 
-            console.log("Getting user data for" + (isOwner ? " owner." : " user."));
-
-            const res = await fetch(`http://localhost:3000/api/${isOwner ? "owner" : "user"}`, {
+            const res = await fetch("http://localhost:3000/api/auth/session", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json"
                 },
                 credentials: "include"
-            })
+            });
 
             const result = await res.json();
-            console.log(result);
 
-            if (isOwner) {
-                setOwner(result.data);
-                console.log("set owner data.")
-            } else {
-                setUser(result.data);
-                console.log("set user data.")
+            if (!result.success) {
+                setLoading(false);
+                return;
             };
+
+            if (result.data.user && result.data.user.status !== "SUSPENDED" && result.data.user.status != "DELETED") {
+                setUser(result.data.user);
+                setOwner(null);
+                setLoading(false);
+                return;
+            }
+
+            if (result.data.owner && result.data.owner.status !== "SUSPENDED" && result.data.owner.status != "DELETED") {
+                setOwner(result.data.owner);
+                setUser(null);
+                setLoading(false);
+                return;
+            }
 
             setLoading(false);
         } catch (error: any) {
             console.log(error.message);
-        };
-    }, []);
+        }
+    }
 
     useEffect(() => {
-        fetchUser(false);
-        fetchUser(true);
-    }, [fetchUser])
+        refreshUser();
+    }, [])
 
     const signInWithCredentials = async (email: string, password: string, isOwner?: boolean) => {
         try {
@@ -126,6 +115,7 @@ export default function AuthContextProvider({ children } : { children: ReactNode
                 },
                 credentials: "include"
             })
+
             const data = await res.json();
 
             if (!data.success) {
@@ -133,6 +123,7 @@ export default function AuthContextProvider({ children } : { children: ReactNode
             };
 
             setUser(null);
+            setOwner(null);
         } catch (error: any) {
             console.log(error.message);
         }

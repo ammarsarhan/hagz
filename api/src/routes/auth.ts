@@ -8,6 +8,7 @@ import {
     sendUserVerificationEmail,
     sendOwnerVerificationEmail,
     verifyOwner,
+    fetchSessionData,
     signOut
 } from "../controllers/authController";
 
@@ -23,6 +24,7 @@ auth.post('/owner/sign-up', (req, res) => signUpOwner(req, res));
 auth.get('/owner/verify', (req, res) => verifyOwner(req, res));
 auth.post('/owner/verify/send', (req, res) => sendOwnerVerificationEmail(req, res));
 
+auth.get('/session', (req, res) => fetchSessionData(req, res));
 auth.post('/sign-out', (req, res) => signOut(req, res));
 
 export default auth;

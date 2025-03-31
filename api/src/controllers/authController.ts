@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { handleSendUserVerification, verifyUserByToken, signInUserWithCredentials, signUpUserWithCredentials, signUpOwnerWithCredentials, handleSendOwnerVerification, verifyOwnerByToken, signInOwnerWithCredentials } from "../services/authService";
 import { maskEmail, maskPhone } from "../utils/mask";
+import { verify } from "jsonwebtoken";
+import { generateAccessToken, TokenPayloadType } from "../utils/token";
+import { fetchUserById } from "../repositories/userRepository";
+import { fetchOwnerById } from "../repositories/ownerRepository";
 
 export async function signInUser(req: Request, res: Response) {
     try {
@@ -155,6 +159,73 @@ export async function verifyOwner(req: Request, res: Response) {
         res.status(200).json({ success: true, message: "Verified owner account email address successfully." })
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message })
+    }
+}
+
+export async function fetchSessionData(req: Request, res: Response) {
+    try {
+        const refreshToken = req.signedCookies.refreshToken;
+
+        if (!refreshToken) {
+            res.status(400).json({
+                success: false,
+                message: "No refresh token provided. Unable to create a new access token."
+            });
+            return;
+        }
+
+        const decoded = verify(refreshToken, process.env.REFRESH_SECRET_KEY || "") as TokenPayloadType;
+
+        if (typeof decoded !== "object" || !decoded.id || !decoded.type) {
+            res.status(406).json({
+                success: false,
+                message: "Invalid refresh token. Please sign in again."
+            });
+            return;
+        }
+
+        const accessToken = generateAccessToken({ id: decoded.id, type: decoded.type });
+
+        res.cookie("accessToken", accessToken, {
+            maxAge: 1000 * 60 * 30,
+            httpOnly: true,
+            secure: true,
+            sameSite: "lax"
+        });
+
+        let user = null;
+        let owner = null;
+
+        if (decoded.type === "User") {
+            user = await fetchUserById(decoded.id);
+            user = {
+                id: user.id,
+                name: user.name,
+                email: maskEmail(user.email),
+                phone: maskPhone(user.phone),
+                status: user.accountStatus
+            };
+        } else if (decoded.type === "Owner") {
+            owner = await fetchOwnerById(decoded.id);
+            owner = {
+                id: owner.id,
+                name: owner.name,
+                email: maskEmail(owner.email),
+                phone: maskPhone(owner.phone),
+                status: owner.accountStatus
+            };
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Fetched session data successfully.",
+            data: { user, owner }
+        });
+    } catch (error: any) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
     }
 }
 

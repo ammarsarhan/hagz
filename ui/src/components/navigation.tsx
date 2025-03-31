@@ -15,7 +15,7 @@ export function UserNavigation() {
     const isActiveStyle = (pathname: string) => path === pathname ? "text-black hidden cursor-default" : "text-gray-500 hover:underline hidden";
 
     return (
-        <nav className="flex items-center justify-between p-6 relative">
+        <nav className="flex items-center justify-between p-5 relative">
             <div className="flex items-center gap-x-5">
                 <button>
                     <Menu className="w-5 h-5"/>
@@ -26,7 +26,7 @@ export function UserNavigation() {
             </div>
             <div className="flex items-center gap-x-6 text-sm">
                 {
-                    user ? 
+                    user && 
                         <>
                             <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
                             <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
@@ -35,23 +35,26 @@ export function UserNavigation() {
                                 <span>{user.name.slice(0, 1)}</span>
                             </Link>
                         </>
-                    :
-                    owner ?
+                }
+                {
+                    owner &&
                         <Link href={'/owner/dashboard'} className="text-gray-500 hover:underline">Your Dashboard</Link> 
-                    :
-                        <>
-                            <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
-                            <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
-                            <Link href={'/faq'} className={`${isActiveStyle('/faq')} sm:inline`}>FAQs</Link>
-                            <div className="ml-2 flex items-center gap-x-2">
-                                <Link href={'/auth/user/sign-up'} className="hidden sm:inline">
-                                    <Button variant="outline" className="text-xs rounded-sm">Sign Up</Button>
-                                </Link>
-                                <Link href={'/auth/user/log-in'}>
-                                    <Button className="text-xs rounded-sm">Log In</Button>
-                                </Link>
-                            </div>
-                        </>
+                }
+                {
+                    !user && !owner &&
+                    <>
+                        <Link href={'/search'} className={`${isActiveStyle('/search')} [@media(min-width:450px)]:inline`}>Search</Link>
+                        <Link href={'/featured'} className={`${isActiveStyle('/featured')} [@media(min-width:450px)]:inline`}>Featured</Link>
+                        <Link href={'/faq'} className={`${isActiveStyle('/faq')} sm:inline`}>FAQs</Link>
+                        <div className="ml-2 flex items-center gap-x-2">
+                            <Link href={'/auth/user/sign-up'} className="hidden sm:inline">
+                                <Button variant="outline" className="text-xs rounded-sm">Sign Up</Button>
+                            </Link>
+                            <Link href={'/auth/user/log-in'}>
+                                <Button className="text-xs rounded-sm">Log In</Button>
+                            </Link>
+                        </div>
+                    </>
                 }
             </div>
         </nav>
