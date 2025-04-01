@@ -10,7 +10,7 @@ export default function SignOut() {
 
     useEffect(() => {
         signOut();
-        router.back();
+        router.push('/');
     }, [router, signOut]);
 
     return (

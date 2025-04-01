@@ -8,7 +8,7 @@ import Link from "next/link";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 
-export default function Login() {
+export default function Signin() {
     const { signInWithCredentials } = useAuthContext();
     const router = useRouter();
 
@@ -50,7 +50,7 @@ export default function Login() {
             return;
         }
 
-        const res = await signInWithCredentials(parsed.data.email, parsed.data.password, true);
+        const res = await signInWithCredentials(parsed.data.email, parsed.data.password);
 
         if (!res.success) {
             setErrorWithTimeout(res.message);
@@ -64,7 +64,7 @@ export default function Login() {
             return;
         }
 
-        router.back();
+        router.push('/');
     }
 
     return (
@@ -73,7 +73,7 @@ export default function Login() {
                 <span className="text-sm text-center text-red-500">{error}</span>
                 <div className="flex-center flex-col text-center">
                     <h1 className="text-2xl mb-2">Sign In to Hagz</h1>
-                    <p className="text-sm text-gray-500">Log back in to Hagz as an owner to manage pitches and view your current reservations!</p>
+                    <p className="text-sm text-gray-500">Log back in to Hagz as a user to continue finding and reserving pitches!</p>
                 </div>
                 <div className="w-full">
                     <InputGroup 
@@ -96,7 +96,7 @@ export default function Login() {
                     <span className="text-sm" onClick={() => setReveal(!reveal)}>Show Password</span>
                 </div>
                 <Button className="w-1/3 py-3 text-sm" disabled={loading}>{loading ? "Loading..." : "Sign in"}</Button>
-                <span className="text-sm text-gray-500 mt-4">Don&apos;t have an account? Create one now! <Link href="/auth/owner/sign-up" className="text-blue-900">Sign up.</Link></span>
+                <span className="text-sm text-gray-500 mt-4">Don&apos;t have an account? Create one now! <Link href="/auth/user/sign-up" className="text-blue-900">Sign up.</Link></span>
             </form>
             <div>
 
