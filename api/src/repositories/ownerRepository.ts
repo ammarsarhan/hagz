@@ -68,6 +68,15 @@ export async function fetchOwnerById(id: string) {
         const owner = await prisma.owner.findUnique({
             where: {
                 id: id
+            },
+            include: {
+                pitches: {
+                    select: {
+                        id: true,
+                        name: true,
+                        _count: true
+                    }
+                }
             }
         })
 

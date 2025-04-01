@@ -371,7 +371,7 @@ const Form = () => {
             }
             {
                 index == 0 &&
-                <span className="text-sm text-gray-500">Already have an account? <Link href="/auth/owner/log-in" className="text-blue-900">Log in.</Link></span>
+                <span className="text-sm text-gray-500">Already have an account? <Link href="/auth/owner/sign-in" className="text-blue-900">Log in.</Link></span>
             }
         </form>
     )

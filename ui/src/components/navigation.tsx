@@ -7,6 +7,7 @@ import Button from "@/components/button";
 import { useAuthContext } from "@/context/auth";
 
 import { Menu, X } from "lucide-react";
+import { useDashboardContext } from "@/context/dashboard";
 
 export function UserNavigation() {
     const path = usePathname();
@@ -47,7 +48,7 @@ export function UserNavigation() {
                                 <Link href={'/auth/user/sign-up'} className="hidden sm:inline">
                                     <Button variant="outline" className="text-xs rounded-sm">Sign Up</Button>
                                 </Link>
-                                <Link href={'/auth/user/log-in'}>
+                                <Link href={'/auth/user/sign-in'}>
                                     <Button className="text-xs rounded-sm">Log In</Button>
                                 </Link>
                             </div>
@@ -61,6 +62,7 @@ export function UserNavigation() {
 
 export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (open: boolean) => void}) {
     const { owner } = useAuthContext();
+    const { pitch, ground } = useDashboardContext();
     const path = usePathname();
 
     const isActiveStyle = (match: string) => path === match ? "text-black cursor-default" : "text-gray-500 hover:underline";
@@ -94,14 +96,29 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
                             <Link href={"/help"} className={isActiveStyle("/help")}>Help</Link>
                             <Link href={"/notifications"} className={isActiveStyle("/notifications")}>Notifications</Link>
                         </div>
-                        <div className="flex items-center gap-x-3 mt-6 pt-6 border-t-[1px]">
+                        <div className="flex items-center gap-x-3 my-5 pt-6 border-t-[1px]">
                             <div className="flex-center rounded-full w-7 h-7 border-[1px]">
                                 {owner.name.slice(0, 1)}
                             </div>
                             <div className="[&>span]:block">
                                 <span>{owner.name}</span>
-                                <span className="text-gray-500">smth</span>
+                                <span className="text-gray-500">{owner.company ? owner.company : "Individual"}</span>
                             </div>
+                        </div>
+                        <div className="p-2 border-[1px] rounded-md bg-white flex-center flex-col">
+                            {
+                                owner.pitches.length > 0 &&
+                                <div>
+                                    current pitch index: {pitch}
+                                    current ground index: {ground}
+                                </div>
+                            }
+                            {
+                                owner.pitches.length === 0 &&
+                                <div>
+                                    no pitch
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>

@@ -210,9 +210,17 @@ export async function fetchSessionData(req: Request, res: Response) {
             owner = {
                 id: owner.id,
                 name: owner.name,
+                company: owner.company,
                 email: maskEmail(owner.email),
                 phone: maskPhone(owner.phone),
-                status: owner.accountStatus
+                status: owner.accountStatus,
+                pitches: owner.pitches.map(pitch => {
+                    return {
+                        id: pitch.id,
+                        name: pitch.name,
+                        grounds: pitch._count.grounds
+                    }
+                })
             };
         }
 

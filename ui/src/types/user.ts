@@ -5,3 +5,12 @@ export default interface UserType {
     phone: string
     status: "ACTIVE" | "UNVERIFIED" | "SUSPENDED" | "DELETED"
 }
+
+export type OwnerType = UserType & {
+    pitches: {
+        id: string,
+        name: string,
+        grounds: number
+    }[],
+    company?: string
+}

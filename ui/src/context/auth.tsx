@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import UserType from "@/types/user";
+import UserType, { OwnerType } from "@/types/user";
+import DashboardContextProvider from "./dashboard";
 
 interface AuthContextType {
     user: UserType | null,
-    owner: UserType | null,
+    owner: OwnerType | null,
     signInWithCredentials: (email: string, password: string, isOwner?: boolean) => Promise<any>
     signOut: () => Promise<any>
 }
@@ -24,7 +25,7 @@ export function useAuthContext() {
 
 export default function AuthContextProvider({ children } : { children: ReactNode }) {
     const [user, setUser] = useState<UserType | null>(null);
-    const [owner, setOwner] = useState<UserType | null>(null);
+    const [owner, setOwner] = useState<OwnerType | null>(null);
     const [loading, setLoading] = useState(true);
 
     const refreshUser = async () => {
@@ -99,6 +100,7 @@ export default function AuthContextProvider({ children } : { children: ReactNode
                 setUser(result.data);
             };
 
+            await refreshUser();
             return result;
         } catch (error: any) {
             console.log(error.message);
@@ -131,7 +133,13 @@ export default function AuthContextProvider({ children } : { children: ReactNode
 
     return (
         <AuthContext.Provider value={{ user, owner, signInWithCredentials, signOut }}>
-            {!loading && children}
+            {
+                !loading && owner &&
+                <DashboardContextProvider>
+                    { children }
+                </DashboardContextProvider>
+            }
+            { !loading && !owner && children }
         </AuthContext.Provider>
     )
 }
