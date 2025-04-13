@@ -1,12 +1,14 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useState } from "react";
+import { useAuthContext } from "@/context/auth";
 
 interface DashboardContextType {
-    pitch: number;
-    ground: number;
-    setPitch: (pitch: number) => void;
-    setGround: (ground: number) => void;
+    pitchIndex: number;
+    groundIndex: number;
+    setPitchIndex: (pitch: number) => void;
+    incrementGround: () => void;
+    decrementGround: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -22,11 +24,35 @@ export function useDashboardContext() {
 }
 
 export default function DashboardContextProvider({ children } : { children: ReactNode }) {
-    const [pitch, setPitch] = useState(0);
-    const [ground, setGround] = useState(0);
+    const { owner } = useAuthContext();
+
+    if (!owner) {
+        throw new Error("DashboardContextProvider must be used within an AuthContextProvider with a non-null owner.");
+    }
+
+    const [pitchIndex, setPitchIndex] = useState(0);
+    const [groundIndex, setGroundIndex] = useState(0);
+
+    const incrementGround = () => {
+        if (groundIndex < owner.pitches[pitchIndex].grounds - 1) {
+            setGroundIndex(prev => prev + 1);
+        }
+    }
+
+    const decrementGround = () => {
+        if (groundIndex > 0) {
+            setGroundIndex(prev => prev - 1);
+        }
+    }
 
     return (
-        <DashboardContext.Provider value={{ pitch, ground, setPitch, setGround }}>
+        <DashboardContext.Provider value={{ 
+            pitchIndex, 
+            groundIndex, 
+            setPitchIndex, 
+            incrementGround, 
+            decrementGround 
+        }}>
             {children}
         </DashboardContext.Provider>
     )

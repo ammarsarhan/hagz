@@ -24,11 +24,11 @@ export default function ProfileAvatar() {
                             <Book className="w-4 h-4"/>
                             <span>Reservations</span>
                         </Link>
-                        <Link className="flex items-center gap-x-2 text-gray-700 px-4 py-2 hover:bg-gray-100 mx-1 mt-1" href="/user/profile/settings">
+                        <Link className="flex items-center gap-x-2 text-gray-700 px-4 py-2 hover:bg-gray-100 mx-1 mt-1" href="/account/settings">
                             <Settings className="w-4 h-4"/>
                             <span>Settings</span>
                         </Link>
-                        <Link className="flex items-center gap-x-2 text-gray-700 px-4 py-2 hover:bg-gray-100 mx-1 mb-1" href="/notifications">
+                        <Link className="flex items-center gap-x-2 text-gray-700 px-4 py-2 hover:bg-gray-100 mx-1 mb-1" href="/account/notifications">
                             <Bell className="w-4 h-4"/>
                             <span>Notifications</span>
                         </Link>

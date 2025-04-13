@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { redirect } from "next/navigation";
 import { OwnerNavigation, UserNavigation } from "@/components/navigation";
 import { useAuthContext } from "@/context/auth";
-import { useState } from "react";
 
-export default function UserLayout({
+export default function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -12,8 +13,12 @@ export default function UserLayout({
   const { owner } = useAuthContext();
   const [open, setOpen] = useState(true);
 
+  if (owner) {
+    redirect("/dashboard");
+  }
+
   return (
-    <div className={`flex h-screen ${owner ? "flex-row" : "flex-col"}`}>
+    <div className="flex flex-col h-screen">
       {
         owner ? 
         <OwnerNavigation open={open} setOpen={setOpen}/> : 

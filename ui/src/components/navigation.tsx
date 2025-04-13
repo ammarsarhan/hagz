@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 
 import Button from "@/components/button";
 import { useAuthContext } from "@/context/auth";
-
-import { Menu, X } from "lucide-react";
 import { useDashboardContext } from "@/context/dashboard";
+
+import { Menu, Plus, X } from "lucide-react";
 
 export function UserNavigation() {
     const path = usePathname();
@@ -62,63 +62,66 @@ export function UserNavigation() {
 
 export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (open: boolean) => void}) {
     const { owner } = useAuthContext();
-    const { pitch, ground } = useDashboardContext();
+    const { pitchIndex, groundIndex } = useDashboardContext();
     const path = usePathname();
 
     const isActiveStyle = (match: string) => path === match ? "text-black cursor-default" : "text-gray-500 hover:underline";
 
     if (owner) {
+        const pitch = owner.pitches[pitchIndex];
+        const ground = `Ground ${groundIndex + 1}`;
+
         return (
             <nav className={`w-full h-screen fixed top-0 left-0 bg-[#fafafa] md:w-72 md:static md:border-r-[1px] md:block ${open ? "" : "hidden"}`}>
                 <div className="flex flex-col h-screen justify-between p-6 md:p-5 text-sm [&_a]:w-fit [&_a]:hover:underline">
                     <div>
                         <div className="flex items-center justify-between gap-x-16">
-                            <Link href={"/"}>
+                            <Link href={"/dashboard"}>
                                 <span className="font-semibold text-base text-black!">Hagz</span>
                             </Link>
                             <button onClick={() => setOpen(false)} className="md:hidden">
                                 <X className="w-4 h-4"/>
                             </button>
                         </div>
-                        <div className="flex flex-col gap-y-5 mt-8">
-                            <Link href={"/reservations"} className={isActiveStyle("/reservations")}>Reservations</Link>
-                            <Link href={"/payments"} className={isActiveStyle("/payments")}>Payments</Link>
-                            <Link href={"/analytics"} className={isActiveStyle("/analytics")}>Analytics</Link>
-                            <Link href={"/grounds"} className={isActiveStyle("/grounds")}>Manage Grounds</Link>
-                            <Link href={"/pitch"} className={isActiveStyle("/pitch")}>Pitch Settings</Link>
+                        {
+                            pitch ?
+                            <div className="mt-5 [&>span]:block">
+                                <span>{pitch.name}</span>
+                                <span>{ground}</span>
+                            </div> :
+                            <div className="mt-5">
+                                <Link href={"/dashboard/pitch/create"} className="text-blue-800 text-underline flex items-center gap-x-1.5">
+                                    <Plus className="w-4 h-4 text-blue-800"/>
+                                    Create New Pitch
+                                </Link>
+                            </div>
+                        }
+                        <div className="flex flex-col gap-y-5 mt-6">
+                            <Link href={"/dashboard/reservations"} className={isActiveStyle("/reservations")}>Reservations</Link>
+                            <Link href={"/dashboard/payments"} className={isActiveStyle("/payments")}>Payments</Link>
+                            <Link href={"/dashboard/analytics"} className={isActiveStyle("/analytics")}>Analytics</Link>
+                            <Link href={"/dashboard/pitch/grounds"} className={isActiveStyle("/pitch/grounds")}>Manage Grounds</Link>
+                            <Link href={"/dashboard/pitch"} className={isActiveStyle("/pitch")}>Pitch Settings</Link>
                         </div>
                         <div className="flex flex-col gap-y-5 mt-6 pt-6 border-t-[1px]">
-                            <Link href={"/settings"} className={isActiveStyle("/settings")}>Account Settings</Link>
+                            <Link href={"/account/settings"} className={isActiveStyle("/settings")}>Account Settings</Link>
                         </div>
                     </div>
                     <div>
                         <div className="flex flex-col gap-y-5">
                             <Link href={"/help"} className={isActiveStyle("/help")}>Help</Link>
-                            <Link href={"/notifications"} className={isActiveStyle("/notifications")}>Notifications</Link>
+                            <Link href={"/account/notifications"} className={isActiveStyle("/notifications")}>Notifications</Link>
                         </div>
-                        <div className="flex items-center gap-x-3 my-5 pt-6 border-t-[1px]">
-                            <div className="flex-center rounded-full w-7 h-7 border-[1px]">
-                                {owner.name.slice(0, 1)}
-                            </div>
-                            <div className="[&>span]:block">
-                                <span>{owner.name}</span>
-                                <span className="text-gray-500">{owner.company ? owner.company : "Individual"}</span>
-                            </div>
-                        </div>
-                        <div className="p-2 border-[1px] rounded-md bg-white flex-center flex-col">
-                            {
-                                owner.pitches.length > 0 &&
-                                <div>
-                                    current pitch index: {pitch}
-                                    current ground index: {ground}
+                        <div className="flex flex-col gap-y-6 mt-5 md:mb-2 pt-6 border-t-[1px]">    
+                            <div className="flex items-center gap-x-3">
+                                <div className="flex-center rounded-full w-7 h-7 border-[1px]">
+                                    {owner.name.slice(0, 1)}
                                 </div>
-                            }
-                            {
-                                owner.pitches.length === 0 &&
-                                <div>
-                                    no pitch
+                                <div className="[&>span]:block">
+                                    <span>{owner.name}</span>
+                                    <span className="text-gray-500">{ owner.company ? owner.company : "Individual" }</span>
                                 </div>
-                            }
+                            </div>
                         </div>
                     </div>
                 </div>
