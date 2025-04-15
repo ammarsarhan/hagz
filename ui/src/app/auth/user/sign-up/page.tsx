@@ -120,7 +120,7 @@ const Third = () => {
 
     const formatCount = (time: number) => {
         return time < 10 ? `00:0${time}` : `00:${time}`;
-    }
+    };
 
     const sendEmail = useCallback(async (email: string) => {
         setLoading(true);

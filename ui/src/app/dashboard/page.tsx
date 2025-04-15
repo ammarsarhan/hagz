@@ -12,9 +12,7 @@ export default function Dashboard() {
     
     return (
         <div>
-            <h1>
-                {owner.name}
-            </h1>
+            owner dashboard home
         </div>
     )
 }

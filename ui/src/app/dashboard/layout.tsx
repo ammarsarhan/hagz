@@ -4,6 +4,7 @@ import { useState } from "react";
 import { redirect } from "next/navigation";
 import { OwnerNavigation } from "@/components/navigation";
 import { useAuthContext } from "@/context/auth";
+import Breadcrumbs from "@/components/breadcrumbs";
 
 export default function UserLayout({
   children,
@@ -19,8 +20,11 @@ export default function UserLayout({
 
     return (
         <div className="flex h-screen">
-            <OwnerNavigation open={open} setOpen={setOpen}/>    
-        {children}
+          <OwnerNavigation open={open} setOpen={setOpen}/>
+          <div className="w-full">
+            <Breadcrumbs/>
+            {children}
+          </div>  
         </div>
     );
 }
