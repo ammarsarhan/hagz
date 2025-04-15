@@ -7,7 +7,7 @@ import Button from "@/components/button";
 import { useAuthContext } from "@/context/auth";
 import { useDashboardContext } from "@/context/dashboard";
 
-import { Menu, Plus, X } from "lucide-react";
+import { Menu, Plus, X, LogOut } from "lucide-react";
 
 export function UserNavigation() {
     const path = usePathname();
@@ -90,7 +90,7 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
                                 <span>{ground}</span>
                             </div> :
                             <div className="mt-5">
-                                <Link href={"/dashboard/pitch/create"} className="text-blue-800 text-underline flex items-center gap-x-1.5">
+                                <Link href={"/dashboard/pitches/create"} className="text-blue-800 text-underline flex items-center gap-x-1.5">
                                     <Plus className="w-4 h-4 text-blue-800"/>
                                     Create New Pitch
                                 </Link>
@@ -101,7 +101,7 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
                             <Link href={"/dashboard/payments"} className={isActiveStyle("/dashboard/payments")}>Payments</Link>
                             <Link href={"/dashboard/analytics"} className={isActiveStyle("/dashboard/analytics")}>Analytics</Link>
                             <Link href={"/dashboard/pitch/grounds"} className={isActiveStyle("/dashboard/pitch/grounds")}>Manage Grounds</Link>
-                            <Link href={"/dashboard/pitch"} className={isActiveStyle("/dashboard/pitch")}>Pitch Settings</Link>
+                            <Link href={"/dashboard/pitch/settings"} className={isActiveStyle("/dashboard/pitch/settings")}>Pitch Settings</Link>
                         </div>
                         <div className="flex flex-col gap-y-5 mt-6 pt-6 border-t-[1px]">
                             <Link href={"/account/settings"} className={isActiveStyle("/account/settings")}>Account Settings</Link>
@@ -112,15 +112,20 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
                             <Link href={"/help"} className="text-gray-500 hover:underline">Help</Link>
                             <Link href={"/account/notifications"} className={isActiveStyle("/account/notifications")}>Notifications</Link>
                         </div>
-                        <div className="flex flex-col gap-y-6 mt-5 md:mb-2 pt-6 border-t-[1px]">    
-                            <div className="flex items-center gap-x-3">
-                                <div className="flex-center rounded-full w-7 h-7 border-[1px]">
-                                    {owner.name.slice(0, 1)}
+                        <div className="flex flex-col gap-y-6 mt-5 md:mb-2 pt-6 border-t-[1px]">
+                            <div className="flex items-center justify-between gap-x-8">
+                                <div className="flex items-center gap-x-3">
+                                    <div className="flex-center rounded-full w-7 h-7 border-[1px]">
+                                        {owner.name.slice(0, 1)}
+                                    </div>
+                                    <div className="[&>span]:block">
+                                        <span>{owner.name}</span>
+                                        <span className="text-gray-500">{ owner.company ? owner.company : "Individual" }</span>
+                                    </div>
                                 </div>
-                                <div className="[&>span]:block">
-                                    <span>{owner.name}</span>
-                                    <span className="text-gray-500">{ owner.company ? owner.company : "Individual" }</span>
-                                </div>
+                                <Link href={"/auth/sign-out"}>
+                                    <LogOut className="w-4 h-4 text-gray-500"/>
+                                </Link>
                             </div>
                         </div>
                     </div>
