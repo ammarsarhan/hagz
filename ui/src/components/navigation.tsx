@@ -97,20 +97,20 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
                             </div>
                         }
                         <div className="flex flex-col gap-y-5 mt-6">
-                            <Link href={"/dashboard/reservations"} className={isActiveStyle("/reservations")}>Reservations</Link>
-                            <Link href={"/dashboard/payments"} className={isActiveStyle("/payments")}>Payments</Link>
-                            <Link href={"/dashboard/analytics"} className={isActiveStyle("/analytics")}>Analytics</Link>
-                            <Link href={"/dashboard/pitch/grounds"} className={isActiveStyle("/pitch/grounds")}>Manage Grounds</Link>
-                            <Link href={"/dashboard/pitch"} className={isActiveStyle("/pitch")}>Pitch Settings</Link>
+                            <Link href={"/dashboard/reservations"} className={isActiveStyle("/dashboard/reservations")}>Reservations</Link>
+                            <Link href={"/dashboard/payments"} className={isActiveStyle("/dashboard/payments")}>Payments</Link>
+                            <Link href={"/dashboard/analytics"} className={isActiveStyle("/dashboard/analytics")}>Analytics</Link>
+                            <Link href={"/dashboard/pitch/grounds"} className={isActiveStyle("/dashboard/pitch/grounds")}>Manage Grounds</Link>
+                            <Link href={"/dashboard/pitch"} className={isActiveStyle("/dashboard/pitch")}>Pitch Settings</Link>
                         </div>
                         <div className="flex flex-col gap-y-5 mt-6 pt-6 border-t-[1px]">
-                            <Link href={"/account/settings"} className={isActiveStyle("/settings")}>Account Settings</Link>
+                            <Link href={"/account/settings"} className={isActiveStyle("/account/settings")}>Account Settings</Link>
                         </div>
                     </div>
                     <div>
                         <div className="flex flex-col gap-y-5">
-                            <Link href={"/help"} className={isActiveStyle("/help")}>Help</Link>
-                            <Link href={"/account/notifications"} className={isActiveStyle("/notifications")}>Notifications</Link>
+                            <Link href={"/help"} className="text-gray-500 hover:underline">Help</Link>
+                            <Link href={"/account/notifications"} className={isActiveStyle("/account/notifications")}>Notifications</Link>
                         </div>
                         <div className="flex flex-col gap-y-6 mt-5 md:mb-2 pt-6 border-t-[1px]">    
                             <div className="flex items-center gap-x-3">

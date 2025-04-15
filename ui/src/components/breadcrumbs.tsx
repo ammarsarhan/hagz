@@ -26,7 +26,7 @@ export default function Breadcrumbs() {
                         return (
                             <Fragment key={index}>         
                                 <Link href={location} className="text-gray-500 hover:underline">{label}</Link>
-                                <span>/</span>
+                                <span>&gt;</span>
                             </Fragment>
                         )
                     }
