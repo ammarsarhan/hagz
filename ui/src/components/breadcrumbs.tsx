@@ -9,7 +9,7 @@ export default function Breadcrumbs() {
     const blocks = path.split("/").filter(value => value != "");
 
     return (
-        <div className="flex items-center gap-x-2 px-4 py-3 my-3 text-sm">
+        <div className="flex items-center gap-x-2 mx-6 my-3 py-3 text-sm">
             {
                 blocks.map((name, index) => {
                     const last = index === blocks.length - 1;

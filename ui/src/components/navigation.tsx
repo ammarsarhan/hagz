@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Button from "@/components/button";
+import { CreateModal } from "@/components/dashboard/modals";
 import { useAuthContext } from "@/context/auth";
 import { useDashboardContext } from "@/context/dashboard";
 
 import { Menu, Plus, X, LogOut } from "lucide-react";
+import { useState } from "react";
 
 export function UserNavigation() {
     const path = usePathname();
@@ -65,6 +67,8 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
     const { pitchIndex, groundIndex } = useDashboardContext();
     const path = usePathname();
 
+    const [createOpen, setCreateOpen] = useState(false);
+
     const isActiveStyle = (match: string) => path === match ? "text-black cursor-default" : "text-gray-500 hover:underline";
 
     if (owner) {
@@ -72,65 +76,71 @@ export function OwnerNavigation({ open, setOpen } : { open: boolean, setOpen: (o
         const ground = `Ground ${groundIndex + 1}`;
 
         return (
-            <nav className={`w-full h-screen fixed top-0 left-0 bg-[#fafafa] md:w-72 md:static md:border-r-[1px] md:block ${open ? "" : "hidden"}`}>
-                <div className="flex flex-col h-screen justify-between p-6 md:p-5 text-sm [&_a]:w-fit [&_a]:hover:underline">
-                    <div>
-                        <div className="flex items-center justify-between gap-x-16">
-                            <Link href={"/dashboard"}>
-                                <span className="font-semibold text-base text-black!">Hagz</span>
-                            </Link>
-                            <button onClick={() => setOpen(false)} className="md:hidden">
-                                <X className="w-4 h-4"/>
-                            </button>
-                        </div>
-                        {
-                            pitch ?
-                            <div className="mt-5 [&>span]:block">
-                                <span>{pitch.name}</span>
-                                <span>{ground}</span>
-                            </div> :
-                            <div className="mt-5">
-                                <Link href={"/dashboard/pitches/create"} className="text-blue-800 text-underline flex items-center gap-x-1.5">
-                                    <Plus className="w-4 h-4 text-blue-800"/>
-                                    Create New Pitch
+            <>
+                {
+                    createOpen &&
+                    <CreateModal close={() => setCreateOpen(false)}/>
+                }
+                <nav className={`w-full h-screen fixed top-0 left-0 bg-[#fafafa] md:w-72 md:static md:border-r-[1px] md:block ${open ? "" : "hidden"}`}>
+                    <div className="flex flex-col h-screen justify-between p-6 md:p-5 text-sm [&_a]:w-fit [&_a]:hover:underline">
+                        <div>
+                            <div className="flex items-center justify-between gap-x-16">
+                                <Link href={"/dashboard"}>
+                                    <span className="font-semibold text-base text-black!">Hagz</span>
                                 </Link>
+                                <button onClick={() => setOpen(false)} className="md:hidden">
+                                    <X className="w-4 h-4"/>
+                                </button>
                             </div>
-                        }
-                        <div className="flex flex-col gap-y-5 mt-6">
-                            <Link href={"/dashboard/reservations"} className={isActiveStyle("/dashboard/reservations")}>Reservations</Link>
-                            <Link href={"/dashboard/payments"} className={isActiveStyle("/dashboard/payments")}>Payments</Link>
-                            <Link href={"/dashboard/analytics"} className={isActiveStyle("/dashboard/analytics")}>Analytics</Link>
-                            <Link href={"/dashboard/pitch/grounds"} className={isActiveStyle("/dashboard/pitch/grounds")}>Manage Grounds</Link>
-                            <Link href={"/dashboard/pitch/settings"} className={isActiveStyle("/dashboard/pitch/settings")}>Pitch Settings</Link>
-                        </div>
-                        <div className="flex flex-col gap-y-5 mt-6 pt-6 border-t-[1px]">
-                            <Link href={"/account/settings"} className={isActiveStyle("/account/settings")}>Account Settings</Link>
-                        </div>
-                    </div>
-                    <div>
-                        <div className="flex flex-col gap-y-5">
-                            <Link href={"/help"} className="text-gray-500 hover:underline">Help</Link>
-                            <Link href={"/account/notifications"} className={isActiveStyle("/account/notifications")}>Notifications</Link>
-                        </div>
-                        <div className="flex flex-col gap-y-6 mt-5 md:mb-2 pt-6 border-t-[1px]">
-                            <div className="flex items-center justify-between gap-x-8">
-                                <div className="flex items-center gap-x-3">
-                                    <div className="flex-center rounded-full w-7 h-7 border-[1px]">
-                                        {owner.name.slice(0, 1)}
-                                    </div>
-                                    <div className="[&>span]:block">
-                                        <span>{owner.name}</span>
-                                        <span className="text-gray-500">{ owner.company ? owner.company : "Individual" }</span>
-                                    </div>
+                            {
+                                pitch ?
+                                <div className="mt-5 [&>span]:block">
+                                    <span>{pitch.name}</span>
+                                    <span>{ground}</span>
+                                </div> :
+                                <div className="mt-5">
+                                    <button className="text-blue-800 text-underline flex items-center gap-x-1.5" onClick={() => setCreateOpen(true)}>
+                                        <Plus className="w-4 h-4 text-blue-800"/>
+                                        Create New Pitch
+                                    </button>
                                 </div>
-                                <Link href={"/auth/sign-out"}>
-                                    <LogOut className="w-4 h-4 text-gray-500"/>
-                                </Link>
+                            }
+                            <div className="flex flex-col gap-y-5 mt-6">
+                                <Link href={"/dashboard/reservations"} className={isActiveStyle("/dashboard/reservations")}>Reservations</Link>
+                                <Link href={"/dashboard/payments"} className={isActiveStyle("/dashboard/payments")}>Payments</Link>
+                                <Link href={"/dashboard/analytics"} className={isActiveStyle("/dashboard/analytics")}>Analytics</Link>
+                                <Link href={"/dashboard/pitch/grounds"} className={isActiveStyle("/dashboard/pitch/grounds")}>Manage Grounds</Link>
+                                <Link href={"/dashboard/pitch/settings"} className={isActiveStyle("/dashboard/pitch/settings")}>Pitch Settings</Link>
+                            </div>
+                            <div className="flex flex-col gap-y-5 mt-6 pt-6 border-t-[1px]">
+                                <Link href={"/account/settings"} className={isActiveStyle("/account/settings")}>Account Settings</Link>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex flex-col gap-y-5">
+                                <Link href={"/help"} className="text-gray-500 hover:underline">Help</Link>
+                                <Link href={"/account/notifications"} className={isActiveStyle("/account/notifications")}>Notifications</Link>
+                            </div>
+                            <div className="flex flex-col gap-y-6 mt-5 md:mb-2 pt-6 border-t-[1px]">
+                                <div className="flex items-center justify-between gap-x-8">
+                                    <div className="flex items-center gap-x-3">
+                                        <div className="flex-center rounded-full w-7 h-7 border-[1px]">
+                                            {owner.name.slice(0, 1)}
+                                        </div>
+                                        <div className="[&>span]:block">
+                                            <span>{owner.name}</span>
+                                            <span className="text-gray-500">{ owner.company ? owner.company : "Individual" }</span>
+                                        </div>
+                                    </div>
+                                    <Link href={"/auth/sign-out"}>
+                                        <LogOut className="w-4 h-4 text-gray-500"/>
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            </>
         )
     }
 }
