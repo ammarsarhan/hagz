@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  db:
+    build: .    
+    container_name: api
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d db"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+
+volumes:
+  postgres_data:

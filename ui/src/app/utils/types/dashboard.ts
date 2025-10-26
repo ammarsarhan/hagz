@@ -1,0 +1,1 @@
+export type OnboardingStage = "NO_PITCH" | "PITCH_DRAFT" | "PITCH_PENDING" | "PUBLISHING_REQUIRED" | "ACTIVE" | "INACTIVE";

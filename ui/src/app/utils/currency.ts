@@ -1,0 +1,1 @@
+export const currencyFormat = new Intl.NumberFormat("en-EG", { style: 'currency', currency: "EGP" });

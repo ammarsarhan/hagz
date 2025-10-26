@@ -1,0 +1,545 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================= Enums =================
+
+enum UserStatus {
+  UNVERIFIED
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum PitchStatus {
+  DRAFT
+  PENDING
+  REJECTED
+  APPROVED
+  LIVE
+  ARCHIVED
+  DELETED
+  SUSPENDED
+}
+
+enum GroundStatus {
+  LIVE
+  ARCHIVED
+  MAINTENANCE
+  DELETED
+}
+
+enum PayoutRate {
+  MONTHLY
+  BIWEEKLY
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum SignInProvider {
+  EMAIL
+  GOOGLE
+  META
+}
+
+enum SignInMethod {
+  EMAIL
+  PASSWORD
+  OAUTH
+}
+
+enum Language {
+  EN
+  AR
+  FR
+}
+
+enum Country {
+  EG
+  SA
+  AE
+}
+
+enum Currency {
+  EGP
+  SAR
+  AED
+  USD
+  EUR
+}
+
+enum DateType {
+  GREGORIAN
+  HIJRI
+}
+
+enum ContactMethod {
+  EMAIL
+  PHONE
+}
+
+enum BillingMethod {
+  CASH
+  CREDIT_CARD
+  WALLET
+}
+
+enum ScheduleExceptionType {
+  DEFAULT
+  RECURRING
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  MONTHLY
+}
+
+enum ScheduleExceptionTarget {
+  PITCH
+  COMBINATION
+  GROUND
+}
+
+enum GroundSurfaceType {
+  FG
+  AG
+  TF
+  HW
+}
+
+enum GroundSize {
+  FIVE
+  SEVEN
+  ELEVEN
+}
+
+enum CombinationSize {
+  SEVEN
+  NINE
+  ELEVEN
+}
+
+enum Amenity {
+  LIGHTING
+  SEATING
+  LOCKER_ROOMS
+  SHOWERS
+  TOILETS
+  PARKING
+  AIR_CONDITIONED
+  HEATING
+  SOUND_SYSTEM
+  WATER_FOUNTAIN
+  WIFI
+  BALL_INCLUDED
+  EQUIPMENT_RENTAL
+  FIRST_AID
+  REFEREE_SERVICE
+  CAFETERIA
+}
+
+enum AccessRole {
+  UNAUTHORIZED
+  VIEW
+  WRITE
+}
+
+// ================= Models =================
+
+model Guest {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String  @unique
+  notes     String?
+
+  bookings Booking[] @relation("guest")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id              String           @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?          @unique
+  phone           String?          @unique
+  verifiedMethods ContactMethod[]
+  accounts        Account[]
+  preferences     UserPreferences?
+  status          UserStatus       @default(UNVERIFIED)
+
+  issuedBookings Booking[] @relation("issuer")
+  bookings       Booking[] @relation("user")
+
+  manager Manager?
+  owner   Owner?
+
+  verificationToken     String?   @unique
+  verificationExpiresAt DateTime?
+  verificationSentAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Manager {
+  id String @id @default(cuid())
+
+  pitches     Pitch[]
+  permissions ManagerPermissions[]
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Owner {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  pitches     Pitch[]
+  invitations Invitation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id           String         @id @default(cuid())
+  provider     SignInProvider
+  providerId   String
+  signInMethod SignInMethod
+  password     String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerId], name: "accountId")
+}
+
+model UserPreferences {
+  id            String        @id @default(cuid())
+  language      Language      @default(EN)
+  country       Country       @default(EG)
+  dateType      DateType      @default(GREGORIAN)
+  contactMethod ContactMethod @default(EMAIL)
+  billingMethod BillingMethod @default(CASH)
+  currency      Currency      @default(EGP)
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ================= Invitations =================
+
+model Invitation {
+  id         String           @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String
+  message    String?
+  status     InvitationStatus @default(PENDING)
+  token      String           @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  issuerId String
+  issuer   Owner  @relation(fields: [issuerId], references: [id], onDelete: Cascade)
+
+  pitchId String
+  pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ================= Pitch =================
+
+model Pitch {
+  id             String    @id @default(cuid())
+  name           String
+  taxId          String?
+  description    String
+  street         String
+  area           String
+  city           String
+  country        Country
+  latitude       Float
+  longitude      Float
+  googleMapsLink String
+  images         String[]
+  isFeatured     Boolean   @default(false)
+  amenities      Amenity[]
+  basePrice      Int       @default(100)
+
+  status             PitchStatus         @default(DRAFT)
+  settings           PitchSettings?
+  layout             Layout?
+  schedule           Schedule[]
+
+  ownerId String
+  owner   Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  managers    Manager[]
+  permissions ManagerPermissions[]
+  invitations Invitation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PitchSettings {
+  id                String        @id @default(cuid())
+  automaticBookings Boolean       @default(true)
+  depositFee        Int?          @default(0)
+  paymentDeadline   Int           @default(3)
+  minBookingHours   Int           @default(1)
+  maxBookingHours   Int           @default(2)
+  cancellationGrace Int          @default(1)
+  cancellationFee   Int           @default(0)
+  noShowFee         Int           @default(0)
+  advanceBooking    Int           @default(2)
+  peakHourSurcharge Int           @default(0)
+  offPeakDiscount   Int           @default(0)
+  payoutRate        PayoutRate    @default(MONTHLY)
+  payoutMethod      BillingMethod @default(CASH)
+
+  pitchId String @unique
+  pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ================= Layout =================
+
+model Layout {
+  id           String        @id @default(cuid())
+  grounds      Ground[]
+  combinations Combination[]
+
+  pitchId String @unique
+  pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Combination {
+  id          String            @id @default(cuid())
+  name        String
+  size        CombinationSize
+  surfaceType GroundSurfaceType
+  description String?
+  price       Int
+
+  layoutId String
+  layout   Layout @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+
+  grounds    Ground[]
+  settings   CombinationSettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CombinationSettings {
+  id                String @id @default(cuid())
+  minBookingHours   Int?
+  maxBookingHours   Int?
+  cancellationFee   Int?
+  noShowFee         Int?
+  advanceBooking    Int?
+  paymentDeadline   Int?
+  peakHourSurcharge Int?
+  offPeakDiscount   Int?
+
+  combinationId String      @unique
+  combination   Combination @relation(fields: [combinationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ================= Ground =================
+
+model Ground {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  surfaceType GroundSurfaceType
+  size        GroundSize
+  status      GroundStatus      @default(LIVE)
+  price       Int
+
+  images String[]
+
+  layoutId String
+  layout   Layout @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+
+  combinations Combination[]
+  settings     GroundSettings?
+  bookings     Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GroundSettings {
+  id                String @id @default(cuid())
+  minBookingHours   Int?
+  maxBookingHours   Int?
+  cancellationFee   Int?
+  noShowFee         Int?
+  advanceBooking    Int?
+  paymentDeadline   Int?
+  peakHourSurcharge Int?
+  offPeakDiscount   Int?
+
+  groundId String @unique
+  ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ================= Schedule =================
+
+model Schedule {
+  id           String   @id @default(cuid())
+  dayOfWeek    Int
+  openTime     Int
+  closeTime    Int
+  peakHours    Int[]
+  offPeakHours Int[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  pitchId String
+  Pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+}
+
+model ScheduleException {
+  id          String                  @id @default(cuid())
+  type        ScheduleExceptionType
+  target      ScheduleExceptionTarget
+  targetId    String
+  startDate   DateTime
+  endDate     DateTime
+  reason      String?
+  issuerId    String?
+
+  // Recurrence fields (optional)
+  frequency   RecurrenceFrequency?
+  interval    Int?
+  byDay       Int[]
+  until       DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([target, targetId])
+}
+
+// ================= Permissions =================
+
+model ManagerPermissions {
+  bookings           AccessRole @default(WRITE)
+  payments           AccessRole @default(UNAUTHORIZED)
+  analytics          AccessRole @default(VIEW)
+  settings           AccessRole @default(VIEW)
+  schedule           AccessRole @default(VIEW)
+  scheduleExceptions AccessRole @default(WRITE)
+
+  managerId String
+  manager   Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  pitchId String
+  pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  @@id([managerId, pitchId], name: "id")
+}
+
+// ================= Bookings =================
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONFIRMED
+  CANCELLED
+  IN_PROGRESS
+  NO_SHOW
+  COMPLETED
+  EXPIRED
+}
+
+enum BookingSource {
+  IN_PERSON
+  PHONE
+  PLATFORM
+  OTHER
+}
+
+model Booking {
+  id            String           @id @default(cuid())
+  referenceCode String           @unique
+  status        BookingStatus    @default(PENDING)
+  source        BookingSource    @default(PLATFORM)
+  recurrenceId  String?
+  recurrence    RecurringBooking? @relation(fields: [recurrenceId], references: [id])
+
+  issuerId String
+  issuer   User   @relation("issuer", fields: [issuerId], references: [id])
+
+  userId  String?
+  user    User?   @relation("user", fields: [userId], references: [id])
+  guestId String?
+  guest   Guest?  @relation("guest", fields: [guestId], references: [id])
+
+  grounds        Ground[]
+
+  approvalDeadline DateTime?
+  paymentDeadline DateTime
+  cancellationDeadline DateTime
+  startDate   DateTime
+  endDate     DateTime
+  totalPrice  Int
+  depositPaid Boolean  @default(false)
+
+  cancelledAt DateTime?
+  cancellationReason String?
+  notes              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RecurringBooking {
+  id               String               @id @default(cuid())
+  frequency        RecurrenceFrequency?
+  interval         Int?
+  byDay            Int[]
+  recurrenceEndsAt DateTime?
+
+  bookings Booking[]
+}
