@@ -1,6 +1,16 @@
 import { FaCheck } from "react-icons/fa6";
 
-export function PathLink({ isSelected, icon, title, description, className, onClick } : { isSelected: boolean, icon?: React.ReactNode, title: string, description?: string, className?: string, onClick: () => void }) {
+export function PathLink({ isSelected, icon, title, description, className, onClick, disabled = false } : { isSelected: boolean, icon?: React.ReactNode, title: string, description?: string, className?: string, onClick: () => void, disabled?: boolean }) {
+    if (disabled) {
+        return (
+            <div
+                className={`px-4 py-3 border-[1px] rounded-md flex bg-white border-gray-200 items-center justify-center cursor-not-allowed ${className ?? ""}`} 
+            >
+                <span className="font-medium text-gray-500 block text-center">{title}</span>
+            </div>
+        );
+    }
+
     return (
         <button 
             onClick={onClick} 

@@ -1,19 +1,20 @@
 import { useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import z from "zod";
+import { v4 as randomUUID } from "uuid";
+
+import useFormContext from "@/app/context/useFormContext";
+import Input from "@/app/components/dashboard/Input";
+import { PathLink } from "@/app/components/base/PathLink";
+import { CombinationType, GroundType } from "@/app/dashboard/pitches/create/steps/Layout";
+import { createCombinationKey, doesCombinationExist } from "@/app/utils/layout";
 
 import { IoGridOutline, IoSettingsOutline } from "react-icons/io5";
 import { IoIosClose, IoIosInformationCircleOutline, IoMdPeople } from "react-icons/io";
 import { CgDetailsMore } from "react-icons/cg";
-
-import { v4 as randomUUID } from "uuid";
-import useFormContext from "@/app/context/useFormContext";
-import { CombinationType, GroundType } from "@/app/dashboard/pitches/create/steps/Layout";
-import { LuLayoutDashboard } from "react-icons/lu";
-import z from "zod";
-import Input from "@/app/components/dashboard/Input";
-import { createCombinationKey, doesCombinationExist } from "@/app/utils/layout";
 import { MdEmojiPeople } from "react-icons/md";
+import { LuLayoutDashboard } from "react-icons/lu";
 import { FaPeopleGroup } from "react-icons/fa6";
-import { PathLink } from "@/app/components/base/PathLink";
 
 // Start of combinationModal steps
 const CombinationModalGrounds = ({ 
@@ -96,7 +97,7 @@ const CombinationModalGrounds = ({
             </div>
         </>
     )
-}
+};
 
 const CombinationModalSize = ({ size, setSize } : { size: "SEVEN" | "NINE" | "ELEVEN", setSize: (value: "SEVEN" | "NINE" | "ELEVEN") => void }) => {
     const sizeMap = new Map<string, number>([
@@ -135,7 +136,7 @@ const CombinationModalSize = ({ size, setSize } : { size: "SEVEN" | "NINE" | "EL
                 {
                     options.map((option, index) => {
                         return (
-                            <div key={index} className="w-full text-xs">
+                            <div key={index} className="w-full text-[0.8rem]">
                                 <PathLink isSelected={index === sizeMap.get(size)} icon={option.icon} title={option.label} description={option.description} className="w-full!" onClick={() => setSize(option.value as "SEVEN" | "NINE" | "ELEVEN")} />
                             </div>
                         )
@@ -145,7 +146,7 @@ const CombinationModalSize = ({ size, setSize } : { size: "SEVEN" | "NINE" | "EL
             <p className="text-[0.8125rem] my-6 text-gray-600">{options[sizeMap.get(size)!].analysis}</p>
         </>
     )
-}
+};
 
 const CombinationModalDetails = ({
     name,
@@ -377,8 +378,6 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
             setErrors({});
         }, 3000);
     };
-
-    if (!isOpen) return null;
     
     const addCombinationModalGroundsProps = {
         setName,
@@ -450,7 +449,7 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
             case 0:
                 {
                     const schema = z.object({
-                        grounds: z.array(z.any()).min(2, "You need at least 2 grounds to create a combination.").max(5, "You can select up to 5 grounds at most to create a combination.")
+                        grounds: z.array(z.uuid()).min(2, "You need at least 2 grounds to create a combination.").max(5, "You can select up to 5 grounds at most to create a combination.")
                     });
 
                     const parsed = schema.safeParse({
@@ -572,14 +571,14 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
                         paymentDeadline: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 24), {
-                                message: "Payment deadline must be between 0 and 24 hours.",
+                            .refine((val) => val === null || (val >= 2 && val <= 24), {
+                                message: "Payment deadline must be between 2 and 24 hours.",
                             }),
                         advanceBooking: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 23), {
-                                message: "Advance booking hours must be between 0 and 23 hours.",
+                            .refine((val) => val === null || (val >= 1 && val <= 23), {
+                                message: "Advance booking hours must be between 1 and 23 hours.",
                             }),
                         peakHourSurcharge: z
                             .union([z.string(), z.null()])
@@ -593,6 +592,22 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
                             .refine((val) => val === null || (val >= 0 && val <= 50), {
                                 message: "Off peak discount must be between 0 and 50 percent.",
                             }),
+                    }).superRefine((_, ctx) => {
+                        if (minimumHours >= maximumHours) {
+                            ctx.addIssue({
+                                code: "custom",
+                                path: ["minimumHours"],
+                                message: "Minimum booking hours must be less than maximum booking hours.",
+                            });
+                        };
+
+                        if (advanceBooking >= paymentDeadline) {
+                            ctx.addIssue({
+                                code: "custom",
+                                path: ["paymentDeadline"],
+                                message: "Payment must happen before the hours before booking.",
+                            });
+                        };
                     });
     
                     const parsed = schema.safeParse({
@@ -654,7 +669,7 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
         setAdvanceBooking(formData.settings.advanceBooking);
         setPeakHourSurcharge(formData.settings.peakHourSurcharge);
         setOffPeakDiscount(formData.settings.offPeakDiscount);
-    }
+    };
 
     const handleCreateCombination = () => {
         // TODO: Implement a function to clear the state back to default values when the creation is successful.
@@ -667,6 +682,7 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
         const id = randomUUID();
 
         const surfaceType = formData.layout.grounds.find((ground: GroundType) => ground.id === grounds[0]).surfaceType;
+        const defaultSettings = formData.settings;
 
         const combination = {
             grounds,
@@ -677,14 +693,22 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
             size,
             surfaceType,
             settings: {
-                minBookingHours: minimumHours,
-                maxBookingHours: maximumHours,
-                cancellationFee: cancellationFee,
-                noShowFee: noShowFee,
-                paymentDeadline: paymentDeadline,
-                advanceBooking: advanceBooking,
-                peakHourSurcharge: peakHourSurcharge,
-                offPeakDiscount: offPeakDiscount
+                minBookingHours:
+                    minimumHours !== defaultSettings.minBookingHours ? minimumHours : null,
+                maxBookingHours:
+                    maximumHours !== defaultSettings.maxBookingHours ? maximumHours : null,
+                cancellationFee:
+                    cancellationFee !== defaultSettings.cancellationFee ? cancellationFee : null,
+                noShowFee:
+                    noShowFee !== defaultSettings.noShowFee ? noShowFee : null,
+                paymentDeadline:
+                    paymentDeadline !== defaultSettings.paymentDeadline ? paymentDeadline : null,
+                advanceBooking:
+                    advanceBooking !== defaultSettings.advanceBooking ? advanceBooking : null,
+                peakHourSurcharge:
+                    peakHourSurcharge !== defaultSettings.peakHourSurcharge ? peakHourSurcharge : null,
+                offPeakDiscount:
+                    offPeakDiscount !== defaultSettings.offPeakDiscount ? offPeakDiscount : null
             }
         };
 
@@ -703,82 +727,87 @@ export const AddCombinationModal = ({ isOpen, onClose } : { isOpen: boolean, onC
     };
 
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
-            <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-60">
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-x-2.5">
-                                <IoGridOutline className="size-4 text-black"/>
-                                <span className="font-medium">Add Combination</span>
-                            </div>
-                            <div className="relative">
-                                <IoIosInformationCircleOutline className="size-4.5 text-gray-500"/>
-                            </div>
-                        </div>
-                        <div className="my-6">
-                            <p className="text-[0.8125rem] text-gray-600">
-                                Combinations allow you to group grounds that can be merged together, making it easier to manage and present them as a cohesive unit.
-                            </p>
-                        </div>
-                        <div className="flex flex-col gap-y-1">
-                            {
-                                steps.map((step, index) => {
-                                    const isComplete = index < currentIndex;
-                                    const isActive = index === currentIndex;
+        <AnimatePresence>
+            {
+                isOpen &&
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="modal fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
+                    <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-60">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-x-2.5">
+                                        <IoGridOutline className="size-4 text-black text-[0.825rem]"/>
+                                        <span className="font-medium">Add Combination</span>
+                                    </div>
+                                    <div className="relative">
+                                        <IoIosInformationCircleOutline className="size-4.5 text-gray-500"/>
+                                    </div>
+                                </div>
+                                <div className="my-6">
+                                    <p className="text-[0.8125rem] text-gray-600">
+                                        Combinations allow you to group grounds that can be merged together, making it easier to manage and present them as a cohesive unit.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-y-1">
+                                    {
+                                        steps.map((step, index) => {
+                                            const isComplete = index < currentIndex;
+                                            const isActive = index === currentIndex;
 
-                                    return (
-                                        <div className="p-2 flex items-center gap-x-2 rounded-md" style={isActive ? { background: "#e5e7eb" } : (isComplete ? {} : { color: "#6a7282" })} key={index}>
-                                            {step.icon}
-                                            <span className="font-medium text-[0.8125rem]">{step.label}</span>
-                                        </div>
-                                    )
-                                })
-                            }
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-y-2.5">
-                        <span className="text-[0.8125rem] text-gray-700">Step {currentIndex + 1} of {steps.length}</span>
-                        <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
-                            <div className="absolute h-full bg-blue-700" style={{ width: `${(currentIndex + 1) / steps.length * 100}%` }}></div>
-                        </div>
-                    </div>
-                </div>
-                <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
-                    <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-1 flex-col gap-y-1">
-                                <h2 className="font-medium">{steps[currentIndex].title}</h2>
-                                <p className="text-[0.8125rem] text-gray-600 max-w-3/4">{steps[currentIndex].description}</p>
+                                            return (
+                                                <div className="p-2 flex items-center gap-x-2 rounded-md" style={isActive ? { background: "#e5e7eb" } : (isComplete ? {} : { color: "#6a7282" })} key={index}>
+                                                    {step.icon}
+                                                    <span className="font-medium text-[0.8125rem]">{step.label}</span>
+                                                </div>
+                                            )
+                                        })
+                                    }
+                                </div>
                             </div>
-                            <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
-                                <IoIosClose className="size-6"/>
-                            </button>
+                            <div className="flex flex-col gap-y-2.5">
+                                <span className="text-[0.8125rem] text-gray-700">Step {currentIndex + 1} of {steps.length}</span>
+                                <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
+                                    <div className="absolute h-full bg-blue-700" style={{ width: `${(currentIndex + 1) / steps.length * 100}%` }}></div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="mt-5 mb-6">
-                            {steps[currentIndex].component}
+                        <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
+                            <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex flex-1 flex-col gap-y-0.5">
+                                        <h2 className="font-medium text-sm">{steps[currentIndex].title}</h2>
+                                        <p className="text-[0.8rem] text-gray-600 max-w-3/4">{steps[currentIndex].description}</p>
+                                    </div>
+                                    <button className="text-gray-500 hover:text-gray-700 transition-colors cursor-pointer" type="button" onClick={onClose}>
+                                        <IoIosClose className="size-6"/>
+                                    </button>
+                                </div>
+                                <div className="mt-5 mb-6">
+                                    {steps[currentIndex].component}
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-x-2">
+                                {
+                                    currentIndex != 0 &&
+                                    <button type="button" onClick={previous} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 border-gray-300 bg-white transition-colors cursor-pointer">
+                                        <span className="text-xs">Previous</span>
+                                    </button>
+                                }
+                                {
+                                    currentIndex != steps.length - 1 ?
+                                    <button type="button" onClick={next} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
+                                        <span className="text-xs">Next</span>
+                                    </button> :
+                                    <button type="button" onClick={handleCreateCombination} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
+                                        <span className="text-xs">Create</span>
+                                    </button>
+                                }
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-end gap-x-2">
-                        {
-                            currentIndex != 0 &&
-                            <button type="button" onClick={previous} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 border-gray-300 bg-white transition-colors cursor-pointer">
-                                <span className="text-xs">Previous</span>
-                            </button>
-                        }
-                        {
-                            currentIndex != steps.length - 1 ?
-                            <button type="button" onClick={next} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
-                                <span className="text-xs">Next</span>
-                            </button> :
-                            <button type="button" onClick={handleCreateCombination} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
-                                <span className="text-xs">Create</span>
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     )
 }
 
@@ -814,8 +843,6 @@ export const EditCombinationModal = ({ isOpen, onClose, target } : { isOpen: boo
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => setErrors({}), 3000);
     };
-
-    if (!isOpen) return null;
 
     const editCombinationModalGroundsProps = {
         setName,
@@ -888,7 +915,7 @@ export const EditCombinationModal = ({ isOpen, onClose, target } : { isOpen: boo
             case 0:
                 {
                     const schema = z.object({
-                        grounds: z.array(z.any()).min(2, "You need at least 2 grounds to create a combination.").max(5, "You can select up to 5 grounds at most to create a combination.")
+                        grounds: z.array(z.uuid()).min(2, "You need at least 2 grounds to create a combination.").max(5, "You can select up to 5 grounds at most to create a combination.")
                     });
 
                     const parsed = schema.safeParse({
@@ -1012,14 +1039,14 @@ export const EditCombinationModal = ({ isOpen, onClose, target } : { isOpen: boo
                         paymentDeadline: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 24), {
-                                message: "Payment deadline must be between 0 and 24 hours.",
+                            .refine((val) => val === null || (val >= 2 && val <= 24), {
+                                message: "Payment deadline must be between 2 and 24 hours.",
                             }),
                         advanceBooking: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 23), {
-                                message: "Advance booking hours must be between 0 and 23 hours.",
+                            .refine((val) => val === null || (val >= 1 && val <= 23), {
+                                message: "Advance booking hours must be between 1 and 23 hours.",
                             }),
                         peakHourSurcharge: z
                             .union([z.string(), z.null()])
@@ -1033,6 +1060,14 @@ export const EditCombinationModal = ({ isOpen, onClose, target } : { isOpen: boo
                             .refine((val) => val === null || (val >= 0 && val <= 50), {
                                 message: "Off peak discount must be between 0 and 50 percent.",
                             }),
+                    }).superRefine((_, ctx) => {
+                        if (advanceBooking >= paymentDeadline) {
+                            ctx.addIssue({
+                                code: "custom",
+                                path: ["paymentDeadline"],
+                                message: "Payment must happen before the hours before booking.",
+                            });
+                        }
                     });
     
                     const parsed = schema.safeParse({
@@ -1104,6 +1139,7 @@ export const EditCombinationModal = ({ isOpen, onClose, target } : { isOpen: boo
             ...combination,
             name,
             description,
+            grounds,
             surfaceType: combination.surfaceType,
             size,
             images: [],
@@ -1126,120 +1162,128 @@ export const EditCombinationModal = ({ isOpen, onClose, target } : { isOpen: boo
     };
 
     return (
-        <div
-            className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50"
-            onClick={onClose}
-        >
-            <div
-                className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-60">
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-x-2.5">
-                                <IoGridOutline className="size-4 text-black" />
-                                <span className="font-medium">Edit Combination</span>
-                            </div>
-                        </div>
-                        <div className="my-6">
-                            <p className="text-[0.8125rem] text-gray-600">
-                                Update grounds, details, or settings of this combination.
-                            </p>
-                        </div>
-                        <div className="flex flex-col gap-y-1">
-                            {steps.map((step, i) => {
-                                const isActive = i === currentIndex;
-                                const isComplete = i < currentIndex;
-                                return (
-                                    <div
-                                        key={i}
-                                        className="p-2 flex items-center gap-x-2 rounded-md"
-                                        style={
-                                            isActive
-                                                ? { background: "#e5e7eb" }
-                                                : isComplete
-                                                ? {}
-                                                : { color: "#6a7282" }
-                                        }
-                                    >
-                                        {step.icon}
-                                        <span className="font-medium text-[0.8125rem]">
-                                            {step.label}
-                                        </span>
+        <AnimatePresence>
+            {
+                isOpen &&
+                <motion.div
+                    className="modal fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.1 }}
+                    onClick={onClose}
+                >
+                    <div
+                        className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-60">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-x-2.5">
+                                        <IoGridOutline className="size-4 text-black" />
+                                        <span className="font-medium text-[0.825rem]">Edit Combination</span>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-y-2.5">
-                        <span className="text-[0.8125rem] text-gray-700">
-                            Step {currentIndex + 1} of {steps.length}
-                        </span>
-                        <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
-                            <div
-                                className="absolute h-full bg-blue-700"
-                                style={{
-                                    width: `${((currentIndex + 1) / steps.length) * 100}%`
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="rounded-md p-5 flex flex-col justify-between bg-white border border-gray-300 w-lg">
-                    <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-1 flex-col gap-y-1">
-                                <h2 className="font-medium">
-                                    {steps[currentIndex].title}
-                                </h2>
-                                <p className="text-[0.8125rem] text-gray-600 max-w-3/4">
-                                    {steps[currentIndex].description}
-                                </p>
+                                </div>
+                                <div className="my-6">
+                                    <p className="text-[0.8125rem] text-gray-600">
+                                        Update grounds, details, or settings of this combination.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-y-1">
+                                    {steps.map((step, i) => {
+                                        const isActive = i === currentIndex;
+                                        const isComplete = i < currentIndex;
+                                        return (
+                                            <div
+                                                key={i}
+                                                className="p-2 flex items-center gap-x-2 rounded-md"
+                                                style={
+                                                    isActive
+                                                        ? { background: "#e5e7eb" }
+                                                        : isComplete
+                                                        ? {}
+                                                        : { color: "#6a7282" }
+                                                }
+                                            >
+                                                {step.icon}
+                                                <span className="font-medium text-[0.8125rem]">
+                                                    {step.label}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                            <button
-                                className="hover:text-gray-600 cursor-pointer"
-                                type="button"
-                                onClick={onClose}
-                            >
-                                <IoIosClose className="size-6" />
-                            </button>
+                            <div className="flex flex-col gap-y-2.5">
+                                <span className="text-[0.8125rem] text-gray-700">
+                                    Step {currentIndex + 1} of {steps.length}
+                                </span>
+                                <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
+                                    <div
+                                        className="absolute h-full bg-blue-700"
+                                        style={{
+                                            width: `${((currentIndex + 1) / steps.length) * 100}%`
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="mt-5 mb-6">
-                            {steps[currentIndex].component}
+                        <div className="rounded-md p-5 flex flex-col justify-between bg-white border border-gray-300 w-lg">
+                            <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex flex-1 flex-col gap-y-0.5">
+                                        <h2 className="font-medium text-sm">
+                                            {steps[currentIndex].title}
+                                        </h2>
+                                        <p className="text-[0.8rem] text-gray-600 max-w-3/4">
+                                            {steps[currentIndex].description}
+                                        </p>
+                                    </div>
+                                    <button
+                                        className="hover:text-gray-600 cursor-pointer"
+                                        type="button"
+                                        onClick={onClose}
+                                    >
+                                        <IoIosClose className="size-6" />
+                                    </button>
+                                </div>
+                                <div className="mt-5 mb-6">
+                                    {steps[currentIndex].component}
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-x-2">
+                                {currentIndex !== 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={previous}
+                                        className="rounded-md border px-6 py-2 border-gray-300 bg-white text-xs cursor-pointer"
+                                    >
+                                        Previous
+                                    </button>
+                                )}
+                                {currentIndex !== steps.length - 1 ? (
+                                    <button
+                                        type="button"
+                                        onClick={next}
+                                        className="rounded-md border px-6 py-2.5 text-white bg-black hover:bg-gray-800 text-xs cursor-pointer"
+                                    >
+                                        Next
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleSave}
+                                        className="rounded-md border px-6 py-2.5 text-white bg-black hover:bg-gray-800 text-xs cursor-pointer"
+                                    >
+                                        Save Changes
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-end gap-x-2">
-                        {currentIndex !== 0 && (
-                            <button
-                                type="button"
-                                onClick={previous}
-                                className="rounded-md border px-6 py-2 border-gray-300 bg-white text-xs"
-                            >
-                                Previous
-                            </button>
-                        )}
-                        {currentIndex !== steps.length - 1 ? (
-                            <button
-                                type="button"
-                                onClick={next}
-                                className="rounded-md border px-6 py-2 text-white bg-black hover:bg-gray-800 text-xs"
-                            >
-                                Next
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleSave}
-                                className="rounded-md border px-6 py-2 text-white bg-black hover:bg-gray-800 text-xs"
-                            >
-                                Save Changes
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     );
 };

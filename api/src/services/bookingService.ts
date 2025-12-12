@@ -1,13 +1,14 @@
 // Map out all of the possible situations in which a user/manager/owner could create a booking for a ground/combination.
-import { addMinutes, differenceInHours, eachHourOfInterval, isAfter, isBefore, subHours, subMinutes } from "date-fns";
-import { BookingSource, Ground, GroundSettings, RecurrenceFrequency, Schedule } from "generated/prisma";
-
-import { ResolvedSettings } from "@/utils/dashboard";
-import prisma from "@/utils/prisma";
-import { generateReferenceId } from "@/utils/token";
-
 // In the case that an owner is trying to create a booking:
 // As a base we need to compare the booking startDate and endDate against 6 checks.
+
+import { addHours, differenceInHours, differenceInMilliseconds, format, getDay, getHours, subHours } from "date-fns";
+import { CombinationSettings, GroundSettings, PitchSettings } from "generated/prisma";
+import { JsonValue } from "generated/prisma/runtime/library";
+
+import prisma from "@/utils/prisma";
+import { ResolvedSettings, unavailableStates } from "@/utils/booking";
+import { bookingQueue } from "@/queues/booking";
 
 // 1) Check the pitch status & settings:
 // - Pitch status is LIVE
@@ -47,286 +48,474 @@ import { generateReferenceId } from "@/utils/token";
 // When the user approves/verifies the booking request, the booking will be updated to APPROVED, which is when the deposit/full fee can be paid as long as the expiryDate has not been hit.
 // Upon payment, the callback URL will send a request to update the booking to CONFIRMED.
 
-export interface CreateBookingPayload {
-    pitchId: string;
-    groundId?: string;
-    combinationId?: string;
-    startDate: Date;
-    endDate: Date;
-    source: BookingSource;
-    issuerId: string;
-    user: {
+type TargetSettings = Omit<GroundSettings, "id" | "createdAt" | "updatedAt" | "groundId"> | Omit<CombinationSettings, "id" | "createdAt" | "updatedAt" | "combinationId"> ;
+
+export function resolveEffectiveSettings(targetSettings: TargetSettings, pitchSettings: PitchSettings): ResolvedSettings {
+    return {
+        minBookingHours: targetSettings.minBookingHours ?? pitchSettings.minBookingHours,
+        maxBookingHours: targetSettings.maxBookingHours ?? pitchSettings.maxBookingHours,
+        cancellationFee: targetSettings.cancellationFee ?? pitchSettings.cancellationFee,
+        noShowFee: targetSettings.noShowFee ?? pitchSettings.noShowFee,
+        advanceBooking: targetSettings.advanceBooking ?? pitchSettings.advanceBooking,
+        paymentDeadline: targetSettings.paymentDeadline ?? pitchSettings.paymentDeadline,
+        peakHourSurcharge: targetSettings.peakHourSurcharge ?? pitchSettings.peakHourSurcharge,
+        offPeakDiscount: targetSettings.offPeakDiscount ?? pitchSettings.offPeakDiscount
+    };
+};
+
+interface ResolveTargetsPayload {
+    grounds: Array<{
+        id: string,
+        name: string,
+        effectiveSettings: JsonValue
+    }>,
+    combinations: Array<{
+        id: string,
+        name: string,
+        effectiveSettings: JsonValue
+    }>
+};
+
+interface TargetType {
+    id: string;
+    name: string;
+    type: "ALL" | "GROUND" | "COMBINATION";
+    settings?: JsonValue
+};
+
+export function resolvePitchTargets(layout: ResolveTargetsPayload, settings: PitchSettings) {
+    const targets: Array<TargetType> = [];
+
+    targets.push({
+        id: "ALL", 
+        name: `All Grounds (${layout.grounds.length + layout.combinations.length})`,
+        type: "ALL" as const
+    });
+
+    layout.grounds.forEach(g => {
+        targets.push({
+            id: g.id,
+            name: g.name,
+            type: "GROUND" as const,
+            settings: {
+                ...(g.effectiveSettings as Record<string, JsonValue>),
+                cancellationGrace: settings.cancellationGrace
+            }
+        });
+    });
+    
+    layout.combinations.forEach(c => {
+        targets.push({
+            id: c.id,
+            name: c.name,
+            type: "COMBINATION" as const,
+            settings: {
+                ...(c.effectiveSettings as Record<string, JsonValue>),
+                cancellationGrace: settings.cancellationGrace
+            }
+        });
+    });
+
+    return targets;
+};
+
+export interface TimeSlot {
+    startTime: Date;
+    endTime: Date;
+    available: boolean;
+    price: number;
+    isPeakHour: boolean;
+    isOffPeakHour: boolean;
+    reason?: string;
+};
+
+interface ResolveBookingDataPayload {
+    account: {
+        id: string;
         firstName: string;
         lastName: string;
-        email?: string;
-        phone?: string;
-        notes?: string;
-    };
-    recurrence?: {
-        frequency: RecurrenceFrequency;
-        interval: number;
-        byDay: Array<number>;
-        endsAt: Date;
-    };
-    notes?: string;
-};
-
-const generateBookingServiceError = (target: string, message: string, code: number) => {
-    return {
-        success: false as const,
-        error: {
-            target,
-            message,
-            code
-        }
+        bookings: {
+            startDate: Date;
+            endDate: Date;
+            grounds: {
+                name: string;
+            }[];
+        }[];
     }
-};
+}
 
-export function getBookingDeadlines(settings: ResolvedSettings, startDate: Date) {
-    const now = new Date();
-    const timeUntilStart = differenceInHours(startDate, now);
+export function resolveLastBookingData({ account } : ResolveBookingDataPayload) {
+    if (account.bookings.length === 0) return null;
 
-    if (timeUntilStart <= 0) {
-        throw new Error("Cannot calculate deadlines for a past or immediate start date.");
-    };
+    const booking = account.bookings[0];
+    const duration = differenceInHours(booking.endDate, booking.startDate);
 
-    const proximity = Math.pow(Math.min(1, Math.max(0, (24 - timeUntilStart) / 24)), 1.5);
+    let target = "";
 
-    const approvalBase = settings.paymentDeadline + 1;
-    const paymentBase = settings.paymentDeadline;
-    const advanceBase = settings.advanceBooking;
-    const cancellationBase = settings.cancellationGrace;
-
-    const compression = 3;
-
-    const approvalOffset = approvalBase - proximity * compression;
-    const paymentOffset = paymentBase - proximity * (compression * 0.7);
-    const advanceOffset = advanceBase;
-
-    let approvalDeadline = subHours(startDate, approvalOffset);
-    let paymentDeadline = subHours(startDate, paymentOffset);
-    const advanceDeadline = subHours(startDate, advanceOffset);
-    let cancellationDeadline = subHours(startDate, cancellationBase);
-
-    // Enforce order and safety
-    if (approvalDeadline >= paymentDeadline) approvalDeadline = subMinutes(paymentDeadline, 30);
-    if (paymentDeadline >= advanceDeadline) paymentDeadline = subMinutes(advanceDeadline, 30);
-
-    if (approvalDeadline <= now) approvalDeadline = addMinutes(now, 5);
-    if (paymentDeadline <= approvalDeadline) paymentDeadline = addMinutes(approvalDeadline, 30);
-
-    // If it’s before advanceDeadline (invalid), move it forward
-    if (isBefore(cancellationDeadline, advanceDeadline)) {
-        cancellationDeadline = addMinutes(advanceDeadline, 15);
-    }
-
-    // If it’s after startDate (invalid), pull it back
-    if (isAfter(cancellationDeadline, startDate)) {
-        cancellationDeadline = subMinutes(startDate, 15);
-    }
+    booking.grounds.forEach(
+      (ground, index) => 
+      index === booking.grounds.length - 1 ? 
+      target += ground.name :
+      target += `${ground.name} and `
+    );
 
     return {
-        approvalDeadline,
-        paymentDeadline,
-        advanceDeadline,
-        cancellationDeadline
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        target,
+        duration
     };
 };
 
-const calculateBookingHourPrice = (hour: number, schedule: Schedule, price: number, settings: ResolvedSettings) => {
-    const isPeakHour = schedule.peakHours?.includes(hour);
-    const isOffPeakHour = schedule.offPeakHours?.includes(hour);
+interface AvailabilityCheck {
+    available: boolean;
+    reason?: string;
+    conflictingBookings?: Array<{
+        referenceCode: string;
+        startTime: Date;
+        endTime: Date;
+    }>;
+}
 
-    if (isPeakHour) {
-        return price * (1 + settings.peakHourSurcharge / 100);
-    };
+export async function checkTimeslotAvailability(id: string, targetId: string, targetType: "GROUND" | "COMBINATION", timeslots: Array<{ startTime: Date; endTime: Date }>): Promise<AvailabilityCheck> {
+    const firstSlot = timeslots[0];
+    const lastSlot = timeslots[timeslots.length - 1];
+    const schedule = new Set<number>();
 
-    if (isOffPeakHour) {
-        return price * (1 - settings.offPeakDiscount / 100);
-    };
-
-    return price;
-};
-
-type CheckBookingExceptionsPayload = Pick<CreateBookingPayload, "startDate" | "endDate" | "pitchId" | "combinationId"> & { grounds: Ground[] };
-
-export async function checkBookingExceptions({ startDate, endDate, pitchId, combinationId, grounds } : CheckBookingExceptionsPayload) {
-    // Check for the pitch first.
-    const pitchException = await prisma.scheduleException.findFirst({ 
-        where: {
-            targetId: pitchId,
-            target: "PITCH",
-            startDate: { lte: endDate },
-            endDate: { gte: startDate }
-        }
+    timeslots.forEach(slot => {
+        schedule.add(getDay(slot.startTime));
     });
 
-    if (pitchException) return pitchException;
-
-    // Check for combination exceptions if a combinationId was provided.
-    const combinationException = await prisma.scheduleException.findFirst({
+    const pitch = await prisma.pitch.findUnique({ 
         where: {
-            targetId: combinationId,
-            target: "COMBINATION",
-            startDate: { lte: endDate },
-            endDate: { gte: startDate }
-        }
-    });
-
-    if (combinationException) return combinationException;
-
-    // Check for ground exceptions.
-    const groundException = await prisma.scheduleException.findFirst({
-        where: {
-            target: "GROUND",
-            targetId: { in: grounds.map(g => g.id) },
-            startDate: { lte: endDate },
-            endDate: { gte: startDate }
-        }
-    });
-
-    if (groundException) return groundException;
-
-    return false;
-};
-
-type GroundType = Ground & { settings: GroundSettings };
-
-export async function checkBookingAvailability(payload: Omit<CreateBookingPayload, "user">, settings: ResolvedSettings) {
-    // Populate our grounds array with the data that we need to access and ensure that they all belong to the same pitchId.
-    let grounds: GroundType[] = [];
-
-    if (payload.groundId) {
-        const ground = await prisma.ground.findFirst({
-            where: { 
-                id: payload.groundId,
-                layout: { 
-                    pitchId: payload.pitchId
-                }
-            },
-            include: {
-                settings: true
-            }
-        });
-
-        if (!ground || !ground.settings) return generateBookingServiceError("groundId", "Could not find a ground with the specified ID. Please try again with a valid target.", 404);
-        grounds = [ground as GroundType];
-    }
-
-    if (payload.combinationId) {
-        const combination = await prisma.combination.findFirst({ 
-            where: { 
-                id: payload.combinationId,
-                layout: {
-                    pitchId: payload.pitchId
-                }
-            },
-            select: { 
-                grounds: {
-                    include: { 
-                        settings: true
+            id,
+            status: "LIVE"
+        },
+        select: {
+            id: true,
+            schedule: {
+                where: {
+                    dayOfWeek: {
+                        in: Array.from(schedule)
                     }
-                } 
-            }
+                }
+            },
+            ...(targetType === "GROUND" && {
+                layout: {
+                    select: {
+                        grounds: {
+                            where: {
+                                id: targetId,
+                                status: "LIVE"
+                            },
+                            include: {
+                                bookings: {
+                                    where: {
+                                        status: { in: unavailableStates },
+                                        OR: [
+                                            {
+                                                startDate: {
+                                                    gte: firstSlot.startTime,
+                                                    lt: lastSlot.endTime
+                                                }
+                                            },
+                                            {
+                                                endDate: {
+                                                    gt: firstSlot.startTime,
+                                                    lte: lastSlot.endTime
+                                                }
+                                            },
+                                            {
+                                                AND: [
+                                                    { startDate: { lte: firstSlot.startTime } },
+                                                    { endDate: { gte: lastSlot.endTime } }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }),
+            ...(targetType === "COMBINATION" && {
+                layout: {
+                    select: {
+                        combinations: {
+                            where: {
+                                id: targetId,
+                            },
+                            include: {
+                                grounds: {
+                                    where: {
+                                        status: "LIVE"
+                                    },
+                                    include: {
+                                        bookings: {
+                                            where: {
+                                                status: { in: unavailableStates },
+                                                OR: [
+                                                    {
+                                                        startDate: {
+                                                            gte: firstSlot.startTime,
+                                                            lt: lastSlot.endTime
+                                                        }
+                                                    },
+                                                    {
+                                                        endDate: {
+                                                            gt: firstSlot.startTime,
+                                                            lte: lastSlot.endTime
+                                                        }
+                                                    },
+                                                    {
+                                                        AND: [
+                                                            { startDate: { lte: firstSlot.startTime } },
+                                                            { endDate: { gte: lastSlot.endTime } }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }),
+        }
+    });
+
+    if (!pitch || !pitch.layout || !pitch.schedule) {
+        return { 
+            available: false, 
+            reason: "Could not find details associated with the specified pitch. If this issue persists, please contact customer support." 
+        };
+    };
+
+    const layout = pitch.layout as any;
+    let targets: any[] = [];
+
+    if (targetType === "GROUND") {
+        const grounds = layout.grounds || [];
+
+        if (grounds.length === 0) {
+            return { 
+                available: false, 
+                reason: "Ground was not found or not live." 
+            };
+        };
+
+        targets = grounds;
+    } else {
+        const combinations = layout.combinations || [];
+
+        if (combinations.length === 0) {
+            return { 
+                available: false, 
+                reason: "Combination was not found." 
+            };
+        };
+
+        targets = combinations[0].grounds;
+    }
+
+    const exceptions = await prisma.scheduleException.findMany({
+        where: {
+            OR: [
+                { target: "PITCH", targetId: id },
+                { target: targetType, targetId: targetId }
+            ],
+            startDate: { lte: lastSlot.endTime },
+            endDate: { gte: firstSlot.startTime }
+        }
+    });
+
+    for (const slot of timeslots) {
+        const dayOfWeek = getDay(slot.startTime);
+        const startHour = getHours(slot.startTime);
+        const endHour = getHours(slot.endTime);
+
+        const schedule = pitch.schedule.find(s => s.dayOfWeek === dayOfWeek);
+
+        if (!schedule) {
+            return {
+                available: false,
+                reason: `No schedule found for ${format(slot.startTime, 'EEEE')}`
+            };
+        };
+
+        if (schedule.openTime === 0 && schedule.closeTime === 0) {
+            return {
+                available: false,
+                reason: `Pitch is closed on ${format(slot.startTime, 'EEEE')}`
+            };
+        };
+
+        if (startHour < schedule.openTime || endHour > schedule.closeTime) {
+            return {
+                available: false,
+                reason: `Timeslot ${format(slot.startTime, 'HH:mm')}-${format(slot.endTime, 'HH:mm')} is outside operating hours (${schedule.openTime}:00-${schedule.closeTime}:00)`
+            };
+        };
+
+        const hasException = exceptions.find(ex => 
+            slot.startTime >= ex.startDate && slot.startTime < ex.endDate
+        );
+
+        if (hasException) {
+            return {
+                available: false,
+                reason: hasException.reason || `Maintenance scheduled for ${format(slot.startTime, 'MMM dd, HH:mm')}`
+            };
+        };
+
+        const conflicts: Array<{
+            referenceCode: string;
+            startTime: Date;
+            endTime: Date;
+        }> = [];
+
+        targets.forEach(ground => {
+            ground.bookings.forEach((booking: any) => {
+                const bookingStart = new Date(booking.startDate);
+                const bookingEnd = new Date(booking.endDate);
+                
+                const hasOverlap = (
+                    (slot.startTime >= bookingStart && slot.startTime < bookingEnd) ||
+                    (slot.endTime > bookingStart && slot.endTime <= bookingEnd) ||
+                    (slot.startTime <= bookingStart && slot.endTime >= bookingEnd)
+                );
+
+                if (hasOverlap) {
+                    conflicts.push({
+                        referenceCode: booking.referenceCode,
+                        startTime: bookingStart,
+                        endTime: bookingEnd
+                    });
+                }
+            });
         });
 
-        if (!combination) return generateBookingServiceError("combinationId", "Could not find a combination with the specified ID. Please try again with a valid target.", 404);
-        grounds = combination.grounds as GroundType[];
-    };
+        if (conflicts.length > 0) {
+            const conflictDetails = conflicts.map(c => 
+                `${format(c.startTime, 'HH:mm')}-${format(c.endTime, 'HH:mm')} (${c.referenceCode})`
+            ).join(', ');
 
-    // Check the status of both the pitch and the ground(s).
-    const pitch = await prisma.pitch.findFirst({ 
-        where: { 
-            id: payload.pitchId, 
-            status: { in: ["LIVE"] } 
-        },
-        include: {
-            settings: true
+            return {
+                available: false,
+                reason: `Conflicting booking(s): ${conflictDetails}`,
+                conflictingBookings: conflicts
+            };
         }
-    });
+    }
 
-    if (!pitch || !pitch.settings) return generateBookingServiceError("pitchId", "Could not find an active pitch with the specified ID. Please make sure this pitch is active and try again later.", 404);
-
-    const inactiveGround = grounds.find(ground => ground.status != "LIVE");
-    if (inactiveGround) return generateBookingServiceError("groundId", `Could not create a booking for ${inactiveGround.name}. It is currently inactive. Please try again later.`, 400);
-
-    // Check if any current bookings exist on any of the grounds that overlap with the specified startDate and endDate.
-    const overlappingBooking = await prisma.booking.findFirst({
-        where: {
-            status: { notIn: ["CANCELLED", "EXPIRED", "REJECTED"] },
-            grounds: { some: { id: { in: grounds.map(g => g.id) } } },
-            startDate: { lte: payload.endDate },
-            endDate: { gte: payload.startDate }
-        },
-        include: {
-            grounds: true
-        }
-    });
-
-    if (overlappingBooking) {
-        const names = overlappingBooking.grounds.map(g => g.name).join(", ");
-        return generateBookingServiceError("startDate", `The selected time slot overlaps with an existing booking on ${names}. Please choose a different time.`, 409);
-    };
-
-    // Check if any schedule exceptions exist on any of the grounds, combination, or pitch.
-    const exception = await checkBookingExceptions({ ...payload, grounds });
-    if (exception) return generateBookingServiceError("startDate", `The selected time slot overlaps with an existing schedule exception on ${exception.target}. Please choose a different time.`, 409);
-
-    // Check the pitch's schedule and make sure that it is open for each hour that the booking exists and calculate the price while doing so.
-    let totalPrice: number = 0;
-    let bookingDays: number[] = [];
-
-    const bookingSegments = eachHourOfInterval({ start: payload.startDate, end: subMinutes(payload.endDate, 1) });
-
-    bookingSegments.forEach(segment => {
-        const day = segment.getDay();
-        if (!bookingDays.includes(day)) bookingDays.push(day);
-    });
-
-    const schedules = await prisma.schedule.findMany({ 
-        where: {
-            pitchId: payload.pitchId,
-            dayOfWeek: { in: bookingDays }
-        }
-    });
-
-    if (!schedules) return generateBookingServiceError("pitchId", "Could not find the schedules associated with the specified pitchId. Please make sure schedules are set properly and try again. If this issue persists please get in touch with customer support.", 500);
-
-    bookingSegments.forEach(segment => {
-        const day = segment.getDay();
-        const hour = segment.getHours();
-
-        const schedule = schedules.find(s => s.dayOfWeek === day);
-        if (!schedule) return generateBookingServiceError("startDate", "Could not find schedule for the specified startDate. Please try again later.", 500);
-        if (hour < schedule.openTime || hour >= schedule.closeTime) return generateBookingServiceError("startDate", "The specified booking falls outside of the pitch's operating times. Please select a valid booking time.", 409);
-
-        // Map through the grounds for each hour and add the peakHour/offPeakHour/defaultPrice to the total price.
-        grounds.forEach(ground => {
-            const price = ground.price ?? pitch.basePrice;
-            const hourPrice = calculateBookingHourPrice(hour, schedule, price, settings);
-            totalPrice += hourPrice;
-        });
-    });
-
-    // Check if the booking is after the advanceDeadline.
-    const now = new Date();
-    const { approvalDeadline, paymentDeadline, cancellationDeadline, advanceDeadline } = getBookingDeadlines(settings, payload.startDate);
-    if (isAfter(now, advanceDeadline)) return generateBookingServiceError("startDate", "Could not generate booking where advanceDeadline is before booking creation date.", 400);
-
-    const bookingDuration = differenceInHours(payload.endDate, payload.startDate);
-    const referenceId = generateReferenceId()
-
-    return {
-        success: true as const,
-        data: {
-            advanceDeadline,
-            approvalDeadline,
-            paymentDeadline,
-            cancellationDeadline,
-            referenceCode: referenceId,
-            duration: bookingDuration,
-            price: totalPrice
-        }
-    };
+    return { available: true };
 };
 
+export async function calculateBookingPrice(pitchId: string, targetId: string, targetType: "GROUND" | "COMBINATION", timeslots: Array<{ startTime: Date; endTime: Date }>): Promise<number> {
+    const days = new Set<number>();
+    timeslots.forEach(slot => days.add(getDay(slot.startTime)));
+
+    const pitch = await prisma.pitch.findUnique({
+        where: { id: pitchId },
+        select: {
+        schedule: {
+            where: {
+                dayOfWeek: { in: Array.from(days) }
+            }
+        },
+        layout: {
+            select: {
+                grounds: targetType === "GROUND" ? {
+                    where: { id: targetId },
+                    select: { price: true, effectiveSettings: true }
+                } : undefined,
+                combinations: targetType === "COMBINATION" ? {
+                    where: { id: targetId },
+                    select: { price: true, effectiveSettings: true }
+                } : undefined
+            }
+        }
+        }
+    });
+
+    if (!pitch?.layout) return 0;
+
+    const layout = pitch.layout as any;
+    const target = targetType === "GROUND" 
+        ? layout.grounds?.[0] 
+        : layout.combinations?.[0];
+
+    if (!target) return 0;
+
+    const basePrice = target.price;
+    const settings = target.effectiveSettings;
+
+    let totalPrice = 0;
+
+    timeslots.forEach(slot => {
+        const dayOfWeek = getDay(slot.startTime);
+        const hour = getHours(slot.startTime);
+        const schedule = pitch.schedule.find(s => s.dayOfWeek === dayOfWeek);
+
+        if (!schedule) return;
+
+        let price = basePrice + 15;
+
+        if (schedule.peakHours.includes(hour)) {
+            price += (price * settings.peakHourSurcharge) / 100;
+        } else if (schedule.offPeakHours.includes(hour)) {
+            price -= (price * settings.offPeakDiscount) / 100;
+        }
+
+        totalPrice += price;
+    });
+
+    return Math.round(totalPrice);
+};
+
+export function scheduleBookingJobs(id: string, isUser: boolean, isPaid: boolean, startDate: Date, endDate: Date, settings: ResolvedSettings) {
+    const now = new Date();
+
+    // We have 4 different cases:
+    // 1) The owner is booking for a user, in that case we start off as an UNAPPROVED booking -> APPROVED by user -> PENDING payment -> CONFIRMED payment -> booking IN PROGRESS -> booking COMPLETED.
+    // 2) The owner is booking for a user, in that case we start off as an UNAPPROVED booking -> APPROVED by user -> Booking is already paid or will be paid in cash (CONFIRMED) -> booking IN PROGRESS -> booking COMPLETED.
+    // 3) The owner is booking for a guest, in that case we start off as a PENDING booking -> CONFIRMED payment -> booking IN PROGRESS -> booking COMPLETED.
+    // 4) The owner is booking for a guest and they have already paid, start off as a CONFIRMED payment -> booking IN PROGRESS -> booking COMPLETED.
+
+    if (isUser && !isPaid) {
+        // Approval must happen 30 minutes before the payment deadline.
+        const approvalFactor = settings.paymentDeadline + 0.5;
+        const approvalDeadline = subHours(startDate, approvalFactor);
+
+        bookingQueue.add("approval", { id }, { delay: differenceInMilliseconds(approvalDeadline, now) });
+
+        // Payment must happen before the booking startDate by the settings.paymentDeadline factor.
+        const paymentFactor = settings.paymentDeadline;
+        const paymentDeadline = subHours(startDate, paymentFactor);
+        bookingQueue.add("payment", { id }, { delay: differenceInMilliseconds(paymentDeadline, now) });
+    };
+
+    if (isUser && isPaid) {
+        // Approval must happen 30 minutes before the advanceBooking deadline.
+        const approvalFactor = settings.advanceBooking + 0.5;
+        const approvalDeadline = subHours(startDate, approvalFactor);
+
+        bookingQueue.add("approval", { id }, { delay: differenceInMilliseconds(approvalDeadline, now) });
+
+        // Payment has already been completed so there is no need to add a paymentDeadline job.
+    };
+
+    if (!isUser && !isPaid) {
+        // There is no approval factor because we are booking for a guest.
+        // Payment must happen before the booking startDate by the settings.paymentDeadline factor.
+        const paymentFactor = settings.paymentDeadline;
+        const paymentDeadline = subHours(startDate, paymentFactor);
+        bookingQueue.add("payment", { id }, { delay: differenceInMilliseconds(paymentDeadline, now) });
+    };
+
+    bookingQueue.add("start", { id }, { delay: differenceInMilliseconds(startDate, now) });
+    bookingQueue.add("end", { id }, { delay: differenceInMilliseconds(endDate, now) });
+};

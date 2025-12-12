@@ -3,6 +3,7 @@ import { BillingMethod, PayoutRate, PitchStatus, PitchType } from "@/app/utils/t
 import { Invitation } from "@/app/utils/types/invitation";
 import { ManagerPermissions } from "@/app/utils/types/manager";
 import { OnboardingStage } from "@/app/utils/types/dashboard";
+import { CreateBookingPayload } from "@/app/utils/types/booking";
 
 export async function fetchDashboard() {
     const target = `${process.env.NEXT_PUBLIC_API_URL}/dashboard`;
@@ -86,7 +87,8 @@ interface UpdatePitchSettingsPayload {
     offPeakDiscount: string;
     payoutRate: PayoutRate;
     payoutMethod: BillingMethod;
-}
+    paymentMethods: BillingMethod[];
+};
 
 export async function updatePitchSettings(id: string, settings: UpdatePitchSettingsPayload) {
     const target = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/settings`;
@@ -127,8 +129,7 @@ export async function createInvitation(data: CreateInvitationPayload) {
     });
     
     const invitation = await res.json();
-    console.log(invitation);
-
+    
     if (!res.ok) {
         throw new Error(invitation.message || "Failed to create invitation. Please try again later.");
     };
@@ -193,7 +194,6 @@ export async function signInWithCredentials(payload: SignInPayloadType) {
     const { message, data } = await res.json();
     
     if (!res.ok) throw new Error(message);
-
     return data;
 }
 
@@ -220,7 +220,6 @@ export async function createOwner(payload: OwnerPayloadType) {
     const { message, data } = await res.json(); 
     
     if (!res.ok) throw new Error(message);
-
     return data;
 };
 
@@ -247,7 +246,6 @@ export async function createManager(payload: ManagerPayloadType) {
     const { message, data } = await res.json(); 
     
     if (!res.ok) throw new Error(message);
-
     return data;
 };
 
@@ -266,7 +264,6 @@ export async function updatePitchState(state: PitchStatus, id: string) {
     const { message, data } = await res.json(); 
     
     if (!res.ok) throw new Error(message);
-
     return data;
 };
 
@@ -285,7 +282,6 @@ export async function updatePitchPermissions(manager: string, payload: Omit<Mana
     const { message, data } = await res.json(); 
     
     if (!res.ok) throw new Error(message);
-
     return data;
 };
 
@@ -320,4 +316,215 @@ export async function updateInvitation(action: "ACCEPT" | "REJECT", token: strin
 
     if (!res.ok) throw new Error(message);
     return data;    
-} 
+};
+
+export async function signOut() {
+    const target = `${process.env.NEXT_PUBLIC_API_URL}/auth/sign-out`;
+
+    const res = await fetch(target, {
+        method: "GET",
+        headers: {
+            "Content-type": "application/json",
+        },
+        credentials: "include"
+    });
+
+    const { message } = await res.json();
+    return message;
+};
+
+export async function fetchPitchBookingConstraints(id: string) {
+    const target = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/bookings/general`;
+    
+    // Client-side request - cookies are automatically included.
+    const res = await fetch(target, {
+        method: "GET",
+        headers: {
+            "Content-type": "application/json"
+        },
+        credentials: "include"
+    });
+
+    const { data } = await res.json();
+    return data;  
+};
+
+export async function fetchBookingSlots(id: string, target: string, type: "GROUND" | "COMBINATION", date: Date) {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/bookings/availability/single?target=${target}&type=${type}&date=${date.toISOString()}`;
+    
+    // Client-side request - cookies are automatically included.
+    const res = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-type": "application/json"
+        },
+        credentials: "include"
+    });
+
+    const { data } = await res.json();
+    return data;  
+};
+
+export async function fetchPitchGuest(id: string, target: string) {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/account?target=${target}`;
+
+    // Client-side request - cookies are automatically included.
+    const res = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-type": "application/json"
+        },
+        credentials: "include"
+    });
+
+    const { data } = await res.json();
+    return data;
+};
+
+export async function createBookingRequest(id: string, payload: CreateBookingPayload) {
+    const target = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/bookings/create`;
+
+    const res = await fetch(target, {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ payload })
+    });
+
+    const data = await res.json();
+    return data;
+}
+
+interface FetchBookingsParams {
+    id: string;
+    startDate: Date;
+    endDate?: Date;
+    target?: string;
+    type?: "ALL" | "GROUND" | "COMBINATION";
+    status?: string;
+    page?: number;
+    limit?: number;
+}
+
+export interface Booking {
+    id: string;
+    referenceCode: string;
+    status: string;
+    source: string;
+    startDate: Date;
+    endDate: Date;
+    totalPrice: number;
+    notes: string | null;
+    issuedTo: string;
+    grounds: Array<{
+        id: string;
+        name: string;
+    }>;
+    isRecurring: boolean;
+    createdAt: Date;
+}
+
+export interface ViewBookingsResponse {
+    message: string;
+    metadata: {
+        id: string;
+        target: string | null;
+        type: string;
+        name: string;
+        dateRange: {
+            start: Date;
+            end: Date | null;
+        };
+        status: string | null;
+    };
+    pagination: {
+        page: number,
+        limit: number,
+        totalItems: number,
+        totalPages: number,
+        hasNext: boolean,
+        hasPrevious: boolean
+    },
+    bookings: Booking[];
+}
+
+export async function fetchBookings({
+    id,
+    startDate,
+    endDate,
+    target,
+    type = "ALL",
+    status,
+    page = 1,
+    limit = 50
+}: FetchBookingsParams): Promise<ViewBookingsResponse> {
+    const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/bookings`);
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    
+    params.append("type", type);
+    params.append("start", startDate.toISOString());
+    
+    if (endDate) {
+        params.append("end", endDate.toISOString());
+    }
+    
+    if (target && type !== "ALL") {
+        params.append("target", target);
+    }
+    
+    if (status) {
+        params.append("status", status);
+    }
+    
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
+    url.search = params.toString();
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include"
+    });
+
+    if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to fetch bookings.");
+    }
+
+    const response = await res.json();
+    return response;
+};
+
+export async function fetchAnalytics(id: string, startDate: Date, endDate: Date) {
+    const target = new URL(`${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/analytics`);
+
+    const params = new URLSearchParams();
+
+    params.append("start", startDate.toISOString());
+    params.append("end", endDate.toISOString());
+
+    target.search = params.toString();
+
+    const res = await fetch(target.toString(), {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include"
+    });
+
+    if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to fetch analytics.");
+    }
+
+    const response = await res.json();
+    return response;
+}

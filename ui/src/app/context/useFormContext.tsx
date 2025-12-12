@@ -6,7 +6,7 @@ export interface FormContextStepType {
     title: string, 
     description: string, 
     component: React.ReactNode
-    schema: z.ZodObject | z.ZodArray,
+    schema?: z.ZodObject | z.ZodArray,
     key: string
 }
 

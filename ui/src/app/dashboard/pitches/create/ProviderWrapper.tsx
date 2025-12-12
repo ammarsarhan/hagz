@@ -4,11 +4,13 @@ import { FormContextProvider } from "@/app/context/useFormContext";
 
 import Details, { detailsSchema } from "@/app/dashboard/pitches/create/steps/Details";
 import Settings, { settingsSchema } from "@/app/dashboard/pitches/create/steps/Settings";
-import Layout, { layoutSchema } from "@/app/dashboard/pitches/create/steps/Layout";
-import Schedule, { scheduleSchema } from "@/app/dashboard/pitches/create/steps/Schedule";
+import Layout from "@/app/dashboard/pitches/create/steps/Layout";
+import Schedule from "@/app/dashboard/pitches/create/steps/Schedule";
 
 import { Amenity, CombinationDraftType, GroundDraftType, PitchType } from "@/app/utils/types/pitch";
 import Form from "@/app/dashboard/pitches/create/Form";
+
+const safeString = (value: number | string | null | undefined) => value === null || value === undefined ? "" : String(value);
 
 export default function ProviderWrapper({ draft, index } : { draft?: PitchType, index?: number | undefined }) {
     const data = {
@@ -40,7 +42,8 @@ export default function ProviderWrapper({ draft, index } : { draft?: PitchType, 
             offPeakDiscount: "5",
             payoutRate: "MONTHLY",
             allowDeposit: "No",
-            depositFee: "20"
+            depositFee: "20",
+            paymentMethods: ["CASH"]
         },
         layout: {
             grounds: [] as GroundDraftType[],
@@ -134,6 +137,7 @@ export default function ProviderWrapper({ draft, index } : { draft?: PitchType, 
                 payoutRate: draft.settings.payoutRate || "MONTHLY",
                 depositFee: typeof draft.settings.depositFee === "number" ? String(draft.settings.depositFee) : "",
                 allowDeposit: draft.settings.depositFee ? "Yes" : "No",
+                paymentMethods: draft.settings.paymentMethods ?? ["CASH"]
             };
 
             data.settings = settings;
@@ -151,14 +155,14 @@ export default function ProviderWrapper({ draft, index } : { draft?: PitchType, 
                         size: ground.size,
                         surfaceType: ground.surfaceType,
                         settings: {
-                            minBookingHours: String(ground.settings.minBookingHours) || "",
-                            maxBookingHours: String(ground.settings.maxBookingHours) || "",
-                            cancellationFee: String(ground.settings.cancellationFee) || "",
-                            noShowFee: String(ground.settings.noShowFee) || "",
-                            paymentDeadline: String(ground.settings.paymentDeadline) || "",
-                            advanceBooking: String(ground.settings.advanceBooking) || "",
-                            peakHourSurcharge: String(ground.settings.peakHourSurcharge) || "",
-                            offPeakDiscount: String(ground.settings.offPeakDiscount) || ""
+                            minBookingHours: safeString(ground.settings.minBookingHours ?? draft.settings?.minBookingHours),
+                            maxBookingHours: safeString(ground.settings.maxBookingHours ?? draft.settings?.maxBookingHours),
+                            cancellationFee: safeString(ground.settings.cancellationFee ?? draft.settings?.cancellationFee),
+                            noShowFee: safeString(ground.settings.noShowFee ?? draft.settings?.noShowFee),
+                            paymentDeadline: safeString(ground.settings.paymentDeadline ?? draft.settings?.paymentDeadline),
+                            advanceBooking: safeString(ground.settings.advanceBooking ?? draft.settings?.advanceBooking),
+                            peakHourSurcharge: safeString(ground.settings.peakHourSurcharge ?? draft.settings?.peakHourSurcharge),
+                            offPeakDiscount: safeString(ground.settings.offPeakDiscount ?? draft.settings?.offPeakDiscount),
                         }
                     }
                 }),
@@ -172,14 +176,14 @@ export default function ProviderWrapper({ draft, index } : { draft?: PitchType, 
                         grounds: combination.grounds.map(ground => ground.id) || [],
                         price: String(combination.price || ""),
                         settings: {
-                            minBookingHours: String(combination.settings.minBookingHours) || "",
-                            maxBookingHours: String(combination.settings.maxBookingHours) || "",
-                            cancellationFee: String(combination.settings.cancellationFee) || "",
-                            noShowFee: String(combination.settings.noShowFee) || "",
-                            paymentDeadline: String(combination.settings.paymentDeadline) || "",
-                            advanceBooking: String(combination.settings.advanceBooking) || "",
-                            peakHourSurcharge: String(combination.settings.peakHourSurcharge) || "",
-                            offPeakDiscount: String(combination.settings.offPeakDiscount) || ""
+                            minBookingHours: safeString(combination.settings.minBookingHours ?? draft.settings?.minBookingHours),
+                            maxBookingHours: safeString(combination.settings.maxBookingHours ?? draft.settings?.maxBookingHours),
+                            cancellationFee: safeString(combination.settings.cancellationFee ?? draft.settings?.cancellationFee),
+                            noShowFee: safeString(combination.settings.noShowFee ?? draft.settings?.noShowFee),
+                            paymentDeadline: safeString(combination.settings.paymentDeadline ?? draft.settings?.paymentDeadline),
+                            advanceBooking: safeString(combination.settings.advanceBooking ?? draft.settings?.advanceBooking),
+                            peakHourSurcharge: safeString(combination.settings.peakHourSurcharge ?? draft.settings?.peakHourSurcharge),
+                            offPeakDiscount: safeString(combination.settings.offPeakDiscount ?? draft.settings?.offPeakDiscount),
                         }
                     }
                 })
@@ -208,14 +212,12 @@ export default function ProviderWrapper({ draft, index } : { draft?: PitchType, 
             title: "Pitch Layout",
             description: "Configure your pitch layout and design, grounds and combinations.",
             component: <Layout/>,
-            schema: layoutSchema,
             key: "layout"
         },
         {
             title: "Pitch Schedule",
             description: "Set up your pitch schedule, including availability per weekday.",
             component: <Schedule/>,
-            schema: scheduleSchema,
             key: "schedule"
         }
     ];

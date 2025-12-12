@@ -5,7 +5,7 @@ import { PathLink } from "@/app/components/base/PathLink";
 import Input from "@/app/components/dashboard/Input";
 
 import { MdGrass, MdOutlineCloudUpload } from "react-icons/md";
-import { IoSettingsOutline, IoGridOutline } from "react-icons/io5";
+import { IoSettingsOutline, IoGridOutline, IoWarningOutline } from "react-icons/io5";
 import { FaPeopleGroup } from "react-icons/fa6";
 import { IoIosClose, IoIosInformationCircleOutline, IoMdPeople } from "react-icons/io";
 import { CgDetailsMore } from "react-icons/cg";
@@ -15,6 +15,7 @@ import { v4 as randomUUID } from "uuid";
 import useFormContext from "@/app/context/useFormContext";
 import { GroundType } from "../Layout";
 import { generateDefaultGroundName } from "@/app/utils/layout";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Start of groundModal steps
 const GroundModalDetails = ({
@@ -123,7 +124,7 @@ const GroundModalSize = ({ size, setSize } : { size: "FIVE" | "SEVEN" | "ELEVEN"
                 {
                     options.map((option, index) => {
                         return (
-                            <div key={index} className="w-full text-xs">
+                            <div key={index} className="w-full text-[0.8rem]">
                                 <PathLink isSelected={index === sizeMap.get(size)} icon={option.icon} title={option.label} description={option.description} className="w-full!" onClick={() => setSize(option.value as "FIVE" | "SEVEN" | "ELEVEN")} />
                             </div>
                         )
@@ -169,7 +170,7 @@ const GroundModalSurfaceType = ({ surfaceType, setSurfaceType } : { surfaceType:
                 {
                     options.map((option, index) => {
                         return (
-                            <div key={index} className="w-full text-xs">
+                            <div key={index} className="w-full text-[0.8rem]">
                                 <PathLink isSelected={index === surfaceTypeMap.get(surfaceType)} title={option.label} description={option.description} className="w-full! h-full" onClick={() => setSurfaceType(option.value as "FG" | "AG" | "TF" | "HW")} />
                             </div>
                         )
@@ -218,7 +219,7 @@ const GroundModalSettings = ({
     errors: Record<string, string>
 }) => {
     return (
-        <div className="flex flex-col gap-y-4 text-[0.8125rem] mt-4 mb-8">
+        <div className="flex flex-col gap-y-4 text-[0.8125rem] mt-6 mb-10">
             <div className="flex gap-x-4">
                 <div className="flex flex-1 flex-col gap-y-1.5">
                     <Input 
@@ -382,8 +383,6 @@ export const AddGroundModal = ({ isOpen, onClose } : { isOpen: boolean, onClose:
         setOffPeakDiscount
     };
 
-    if (!isOpen) return null;
-
     const steps = [
         {
             label: "Details",
@@ -509,14 +508,14 @@ export const AddGroundModal = ({ isOpen, onClose } : { isOpen: boolean, onClose:
                         paymentDeadline: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 24), {
-                                message: "Payment deadline must be between 0 and 24 hours.",
+                            .refine((val) => val === null || (val >= 2 && val <= 24), {
+                                message: "Payment deadline must be between 2 and 24 hours before the booking.",
                             }),
                         advanceBooking: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 23), {
-                                message: "Advance booking hours must be between 0 and 23 hours.",
+                            .refine((val) => val === null || (val >= 1 && val <= 23), {
+                                message: "Advance booking must be between 1 and 23 hours before the booking.",
                             }),
                         peakHourSurcharge: z
                             .union([z.string(), z.null()])
@@ -530,6 +529,22 @@ export const AddGroundModal = ({ isOpen, onClose } : { isOpen: boolean, onClose:
                             .refine((val) => val === null || (val >= 0 && val <= 50), {
                                 message: "Off peak discount must be between 0 and 50 percent.",
                             }),
+                    }).superRefine((_, ctx) => {
+                        if (minimumHours >= maximumHours) {
+                            ctx.addIssue({
+                                code: "custom",
+                                path: ["minimumHours"],
+                                message: "Minimum booking hours must be less than maximum booking hours.",
+                            });
+                        };
+
+                        if (advanceBooking >= paymentDeadline) {
+                            ctx.addIssue({
+                                code: "custom",
+                                path: ["paymentDeadline"],
+                                message: "Payment must happen before the hours before booking.",
+                            });
+                        }
                     });
     
                     const parsed = schema.safeParse({
@@ -648,80 +663,85 @@ export const AddGroundModal = ({ isOpen, onClose } : { isOpen: boolean, onClose:
     };
 
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
-            <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-56">
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-x-2.5">
-                                <IoGridOutline className="size-4 text-black"/>
-                                <span className="font-medium">Add Ground</span>
-                            </div>
-                            <div className="relative">
-                                <IoIosInformationCircleOutline className="size-4.5 text-gray-500"/>
-                            </div>
-                        </div>
-                        <div className="my-6">
-                            <p className="text-[0.8125rem] text-gray-600">Each pitch requires <span className="underline">at least one ground</span> before being submitted for review. Please make sure your layout is as accurate as possible to the real-world environment.</p>
-                        </div>
-                        <div className="flex flex-col gap-y-1">
-                            {
-                                steps.map((step, index) => {
-                                    const isComplete = index < currentIndex;
-                                    const isActive = index === currentIndex;
+        <AnimatePresence>
+            {
+                isOpen &&
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="modal fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
+                    <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-56">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-x-2.5">
+                                        <IoGridOutline className="size-4 text-black"/>
+                                        <span className="text-[0.825rem] font-medium">Add Ground</span>
+                                    </div>
+                                    <div className="relative">
+                                        <IoIosInformationCircleOutline className="size-4.5 text-gray-500"/>
+                                    </div>
+                                </div>
+                                <div className="my-6">
+                                    <p className="text-[0.8125rem] text-gray-600">Each pitch requires <span className="underline">at least one ground</span> before being submitted for review. Please make sure your layout is as accurate as possible to the real-world environment.</p>
+                                </div>
+                                <div className="flex flex-col gap-y-1">
+                                    {
+                                        steps.map((step, index) => {
+                                            const isComplete = index < currentIndex;
+                                            const isActive = index === currentIndex;
 
-                                    return (
-                                        <div className="p-2 flex items-center gap-x-2 rounded-md" style={isActive ? { background: "#e5e7eb" } : (isComplete ? {} : { color: "#6a7282" })} key={index}>
-                                            {step.icon}
-                                            <span className="font-medium text-[0.8125rem]">{step.label}</span>
-                                        </div>
-                                    )
-                                })
-                            }
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-y-2.5">
-                        <span className="text-[0.8125rem] text-gray-700">Step {currentIndex + 1} of {steps.length}</span>
-                        <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
-                            <div className="absolute h-full bg-blue-700" style={{ width: `${(currentIndex + 1) / steps.length * 100}%` }}></div>
-                        </div>
-                    </div>
-                </div>
-                <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
-                    <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-1 flex-col gap-y-1">
-                                <h2 className="font-medium">{steps[currentIndex].title}</h2>
-                                <p className="text-[0.8125rem] text-gray-600 max-w-3/4">{steps[currentIndex].description}</p>
+                                            return (
+                                                <div className="p-2 flex items-center gap-x-2 rounded-md" style={isActive ? { background: "#e5e7eb" } : (isComplete ? {} : { color: "#6a7282" })} key={index}>
+                                                    {step.icon}
+                                                    <span className="font-medium text-[0.8125rem]">{step.label}</span>
+                                                </div>
+                                            )
+                                        })
+                                    }
+                                </div>
                             </div>
-                            <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
-                                <IoIosClose className="size-6"/>
-                            </button>
+                            <div className="flex flex-col gap-y-2.5">
+                                <span className="text-[0.8125rem] text-gray-700">Step {currentIndex + 1} of {steps.length}</span>
+                                <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
+                                    <div className="absolute h-full bg-blue-700" style={{ width: `${(currentIndex + 1) / steps.length * 100}%` }}></div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="h-[calc(100%-5.5rem)] my-5">
-                            {steps[currentIndex].component}
+                        <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
+                            <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex flex-1 flex-col gap-y-0.5">
+                                        <h2 className="font-medium text-sm">{steps[currentIndex].title}</h2>
+                                        <p className="text-[0.8rem] text-gray-600 max-w-3/4">{steps[currentIndex].description}</p>
+                                    </div>
+                                    <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
+                                        <IoIosClose className="size-6"/>
+                                    </button>
+                                </div>
+                                <div className="h-[calc(100%-5.5rem)] my-5">
+                                    {steps[currentIndex].component}
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-x-2">
+                                {
+                                    currentIndex != 0 &&
+                                    <button type="button" onClick={previous} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 border-gray-300 bg-white transition-colors cursor-pointer">
+                                        <span className="text-xs">Previous</span>
+                                    </button>
+                                }
+                                {
+                                    currentIndex != steps.length - 1 ?
+                                    <button type="button" onClick={next} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
+                                        <span className="text-xs">Next</span>
+                                    </button> :
+                                    <button type="button" onClick={handleCreateGround} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
+                                        <span className="text-xs">Create</span>
+                                    </button>
+                                }
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-end gap-x-2">
-                        {
-                            currentIndex != 0 &&
-                            <button type="button" onClick={previous} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 border-gray-300 bg-white transition-colors cursor-pointer">
-                                <span className="text-xs">Previous</span>
-                            </button>
-                        }
-                        {
-                            currentIndex != steps.length - 1 ?
-                            <button type="button" onClick={next} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
-                                <span className="text-xs">Next</span>
-                            </button> :
-                            <button type="button" onClick={handleCreateGround} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2 text-white bg-black hover:bg-gray-800 transition-colors cursor-pointer">
-                                <span className="text-xs">Create</span>
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     )
 }
 
@@ -924,14 +944,14 @@ export const EditGroundModal = ({
                         paymentDeadline: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 24), {
-                                message: "Payment deadline must be between 0 and 24 hours.",
+                            .refine((val) => val === null || (val >= 2 && val <= 24), {
+                                message: "Payment deadline must be between 2 and 24 hours.",
                             }),
                         advanceBooking: z
                             .union([z.string(), z.null()])
                             .transform((val) => (val === null ? null : Number(val)))
-                            .refine((val) => val === null || (val >= 0 && val <= 23), {
-                                message: "Advance booking hours must be between 0 and 23 hours.",
+                            .refine((val) => val === null || (val >= 1 && val <= 23), {
+                                message: "Advance booking hours must be between 1 and 23 hours.",
                             }),
                         peakHourSurcharge: z
                             .union([z.string(), z.null()])
@@ -945,6 +965,14 @@ export const EditGroundModal = ({
                             .refine((val) => val === null || (val >= 0 && val <= 50), {
                                 message: "Off peak discount must be between 0 and 50 percent.",
                             }),
+                    }).superRefine((_, ctx) => {
+                        if (advanceBooking >= paymentDeadline) {
+                            ctx.addIssue({
+                                code: "custom",
+                                path: ["paymentDeadline"],
+                                message: "Payment must happen before the hours before booking.",
+                            });
+                        }
                     });
     
                     const parsed = schema.safeParse({
@@ -1034,101 +1062,104 @@ export const EditGroundModal = ({
         onClose();
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
-            <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-56">
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-x-2.5">
-                                <IoGridOutline className="size-4 text-black"/>
-                                <span className="font-medium">Edit Ground</span>
-                            </div>
-                            <IoIosInformationCircleOutline className="size-4.5 text-gray-500" />
-                        </div>
-                        <div className="my-6 text-[0.8125rem] text-gray-600">
-                            Update any ground details and save your changes.
-                        </div>
-                        <div className="flex flex-col gap-y-1">
-                        {
-                            steps.map((step, index) => {
-                                const isActive = index === currentIndex;
-                                const isComplete = index < currentIndex;
-                                return (
-                                    <div
-                                        key={index}
-                                        className={`p-2 flex items-center gap-x-2 rounded-md ${isActive ? "bg-gray-200" : isComplete ? "" : "text-gray-400"}`}
-                                    >
-                                        {step.icon}
-                                        <span className="font-medium text-[0.8125rem]">{step.label}</span>
+        <AnimatePresence>
+            {
+                isOpen &&
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="modal fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
+                    <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-56">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-x-2.5">
+                                        <IoGridOutline className="size-4 text-black"/>
+                                        <span className="font-medium">Edit Ground</span>
                                     </div>
-                                );
-                            })
-                        }
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-y-2.5">
-                        <span className="text-[0.8125rem] text-gray-700">
-                            Step {currentIndex + 1} of {steps.length}
-                        </span>
-                        <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
-                        <div
-                            className="absolute h-full bg-blue-700"
-                            style={{ width: `${((currentIndex + 1) / steps.length) * 100}%` }}
-                        />
-                        </div>
-                    </div>
-                </div>
-                <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
-                    <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-1 flex-col gap-y-1">
-                                <h2 className="font-medium">{steps[currentIndex].title}</h2>
-                                <p className="text-[0.8125rem] text-gray-600 max-w-3/4">
-                                {steps[currentIndex].description}
-                                </p>
+                                    <IoIosInformationCircleOutline className="size-4.5 text-gray-500" />
+                                </div>
+                                <div className="my-6 text-[0.8125rem] text-gray-600">
+                                    Update any ground details and save your changes.
+                                </div>
+                                <div className="flex flex-col gap-y-1">
+                                {
+                                    steps.map((step, index) => {
+                                        const isActive = index === currentIndex;
+                                        const isComplete = index < currentIndex;
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`p-2 flex items-center gap-x-2 rounded-md ${isActive ? "bg-gray-200" : isComplete ? "" : "text-gray-400"}`}
+                                            >
+                                                {step.icon}
+                                                <span className="font-medium text-[0.8125rem]">{step.label}</span>
+                                            </div>
+                                        );
+                                    })
+                                }
+                                </div>
                             </div>
-                            <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
-                                <IoIosClose className="size-6" />
-                            </button>
+                            <div className="flex flex-col gap-y-2.5">
+                                <span className="text-[0.8125rem] text-gray-700">
+                                    Step {currentIndex + 1} of {steps.length}
+                                </span>
+                                <div className="bg-blue-200 w-full relative h-1 rounded-md overflow-clip">
+                                <div
+                                    className="absolute h-full bg-blue-700"
+                                    style={{ width: `${((currentIndex + 1) / steps.length) * 100}%` }}
+                                />
+                                </div>
+                            </div>
                         </div>
-                        <div className="h-[calc(100%-5.5rem)] my-5">
-                            {steps[currentIndex].component}
+                        <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
+                            <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex flex-1 flex-col gap-y-0.5">
+                                        <h2 className="font-medium text-sm">{steps[currentIndex].title}</h2>
+                                        <p className="text-[0.8rem] text-gray-600 max-w-3/4">
+                                            {steps[currentIndex].description}
+                                        </p>
+                                    </div>
+                                    <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
+                                        <IoIosClose className="size-6" />
+                                    </button>
+                                </div>
+                                <div className="h-[calc(100%-5.5rem)] my-5">
+                                    {steps[currentIndex].component}
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-x-2">
+                                {
+                                    currentIndex !== 0 && 
+                                    <button
+                                        type="button"
+                                        onClick={previous}
+                                        className="rounded-md border px-6 py-2.25 hover:bg-gray-50 transition-colors border-gray-300 bg-white text-xs cursor-pointer"
+                                    >
+                                        Previous
+                                    </button>
+                                }
+                                {
+                                    currentIndex !== steps.length - 1 ?
+                                    <button
+                                        type="button"
+                                        onClick={next}
+                                        className="rounded-md border px-6 py-2.25 text-white bg-black hover:bg-gray-800 text-xs cursor-pointer"
+                                    >
+                                        Next
+                                    </button> : 
+                                    <button
+                                        type="button"
+                                        onClick={handleSave}
+                                        className="rounded-md border px-6 py-2.25 text-white bg-black hover:bg-gray-800 text-xs cursor-pointer"
+                                    >
+                                        Save Changes
+                                    </button>
+                                }
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-end gap-x-2">
-                        {
-                            currentIndex !== 0 && 
-                            <button
-                                type="button"
-                                onClick={previous}
-                                className="rounded-md border px-6 py-2 border-gray-300 bg-white text-xs"
-                            >
-                                Previous
-                            </button>
-                        }
-                        {
-                            currentIndex !== steps.length - 1 ?
-                            <button
-                                type="button"
-                                onClick={next}
-                                className="rounded-md border px-6 py-2 text-white bg-black hover:bg-gray-800 text-xs"
-                            >
-                                Next
-                            </button> : 
-                            <button
-                                type="button"
-                                onClick={handleSave}
-                                className="rounded-md border px-6 py-2 text-white bg-black hover:bg-gray-800 text-xs"
-                            >
-                                Save Changes
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     );
-    };
+};

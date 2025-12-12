@@ -1,30 +1,11 @@
-import { Amenity, CombinationSize, Country, GroundSize, GroundSurfaceType, PayoutRate, PitchStatus, UserStatus } from "generated/prisma";
+import { Amenity, BillingMethod, BookingSource, CombinationSize, Country, Ground, GroundSize, GroundSurfaceType, PayoutRate, PitchStatus, UserStatus } from "generated/prisma";
 import z from "zod";
 import prisma from "./prisma";
+import { differenceInHours } from "date-fns";
 
 export type OnboardingStage = "NO_PITCH" | "PITCH_DRAFT" | "PITCH_PENDING" | "PUBLISHING_REQUIRED" | "ACTIVE" | "INACTIVE";
 export type DraftStep = "DETAILS" | "SETTINGS" | "LAYOUT" | "SCHEDULE";
 export type UserRole = "USER" | "MANAGER" | "OWNER";
-
-interface UserType {
-    firstName: string;
-    lastName: string;
-    email: string | null;
-    status: UserStatus;
-    owner: {
-        pitches: {
-            id: string;
-            name: string;
-            status: PitchStatus;
-        }[];
-    } | null;
-};
-
-type PitchDraft = PitchDetails & {
-    settings: PitchSettings | null
-    layout: PitchLayout | null
-    schedule: Array<PitchSchedule> | null
-};
 
 export interface PitchDetails {
     name: string;
@@ -64,6 +45,8 @@ interface GroundType {
     size: GroundSize;
     layoutId: string;
     surfaceType: GroundSurfaceType;
+    settings?: LayoutTargetSettings;
+    combinations?: CombinationType[];
 }
 
 interface CombinationType {
@@ -84,10 +67,15 @@ export interface PitchLayout {
     pitchId: string;
     combinations: CombinationType[];
     grounds: GroundType[];
+    structure: any;
 };
 
 export interface PitchSchedule {
-
+    dayOfWeek: number;
+    openTime: number;
+    closeTime: number;
+    peakHours: number[];
+    offPeakHours: number[];
 };
 
 // Helper utility function to get the user onboarding stage based on their current data status.
@@ -142,7 +130,7 @@ export const draftStepToIndex: Record<DraftStep, number> = {
 };
 
 // Helper utility function to get the pitch draft step based on the draft data
-export function getPitchDraftStep(draft: PitchDraft) {
+export function getPitchDraftStep(draft: any) {
     let step = "DETAILS";
 
     if (draft.settings) step = "SETTINGS";
@@ -228,7 +216,10 @@ export async function resolveUserRole(id: string): Promise<UserRole> {
 export const detailsSchema = z.object({
     name: z.string({ error: "Pitch name is required." })
         .min(4, "Pitch name must have at least 4 characters.")
-        .max(100, "Pitch name must have 100 characters at most."),
+        .max(100, "Pitch name must have 100 characters at most.")
+        .transform(str => {
+            return str[0].toUpperCase() + str.slice(1)
+        }),
     taxId: z.string({ error: "Tax Identification Number (TIN) must be a string." })
         .transform((val) => (val === "" ? null : val))
         .nullable()
@@ -275,6 +266,7 @@ export const detailsSchema = z.object({
     googleMapsLink: z.string("Google Maps link is required.")
 }).superRefine((data, ctx) => {
     let link = data.googleMapsLink?.trim();
+    
     if (!link) {
         ctx.addIssue({
             code: "custom",
@@ -413,7 +405,11 @@ export const settingsSchema = z.object({
     payoutRate: z.enum(["BIWEEKLY", "MONTHLY"], "Payout rate is required."),
     payoutMethod: z.enum(["CREDIT_CARD", "WALLET", "CASH"], "Payout method is required.")
         .default("CASH")
-        .optional()
+        .optional(),
+    paymentMethods: z.array(z.enum(["CREDIT_CARD", "WALLET", "CASH"], "Allowed payment method is required."))
+        .min(1, "At least one method is required to allow users to book your pitch.")
+        .max(3, "3 payment methods allowed at most.")
+        .refine((arr) => new Set(arr).size === arr.length, "Payment methods must be unique.")
 }).superRefine((data, ctx) => {
     if (data.minBookingHours > data.maxBookingHours) {
         ctx.addIssue({
@@ -430,6 +426,14 @@ export const settingsSchema = z.object({
             message: "Cancellation grace period must be less than or equal to advance booking hours."
         });
     };
+
+    if (data.advanceBooking >= data.paymentDeadline) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["paymentDeadline"],
+            message: "Payment must happen before the hours before booking.",
+        });
+    }
 });
 
 const layoutSettingsSchema = z.object({
@@ -486,114 +490,16 @@ const layoutSettingsSchema = z.object({
 export type LayoutTargetSettings = z.infer<typeof layoutSettingsSchema>;
 export type LayoutPitchSettings = Pick<z.infer<typeof settingsSchema>, "advanceBooking" | "minBookingHours" | "maxBookingHours" | "cancellationFee" | "noShowFee" | "peakHourSurcharge" | "offPeakDiscount" | "paymentDeadline" | "cancellationGrace">;
 
-export interface ResolvedSettings {
-    minBookingHours: number;
-    maxBookingHours: number;
-    cancellationFee: number;
-    noShowFee: number;
-    advanceBooking: number;
-    peakHourSurcharge: number;
-    offPeakDiscount: number;
-    paymentDeadline: number;
-    cancellationGrace: number;
-};
-
-export function resolveEffectiveGroundSettings(targetSettings: LayoutTargetSettings, pitchSettings: LayoutPitchSettings): ResolvedSettings {
-    return {
-        minBookingHours: targetSettings.minBookingHours ?? pitchSettings.minBookingHours,
-        maxBookingHours: targetSettings.maxBookingHours ?? pitchSettings.maxBookingHours,
-        cancellationFee: targetSettings.cancellationFee ?? pitchSettings.cancellationFee,
-        noShowFee: targetSettings.noShowFee ?? pitchSettings.noShowFee,
-        advanceBooking: targetSettings.advanceBooking ?? pitchSettings.advanceBooking,
-        peakHourSurcharge: targetSettings.peakHourSurcharge ?? pitchSettings.peakHourSurcharge,
-        offPeakDiscount: targetSettings.offPeakDiscount ?? pitchSettings.offPeakDiscount,
-        paymentDeadline: targetSettings.paymentDeadline ?? pitchSettings.paymentDeadline,
-        cancellationGrace: pitchSettings.cancellationGrace
-    };
-};
-
-const handleVariance = (key: keyof LayoutTargetSettings, values: number[], threshold = 0.3) => {
-    if (values.length <= 1) return null;
-
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-
-    if (max - min > threshold * max) {
-        return `High variance detected in ${key}: values range from ${min} to ${max}.`;
-    }
-
-    return null;
-}
-
-export function resolveEffectiveCombinationSettings(targetSettings: LayoutTargetSettings[], pitchSettings: LayoutPitchSettings) {
-    let conflicts: Record<string, string> = {};
-
-    // Helper function to extract only the numbers from the settings
-    const vals = (key: keyof LayoutTargetSettings) => {
-        const numbers = targetSettings
-            .map(g => (typeof (g as any)[key] === "number" ? (g as any)[key] as number : null))
-            .filter(v => v !== null) as number[];
-        
-        return numbers.length ? numbers : [pitchSettings[key] as number];
-    };
-
-    // Get the maximum of the minimum booking hours.
-    let minBookingHours = Math.max(...vals("minBookingHours"), pitchSettings.minBookingHours);
-    let maxBookingHours = Math.min(...vals("maxBookingHours"), pitchSettings.maxBookingHours);
-
-    // If we can not resolve a joint minimum and maximum booking hours, fallback to the pitch settings and record that fallback has been set.
-    if (minBookingHours > maxBookingHours) {
-        minBookingHours = pitchSettings.minBookingHours;
-        maxBookingHours = pitchSettings.maxBookingHours;
-
-        conflicts["minBookingHours"] = "Conflicting ground settings (min > max). Fell back to pitch settings.";
-    };
-
-    // Get the maximum hours before booking value
-    const advanceBooking = Math.max(...vals("advanceBooking"), pitchSettings.advanceBooking);
-    const paymentDeadline = Math.max(...vals("paymentDeadline"), pitchSettings.paymentDeadline);
-    // Get the maximum cancellation/no show fee, and any other remaining fees.
-    const cancellationFee = Math.max(...vals("cancellationFee"), pitchSettings.cancellationFee);
-    const cancellationVariance = handleVariance("cancellationFee", vals("cancellationFee"));
-    if (cancellationVariance) conflicts["cancellationFee"] = cancellationVariance;
-
-    const noShowFee = Math.max(...vals("noShowFee"), pitchSettings.noShowFee);
-    const noShowVariance = handleVariance("noShowFee", vals("noShowFee"));
-    if (noShowVariance) conflicts["noShowFee"] = noShowVariance;
-
-    const peakHourSurcharge = Math.max(...vals("peakHourSurcharge"), pitchSettings.peakHourSurcharge);
-    const peakHourVariance = handleVariance("peakHourSurcharge", vals("peakHourSurcharge"));
-    if (peakHourVariance) conflicts["peakHourSurcharge"] = peakHourVariance;
-
-    const offPeakDiscount = Math.min(...vals("offPeakDiscount"), pitchSettings.offPeakDiscount);
-    const offPeakVariance = handleVariance("offPeakDiscount", vals("offPeakDiscount"));
-    if (offPeakVariance) conflicts["offPeakDiscount"] = offPeakVariance;
-
-    const cancellationGrace = pitchSettings.cancellationGrace;
-
-    return {
-        settings: {
-            minBookingHours,
-            maxBookingHours,
-            advanceBooking,
-            cancellationFee,
-            noShowFee,
-            peakHourSurcharge,
-            offPeakDiscount,
-            paymentDeadline,
-            cancellationGrace
-        },
-        conflicts
-    }
-}
-
 export const layoutSchema = z.object({
   combinations: z.array(
     z.object({
         id: z.uuid("Combination ID must be a valid UUID."),
         name: z.string("A combination name is required.")
             .min(2, "Combination name must have at least 2 characters.")
-            .max(100, "Combination name must have 100 characters at most."),
+            .max(100, "Combination name must have 100 characters at most.")
+            .transform(str => {
+                return str[0].toUpperCase() + str.slice(1)
+            }),
         description: z.string()
             .max(500, "Additional description may not be longer than 500 characters.")
             .trim()
@@ -617,7 +523,10 @@ export const layoutSchema = z.object({
         id: z.uuid("Ground ID must be a valid UUID."),
         name: z.string("Ground name is required.")
             .min(2, "Ground name must have at least 2 characters.")
-            .max(100, "Ground name must have 100 characters at most."),
+            .max(100, "Ground name must have 100 characters at most.")
+            .transform(str => {
+                return str[0].toUpperCase() + str.slice(1)
+            }),
         description: z.string()
             .max(500, "Additional description may not be longer than 500 characters.")
             .trim()
@@ -705,21 +614,26 @@ export const layoutSchema = z.object({
 export const scheduleSchema = z.array(
     z.object({
         dayOfWeek: z.number("Day of the week must be included within the schedule object.")
+            .int("Day of week must be a valid whole number.")
             .min(0, "Day of the week must be between 0 and 6.")
             .max(6, "Day of the week must be between 0 and 6."),
         openTime: z.number("Open time must be included within the schedule object.")
+            .int("Open time must be a valid whole number.")
             .min(0, "Open time must be 0 at least.")
             .max(23, "Open time must be up to 23 at most."),
         closeTime: z.number("Close time must be included within the schedule object.")
+            .int("Close time must be a valid whole number.")
             .min(0, "Close time must be 0 at least.")
             .max(24, "Close time must be up to 24 at most."),
         peakHours: z.array(
             z.number()
+            .int("Peak hour must be a valid whole number.")
             .min(0, "Peak hour slot index must be 0 at least.")
             .max(24, "Peak hour slot index must be 24 at most.")
         ),
         offPeakHours: z.array(
             z.number()
+            .int("Off peak hour must be a valid whole number.")
             .min(0, "Off peak hour slot index must be 0 at least.")
             .max(24, "Off peak hour slot index must be 24 at most.")
         )
@@ -759,3 +673,191 @@ export const scheduleSchema = z.array(
         }
     })
 });
+
+export const layoutSizeMap = new Map<string, number>([
+    ["FIVE", 1],
+    ["SEVEN", 1.25],
+    ["ELEVEN", 1.5]
+]);
+
+export const generateLayoutGrid = (grounds: Pick<GroundType, "id" | "name" | "surfaceType" | "size">[]) => {
+    const grid = [];
+
+    for (let i = 0; i < grounds.length; i++) {
+        const ground = grounds[i];
+        
+        const item = {
+            order: i + 1,
+            isVertical: Math.random() < 0.5,
+            id: ground.id,
+            name: ground.name,
+            surfaceType: ground.surfaceType,
+            size: ground.size,
+            scale: layoutSizeMap.get(ground.size)
+        };
+
+        grid.push(item);
+    };
+
+    return grid;
+};
+
+export interface TargetOption {
+    name: string;
+    id: string;
+    type: "ALL" | "GROUND" | "COMBINATION"
+};
+
+export type BookingTargetOption = TargetOption;
+
+export const maskEmail = (email: string) => {
+    const [local, domain] = email.split("@");
+
+    if (!local || !domain) return email;
+    if (local.length <= 2) {
+        return `${local}*****@${domain}`;
+    }
+
+    const firstChar = local[0];
+    const lastChar = local[local.length - 1];
+
+    return `${firstChar}*****${lastChar}@${domain}`;
+};
+
+export type IntervalType = "ONE_WEEK" | "TWO_WEEK" | "THREE_WEEK" | "ONE_MONTH" | "TWO_MONTH";
+export type PaymentType = "ONE_TIME" | "PER_INSTANCE";
+
+export interface RecurringOptions {
+    frequency: "WEEKLY" | "MONTHLY",
+    interval: IntervalType,
+    occurrences: number,
+    endsAt: Date,
+    payment: PaymentType
+};
+
+export interface CreateBookingPayload {
+    bookingId: string;
+    startedAt: Date;
+    target: string;
+    targetType: "GROUND" | "COMBINATION";
+    startDate: Date;
+    timeslots: Array<{
+        startTime: Date,
+        endTime: Date
+    }>;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    source: BookingSource;
+    paymentMethod: BillingMethod | null;
+    notes: string;
+    recurringOptions: RecurringOptions | null;
+};
+
+export const calculateAvailableHours = (schedules: PitchSchedule[]) => {
+    if (!schedules.length) return 0;
+
+    let hours = 0;
+
+    schedules.map(schedule => {
+        if (schedule.openTime === 0 && schedule.closeTime === 0) return;
+        hours += schedule.closeTime - schedule.openTime;
+    });
+
+    return hours;
+};
+
+export async function calculatePeriodAnalytics(
+    pitchId: string,
+    startDate: Date,
+    endDate: Date,
+    schedule: any[]
+) {
+    const bookings = await prisma.booking.findMany({ 
+        where: {
+            pitchId,
+            startDate: { gte: startDate, lte: endDate }
+        },
+        include: {
+            grounds: {
+                select: {
+                    id: true,
+                    name: true
+                }
+            }
+        }
+    });
+
+    const totalBookings = bookings.length;
+    const totalAvailability = calculateAvailableHours(schedule);
+
+    const seenCustomers = new Set<string>();
+    const recurringCustomers = new Set<string>();
+
+    bookings.forEach(booking => {
+        const customerId = booking.userId || booking.guestId;
+        if (!customerId) return;
+
+        if (seenCustomers.has(customerId)) {
+            recurringCustomers.add(customerId);
+        } else {
+            seenCustomers.add(customerId);
+        }
+    });
+
+    const totalCustomers = seenCustomers.size;
+    const recurringCount = recurringCustomers.size;
+
+    const confirmedBookings = bookings.filter(b => 
+        ['CONFIRMED', 'COMPLETED', 'IN_PROGRESS'].includes(b.status)
+    );
+
+    const cancelledBookings = bookings.filter(b => b.status === 'CANCELLED');
+    const noShowBookings = bookings.filter(b => b.status === 'NO_SHOW');
+
+    const totalRevenue = bookings
+        .filter(b => ['CONFIRMED', 'COMPLETED', 'IN_PROGRESS'].includes(b.status))
+        .reduce((sum, b) => sum + b.totalPrice, 0);
+
+    const bookedHours = bookings
+        .filter(b => ['CONFIRMED', 'COMPLETED', 'IN_PROGRESS'].includes(b.status))
+        .reduce((sum, booking) => {
+            const hours = differenceInHours(booking.endDate, booking.startDate);
+            return sum + (hours * booking.grounds.length);
+        }, 0);
+
+    return {
+        totalBookings,
+        totalRevenue,
+        totalCustomers,
+        recurringCount,
+        bookedHours,
+        totalAvailability,
+        cancelledCount: cancelledBookings.length,
+        noShowCount: noShowBookings.length,
+        confirmedCount: confirmedBookings.length,
+        bookings
+    };
+}
+
+export function calculateChange(current: number, previous: number): {
+    value: number;
+    percentage: number;
+    direction: 'UP' | 'DOWN' | 'NEUTRAL';
+} {
+    if (previous === 0) {
+        return {
+            value: current,
+            percentage: current > 0 ? 100 : 0,
+            direction: current > 0 ? 'UP' : 'NEUTRAL'
+        };
+    }
+
+    const percentage = ((current - previous) / previous) * 100;
+    
+    return {
+        value: current,
+        percentage: Math.abs(percentage),
+        direction: percentage > 0 ? 'UP' : percentage < 0 ? 'DOWN' : 'NEUTRAL'
+    };
+};

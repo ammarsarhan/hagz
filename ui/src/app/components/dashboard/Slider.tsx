@@ -1,6 +1,7 @@
 "use client";
 
 import useFormContext from "@/app/context/useFormContext";
+import { formatHour } from "@/app/utils/date";
 import { PitchScheduleItem, PitchType } from "@/app/utils/types/pitch";
 import { FaArrowRight } from "react-icons/fa6";
 
@@ -80,16 +81,27 @@ export default function HourSlider({
                     <div className="flex items-center justify-center gap-x-4 text-base font-semibold text-center">
                         {
                             isClosed ?
-                            <div className="flex flex-col gap-y-0.5">
-                                <span className="font-medium">Closed</span>
-                                <span className="text-gray-500 text-xs font-normal">Drag the slider to select pitch operating hours.</span>
+                            <div className="flex flex-col items-center gap-y-0.5">
+                                <span>Closed</span>
+                                <span className="text-[0.8rem] font-normal text-gray-500">Drag the slider to select operational hours for this day.</span>
                             </div> :
                             <>
-                                <span>{format(minVal)}</span>
-                                <FaArrowRight className="size-3"/>
-                                <span>{maxVal == 24 ? "23:59" : format(maxVal)}</span>
+                                {
+                                    minVal === 0 && maxVal === 24 ?
+                                    <div className="flex flex-col items-center gap-y-0.5">
+                                        <span>Open Full Day</span>
+                                        <span className="text-[0.8rem] font-normal text-gray-500">Pitch is operational, active, and can service customers for the full 24 hours.</span>
+                                    </div> :
+                                    <div className="flex flex-col items-center gap-y-0.5">
+                                        <div className="flex items-center gap-x-3">
+                                            <span>{format(minVal)}</span>
+                                            <FaArrowRight className="size-3"/>
+                                            <span>{format(maxVal)}</span>
+                                        </div>
+                                        <span className="text-[0.8rem] font-normal text-gray-500">Pitch is operational from {formatHour(minVal, true)} to {formatHour(maxVal, true)}.</span>
+                                    </div>
+                                }
                             </>
-
                         }
                     </div>
                     <div className="relative flex items-center justify-center w-full">
@@ -125,21 +137,23 @@ export default function HourSlider({
                     <div className="flex items-center justify-between text-[0.65rem] text-gray-500">
                         {
                             Array.from({ length: 25 }, (_, i) => {
-                                const isEnd = i === 24;
+                                if (i === 24) {
+                                    return (
+                                        <span key={i}>
+                                            00:00 (+1)
+                                        </span>
+                                    )
+                                }
 
-                                if (isEnd) {
+                                if (i % 6 === 0) {
                                     return (
                                         <span key={i} className="text-center">
-                                            23:59
+                                            {i.toString().padStart(2, "0")}:00
                                         </span>
                                     )
                                 };
 
-                                return (
-                                    <span key={i} className="text-center">
-                                        {i.toString().padStart(2, "0")}:00
-                                    </span>
-                                )
+                                return null;
                             })
                         }
                     </div>

@@ -1,17 +1,13 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
 import HourSlider from "@/app/components/dashboard/Slider";
 import useFormContext from "@/app/context/useFormContext";
+import { PitchScheduleItem, PitchType } from "@/app/utils/types/pitch";
+
 import { BiPlus } from "react-icons/bi";
 import { IoIosClose } from "react-icons/io";
 import { FaArrowRight } from "react-icons/fa6";
-import z from "zod";
-import { PitchScheduleItem, PitchType } from "@/app/utils/types/pitch";
-
-export const scheduleSchema = z.array(
-  z.object({
-
-  })
-);
 
 const slots = [
     { start: "00:00", end: "01:00" },
@@ -37,7 +33,6 @@ const slots = [
     { start: "20:00", end: "21:00" },
     { start: "21:00", end: "22:00" },
     { start: "22:00", end: "23:00" },
-    { start: "23:00", end: "23:59" }
 ];
 
 const HoursModal = ({ 
@@ -106,8 +101,6 @@ const HoursModal = ({
         }));
     };
 
-    if (!isOpen) return null;
-
     const openSlots = slots.slice(openTime, closeTime);
 
     const isPeak = isOpen == "PEAK";
@@ -116,48 +109,53 @@ const HoursModal = ({
     const description = isPeak ? "Select the hours you want the peak hour surcharge to apply to. Slots can not overlap with discounted hours." : "Select the hours you want the off-peak hour discount to apply to. Slots can not overlap with peak hours.";
 
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
-            <div className="flex flex-col gap-y-4 gap-x-4 bg-gray-50 rounded-md p-6 m-4" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between gap-x-8 max-w-108">
-                    <div className="flex-1 flex flex-col gap-y-0.5 mt-1">
-                        <h2 className="text-sm font-medium">{title}</h2>
-                        <p className="text-[0.8125rem] text-gray-500">{description}</p>
+        <AnimatePresence>
+            {
+                isOpen &&
+                <motion.div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
+                    <div className="flex flex-col gap-y-4 gap-x-4 bg-gray-50 rounded-md p-6 m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start justify-between gap-x-8 max-w-108">
+                            <div className="flex-1 flex flex-col gap-y-0.5 mt-1">
+                                <h2 className="text-sm font-medium">{title}</h2>
+                                <p className="text-[0.8125rem] text-gray-500">{description}</p>
+                            </div>
+                            <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
+                                <IoIosClose className="size-6"/>
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-x-4 gap-y-3 my-2 bg-white border-[1px] border-gray-300 p-4 rounded-md max-w-108">
+                            {
+                                openSlots.map((slot, index) => {
+                                    const includesPeak = activeSchedule.peakHours.includes(index);
+                                    const includesOffPeak = activeSchedule.offPeakHours.includes(index);
+
+                                    const isSelectable = (isPeak && !includesOffPeak) || (!isPeak && !includesPeak);
+                                    const isSelected = (isPeak && includesPeak) || (!isPeak && includesOffPeak);
+
+                                    return (
+                                        <button 
+                                            disabled={!isSelectable}
+                                            onClick={() => isPeak ? handlePeakHour(index) : handleOffPeakHour(index)} 
+                                            key={index} 
+                                            type="button" 
+                                            className={`
+                                                ${isSelected ? 'bg-blue-100 text-blue-800 border-transparent' : 'border-gray-200'}
+                                                ${!isSelectable ? "bg-gray-100 border-gray-100! text-gray-600 cursor-not-allowed" : "cursor-pointer"}
+                                                flex items-center gap-x-2 transition-colors rounded-md border-[1px] px-3 py-1.5
+                                            `}
+                                        >
+                                            <span className="text-[0.8125rem]">{slot.start}</span>
+                                            <FaArrowRight className="size-2"/>
+                                            <span className="text-[0.8125rem]">{slot.end}</span>
+                                        </button>
+                                    )
+                                })
+                            }
+                        </div>
                     </div>
-                    <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
-                        <IoIosClose className="size-6"/>
-                    </button>
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-3 my-2 bg-white border-[1px] border-gray-300 p-4 rounded-md max-w-108">
-                    {
-                        openSlots.map((slot, index) => {
-                            const includesPeak = activeSchedule.peakHours.includes(index);
-                            const includesOffPeak = activeSchedule.offPeakHours.includes(index);
-
-                            const isSelectable = (isPeak && !includesOffPeak) || (!isPeak && !includesPeak);
-                            const isSelected = (isPeak && includesPeak) || (!isPeak && includesOffPeak);
-
-                            return (
-                                <button 
-                                    disabled={!isSelectable}
-                                    onClick={() => isPeak ? handlePeakHour(index) : handleOffPeakHour(index)} 
-                                    key={index} 
-                                    type="button" 
-                                    className={`
-                                        ${isSelected ? 'bg-blue-100 text-blue-800 border-transparent' : 'border-gray-200'}
-                                        ${!isSelectable ? "bg-gray-100 border-gray-100! text-gray-600 cursor-not-allowed" : "cursor-pointer"}
-                                        flex items-center gap-x-2 transition-colors rounded-md border-[1px] px-3 py-1.5
-                                    `}
-                                >
-                                    <span className="text-[0.8125rem]">{slot.start}</span>
-                                    <FaArrowRight className="size-2"/>
-                                    <span className="text-[0.8125rem]">{slot.end}</span>
-                                </button>
-                            )
-                        })
-                    }
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     )
 };
 
@@ -183,11 +181,21 @@ export default function Schedule() {
         const closingHour = hours[1];
 
         const schedule = formData.schedule;
+        
+        const peakHours = schedule[currentIndex].peakHours.filter((hour: number) => 
+            hour >= openingHour && hour < closingHour
+        );
+
+        const offPeakHours = schedule[currentIndex].offPeakHours.filter((hour: number) => 
+            hour >= openingHour && hour < closingHour
+        );
 
         schedule[currentIndex] = {
             ...schedule[currentIndex],
             openTime: openingHour,
-            closeTime: closingHour
+            closeTime: closingHour,
+            peakHours,
+            offPeakHours
         };
 
         setFormData(
@@ -273,7 +281,10 @@ export default function Schedule() {
                                     activeSchedule.peakHours.length > 0 &&
                                     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                                         {
-                                            activeSchedule.peakHours.map((value: number, index: number) => {
+                                            activeSchedule.peakHours
+                                            .slice()
+                                            .sort((a: number, b: number) => a - b)
+                                            .map((value: number, index: number) => {
                                                 return (
                                                     <li key={index} className="text-[0.8125rem] flex gap-x-4 items-center text-nowrap">
                                                         {
@@ -322,7 +333,10 @@ export default function Schedule() {
                                     activeSchedule.offPeakHours.length > 0 &&
                                     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                                         {
-                                            activeSchedule.offPeakHours.map((value: number, index: number) => {
+                                            activeSchedule.offPeakHours
+                                            .slice()
+                                            .sort((a: number, b: number) => a - b)
+                                            .map((value: number, index: number) => {
                                                 return (
                                                     <li key={index} className="text-[0.8125rem] flex gap-x-4 items-center text-nowrap">
                                                         {

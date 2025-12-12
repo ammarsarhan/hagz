@@ -12,6 +12,7 @@ import { IoFastFood } from "react-icons/io5";
 export type Amenity = "SEATING" | "LOCKER_ROOMS" | "LIGHTING" | "CAFETERIA" | "SHOWERS" | "TOILETS" | "PARKING" | "AIR_CONDITIONED" | "HEATING" | "SOUND_SYSTEM" | "WATER_FOUNTAIN" | "WIFI" | "BALL_INCLUDED" | "EQUIPMENT_RENTAL" | "FIRST_AID" | "REFEREE_SERVICE";
 export type PayoutRate = "BIWEEKLY" | "MONTHLY";
 export type BillingMethod = "CASH" | "CREDIT_CARD" | "WALLET";
+export type BookingSource = "PLATFORM" | "IN_PERSON" | "PHONE" | "OTHER";
 export type PitchStatus = "DRAFT" | "PENDING" | "REJECTED" | "APPROVED" | "LIVE" | "DELETED" | "SUSPENDED" | "ARCHIVED";
 
 export interface AmenityGroup { 
@@ -21,7 +22,13 @@ export interface AmenityGroup {
         key: Amenity; 
         icon: React.ReactNode
     }[] 
-}
+};
+
+export const billingMethodMap = new Map<BillingMethod, string>([
+    ["CASH", "Cash"],
+    ["CREDIT_CARD", "Credit Card"],
+    ["WALLET", "Wallet"]
+])
 
 export const amenityMap = new Map<string, string>([
   ["SEATING", "Seating"],
@@ -132,6 +139,7 @@ export interface PitchSettings {
   peakHourSurcharge: number;     // Percentage surcharge for peak hours
   payoutRate: PayoutRate;        // How payouts are scheduled
   payoutMethod: BillingMethod;   // How payouts are handed
+  paymentMethods: BillingMethod[];   // How bookings are paid
   createdAt: string;             // ISO timestamp
   updatedAt: string;             // ISO timestamp
 };
@@ -230,4 +238,16 @@ export interface PitchScheduleItem {
   closeTime: number;
   peakHours: number[],
   offPeakHours: number[]
-}
+};
+
+export interface ResolvedSettings {
+    minBookingHours: number;
+    maxBookingHours: number;
+    cancellationFee: number;
+    noShowFee: number;
+    advanceBooking: number;
+    peakHourSurcharge: number;
+    offPeakDiscount: number;
+    paymentDeadline: number;
+    cancellationGrace: number;
+};

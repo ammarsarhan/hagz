@@ -305,7 +305,7 @@ export default function Pitches() {
                                 <span className="text-xs">Add Pitch</span>
                             </button> :
                             <Link href="/dashboard/pitches/create">
-                                <button className="flex items-center gap-x-1 border-[1px] border-transparent bg-blue-700 text-white rounded-md px-3 py-2 cursor-pointer hover:bg-blue-700/90 transition-colors">
+                                <button className="flex items-center gap-x-1 border-[1px] border-transparent bg-blue-800 text-white rounded-md px-3 py-2 cursor-pointer hover:bg-blue-800/90 transition-colors">
                                     <BiPlus className="size-4" />
                                     <span className="text-xs">Add Pitch</span>
                                 </button>

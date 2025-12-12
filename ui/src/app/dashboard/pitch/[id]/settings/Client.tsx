@@ -7,13 +7,11 @@ import Link from "next/link";
 import _ from "lodash";
 import z from "zod";
 
-import Alert from "@/app/components/base/Alert";
 import copyToClipboard from "@/app/utils/copy";
-import Input, { Dropdown, TextArea } from "@/app/components/dashboard/Input";
+import Input, { Dropdown, MultiDropdown, TextArea } from "@/app/components/dashboard/Input";
 import { Invitation } from "@/app/utils/types/invitation";
 import { AccessRole, Manager, ManagerPermissions } from "@/app/utils/types/manager";
 import { PitchStatus } from "@/app/utils/types/pitch";
-import { formatDate } from "@/app/utils/date";
 import { createInvitation, fetchPitchSettings, updatePitchPermissions, updatePitchSettings, updatePitchState } from "@/app/utils/api/client";
 
 import { BiPlus } from "react-icons/bi";
@@ -23,6 +21,7 @@ import { FaRegCircleCheck, FaStoreSlash } from "react-icons/fa6";
 import { MdDeleteForever } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
 
 const handleCopyLink = (invitation: Invitation) => {
     if (invitation == null) return;
@@ -43,7 +42,6 @@ const CreateInvitationModal = ({ isOpen, onClose, id } : { isOpen: boolean, onCl
     const [invitation, setInvitation] = useState<Invitation | null>(null);
 
     const [errors, setErrors] = useState<Record<string, string>>();
-    const [alert, setAlert] = useState<string | null>(null);
 
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -55,11 +53,9 @@ const CreateInvitationModal = ({ isOpen, onClose, id } : { isOpen: boolean, onCl
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
-            setAlert(error.message);
+            alert(error.message);
         }
     });
-
-    if (!isOpen) return null;
 
     const schema = z.object({
         id: z.string(),
@@ -130,101 +126,96 @@ const CreateInvitationModal = ({ isOpen, onClose, id } : { isOpen: boolean, onCl
     };
     
     return (
-        <>
+        <AnimatePresence>
             {
-                alert && 
-                <Alert 
-                    type="error"
-                    message={alert}
-                    onClose={() => setAlert(null)}
-                />
+                isOpen &&
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={handleClose}>
+                    <div className="flex flex-col gap-y-4 gap-x-4 bg-gray-50 rounded-md p-6 m-4" onClick={(e) => e.stopPropagation()}>
+                        {
+                            invitation ?
+                            <div>
+                                <div className="flex items-center justify-end">
+                                    <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={handleClose}>
+                                        <IoIosClose className="size-6"/>
+                                    </button>
+                                </div>
+                                <div className="text-[0.8125rem] w-lg flex flex-col items-center justify-center gap-y-2 text-center text-xs">
+                                    <FaRegCircleCheck className="size-8 text-gray-400 mb-3"/>
+                                    <h2 className="text-sm font-medium text-center">Your invitation has been created successfully!</h2>
+                                    <p className="text-gray-500">An invitation has been created and sent to {invitation.firstName} at the following email address: {invitation.email}. This invitation will be valid until <span className="underline">{format(invitation.expiresAt, "h:mm")}</span> on <span className="underline">{format(invitation.expiresAt, "MMMM do, yyyy")}.</span></p>
+                                    <p className="text-gray-500">You may revoke this invitation at any time through your pitch settings.</p>
+                                    <div className="mt-4 mb-2">
+                                        <button className="text-blue-700 hover:underline cursor-pointer" onClick={() => handleCopyLink(invitation)}>Copy invitation link</button>
+                                    </div>
+                                </div>
+                            </div> :
+                            <>
+                                <div className="flex items-start justify-between gap-x-4 w-full">
+                                    <div className="flex-1 flex flex-col gap-y-0.5 mt-1">
+                                        <h2 className="text-sm font-medium">Create Invitation</h2>
+                                        <p className="text-[0.8125rem] text-gray-500 max-w-96">Invite managers to add them to your team to help you manage your pitch and track bookings/payments.</p>
+                                    </div>
+                                    <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={handleClose}>
+                                        <IoIosClose className="size-6"/>
+                                    </button>
+                                </div>
+                                <div className="flex text-[0.8125rem] w-lg flex-col gap-y-4 mt-2 mb-1 bg-white border-[1px] border-gray-300 p-4 rounded-md">
+                                    <div className="flex gap-x-4">
+                                        <Input
+                                            label="First Name"
+                                            placeholder="First Name"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                            error={errors?.["firstName"]}
+                                            required
+                                        />
+                                        <Input
+                                            label="Last Name"
+                                            placeholder="Last Name"
+                                            value={lastName}
+                                            onChange={(e) => setLastName(e.target.value)}
+                                            error={errors?.["lastName"]}
+                                            required
+                                        />
+                                    </div>
+                                    <Input
+                                        label="Email"
+                                        placeholder="Email Address"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        error={errors?.["email"]}
+                                        required
+                                    />
+                                    <TextArea 
+                                        label="Message" 
+                                        placeholder="Add a message..."
+                                        value={message}
+                                        error={errors?.["message"]}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                    />
+                                    <Dropdown 
+                                        label="Expires In"
+                                        options={[
+                                            { value: "1", label: "24 hours" },
+                                            { value: "7", label: "7 days" },
+                                            { value: "30", label: "30 days" },
+                                        ]}
+                                        value={expiresIn}
+                                        onChange={(e) => setExpiresIn(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="flex items-center justify-end">
+                                    <button type="button" onClick={handleSubmit} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-3 py-2.5 text-white bg-black hover:bg-gray-800 transition-colors w-28 cursor-pointer">
+                                        <span className="text-xs">Create</span>
+                                    </button>
+                                </div> 
+                            </>   
+                        }
+                    </div>
+                </motion.div>
             }
-            <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={handleClose}>
-                <div className="flex flex-col gap-y-4 gap-x-4 bg-gray-50 rounded-md p-6 m-4" onClick={(e) => e.stopPropagation()}>
-                    {
-                        invitation ?
-                        <div>
-                            <div className="flex items-center justify-end">
-                                <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={handleClose}>
-                                    <IoIosClose className="size-6"/>
-                                </button>
-                            </div>
-                            <div className="text-[0.8125rem] w-lg flex flex-col items-center justify-center gap-y-2 text-center text-xs">
-                                <FaRegCircleCheck className="size-8 text-gray-400 mb-3"/>
-                                <h2 className="text-sm font-medium text-center">Your invitation has been created successfully!</h2>
-                                <p className="text-gray-500">An invitation has been created and sent to {invitation.firstName} at the following email address: {invitation.email}. This invitation will be valid until <span className="underline">{format(invitation.expiresAt, "h:mm")}</span> on <span className="underline">{format(invitation.expiresAt, "MMMM do, yyyy")}.</span></p>
-                                <p className="text-gray-500">You may revoke this invitation at any time through your pitch settings.</p>
-                                <div className="mt-4 mb-2">
-                                    <button className="text-blue-700 hover:underline cursor-pointer" onClick={() => handleCopyLink(invitation)}>Copy invitation link</button>
-                                </div>
-                            </div>
-                        </div> :
-                        <>
-                            <div className="flex items-start justify-between gap-x-4 w-full">
-                                <div className="flex-1 flex flex-col gap-y-0.5 mt-1">
-                                    <h2 className="text-sm font-medium">Create Invitation</h2>
-                                    <p className="text-[0.8125rem] text-gray-500 max-w-96">Invite managers to add them to your team to help you manage your pitch and track bookings/payments.</p>
-                                </div>
-                                <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={handleClose}>
-                                    <IoIosClose className="size-6"/>
-                                </button>
-                            </div>
-                            <div className="flex text-[0.8125rem] w-lg flex-col gap-y-4 mt-2 mb-1 bg-white border-[1px] border-gray-300 p-4 rounded-md">
-                                <div className="flex gap-x-4">
-                                    <Input
-                                        label="First Name"
-                                        placeholder="First Name"
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        error={errors?.["firstName"]}
-                                        required
-                                    />
-                                    <Input
-                                        label="Last Name"
-                                        placeholder="Last Name"
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        error={errors?.["lastName"]}
-                                        required
-                                    />
-                                </div>
-                                <Input
-                                    label="Email"
-                                    placeholder="Email Address"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    error={errors?.["email"]}
-                                    required
-                                />
-                                <TextArea 
-                                    label="Message" 
-                                    placeholder="Add a message..."
-                                    value={message}
-                                    error={errors?.["message"]}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                />
-                                <Dropdown 
-                                    label="Expires In"
-                                    options={[
-                                        { value: "1", label: "24 hours" },
-                                        { value: "7", label: "7 days" },
-                                        { value: "30", label: "30 days" },
-                                    ]}
-                                    value={expiresIn}
-                                    onChange={(e) => setExpiresIn(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="flex items-center justify-end">
-                                <button type="button" onClick={handleSubmit} className="flex items-center justify-center gap-x-1 rounded-md border-[1px] px-3 py-2.5 text-white bg-black hover:bg-gray-800 transition-colors w-28 cursor-pointer">
-                                    <span className="text-xs">Create</span>
-                                </button>
-                            </div> 
-                        </>   
-                    }
-                </div>
-            </div>
-        </>
+        </AnimatePresence>
     )
 };
 
@@ -239,6 +230,7 @@ const PermissionsModal = ({ data, onClose, id } : { data: ManagerTableItem | nul
 
     // We can be sure that data is not undefined here because we are wrapping PermissionsModal in a conditional rendering statement
     const permissions = data!.permissions;
+    const manager = data!.manager;
 
     const [temp, setTemp] = useState<Omit<ManagerPermissions, "pitchId" | "managerId">>(permissions);
     
@@ -254,146 +246,149 @@ const PermissionsModal = ({ data, onClose, id } : { data: ManagerTableItem | nul
             onClose();
         }
     });
-    
-    if (!data) return null;
 
     const initial = permissions;
-    const addedAt = format(data.manager.acceptedAt, "MMMM do, yyyy h:mm a");
+    const addedAt = `${format(manager.acceptedAt, "MMMM do, yyyy")} at ${format(manager.acceptedAt, "h:mm a")}`;
     const isDirty = !_.isEqual(temp, initial);
     
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={handleClose}>
-            <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-56">
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-x-2.5">
-                                <span className="font-medium">Manager Details</span>
-                            </div>
-                            <div className="relative">
-                                <IoIosInformationCircleOutline className="size-4.5 text-gray-500"/>
+        <AnimatePresence>
+            {
+                data && 
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={handleClose}>
+                    <div className="flex gap-x-4 bg-gray-50 rounded-md p-4 m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-2 py-3 flex flex-col justify-between gap-y-32 w-56">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-x-2.5">
+                                        <span className="font-medium text-sm">Manager Details</span>
+                                    </div>
+                                    <div className="relative">
+                                        <IoIosInformationCircleOutline className="size-4.5 text-gray-500"/>
+                                    </div>
+                                </div>
+                                <div className="my-6 flex flex-col gap-y-4 text-[0.8rem]">
+                                    <div className="w-full">
+                                        <div className="flex flex-col gap-y-1 flex-1">
+                                            <span>ID</span>
+                                            <span className="text-gray-500">{data.manager.id}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-x-2">
+                                        <div className="flex flex-col gap-y-1 flex-1">
+                                            <span>First Name</span>
+                                            <span className="text-gray-500">{data.manager.user.firstName}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-y-1 flex-1">
+                                            <span>Last Name</span>
+                                            <span className="text-gray-500">{data.manager.user.lastName}</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-full">
+                                        <div className="flex flex-col gap-y-1 flex-1">
+                                            <span>Email Address</span>
+                                            <span className="text-gray-500">{data.manager.user.email}</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-full">
+                                        <div className="flex flex-col gap-y-1 flex-1">
+                                            <span>Added At</span>
+                                            <span className="text-gray-500">{addedAt}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="my-6 flex flex-col gap-y-4 text-[0.8rem]">
-                            <div className="w-full">
-                                <div className="flex flex-col gap-y-1 flex-1">
-                                    <span>ID</span>
-                                    <span className="text-gray-500">{data.manager.id}</span>
+                        <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-lg">
+                            <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex flex-1 flex-col gap-y-0.5">
+                                        <h2 className="font-medium text-sm">
+                                            View/Edit Permissions
+                                        </h2>
+                                        <p className="text-[0.8rem] text-gray-600 pr-2">
+                                            Modify permissions to give certain managers read, write, and access privileges across different platforms.
+                                        </p>
+                                    </div>
+                                    <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
+                                        <IoIosClose className="size-6"/>
+                                    </button>
+                                </div>
+                                <div className="h-[calc(100%-5.5rem)] w-full flex flex-col gap-y-4 my-8">
+                                    <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
+                                        <span className="text-nowrap">Bookings</span>
+                                        <Dropdown 
+                                            options={options} 
+                                            value={temp.bookings}
+                                            onChange={(e) => setTemp({ ...temp, bookings: e.target.value as AccessRole })}
+                                            wrapperStyle={{fontSize: "0.785rem"}}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
+                                        <span className="text-nowrap">Settings</span>
+                                        <Dropdown 
+                                            options={options} 
+                                            value={temp.settings}
+                                            onChange={(e) => setTemp({ ...temp, settings: e.target.value as AccessRole })}
+                                            wrapperStyle={{fontSize: "0.785rem"}}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
+                                        <span className="text-nowrap">Payments</span>
+                                        <Dropdown 
+                                            options={options} 
+                                            value={temp.payments}
+                                            onChange={(e) => setTemp({ ...temp, payments: e.target.value as AccessRole })}
+                                            wrapperStyle={{fontSize: "0.785rem"}}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
+                                        <span className="text-nowrap">Analytics</span>
+                                        <Dropdown 
+                                            options={options} 
+                                            value={temp.analytics}
+                                            onChange={(e) => setTemp({ ...temp, analytics: e.target.value as AccessRole })}
+                                            wrapperStyle={{fontSize: "0.785rem"}}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
+                                        <span className="text-nowrap">Schedule</span>
+                                        <Dropdown 
+                                            options={options} 
+                                            value={temp.schedule}
+                                            onChange={(e) => setTemp({ ...temp, schedule: e.target.value as AccessRole })}
+                                            wrapperStyle={{fontSize: "0.785rem"}}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
+                                        <span className="text-nowrap">Schedule Exceptions</span>
+                                        <Dropdown 
+                                            options={options} 
+                                            value={temp.scheduleExceptions}
+                                            onChange={(e) => setTemp({ ...temp, scheduleExceptions: e.target.value as AccessRole })}
+                                            wrapperStyle={{fontSize: "0.785rem"}}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex gap-x-2">
-                                <div className="flex flex-col gap-y-1 flex-1">
-                                    <span>First Name</span>
-                                    <span className="text-gray-500">{data.manager.user.firstName}</span>
-                                </div>
-                                <div className="flex flex-col gap-y-1 flex-1">
-                                    <span>Last Name</span>
-                                    <span className="text-gray-500">{data.manager.user.lastName}</span>
-                                </div>
-                            </div>
-                            <div className="w-full">
-                                <div className="flex flex-col gap-y-1 flex-1">
-                                    <span>Email Address</span>
-                                    <span className="text-gray-500">{data.manager.user.email}</span>
-                                </div>
-                            </div>
-                            <div className="w-full">
-                                <div className="flex flex-col gap-y-1 flex-1">
-                                    <span>Added At</span>
-                                    <span className="text-gray-500">{addedAt}</span>
-                                </div>
+                            <div className="flex items-center justify-end gap-x-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => mutation.mutate({ manager: data.manager.userId, data: temp })} 
+                                    className={`
+                                        flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
+                                        ${isDirty ? 'bg-black hover:bg-gray-800 cursor-pointer' : 'bg-gray-700 cursor-not-allowed'} 
+                                        transition-colors
+                                    `}
+                                >
+                                    <span className="text-xs">Save</span>
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="rounded-md p-5 flex flex-col justify-between bg-white border-[1px] border-gray-300 w-108">
-                    <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-1 flex-col gap-y-1">
-                                <h2 className="font-medium">
-                                    View/Edit Permissions
-                                </h2>
-                                <p className="text-[0.8125rem] text-gray-600 max-w-3/4">
-                                    View and edit permissions to give certain managers read, write, and access privileges across different platforms.
-                                </p>
-                            </div>
-                            <button className="hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
-                                <IoIosClose className="size-6"/>
-                            </button>
-                        </div>
-                        <div className="h-[calc(100%-5.5rem)] w-full flex flex-col gap-y-4 my-8">
-                            <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
-                                <span className="text-nowrap">Bookings</span>
-                                <Dropdown 
-                                    options={options} 
-                                    value={temp.bookings}
-                                    onChange={(e) => setTemp({ ...temp, bookings: e.target.value as AccessRole })}
-                                    wrapperStyle={{fontSize: "0.8rem"}}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
-                                <span className="text-nowrap">Settings</span>
-                                <Dropdown 
-                                    options={options} 
-                                    value={temp.settings}
-                                    onChange={(e) => setTemp({ ...temp, settings: e.target.value as AccessRole })}
-                                    wrapperStyle={{fontSize: "0.8rem"}}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
-                                <span className="text-nowrap">Payments</span>
-                                <Dropdown 
-                                    options={options} 
-                                    value={temp.payments}
-                                    onChange={(e) => setTemp({ ...temp, payments: e.target.value as AccessRole })}
-                                    wrapperStyle={{fontSize: "0.8rem"}}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
-                                <span className="text-nowrap">Analytics</span>
-                                <Dropdown 
-                                    options={options} 
-                                    value={temp.analytics}
-                                    onChange={(e) => setTemp({ ...temp, analytics: e.target.value as AccessRole })}
-                                    wrapperStyle={{fontSize: "0.8rem"}}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
-                                <span className="text-nowrap">Schedule</span>
-                                <Dropdown 
-                                    options={options} 
-                                    value={temp.schedule}
-                                    onChange={(e) => setTemp({ ...temp, schedule: e.target.value as AccessRole })}
-                                    wrapperStyle={{fontSize: "0.8rem"}}
-                                />
-                            </div>
-                            <div className="flex items-center justify-between gap-x-16 text-[0.8125rem]">
-                                <span className="text-nowrap">Schedule Exceptions</span>
-                                <Dropdown 
-                                    options={options} 
-                                    value={temp.scheduleExceptions}
-                                    onChange={(e) => setTemp({ ...temp, scheduleExceptions: e.target.value as AccessRole })}
-                                    wrapperStyle={{fontSize: "0.8rem"}}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-end gap-x-2">
-                        <button 
-                            type="button" 
-                            onClick={() => mutation.mutate({ manager: data.manager.userId, data: temp })} 
-                            className={`
-                                flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
-                                ${isDirty ? 'bg-black hover:bg-gray-800 cursor-pointer' : 'bg-gray-700 cursor-not-allowed'} 
-                                transition-colors
-                            `}
-                        >
-                            <span className="text-xs">Save</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     )
 };
 
@@ -424,14 +419,14 @@ const InvitationsTable = ({ data } : { data: Invitation[] }) => {
         columnHelper.accessor("createdAt", {
             header: "Sent On",
             cell: info => {
-                const label = format(info.getValue(), "MMMM do, yyyy h:mm a");
+                const label = format(info.getValue(), "dd/MM/yyyy h:mm a");
                 return <span className="text-[0.8rem]">{label}</span>
             },
         }),
         columnHelper.accessor("expiresAt", {
             header: "Expires On",
             cell: info => {
-                const label = format(info.getValue(), "MMMM do, yyyy h:mm a");
+                const label = format(info.getValue(), "dd/MM/yyyy h:mm a");
                 return <span className="text-[0.8rem]">{label}</span>
             },
         }),
@@ -607,6 +602,7 @@ const parseData = (data: any) => {
         offPeakDiscount: String(data.offPeakDiscount),
         payoutRate: data.payoutRate,
         payoutMethod: data.payoutMethod,
+        paymentMethods: data.paymentMethods,
         pitchId: data.pitchId,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt
@@ -677,47 +673,52 @@ const PitchStatusConfirmationModal = ({ state, onClose, id } : { state: PitchSta
     const isDisabled = activeState.requiresConfirmation && activeState.key != confirmation;
     
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={handleClose}>
-            <div className="bg-gray-50 p-6 rounded-md" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-end">
-                    <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={handleClose}>
-                        <IoIosClose className="size-6"/>
-                    </button>
-                </div>
-                <div className="text-[0.8125rem] w-lg flex flex-col items-center justify-center gap-y-2 text-center text-xs">
-                    {activeState.icon}
-                    <h2 className="text-sm font-medium text-center">{activeState.title}</h2>
-                    <p className="text-gray-500">{activeState.subtitle}</p>
-                    <p className="text-gray-500">{activeState.description}</p>
-                    {
-                        activeState.requiresConfirmation &&
-                        <div className="flex flex-col gap-y-2 mt-4 text-xs w-full px-8">
-                            <Input 
-                                value={confirmation}
-                                onChange={(e) => setConfirmation(e.target.value)}
-                                placeholder="Confirm text"
-                                description={`Please enter "${state}" to confirm your changes.`}
-                                className="w-full"
-                            />
+        <AnimatePresence>
+            {
+                activeState &&
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={handleClose}>
+                    <div className="bg-gray-50 p-6 rounded-md" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end">
+                            <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={handleClose}>
+                                <IoIosClose className="size-6"/>
+                            </button>
                         </div>
-                    }
-                    <div className="mt-4 mb-2">
-                        <button 
-                            type="button" 
-                            className={`
-                                flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
-                                ${!isDisabled ? "bg-black hover:bg-gray-800 cursor-pointer" : "bg-gray-800 cursor-not-allowed"}
-                                transition-colors
-                            `}
-                            onClick={() => mutation.mutate({ state, id })}
-                            disabled={isDisabled}
-                        >
-                            <span className="text-xs">{activeState.action}</span>
-                        </button>
+                        <div className="text-[0.8125rem] w-lg flex flex-col items-center justify-center gap-y-2 text-center text-xs">
+                            {activeState.icon}
+                            <h2 className="text-sm font-medium text-center">{activeState.title}</h2>
+                            <p className="text-gray-500">{activeState.subtitle}</p>
+                            <p className="text-gray-500">{activeState.description}</p>
+                            {
+                                activeState.requiresConfirmation &&
+                                <div className="flex flex-col gap-y-2 mt-4 text-xs w-full px-8">
+                                    <Input 
+                                        value={confirmation}
+                                        onChange={(e) => setConfirmation(e.target.value)}
+                                        placeholder="Confirm text"
+                                        description={`Please enter "${state}" to confirm your changes.`}
+                                        className="w-full"
+                                    />
+                                </div>
+                            }
+                            <div className="mt-4 mb-2">
+                                <button 
+                                    type="button" 
+                                    className={`
+                                        flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
+                                        ${!isDisabled ? "bg-black hover:bg-gray-800 cursor-pointer" : "bg-gray-800 cursor-not-allowed"}
+                                        transition-colors
+                                    `}
+                                    onClick={() => mutation.mutate({ state, id })}
+                                    disabled={isDisabled}
+                                >
+                                    <span className="text-xs">{activeState.action}</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                </motion.div>   
+            }
+        </AnimatePresence>
     )
 };
 
@@ -796,46 +797,55 @@ export default function Client({ id } : { id: string }) {
                             <p className="text-[0.8rem] text-gray-500">Customize when a pitch becomes publicly bookable & automatically deactivate or archive unavailable pitches.</p>
                         </div>
                         <div className="w-2/3">
-                            <div className="flex items-center justify-between gap-x-32 py-5 border-b-[1px] border-gray-200 w-full">
-                                <div className="flex flex-col gap-y-0.5 text-[0.8125rem]">
-                                    <span>Go Live</span>
-                                    <p className="text-gray-500">Make your pitch live to index, search, and book for all users.</p>
-                                </div>
-                                <div>
-                                    <button 
-                                        type="button" 
-                                        disabled={status === "LIVE"}
-                                        className={`
-                                            flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
-                                            ${status != "LIVE" ? 'bg-black hover:bg-gray-800 cursor-pointer' : 'bg-gray-700 cursor-not-allowed'} 
-                                            transition-colors
-                                        `}
-                                        onClick={() => setStatusConfirmationModalState("LIVE")}
-                                    >
-                                        <span className="text-xs">Publish</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between gap-x-32 py-5 border-b-[1px] border-gray-200">
-                                <div className="flex flex-col gap-y-0.5 text-[0.8125rem]">
-                                    <span>Deactivate/Archive Pitch</span>
-                                    <p className="text-gray-500">Make your pitch unavailable to book while keeping your data accessible/stored on the dashboard.</p>
-                                </div>
-                                <div>
-                                    <button 
-                                        type="button" 
-                                        disabled={status === "ARCHIVED"}
-                                        className={`
-                                            flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
-                                            ${status != "ARCHIVED" ? 'bg-black hover:bg-gray-800 cursor-pointer' : 'bg-gray-700 cursor-not-allowed'} 
-                                            transition-colors
-                                        `}
-                                        onClick={() => setStatusConfirmationModalState("ARCHIVED")}
-                                    >
-                                        <span className="text-xs">Deactivate</span>
-                                    </button>
-                                </div>
-                            </div>
+                            <AnimatePresence>
+                                {
+                                    status != "LIVE" &&
+                                    <motion.div initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="flex items-center justify-between gap-x-32 py-5 border-b-[1px] border-gray-200 w-full">
+                                        <div className="flex flex-col gap-y-0.5 text-[0.8125rem]">
+                                            <span>Go Live</span>
+                                            <p className="text-gray-500">Make your pitch live to index, search, and book for all users.</p>
+                                        </div>
+                                        <div>
+                                            <button 
+                                                type="button" 
+                                                className={`
+                                                    flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white
+                                                    bg-black hover:bg-gray-800 cursor-pointer
+                                                    transition-colors
+                                                `}
+                                                onClick={() => setStatusConfirmationModalState("LIVE")}
+                                            >
+                                                <span className="text-xs">Publish</span>
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                }
+                            </AnimatePresence>
+                            <AnimatePresence>
+                                {
+                                    (!["ARCHIVED", "APPROVED"].includes(status)) &&
+                                    <motion.div initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="flex items-center justify-between gap-x-32 py-5 border-b-[1px] border-gray-200">
+                                        <div className="flex flex-col gap-y-0.5 text-[0.8125rem]">
+                                            <span>Deactivate/Archive Pitch</span>
+                                            <p className="text-gray-500">Make your pitch unavailable to book while keeping your data accessible/stored on the dashboard.</p>
+                                        </div>
+                                        <div>
+                                            <button 
+                                                type="button" 
+                                                disabled={status === "ARCHIVED"}
+                                                className={`
+                                                    flex items-center justify-center gap-x-1 rounded-md border-[1px] px-6 py-2.5 text-white 
+                                                    bg-black hover:bg-gray-800 cursor-pointer
+                                                    transition-colors
+                                                `}
+                                                onClick={() => setStatusConfirmationModalState("ARCHIVED")}
+                                            >
+                                                <span className="text-xs">Deactivate</span>
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                }
+                            </AnimatePresence>
                             <div className="flex items-center justify-between gap-x-32 py-5">
                                 <div className="flex flex-col gap-y-0.5 text-[0.8125rem]">
                                     <span>Delete Pitch</span>
@@ -891,7 +901,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.advanceBooking}
                                         onChange={(e) => setTemp({ ...temp, advanceBooking: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit={temp.advanceBooking === "1" ? "Hour" : "Hours"}
                                     />
                                 </div>
@@ -902,7 +912,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.minBookingHours}
                                         onChange={(e) => setTemp({ ...temp, minBookingHours: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit={temp.minBookingHours === "1" ? "Hour" : "Hours"}
                                     />
                                 </div>
@@ -913,7 +923,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.maxBookingHours}
                                         onChange={(e) => setTemp({ ...temp, maxBookingHours: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit={temp.maxBookingHours === "1" ? "Hour" : "Hours"}
                                     />
                                 </div>
@@ -932,7 +942,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.cancellationGrace}
                                         onChange={(e) => setTemp({ ...temp, cancellationGrace: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit={temp.cancellationGrace === "1" ? "Hour" : "Hours"}
                                     />
                                 </div>
@@ -943,7 +953,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.cancellationFee}
                                         onChange={(e) => setTemp({ ...temp, cancellationFee: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit="%"
                                     />
                                 </div>  
@@ -954,7 +964,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.noShowFee}
                                         onChange={(e) => setTemp({ ...temp, noShowFee: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit="%"
                                     />
                                 </div>
@@ -997,7 +1007,7 @@ export default function Client({ id } : { id: string }) {
                                         <Input
                                             value={temp.depositFee}
                                             onChange={(e) => setTemp({ ...temp, depositFee: e.target.value })}
-                                            className="text-xs"
+                                            className="text-[0.75rem]"
                                             unit="%"
                                         />
                                     </div>
@@ -1009,7 +1019,7 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.paymentDeadline}
                                         onChange={(e) => setTemp({ ...temp, paymentDeadline: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit={temp.paymentDeadline === "1" ? "Hour" : "Hours"}
                                     />
                                 </div>
@@ -1020,19 +1030,37 @@ export default function Client({ id } : { id: string }) {
                                     <Input
                                         value={temp.peakHourSurcharge}
                                         onChange={(e) => setTemp({ ...temp, peakHourSurcharge: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit="%"
                                     />
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between gap-x-16 py-2.5">
+                            <div className="flex items-center justify-between gap-x-16 py-2.5 border-b-[1px] border-gray-200">
                                 <span className="text-[0.8125rem]">Off-Peak Discount</span>
                                 <div className="w-20">
                                     <Input
                                         value={temp.offPeakDiscount}
                                         onChange={(e) => setTemp({ ...temp, offPeakDiscount: e.target.value })}
-                                        className="text-xs"
+                                        className="text-[0.75rem]"
                                         unit="%"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-x-16 py-5">
+                                <div className="flex flex-col text-[0.8125rem]">
+                                    <span>Payment Methods</span>
+                                    <p className="text-gray-500">Allowed payment methods open to the user to select from when booking your pitch.</p>
+                                </div>
+                                <div className="w-52">
+                                    <MultiDropdown 
+                                        options={[
+                                            { value: "CASH", label: "Cash" },
+                                            { value: "CREDIT_CARD", label: "Credit Card" },
+                                            { value: "WALLET", label: "Wallet" },
+                                        ]}
+                                        values={temp.paymentMethods}
+                                        onChange={(methods) => setTemp({ ...temp, paymentMethods: methods })}
+                                        wrapperStyle={{fontSize: "0.75rem"}}
                                     />
                                 </div>
                             </div>

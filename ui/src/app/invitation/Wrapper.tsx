@@ -25,8 +25,6 @@ export default function Wrapper({ token } : { token: string }) {
         )
     };
 
-    console.log(data);
-
     switch (data.status) {
         case "PENDING":
             {

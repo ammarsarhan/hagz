@@ -1,7 +1,9 @@
 "use client";
 
-import { DateScopeType, ViewType } from '@/app/utils/types/booking';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
+
+import { DateScopeType, ViewType } from '@/app/utils/types/booking';
+import { PitchScheduleItem, PitchSettings, ResolvedSettings } from "@/app/utils/types/pitch";
 
 export interface TargetOption {
     name: string;
@@ -9,61 +11,24 @@ export interface TargetOption {
     type: "ALL" | "GROUND" | "COMBINATION"
 };
 
-interface DataLayoutType {
-    grounds: Array<{
-        name: string;
-        id: string;
-        combinations: Array<{
-            id: string;
-            name: string;
-        }>
-    }>;
-};
-
-const parseTargets = (data: DataLayoutType): TargetOption[] => {
-    if (!data.grounds.length) return [];
-
-    const seenCombinations = new Set<string>();
-    const groundOptions: TargetOption[] = [];
-    const combinationOptions: TargetOption[] = [];
-
-    for (const ground of data.grounds) {
-        // Add each ground
-        groundOptions.push({
-            name: ground.name,
-            type: "GROUND",
-            id: ground.id,
-        });
-
-        // Collect unique combinations
-        for (const combo of ground.combinations) {
-            if (!seenCombinations.has(combo.id)) {
-                seenCombinations.add(combo.id);
-                combinationOptions.push({
-                    name: `${combo.name}`,
-                    type: "COMBINATION",
-                    id: combo.id,
-                });
-            }
-        }
-    }
-
-    return [
-        { name: `All Grounds (${groundOptions.length})`, id: "ALL", type: "ALL" },
-        ...groundOptions,
-        ...combinationOptions,
-    ];
+export interface BookingTargetOption {
+    name: string;
+    id: string;
+    type: "GROUND" | "COMBINATION";
+    settings: ResolvedSettings
 };
 
 interface BookingContextType {
-    viewType: ViewType,
-    setViewType: (value: ViewType) => void,
-    dateScope: DateScopeType,
-    setDateScope: (value: DateScopeType) => void,
-    activeTarget: TargetOption,
-    setActiveTarget: (value: TargetOption) => void,
-    targets: TargetOption[]
-}
+    view: ViewType,
+    setView: (value: ViewType) => void,
+    scope: DateScopeType,
+    setScope: (value: DateScopeType) => void,
+    target: TargetOption,
+    setTarget: (value: TargetOption) => void,
+    targets: TargetOption[],
+    schedule: Array<PitchScheduleItem>,
+    settings: PitchSettings
+};
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
@@ -75,28 +40,48 @@ export default function useBookingContext() {
     }
 
     return context;
-}
+};
 
 interface BookingContextProviderProps {
     children: ReactNode,
-    layout: DataLayoutType
-}
+    targets: TargetOption[],
+    schedule: Array<PitchScheduleItem>,
+    settings: PitchSettings
+};
 
-export function BookingContextProvider({ children, layout } : BookingContextProviderProps) {
-    const targets = parseTargets(layout);
+const listOptions = [
+    "TODAY", "TOMORROW", "WEEK", "NEXT_WEEK", "MONTH", "UPCOMING", "PAST_WEEK", "PAST_MONTH", "ALL"
+];
+const weeklyOptions = [
+    "WEEK", "NEXT_WEEK", "PAST_WEEK"
+];
 
-    const [viewType, setViewType] = useState<ViewType>("LIST");
-    const [dateScope, setDateScope] = useState<DateScopeType>("TODAY");
-    const [activeTarget, setActiveTarget] = useState<TargetOption>(targets[0]);
+export function BookingContextProvider({ children, targets, schedule, settings } : BookingContextProviderProps) {
+    const [view, setView] = useState<ViewType>("WEEKLY");
+    const [scope, setScope] = useState<DateScopeType>("WEEK");
+    const [target, setTarget] = useState<TargetOption>(targets[0]);
+
+    const handleSetViewType = (view: ViewType) => {
+        const isList = view === "LIST";
+        const options = isList ? listOptions : weeklyOptions;
+
+        if (!options.includes(scope)) {
+            setScope(isList ? "TODAY" : "WEEK");
+        };
+
+        setView(view);
+    };
 
     const value = {
-        viewType,
-        setViewType,
-        dateScope,
-        setDateScope,
-        activeTarget,
-        setActiveTarget,
-        targets
+        view,
+        setView: handleSetViewType,
+        scope,
+        setScope,
+        target,
+        setTarget,
+        targets,
+        schedule,
+        settings
     };
 
     return (

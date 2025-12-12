@@ -7,6 +7,7 @@ import { MdOutlineCloudUpload } from 'react-icons/md';
 
 import z from "zod"
 import { amenities, Amenity, amenityMap } from "@/app/utils/types/pitch";
+import { AnimatePresence, motion } from "framer-motion";
 
 export const detailsSchema = z.object({
     name: z.string("Pitch name is required.")
@@ -162,45 +163,48 @@ const AddAmenityModal = ({ isOpen, onClose } : { isOpen: boolean, onClose: () =>
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
-            <div className="flex flex-col gap-y-4 gap-x-4 bg-gray-50 rounded-md p-6 m-4" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between gap-x-8 w-full">
-                    <div className="flex-1 flex flex-col gap-y-0.5 mt-1">
-                        <h2 className="text-sm font-medium">Add Amenities</h2>
-                        <p className="text-[0.8125rem] text-gray-500">Select the amenities you want to add to your pitch.</p>
+        <AnimatePresence>
+            {
+                isOpen &&
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="fixed top-0 left-0 flex items-center justify-center w-screen h-screen z-99 bg-black/50" onClick={onClose}>
+                    <div className="flex flex-col gap-y-4 gap-x-4 bg-gray-50 rounded-md p-6 m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start justify-between gap-x-8 w-full">
+                            <div className="flex-1 flex flex-col gap-y-0.5 mt-1">
+                                <h2 className="text-sm font-medium">Add Amenities</h2>
+                                <p className="text-[0.8125rem] text-gray-500">Select the amenities you want to add to your pitch.</p>
+                            </div>
+                            <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
+                                <IoIosClose className="size-6"/>
+                            </button>
+                        </div>
+                        <div className="flex flex-col gap-y-6 my-2 bg-white border-[1px] border-gray-300 p-4 rounded-md">
+                            {
+                                amenities.map((item, index) => {
+                                    return (
+                                        <div key={index}>
+                                            <h3 className="font-medium first:mb-2">{item.group}</h3>
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                                {
+                                                    item.items.map((amenity) => {
+                                                        return (
+                                                            <button onClick={() => handleAmenity(amenity.key)} key={amenity.key} type="button" className={`${formData.details.amenities.includes(amenity.key) ? 'bg-blue-100 text-blue-800 border-transparent' : 'border-gray-200'} flex items-center gap-x-2 transition-colors rounded-md border-[1px] px-3 py-1.5 cursor-pointer`}>
+                                                                {amenity.icon}
+                                                                <span className="text-[0.8125rem]">{amenity.label}</span>
+                                                            </button>
+                                                        );
+                                                    })
+                                                }
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
                     </div>
-                    <button className="flex-shrink-0 hover:text-gray-600 cursor-pointer" type="button" onClick={onClose}>
-                        <IoIosClose className="size-6"/>
-                    </button>
-                </div>
-                <div className="flex flex-col gap-y-6 my-2 bg-white border-[1px] border-gray-300 p-4 rounded-md">
-                    {
-                        amenities.map((item, index) => {
-                            return (
-                                <div key={index}>
-                                    <h3 className="font-medium first:mb-2">{item.group}</h3>
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                        {
-                                            item.items.map((amenity) => {
-                                                return (
-                                                    <button onClick={() => handleAmenity(amenity.key)} key={amenity.key} type="button" className={`${formData.details.amenities.includes(amenity.key) ? 'bg-blue-100 text-blue-800 border-transparent' : 'border-gray-200'} flex items-center gap-x-2 transition-colors rounded-md border-[1px] px-3 py-1.5 cursor-pointer`}>
-                                                        {amenity.icon}
-                                                        <span className="text-[0.8125rem]">{amenity.label}</span>
-                                                    </button>
-                                                );
-                                            })
-                                        }
-                                    </div>
-                                </div>
-                            )
-                        })
-                    }
-                </div>
-            </div>
-        </div>
+                </motion.div>
+            }
+        </AnimatePresence>
     )
 }
 

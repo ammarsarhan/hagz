@@ -1,5 +1,4 @@
-import { useState } from "react";
-import z from "zod"
+import { useEffect, useRef, useState } from "react";
 import useFormContext from "@/app/context/useFormContext";
 
 import {
@@ -46,15 +45,9 @@ export interface CombinationType {
     }
 }
 
-export const layoutSchema = z.object({
-
-});
-
 export function LayoutSidebar({ 
     activeGroundId, 
-    activeCombinationId, 
-    setActiveGroundId, 
-    setActiveCombinationId, 
+    activeCombinationId,
     setIsAddGroundModalOpen, 
     setIsAddCombinationModalOpen,
     setIsEditGroundModalOpen,
@@ -62,8 +55,6 @@ export function LayoutSidebar({
 } : { 
     activeGroundId: string | null, 
     activeCombinationId: string | null,
-    setActiveGroundId: (ground: string | null) => void,
-    setActiveCombinationId: (combination: string | null) => void,
     setIsAddGroundModalOpen: (isOpen: boolean) => void,
     setIsAddCombinationModalOpen: (isOpen: boolean) => void,
     setIsEditGroundModalOpen: (isOpen: boolean) => void,
@@ -89,12 +80,8 @@ export function LayoutSidebar({
                 <div className="p-4 flex flex-col justify-between w-full h-full">
                     <div className="flex flex-col gap-y-4 text-[0.775rem]">
                         <div className="flex flex-col gap-y-4 rounded-md bg-white p-4 border-[1px] border-gray-200">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center">
                                 <h3 className="text-[0.9rem] font-semibold">Grounds</h3>
-                                {
-                                    activeGround &&
-                                    <button type="button" className="text-[0.8rem] text-blue-700 hover:underline cursor-pointer" onClick={() => setActiveGroundId(null)}>Show list</button>
-                                }
                             </div>
                             {
                                 activeGround ?
@@ -171,12 +158,8 @@ export function LayoutSidebar({
                             </div>
                         </div>
                         <div className="flex flex-col gap-y-4 rounded-md bg-white p-4 border-[1px] border-gray-200">
-                            <div className="flex items-center justify-between">
+                            <div className="flex">
                                 <h3 className="text-[0.9rem] font-semibold">Combinations</h3>
-                                {
-                                    activeCombination &&
-                                    <button type="button" className="text-[0.8rem] text-blue-700 hover:underline cursor-pointer" onClick={() => setActiveCombinationId(null)}>Show list</button>
-                                }
                             </div>
                             {
                                 activeCombination ?
@@ -263,8 +246,8 @@ export function LayoutSidebar({
 }
 
 const GroundsTable = ({ activeGroundId, setActiveGroundId, setIsAddGroundModalOpen } : { activeGroundId: string | null, setActiveGroundId: (ground: string | null) => void, setIsAddGroundModalOpen: (isOpen: boolean) => void }) => {
+    const tableRef = useRef<HTMLDivElement>(null);
     const { formData } = useFormContext();
-
     const data = formData.layout.grounds as GroundType[];
 
     const columnHelper = createColumnHelper<GroundType>();
@@ -275,12 +258,19 @@ const GroundsTable = ({ activeGroundId, setActiveGroundId, setIsAddGroundModalOp
         }),
         columnHelper.accessor("description", {
             header: () => <span>Additional Description</span>,
-            cell: info => <p style={{
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden"
-                            }}>{info.getValue() || "-"}</p>
+            cell: info => {
+                const label = info.getValue();
+
+                return (
+                    <p style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        color: label ? "black" : "oklch(55.1% 0.027 264.364)"
+                    }}>{label || "None"}</p>
+                )
+            }
         }),
         columnHelper.accessor("size", {
             header: () => <span>Size</span>,
@@ -300,10 +290,27 @@ const GroundsTable = ({ activeGroundId, setActiveGroundId, setIsAddGroundModalOp
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-    })
+    });
+
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            const target = e.target as HTMLElement;
+
+            if (target.closest("button") || target.closest(".modal") || target.closest(".app-table-row")) {
+                return;
+            }
+
+            if (tableRef.current && !tableRef.current.contains(target)) {
+                setActiveGroundId(null);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [setActiveGroundId]);
 
     return (
-        <div>
+        <div ref={tableRef}>
             {
                 table.getHeaderGroups().map(headerGroup => {
                     return (
@@ -327,7 +334,7 @@ const GroundsTable = ({ activeGroundId, setActiveGroundId, setIsAddGroundModalOp
                 table.getRowModel().rows.length > 0 ?
                 table.getRowModel().rows.map(row => {
                     return (
-                        <div key={row.id} className="flex w-full border-b-[1px] border-x-[1px] border-gray-200 last:rounded-b-sm hover:bg-gray-50 transition-colors cursor-pointer" style={{ backgroundColor: activeGroundId === row.original.id ? 'rgba(0, 0, 0, 0.05)' : '' }} onClick={() => setActiveGroundId(activeGroundId && activeGroundId === row.original.id ? null : row.original.id)}>
+                        <div key={row.id} className="app-table-row flex w-full border-b-[1px] border-x-[1px] border-gray-200 last:rounded-b-sm hover:bg-gray-50 transition-colors cursor-pointer" style={{ backgroundColor: activeGroundId === row.original.id ? 'rgba(0, 0, 0, 0.05)' : '' }} onClick={() => setActiveGroundId(activeGroundId && activeGroundId === row.original.id ? null : row.original.id)}>
                             {
                                 row.getVisibleCells().map(cell => {
                                     return (
@@ -358,8 +365,8 @@ const GroundsTable = ({ activeGroundId, setActiveGroundId, setIsAddGroundModalOp
 };
 
 const CombinationsTable = ({ activeCombinationId, setActiveCombinationId, setIsAddCombinationModalOpen } : { activeCombinationId: string | null, setActiveCombinationId: (combination: string | null) => void, setIsAddCombinationModalOpen: (isOpen: boolean) => void }) => {
+    const tableRef = useRef<HTMLDivElement | null>(null);
     const { formData } = useFormContext();
-
     const data = formData.layout.combinations as CombinationType[];
 
     const columnHelper = createColumnHelper<CombinationType>();
@@ -372,26 +379,28 @@ const CombinationsTable = ({ activeCombinationId, setActiveCombinationId, setIsA
                 return <span>{name || "-"}</span>;
             },
         }),
-
         columnHelper.accessor("description", {
             header: () => <span>Additional Description</span>,
             cell: info => {
-            const desc = info.getValue<string>();
-                return (
-                    <p className="text-xs line-clamp-2">
-                        {desc?.trim() ? desc : "-"}
-                    </p>
-                );
-            },
-        }),
+                const label = info.getValue();
 
+                return (
+                    <p style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        color: label ? "black" : "oklch(55.1% 0.027 264.364)"
+                    }}>{label || "None"}</p>
+                )
+            }
+        }),
         columnHelper.accessor("size", {
             header: () => <span>Combined Size</span>,
             cell: info => {
                 return <span>{sizeMap.get(info.getValue())}</span>;
             },
         }),
-
         columnHelper.accessor("grounds", {
             header: () => <span>Grounds</span>,
             cell: info => {
@@ -417,7 +426,6 @@ const CombinationsTable = ({ activeCombinationId, setActiveCombinationId, setIsA
                 );
             },
         }),
-
         columnHelper.accessor("price", {
             header: () => <span>Price</span>,
             cell: info => {
@@ -435,8 +443,25 @@ const CombinationsTable = ({ activeCombinationId, setActiveCombinationId, setIsA
 
     const hasGrounds = formData.layout.grounds.length > 1;
 
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            const target = e.target as HTMLElement;
+
+            if (target.closest("button") || target.closest(".modal") || target.closest(".app-table-row")) {
+                return;
+            };
+
+            if (tableRef.current && !tableRef.current.contains(target)) {
+                setActiveCombinationId(null);
+            };
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [setActiveCombinationId]);
+
     return (
-        <div>
+        <div ref={tableRef}>
             {
                 table.getHeaderGroups().map(headerGroup => {
                     return (
@@ -460,7 +485,7 @@ const CombinationsTable = ({ activeCombinationId, setActiveCombinationId, setIsA
                 table.getRowModel().rows.length > 0 ?
                 table.getRowModel().rows.map(row => {
                     return (
-                        <div key={row.id} style={{ backgroundColor: activeCombinationId === row.original.id ? 'rgba(0, 0, 0, 0.05)' : '' }} className="flex w-full border-b-[1px] border-x-[1px] border-gray-200 last:rounded-b-sm hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setActiveCombinationId(activeCombinationId && activeCombinationId === row.original.id ? null : row.original.id)}>
+                        <div key={row.id} style={{ backgroundColor: activeCombinationId === row.original.id ? 'rgba(0, 0, 0, 0.05)' : '' }} className="app-table-row flex w-full border-b-[1px] border-x-[1px] border-gray-200 last:rounded-b-sm hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setActiveCombinationId(activeCombinationId && activeCombinationId === row.original.id ? null : row.original.id)}>
                             {
                                 row.getVisibleCells().map(cell => {
                                     return (
@@ -502,8 +527,6 @@ export default function Layout() {
     const layoutSidebarProps = {
         activeGroundId,
         activeCombinationId,
-        setActiveGroundId,
-        setActiveCombinationId,
         setIsAddGroundModalOpen,
         setIsAddCombinationModalOpen,
         setIsEditGroundModalOpen,
@@ -520,24 +543,19 @@ export default function Layout() {
         activeCombinationId,
         setActiveCombinationId,
         setIsAddCombinationModalOpen
-    }
-
-    const addGroundModalKey = `add-ground-modal-${isAddGroundModalOpen}`;
-    const addCombinationModalKey = `add-combination-modal-${isAddCombinationModalOpen}`;
-    const editGroundModalKey = `edit-ground-modal-${isEditGroundModalOpen}`;
-    const editCombinationModalKey = `edit-combination-modal-${isEditCombinationModalOpen}`;
+    };
 
     return (
         <>
-            <AddGroundModal key={addGroundModalKey} isOpen={isAddGroundModalOpen} onClose={() => setIsAddGroundModalOpen(false)}/>
-            <AddCombinationModal key={addCombinationModalKey} isOpen={isAddCombinationModalOpen} onClose={() => setIsAddCombinationModalOpen(false)}/>
+            <AddGroundModal isOpen={isAddGroundModalOpen} onClose={() => setIsAddGroundModalOpen(false)}/>
+            <AddCombinationModal isOpen={isAddCombinationModalOpen} onClose={() => setIsAddCombinationModalOpen(false)}/>
             {
                 activeGroundId && 
-                <EditGroundModal key={editGroundModalKey} isOpen={isEditGroundModalOpen} onClose={() => setIsEditGroundModalOpen(false)} target={activeGroundId}/>
+                <EditGroundModal isOpen={isEditGroundModalOpen} onClose={() => setIsEditGroundModalOpen(false)} target={activeGroundId} key={`g-${activeGroundId}`}/>
             }
             {
                 activeCombinationId && 
-                <EditCombinationModal key={editCombinationModalKey} isOpen={isEditCombinationModalOpen} onClose={() => setIsEditCombinationModalOpen(false)} target={activeCombinationId}/>
+                <EditCombinationModal isOpen={isEditCombinationModalOpen} onClose={() => setIsEditCombinationModalOpen(false)} target={activeCombinationId} key={`c-${activeCombinationId}`}/>
             }
             <div className="flex flex-col gap-y-8 pb-7">
                 <div className="flex flex-col gap-y-4">

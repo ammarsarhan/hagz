@@ -1,5 +1,4 @@
 import express from 'express';
-import rateLimit from "express-rate-limit";
 
 import { 
     signUpWithCredentials,
@@ -11,10 +10,12 @@ import {
     verifyWithEmail,
     fetchVerificationData,
     issueVerificationToken,
-    refreshTokens
+    refreshTokens,
+    fetchSession,
+    signOut
 } from '@/controllers/authController'
 
-import { authorize } from '@/middleware/auth';
+import { authorize, optionalAuthorize } from '@/middleware/auth';
 
 const router = express.Router();
 
@@ -35,7 +36,9 @@ router.post('/verify/send', authorize, issueVerificationToken);
 router.get('/verify', authorize, fetchVerificationData);
 router.post('/verify', authorize, verifyWithEmail);
 
-// Refresh 
+// Refresh & Session
+router.get('/session', optionalAuthorize, fetchSession)
 router.post('/refresh', refreshTokens);
+router.get('/sign-out', signOut);
 
 export default router;

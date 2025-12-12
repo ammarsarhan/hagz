@@ -1,5 +1,7 @@
+import { BillingMethod } from "@/app/utils/types/pitch";
 import Link from "next/link";
 import { CSSProperties, useEffect, useRef, useState } from "react";
+import { FaTimes } from "react-icons/fa";
 import { FaCheck, FaChevronDown } from "react-icons/fa6";
 
 export default function Input({
@@ -98,10 +100,10 @@ export function Dropdown({
   return (
     <div className="flex flex-col gap-y-2 w-full" style={wrapperStyle} ref={wrapperRef}>
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <span className="font-medium text-gray-700">
           {label}
           {required && <span className="text-red-500 ml-0.5">*</span>}
-        </label>
+        </span>
       )}
 
       <div className="relative w-full bg-white">
@@ -117,7 +119,6 @@ export function Dropdown({
             className={`text-gray-500 size-3 transition-transform ${open ? "rotate-180" : ""}`}
           />
         </button>
-
         {open && (
           <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto z-10">
             {options.length > 0 ? (
@@ -149,15 +150,119 @@ export function Dropdown({
       {description && <p className="text-gray-500 text-xs">{description}</p>}
     </div>
   );
-}
+};
 
-export function TextArea({ label, description, placeholder, value, error, required = false, onChange, ...props } : { label: string, description?: string, placeholder: string, error?: string, value: string, required?: boolean, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function MultiDropdown({
+  label,
+  options,
+  required = false,
+  description,
+  values,
+  onChange,
+  wrapperStyle,
+  className,
+}: {
+  label?: string;
+  options: Opt[];
+  required?: boolean;
+  description?: string;
+  className?: string;
+  wrapperStyle?: CSSProperties;
+  values: string[];
+  onChange: ((value: string[]) => void);
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectOption = (value: string) => {
+    let updated: string[];
+
+    if (values.includes(value)) {
+      updated = values.filter((v) => v !== value);
+    } else {
+      updated = [...values, value];
+    }
+
+    onChange(updated);
+  };
+
+  return (
+    <div className="flex flex-col gap-y-2 w-full" style={wrapperStyle} ref={wrapperRef}>
+      {label && (
+        <span className="font-medium text-gray-700">
+          {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
+        </span>
+      )}
+      <div className="relative w-full bg-white">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          className={`cursor-pointer w-full border border-gray-200 rounded-md p-2 flex justify-between items-center text-left hover:border-gray-300 focus:ring-2 focus:ring-blue-200 ${className}`}
+        >
+          <span className="truncate">
+            {(() => {
+              if (!values.length) return "Select an option";
+
+              const selected = options
+                .filter(opt => values.includes(opt.value))
+                .map(opt => opt.label);
+
+              if (selected.length === 1) return selected[0];
+
+              if (selected.length === 2)
+                return `${selected[0]} & ${selected[1]}`;
+
+              return selected.join(", ");
+            })()}
+          </span>
+          <FaChevronDown
+            className={`text-gray-500 size-3 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+        {open && (
+          <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto z-10">
+            {options.length > 0 ? (
+              options.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => handleSelectOption(opt.value)}
+                  className={`cursor-pointer px-3 py-2 flex justify-between items-center hover:bg-gray-100 ${values.includes(opt.value) ? "bg-gray-50" : ""}`}
+                >
+                  <span>{opt.label}</span>
+                  {values.includes(opt.value) && <FaCheck className="text-blue-500 size-3" />}
+                </div>
+              ))
+            ) : (
+              <div className="p-2 text-sm text-gray-500">No options</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {description && <p className="text-gray-500 text-xs">{description}</p>}
+    </div>
+  );
+};
+
+export function TextArea({ label, description, placeholder, value, error, required = false, onChange, ...props } : { label?: string, description?: string, placeholder: string, error?: string, value: string, required?: boolean, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
       <div className="flex flex-col gap-y-2 w-full">
-          <label>
+          <span>
             {label}
             {required && <span className="text-red-500 ml-0.5">*</span>}
-          </label>
+          </span>
           <textarea
               placeholder={placeholder}
               value={value}

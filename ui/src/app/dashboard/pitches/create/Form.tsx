@@ -41,20 +41,22 @@ export default function Form() {
         let key = currentStep.key;
         const payload = formData[key];
 
-        const parsed = schema.safeParse(payload);
-
-        if (!parsed.success) {
-            window.scrollTo(0, 0);
-
-            const errors: Record<string, string> = {};
-            parsed.error.issues.forEach((issue) => {
-                const path = issue.path.join(".");
-                errors[`${key}.${path}`] = issue.message;
-            });
-
-            setErrors(errors);
-            return;
-        }
+        if (schema) {
+            const parsed = schema.safeParse(payload);
+    
+            if (!parsed.success) {
+                window.scrollTo(0, 0);
+    
+                const errors: Record<string, string> = {};
+                parsed.error.issues.forEach((issue) => {
+                    const path = issue.path.join(".");
+                    errors[`${key}.${path}`] = issue.message;
+                });
+    
+                setErrors(errors);
+                return;
+            }
+        };
 
         key = key.toUpperCase();
         mutation.mutate({ key, payload });
@@ -80,12 +82,12 @@ export default function Form() {
                     <div className="flex items-center gap-x-2 justify-end">
                         {
                             currentIndex !== 0 && (
-                                <button onClick={handlePrevious} type="button" className="mt-2 flex items-center justify-center gap-x-1 rounded-md border-[1px] px-3 py-2 border-gray-300 hover:bg-gray-100 transition-colors w-32 cursor-pointer">
+                                <button onClick={handlePrevious} type="button" className="mt-2 flex items-center justify-center gap-x-1 rounded-md border-[1px] px-3 py-2.5 border-gray-300 hover:bg-gray-100 transition-colors w-32 cursor-pointer">
                                     <span className="text-[0.8125rem]">Previous</span>
                                 </button>
                             )
                         }
-                        <button type="submit" className="mt-2 flex items-center justify-center gap-x-1 rounded-md border-[1px] px-3 py-2 text-white bg-black hover:bg-gray-800 transition-colors w-32 cursor-pointer">
+                        <button type="submit" className="mt-2 flex items-center justify-center gap-x-1 rounded-md border-[1px] px-3 py-2.5 text-white bg-black hover:bg-gray-800 transition-colors w-32 cursor-pointer">
                             <span className="text-[0.8125rem]">{isLast ? "Finish" : "Next"}</span>
                         </button>
                     </div>

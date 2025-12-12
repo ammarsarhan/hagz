@@ -22,17 +22,16 @@ app.use(cors({
 
 async function init() {
     // Handle any other crucial connections before the application starts
-
     app.listen(PORT, () => {
         console.log(`Server is running at http://localhost:${PORT}`);
     });
-}
+};
 
 // Routing
 app.use('/auth', auth);
 app.use('/dashboard', dashboard);
 app.use('/pitch', pitch)
-app.use('/invitation', invitation)
+app.use('/invitation', invitation);
 
 // Start the server
 init();

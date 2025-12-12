@@ -23,11 +23,17 @@ export async function signUpWithCredentials(req: Request, res: Response, next: N
         firstName: z
             .string({ error: "Please enter a valid first name." })
             .min(2, { error: "First name must be at least 2 characters." })
-            .max(100, { error: "First name must be at most 100 characters." }),
+            .max(100, { error: "First name must be at most 100 characters." })
+            .transform(str => {
+                return str[0].toUpperCase() + str.slice(1).toLowerCase()
+            }),
         lastName: z
             .string({ error: "Please enter a valid last name." })
             .min(2, { error: "Last name must be at least 2 characters." })
-            .max(100, { error: "Last name must be at most 100 characters." }),
+            .max(100, { error: "Last name must be at most 100 characters." })
+            .transform(str => {
+                return str[0].toUpperCase() + str.slice(1).toLowerCase()
+            }),
         email: z
             .email({ error: "Please enter a valid email address." }),
         phone: z
@@ -483,4 +489,59 @@ export async function refreshTokens(req: Request, res: Response, next: NextFunct
     };
 
     return res.status(200).json({ message: "Created a new access token for the specified user successfully." });
+};
+
+export async function fetchSession(req: Request, res: Response, next: NextFunction) {
+    const id = req.user?.sub;
+    const role = req.user?.role;
+
+    if (!id) {
+        return res.status(200).json({ message: "Could not fetch user session data as they are not authenticated.", data: { user: null } });
+    };
+
+    const user = await prisma.user.findFirst({
+        where: {
+            id,
+            status: { notIn: ["SUSPENDED", "DELETED"] }
+        }
+    });
+
+    if (!user) {
+        return res.status(404).json({ message: "Could not find an active user record for the specified id.", data: { user: null } });
+    };
+
+    return res.status(200).json({ 
+        message: "Fetched user session data successfully.",
+        data: {
+            user: {
+                role,
+                status: user.status,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email
+            }
+        }
+    });
+};
+
+export async function signOut(req: Request, res: Response, next: NextFunction) {
+    try {
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/", // must match the path you set earlier
+        });
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/",
+        });
+
+        return res.status(200).json({ message: "User signed out successfully." });
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to sign out user. Please try again." });
+    }
 }

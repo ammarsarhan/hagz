@@ -17,13 +17,13 @@ export default function DashboardShell({ children } : { children: ReactNode }) {
     });
 
     if (!data) return null;
-    const { user, stage } = data;
+    const { user, stage, pitches } = data;
     
     return (
         <div className="flex h-screen">
             <Aside stage={stage}/>
             <div className="flex flex-col h-full w-full">
-                <Navigation user={user}/>
+                <Navigation pitches={pitches} user={user}/>
                 <main className="absolute top-16 right-0 w-full lg:w-[calc(100%-14rem)] h-[calc(100vh-4rem)] text-sm">
                     {children}
                 </main>

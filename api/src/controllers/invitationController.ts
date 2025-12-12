@@ -15,10 +15,16 @@ export async function createInvitation(req: Request, res: Response, next: NextFu
         id: z.string(),
         firstName: z.string({ error: "Please provide a valid first name." })
             .min(2, { error: "First name must be at least 2 characters." })
-            .max(100, { error: "First name must be at most 100 characters." }),
+            .max(100, { error: "First name must be at most 100 characters." })
+            .transform(str => {
+                return str[0].toUpperCase() + str.slice(1).toLowerCase()
+            }),
         lastName: z.string({ error: "Please provide a valid last name." })
             .min(2, { error: "Last name must be at least 2 characters." })
-            .max(100, { error: "Last name must be at most 100 characters." }),
+            .max(100, { error: "Last name must be at most 100 characters." })
+            .transform(str => {
+                return str[0].toUpperCase() + str.slice(1).toLowerCase()
+            }),
         email: z.email({ error: "Please provide a valid email address." }),
         message: z.string()
             .max(500, "Additional message may not be longer than 500 characters.")
@@ -238,7 +244,7 @@ export async function updateInvitation(req: Request, res: Response, next: NextFu
                     where: { id: manager.id },
                     data: {
                         pitches: {
-                        connect: { id: invitation.pitchId }
+                            connect: { id: invitation.pitchId }
                         }
                     }
                 });
@@ -247,8 +253,8 @@ export async function updateInvitation(req: Request, res: Response, next: NextFu
                 await tx.managerPermissions.upsert({
                     where: {
                         id: {
-                        managerId: manager.id,
-                        pitchId: invitation.pitchId,
+                            managerId: manager.id,
+                            pitchId: invitation.pitchId,
                         }
                     },
                     update: {},

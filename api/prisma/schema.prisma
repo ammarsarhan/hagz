@@ -105,6 +105,11 @@ enum RecurrenceFrequency {
   MONTHLY
 }
 
+enum RecurrencePayment {
+  ONE_TIME
+  PER_INSTANCE
+}
+
 enum ScheduleExceptionTarget {
   PITCH
   COMBINATION
@@ -161,13 +166,17 @@ model Guest {
   id        String  @id @default(cuid())
   firstName String
   lastName  String
-  phone     String  @unique
+  phone     String
   notes     String?
 
+  pitch    Pitch     @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  pitchId  String
   bookings Booking[] @relation("guest")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([phone, pitchId])
 }
 
 model User {
@@ -291,10 +300,10 @@ model Pitch {
   amenities      Amenity[]
   basePrice      Int       @default(100)
 
-  status             PitchStatus         @default(DRAFT)
-  settings           PitchSettings?
-  layout             Layout?
-  schedule           Schedule[]
+  status   PitchStatus    @default(DRAFT)
+  settings PitchSettings?
+  layout   Layout?
+  schedule Schedule[]
 
   ownerId String
   owner   Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -302,26 +311,29 @@ model Pitch {
   managers    Manager[]
   permissions ManagerPermissions[]
   invitations Invitation[]
+  bookings    Booking[]
+  guests      Guest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model PitchSettings {
-  id                String        @id @default(cuid())
-  automaticBookings Boolean       @default(true)
-  depositFee        Int?          @default(0)
-  paymentDeadline   Int           @default(3)
-  minBookingHours   Int           @default(1)
-  maxBookingHours   Int           @default(2)
-  cancellationGrace Int          @default(1)
-  cancellationFee   Int           @default(0)
-  noShowFee         Int           @default(0)
-  advanceBooking    Int           @default(2)
-  peakHourSurcharge Int           @default(0)
-  offPeakDiscount   Int           @default(0)
-  payoutRate        PayoutRate    @default(MONTHLY)
-  payoutMethod      BillingMethod @default(CASH)
+  id                String          @id @default(cuid())
+  automaticBookings Boolean         @default(true)
+  depositFee        Int?            @default(0)
+  paymentDeadline   Int             @default(3)
+  minBookingHours   Int             @default(1)
+  maxBookingHours   Int             @default(2)
+  cancellationGrace Int             @default(1)
+  cancellationFee   Int             @default(0)
+  noShowFee         Int             @default(0)
+  advanceBooking    Int             @default(2)
+  peakHourSurcharge Int             @default(0)
+  offPeakDiscount   Int             @default(0)
+  payoutRate        PayoutRate      @default(MONTHLY)
+  payoutMethod      BillingMethod   @default(CASH)
+  paymentMethods    BillingMethod[]
 
   pitchId String @unique
   pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
@@ -334,6 +346,7 @@ model PitchSettings {
 
 model Layout {
   id           String        @id @default(cuid())
+  structure    Json
   grounds      Ground[]
   combinations Combination[]
 
@@ -355,8 +368,9 @@ model Combination {
   layoutId String
   layout   Layout @relation(fields: [layoutId], references: [id], onDelete: Cascade)
 
-  grounds    Ground[]
-  settings   CombinationSettings?
+  grounds           Ground[]
+  settings          CombinationSettings?
+  effectiveSettings Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -396,9 +410,10 @@ model Ground {
   layoutId String
   layout   Layout @relation(fields: [layoutId], references: [id], onDelete: Cascade)
 
-  combinations Combination[]
-  settings     GroundSettings?
-  bookings     Booking[]
+  combinations      Combination[]
+  settings          GroundSettings?
+  effectiveSettings Json
+  bookings          Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -439,23 +454,23 @@ model Schedule {
 }
 
 model ScheduleException {
-  id          String                  @id @default(cuid())
-  type        ScheduleExceptionType
-  target      ScheduleExceptionTarget
-  targetId    String
-  startDate   DateTime
-  endDate     DateTime
-  reason      String?
-  issuerId    String?
+  id        String                  @id @default(cuid())
+  type      ScheduleExceptionType
+  target    ScheduleExceptionTarget
+  targetId  String
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  issuerId  String?
 
   // Recurrence fields (optional)
-  frequency   RecurrenceFrequency?
-  interval    Int?
-  byDay       Int[]
-  until       DateTime?
+  frequency RecurrenceFrequency?
+  interval  Int?
+  byDay     Int[]
+  until     DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([target, targetId])
 }
@@ -482,9 +497,10 @@ model ManagerPermissions {
 // ================= Bookings =================
 
 enum BookingStatus {
-  PENDING
+  UNAPPROVED
   APPROVED
   REJECTED
+  PENDING
   CONFIRMED
   CANCELLED
   IN_PROGRESS
@@ -501,32 +517,36 @@ enum BookingSource {
 }
 
 model Booking {
-  id            String           @id @default(cuid())
-  referenceCode String           @unique
-  status        BookingStatus    @default(PENDING)
-  source        BookingSource    @default(PLATFORM)
+  id            String            @id @default(cuid())
+  referenceCode String            @unique
+  status        BookingStatus     @default(UNAPPROVED)
+  source        BookingSource     @default(PLATFORM)
   recurrenceId  String?
-  recurrence    RecurringBooking? @relation(fields: [recurrenceId], references: [id])
+  recurrence    RecurringBooking? @relation(fields: [recurrenceId], references: [id], onDelete: Cascade)
 
   issuerId String
   issuer   User   @relation("issuer", fields: [issuerId], references: [id])
+  pitchId  String
+  pitch    Pitch  @relation(fields: [pitchId], references: [id])
 
   userId  String?
   user    User?   @relation("user", fields: [userId], references: [id])
   guestId String?
   guest   Guest?  @relation("guest", fields: [guestId], references: [id])
 
-  grounds        Ground[]
+  grounds Ground[]
 
-  approvalDeadline DateTime?
-  paymentDeadline DateTime
+  isPaid               Boolean  @default(false)
+  paymentMethod        BillingMethod?
+  totalPrice           Int
+
+  approvalDeadline     DateTime?
+  paymentDeadline      DateTime
   cancellationDeadline DateTime
-  startDate   DateTime
-  endDate     DateTime
-  totalPrice  Int
-  depositPaid Boolean  @default(false)
+  startDate            DateTime
+  endDate              DateTime
 
-  cancelledAt DateTime?
+  cancelledAt        DateTime?
   cancellationReason String?
   notes              String?
 
@@ -535,11 +555,11 @@ model Booking {
 }
 
 model RecurringBooking {
-  id               String               @id @default(cuid())
-  frequency        RecurrenceFrequency?
-  interval         Int?
-  byDay            Int[]
-  recurrenceEndsAt DateTime?
+  id               String              @id @default(cuid())
+  frequency        RecurrenceFrequency
+  interval         Int
+  recurrenceEndsAt DateTime
+  paymentSchedule  RecurrencePayment   @default(PER_INSTANCE)
 
   bookings Booking[]
 }

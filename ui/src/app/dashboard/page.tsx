@@ -7,6 +7,8 @@ import { LuGitPullRequestCreateArrow } from "react-icons/lu";
 import { FaCircleInfo, FaCalculator, FaArrowRight } from "react-icons/fa6";
 import { BiPlus } from "react-icons/bi";
 import { QueryClient } from "@tanstack/react-query";
+import { VscPreview } from "react-icons/vsc";
+import { TbConfetti } from "react-icons/tb";
 
 export default async function Home() {
     const queryClient = new QueryClient();
@@ -60,9 +62,9 @@ export default async function Home() {
                             </div>
                             <div className="mt-2">
                                 <Link href="/dashboard/pitches/create"> 
-                                    <Button className="gap-x-1.5 bg-black! border-gray-800! hover:border-gray-800! hover:bg-gray-800! text-white text-[0.8125rem]">
+                                    <Button className="gap-x-1.5 bg-black! border-gray-800! hover:border-gray-800! hover:bg-gray-800! text-white">
                                         <BiPlus className="size-3.5"/> 
-                                        <span className="text-xs">Create a pitch</span>
+                                        <span className="text-[0.8rem]">Create a pitch</span>
                                     </Button>
                                 </Link>
                             </div>
@@ -113,8 +115,8 @@ export default async function Home() {
                             </div>
                             <div className="mt-2">
                                 <Link href="/dashboard/pitches/create"> 
-                                    <Button className="gap-x-2 bg-black! hover:bg-gray-800! border-0! text-white text-[0.8125rem]">
-                                        <span>Finish draft</span>
+                                    <Button className="gap-x-2 bg-black! hover:bg-gray-800! border-0! text-white">
+                                        <span className="text-[0.8rem]">Finish draft</span>
                                         <FaArrowRight className="size-3"/>
                                     </Button>
                                 </Link>
@@ -127,9 +129,32 @@ export default async function Home() {
             return (
                 <>
                     <div className="h-[calc(100vh-4rem)] flex flex-col items-center justify-center gap-y-8 py-4 mx-6">
-                        <div className="flex flex-col gap-y-2 text-center lg:w-3/4">
+                        <div className="flex flex-col items-center gap-y-2 text-center lg:w-3/4">
+                            <VscPreview className="size-10 text-blue-700 mb-2"/>
                             <h1 className="text-xl font-medium">Your pitch has been submitted for review.</h1>
                             <p className="text-[0.8125rem] text-gray-500">Please wait while we process your pitch. A member of our team will get in touch with you. This process may take up to 48 hours. If you have any questions, feel free to <Link href="/help" className="text-blue-700 hover:underline transition-colors text-nowrap">contact us</Link>.</p>
+                        </div>
+                        <div className="flex items-center gap-x-4">
+                            <div className="w-full flex flex-col gap-y-4.5 p-4 border-[1px] border-gray-200 rounded-md w-80! h-full">
+                                <FaCircleInfo className="size-7 flex-shrink-0 text-blue-800"/>
+                                <div className="flex flex-col gap-y-1.5 text-left text-[0.8125rem]">
+                                    <h3 className="font-medium">Read the documentation</h3>
+                                    <p className="text-gray-600">Learn more about how Hagz can help you grow your business.</p>
+                                    <Link href="/dashboard/pitches/create" className="text-blue-800 flex items-center gap-x-1 hover:underline">
+                                        <span>Go to docs</span>
+                                    </Link>
+                                </div>
+                            </div>
+                            <div className="w-full flex flex-col gap-y-4.5 p-4 border-[1px] border-gray-200 rounded-md w-80! h-full">
+                                <FaCalculator className="size-7 flex-shrink-0 text-blue-800"/>
+                                <div className="flex flex-col gap-y-1.5 text-left text-[0.8125rem]">
+                                    <h3 className="font-medium">Calculate pricing</h3>
+                                    <p className="text-gray-600">Completely transparent pricing. View your potential cut and earning growth.</p>
+                                    <Link href="/dashboard/pitches/create" className="text-blue-800 flex items-center gap-x-1 hover:underline">
+                                        <span>Go to calculator</span>
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </>
@@ -141,13 +166,15 @@ export default async function Home() {
                 return (
                     <>
                         <div className="h-[calc(100vh-4rem)] flex flex-col items-center justify-center gap-y-8 py-4 mx-6">
-                            <div className="flex flex-col gap-y-2 text-center lg:w-3/4">
+                            <div className="flex flex-col items-center gap-y-2 text-center lg:w-3/4">
+                                <TbConfetti className="size-10 text-blue-700 mb-2"/>
                                 <h1 className="text-xl font-medium">Congratulations! Your pitch has been approved.</h1>
                                 <p className="text-[0.8125rem] text-gray-500">Your pitch details have been reviewed and approved by the Hagz quality assurance team. You may now go live to start accepting bookings.</p>
-                                <div className="mx-auto mt-2">
-                                    <Link href={`/dashboard/pitch/${id}/settings`}>
-                                        <Button>
-                                            Go to settings
+                                <div className="mt-4">
+                                    <Link href={`/dashboard/pitch/${id}/settings`}> 
+                                        <Button className="gap-x-2 bg-black! hover:bg-gray-800! border-0! text-white">
+                                            <span className="text-[0.8rem]">Go to settings</span>
+                                            <FaArrowRight className="size-2.75"/>
                                         </Button>
                                     </Link>
                                 </div>
@@ -164,9 +191,8 @@ export default async function Home() {
             )
         case "ACTIVE":
             return (
-                <div>
-                    <span>Show default dashboard</span>
-                </div>
+                <>
+                </>
             )
     }
 };

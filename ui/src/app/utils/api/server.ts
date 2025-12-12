@@ -5,7 +5,7 @@ import { OnboardingStage } from "../types/dashboard";
 export async function fetchPitchState(id: string) {
     const target = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/general`;
     const { header } = await extractCookies();
-    
+
     // Server-side request - append cookies to authorize access.
     const res = await fetch(target, {
         method: "GET",
@@ -22,7 +22,7 @@ export async function fetchPitchState(id: string) {
 export async function fetchPitch(id: string) {
     const target = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}`;
     const { header } = await extractCookies();
-    
+
     // Server-side request - append cookies to authorize access.
     const res = await fetch(target, {
         method: "GET",
@@ -113,6 +113,40 @@ export async function fetchInvitation(token: string) {
 
 export async function fetchPitches() {
     const target = `${process.env.NEXT_PUBLIC_API_URL}/dashboard/pitches`;
+    const { header } = await extractCookies();
+
+    const res = await fetch(target, {
+        method: "GET",
+        headers: {
+            "Content-type": "application/json",
+            Cookie: header,
+        }
+    });
+
+    const { data } = await res.json();
+    return data;
+};
+
+export async function fetchSession() {
+    const target = `${process.env.NEXT_PUBLIC_API_URL}/auth/session`;
+
+    const { header } = await extractCookies();
+
+    const res = await fetch(target, {
+        method: "GET",
+        headers: {
+            "Content-type": "application/json",
+            Cookie: header,
+        }
+    });
+
+    const data = await res.json();
+    return data;    
+};
+
+export async function fetchPitchBookingConstraints(id: string) {
+    const target = `${process.env.NEXT_PUBLIC_API_URL}/pitch/${id}/bookings/general`;
+
     const { header } = await extractCookies();
 
     const res = await fetch(target, {

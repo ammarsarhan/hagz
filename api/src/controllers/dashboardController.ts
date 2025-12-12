@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from 'generated/prisma';
 import prisma from '@/utils/prisma';
 import { 
     getDashboardStage,
@@ -13,8 +14,9 @@ import {
     PitchSettings,
     resolveUserRole,
     fetchActivePitches,
-    resolveEffectiveGroundSettings
+    maskEmail
 } from '@/utils/dashboard';
+import { resolveEffectiveSettings } from '@/services/bookingService';
 
 export async function fetchDashboard(req: Request, res: Response, next: NextFunction) {
     const id = req.user?.sub;
@@ -40,7 +42,7 @@ export async function fetchDashboard(req: Request, res: Response, next: NextFunc
                 status: user.status,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                email: user.email,
+                email: maskEmail(user.email!),
             },
             pitches,
             stage
@@ -65,7 +67,7 @@ export async function fetchPitchCreateState(req: Request, res: Response, next: N
         // Fetch the user's pitch creation state.
         // Implement this using a transaction to prevent race conditions.
         const result = await prisma.$transaction(async (tx) => {
-            const user = await prisma.user.findUnique({
+            const user = await tx.user.findUnique({
                 where: { 
                     id,
                     status: { notIn: ["DELETED", "SUSPENDED"] }
@@ -324,21 +326,14 @@ export async function createPitchRequest(req: Request, res: Response, next: Next
 
                     if (!pitchSettings) return res.status(400).json({ message: "Could not find pitch settings. Layout step depends on settings set in the previous stage." });
 
-                    data.grounds.forEach(ground => {
-                        const settings = resolveEffectiveGroundSettings(ground.settings, pitchSettings);
-                        if (settings.minBookingHours > settings.maxBookingHours) return res.status(400).json({ message: "Could not update pitch layout. Maximum booking hours must be greater than minimum booking hours." });
-                    });
-
-                    data.combinations.forEach(combination => {
-                        const settings = resolveEffectiveGroundSettings(combination.settings, pitchSettings);
-                        if (settings.minBookingHours > settings.maxBookingHours) return res.status(400).json({ message: "Could not update pitch layout. Maximum booking hours must be greater than minimum booking hours." });
-                    });
-
                     const result = await prisma.$transaction(async (tx) => {
-                        // Ensure a single layout exists for this draft
+                        // Ensure a single layout exists for this draft.
                         const layout = await tx.layout.upsert({
                             where: { pitchId: draft.id },
-                            create: { pitchId: draft.id },
+                            create: { 
+                                pitchId: draft.id,
+                                structure: {} // Todo: Handle storing a precomputed version of the layout and any changing versions.
+                            },
                             update: {},
                             include: {
                                 grounds: true,
@@ -346,7 +341,7 @@ export async function createPitchRequest(req: Request, res: Response, next: Next
                             }
                         });
 
-                        // Delete old grounds & combinations to prevent duplicates
+                        // Delete old grounds & combinations to prevent duplicates.
                         await tx.combinationSettings.deleteMany({ where: { combination: { layoutId: layout.id } } });
                         await tx.groundSettings.deleteMany({ where: { ground: { layoutId: layout.id } } });
 
@@ -355,10 +350,13 @@ export async function createPitchRequest(req: Request, res: Response, next: Next
 
                         // Re-insert fresh grounds
                         for (const ground of data.grounds) {
+                            const effectiveSettings = resolveEffectiveSettings(ground.settings, pitchSettings);
+
                             await tx.ground.create({
                                 data: {
                                     ...ground,
                                     layoutId: layout.id,
+                                    effectiveSettings: effectiveSettings as unknown as Prisma.JsonObject,
                                     settings: {
                                         create: ground.settings
                                     }
@@ -368,10 +366,13 @@ export async function createPitchRequest(req: Request, res: Response, next: Next
 
                         // Re-insert fresh combinations
                         for (const combination of data.combinations) {
+                            const effectiveSettings = resolveEffectiveSettings(combination.settings, pitchSettings);
+
                             await tx.combination.create({
                                 data: {
                                     ...combination,
                                     layoutId: layout.id,
+                                    effectiveSettings: effectiveSettings as unknown as Prisma.JsonObject,
                                     grounds: {
                                         connect: combination.grounds.map((id) => ({ id }))
                                     },
@@ -517,4 +518,4 @@ export async function fetchPitches(req: Request, res: Response, next: NextFuncti
     });
 
     return res.status(200).json({ message: "Fetched owner pitches successfully.", data: updated ?? [] });
-}
+};

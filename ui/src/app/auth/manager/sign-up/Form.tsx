@@ -1,14 +1,14 @@
 "use client";
 
+import z from "zod";
 import { FormEvent, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import Button from "@/app/components/base/Button";
 import Input from "@/app/components/dashboard/Input";
 import { createManager, ManagerPayloadType } from "@/app/utils/api/client";
 import { Invitation } from "@/app/utils/types/invitation";
-import z from "zod";
-import { useRouter } from "next/navigation";
 
 const schema = z.object({
     firstName: z
