@@ -1,11 +1,9 @@
 import z from "zod";
 import { Request, Response, NextFunction } from "express";
-import { AccessRole, BillingMethod, BookingSource, BookingStatus, PitchStatus } from "generated/prisma";
+import { AccessRole, PitchStatus } from "generated/prisma";
 
 import { settingsSchema } from "@/utils/dashboard";
 import prisma from "@/utils/prisma";
-import { resolvePitchTargets } from "@/services/bookingService";
-import { addHours, addMonths, addWeeks, format, getDay, getHours, isAfter, isBefore, isSameDay, isWithinInterval, parseISO, startOfDay } from "date-fns";
 
 export async function fetchPitchState(req: Request, res: Response, next: NextFunction) {
     const pitchId = req.params.id;
