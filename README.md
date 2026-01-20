@@ -182,6 +182,11 @@ We will split this into 3 main domains:
         - Overview `/profile`
         - Bookings `/profile/history`
         - Settings `/profile/settings`
+    9) How it works `/model`
+    10) Policy `/policy`
+    11) Contact `/contact`
+    12) FAQs `/faq`
+
 - Auth
     1) Sign In `/auth/sign-in`
     2) Owner Sign Up `/auth/owner/sign-up`
