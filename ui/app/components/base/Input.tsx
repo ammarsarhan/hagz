@@ -1,21 +1,23 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { IoEye, IoEyeOff } from "react-icons/io5";
 
 interface InputProps {
     className?: string;
     label?: string;
+    error?: boolean;
     type: "text" | "password";
     placeholder: string;
     value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-type InputGroupProps = InputProps & { label: string };
+type InputGroupProps = Omit<InputProps, "error"> & { label: string, error?: string };
 
-export default function Input({ type, className, placeholder, value, onChange } : InputProps) {
+export default function Input({ type, className, placeholder, value, error, onChange } : InputProps) {
     const [showPassword, setShowPassword] = useState(false);
 
-    const base = "p-2 border border-gray-200 rounded-md text-sm w-full bg-white outline-none focus:border-secondary";
+    const base = `p-2 border ${error ? "border-red-600" : "border-gray-200"} rounded-md text-sm w-full bg-white outline-none focus:border-secondary`;
     const isPassword = type === "password";
     const computedType = isPassword ? (showPassword ? "text" : "password") : type;
 
@@ -24,7 +26,7 @@ export default function Input({ type, className, placeholder, value, onChange } 
             <input className={base} type={computedType} placeholder={placeholder} value={value} onChange={onChange}/>
             {
                 isPassword &&
-                <button className="absolute h-[calc(100%-2px)] px-2.5 my-px mx-px rounded-md bg-white right-0" onClick={() => setShowPassword(prev => !prev)}>
+                <button type="button" className="absolute h-[calc(100%-2px)] px-2.5 my-px mx-px rounded-md bg-white right-0" onClick={() => setShowPassword(prev => !prev)}>
                     {
                         showPassword ?
                         <IoEyeOff className="size-4 text-gray-400"/> :
@@ -36,11 +38,24 @@ export default function Input({ type, className, placeholder, value, onChange } 
     )
 }
 
-export function InputGroup({ className, type, label, placeholder, value, onChange } : InputGroupProps) {
+export function InputGroup({ className, type, label, placeholder, value, error, onChange } : InputGroupProps) {
     return (
         <div className={`flex flex-col gap-y-1.5 ${className}`}>
             <span className="text-xxs">{label}</span>
-            <Input type={type} placeholder={placeholder} value={value} onChange={onChange}/>
+            <Input error={!!error} type={type} placeholder={placeholder} value={value} onChange={onChange}/>
+            <AnimatePresence>   
+                {
+                    error &&
+                    <motion.span 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="text-xs text-red-600"
+                    >
+                        {error}
+                    </motion.span>
+                }
+            </AnimatePresence>
         </div>
     )
 }

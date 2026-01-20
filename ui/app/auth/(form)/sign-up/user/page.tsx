@@ -7,7 +7,10 @@ import Logo from "@/app/components/base/Logo";
 import { InputGroup } from "@/app/components/base/Input";
 
 import { FaArrowLeft } from "react-icons/fa6";
-import { useReducer, useState } from "react";
+import { useReducer, useRef, useState } from "react";
+import { userDetailsSchema } from "@/app/schemas/user";
+import parseErrors from "@/app/utils/schema";
+import z from "zod";
 
 interface CreateUserPayload {
     firstName: string;
@@ -30,7 +33,8 @@ function createUserReducer(state: CreateUserPayload, action: CreateUserAction) {
 
 export default function SignUp() {
     const [isLoading, setIsLoading] = useState(false);
-    const [errors, setErrors] = useState<Array<Record<string, string>>>([]);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [state, dispatch] = useReducer(createUserReducer, {
         firstName: "",
@@ -45,19 +49,47 @@ export default function SignUp() {
         dispatch({ field, value: e.target.value });
 
     const updatePhone = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value;
-        if (value.length > 13) return;
+        let digits = e.target.value.replace(/\D/g, "");
 
-        if (value.length == 4 || value.length == 8) {
-            value += "-";
+        if (digits.length > 11) digits = digits.slice(0, 11);
+
+        let formatted = "";
+
+        if (digits.length <= 4) {
+            formatted = digits;
+        } else if (digits.length <= 7) {
+            formatted = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+        } else {
+            formatted = `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
         };
 
-        dispatch({ field: "phone", value });
-    }
+        dispatch({ field: "phone", value: formatted });
+    };
+
+    const setErrorsWithTimeout = (errors: Record<string, string>) => {
+        setErrors(errors);
+
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        timeoutRef.current = setTimeout(() => {
+            setErrors({});
+        }, 3000);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+
+        const parsed = userDetailsSchema.safeParse(state);
+
+        if (!parsed.success) {
+            const errors = parseErrors<z.infer<typeof userDetailsSchema>>(parsed.error.issues);
+            setErrorsWithTimeout(errors);
+            console.log(errors);
+        };
+
         setIsLoading(false);
     };
 
@@ -75,14 +107,15 @@ export default function SignUp() {
                 <p className="text-gray-500 text-sm mt-2">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
                 <div className="flex flex-col gap-y-4 my-10">
                     <div className="flex items-center gap-x-4">
-                        <InputGroup className="flex-1" label="First Name" type="text" placeholder="First Name" value={state.firstName} onChange={update("firstName")} />
-                        <InputGroup className="flex-1" label="Last Name" type="text" placeholder="Last Name" value={state.lastName} onChange={update("lastName")} />
+                        <InputGroup error={errors["firstName"]} className="flex-1" label="First Name" type="text" placeholder="First Name" value={state.firstName} onChange={update("firstName")} />
+                        <InputGroup error={errors["lastName"]} className="flex-1" label="Last Name" type="text" placeholder="Last Name" value={state.lastName} onChange={update("lastName")} />
                     </div>
-                    <InputGroup className="flex-1" label="Phone Number" type="text" placeholder="Phone" value={state.phone} onChange={updatePhone} />
-                    <InputGroup className="flex-1" label="Password" type="password" placeholder="Password" value={state.password} onChange={update("password")} />
+                    <InputGroup error={errors["phone"]} className="flex-1" label="Phone Number" type="text" placeholder="Phone" value={state.phone} onChange={updatePhone} />
+                    <InputGroup error={errors["password"]} className="flex-1" label="Password" type="password" placeholder="Password" value={state.password} onChange={update("password")} />
+                    <p className="text-xxs">Already have an account? <Link href="/auth/sign-in" className="text-secondary hover:text-secondary/75 hover:underline">Sign in</Link></p>
                 </div>
                 <div className="w-full flex-center">
-                    <Button variant="primary" type="submit">
+                    <Button variant="primary" type="submit" disabled={isLoading}>
                         <span className="text-xxs font-medium">Sign Up</span>
                     </Button>
                 </div>
