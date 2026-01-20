@@ -3,5 +3,9 @@
 @theme {
     --text-xxs: 0.8rem;
     --color-primary: #B3FF00;
-    --color-secondary: #3C1DC6;
+    --color-secondary: #1E1EC7;
+}
+
+.flex-center {
+    @apply flex items-center justify-center;
 }

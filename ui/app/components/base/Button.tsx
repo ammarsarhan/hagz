@@ -11,6 +11,12 @@ export default function Button({ type = "button", variant = "primary", children 
                     {children}
                 </button>
             )
+        case "mono":
+            return (
+                <button type={type} className={`${base} bg-black hover:bg-black/85 border-transparent text-white`}>
+                    {children}
+                </button>
+            )
         case "outline":
             return (
                 <button type={type} className={`${base} bg-transparent hover:bg-gray-100 border-gray-200`}>

@@ -10,7 +10,7 @@ export default function Navigation() {
         <nav className="h-18 flex items-center justify-between py-4 px-6 text-[0.85rem] font-medium">
             <div className="flex items-center gap-x-5">
                 <Link href="/">
-                    <Logo/>
+                    <Logo active/>
                 </Link>
                 <div className="flex items-center gap-x-5">
                     <Link href="/" className="hover:underline">Search</Link>
@@ -28,8 +28,8 @@ export default function Navigation() {
                     </Link>
                     <Link href="/auth/sign-up">
                         <Button variant="primary">
-                            <span>Create An Account</span>
-                            <FaChevronRight className="size-3 group-hover:-rotate-45 transition-all" />
+                            <span className="group-hover:text-black/75">Create An Account</span>
+                            <FaChevronRight className="size-3 group-hover:-rotate-45 group-hover:text-black/75 transition-all" />
                         </Button>
                     </Link>
                 </div>
