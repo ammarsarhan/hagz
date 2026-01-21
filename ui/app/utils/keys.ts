@@ -1,3 +1,3 @@
-export const queryKeys = {
-    
-}
+export const keys = {
+    session: ['auth']
+};

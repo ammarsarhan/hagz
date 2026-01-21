@@ -24,12 +24,12 @@ export async function query<T>(endpoint: string, options: FetchOptions = {}): Pr
     return data;
 };
 
-export async function mutate<T>(endpoint: string, body: string, options: FetchOptions = {}): Promise<T> {
+export async function mutate<T>(endpoint: string, body: object, options: FetchOptions = {}): Promise<T> {
     const url = `${BASE_URL}${endpoint}`;
     
     const res = await fetch(url, {
         method: 'POST',
-        body,
+        body: JSON.stringify(body),
         headers: {
             'Content-Type': 'application/json',
             ...options.headers,

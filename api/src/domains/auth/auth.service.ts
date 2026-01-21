@@ -4,6 +4,6 @@ import { InternalServerError } from '@/shared/error';
 
 export default class AuthService {
     signUpUser = async (data: any) => {
-        throw new InternalServerError("Some random error");
+        return data;
     }
 }

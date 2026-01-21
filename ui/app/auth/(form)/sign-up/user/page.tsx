@@ -13,6 +13,8 @@ import parseErrors from "@/app/utils/schema";
 
 import { FaArrowLeft, FaFileContract } from "react-icons/fa6";
 import { IoIosClose } from "react-icons/io";
+import { useMutation } from "@tanstack/react-query";
+import { mutate } from "@/app/utils/api/base";
 
 interface CreateUserPayload {
     firstName: string;
@@ -35,7 +37,6 @@ function createUserReducer(state: CreateUserPayload, action: CreateUserAction) {
 
 export default function SignUp() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -81,6 +82,11 @@ export default function SignUp() {
         }, 3000);
     };
 
+    const handleCloseModal = () => {
+        if (mutation.isPending) return;
+        setIsModalOpen(false); 
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -96,9 +102,16 @@ export default function SignUp() {
         setIsModalOpen(true);
     };
 
+    const mutation = useMutation({
+        mutationFn: async () => await mutate("/auth/sign-up/user", state),
+        onSuccess: (data) => {
+            console.log(data);
+        }
+    });
+
     return (
         <>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+            <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
                 <div className="w-xl bg-white rounded-md p-6">
                     <div className="w-full flex items-center justify-end">
                         <button type="button" className="text-gray-700 hover:text-gray-500 transition-colors" onClick={() => setIsModalOpen(false)}>
@@ -109,7 +122,7 @@ export default function SignUp() {
                         <FaFileContract className="size-10"/>
                         <h1 className="font-semibold text-center text-xl">We uphold punctuality standards to keep our community safe.</h1>
                         <p className="text-gray-700 text-xxs">By using Hagz, you agree to our Terms of Service and Privacy Policy. Great experiences start with mutual respect; staying punctual and keeping up with payments helps us protect the rights of both owners and users. Your commitment to showing up on time is what makes our community great and keeps Hagz reliable for everyone.</p>
-                        <Button className="mt-2">
+                        <Button className="mt-2" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
                             <span className="font-medium">I Understand, Create My Account</span>
                         </Button>
                     </div>
@@ -136,7 +149,7 @@ export default function SignUp() {
                         <p className="text-xxs">Already have an account? <Link href="/auth/sign-in" className="text-secondary hover:text-secondary/75 hover:underline">Sign in</Link></p>
                     </div>
                     <div className="w-full flex-center">
-                        <Button variant="primary" type="submit" disabled={isLoading}>
+                        <Button variant="primary" type="submit" disabled={mutation.isPending}>
                             <span className="text-xxs font-medium">Sign Up</span>
                         </Button>
                     </div>
