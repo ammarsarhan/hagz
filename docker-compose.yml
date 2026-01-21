@@ -33,12 +33,12 @@ services:
       timeout: 3s
       retries: 5
 
-  # Backend (Node.js)
-  backend:
+  # API (Node.js)
+  api:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: backend
+    container_name: api
     environment:
       NODE_ENV: ${NODE_ENV}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -56,21 +56,21 @@ services:
       - ./api:/app
       - /app/node_modules
 
-  # Frontend (Next.js)
-  frontend:
+  # UI (Next.js)
+  ui:
     build:
       context: ./ui
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    container_name: frontend
+    container_name: ui
     environment:
       NODE_ENV: ${NODE_ENV}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
-      - backend
+      - api
     networks:
       - network
     volumes:
