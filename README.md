@@ -218,21 +218,23 @@ We will split this into 3 main domains:
     /dashboard
     /auth
     /components
-    /lib
+    /schemas
+    /utils
 /api
-    /domains
-        /auth
-        /pitch
-        /booking
-        /user
-        /dashboard
-        /invitations
-        /payments
-        /notifications
-    /shared
-        /middleware
-        /workers
-        /lib
+    /src
+        /domains
+            /auth
+            /pitch
+            /booking
+            /user
+            /dashboard
+            /invitations
+            /payments
+            /notifications
+        /shared
+            /middleware
+            /workers
+            /lib
 /docs
 ```
 

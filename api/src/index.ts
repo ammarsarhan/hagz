@@ -5,7 +5,7 @@ const port = process.env.PORT || 8080;
 
 app.use(express.json());
 
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_: Request, res: Response) => {
     return res.status(200).json({ status: 'UP' });
 });
 
