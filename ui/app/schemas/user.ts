@@ -16,5 +16,5 @@ export const userDetailsSchema = z.object({
         .string("Password is required")
         .min(8, "Password must be at least 8 characters long.")
         .max(50, "Password must be 50 characters long at most.")
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, "Password must contain at least one uppercase letter, one lowercase letter, and one number."),
 });

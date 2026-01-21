@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useReducer, useRef, useState } from "react";
+import z from "zod";
 
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 import { InputGroup } from "@/app/components/base/Input";
-
-import { FaArrowLeft } from "react-icons/fa6";
-import { useReducer, useRef, useState } from "react";
+import { Modal } from "@/app/components/base/Modal";
 import { userDetailsSchema } from "@/app/schemas/user";
 import parseErrors from "@/app/utils/schema";
-import z from "zod";
+
+import { FaArrowLeft, FaFileContract } from "react-icons/fa6";
+import { IoIosClose } from "react-icons/io";
 
 interface CreateUserPayload {
     firstName: string;
@@ -32,6 +34,7 @@ function createUserReducer(state: CreateUserPayload, action: CreateUserAction) {
 };
 
 export default function SignUp() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -80,47 +83,66 @@ export default function SignUp() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
 
         const parsed = userDetailsSchema.safeParse(state);
 
         if (!parsed.success) {
             const errors = parseErrors<z.infer<typeof userDetailsSchema>>(parsed.error.issues);
             setErrorsWithTimeout(errors);
-            console.log(errors);
+            return;
         };
-
-        setIsLoading(false);
+        
+        setErrors({});
+        setIsModalOpen(true);
     };
 
     return (
-        <div className="h-full relative flex-center flex-col p-10">
-            <div className="absolute top-4 left-4">
-                <Link href="/" className="flex items-center gap-x-1.5 text-secondary hover:text-secondary/75 transition-all">
-                    <FaArrowLeft className="size-3"/>
-                    <span className="font-medium text-sm">Back to home</span>
-                </Link>
-            </div>
-            <form className="w-full" onSubmit={handleSubmit}>
-                <Logo/>
-                <h1 className="font-semibold text-3xl w-full mt-4">Create a user account <br/> with Hagz</h1>
-                <p className="text-gray-500 text-sm mt-2">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
-                <div className="flex flex-col gap-y-4 my-10">
-                    <div className="flex items-center gap-x-4">
-                        <InputGroup error={errors["firstName"]} className="flex-1" label="First Name" type="text" placeholder="First Name" value={state.firstName} onChange={update("firstName")} />
-                        <InputGroup error={errors["lastName"]} className="flex-1" label="Last Name" type="text" placeholder="Last Name" value={state.lastName} onChange={update("lastName")} />
+        <>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <div className="w-xl bg-white rounded-md p-6">
+                    <div className="w-full flex items-center justify-end">
+                        <button type="button" className="text-gray-700 hover:text-gray-500 transition-colors" onClick={() => setIsModalOpen(false)}>
+                            <IoIosClose className="size-6"/>
+                        </button>
                     </div>
-                    <InputGroup error={errors["phone"]} className="flex-1" label="Phone Number" type="text" placeholder="Phone" value={state.phone} onChange={updatePhone} />
-                    <InputGroup error={errors["password"]} className="flex-1" label="Password" type="password" placeholder="Password" value={state.password} onChange={update("password")} />
-                    <p className="text-xxs">Already have an account? <Link href="/auth/sign-in" className="text-secondary hover:text-secondary/75 hover:underline">Sign in</Link></p>
+                    <div className="flex-center flex-col gap-y-4 my-4 px-3">
+                        <FaFileContract className="size-10"/>
+                        <h1 className="font-semibold text-center text-xl">We uphold punctuality standards to keep our community safe.</h1>
+                        <p className="text-gray-700 text-xxs">By using Hagz, you agree to our Terms of Service and Privacy Policy. Great experiences start with mutual respect; staying punctual and keeping up with payments helps us protect the rights of both owners and users. Your commitment to showing up on time is what makes our community great and keeps Hagz reliable for everyone.</p>
+                        <Button className="mt-2">
+                            <span className="font-medium">I Understand, Create My Account</span>
+                        </Button>
+                    </div>
                 </div>
-                <div className="w-full flex-center">
-                    <Button variant="primary" type="submit" disabled={isLoading}>
-                        <span className="text-xxs font-medium">Sign Up</span>
-                    </Button>
+            </Modal>
+            <div className="h-full relative flex-center flex-col p-10">
+                <div className="absolute top-4 left-4">
+                    <Link href="/" className="flex items-center gap-x-1.5 text-secondary hover:text-secondary/75 transition-all">
+                        <FaArrowLeft className="size-3"/>
+                        <span className="font-medium text-sm">Back to home</span>
+                    </Link>
                 </div>
-            </form>
-            <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
-        </div>
+                <form className="w-full" onSubmit={handleSubmit}>
+                    <Logo/>
+                    <h1 className="font-semibold text-3xl w-full mt-4">Create a user account <br/> with Hagz</h1>
+                    <p className="text-gray-500 text-sm mt-2">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
+                    <div className="flex flex-col gap-y-4 my-10">
+                        <div className="flex items-center gap-x-4">
+                            <InputGroup error={errors["firstName"]} className="flex-1" label="First Name" type="text" placeholder="First Name" value={state.firstName} onChange={update("firstName")} />
+                            <InputGroup error={errors["lastName"]} className="flex-1" label="Last Name" type="text" placeholder="Last Name" value={state.lastName} onChange={update("lastName")} />
+                        </div>
+                        <InputGroup error={errors["phone"]} className="flex-1" label="Phone Number" type="text" placeholder="Phone" value={state.phone} onChange={updatePhone} />
+                        <InputGroup error={errors["password"]} className="flex-1" label="Password" type="password" placeholder="Password" value={state.password} onChange={update("password")} />
+                        <p className="text-xxs">Already have an account? <Link href="/auth/sign-in" className="text-secondary hover:text-secondary/75 hover:underline">Sign in</Link></p>
+                    </div>
+                    <div className="w-full flex-center">
+                        <Button variant="primary" type="submit" disabled={isLoading}>
+                            <span className="text-xxs font-medium">Sign Up</span>
+                        </Button>
+                    </div>
+                </form>
+                <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
+            </div>
+        </>
     )
 }
