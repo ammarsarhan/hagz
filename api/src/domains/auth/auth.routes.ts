@@ -1,12 +1,10 @@
 import express from 'express';
 
 import AuthController from '@/domains/auth/auth.controller';
-import AuthService from '@/domains/auth/auth.service';
 
 const router = express.Router();
 
-const service = new AuthService();
-const controller = new AuthController(service);
+const controller = new AuthController();
 
 router.post('/sign-up/user', controller.signUpUser);
 

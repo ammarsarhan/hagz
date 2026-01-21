@@ -22,6 +22,7 @@ app.get('/health', (_: Request, res: Response) => {
 });
 
 app.use('/auth', auth);
+
 app.use(handleError);
 
 app.listen(port, () => {

@@ -17,7 +17,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
+  prisma-studio:
+    image: node:20-alpine
+    container_name: prisma-studio
+    working_dir: /usr/src/app/api
+    volumes:
+      - ./api:/usr/src/app/api
+    command: sh -c "npx prisma generate && npx prisma studio --port 5555 --browser none"
+    ports:
+      - "127.0.0.1:5555:5555"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - network
   # Redis
   redis:
     image: redis:7-alpine

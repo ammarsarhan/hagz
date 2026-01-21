@@ -1,9 +1,16 @@
-import z from 'zod';
-import prisma from "@/shared/lib/prisma";
-import { InternalServerError } from '@/shared/error';
+import UserService from '@/domains/user/user.service';
+import { createUserPayload } from '@/domains/user/user.validator';
+
+import { ConflictError } from '@/shared/error';
 
 export default class AuthService {
-    signUpUser = async (data: any) => {
-        return data;
+    private userService = new UserService();
+
+    signUpUser = async (payload: createUserPayload) => {
+        const existingUser = await this.userService.fetchUserByPhone(payload.phone);
+        if (existingUser) throw new ConflictError("A user with the specified phone number already exists.");
+        
+        const user = await this.userService.createUser(payload);
+        return user;
     }
 }
