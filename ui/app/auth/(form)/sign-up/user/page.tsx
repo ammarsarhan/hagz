@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useReducer, useRef, useState } from "react";
 import z from "zod";
 
@@ -15,6 +16,7 @@ import { FaArrowLeft, FaFileContract } from "react-icons/fa6";
 import { IoIosClose } from "react-icons/io";
 import { useMutation } from "@tanstack/react-query";
 import { mutate } from "@/app/utils/api/base";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface CreateUserPayload {
     firstName: string;
@@ -36,6 +38,8 @@ function createUserReducer(state: CreateUserPayload, action: CreateUserAction) {
 };
 
 export default function SignUp() {
+    const router = useRouter();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -79,7 +83,7 @@ export default function SignUp() {
 
         timeoutRef.current = setTimeout(() => {
             setErrors({});
-        }, 3000);
+        }, 5000);
     };
 
     const handleCloseModal = () => {
@@ -104,28 +108,32 @@ export default function SignUp() {
 
     const mutation = useMutation({
         mutationFn: async () => await mutate("/auth/sign-up/user", state),
+        onError: (error) => {
+            console.log(error);
+            setErrorsWithTimeout({ "general": error.message });
+            setIsModalOpen(false);
+        },
         onSuccess: (data) => {
             console.log(data);
+            router.push("/");
         }
     });
 
     return (
         <>
-            <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-                <div className="w-xl bg-white rounded-md p-6">
-                    <div className="w-full flex items-center justify-end">
-                        <button type="button" className="text-gray-700 hover:text-gray-500 transition-colors" onClick={() => setIsModalOpen(false)}>
-                            <IoIosClose className="size-6"/>
-                        </button>
-                    </div>
-                    <div className="flex-center flex-col gap-y-4 my-4 px-3">
-                        <FaFileContract className="size-10"/>
-                        <h1 className="font-semibold text-center text-xl">We uphold punctuality standards to keep our community safe.</h1>
-                        <p className="text-gray-700 text-xxs">By using Hagz, you agree to our Terms of Service and Privacy Policy. Great experiences start with mutual respect; staying punctual and keeping up with payments helps us protect the rights of both owners and users. Your commitment to showing up on time is what makes our community great and keeps Hagz reliable for everyone.</p>
-                        <Button className="mt-2" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-                            <span className="font-medium">I Understand, Create My Account</span>
-                        </Button>
-                    </div>
+            <Modal isOpen={isModalOpen} className="w-full md:w-xl bg-white rounded-md p-6 m-4" onClose={handleCloseModal}>
+                <div className="w-full flex items-center justify-end">
+                    <button type="button" className="text-gray-700 hover:text-gray-500 transition-colors" onClick={() => setIsModalOpen(false)}>
+                        <IoIosClose className="size-6"/>
+                    </button>
+                </div>
+                <div className="flex-center flex-col gap-y-4 my-4 px-3">
+                    <FaFileContract className="size-10"/>
+                    <h1 className="font-semibold text-center text-xl">We uphold punctuality standards to keep our community safe.</h1>
+                    <p className="text-gray-700 text-xxs">By using Hagz, you agree to our Terms of Service and Privacy Policy. Great experiences start with mutual respect; staying punctual and keeping up with payments helps us protect the rights of both owners and users. Your commitment to showing up on time is what makes our community great and keeps Hagz reliable for everyone.</p>
+                    <Button className="mt-2" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+                        <span className="font-medium">I Understand, Create My Account</span>
+                    </Button>
                 </div>
             </Modal>
             <div className="h-full relative flex-center flex-col p-10">
@@ -138,8 +146,21 @@ export default function SignUp() {
                 <form className="w-full" onSubmit={handleSubmit}>
                     <Logo/>
                     <h1 className="font-semibold text-3xl w-full mt-4">Create a user account <br/> with Hagz</h1>
-                    <p className="text-gray-500 text-sm mt-2">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
-                    <div className="flex flex-col gap-y-4 my-10">
+                    <p className="text-gray-500 text-sm mt-2 mb-5">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
+                    <AnimatePresence>
+                        {
+                            errors["general"] &&
+                            <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="text-xxs text-red-600"
+                            >
+                                {errors["general"]}
+                            </motion.p>
+                        }
+                    </AnimatePresence>
+                    <div className="flex flex-col gap-y-4 mt-5 mb-10">
                         <div className="flex items-center gap-x-4">
                             <InputGroup error={errors["firstName"]} className="flex-1" label="First Name" type="text" placeholder="First Name" value={state.firstName} onChange={update("firstName")} />
                             <InputGroup error={errors["lastName"]} className="flex-1" label="Last Name" type="text" placeholder="Last Name" value={state.lastName} onChange={update("lastName")} />

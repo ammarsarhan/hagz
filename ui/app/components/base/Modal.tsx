@@ -6,11 +6,12 @@ type OrientationType = "center" | "left" | "right";
 interface ModalProps { 
     children: React.ReactNode;
     isOpen: boolean;
+    className: string;
     onClose: () => void;
     orientation?: OrientationType;
 }
 
-export function Modal({ orientation = "center", children, isOpen, onClose } : ModalProps) {
+export function Modal({ orientation = "center", className, children, isOpen, onClose } : ModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     let base = "w-screen h-screen fixed top-0 left-0 z-99 bg-black/30 ";
 
@@ -49,7 +50,7 @@ export function Modal({ orientation = "center", children, isOpen, onClose } : Mo
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                 >
-                    <div ref={modalRef}>
+                    <div ref={modalRef} className={className}>
                         {children}
                     </div>
                 </motion.div>

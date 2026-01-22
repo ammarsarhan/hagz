@@ -17,6 +17,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   prisma-studio:
     image: node:20-alpine
     container_name: prisma-studio
@@ -33,6 +34,7 @@ services:
         condition: service_healthy
     networks:
       - network
+
   # Redis
   redis:
     image: redis:7-alpine
@@ -55,6 +57,8 @@ services:
       dockerfile: Dockerfile
     container_name: api
     environment:
+      REFRESH_SECRET: ${REFRESH_SECRET}
+      ACCESS_SECRET: ${ACCESS_SECRET}
       NODE_ENV: ${NODE_ENV}
       FRONTEND_URL: http://localhost:${FRONTEND_PORT}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -70,7 +74,7 @@ services:
       - network
     volumes:
       - ./api:/app
-      - api_modules:/app/node_modules
+      - /app/node_modules
 
   # UI (Next.js)
   ui:
@@ -91,15 +95,12 @@ services:
       - network
     volumes:
       - ./ui:/app
-      - ui_modules:/app/node_modules
-      - ui_next:/app/.next
+      - /app/node_modules
+      - /app/.next
 
 volumes:
   postgres_data:
   redis_data:
-  api_modules:
-  ui_modules:
-  ui_next:
 
 networks:
   network:

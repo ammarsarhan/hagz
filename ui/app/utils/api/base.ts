@@ -16,11 +16,12 @@ export async function query<T>(endpoint: string, options: FetchOptions = {}): Pr
         credentials: 'include',
     });
 
-    if (!res.ok) {
-        throw new Error(`An error has occurred: ${res.statusText}`);
+    const { success, message, data } = await res.json();
+
+    if (!success) {
+        throw new Error(message);
     };
 
-    const { data } = await res.json();
     return data;
 };
 
@@ -37,10 +38,11 @@ export async function mutate<T>(endpoint: string, body: object, options: FetchOp
         credentials: 'include',
     });
 
-    if (!res.ok) {
-        throw new Error(`An error has occurred: ${res.statusText}`);
+    const { success, message, data } = await res.json();
+
+    if (!success) {
+        throw new Error(message);
     };
 
-    const { data } = await res.json();
     return data;
 };
