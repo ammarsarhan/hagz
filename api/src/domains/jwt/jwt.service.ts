@@ -9,8 +9,8 @@ export interface BaseTokenPayload {
 class JWTService {
     private refreshSecret: string;
     private accessSecret: string;
-    private refreshExpiry: any = '15m';
-    private accessExpiry: any = '7d';
+    private refreshExpiry: any = '7d';
+    private accessExpiry: any = '15m';
 
     constructor () {
         this.refreshSecret = process.env.REFRESH_SECRET!;
@@ -37,7 +37,9 @@ class JWTService {
     }
     
     verifyRefreshToken = (token: string) => {
+        console.log("Hit verifyrefreshtoken")
         const decoded = verify(token, this.refreshSecret) as BaseTokenPayload;
+        console.log(decoded)
         return decoded;
     };
 

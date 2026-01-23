@@ -15,9 +15,6 @@ export default function authorize(isOptional: boolean = false) {
         try {
             const accessToken = req.cookies.accessToken;
             const refreshToken = req.cookies.refreshToken;
-            
-            console.log('Access Token:', accessToken, 'Type:', typeof accessToken);
-            console.log('Refresh Token:', refreshToken, 'Type:', typeof refreshToken);
 
             if (accessToken) {
                 const decoded = JWTService.verifyAccessToken(accessToken);
@@ -28,7 +25,7 @@ export default function authorize(isOptional: boolean = false) {
             if (refreshToken) {
                 const decoded = JWTService.verifyRefreshToken(refreshToken);
                 const { id, phone } = decoded;
-
+                
                 const token = JWTService.generateAccessToken({ id, phone });
 
                 res.cookie('accessToken', token, {
