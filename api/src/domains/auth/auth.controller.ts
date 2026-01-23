@@ -11,7 +11,40 @@ export default class AuthController {
 
     signUpUser = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const parsed = createUserSchema.safeParse(req.body);
+            const payload = { ...req.body, role: "USER" };
+            const parsed = createUserSchema.safeParse(payload);
+            if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
+
+            const { user, tokens } = await this.authService.registerUser(parsed.data);
+            
+            res.cookie("accessToken", tokens.accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000
+            });
+
+            res.cookie("refreshToken", tokens.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            });
+
+            return res.status(201).json({ 
+                success: true, 
+                message: "Created user account successfully.", 
+                data: { user }
+            });
+        } catch (error: any) {
+            next(error);
+        }
+    };
+
+    signUpOwner = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const payload = { ...req.body, role: "OWNER" };
+            const parsed = createUserSchema.safeParse(payload);
             if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
 
             const { user, tokens } = await this.authService.registerUser(parsed.data);
