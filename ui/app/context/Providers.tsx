@@ -1,38 +1,36 @@
-'use client'
+import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
+import { ReactQueryProvider } from '@/app/context/Query';
+import { AuthContextProvider } from '@/app/context/Auth';
+import getTokens, { buildHeaders } from '@/app/utils/api/cookies';
+import keys from '@/app/utils/api/keys';
+import { query } from '@/app/utils/api/base';
 
-import {
-  isServer,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'
-
-function makeQueryClient() {
-    return new QueryClient({
+export default async function Providers({ children }: { children: React.ReactNode }) {
+    const queryClient = new QueryClient({
         defaultOptions: {
             queries: {
-                staleTime: 60 * 1000,
+                staleTime: 60 * 1000, 
             },
         },
-    })
-};
+    });
 
-let browserQueryClient: QueryClient | undefined = undefined;
+    const { accessToken, refreshToken } = await getTokens();
+    const cookieHeader = buildHeaders(accessToken, refreshToken)
 
-function getQueryClient() {
-    if (isServer) {
-        return makeQueryClient()
-    } else {
-        if (!browserQueryClient) browserQueryClient = makeQueryClient()
-        return browserQueryClient
-    }
-};
-
-export default function Providers({ children }: { children: React.ReactNode }) {
-    const queryClient = getQueryClient()
+    await queryClient.prefetchQuery({
+        queryKey: keys.session,
+        queryFn: async () => await query('/auth/session', { 
+            headers: cookieHeader ? { Cookie: cookieHeader } : {}
+        })
+    });
 
     return (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
+        <ReactQueryProvider>
+            <HydrationBoundary state={dehydrate(queryClient)}>
+                <AuthContextProvider>
+                    {children}
+                </AuthContextProvider>
+            </HydrationBoundary>
+        </ReactQueryProvider>
     )
 };

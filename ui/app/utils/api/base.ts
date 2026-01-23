@@ -1,4 +1,6 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const BASE_URL = (typeof window === 'undefined' && process.env.INTERNAL_API_URL)
+    ? process.env.INTERNAL_API_URL
+    : process.env.NEXT_PUBLIC_API_URL;
 
 interface FetchOptions {
     headers?: HeadersInit;
@@ -6,16 +8,18 @@ interface FetchOptions {
 
 export async function query<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const url = `${BASE_URL}${endpoint}`;
-    
+
     const res = await fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
             ...options.headers,
         },
-        credentials: 'include',
+        ...(typeof window !== 'undefined' && { credentials: 'include' }),
+        cache: 'no-store'
     });
 
+    
     const { success, message, data } = await res.json();
 
     if (!success) {
@@ -35,7 +39,8 @@ export async function mutate<T>(endpoint: string, body: object, options: FetchOp
             'Content-Type': 'application/json',
             ...options.headers,
         },
-        credentials: 'include',
+        ...(typeof window !== 'undefined' && { credentials: 'include' }),
+        cache: 'no-store'
     });
 
     const { success, message, data } = await res.json();

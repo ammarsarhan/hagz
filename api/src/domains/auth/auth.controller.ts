@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 
 import AuthService from '@/domains/auth/auth.service';
-import { createUserSchema, signInSchema } from '../user/user.validator';
+import UserService from '@/domains/user/user.service';
+import { createUserSchema, signInSchema } from '@/domains/user/user.validator';
 import { BadRequestError, UnauthorizedError } from '@/shared/error';
 
 export default class AuthController {
+    private userService = new UserService();
     private authService = new AuthService();
 
     signUpUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -18,20 +20,20 @@ export default class AuthController {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000
+                maxAge: 15 * 60 * 1000
             });
 
             res.cookie("refreshToken", tokens.refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",
-                maxAge: 15 * 60 * 1000
+                maxAge: 7 * 24 * 60 * 60 * 1000
             });
 
-            return res.status(200).json({ 
+            return res.status(201).json({ 
                 success: true, 
                 message: "Created user account successfully.", 
-                data: user 
+                data: { user }
             });
         } catch (error: any) {
             next(error);
@@ -40,34 +42,55 @@ export default class AuthController {
 
     signIn = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            console.log("Hit")
-
             const parsed = signInSchema.safeParse(req.body);
             if (!parsed.success) throw new UnauthorizedError(parsed.error.issues[0].message);
 
-            const { user, tokens } = await this.authService.signIn(parsed.data);
+            const { user, tokens } = await this.authService.signInUser(parsed.data);
 
             res.cookie("accessToken", tokens.accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000
-            });
-
-            res.cookie("refreshToken", tokens.refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",
                 maxAge: 15 * 60 * 1000
             });
 
+            res.cookie("refreshToken", tokens.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            });
+
             return res.status(200).json({ 
                 success: true, 
                 message: "Signed user in successfully.", 
-                data: user 
+                data: { user } 
             });
         } catch (error: any) {
             next(error);
         }
     }; 
+
+    fetchSession = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (!req.user) {
+                return res.status(200).json({ 
+                    success: true, 
+                    message: "An access token was not provided.", 
+                    data: { user: null } 
+                });
+            };
+
+            const id = req.user.id;
+            const user = await this.userService.fetchUserById(id, true);
+
+            return res.status(200).json({ 
+                success: true, 
+                message: "Fetched user session data successfully.", 
+                data: { user } 
+            });
+        } catch (error: any) {
+            next(error);
+        }
+    };
 };

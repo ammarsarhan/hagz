@@ -7,7 +7,6 @@ import { createUserPayload, signInPayload } from '@/domains/user/user.validator'
 import { ConflictError, UnauthorizedError } from '@/shared/error';
 
 export default class AuthService {
-    private JWTService = new JWTService();
     private userService = new UserService();
 
     registerUser = async (payload: createUserPayload) => {
@@ -21,11 +20,11 @@ export default class AuthService {
             password: hash
         });
 
-        const tokens = this.JWTService.generateTokenPair({ id: user.id, phone: user.phone });
+        const tokens = JWTService.generateTokenPair({ id: user.id, phone: user.phone });
         return { tokens, user };
     };
 
-    signIn = async (payload: signInPayload) => {        
+    signInUser = async (payload: signInPayload) => {        
         const user = await this.userService.fetchUserByPhone(payload.phone);
         if (!user) throw new UnauthorizedError("Could not find an account with the specified credentials.");
 
@@ -36,7 +35,16 @@ export default class AuthService {
             this.userService.updatePassword(user.id, user.password);
         };
 
-        const tokens = this.JWTService.generateTokenPair({ id: user.id, phone: user.phone });
-        return { tokens, user: { ...user } };
+        const { password, createdAt, updatedAt, ...data } = user;
+
+        const tokens = JWTService.generateTokenPair({ id: user.id, phone: user.phone });
+        return { tokens, user: data };
     };
+
+    getSessionData = async (token: string) => {
+        const { id } = JWTService.verifyAccessToken(token);
+        const user = await this.userService.fetchUserById(id, true);
+
+        return user;
+    }
 }

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useReducer, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import z from "zod";
 
 import Button from "@/app/components/base/Button";
@@ -10,13 +12,12 @@ import Logo from "@/app/components/base/Logo";
 import { InputGroup } from "@/app/components/base/Input";
 import { Modal } from "@/app/components/base/Modal";
 import { userDetailsSchema } from "@/app/schemas/user";
+import { mutate } from "@/app/utils/api/base";
+import keys from "@/app/utils/api/keys";
 import parseErrors from "@/app/utils/schema";
 
 import { FaArrowLeft, FaFileContract } from "react-icons/fa6";
 import { IoIosClose } from "react-icons/io";
-import { useMutation } from "@tanstack/react-query";
-import { mutate } from "@/app/utils/api/base";
-import { AnimatePresence, motion } from "framer-motion";
 
 interface CreateUserPayload {
     firstName: string;
@@ -39,6 +40,7 @@ function createUserReducer(state: CreateUserPayload, action: CreateUserAction) {
 
 export default function SignUp() {
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -109,12 +111,11 @@ export default function SignUp() {
     const mutation = useMutation({
         mutationFn: async () => await mutate("/auth/sign-up/user", state),
         onError: (error) => {
-            console.log(error);
             setErrorsWithTimeout({ "general": error.message });
             setIsModalOpen(false);
         },
-        onSuccess: (data) => {
-            console.log(data);
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: keys.session })
             router.push("/");
         }
     });

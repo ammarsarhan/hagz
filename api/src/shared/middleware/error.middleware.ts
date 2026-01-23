@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import AppError from "@/shared/error";
 
-export default function handleError(
+export default function sendError(
     err: Error,
     _req: Request,
     res: Response,

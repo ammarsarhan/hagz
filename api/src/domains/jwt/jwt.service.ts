@@ -6,7 +6,7 @@ export interface BaseTokenPayload {
     phone: string;
 }
 
-export default class JWTService {
+class JWTService {
     private refreshSecret: string;
     private accessSecret: string;
     private refreshExpiry: any = '15m';
@@ -45,4 +45,6 @@ export default class JWTService {
         const decoded = verify(token, this.accessSecret) as BaseTokenPayload;
         return decoded;
     };
-}
+};
+
+export default new JWTService();

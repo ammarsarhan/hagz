@@ -3,20 +3,19 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useReducer, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import z from "zod";
 
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 import { InputGroup } from "@/app/components/base/Input";
-import { Modal } from "@/app/components/base/Modal";
 import { signInSchema } from "@/app/schemas/user";
 import { mutate } from "@/app/utils/api/base";
 import parseErrors from "@/app/utils/schema";
 
-import { FaArrowLeft, FaFileContract } from "react-icons/fa6";
-import { IoIosClose } from "react-icons/io";
+import { FaArrowLeft } from "react-icons/fa6";
+import keys from "@/app/utils/api/keys";
 
 interface SignInPayload {
     phone: string;
@@ -37,6 +36,8 @@ function signInReducer(state: SignInPayload, action: SignInAction) {
 
 export default function SignIn() {
     const router = useRouter();
+    const queryClient = useQueryClient();
+
     const [errors, setErrors] = useState<Record<string, string>>({});
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -98,11 +99,10 @@ export default function SignIn() {
     const mutation = useMutation({
         mutationFn: async () => await mutate("/auth/sign-in", state),
         onError: (error) => {
-            console.log(error);
             setErrorsWithTimeout({ "general": error.message });
         },
-        onSuccess: (data) => {
-            console.log(data);
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: keys.session })
             router.push("/");
         }
     });

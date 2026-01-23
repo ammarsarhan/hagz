@@ -186,7 +186,6 @@ We will split this into 3 main domains:
     10) Policy `/policy`
     11) Contact `/contact`
     12) FAQs `/faq`
-
 - Auth
     1) Sign In `/auth/sign-in`
     2) Owner Sign Up `/auth/owner/sign-up`
