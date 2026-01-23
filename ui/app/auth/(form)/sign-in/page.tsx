@@ -16,6 +16,7 @@ import parseErrors from "@/app/utils/schema";
 
 import { FaArrowLeft } from "react-icons/fa6";
 import keys from "@/app/utils/api/keys";
+import { User } from "@/app/context/Auth";
 
 interface SignInPayload {
     phone: string;
@@ -23,8 +24,12 @@ interface SignInPayload {
 }
 
 interface SignInAction {
-  field: keyof SignInPayload
-  value: string
+  field: keyof SignInPayload;
+  value: string;
+}
+
+interface SignInResponse {
+    user: User;
 }
 
 function signInReducer(state: SignInPayload, action: SignInAction) {
@@ -96,14 +101,25 @@ export default function SignIn() {
         mutation.mutate();
     };
 
-    const mutation = useMutation({
+    const mutation = useMutation<SignInResponse, Error>({
         mutationFn: async () => await mutate("/auth/sign-in", state),
         onError: (error) => {
             setErrorsWithTimeout({ "general": error.message });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: keys.session })
-            router.push("/");
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: keys.session });
+
+            switch (data.user.role) {
+                case "USER":
+                    router.push("/");
+                    break;
+                case "MANAGER":
+                    router.push("/dashboard");
+                    break;
+                case "OWNER":
+                    router.push("/dashboard");
+                    break;
+            }
         }
     });
 

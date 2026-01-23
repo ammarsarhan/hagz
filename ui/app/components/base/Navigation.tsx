@@ -5,7 +5,7 @@ import Link from "next/link";
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 
-import { FaChevronDown, FaChevronRight, FaUser } from "react-icons/fa6";
+import { FaChevronDown, FaChevronRight, FaGear, FaUser } from "react-icons/fa6";
 import useAuthContext from "@/app/context/Auth";
 
 export default function Navigation() {
@@ -27,20 +27,11 @@ export default function Navigation() {
             </div>
             {
                 user ?
-                <div className="flex items-center gap-x-6">
-                    <Link href="/profile" className="flex items-center gap-x-2.5">
-                        <div className="size-7.5 flex-center bg-slate-200 rounded-full">
-                            <FaUser className="size-3.5 text-slate-400"/>
-                        </div>
-                        <div className="flex flex-col text-xs">
-                            <span className="font-medium">{user.firstName} {user.lastName}</span>
-                            <span className="text-gray-500">{user.phone}</span>
-                        </div>
-                        <FaChevronDown className="size-3 text-gray-500"/>
-                    </Link>
+                <div className="flex items-center gap-x-4">
+                    
                 </div> :
                 <div className="hidden lg:flex items-center gap-x-4">
-                    <Link href="/" className="hover:underline text-secondary hover:text-secondary/75 transition-colors mx-1">Have a pitch?</Link>
+                    <Link href="/auth/sign-up/owner" className="hover:underline text-secondary hover:text-secondary/75 transition-colors mx-1">Have a pitch?</Link>
                     <div className="flex items-center gap-x-2">
                         <Link href="/auth/sign-in">
                             <Button variant="outline">Sign In</Button>

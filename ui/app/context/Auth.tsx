@@ -5,11 +5,16 @@ import { useQuery } from "@tanstack/react-query";
 import { query } from "@/app/utils/api/base";
 import keys from "@/app/utils/api/keys";
 
+export type UserRole = "USER" | "OWNER" | "MANAGER";
+export type UserStatus = "UNVERIFIED" | "ACTIVE" | "SUSPENDED";
+
 export interface User {
     id: string;
     firstName: string;
     lastName: string;
     phone: string;
+    role: UserRole;
+    status: UserStatus;
 }
 
 interface AuthContextType {

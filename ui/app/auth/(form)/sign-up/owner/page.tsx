@@ -116,7 +116,7 @@ export default function SignUp() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: keys.session })
-            router.push("/");
+            router.push("/dashboard");
         }
     });
 
