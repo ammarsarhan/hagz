@@ -17,7 +17,7 @@ export default function Navigation() {
                 <Link href="/">
                     <Logo active/>
                 </Link>
-                <div className="flex items-center gap-x-5">
+                <div className="hidden lg:flex items-center gap-x-5">
                     <Link href="/" className="hover:underline">Search</Link>
                     <Link href="/" className="hover:underline">How It Works</Link>
                     <Link href="/" className="hover:underline">Policy</Link>
@@ -29,18 +29,18 @@ export default function Navigation() {
                 user ?
                 <div className="flex items-center gap-x-6">
                     <Link href="/profile" className="flex items-center gap-x-2.5">
-                        <div className="size-8 flex-center bg-slate-200 rounded-full">
-                            <FaUser className="size-4 text-slate-400"/>
+                        <div className="size-7.5 flex-center bg-slate-200 rounded-full">
+                            <FaUser className="size-3.5 text-slate-400"/>
                         </div>
-                        <div className="flex flex-col text-xs mr-0.5">
+                        <div className="flex flex-col text-xs">
                             <span className="font-medium">{user.firstName} {user.lastName}</span>
                             <span className="text-gray-500">{user.phone}</span>
                         </div>
                         <FaChevronDown className="size-3 text-gray-500"/>
                     </Link>
                 </div> :
-                <div className="flex items-center gap-x-4">
-                    <Link href="/" className="hover:underline mx-1">Have a pitch?</Link>
+                <div className="hidden lg:flex items-center gap-x-4">
+                    <Link href="/" className="hover:underline text-secondary hover:text-secondary/75 transition-colors mx-1">Have a pitch?</Link>
                     <div className="flex items-center gap-x-2">
                         <Link href="/auth/sign-in">
                             <Button variant="outline">Sign In</Button>

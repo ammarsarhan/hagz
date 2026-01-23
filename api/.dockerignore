@@ -1,0 +1,7 @@
+node_modules
+dist
+.prisma
+.git
+.env*
+Dockerfile
+docker-compose.yml

@@ -2,16 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN mkdir -p /app && chown -R node:node /app
-
-COPY --chown=node:node package*.json ./
+RUN chown -R node:node /app
 
 USER node
 
-RUN npm install
+COPY --chown=node:node package*.json ./
 
-COPY --chown=node:node . .
+RUN npm install
 
 EXPOSE 8080
 
-CMD npx prisma generate && npx prisma db push && npm run dev
+CMD sh -c "npx prisma generate && npx prisma db push && npm run dev"

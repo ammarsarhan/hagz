@@ -74,7 +74,7 @@ services:
       - network
     volumes:
       - ./api:/app
-      - /app/node_modules
+      - api_node_modules:/app/node_modules
 
   # UI (Next.js)
   ui:
@@ -96,12 +96,15 @@ services:
       - network
     volumes:
       - ./ui:/app
-      - /app/node_modules
-      - /app/.next
+      - ui_node_modules:/app/node_modules
+      - ui_next:/app/.next
 
 volumes:
   postgres_data:
   redis_data:
+  api_node_modules:
+  ui_node_modules:
+  ui_next:
 
 networks:
   network:
