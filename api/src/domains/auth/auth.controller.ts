@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import AuthService from '@/domains/auth/auth.service';
 import UserService from '@/domains/user/user.service';
 import { createUserSchema, signInSchema } from '@/domains/user/user.validator';
-import { BadRequestError, UnauthorizedError } from '@/shared/error';
+import { BadRequestError, UnauthorizedError } from '@/shared/lib/error';
 
 export default class AuthController {
     private userService = new UserService();
@@ -43,7 +43,7 @@ export default class AuthController {
 
     signUpOwner = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const payload = { ...req.body, role: "OWNER" };
+            const payload = { ...req.body, role: "ADMIN" };
             const parsed = createUserSchema.safeParse(payload);
             if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
 

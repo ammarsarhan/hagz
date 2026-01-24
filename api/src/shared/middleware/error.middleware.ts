@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import AppError from "@/shared/error";
+import AppError from "@/shared/lib/error";
 
 export default function sendError(
     err: Error,

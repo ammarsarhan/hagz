@@ -16,7 +16,7 @@ import parseErrors from "@/app/utils/schema";
 
 import { FaArrowLeft } from "react-icons/fa6";
 import keys from "@/app/utils/api/keys";
-import { User } from "@/app/context/Auth";
+import { User } from "@/app/utils/types/user";
 
 interface SignInPayload {
     phone: string;
@@ -109,14 +109,16 @@ export default function SignIn() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: keys.session });
 
+            if (data.user.status == "UNVERIFIED") {
+                router.push("/auth/verify");
+                return;
+            }
+
             switch (data.user.role) {
                 case "USER":
                     router.push("/");
                     break;
-                case "MANAGER":
-                    router.push("/dashboard");
-                    break;
-                case "OWNER":
+                case "ADMIN":
                     router.push("/dashboard");
                     break;
             }

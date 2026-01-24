@@ -1,9 +1,10 @@
 import 'dotenv/config';
 
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from "cors";
 
 import auth from '@/domains/auth/auth.routes';
+import dashboard from '@/domains/dashboard/dashboard.routes';
 
 import sendError from '@/shared/middleware/error.middleware';
 import cookieParser from 'cookie-parser';
@@ -19,6 +20,7 @@ app.use(cookieParser())
 app.use(express.json());
 
 app.use('/auth', auth);
+app.use('/dashboard', dashboard);
 
 app.use(sendError);
 

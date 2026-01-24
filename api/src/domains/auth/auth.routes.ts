@@ -1,9 +1,9 @@
-import express from 'express';
+import { Router } from 'express';
 
 import AuthController from '@/domains/auth/auth.controller';
 import authorize from '@/shared/middleware/authorize.middleware';
 
-const router = express.Router();
+const router = Router();
 
 const controller = new AuthController();
 

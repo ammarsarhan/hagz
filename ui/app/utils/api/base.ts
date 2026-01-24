@@ -1,3 +1,5 @@
+import { RequestError } from "@/app/utils/api/error";
+
 const BASE_URL = (typeof window === 'undefined' && process.env.INTERNAL_API_URL)
     ? process.env.INTERNAL_API_URL
     : process.env.NEXT_PUBLIC_API_URL;
@@ -23,7 +25,9 @@ export async function query<T>(endpoint: string, options: FetchOptions = {}): Pr
     const { success, message, data } = await res.json();
 
     if (!success) {
-        throw new Error(message);
+        const error = new Error(message || "An unknown error has occurred.");
+        (error as RequestError).status = res.status;
+        throw error;
     };
 
     return data;
@@ -46,7 +50,9 @@ export async function mutate<T>(endpoint: string, body: object, options: FetchOp
     const { success, message, data } = await res.json();
 
     if (!success) {
-        throw new Error(message);
+        const error = new Error(message || "An unknown error has occurred.");
+        (error as RequestError).status = res.status;
+        throw error;
     };
 
     return data;

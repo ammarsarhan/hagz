@@ -2,24 +2,20 @@
 
 import { createContext, ReactNode, useContext } from "react"
 import { useQuery } from "@tanstack/react-query";
-import { query } from "@/app/utils/api/base";
+
+import ErrorView from "@/app/components/base/ErrorView";
 import keys from "@/app/utils/api/keys";
+import { query } from "@/app/utils/api/base";
+import { User } from "@/app/utils/types/user";
+import { RequestError } from "@/app/utils/api/error";
 
-export type UserRole = "USER" | "OWNER" | "MANAGER";
-export type UserStatus = "UNVERIFIED" | "ACTIVE" | "SUSPENDED";
-
-export interface User {
-    id: string;
-    firstName: string;
-    lastName: string;
-    phone: string;
-    role: UserRole;
-    status: UserStatus;
-}
+import { FaExclamation } from "react-icons/fa6";
 
 interface AuthContextType {
     user: User | null;
 };
+
+type AuthSessionResponse = AuthContextType;
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -34,15 +30,20 @@ export default function useAuthContext() {
 };
 
 export function AuthContextProvider({ children } : { children: ReactNode }) {
-    const session = useQuery({
-        queryKey: keys.session,
-        queryFn: async () => await query('/auth/session'),
-        retry: false,
-        staleTime: 1000 * 60 * 5
-    });
+    let user: User | null = null;
 
-    const data = session.data as { user: User | null };
-    const { user } = data;
+    try {
+        const response = useQuery<AuthSessionResponse>({
+            queryKey: keys.session,
+            queryFn: async () => await query('/auth/session'),
+            retry: false
+        });
+
+        if (response.data) user = response.data.user;
+    } catch (error: unknown) {
+        const { status, message } = error as RequestError;
+        console.log(status, message);
+    };
 
     return (
         <AuthContext.Provider value={{ user }}>

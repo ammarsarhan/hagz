@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import JWTService, { BaseTokenPayload } from "@/domains/jwt/jwt.service";
 import sendError from "@/shared/middleware/error.middleware";
-import { UnauthorizedError } from "../error";
+import { UnauthorizedError } from "@/shared/lib/error";
 
 declare module "express-serve-static-core" {
     interface Request {

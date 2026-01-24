@@ -4,7 +4,7 @@ import JWTService from '@/domains/jwt/jwt.service';
 import UserService from '@/domains/user/user.service';
 import { createUserPayload, signInPayload } from '@/domains/user/user.validator';
 
-import { ConflictError, UnauthorizedError } from '@/shared/error';
+import { ConflictError, UnauthorizedError } from '@/shared/lib/error';
 
 export default class AuthService {
     private userService = new UserService();

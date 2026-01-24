@@ -9,6 +9,10 @@ datasource db {
 
 enum UserRole {
   USER
+  ADMIN
+}
+
+enum StaffRole {
   OWNER
   MANAGER
 }
@@ -21,6 +25,41 @@ enum UserStatus {
   DELETED
 }
 
+enum PitchStatus {
+  UNVERIFIED
+  APPROVED
+  REJECTED
+  LIVE
+  MAINTENANCE
+  SUSPENDED
+  DELETED
+}
+
+enum AmenityType {
+  LIGHTING
+  SEATING
+  LOCKER_ROOMS
+  SHOWERS
+  TOILETS
+  PARKING
+  AIR_CONDITIONED
+  HEATING
+  SOUND_SYSTEM
+  WATER_FOUNTAIN
+  WIFI
+  BALL_INCLUDED
+  EQUIPMENT_RENTAL
+  FIRST_AID
+  REFEREE_SERVICE
+  CAFETERIA
+}
+
+enum Country {
+  EG
+  SA
+  AE
+}
+
 model User {
   id        String @id @default(cuid())
   firstName String
@@ -30,7 +69,58 @@ model User {
 
   status    UserStatus @default(UNVERIFIED)
   role      UserRole   @default(USER)
+
+  pitches   Staff[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Pitch {
+  id             String    @id @default(cuid())
+  name           String
+  taxId          String?
+  description    String
+  street         String
+  area           String
+  city           String
+  country        Country
+  latitude       Float
+  longitude      Float
+  googleMapsLink String
+  images         String[]
+  status         PitchStatus @default(UNVERIFIED)
+  schedule       Json
+
+  staff          Staff[]
+  amenities      Amenity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Staff {
+  userId String
+  pitchId String
+
+  role StaffRole
+
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch   Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, pitchId])
+}
+
+model Amenity {
+  pitchId String
+  order Int
+  name AmenityType
+  price Int?
+
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  @@id([pitchId, order])
 }

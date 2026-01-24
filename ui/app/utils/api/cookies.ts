@@ -9,15 +9,11 @@ export default async function getTokens() {
     const accessToken = accessCookie?.value;
     const refreshToken = refreshCookie?.value;
 
-    return { accessToken, refreshToken };
-};
+    const pieces: string[] = [];
 
-export function buildHeaders(accessToken: string | undefined, refreshToken: string | undefined) {
-    const cookies: string[] = [];
-
-    if (accessToken) cookies.push(`accessToken=${accessToken}`);
-    if (refreshToken) cookies.push(`refreshToken=${refreshToken}`);
+    if (accessToken) pieces.push(`accessToken=${accessToken}`);
+    if (refreshToken) pieces.push(`refreshToken=${refreshToken}`);
     
-    const header = cookies.length > 0 ? cookies.join('; ') : undefined;
+    const header = pieces.length > 0 ? pieces.join('; ') : undefined;
     return header;
 }

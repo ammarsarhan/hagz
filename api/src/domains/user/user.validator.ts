@@ -19,7 +19,7 @@ export const createUserSchema = z.object({
         .min(8, "Password must be at least 8 characters long.")
         .max(50, "Password must be 50 characters long at most.")
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, "Password must contain at least one uppercase letter, one lowercase letter, and one number."),
-    role: z.enum(["USER", "OWNER", "MANAGER"])
+    role: z.enum(["USER", "ADMIN"])
 });
 
 export type signInPayload = z.infer<typeof signInSchema>;

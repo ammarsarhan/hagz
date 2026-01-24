@@ -1,5 +1,6 @@
 const keys = {
-    session: ['auth']
+    session: ['session'],
+    dashboard: ['dashboard']
 };
 
 export default keys;

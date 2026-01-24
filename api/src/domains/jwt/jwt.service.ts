@@ -1,4 +1,4 @@
-import { InternalServerError } from "@/shared/error";
+import { InternalServerError } from "@/shared/lib/error";
 import { sign, verify } from "jsonwebtoken"
 
 export interface BaseTokenPayload {
@@ -37,9 +37,7 @@ class JWTService {
     }
     
     verifyRefreshToken = (token: string) => {
-        console.log("Hit verifyrefreshtoken")
         const decoded = verify(token, this.refreshSecret) as BaseTokenPayload;
-        console.log(decoded)
         return decoded;
     };
 
