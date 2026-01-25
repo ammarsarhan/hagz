@@ -7,6 +7,8 @@ export default function sendError(
     res: Response,
     _next: NextFunction
 ) {
+    console.log(err);
+
     if (err instanceof AppError) {
         return res.status(err.statusCode).json({
             success: false,

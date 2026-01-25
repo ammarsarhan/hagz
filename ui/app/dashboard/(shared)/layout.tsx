@@ -8,7 +8,7 @@ import { query } from "@/app/utils/api/base";
 import { RequestError } from "@/app/utils/api/error";
 import { DashboardStateType } from "@/app/utils/types/dashboard";
 
-import { FaExclamation, FaLock } from "react-icons/fa6";
+import { FaCircleExclamation, FaLock } from "react-icons/fa6";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
@@ -43,9 +43,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             default:
                 return (
                     <ErrorView 
-                        icon={<FaExclamation className="size-10"/>} 
+                        icon={<FaCircleExclamation className="size-10"/>} 
                         title={"An error has occurred."} 
-                        message={message} 
+                        message={`${message} Please try again later.`} 
                         action={"Back to home"} 
                         href={"/"}
                         error={`Error: (${status}) ${message}`}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 
-import { FaChevronDown, FaChevronRight, FaGear, FaUser } from "react-icons/fa6";
+import { FaChevronRight } from "react-icons/fa6";
 import useAuthContext from "@/app/context/Auth";
 
 export default function Navigation() {

@@ -8,7 +8,8 @@ export interface DashboardStateType {
         role: StaffRole;
         pitch: {
             id: string;
-            name: string;
+            nameEn: string;
+            nameAr: string;
         };
     }>
 }
