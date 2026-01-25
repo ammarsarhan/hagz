@@ -8,7 +8,7 @@ import { query } from "@/app/utils/api/base";
 import { RequestError } from "@/app/utils/api/error";
 import { DashboardStateType } from "@/app/utils/types/dashboard";
 
-import { FaLock } from "react-icons/fa6";
+import { FaExclamation, FaLock } from "react-icons/fa6";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
@@ -41,13 +41,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     />
                 )
             default:
-                return <div>{message}</div>
+                return (
+                    <ErrorView 
+                        icon={<FaExclamation className="size-10"/>} 
+                        title={"An error has occurred."} 
+                        message={message} 
+                        action={"Back to home"} 
+                        href={"/"}
+                        error={`Error: (${status}) ${message}`}
+                    />
+                )
         }
     }
 
     if (data.permissions.length <= 0) {
         redirect("/dashboard/onboarding");
-    }
+    };
 
     return (
         <HydrationBoundary state={dehydrate(queryClient)}>

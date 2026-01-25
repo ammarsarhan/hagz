@@ -3,13 +3,10 @@
 import { createContext, ReactNode, useContext } from "react"
 import { useQuery } from "@tanstack/react-query";
 
-import ErrorView from "@/app/components/base/ErrorView";
 import keys from "@/app/utils/api/keys";
 import { query } from "@/app/utils/api/base";
 import { User } from "@/app/utils/types/user";
 import { RequestError } from "@/app/utils/api/error";
-
-import { FaExclamation } from "react-icons/fa6";
 
 interface AuthContextType {
     user: User | null;

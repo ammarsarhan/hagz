@@ -35,6 +35,40 @@ enum PitchStatus {
   DELETED
 }
 
+enum GroundStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum GroundPolicy {
+  STRICT
+  MODERATE
+  LENIENT
+}
+
+enum GroundSport {
+  FOOTBALL
+  PADEL
+  TENNIS
+  BASKETBALL
+  VOLLEYBALL
+}
+
+enum GroundSize {
+  FIVE_A_SIDE
+  SEVEN_A_SIDE
+  ELEVEN_A_SIDE
+  DEFAULT
+}
+
+enum GroundSurface {
+  NATURAL_GRASS
+  ARTIFICIAL_TURF
+  HARD_WOOD
+  OTHER
+}
+
 enum AmenityType {
   LIGHTING
   SEATING
@@ -67,20 +101,26 @@ model User {
   phone     String @unique
   password  String
 
-  status    UserStatus @default(UNVERIFIED)
-  role      UserRole   @default(USER)
+  status UserStatus @default(UNVERIFIED)
+  role   UserRole   @default(USER)
 
-  pitches   Staff[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  pitches Staff[]
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([phone, status])
 }
 
 model Pitch {
-  id             String    @id @default(cuid())
-  name           String
-  taxId          String?
-  description    String
+  id            String  @id @default(cuid())
+  nameEn        String
+  descriptionEn String
+  nameAr        String
+  descriptionAr String
+  taxId         String?
+
   street         String
   area           String
   city           String
@@ -88,25 +128,75 @@ model Pitch {
   latitude       Float
   longitude      Float
   googleMapsLink String
-  images         String[]
-  status         PitchStatus @default(UNVERIFIED)
-  schedule       Json
+  amenityList    AmenityType[]
 
-  staff          Staff[]
-  amenities      Amenity[]
+  status PitchStatus @default(UNVERIFIED)
+
+  images     String[]
+  coverImage String?
+
+  layout          Json
+  groundCount     Int           @default(0)
+  availableSports GroundSport[]
+  availableSizes  GroundSize[]
+  hasCombinations Boolean       @default(false)
+  minimumPrice    Int
+  maximumPrice    Int
+  operationalHours  Int[]
+
+  staff     Staff[]
+  amenities Amenity[]
+  grounds   Ground[]
+
+  rejectionReason String?
+  approvedAt      DateTime?
+  verifiedBy      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([country, city, status])
+  @@index([longitude, latitude])
+}
+
+model Ground {
+  id      String @id @default(cuid())
+  pitchId String
+
+  nameEn        String
+  nameAr        String
+  descriptionEn String?
+  descriptionAr String?
+  images        String[]
+  sport         GroundSport
+  surface       GroundSurface
+  size          GroundSize
+
+  status GroundStatus
+
+  policy        GroundPolicy @default(STRICT)
+  depositFee    Int?
+  basePrice     Int
+  peakPrice     Int?
+  discountPrice Int?
+
+  operatingHours Int[]
+  peakHours      Int[]
+  discountHours  Int[]
+
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Staff {
-  userId String
-  pitchId String
+  userId      String
+  pitchId     String
+  permissions Json
+  role        StaffRole
 
-  role StaffRole
-
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pitch   Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -115,10 +205,12 @@ model Staff {
 }
 
 model Amenity {
-  pitchId String
-  order Int
-  name AmenityType
-  price Int?
+  pitchId     String
+  order       Int
+  name        AmenityType
+  description String?
+  isPaid      Boolean     @default(false)
+  price       Int?
 
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
