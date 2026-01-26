@@ -88,18 +88,30 @@ enum AmenityType {
   CAFETERIA
 }
 
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  WALLET
+}
+
 enum Country {
   EG
   SA
   AE
 }
 
+enum Language {
+  EN
+  AR
+}
+
 model User {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   firstName String
   lastName  String
-  phone     String @unique
+  phone     String   @unique
   password  String
+  language  Language @default(EN)
 
   status UserStatus @default(UNVERIFIED)
   role   UserRole   @default(USER)
@@ -135,14 +147,14 @@ model Pitch {
   images     String[]
   coverImage String?
 
-  layout          Json
-  groundCount     Int           @default(0)
-  availableSports GroundSport[]
-  availableSizes  GroundSize[]
-  hasCombinations Boolean       @default(false)
-  minimumPrice    Int
-  maximumPrice    Int
-  operationalHours  Int[]
+  layout           Json
+  groundCount      Int           @default(0)
+  availableSports  GroundSport[]
+  availableSizes   GroundSize[]
+  hasCombinations  Boolean       @default(false)
+  minimumPrice     Int
+  maximumPrice     Int
+  operationalHours Int[]
 
   staff     Staff[]
   amenities Amenity[]
@@ -173,11 +185,12 @@ model Ground {
 
   status GroundStatus
 
-  policy        GroundPolicy @default(STRICT)
-  depositFee    Int?
-  basePrice     Int
-  peakPrice     Int?
-  discountPrice Int?
+  policy         GroundPolicy    @default(STRICT)
+  paymentMethods PaymentMethod[]
+  depositFee     Int?
+  basePrice      Int
+  peakPrice      Int?
+  discountPrice  Int?
 
   operatingHours Int[]
   peakHours      Int[]

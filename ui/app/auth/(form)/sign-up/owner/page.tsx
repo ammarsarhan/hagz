@@ -168,7 +168,7 @@ export default function SignUp() {
                         </div>
                         <InputGroup error={errors["phone"]} className="flex-1" label="Phone Number" type="text" placeholder="Phone" value={state.phone} onChange={updatePhone} />
                         <InputGroup error={errors["password"]} className="flex-1" label="Password" type="password" placeholder="Password" value={state.password} onChange={update("password")} />
-                        <p className="text-xxs">Already have an account? <Link href="/auth/sign-in" className="text-secondary hover:text-secondary/75 hover:underline">Sign in</Link></p>
+                        <p className="text-xxs">Already have an account? <Link prefetch href="/auth/sign-in" className="text-secondary hover:text-secondary/75 hover:underline">Sign in</Link></p>
                     </div>
                     <div className="w-full flex-center">
                         <Button variant="primary" type="submit" disabled={mutation.isPending}>

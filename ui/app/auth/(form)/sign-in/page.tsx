@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useReducer, useRef, useState } from "react";
+import { useReducer, useRef, useState, useTransition } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import z from "zod";
@@ -10,13 +10,13 @@ import z from "zod";
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 import { InputGroup } from "@/app/components/base/Input";
+import { User } from "@/app/utils/types/user";
 import { signInSchema } from "@/app/schemas/user";
 import { mutate } from "@/app/utils/api/base";
 import parseErrors from "@/app/utils/schema";
+import keys from "@/app/utils/api/keys";
 
 import { FaArrowLeft } from "react-icons/fa6";
-import keys from "@/app/utils/api/keys";
-import { User } from "@/app/utils/types/user";
 
 interface SignInPayload {
     phone: string;
@@ -41,6 +41,7 @@ function signInReducer(state: SignInPayload, action: SignInAction) {
 
 export default function SignIn() {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
     const queryClient = useQueryClient();
 
     const [errors, setErrors] = useState<Record<string, string>>({});

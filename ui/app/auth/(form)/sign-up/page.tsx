@@ -51,7 +51,7 @@ export default function SignUp() {
                     </button>
                 </div>
                 <div className="w-full flex-center">
-                    <Link href={`/auth/sign-up/${path}`}>
+                    <Link href={`/auth/sign-up/${path}`} prefetch>
                         <Button variant="primary">
                             <span className="text-xxs font-medium">Continue</span>
                             <FaArrowRight className="size-3 group-hover:-rotate-45 transition-all" />

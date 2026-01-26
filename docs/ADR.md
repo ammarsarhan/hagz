@@ -261,9 +261,12 @@ Staff is a "permissions relationship" table that joins a user and a pitch. The S
 
 ```
 permissions: {
-    bookings: "READ",
-    payments: "WRITE",
-    analytics: "NONE"
+    bookings: "WRITE",
+    analytics: "READ",
+    team: "READ",
+    payments: "NONE",
+    reports: "READ",
+    settings: "READ"
 }
 ```
 

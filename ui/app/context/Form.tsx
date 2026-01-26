@@ -1,10 +1,18 @@
 import { useContext, createContext, useState, SetStateAction, Dispatch, useRef } from "react";
 
+interface FormContextStepType {
+    title: string;
+    label: string;
+    description: string;
+    component: React.ReactNode;
+}
+
 interface FormContextType<T> {
     data: T;
     setData: Dispatch<SetStateAction<T>>;
     index: number;
-    steps: Array<React.ReactNode>;
+    steps: Array<FormContextStepType>;
+    step: FormContextStepType;
     next: () => void;
     previous: () => void;
     errors: Record<string, string>;
@@ -20,7 +28,7 @@ export default function useFormContext() {
     return context;
 };
 
-export function FormContextProvider<T>({ initial, steps, children } : { initial: T, steps: React.ReactNode[], children: React.ReactNode }) {
+export function FormContextProvider<T>({ initial, steps, children } : { initial: T, steps: Array<FormContextStepType>, children: React.ReactNode }) {
     const [data, setData] = useState(initial);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [index, setIndex] = useState(0);
@@ -50,7 +58,17 @@ export function FormContextProvider<T>({ initial, steps, children } : { initial:
     };
 
     return (
-        <FormContext.Provider value={{ data, setData, index, steps, next, previous, errors, setErrors: setErrorsWithTimeout }}>
+        <FormContext.Provider value={{ 
+            data, 
+            setData, 
+            index, 
+            steps, 
+            step: steps[index], 
+            next, 
+            previous, 
+            errors, 
+            setErrors: setErrorsWithTimeout 
+        }}>
             { children }
         </FormContext.Provider>
     )
