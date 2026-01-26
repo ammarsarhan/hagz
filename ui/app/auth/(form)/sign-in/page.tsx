@@ -10,7 +10,7 @@ import z from "zod";
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 import { InputGroup } from "@/app/components/base/Input";
-import { User } from "@/app/utils/types/user";
+import { PermissionsType, User } from "@/app/utils/types/user";
 import { signInSchema } from "@/app/schemas/user";
 import { mutate } from "@/app/utils/api/base";
 import parseErrors from "@/app/utils/schema";
@@ -30,6 +30,7 @@ interface SignInAction {
 
 interface SignInResponse {
     user: User;
+    permissions: Array<PermissionsType>
 }
 
 function signInReducer(state: SignInPayload, action: SignInAction) {
@@ -41,7 +42,6 @@ function signInReducer(state: SignInPayload, action: SignInAction) {
 
 export default function SignIn() {
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
     const queryClient = useQueryClient();
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -120,14 +120,26 @@ export default function SignIn() {
                     router.push("/");
                     break;
                 case "ADMIN":
-                    router.push("/dashboard");
+                    {
+                        if (data.permissions.length == 0) {
+                            router.push("/dashboard/onboarding");
+                            return;
+                        };
+
+                        router.push("/dashboard");
+                    }
                     break;
             }
         }
     });
 
     return (
-        <div className="h-full relative flex-center flex-col p-10">
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="h-full relative flex-center flex-col p-10"
+        >
             <div className="absolute top-4 left-4">
                 <Link href="/" className="flex items-center gap-x-1.5 text-secondary hover:text-secondary/75 transition-all">
                     <FaArrowLeft className="size-3"/>
@@ -163,6 +175,6 @@ export default function SignIn() {
                 </div>
             </form>
             <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
-        </div>
+        </motion.div>
     )
 }

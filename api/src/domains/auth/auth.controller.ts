@@ -78,7 +78,7 @@ export default class AuthController {
             const parsed = signInSchema.safeParse(req.body);
             if (!parsed.success) throw new UnauthorizedError(parsed.error.issues[0].message);
 
-            const { user, tokens } = await this.authService.signInUser(parsed.data);
+            const { user, permissions, tokens } = await this.authService.signInUser(parsed.data);
 
             res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
@@ -97,7 +97,7 @@ export default class AuthController {
             return res.status(200).json({ 
                 success: true, 
                 message: "Signed user in successfully.", 
-                data: { user } 
+                data: { user, permissions } 
             });
         } catch (error: any) {
             next(error);

@@ -70,7 +70,7 @@ export default function Aside() {
                                                 <div className="size-1.5 rounded-full bg-white"></div>
                                             }
                                         </div>
-                                        <span className={`font-medium text-sm transition-colors ${isActive ? "text-black" : "text-gray-400"}`}>
+                                        <span className={`text-[0.85rem] transition-colors ${isActive ? "text-black font-medium" : "text-gray-400"}`}>
                                             {s.label}
                                         </span>
                                     </motion.div>

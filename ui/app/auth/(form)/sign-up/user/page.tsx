@@ -121,7 +121,11 @@ export default function SignUp() {
     });
 
     return (
-        <>
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+        >
             <Modal isOpen={isModalOpen} className="w-full md:w-xl bg-white rounded-md p-6 m-4" onClose={handleCloseModal}>
                 <div className="w-full flex items-center justify-end">
                     <button type="button" className="text-gray-700 hover:text-gray-500 transition-colors" onClick={() => setIsModalOpen(false)}>
@@ -178,6 +182,6 @@ export default function SignUp() {
                 </form>
                 <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
             </div>
-        </>
+        </motion.div>
     )
 }

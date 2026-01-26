@@ -3,7 +3,7 @@ import * as argon2 from "argon2";
 import prisma from "@/shared/lib/prisma";
 import { createUserPayload } from "@/domains/user/user.validator";
 
-export default class UserService {
+export default class UserService {    
     fetchUserById = async (id: string, session: boolean = false) => {
         const user = await prisma.user.findUnique({ 
             where: { id },

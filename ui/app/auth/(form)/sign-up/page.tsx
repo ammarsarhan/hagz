@@ -5,13 +5,19 @@ import { useState } from "react";
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
 import { FaArrowLeft, FaArrowRight, FaCheck, FaPeopleArrows, FaPerson } from "react-icons/fa6";
+import { motion } from "framer-motion";
 
 export default function SignUp() {
     const [isUser, setIsUser] = useState(true);
     const path = isUser ? "user" : "owner";
 
     return (
-        <div className="h-full relative flex-center flex-col p-10">
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="h-full relative flex-center flex-col p-10"
+        >
             <div className="absolute top-4 left-4">
                 <Link href="/" className="flex items-center gap-x-1.5 text-secondary hover:text-secondary/75 transition-all">
                     <FaArrowLeft className="size-3"/>
@@ -60,6 +66,6 @@ export default function SignUp() {
                 </div>
             </div>
             <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
-        </div>
+        </motion.div>
     )
 }

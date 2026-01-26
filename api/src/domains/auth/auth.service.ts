@@ -2,12 +2,14 @@ import * as argon2 from "argon2";
 
 import JWTService from '@/domains/jwt/jwt.service';
 import UserService from '@/domains/user/user.service';
+import PitchService from "@/domains/pitch/pitch.service";
 import { createUserPayload, signInPayload } from '@/domains/user/user.validator';
 
 import { ConflictError, UnauthorizedError } from '@/shared/lib/error';
 
 export default class AuthService {
     private userService = new UserService();
+    private pitchService = new PitchService();
 
     registerUser = async (payload: createUserPayload) => {
         const existingUser = await this.userService.fetchUserByPhone(payload.phone, true);
@@ -36,9 +38,10 @@ export default class AuthService {
         };
 
         const { password, createdAt, updatedAt, ...data } = user;
-
+        const permissions = await this.pitchService.getAdminPermissions(user.id);
         const tokens = JWTService.generateTokenPair({ id: user.id, phone: user.phone });
-        return { tokens, user: data };
+    
+        return { tokens, user: data, permissions };
     };
 
     getSessionData = async (token: string) => {
