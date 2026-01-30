@@ -5,7 +5,7 @@ import UserService from '@/domains/user/user.service';
 import PitchService from "@/domains/pitch/pitch.service";
 import { createUserPayload, signInPayload } from '@/domains/user/user.validator';
 
-import { ConflictError, UnauthorizedError } from '@/shared/lib/error';
+import { ConflictError, NotFoundError, UnauthorizedError } from '@/shared/lib/error';
 
 export default class AuthService {
     private userService = new UserService();
@@ -22,7 +22,15 @@ export default class AuthService {
             password: hash
         });
 
-        const tokens = JWTService.generateTokenPair({ id: user.id, phone: user.phone });
+        const tokens = JWTService.generateTokenPair({ 
+            id: user.id,
+            phone: user.phone,
+            name: `${user.firstName} ${user.lastName}`,
+            role: user.role,
+            isOnboarded: false, 
+            isVerified: false 
+        });
+
         return { tokens, user };
     };
 
@@ -39,7 +47,18 @@ export default class AuthService {
 
         const { password, createdAt, updatedAt, ...data } = user;
         const permissions = await this.pitchService.getAdminPermissions(user.id);
-        const tokens = JWTService.generateTokenPair({ id: user.id, phone: user.phone });
+
+        const isOnboarded = permissions.length > 0;
+        const isVerified = user.status === "ACTIVE";
+
+        const tokens = JWTService.generateTokenPair({ 
+            id: user.id, 
+            phone: user.phone,
+            name: `${user.firstName} ${user.lastName}`,
+            role: user.role,
+            isOnboarded,
+            isVerified
+        });
     
         return { tokens, user: data, permissions };
     };
@@ -49,5 +68,31 @@ export default class AuthService {
         const user = await this.userService.fetchUserById(id, true);
 
         return user;
+    }
+
+    refreshSessionToken = async (token: string) => {
+        const { id } = JWTService.verifyRefreshToken(token);
+
+        const [user, permissions] = await Promise.all([
+            this.userService.fetchUserById(id),
+            this.pitchService.getAdminPermissions(id)
+        ])
+        
+        if (!user) throw new NotFoundError("Could not find user with the specified credentials.");
+        if (!permissions) throw new NotFoundError("Could not find user permissions with the specified credentials.");
+
+        const isOnboarded = permissions.length > 0;
+        const isVerified = user.status === "ACTIVE";
+
+        const accessToken = JWTService.generateAccessToken({ 
+            id: user.id, 
+            phone: user.phone,
+            name: `${user.firstName} ${user.lastName}`,
+            role: user.role,
+            isOnboarded,
+            isVerified
+        });
+
+        return accessToken;
     }
 }

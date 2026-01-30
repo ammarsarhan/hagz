@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useReducer, useRef, useState, useTransition } from "react";
+import { useReducer, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import z from "zod";
 
 import Button from "@/app/components/base/Button";
@@ -110,7 +109,7 @@ export default function SignIn() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: keys.session });
 
-            if (data.user.status == "UNVERIFIED") {
+            if (!data.user.isVerified) {
                 router.push("/auth/verify");
                 return;
             }
@@ -121,7 +120,7 @@ export default function SignIn() {
                     break;
                 case "ADMIN":
                     {
-                        if (data.permissions.length == 0) {
+                        if (!data.user.isOnboarded) {
                             router.push("/dashboard/onboarding");
                             return;
                         };
@@ -134,12 +133,7 @@ export default function SignIn() {
     });
 
     return (
-        <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="h-full relative flex-center flex-col p-10"
-        >
+        <div className="h-full relative flex-center flex-col p-10">
             <div className="absolute top-4 left-4">
                 <Link href="/" className="flex items-center gap-x-1.5 text-secondary hover:text-secondary/75 transition-all">
                     <FaArrowLeft className="size-3"/>
@@ -150,19 +144,12 @@ export default function SignIn() {
                 <Logo/>
                 <h1 className="font-semibold text-3xl w-full mt-4">Sign in back into Hagz</h1>
                 <p className="text-gray-500 text-sm mt-2 mb-5">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
-                <AnimatePresence>
-                    {
-                        errors["general"] &&
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="text-xxs text-red-600"
-                        >
-                            {errors["general"]}
-                        </motion.p>
-                    }
-                </AnimatePresence>
+                {
+                    errors["general"] &&
+                    <p className="text-xxs text-red-600">
+                        {errors["general"]}
+                    </p>
+                }
                 <div className="flex flex-col gap-y-4 mt-5 mb-10">
                     <InputGroup error={errors["phone"]} className="flex-1" label="Phone Number" type="text" placeholder="Phone" value={state.phone} onChange={updatePhone} />
                     <InputGroup error={errors["password"]} className="flex-1" label="Password" type="password" placeholder="Password" value={state.password} onChange={update("password")} />
@@ -175,6 +162,6 @@ export default function SignIn() {
                 </div>
             </form>
             <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
-        </motion.div>
+        </div>
     )
 }

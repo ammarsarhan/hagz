@@ -1,6 +1,6 @@
 import { RequestError } from "@/app/utils/api/error";
 
-const BASE_URL = (typeof window === 'undefined' && process.env.INTERNAL_API_URL)
+export const BASE_URL = (typeof window === 'undefined' && process.env.INTERNAL_API_URL)
     ? process.env.INTERNAL_API_URL
     : process.env.NEXT_PUBLIC_API_URL;
 

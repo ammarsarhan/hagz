@@ -1,15 +1,13 @@
-"use client";
-
 import Link from "next/link";
 
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
+import { getUser } from "@/app/utils/api/cookies";
 
 import { FaChevronRight } from "react-icons/fa6";
-import useAuthContext from "@/app/context/Auth";
 
-export default function Navigation() {
-    const { user } = useAuthContext();
+export default async function Navigation() {
+    const user = await getUser();
 
     return (
         <nav className="h-18 flex items-center justify-between py-4 px-6 text-[0.85rem] font-medium">

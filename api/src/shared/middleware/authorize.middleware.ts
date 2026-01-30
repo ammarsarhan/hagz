@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 import JWTService, { BaseTokenPayload } from "@/domains/jwt/jwt.service";
+import AuthService from "@/domains/auth/auth.service";
 import sendError from "@/shared/middleware/error.middleware";
 import { UnauthorizedError } from "@/shared/lib/error";
 
@@ -10,8 +11,10 @@ declare module "express-serve-static-core" {
     }
 }
 
+const authService = new AuthService();
+
 export default function authorize(isOptional: boolean = false) {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
         const accessToken = req.cookies.accessToken;
         const refreshToken = req.cookies.refreshToken;
 
@@ -27,16 +30,16 @@ export default function authorize(isOptional: boolean = false) {
 
         if (!decoded && refreshToken) {
             try {
-                decoded = JWTService.verifyRefreshToken(refreshToken);
-                const { id, phone } = decoded;
-                const token = JWTService.generateAccessToken({ id, phone });
-
+                const token = await authService.refreshSessionToken(refreshToken);
+                
                 res.cookie("accessToken", token, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === "production",
                     sameSite: "strict",
                     maxAge: 15 * 60 * 1000,
                 });
+                
+                decoded = JWTService.verifyAccessToken(token);
             } catch {
                 decoded = null;
             }

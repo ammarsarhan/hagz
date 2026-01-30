@@ -35,7 +35,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
                 return (
                     <ErrorView 
                         icon={<FaLock className="size-10"/>} 
-                        title={"Your account has not been verified yet."} 
+                        title={"Your are not allowed to access this resource."} 
                         message={"To protect your account and ensure platform security, we require account verification. Please verify your account to continue."} 
                         action={"Verify account"} 
                         href={"/auth/verify"}

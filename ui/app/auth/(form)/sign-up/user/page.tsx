@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useReducer, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import z from "zod";
 
 import Button from "@/app/components/base/Button";
@@ -116,16 +115,12 @@ export default function SignUp() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: keys.session })
-            router.push("/");
+            router.push("/auth/verify");
         }
     });
 
     return (
-        <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-        >
+        <div className="h-full">
             <Modal isOpen={isModalOpen} className="w-full md:w-xl bg-white rounded-md p-6 m-4" onClose={handleCloseModal}>
                 <div className="w-full flex items-center justify-end">
                     <button type="button" className="text-gray-700 hover:text-gray-500 transition-colors" onClick={() => setIsModalOpen(false)}>
@@ -152,19 +147,14 @@ export default function SignUp() {
                     <Logo/>
                     <h1 className="font-semibold text-3xl w-full mt-4">Create a user account <br/> with Hagz</h1>
                     <p className="text-gray-500 text-sm mt-2 mb-5">Book grounds for yourself and your friends, explore pitches, track your booking history, and make weekly recurring bookings.</p>
-                    <AnimatePresence>
-                        {
-                            errors["general"] &&
-                            <motion.p
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="text-xxs text-red-600"
-                            >
-                                {errors["general"]}
-                            </motion.p>
-                        }
-                    </AnimatePresence>
+                    {
+                        errors["general"] &&
+                        <p
+                            className="text-xxs text-red-600"
+                        >
+                            {errors["general"]}
+                        </p>
+                    }
                     <div className="flex flex-col gap-y-4 mt-5 mb-10">
                         <div className="flex items-center gap-x-4">
                             <InputGroup error={errors["firstName"]} className="flex-1" label="First Name" type="text" placeholder="First Name" value={state.firstName} onChange={update("firstName")} />
@@ -182,6 +172,6 @@ export default function SignUp() {
                 </form>
                 <span className="absolute bottom-6 right-6 text-gray-600 text-xs">© Hagz 2026</span>
             </div>
-        </motion.div>
+        </div>
     )
 }

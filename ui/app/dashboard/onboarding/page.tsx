@@ -12,7 +12,7 @@ export default function Onboarding() {
         <div className="h-screen relative w-full flex bg-gray-100">
             <Aside/>
             <div className="w-full flex-1 p-4 bg-gray-100">
-                <div className="w-full h-full rounded-md p-4 bg-gray-50">
+                <div className="w-full h-full rounded-md p-6 bg-gray-50">
                     <AnimatePresence mode="wait">   
                         {step.component}
                     </AnimatePresence>

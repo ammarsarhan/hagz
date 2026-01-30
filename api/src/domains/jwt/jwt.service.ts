@@ -1,9 +1,17 @@
 import { InternalServerError } from "@/shared/lib/error";
+import { UserRole } from "generated/prisma/enums";
 import { sign, verify } from "jsonwebtoken"
 
 export interface BaseTokenPayload {
     id: string;
     phone: string;
+}
+
+export type ExtendedTokenPayload = BaseTokenPayload & {
+    name: string;
+    role: UserRole;
+    isVerified: boolean;
+    isOnboarded: boolean;
 }
 
 class JWTService {
@@ -24,12 +32,12 @@ class JWTService {
         return token;
     };
 
-    generateAccessToken = (payload: BaseTokenPayload) => {
+    generateAccessToken = (payload: ExtendedTokenPayload) => {
         const token = sign(payload, this.accessSecret, { expiresIn: this.accessExpiry });
         return token;
     };
 
-    generateTokenPair = (payload: BaseTokenPayload) => {
+    generateTokenPair = (payload: ExtendedTokenPayload) => {
         const refreshToken = this.generateRefreshToken(payload);
         const accessToken = this.generateAccessToken(payload);
 
@@ -42,7 +50,7 @@ class JWTService {
     };
 
     verifyAccessToken = (token: string) => {
-        const decoded = verify(token, this.accessSecret) as BaseTokenPayload;
+        const decoded = verify(token, this.accessSecret) as ExtendedTokenPayload;
         return decoded;
     };
 };

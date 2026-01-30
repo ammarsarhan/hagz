@@ -3,10 +3,8 @@ const config = {
     MAX_BOOKING_LIMIT: 6,
     defaults: {
         pitch: {
-            nameEn: "",
-            nameAr: "",
-            descriptionEn: "",
-            descriptionAr: "",
+            name: "",
+            description: "",
             taxId: "",
             street: "",
             area: "",
@@ -28,10 +26,8 @@ const config = {
             }
         },
         ground: {
-            nameEn: "",
-            nameAr: "",
-            descriptionEn: "",
-            descriptionAr: "",
+            name: "",
+            description: "",
             sport: "",
             surface: "",
             size: "",

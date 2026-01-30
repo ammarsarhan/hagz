@@ -34,7 +34,7 @@ export default class AuthController {
             return res.status(201).json({ 
                 success: true, 
                 message: "Created user account successfully.", 
-                data: { user }
+                data: null
             });
         } catch (error: any) {
             next(error);
@@ -65,8 +65,8 @@ export default class AuthController {
 
             return res.status(201).json({ 
                 success: true, 
-                message: "Created user account successfully.", 
-                data: { user }
+                message: "Created owner account successfully.", 
+                data: null
             });
         } catch (error: any) {
             next(error);
@@ -104,6 +104,21 @@ export default class AuthController {
         }
     }; 
 
+    signOut = async (_: Request, res: Response, next: NextFunction) => {
+        try {
+            res.clearCookie("accessToken");
+            res.clearCookie("refreshToken");
+
+            return res.status(200).json({
+                success: true, 
+                message: "Signed out user successfully.", 
+                data: null
+            });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
     fetchSession = async (req: Request, res: Response, next: NextFunction) => {
         try {
             if (!req.user) {
@@ -121,6 +136,30 @@ export default class AuthController {
                 success: true, 
                 message: "Fetched user session data successfully.", 
                 data: { user } 
+            });
+        } catch (error: any) {
+            next(error);
+        }
+    };
+    
+    refreshSession = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const refreshToken = req.cookies.refreshToken;
+            if (!refreshToken) throw new BadRequestError("A refresh token was not provided. Please sign in and try again.");
+
+            const accessToken = await this.authService.refreshSessionToken(refreshToken);
+
+            res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000
+            });
+
+            return res.status(200).json({ 
+                success: true, 
+                message: "Refreshed user access token successfully.",
+                data: null
             });
         } catch (error: any) {
             next(error);
