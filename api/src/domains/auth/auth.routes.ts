@@ -12,6 +12,6 @@ router.post('/sign-up/owner', controller.signUpOwner);
 router.post('/sign-in', controller.signIn);
 router.post('/sign-out', controller.signOut);
 router.get('/session', authorize(true), controller.fetchSession)
-router.post('/refresh', (req, res, next) => { console.log("Reached route"); next(); }, controller.refreshSession)
+router.post('/refresh', controller.refreshSession)
 
 export default router;

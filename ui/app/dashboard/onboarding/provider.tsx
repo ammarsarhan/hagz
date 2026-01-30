@@ -3,22 +3,23 @@
 import { ReactNode } from "react";
 import { FormContextProvider } from "@/app/context/Form";
 
+import Overview from "@/app/components/dashboard/pitch/create/steps/Overview";
+import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
 import Details from "@/app/components/dashboard/pitch/create/steps/Details";
 import Amenities from "@/app/components/dashboard/pitch/create/steps/Amenities";
 import Grounds from "@/app/components/dashboard/pitch/create/steps/Grounds";
 import Layout from "@/app/components/dashboard/pitch/create/steps/Layout";
 
 import config from "@/app/utils/dashboard/config";
-import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
 
 export default function OnboardingProvider({ children } : { children: ReactNode }) {
     const steps = [
-        // {
-        //     title: `Welcome, ${user?.firstName}!`,
-        //     description: "Our pitch onboarding process should have you up and running in less than 10 minutes.",
-        //     label: "Overview",
-        //     component: <Overview/>,
-        // },
+        {
+            title: "Welcome to Hagz!",
+            description: "Our pitch onboarding process should have you up and running in less than 10 minutes.",
+            label: "Overview",
+            component: <Overview/>,
+        },
         {
             title: "Basic Information",
             description: "First of all, we need some information about your pitch.",
