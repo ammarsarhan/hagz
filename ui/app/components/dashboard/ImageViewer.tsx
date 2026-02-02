@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import FileType from "@/app/utils/types/image"
 import { IoIosClose } from "react-icons/io";
 import { FaTrash } from "react-icons/fa6";
+import { useEffect, useRef } from "react";
 
 interface ImageViewerProps {
     image: FileType | null,
@@ -10,6 +11,28 @@ interface ImageViewerProps {
 }
 
 export default function ImageViewer({ image, setImage, deleteImage } : ImageViewerProps) {
+    const toolbarRef = useRef<HTMLDivElement | null>(null);
+    const imageRef = useRef<HTMLImageElement | null>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (
+                imageRef.current &&
+                toolbarRef.current &&
+                !imageRef.current.contains(event.target as Node) &&
+                !toolbarRef.current.contains(event.target as Node)
+            ) {
+                setImage(null);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [setImage]);
+
     const handleDelete = async () => {
         if (!image) return;
         await deleteImage(image.id);
@@ -27,7 +50,7 @@ export default function ImageViewer({ image, setImage, deleteImage } : ImageView
                     className="w-screen h-screen fixed top-0 left-0 bg-black/75 z-1000"
                 >
                     <div className="w-full h-full flex flex-col">
-                        <div className="h-16 text-xxs flex items-center justify-between px-4 flex-1 bg-black/20">
+                        <div className="h-16 text-xxs flex items-center justify-between px-4 flex-1 bg-black/20" ref={toolbarRef}>
                             <div>
                                 <span className="text-white text-xxs">{image.file.name}</span>
                             </div>
@@ -41,7 +64,7 @@ export default function ImageViewer({ image, setImage, deleteImage } : ImageView
                             </div>
                         </div>
                         <div className="flex-center h-[calc(100%-4rem)] w-full p-4">
-                            <img src={image.objectUrl} className="object-fit h-full max-w-full"/>
+                            <img src={image.objectUrl} className="object-contain h-full max-w-full" ref={imageRef}/>
                         </div>
                     </div>
                 </motion.div>
