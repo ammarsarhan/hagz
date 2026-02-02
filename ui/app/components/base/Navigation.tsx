@@ -2,13 +2,11 @@ import Link from "next/link";
 
 import Button from "@/app/components/base/Button";
 import Logo from "@/app/components/base/Logo";
-import { getUser } from "@/app/utils/api/cookies";
+import { User } from "@/app/utils/types/user";
 
 import { FaChevronRight } from "react-icons/fa6";
 
-export default async function Navigation() {
-    const user = await getUser();
-
+export default async function Navigation({ user } : { user: User | null }) {
     return (
         <nav className="h-18 flex items-center justify-between py-4 px-6 text-[0.85rem] font-medium">
             <div className="flex items-center gap-x-5">

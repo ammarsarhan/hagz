@@ -11,7 +11,7 @@ router.post('/sign-up/user', controller.signUpUser);
 router.post('/sign-up/owner', controller.signUpOwner);
 router.post('/sign-in', controller.signIn);
 router.post('/sign-out', controller.signOut);
-router.get('/session', authorize(true), controller.fetchSession)
-router.post('/refresh', controller.refreshSession)
+router.get('/session', authorize(true), controller.fetchSession);
+router.post('/refresh', controller.refreshSession);
 
 export default router;

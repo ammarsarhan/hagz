@@ -17,7 +17,7 @@ type InputGroupProps = Omit<InputProps, "error"> & { label: string, error?: stri
 export default function Input({ type, className, placeholder, value, error, onChange } : InputProps) {
     const [showPassword, setShowPassword] = useState(false);
 
-    const base = `p-2 border ${error ? "border-red-600" : "border-gray-200"} rounded-md text-sm w-full bg-white outline-none focus:border-secondary`;
+    const base = `p-2 border ${error ? "border-red-600" : "border-transparent"} rounded-md text-[0.85rem] w-full bg-gray-200/75 hover:bg-gray-200/50 outline-none focus:border-black focus:bg-gray-50 transition-colors`;
     const isPassword = type === "password";
     const computedType = isPassword ? (showPassword ? "text" : "password") : type;
 
@@ -41,7 +41,7 @@ export default function Input({ type, className, placeholder, value, error, onCh
 export function InputGroup({ className, type, label, placeholder, value, error, description, onChange } : InputGroupProps) {
     return (
         <div className={`flex flex-col gap-y-1.5 ${className}`}>
-            <span className="text-xxs">{label}</span>
+            <span className="text-sm">{label}</span>
             <Input error={!!error} type={type} placeholder={placeholder} value={value} onChange={onChange}/>
             <AnimatePresence mode="wait">   
                 {

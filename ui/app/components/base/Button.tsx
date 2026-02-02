@@ -13,7 +13,7 @@ export default function Button({ type = "button", variant = "primary", className
             )
         case "mono":
             return (
-                <button onClick={onClick} type={type} className={`$bg-black hover:bg-black/85 border-transparent text-white {base}`} disabled={disabled}>
+                <button onClick={onClick} type={type} className={`bg-black hover:bg-black/85 border-transparent text-white ${base}`} disabled={disabled}>
                     {children}
                 </button>
             )

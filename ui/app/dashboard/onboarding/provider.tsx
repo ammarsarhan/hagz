@@ -3,23 +3,17 @@
 import { ReactNode } from "react";
 import { FormContextProvider } from "@/app/context/Form";
 
-import Overview from "@/app/components/dashboard/pitch/create/steps/Overview";
 import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
 import Details from "@/app/components/dashboard/pitch/create/steps/Details";
 import Amenities from "@/app/components/dashboard/pitch/create/steps/Amenities";
 import Grounds from "@/app/components/dashboard/pitch/create/steps/Grounds";
 import Layout from "@/app/components/dashboard/pitch/create/steps/Layout";
 
-import config from "@/app/utils/dashboard/config";
+import { pitch } from "@/app/utils/dashboard/config";
+import { CreatePitchFormType } from "@/app/utils/types/dashboard";
 
 export default function OnboardingProvider({ children } : { children: ReactNode }) {
     const steps = [
-        {
-            title: "Welcome to Hagz!",
-            description: "Our pitch onboarding process should have you up and running in less than 10 minutes.",
-            label: "Overview",
-            component: <Overview/>,
-        },
         {
             title: "Basic Information",
             description: "First of all, we need some information about your pitch.",
@@ -53,7 +47,7 @@ export default function OnboardingProvider({ children } : { children: ReactNode 
     ]
 
     return (
-        <FormContextProvider initial={config.defaults.pitch} steps={steps}>
+        <FormContextProvider<CreatePitchFormType> initial={pitch} steps={steps}>
             {children}
         </FormContextProvider>
     )

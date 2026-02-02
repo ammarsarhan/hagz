@@ -63,6 +63,12 @@ services:
       FRONTEND_URL: http://localhost:${FRONTEND_PORT}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      AWS_REGION: ${AWS_REGION}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
     ports:
       - "${BACKEND_PORT:-8080}:${BACKEND_PORT:-8080}"
     depends_on:
@@ -99,6 +105,24 @@ services:
       - ./ui:/app
       - ui_node_modules:/app/node_modules
       - ui_next:/app/.next
+  # LocalStack (AWS S3)
+  localstack:
+    image: localstack/localstack:3
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3
+      DEBUG: 1
+      AWS_DEFAULT_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack/init.sh:/etc/localstack/init/ready.d/init.sh
+    networks:
+      - network
 
 volumes:
   postgres_data:
@@ -106,6 +130,7 @@ volumes:
   api_node_modules:
   ui_node_modules:
   ui_next:
+  localstack_data:
 
 networks:
   network:

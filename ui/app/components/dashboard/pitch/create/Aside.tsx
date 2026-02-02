@@ -28,7 +28,7 @@ export default function Aside() {
                         initial="hidden"
                         animate="show"
                         exit="exit"
-                        className="flex flex-col gap-y-1 my-6"
+                        className="flex flex-col gap-y-1 my-7"
                     >
                         <motion.h1
                             variants={config.item}
@@ -38,7 +38,7 @@ export default function Aside() {
                         </motion.h1>
                         <motion.p
                             variants={config.item}
-                            className="text-sm"
+                            className="text-[0.85rem] text-gray-700"
                         >
                             {step.description}
                         </motion.p>
@@ -52,7 +52,7 @@ export default function Aside() {
                         initial="hidden"
                         animate="show"
                         exit="exit"
-                        className="flex flex-col gap-y-3.5"
+                        className="flex flex-col gap-y-4"
                     >
                         {
                             steps.map((s, i) => {
@@ -64,7 +64,7 @@ export default function Aside() {
                                         className="flex items-center gap-x-2" 
                                         key={i}
                                     >
-                                        <div className={`rounded-full flex-center size-4 transition-colors ${isActive ? "bg-black" : "bg-gray-400"}`}>
+                                        <div className={`rounded-full flex-center size-4 transition-colors ${isActive ? "bg-black" : "bg-linear-to-b from-gray-400 to-gray-300"}`}>
                                             {
                                                 isActive &&
                                                 <div className="size-1.5 rounded-full bg-white"></div>
@@ -80,7 +80,10 @@ export default function Aside() {
                     </motion.div>
                 </AnimatePresence>
             </div>
-            <span className="text-gray-600 text-xs">© Hagz 2026</span>
+            <div className="flex items-center justify-between">
+                <Link href="/faq" className="text-secondary hover:text-secondary/75 text-xxs">Need help?</Link>
+                <span className="text-gray-600 text-xs">© Hagz 2026</span>
+            </div>
         </motion.aside>
     )
 }

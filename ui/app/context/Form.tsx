@@ -22,8 +22,9 @@ interface FormContextType<T> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const FormContext = createContext<FormContextType<any> | undefined>(undefined);
 
-export default function useFormContext() {
-    const context = useContext(FormContext);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function useFormContext<T = any>() {
+    const context = useContext(FormContext) as FormContextType<T> | undefined;
     if (context === undefined) throw new Error("useFormContext must be used within a FormContextProvider.");
     return context;
 };

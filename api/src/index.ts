@@ -4,6 +4,7 @@ import express from 'express';
 import cors from "cors";
 
 import auth from '@/domains/auth/auth.routes';
+import upload from '@/domains/upload/upload.routes';
 import dashboard from '@/domains/dashboard/dashboard.routes';
 
 import sendError from '@/shared/middleware/error.middleware';
@@ -20,6 +21,7 @@ app.use(cookieParser())
 app.use(express.json());
 
 app.use('/auth', auth);
+app.use('/upload', upload);
 app.use('/dashboard', dashboard);
 
 app.use(sendError);

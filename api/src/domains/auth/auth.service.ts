@@ -31,7 +31,7 @@ export default class AuthService {
             isVerified: false 
         });
 
-        return { tokens, user };
+        return { tokens };
     };
 
     signInUser = async (payload: signInPayload) => {        
@@ -51,16 +51,18 @@ export default class AuthService {
         const isOnboarded = permissions.length > 0;
         const isVerified = user.status === "ACTIVE";
 
-        const tokens = JWTService.generateTokenPair({ 
+        const userMetadata = { 
             id: user.id, 
             phone: user.phone,
             name: `${user.firstName} ${user.lastName}`,
             role: user.role,
             isOnboarded,
             isVerified
-        });
+        };
+
+        const tokens = JWTService.generateTokenPair(userMetadata);
     
-        return { tokens, user: data, permissions };
+        return { tokens, user: userMetadata, permissions };
     };
 
     getSessionData = async (token: string) => {

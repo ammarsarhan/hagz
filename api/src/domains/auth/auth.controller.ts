@@ -15,7 +15,7 @@ export default class AuthController {
             const parsed = createUserSchema.safeParse(payload);
             if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
 
-            const { user, tokens } = await this.authService.registerUser(parsed.data);
+            const { tokens } = await this.authService.registerUser(parsed.data);
             
             res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
@@ -47,7 +47,7 @@ export default class AuthController {
             const parsed = createUserSchema.safeParse(payload);
             if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
 
-            const { user, tokens } = await this.authService.registerUser(parsed.data);
+            const { tokens } = await this.authService.registerUser(parsed.data);
             
             res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
