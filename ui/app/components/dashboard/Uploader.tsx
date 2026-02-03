@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileRejection, useDropzone } from "react-dropzone";
@@ -10,7 +11,6 @@ import FileType from '@/app/utils/types/image';
 
 import { FaUpload } from "react-icons/fa6";
 import { LuLoaderCircle } from 'react-icons/lu';
-import { useState } from 'react';
 
 export default function Uploader() {
     const { data, setData, setErrors } = useFormContext<CreatePitchFormType>();
@@ -217,21 +217,28 @@ export default function Uploader() {
     return (
         <>
             <ImageViewer image={image} setImage={setImage} deleteImage={deleteFile}/>
-            <div {...getRootProps()} className={`w-full p-6 flex-center text-center flex-col gap-y-4 border border-dashed text-gray-800 rounded-md cursor-pointer ${isDragActive ? "border-secondary" : "border-gray-400"} transition-colors`}>
-                <input {...getInputProps()}/>
-                <FaUpload className="size-5"/>
-                <div>
-                    <span className="text-sm font-medium">
-                        {
-                            isDragActive ?
-                            "Drop the files here..." :
-                            "Choose a file or drag & drop it here."
-                        }
-                    </span>
-                    <p className="text-xs text-gray-500">Supported files: JPEG, JPG, PNG up to 10 MBs.</p>
-                </div>
-                <button className="text-xs rounded-full hover:bg-gray-100 transition-colors border border-gray-300 px-4 py-2">Upload file</button>
-            </div>
+            <AnimatePresence>
+                {
+                    <div 
+                        {...getRootProps()} 
+                        className={`w-full p-6 flex-center text-center flex-col gap-y-4 border border-dashed text-gray-800 rounded-md cursor-pointer ${isDragActive ? "border-secondary" : "border-gray-400"} transition-colors`}
+                    >
+                        <input {...getInputProps()}/>
+                        <FaUpload className="size-5"/>
+                        <div>
+                            <span className="text-sm font-medium">
+                                {
+                                    isDragActive ?
+                                    "Drop the files here..." :
+                                    "Choose a file or drag & drop it here."
+                                }
+                            </span>
+                            <p className="text-xs text-gray-500">Supported files: JPEG, JPG, PNG up to 10 MBs.</p>
+                        </div>
+                        <button className="text-xs rounded-full hover:bg-gray-100 transition-colors border border-gray-300 px-4 py-2">Upload file</button>
+                    </div>
+                }
+            </AnimatePresence>
             <div className='flex flex-wrap gap-x-4 gap-y-2.5'>
                 <AnimatePresence>
                     {
@@ -245,7 +252,7 @@ export default function Uploader() {
                                     exit={{ opacity: 0 }}
                                     key={image.id}
                                     className='flex flex-col gap-y-0.5 w-12'
-                                    layout
+                                    layout={true}
                                 >
                                     <button className='size-12 flex-center rounded-sm overflow-clip group relative' onClick={() => setImage(image)} disabled={isPending}>
                                         <div className={`${isPending ? "opacity-30" : "group-hover:opacity-30 opacity-0"} bg-black absolute top-0 left-0 w-full h-full transition-all`}></div>

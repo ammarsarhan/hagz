@@ -3,11 +3,12 @@
 import { ReactNode } from "react";
 import { FormContextProvider } from "@/app/context/Form";
 
-import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
 import Details from "@/app/components/dashboard/pitch/create/steps/Details";
+import Location from "@/app/components/dashboard/pitch/create/steps/Location";
 import Amenities from "@/app/components/dashboard/pitch/create/steps/Amenities";
 import Grounds from "@/app/components/dashboard/pitch/create/steps/Grounds";
 import Layout from "@/app/components/dashboard/pitch/create/steps/Layout";
+import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
 
 import { pitch } from "@/app/utils/dashboard/config";
 import { CreatePitchFormType } from "@/app/utils/types/dashboard";
@@ -19,6 +20,12 @@ export default function OnboardingProvider({ children } : { children: ReactNode 
             description: "First of all, we need some information about your pitch.",
             label: "Details",
             component: <Details/>,
+        },
+        {
+            title: "Location",
+            description: "Describe your pitch's location in more detail. This will help users find your pitch and help us set up language & currency for you.",
+            label: "Location",
+            component: <Location/>,
         },
         {
             title: "Pitch Amenities",

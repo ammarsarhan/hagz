@@ -9,23 +9,24 @@ interface InputProps {
     type: "text" | "password";
     placeholder: string;
     value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    readOnly?: boolean;
 }
 
 type InputGroupProps = Omit<InputProps, "error"> & { label: string, error?: string, description?: string };
 
-export default function Input({ type, className, placeholder, value, error, onChange } : InputProps) {
+export default function Input({ type, className, placeholder, value, error, onChange, readOnly = false } : InputProps) {
     const [showPassword, setShowPassword] = useState(false);
 
-    const base = `p-2 border ${error ? "border-red-600" : "border-transparent"} rounded-md text-[0.85rem] w-full bg-gray-200/75 hover:bg-gray-200/50 outline-none focus:border-black focus:bg-gray-50 transition-colors`;
+    const base = `p-2 border ${error ? "border-red-600" : "border-transparent"} rounded-md text-[0.85rem] w-full bg-gray-200/75 hover:bg-gray-200/50 outline-none focus:border-black focus:bg-gray-50 transition-colors ${readOnly ? "opacity-60 cursor-not-allowed" : ""}`;
     const isPassword = type === "password";
     const computedType = isPassword ? (showPassword ? "text" : "password") : type;
 
     return (
         <div className={`relative ${className}`}>
-            <input className={base} type={computedType} placeholder={placeholder} value={value} onChange={onChange}/>
+            <input className={base} type={computedType} placeholder={placeholder} value={value} onChange={onChange} readOnly={readOnly}/>
             {
-                isPassword &&
+                isPassword && !readOnly &&
                 <button type="button" className="absolute h-[calc(100%-2px)] px-2.5 my-px mx-px rounded-md bg-white right-0" onClick={() => setShowPassword(prev => !prev)}>
                     {
                         showPassword ?
@@ -38,11 +39,11 @@ export default function Input({ type, className, placeholder, value, error, onCh
     )
 }
 
-export function InputGroup({ className, type, label, placeholder, value, error, description, onChange } : InputGroupProps) {
+export function InputGroup({ className, type, label, placeholder, value, error, description, onChange, readOnly } : InputGroupProps) {
     return (
         <div className={`flex flex-col gap-y-1.5 ${className}`}>
             <span className="text-sm">{label}</span>
-            <Input error={!!error} type={type} placeholder={placeholder} value={value} onChange={onChange}/>
+            <Input error={!!error} type={type} placeholder={placeholder} value={value} onChange={onChange} readOnly={readOnly}/>
             <AnimatePresence mode="wait">   
                 {
                     error ?
