@@ -1,4 +1,5 @@
 import z from "zod";
+import { amenities } from "@/app/utils/types/dashboard";
 
 export const pitchDetailsSchema = z.object({
     name: z
@@ -74,4 +75,22 @@ export const pitchDetailsSchema = z.object({
             message: "Could not extract coordinates. Please paste the full Google Maps URL (not a short sharing link).",
         });
     }
+});
+
+export const createAmenitySchema = z.object({ 
+    name: z.enum(Object.values(amenities)),
+    description: z
+        .string()
+        .min(2, "Amenity description must be at least 2 characters long.")
+        .max(100, "Amenity description may not be longer than 100 characters.")
+        .optional()
+        .or(z.literal("")),
+    isPaid: z.boolean(),
+    price: z
+        .string()
+        .optional()
+        .transform((val) => val === "" ? undefined : Number(val))
+        .refine((val) => val === undefined || (val >= 10 && val <= 200), {
+            message: "Amenity price must be between 10 and 200 EGP per hour.",
+        }),
 });

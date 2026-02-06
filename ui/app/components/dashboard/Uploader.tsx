@@ -235,7 +235,7 @@ export default function Uploader() {
                             </span>
                             <p className="text-xs text-gray-500">Supported files: JPEG, JPG, PNG up to 10 MBs.</p>
                         </div>
-                        <button className="text-xs rounded-full hover:bg-gray-100 transition-colors border border-gray-300 px-4 py-2">Upload file</button>
+                        <button className="text-xxs rounded-full hover:bg-gray-100 transition-colors border border-gray-300 px-5 py-2">Upload file</button>
                     </div>
                 }
             </AnimatePresence>

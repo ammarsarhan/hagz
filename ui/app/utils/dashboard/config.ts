@@ -1,4 +1,4 @@
-import { CreatePitchFormType } from "../types/dashboard";
+import { CreatePitchFormType } from "@/app/utils/types/dashboard";
 
 const pitch: CreatePitchFormType = {
     name: "",
@@ -9,14 +9,9 @@ const pitch: CreatePitchFormType = {
     city: "",
     country: "EG" as const,
     googleMapsLink: "",
-    amenities: [
-        {
-            name: "LIGHTING" as const,
-            description: "",
-            isPaid: false,
-            price: ""
-        }
-    ],
+    longitude: "",
+    latitude: "",
+    amenities: [],
     images: [],
     coverImage: "",
     layout: {}

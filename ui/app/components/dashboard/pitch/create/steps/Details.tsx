@@ -33,7 +33,7 @@ export default function Details() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="text-xs text-red-600"
+                                className="text-xxs text-red-600"
                             >
                                 {errors["images"]}
                             </motion.p> :
@@ -41,7 +41,7 @@ export default function Details() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="text-xs text-gray-600"
+                                className="text-xxs text-gray-600"
                             >
                                 We need between 3 and 10 high quality images that show your pitch under its best light.
                             </motion.p>
@@ -49,9 +49,6 @@ export default function Details() {
                     </AnimatePresence>
                 </div>
                 <Uploader/>
-            </div>
-            <div className="w-full">
-                <InputGroup error={errors["googleMapsLink"]} label={"Google Maps Link"} onChange={(e) => setData(prev => ({ ...prev, googleMapsLink: e.target.value }))} type={"text"} placeholder={"Link"} value={data.googleMapsLink} className="flex-1" description="Adding a Google Maps link helps us index your pitch better, making you appear higher in search results."/>
             </div>
         </motion.div>
     )
