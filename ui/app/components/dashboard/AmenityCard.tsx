@@ -56,7 +56,7 @@ export default function AmenityCard({ id, name, description, isPaid, price } : A
                     <p>{description ? description : "No additional description."}</p>
                 </div>
             </div>
-            <button onClick={handleDelete} className="p-2.5 flex-center gap-x-1.5 bg-black text-white hover:bg-black/85 transition-all w-full rounded-b-md">
+            <button onClick={handleDelete} className="p-2.75 flex-center gap-x-1.5 bg-black text-white hover:bg-black/85 transition-all w-full rounded-b-md">
                 <FaRegTrashAlt className="size-3"/>
                 <span className="text-xs">Delete</span>
             </button>

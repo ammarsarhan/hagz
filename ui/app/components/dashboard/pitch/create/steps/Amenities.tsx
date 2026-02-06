@@ -131,7 +131,7 @@ export default function Amenities() {
                             className="flex flex-col gap-y-3 w-full"
                         >
                             <span className="text-sm">Amenities ({data.amenities.length})</span>
-                            <div className="flex gap-x-4 overflow-x-scroll" ref={amenitiesRef}>
+                            <div className="flex gap-x-4 overflow-x-scroll hide-scrollbar" ref={amenitiesRef}>
                                 <AnimatePresence mode="popLayout">
                                     {
                                         data.amenities.map(amenity => <AmenityCard key={amenity.id} {...amenity}/> )
