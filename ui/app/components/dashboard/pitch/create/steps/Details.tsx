@@ -4,10 +4,10 @@ import useFormContext from "@/app/context/Form";
 import Uploader from "@/app/components/dashboard/Uploader";
 import { InputGroup } from "@/app/components/dashboard/Input";
 import { TextAreaGroup } from "@/app/components/dashboard/TextArea";
-import { CreatePitchFormType } from "@/app/utils/types/dashboard";
+import { Pitch } from "@/app/utils/types/dashboard";
 
 export default function Details() {
-    const { data, setData, errors } = useFormContext<CreatePitchFormType>();
+    const { data, setData, errors } = useFormContext<Pitch>();
 
     return (
         <motion.div

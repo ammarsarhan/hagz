@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
 
 import useFormContext from "@/app/context/Form";
-import { Amenity, amenityIcons, amenityOptions, CreatePitchFormType } from "@/app/utils/types/dashboard";
+import { AmenityType, amenityIcons, amenityOptions, Pitch } from "@/app/utils/types/dashboard";
+
 import { FaRegTrashAlt } from "react-icons/fa";
 
-type AmenityCardProps = Amenity;
+type AmenityCardProps = AmenityType;
 
 export default function AmenityCard({ id, name, description, isPaid, price } : AmenityCardProps) {
-    const { data, setData } = useFormContext<CreatePitchFormType>();
+    const { data, setData } = useFormContext<Pitch>();
 
     const label = amenityOptions.find(amenity => amenity.value === name)!.label;
     const IconComponent = amenityIcons.find(amenity => amenity.value === name)!.icon;

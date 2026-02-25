@@ -49,8 +49,8 @@ export default function ImageViewer({ image, setImage, deleteImage } : ImageView
                     exit={{ opacity: 0 }}
                     className="w-screen h-screen fixed top-0 left-0 bg-black/75 z-1000"
                 >
-                    <div className="w-full h-full flex flex-col">
-                        <div className="h-16 text-xxs flex items-center justify-between px-4 flex-1 bg-black/20" ref={toolbarRef}>
+                    <div className="w-full h-screen flex flex-col">
+                        <div className="h-16 text-xxs flex items-center justify-between px-4 flex-1 bg-black/20 z-1001" ref={toolbarRef}>
                             <div>
                                 <span className="text-white text-sm font-medium">{image.file.name}</span>
                             </div>
@@ -64,7 +64,7 @@ export default function ImageViewer({ image, setImage, deleteImage } : ImageView
                             </div>
                         </div>
                         <div className="flex-center h-[calc(100%-4rem)] w-full p-4">
-                            <img src={image.objectUrl} className="object-contain h-full max-w-full" ref={imageRef}/>
+                            <img src={image.objectUrl} className="object-contain max-w-full max-h-full" ref={imageRef}/>
                         </div>
                     </div>
                 </motion.div>

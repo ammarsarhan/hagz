@@ -9,11 +9,11 @@ import { InputGroup } from "@/app/components/dashboard/Input";
 import { DropdownGroup } from "@/app/components/dashboard/Dropdown";
 import { TextAreaGroup } from "@/app/components/dashboard/TextArea";
 import { createAmenitySchema } from "@/app/schemas/pitch";
-import { Amenity, amenityOptions, CreatePitchFormType } from "@/app/utils/types/dashboard";
+import { AmenityType, amenityOptions, Pitch } from "@/app/utils/types/dashboard";
 
 import { FaPlus } from "react-icons/fa6";
 
-type CreateAmenityPayload = Amenity;
+type CreateAmenityPayload = AmenityType;
 
 interface CreateAmenityAction {
     field: keyof CreateAmenityPayload
@@ -28,7 +28,7 @@ function createUserReducer(state: CreateAmenityPayload, action: CreateAmenityAct
 };
 
 export default function Amenities() {
-    const { data, setData } = useFormContext<CreatePitchFormType>();
+    const { data, setData } = useFormContext<Pitch>();
 
     const [state, dispatch] = useReducer(createUserReducer, {
         id: uuidv4(),

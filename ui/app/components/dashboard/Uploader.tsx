@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FileRejection, useDropzone } from "react-dropzone";
 
 import useFormContext from "@/app/context/Form";
-import { CreatePitchFormType } from '@/app/utils/types/dashboard';
+import { Pitch } from '@/app/utils/types/dashboard';
 import { BASE_URL, mutate } from '@/app/utils/api/base';
 import ImageViewer from '@/app/components/dashboard/ImageViewer';
 import FileType from '@/app/utils/types/image';
@@ -13,7 +13,7 @@ import { FaUpload } from "react-icons/fa6";
 import { LuLoaderCircle } from 'react-icons/lu';
 
 export default function Uploader() {
-    const { data, setData, setErrors } = useFormContext<CreatePitchFormType>();
+    const { data, setData, setErrors } = useFormContext<Pitch>();
 
     const deleteFile = async (id: string) => {
         try {
@@ -242,8 +242,9 @@ export default function Uploader() {
             <div className='flex flex-wrap gap-x-4 gap-y-2.5'>
                 <AnimatePresence>
                     {
-                        data.images.map((image: FileType) => {
+                        data.images.map((image: FileType, index: number) => {
                             const isPending = image.isDeleting || image.uploading;
+                            const isFirst = index === 0;
 
                             return (
                                 <motion.div
@@ -254,7 +255,7 @@ export default function Uploader() {
                                     className='flex flex-col gap-y-0.5 w-12'
                                     layout={true}
                                 >
-                                    <button className='size-12 flex-center rounded-sm overflow-clip group relative' onClick={() => setImage(image)} disabled={isPending}>
+                                    <button className={`size-12 flex-center rounded-sm overflow-clip group relative`} onClick={() => setImage(image)} disabled={isPending}>
                                         <div className={`${isPending ? "opacity-30" : "group-hover:opacity-30 opacity-0"} bg-black absolute top-0 left-0 w-full h-full transition-all`}></div>
                                         {
                                             image.uploading &&
@@ -264,9 +265,13 @@ export default function Uploader() {
                                             image.isDeleting &&
                                             <LuLoaderCircle className="absolute top-1/2 left-1/2 -translate-1/2 text-white animate-spin size-4"/>
                                         }
-                                        <img src={image.objectUrl} alt={image.file.name} className='w-full h-full'/>
+                                        <img src={image.objectUrl} alt={image.file.name} className='w-full h-full object-cover'/>
                                     </button>
                                     <span className='text-xs truncate'>{image.file.name}</span>
+                                    {
+                                        isFirst &&
+                                        <span className='text-xs text-gray-600'>(Cover)</span>
+                                    }
                                 </motion.div>
                             )
                         })

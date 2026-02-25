@@ -7,11 +7,10 @@ import Details from "@/app/components/dashboard/pitch/create/steps/Details";
 import Location from "@/app/components/dashboard/pitch/create/steps/Location";
 import Amenities from "@/app/components/dashboard/pitch/create/steps/Amenities";
 import Grounds from "@/app/components/dashboard/pitch/create/steps/Grounds";
-import Layout from "@/app/components/dashboard/pitch/create/steps/Layout";
 import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
 
 import { pitch } from "@/app/utils/dashboard/config";
-import { CreatePitchFormType } from "@/app/utils/types/dashboard";
+import { Pitch } from "@/app/utils/types/dashboard";
 
 export default function OnboardingProvider({ children } : { children: ReactNode }) {
     const steps = [
@@ -40,12 +39,6 @@ export default function OnboardingProvider({ children } : { children: ReactNode 
             component: <Grounds/>,
         },
         {
-            title: "Layout",
-            description: "How are your grounds organized? Can they be booked as combinations?",
-            label: "Layout",
-            component: <Layout/>,
-        },
-        {
             title: "Summary",
             description: "Just a quick check to make sure that everything will operate as you intend it to do.",
             label: "Summary",
@@ -54,7 +47,7 @@ export default function OnboardingProvider({ children } : { children: ReactNode 
     ]
 
     return (
-        <FormContextProvider<CreatePitchFormType> initial={pitch} steps={steps}>
+        <FormContextProvider<Pitch> initial={pitch} steps={steps}>
             {children}
         </FormContextProvider>
     )

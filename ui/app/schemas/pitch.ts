@@ -1,5 +1,5 @@
 import z from "zod";
-import { amenities } from "@/app/utils/types/dashboard";
+import { amenityLabels } from "@/app/utils/types/dashboard";
 
 export const pitchDetailsSchema = z.object({
     name: z
@@ -78,7 +78,7 @@ export const pitchDetailsSchema = z.object({
 });
 
 export const createAmenitySchema = z.object({ 
-    name: z.enum(Object.values(amenities)),
+    name: z.enum(Object.values(amenityLabels)),
     description: z
         .string()
         .min(2, "Amenity description must be at least 2 characters long.")
