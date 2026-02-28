@@ -6,6 +6,10 @@
     --color-secondary: #1E1EC7;
 }
 
+.react-grid-item.react-grid-placeholder {
+    @apply bg-blue-500/40!;
+}
+
 .flex-center {
     @apply flex items-center justify-center;
 }

@@ -41,7 +41,7 @@ export default function AmenityCard({ id, name, description, isPaid, price } : A
                 <div className="grid grid-cols-3 gap-x-4">
                     <div className="flex flex-col w-full">
                         <span className="text-gray-500">Tag</span>
-                        <span className="block break-all">{name}</span>
+                        <span className="block truncate">{name}</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-gray-500">Is Paid?</span>

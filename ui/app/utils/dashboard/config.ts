@@ -10,12 +10,12 @@ const PITCH_SIZE = {
 
 const GROUND_SIZES: Record<GroundSize, { width: number, height: number }> = {
     FIVE_A_SIDE: { width: 4, height: 2 },
-    SEVEN_A_SIDE: { width: 6, height: 3 },
-    ELEVEN_A_SIDE: { width: 8, height: 5 },
-    DEFAULT: { width: 4, height: 2 },
+    SEVEN_A_SIDE: { width: 8, height: 4 },
+    ELEVEN_A_SIDE: { width: 12, height: 6 },
+    STANDARD: { width: 4, height: 2 },
 };
 
-const pitch: Pitch = {
+const pitch = (): Pitch => ({
     id: uuidv4(),
     name: "",
     description: "",
@@ -31,24 +31,28 @@ const pitch: Pitch = {
     images: [],
     coverImage: "",
     layout: {
+        entrance: {
+            axis: "TOP",
+            position: "START"
+        },
         grounds: [],
         combinations: []
     }
-};
+});
 
-const ground: Ground = {
+const ground = (): Ground => ({
     id: uuidv4(),
-    name: "",
+    name: "Ground A",
     description: "",
     sport: "FOOTBALL",
     surface: "ARTIFICIAL_TURF",
     size: "FIVE_A_SIDE",
     paymentMethods: ["CASH", "CREDIT_CARD", "WALLET"],
     policy: "MODERATE",
-    depositFee: "",
-    basePrice: "",
-    peakPrice: "",
-    discountPrice: "",
+    depositFee: "100",
+    basePrice: "400",
+    peakPrice: "500",
+    discountPrice: "350",
     operatingHours: [
         0b111111111111111111111111,
         0b111111111111111111111111,
@@ -59,28 +63,29 @@ const ground: Ground = {
         0b111111111111111111111111,
     ],
     discountHours: [
-        0b000000000000000000000000,
-        0b000000000000000000000000,
-        0b000000000000000000000000,
-        0b000000000000000000000000,
+        0b0000010001000100010000000,
+        0b000000000000000001000000,
+        0b0000000000000000100000000,
+        0b000000000000001000000000,
         0b000000000000000000000000,
         0b000000000000000000000000,
         0b000000000000000000000000,
     ],
     peakHours: [
+        0b001000000000000000000000,
         0b000000000000000000000000,
+        0b001000000000000000000000,
         0b000000000000000000000000,
-        0b000000000000000000000000,
-        0b000000000000000000000000,
-        0b000000000000000000000000,
+        0b001000000000000000000000,
         0b000000000000000000000000,
         0b000000000000000000000000,
     ],
     x: 0,
     y: 0,
-    width: GROUND_SIZES.FIVE_A_SIDE.width,
-    height: GROUND_SIZES.FIVE_A_SIDE.height,
-};
+    w: GROUND_SIZES.FIVE_A_SIDE.width,
+    h: GROUND_SIZES.FIVE_A_SIDE.height,
+    rotation: 0
+});
 
 const defaults = {
     PITCH_SIZE,

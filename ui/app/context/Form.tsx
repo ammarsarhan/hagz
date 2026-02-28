@@ -11,6 +11,7 @@ interface FormContextType<T> {
     data: T;
     setData: Dispatch<SetStateAction<T>>;
     index: number;
+    setIndex: (index: number) => void;
     steps: Array<FormContextStepType>;
     step: FormContextStepType;
     next: () => void;
@@ -63,6 +64,7 @@ export function FormContextProvider<T>({ initial, steps, children } : { initial:
             data, 
             setData, 
             index, 
+            setIndex,
             steps, 
             step: steps[index], 
             next, 

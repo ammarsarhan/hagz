@@ -11,7 +11,9 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 
 export default function Onboarding() {
     const { step, previous, next } = useFormContext();
+
     const isBuilder = step.label === "Grounds";
+    const isLast = step.label === "Summary";
 
     return (
         <div className="h-screen relative w-full flex bg-gray-100">
@@ -21,7 +23,7 @@ export default function Onboarding() {
                     {step.component}
                 </AnimatePresence>
                 {
-                    !isBuilder &&
+                    !isBuilder && !isLast &&
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}

@@ -31,7 +31,7 @@ export default function PricingItem({ day, peakHours, discountHours, isActive, i
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className={`p-3 border rounded-md cursor-pointer ${isSelected && isActive ? "border-gray-400" : "border-gray-200 hover:bg-gray-50"} transition-all`}
+                className={`p-3 border rounded-md ${isSelected && isActive ? "border-gray-400 cursor-pointer" : `${isActive ? "border-gray-200 hover:bg-gray-50" : "border-gray-200 cursor-not-allowed"}`} transition-all`}
                 onClick={handleClose}
             >
                 <div className="flex items-center justify-between">

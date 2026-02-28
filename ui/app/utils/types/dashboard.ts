@@ -125,6 +125,40 @@ export const groundPolicyOptions = groundPolicyLabels.map(g => ({
     value: g
 }));
 
+export const entranceAxisOptions = [
+    {
+        label: "Top",
+        value: "TOP",
+    },
+    {
+        label: "Bottom",
+        value: "BOTTOM",
+    },
+    {
+        label: "Left",
+        value: "LEFT",
+    },
+    {
+        label: "Right",
+        value: "RIGHT",
+    },
+];
+
+export const entrancePositionOptions = [
+    {
+        label: "Start",
+        value: "START",
+    },
+    {
+        label: "Center",
+        value: "CENTER",
+    },
+    {
+        label: "End",
+        value: "END",
+    },
+]
+
 export const groundPolicyDescriptions: Array<{ value: GroundPolicy, description: string, example: string }> = [
     {
         value: "STRICT",
@@ -158,6 +192,8 @@ export type GroundPolicy = typeof groundPolicyLabels[number];
 export type PaymentMethod = typeof paymentMethodLabels[number];
 export type StaffRole = "OWNER" | "MANAGER";
 export type CountryEnum = "EG" | "SA" | "AE";
+export type EntranceAxis = "TOP" | "BOTTOM" | "LEFT" | "RIGHT";
+export type EntrancePosition = "START" | "CENTER" | "END";
 
 export interface DashboardStateType {
     permissions: Array<PermissionsType>
@@ -189,8 +225,9 @@ export interface Ground {
     peakHours: Array<number>,
     x: number,
     y: number,
-    width: number,
-    height: number
+    w: number,
+    h: number,
+    rotation: number
 };
 
 export interface Combination {
@@ -215,6 +252,10 @@ export interface Pitch {
     images: Array<FileType>,
     coverImage: string,
     layout: {
+        entrance: {
+            axis: EntranceAxis,
+            position: EntrancePosition
+        },
         grounds: Array<Ground>,
         combinations: Array<Combination>
     }

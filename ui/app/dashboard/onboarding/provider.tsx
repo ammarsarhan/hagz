@@ -13,6 +13,8 @@ import { pitch } from "@/app/utils/dashboard/config";
 import { Pitch } from "@/app/utils/types/dashboard";
 
 export default function OnboardingProvider({ children } : { children: ReactNode }) {
+    const initial = pitch();
+
     const steps = [
         {
             title: "Basic Information",
@@ -47,7 +49,7 @@ export default function OnboardingProvider({ children } : { children: ReactNode 
     ]
 
     return (
-        <FormContextProvider<Pitch> initial={pitch} steps={steps}>
+        <FormContextProvider<Pitch> initial={initial} steps={steps}>
             {children}
         </FormContextProvider>
     )

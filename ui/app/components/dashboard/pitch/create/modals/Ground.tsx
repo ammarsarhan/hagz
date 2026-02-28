@@ -31,14 +31,14 @@ function createGroundModalReducer(state: Ground, action: CreateGroundModalAction
             }
         case "clear":
             {
-                return { ...ground };
+                return ground();
             }
     };
 };
 
 export default function GroundModal({ isOpen, onClose } : { isOpen: boolean, onClose: () => void }) {
     const [index, setIndex] = useState(0);
-    const [state, dispatch] = useReducer(createGroundModalReducer, { ...ground });
+    const [state, dispatch] = useReducer(createGroundModalReducer, ground());
     const { setData } = useFormContext<Pitch>();
 
     const steps = [

@@ -23,7 +23,7 @@ export default function Toolbar() {
                     <span className={`${!isGroundsOpen ? "text-secondary border-secondary" : "text-gray-500 border-transparent"} font-medium text-xxs border-b-[1.5px] py-1.5 px-2 transition-all`}>Combinations</span>
                 </button>
             </div>
-            <div className="h-[calc(100%-2rem)] flex-1">
+            <div className="h-[calc(100%-4rem)] flex-1">
                 <AnimatePresence>
                     {
                         isGroundsOpen ? <Grounds/> : <Combinations/>
