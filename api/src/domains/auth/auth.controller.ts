@@ -15,7 +15,12 @@ export default class AuthController {
             const parsed = createUserSchema.safeParse(payload);
             if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
 
-            const { tokens } = await this.authService.registerUser(parsed.data);
+            const meta = { 
+                ipAddress: req.ip, 
+                userAgent: req.headers["user-agent"] 
+            };
+
+            const { tokens } = await this.authService.registerUser(parsed.data, meta);
             
             res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
@@ -47,7 +52,12 @@ export default class AuthController {
             const parsed = createUserSchema.safeParse(payload);
             if (!parsed.success) throw new BadRequestError(parsed.error.issues[0].message);
 
-            const { tokens } = await this.authService.registerUser(parsed.data);
+            const meta = {
+                ipAddress: req.ip,
+                userAgent: req.headers["user-agent"]
+            };
+
+            const { tokens } = await this.authService.registerUser(parsed.data, meta);
             
             res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
@@ -78,7 +88,8 @@ export default class AuthController {
             const parsed = signInSchema.safeParse(req.body);
             if (!parsed.success) throw new UnauthorizedError(parsed.error.issues[0].message);
 
-            const { user, permissions, tokens } = await this.authService.signInUser(parsed.data);
+            const meta = { ipAddress: req.ip, userAgent: req.headers["user-agent"] };
+            const { user, permissions, tokens } = await this.authService.signInUser(parsed.data, meta);
 
             res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
@@ -104,8 +115,11 @@ export default class AuthController {
         }
     }; 
 
-    signOut = async (_: Request, res: Response, next: NextFunction) => {
+    signOut = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const refreshToken = req.cookies.refreshToken;
+            if (refreshToken) await this.authService.signOutUser(refreshToken);
+
             res.clearCookie("accessToken");
             res.clearCookie("refreshToken");
 
@@ -147,9 +161,16 @@ export default class AuthController {
             const refreshToken = req.cookies.refreshToken;
             if (!refreshToken) throw new BadRequestError("A refresh token was not provided. Please sign in and try again.");
 
-            const accessToken = await this.authService.refreshSessionToken(refreshToken);
+            const tokens = await this.authService.refreshSessionToken(refreshToken);
 
-            res.cookie("accessToken", accessToken, {
+            res.cookie("refreshToken", tokens.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            });
+
+            res.cookie("accessToken", tokens.accessToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",

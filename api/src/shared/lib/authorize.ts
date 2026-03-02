@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { BaseTokenPayload } from "@/domains/jwt/jwt.service";
+import { BaseTokenPayload } from "@/domains/token/token.service";
 import { ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/error";
 import { User } from "generated/prisma/client";
 
@@ -11,6 +11,6 @@ export function requireUser(req: Request): asserts req is Request & { user: Base
 
 export function authorizeDashboard(user: User | null) {
     if (!user) throw new NotFoundError("Could not find user with the specified ID.");
-    if (user.status != "ACTIVE") throw new ForbiddenError("User account must be active to access this resource.");
+    if (!user.isVerified) throw new ForbiddenError("User account must be verified and active to access this resource.");
     if (user.role != "ADMIN") throw new UnauthorizedError("You does not have the specified permissions to access this resource.");
 };

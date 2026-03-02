@@ -18,7 +18,6 @@ enum StaffRole {
 }
 
 enum UserStatus {
-  UNVERIFIED
   ACTIVE
   SUSPENDED
   BANNED
@@ -105,6 +104,22 @@ enum Language {
   AR
 }
 
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  ipAddress String?
+  userAgent String?
+
+  @@index([userId])
+}
+
 model User {
   id        String   @id @default(cuid())
   firstName String
@@ -113,7 +128,9 @@ model User {
   password  String
   language  Language @default(EN)
 
-  status UserStatus @default(UNVERIFIED)
+  tokens RefreshToken[]
+  isVerified Boolean @default(false)
+  status UserStatus @default(ACTIVE)
   role   UserRole   @default(USER)
 
   pitches Staff[]
@@ -127,10 +144,8 @@ model User {
 
 model Pitch {
   id            String  @id @default(cuid())
-  nameEn        String
-  descriptionEn String
-  nameAr        String
-  descriptionAr String
+  name        String
+  description String
   taxId         String?
 
   street         String
@@ -174,10 +189,8 @@ model Ground {
   id      String @id @default(cuid())
   pitchId String
 
-  nameEn        String
-  nameAr        String
-  descriptionEn String?
-  descriptionAr String?
+  name        String
+  description String?
   images        String[]
   sport         GroundSport
   surface       GroundSurface

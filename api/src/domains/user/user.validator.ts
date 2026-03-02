@@ -1,6 +1,6 @@
 import z from 'zod';
 
-export type createUserPayload = z.infer<typeof createUserSchema>;
+export type CreateUserPayload = z.infer<typeof createUserSchema>;
 
 export const createUserSchema = z.object({
     firstName: z
@@ -22,7 +22,7 @@ export const createUserSchema = z.object({
     role: z.enum(["USER", "ADMIN"])
 });
 
-export type signInPayload = z.infer<typeof signInSchema>;
+export type SignInPayload = z.infer<typeof signInSchema>;
 
 export const signInSchema = z.object({
     phone: z
@@ -34,3 +34,5 @@ export const signInSchema = z.object({
         .max(50, "Could not find an account with the specified credentials.")
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, "Could not find an account with the specified credentials."),
 });
+
+export interface UserMeta { ipAddress?: string, userAgent?: string };

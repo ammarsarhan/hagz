@@ -21,7 +21,7 @@ model Pitch {
     googleMapsLink String
     amenityList    AmenityType[]
 
-    status PitchStatus @default(UNVERIFIED)
+    status PitchStatus @default(ACTIVE)
 
     images     String[]
     coverImage String?
@@ -94,7 +94,7 @@ Amenity list is a computed property from the Amenity relation on the model. We h
 
 ```
 amenityList    AmenityType[]
-status PitchStatus @default(UNVERIFIED)
+status PitchStatus @default()
 images     String[]
 coverImage String?
 ```

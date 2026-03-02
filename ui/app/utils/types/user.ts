@@ -1,7 +1,7 @@
 import { StaffRole } from "@/app/utils/types/dashboard";
 
 export type UserRole = "USER" | "ADMIN";
-export type UserStatus = "UNVERIFIED" | "ACTIVE" | "SUSPENDED";
+export type UserStatus = "ACTIVE" | "SUSPENDED";
 
 export interface User {
     id: string;
@@ -17,7 +17,6 @@ export interface PermissionsType {
     role: StaffRole;
     pitch: {
         id: string;
-        nameEn: string;
-        nameAr: string;
+        name: string;
     };
 }

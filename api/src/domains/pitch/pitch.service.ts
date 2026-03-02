@@ -10,8 +10,7 @@ export default class PitchService {
                 pitch: {
                     select: {
                         id: true,
-                        nameEn: true,
-                        nameAr: true,
+                        name: true,
                     }
                 }
             } 

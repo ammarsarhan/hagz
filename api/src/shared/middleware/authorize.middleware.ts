@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-import JWTService, { BaseTokenPayload } from "@/domains/jwt/jwt.service";
+import JWTService, { BaseTokenPayload } from "@/domains/token/token.service";
 import AuthService from "@/domains/auth/auth.service";
 import sendError from "@/shared/middleware/error.middleware";
 import { UnauthorizedError } from "@/shared/lib/error";
