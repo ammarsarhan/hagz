@@ -3,11 +3,11 @@
 import { ReactNode } from "react";
 import { FormContextProvider } from "@/app/context/Form";
 
-import Details from "@/app/components/dashboard/pitch/create/steps/Details";
-import Location from "@/app/components/dashboard/pitch/create/steps/Location";
-import Amenities from "@/app/components/dashboard/pitch/create/steps/Amenities";
-import Grounds from "@/app/components/dashboard/pitch/create/steps/Grounds";
-import Summary from "@/app/components/dashboard/pitch/create/steps/Summary";
+import Details from "@/app/components/dashboard/pitch/steps/Details";
+import Location from "@/app/components/dashboard/pitch/steps/Location";
+import Amenities from "@/app/components/dashboard/pitch/steps/Amenities";
+import Grounds from "@/app/components/dashboard/pitch/steps/Grounds";
+import Summary from "@/app/components/dashboard/pitch/steps/Summary";
 
 import { pitch } from "@/app/utils/dashboard/config";
 import { Pitch } from "@/app/utils/types/dashboard";

@@ -4,13 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import useFormContext from "@/app/context/Form";
 import Button from "@/app/components/base/Button";
-import Aside from "@/app/components/dashboard/pitch/create/Aside";
-import Toolbar from "@/app/components/dashboard/pitch/create/toolbar/Toolbar";
+import Aside from "@/app/components/dashboard/pitch/Aside";
+import Toolbar from "@/app/components/dashboard/pitch/toolbar/Toolbar";
+import { Pitch } from "@/app/utils/types/dashboard";
 
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 
 export default function Onboarding() {
-    const { step, previous, next } = useFormContext();
+    const { step, previous, next } = useFormContext<Pitch>();
 
     const isBuilder = step.label === "Grounds";
     const isLast = step.label === "Summary";

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 import useFormContext from "@/app/context/Form";
 import Button from "@/app/components/base/Button";
-import GroundModal from "@/app/components/dashboard/pitch/create/modals/Ground";
+import GroundModal from "@/app/components/dashboard/pitch/modals/Ground";
 import { DropdownGroup } from "@/app/components/dashboard/Dropdown";
 import { EntranceAxis, entranceAxisOptions, EntrancePosition, entrancePositionOptions, Pitch } from "@/app/utils/types/dashboard";
 

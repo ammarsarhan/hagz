@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 
 import useFormContext from "@/app/context/Form";
-import Uploader from "@/app/components/dashboard/Uploader";
+import Uploader from "@/app/components/dashboard/pitch/Uploader";
 import { InputGroup } from "@/app/components/dashboard/Input";
 import { TextAreaGroup } from "@/app/components/dashboard/TextArea";
 import { Pitch } from "@/app/utils/types/dashboard";

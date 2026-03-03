@@ -4,8 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 
 import useFormContext from "@/app/context/Form";
 import Button from "@/app/components/base/Button";
-import AmenityCard from "@/app/components/dashboard/AmenityCard";
-import { InputGroup } from "@/app/components/dashboard/Input";
+import AmenityCard from "@/app/components/dashboard/pitch/AmenityCard";
+import { UnitInputGroup } from "@/app/components/dashboard/UnitInput";
 import { DropdownGroup } from "@/app/components/dashboard/Dropdown";
 import { TextAreaGroup } from "@/app/components/dashboard/TextArea";
 import { createAmenitySchema } from "@/app/schemas/pitch";
@@ -35,7 +35,8 @@ export default function Amenities() {
         name: "LIGHTING",
         description: "",
         isPaid: false,
-        price: ""
+        price: "",
+        unit: "BOOKING"
     });
 
     const amenitiesRef = useRef<HTMLDivElement | null>(null);
@@ -108,7 +109,15 @@ export default function Amenities() {
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                 >
-                                    <InputGroup label={"Price"} type={"text"} placeholder={"Price/hr"} value={state.price} onChange={(e) => dispatch({ field: "price", value: e.target.value })} />
+                                    <UnitInputGroup 
+                                        label={"Price"}
+                                        placeholder={"Price"}
+                                        value={state.price}
+                                        onChange={(e) => dispatch({ field: "price", value: e.target.value })}
+                                        unit={state.unit}
+                                        onUnitChange={(e) => dispatch({ field: "unit", value: e })} 
+                                        unitOptions={[{ value: "BOOKING", label: "Per booking" }, { value: "HOUR", label: "Per hour" }]}
+                                    />
                                 </motion.div>
                             }
                         </AnimatePresence>

@@ -109,15 +109,22 @@ export default function Grounds() {
                         onLayoutChange={handleLayoutChange}
                     >
                         {
-                            data.layout.grounds.map(ground => (
-                                <div key={ground.id} className="bg-gray-200 flex-center flex-col select-none">
-                                    <h1 className="text-sm font-medium mb-2">{ground.name}</h1>
-                                    <div className="text-center flex flex-col gap-y-0.5 text-xs">
-                                        <span>{groundSizeOptions.find(g => g.value === ground.size)!.label} {groundSportOptions.find(g => g.value === ground.sport)!.label} {ground.sport === "FOOTBALL" ? "Ground" : "Court"}</span>
-                                        <span>EGP {ground.basePrice}.00/hr</span>
+                            data.layout.grounds.map(ground => {
+                                const price = new Intl.NumberFormat("en-US", {
+                                    style: "currency",
+                                    currency: data.currency,
+                                }).format(Number(ground.basePrice));
+
+                                return (
+                                    <div key={ground.id} className="bg-gray-200 flex-center flex-col select-none">
+                                        <h1 className="text-sm font-medium mb-2">{ground.name}</h1>
+                                        <div className="text-center flex flex-col gap-y-0.5 text-xs">
+                                            <span>{groundSizeOptions.find(g => g.value === ground.size)!.label} {groundSportOptions.find(g => g.value === ground.sport)!.label} {ground.sport === "FOOTBALL" ? "Ground" : "Court"}</span>
+                                            <span>{price}/hr</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                )
+                            })
                         }
                     </ReactGridLayout>
                 }

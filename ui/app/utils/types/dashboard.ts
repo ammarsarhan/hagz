@@ -3,11 +3,8 @@ import FileType from "@/app/utils/types/image";
 import { 
     TbBulb,
     TbArmchair,
-    TbDoor,
-    TbToiletPaper,
     TbParking,
     TbAirConditioning,
-    TbFlame,
     TbVolume,
     TbDroplet,
     TbWifi,
@@ -16,8 +13,15 @@ import {
     TbToolsKitchen2,
     TbBallFootball,
     TbCards,
-    TbAccessible
 } from 'react-icons/tb';
+
+import { MdCheckroom } from "react-icons/md";
+import { LuHeater } from 'react-icons/lu';
+
+import {
+    FaShower,
+    FaRestroom
+} from 'react-icons/fa6';
 
 export const amenityLabels = ["LIGHTING", "SEATING", "LOCKER_ROOMS", "SHOWERS", "TOILETS", "PARKING", "AIR_CONDITIONED", "HEATING", "SOUND_SYSTEM", "WATER_FOUNTAIN", "WIFI", "BALL_INCLUDED", "EQUIPMENT_RENTAL", "FIRST_AID", "REFEREE_SERVICE", "CAFETERIA"] as const;
 
@@ -37,15 +41,15 @@ export const amenityIcons = [
     },
     {
         value: "LOCKER_ROOMS",
-        icon: TbDoor
+        icon: MdCheckroom
     },
     {
         value: "SHOWERS",
-        icon: TbAccessible
+        icon: FaShower
     },
     {
         value: "TOILETS",
-        icon: TbToiletPaper
+        icon: FaRestroom
     },
     {
         value: "PARKING",
@@ -57,7 +61,7 @@ export const amenityIcons = [
     },
     {
         value: "HEATING",
-        icon: TbFlame
+        icon: LuHeater
     },
     {
         value: "SOUND_SYSTEM",
@@ -185,6 +189,7 @@ export const paymentMethodOptions = paymentMethodLabels.map(p => ({
 }));
 
 export type Amenity = typeof amenityLabels[number];
+export type PriceUnit = "HOUR" | "BOOKING";
 export type GroundSport = typeof groundSportLabels[number];
 export type GroundSize = typeof groundSizeLabels[number];
 export type GroundSurface = typeof groundSurfaceLabels[number];
@@ -204,7 +209,8 @@ export interface AmenityType {
     name: Amenity,
     description: string,
     isPaid: boolean,
-    price: string
+    price: string,
+    unit: PriceUnit
 };
 
 export interface Ground {
@@ -245,6 +251,7 @@ export interface Pitch {
     area: string,
     city: string,
     country: CountryEnum,
+    currency: string,
     googleMapsLink: string,
     longitude: string,
     latitude: string,

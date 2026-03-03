@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import useFormContext from "@/app/context/Form";
 import Logo from "@/app/components/base/Logo";
-import Progress from "@/app/components/dashboard/pitch/create/Progress";
+import Progress from "@/app/components/dashboard/pitch/Progress";
 import config from "@/app/utils/framer/config";
 
 import { FaCheck, FaChevronRight } from "react-icons/fa6";

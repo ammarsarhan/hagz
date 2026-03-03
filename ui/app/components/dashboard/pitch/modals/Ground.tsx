@@ -6,10 +6,10 @@ import { Modal } from "@/app/components/base/Modal";
 import { Ground, Pitch } from "@/app/utils/types/dashboard";
 import { ground } from "@/app/utils/dashboard/config";
 
-import Details from "@/app/components/dashboard/pitch/create/modals/steps/Details";
-import Payment from "@/app/components/dashboard/pitch/create/modals/steps/Payment";
-import Schedule from "@/app/components/dashboard/pitch/create/modals/steps/Schedule";
-import Pricing from "@/app/components/dashboard/pitch/create/modals/steps/Pricing";
+import Details from "@/app/components/dashboard/pitch/modals/steps/Details";
+import Payment from "@/app/components/dashboard/pitch/modals/steps/Payment";
+import Schedule from "@/app/components/dashboard/pitch/modals/steps/Schedule";
+import Pricing from "@/app/components/dashboard/pitch/modals/steps/Pricing";
 
 import { IoIosClose } from "react-icons/io";
 import useFormContext from "@/app/context/Form";

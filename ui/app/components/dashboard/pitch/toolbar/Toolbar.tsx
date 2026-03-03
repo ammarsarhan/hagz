@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import Grounds from "@/app/components/dashboard/pitch/create/toolbar/Grounds";
-import Combinations from "@/app/components/dashboard/pitch/create/toolbar/Combinations";
+import Grounds from "@/app/components/dashboard/pitch/toolbar/Grounds";
+import Combinations from "@/app/components/dashboard/pitch/toolbar/Combinations";
 
 export default function Toolbar() {
     const [isGroundsOpen, setIsGroundsOpen] = useState(true);

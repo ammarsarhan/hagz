@@ -3,8 +3,8 @@
 import { ActionDispatch, useState } from "react";
 import { motion } from "framer-motion";
 
-import ScheduleItem from "@/app/components/dashboard/pitch/create/ScheduleItem";
-import { CreateGroundModalAction } from "@/app/components/dashboard/pitch/create/modals/Ground";
+import ScheduleItem from "@/app/components/dashboard/pitch/ScheduleItem";
+import { CreateGroundModalAction } from "@/app/components/dashboard/pitch/modals/Ground";
 import { Ground } from "@/app/utils/types/dashboard";
 import { bitmaskToRanges, days, rangesToBitmask, TimeRange } from "@/app/utils/schedule";
 

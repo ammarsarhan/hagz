@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import useFormContext from "@/app/context/Form";
 import { DropdownGroup } from "@/app/components/dashboard/Dropdown";
 import { InputGroup } from "@/app/components/dashboard/Input";
-import { CountryEnum, CreatePitchFormType } from "@/app/utils/types/dashboard";
+import { CountryEnum, Pitch } from "@/app/utils/types/dashboard";
 import { useEffect } from "react";
 import { extractCoordinates } from "@/app/utils/dashboard/map";
 
@@ -14,7 +14,7 @@ const countryOptions = [
 ];
 
 export default function Location() {
-    const { data, setData, errors } = useFormContext<CreatePitchFormType>();
+    const { data, setData, errors } = useFormContext<Pitch>();
 
     useEffect(() => {
         const coordinates = extractCoordinates(data.googleMapsLink);
@@ -50,7 +50,7 @@ export default function Location() {
                 </div>
                 <div className="flex gap-x-4 w-full">
                     <InputGroup label={"City"} onChange={(e) => setData(prev => ({ ...prev, city: e.target.value }))} type={"text"} placeholder={"City"} value={data.city} className="flex-1"/>
-                    <DropdownGroup onChange={(value) => setData(prev => ({ ...prev, country: value as CountryEnum }))} placeholder={"Select country"} value={data.country} options={countryOptions} label={"Country"} className="flex-1"/>
+                    <DropdownGroup onChange={(value) => setData(prev => ({ ...prev, country: value as CountryEnum, currency: countryOptions.find(c => c.value === value)!.currency }))} placeholder={"Select country"} value={data.country} options={countryOptions} label={"Country"} className="flex-1"/>
                 </div>
             </div>
             <div className="flex gap-x-4 w-full">

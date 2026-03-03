@@ -24,6 +24,7 @@ const pitch = (): Pitch => ({
     area: "",
     city: "",
     country: "EG" as const,
+    currency: "EGP",
     googleMapsLink: "",
     longitude: "",
     latitude: "",

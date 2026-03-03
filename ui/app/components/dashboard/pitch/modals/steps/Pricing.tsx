@@ -1,9 +1,9 @@
 import { ActionDispatch, useState } from "react";
 import { motion } from "framer-motion";
 
-import PricingItem from "@/app/components/dashboard/pitch/create/PricingItem";
+import PricingItem from "@/app/components/dashboard/pitch/PricingItem";
 import { Ground } from "@/app/utils/types/dashboard";
-import { CreateGroundModalAction } from "@/app/components/dashboard/pitch/create/modals/Ground";
+import { CreateGroundModalAction } from "@/app/components/dashboard/pitch/modals/Ground";
 import { bitmaskToRanges, days } from "@/app/utils/schedule";
 
 export default function Pricing({ state, dispatch }: { state: Ground; dispatch: ActionDispatch<[action: CreateGroundModalAction]> }) {

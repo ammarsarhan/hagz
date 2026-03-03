@@ -2,7 +2,7 @@ import { ActionDispatch } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Ground, groundPolicyDescriptions, groundPolicyOptions, paymentMethodOptions } from "@/app/utils/types/dashboard";
-import { CreateGroundModalAction } from "@/app/components/dashboard/pitch/create/modals/Ground";
+import { CreateGroundModalAction } from "@/app/components/dashboard/pitch/modals/Ground";
 import { InputGroup } from "@/app/components/dashboard/Input";
 import { DropdownGroup } from "@/app/components/dashboard/Dropdown";
 import { MultiDropdownGroup } from "@/app/components/dashboard/MultiDropdown";
