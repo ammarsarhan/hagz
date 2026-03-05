@@ -8,12 +8,13 @@ import { DropdownGroup } from "@/app/components/dashboard/Dropdown";
 import { EntranceAxis, entranceAxisOptions, EntrancePosition, entrancePositionOptions, Pitch } from "@/app/utils/types/dashboard";
 
 import { TbArtboard } from "react-icons/tb";
-import { FaArrowRotateRight, FaChevronLeft, FaChevronRight, FaTrash } from "react-icons/fa6";
+import { FaChevronLeft, FaChevronRight, FaTrash } from "react-icons/fa6";
 import { MdEdit } from "react-icons/md";
 
 export default function Grounds() {
     const { data, setData, next, previous } = useFormContext<Pitch>();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalId, setModalId] = useState<string | null>(null);
 
     const hasGrounds = data.layout.grounds.length > 0;
 
@@ -43,7 +44,18 @@ export default function Grounds() {
         }));
     };
 
+    const handleAdd = () => {
+        setModalId(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (id: string) => {
+        setModalId(id);
+        setIsModalOpen(true);
+    };
+
     const handleDelete = (id: string) => {
+        setModalId(null);
         const grounds = data.layout.grounds.filter(g => g.id !== id);
 
         setData(prev => ({
@@ -57,7 +69,7 @@ export default function Grounds() {
 
     return (
         <>
-            <GroundModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}/>
+            <GroundModal id={modalId} key={modalId ? `edit-${modalId}` : "create"} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}/>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -104,11 +116,8 @@ export default function Grounds() {
                                                 <div key={ground.id} className="flex items-center justify-between">
                                                     <span>{index + 1}) {ground.name}</span>
                                                     <div className="flex items-center gap-x-1">
-                                                        <button className="group size-7 rounded-full flex-center hover:bg-gray-200 transition-all">
+                                                        <button className="group size-7 rounded-full flex-center hover:bg-gray-200 transition-all" onClick={() => handleEdit(id)}>
                                                             <MdEdit className="size-3 transition-all"/>
-                                                        </button>
-                                                        <button className="group size-7 rounded-full flex-center hover:bg-gray-200 transition-all">
-                                                            <FaArrowRotateRight className="size-3 transition-all"/>
                                                         </button>
                                                         <button onClick={() => handleDelete(id)} className="group size-7 rounded-full flex-center hover:bg-gray-200 transition-all">
                                                             <FaTrash className="size-3 transition-all"/>
@@ -120,7 +129,7 @@ export default function Grounds() {
                                     }
                                     {
                                         data.layout.grounds.length < 10 ?
-                                        <Button className="my-4 font-medium text-xs!" variant="mono" onClick={() => setIsModalOpen(true)}>Add Ground</Button> :
+                                        <Button className="my-4 font-medium text-xs!" variant="mono" onClick={handleAdd}>Add Ground</Button> :
                                         <Button className="my-4 font-medium text-xs! cursor-auto!" variant="outline" disabled>Add Ground</Button>
                                     }
                                 </div>

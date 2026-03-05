@@ -3,7 +3,6 @@ import ReactGridLayout, { Layout, noCompactor, useContainerWidth } from "react-g
 
 import useFormContext from "@/app/context/Form";
 import { EntranceAxis, EntrancePosition, groundSizeOptions, groundSportOptions, Pitch } from "@/app/utils/types/dashboard";
-import { defaults } from "@/app/utils/dashboard/config";
 
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -18,8 +17,8 @@ export default function Grounds() {
         i: ground.id,
         x: ground.x,
         y: ground.y,
-        w: defaults.GROUND_SIZES[ground.size].width ?? ground.w,
-        h: defaults.GROUND_SIZES[ground.size].height ?? ground.h,
+        w: ground.w,
+        h: ground.h
     }));
 
     const handleLayoutChange = (newLayout: Layout) => {
@@ -104,7 +103,7 @@ export default function Grounds() {
                         width={width}
                         gridConfig={{ cols: 16, rowHeight: 50 }}
                         dragConfig={{ enabled: true }}
-                        resizeConfig={{ enabled: false }}
+                        resizeConfig={{ enabled: true }}
                         compactor={noCompactor}
                         onLayoutChange={handleLayoutChange}
                     >

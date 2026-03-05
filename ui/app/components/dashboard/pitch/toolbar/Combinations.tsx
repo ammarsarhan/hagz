@@ -16,7 +16,7 @@ export default function Combinations() {
             className="h-full flex-center"
         >
             {
-                data.layout.grounds.length <= 0 ?
+                data.layout.grounds.length <= 1 ?
                 <div className="flex-center flex-col gap-y-0.5 text-center mx-2">
                     <TbLayout2 className="size-12 my-3"/>
                     <h2 className="font-medium text-[0.95rem]">You do not have enough grounds yet.</h2>

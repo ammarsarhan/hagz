@@ -84,8 +84,7 @@ const ground = (): Ground => ({
     x: 0,
     y: 0,
     w: GROUND_SIZES.FIVE_A_SIDE.width,
-    h: GROUND_SIZES.FIVE_A_SIDE.height,
-    rotation: 0
+    h: GROUND_SIZES.FIVE_A_SIDE.height
 });
 
 const defaults = {

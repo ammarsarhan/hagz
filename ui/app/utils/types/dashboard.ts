@@ -232,8 +232,7 @@ export interface Ground {
     x: number,
     y: number,
     w: number,
-    h: number,
-    rotation: number
+    h: number
 };
 
 export interface Combination {

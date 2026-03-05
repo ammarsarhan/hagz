@@ -3,8 +3,8 @@ import { AnimatePresence } from "framer-motion";
 
 import Button from "@/app/components/base/Button";
 import { Modal } from "@/app/components/base/Modal";
-import { Ground, Pitch } from "@/app/utils/types/dashboard";
-import { ground } from "@/app/utils/dashboard/config";
+import { Ground, GroundSize, Pitch } from "@/app/utils/types/dashboard";
+import { defaults, ground } from "@/app/utils/dashboard/config";
 
 import Details from "@/app/components/dashboard/pitch/modals/steps/Details";
 import Payment from "@/app/components/dashboard/pitch/modals/steps/Payment";
@@ -17,33 +17,39 @@ import useFormContext from "@/app/context/Form";
 export interface CreateGroundModalAction {
     type: "clear" | "set";
     field: keyof Ground | "*";
-    value?: string | string[] | number[];
+    value?: string | string[] | number | number[] | Ground;
 };
 
 function createGroundModalReducer(state: Ground, action: CreateGroundModalAction) {
     switch (action.type) {
         case "set":
-            {
-                return {
-                    ...state,
-                    [action.field]: action.value,
-                };
+            if (action.field === "*") {
+                return action.value as Ground;
             }
-        case "clear":
-            {
-                return ground();
-            }
-    };
-};
 
-export default function GroundModal({ isOpen, onClose } : { isOpen: boolean, onClose: () => void }) {
+            return {
+                ...state,
+                [action.field]: action.value,
+            };
+
+        case "clear":
+            return ground();
+
+        default:
+            return state;
+    }
+}
+
+export default function GroundModal({ id, isOpen, onClose } : { id: string | null, isOpen: boolean, onClose: () => void }) {
+    const { data, setData } = useFormContext<Pitch>();
+    const initialGround = id ? data.layout.grounds.find(g => g.id === id)! : ground();
+
     const [index, setIndex] = useState(0);
-    const [state, dispatch] = useReducer(createGroundModalReducer, ground());
-    const { setData } = useFormContext<Pitch>();
+    const [state, dispatch] = useReducer(createGroundModalReducer, initialGround);
 
     const steps = [
         {
-            label: "Ground Details",
+            label: id ? "Edit Ground" : "Ground Details",
             description: "Basic information about your ground including the name, description, sport, surface, size, etc...",
             component: <Details state={state} dispatch={dispatch}/>
         },
@@ -74,12 +80,65 @@ export default function GroundModal({ isOpen, onClose } : { isOpen: boolean, onC
         setIndex(prev => prev - 1);
     };
 
+    const { PITCH_SIZE, GROUND_SIZES } = defaults;
+
+    const doesCollide = (
+        x: number,
+        y: number,
+        w: number,
+        h: number
+    ) => {
+        return data.layout.grounds.some(g => {
+            return (
+                x < g.x + g.w &&
+                x + w > g.x &&
+                y < g.y + g.h &&
+                y + h > g.y
+            );
+        });
+    };
+
+    const findFreePoint = (size: GroundSize) => {
+        const base = GROUND_SIZES[size];
+
+        const w = base.width;
+        const h = base.height;
+
+        for (let y = 0; y <= PITCH_SIZE.rows - h; y++) {
+            for (let x = 0; x <= PITCH_SIZE.columns - w; x++) {
+                if (!doesCollide(x, y, w, h)) {
+                    return { x, y, w, h };
+                }
+            }
+        }
+
+        return null;
+    };
+
     const finish = () => {
-        setData(prev => ({ 
-            ...prev, 
-            layout: { 
-                ...prev.layout, 
-                grounds: [...prev.layout.grounds, state] 
+        const target = state;
+        const position = findFreePoint(target.size);
+
+        if (!position) {
+            alert("No available space for this ground size.");
+            return;
+        };
+
+        let grounds: Ground[];
+
+        if (id) {
+            grounds = data.layout.grounds.map(g =>
+                g.id === id ? state : g
+            );
+        } else {
+            grounds = [...data.layout.grounds, { ...target, ...position }];
+        }
+
+        setData(prev => ({
+            ...prev,
+            layout: {
+                ...prev.layout,
+                grounds
             }
         }));
 
