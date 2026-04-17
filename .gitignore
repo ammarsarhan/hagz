@@ -1,4 +1,16 @@
-# dev
+# web
+dist
+dist-ssr
+*.local
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# api
 .yarn/
 !.yarn/releases
 .vscode/*
@@ -7,6 +19,7 @@
 .idea/workspace.xml
 .idea/usage.statistics.xml
 .idea/shelf
+**/generated/prisma
 
 # deps
 node_modules/
