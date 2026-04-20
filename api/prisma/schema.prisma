@@ -7,11 +7,234 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENED
+  BANNED
+  DELETED
+}
+
+enum Role {
+  MANAGER
+  OWNER
+}
+
+enum Language {
+  EN
+  AR
+}
+
+enum Country {
+  EG
+}
+
+enum AmenityName {
+  LIGHTING
+  SEATING
+  LOCKER_ROOMS
+  SHOWERS
+  TOILETS
+  PARKING
+  AIR_CONDITIONED
+  HEATING
+  SOUND_SYSTEM
+  WATER_FOUNTAIN
+  WIFI
+  BALL_INCLUDED
+  EQUIPMENT_RENTAL
+  FIRST_AID
+  REFEREE_SERVICE
+  CAFETERIA
+}
+
+enum PitchStatus {
+  DRAFT
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  LIVE
+  MAINTENANCE
+  DELETED
+}
+
+enum GroundStatus {
+  ACTIVE
+  MAINTENANCE
+  DELETED
+}
+
+enum GroundSurface {
+  NATURAL_GRASS
+  ARTIFICIAL_TURF
+  HARD_WOOD
+  OTHER
+}
+
+enum GroundSport {
+  FOOTBALL
+  BASKETBALL
+  PADEL
+  TENNIS
+  VOLLEYBALL
+}
+
+enum GroundSize {
+  FIVE_A_SIDE
+  SEVEN_A_SIDE
+  ELEVEN_A_SIDE
+  STANDARD
+}
+
+enum GroundPolicy {
+  STRICT
+  MODERATE
+  LENIENT
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  WALLET
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  ipAddress String?
+  userAgent String?
+
+  @@index([userId])
+}
+
 model User {
   id        String   @id @default(cuid())
+  firstName String
+  lastName  String
   phone     String   @unique
   password  String
-  name      String
+  language  Language @default(EN)
+
+  street    String?
+  area           String?
+  city           String?
+  country        Country? @default(EG)
+
+  tokens RefreshToken[]
+  isVerified Boolean @default(false)
+  status UserStatus @default(ACTIVE)
+
+  pitches PitchPermissions[]
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([phone, status])
+}
+
+model PitchPermissions {
+  userId      String
+  pitchId     String
+  permissions Json
+  role        Role
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@id([userId, pitchId])
+}
+
+model Pitch {
+  id            String  @id @default(cuid())
+  name        String
+  description String
+  taxId         String?
+
+  street         String
+  area           String
+  city           String
+  country        Country
+  latitude       Float
+  longitude      Float
+  googleMapsLink String
+  amenityList    AmenityName[]
+  images     String[]
+
+  status PitchStatus @default(DRAFT)
+
+  groundCount      Int           @default(1)
+  sports           GroundSport[]
+  sizes            GroundSize[]
+  hasCombinations  Boolean       @default(false)
+  minimumPrice     Int
+  maximumPrice     Int
+  operationalHours Bytes[]
+
+  permissions     PitchPermissions[]
+  amenities Amenity[]
+  grounds   Ground[]
+
+  rejectionReason String?
+  verifiedBy      String?
+
+  approvedAt      DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([country, city, status])
+  @@index([longitude, latitude])
+}
+
+model Ground {
+  id      String @id @default(cuid())
+  pitchId String
+
+  name        String
+  description String?
+  images        String[]
+  sport         GroundSport
+  surface       GroundSurface
+  size          GroundSize
+
+  status         GroundStatus
+
+  policy         GroundPolicy    @default(STRICT)
+  paymentMethods PaymentMethod[]
+  depositFee     Int?
+  basePrice      Int
+  peakPrice      Int?
+  discountPrice  Int?
+
+  operatingHours Bytes[]
+  peakHours      Bytes[]
+  discountHours  Bytes[]
+
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Amenity {
+  pitchId     String
+  order       Int
+  name        AmenityName
+  description String?
+  isPaid      Boolean     @default(false)
+  price       Int?
+
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  @@id([pitchId, order])
 }
