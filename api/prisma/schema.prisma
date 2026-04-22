@@ -14,7 +14,13 @@ enum UserStatus {
   DELETED
 }
 
-enum Role {
+enum BookingActor {
+  USER
+  MANAGER
+  OWNER
+}
+
+enum PermissionsRole {
   MANAGER
   OWNER
 }
@@ -45,6 +51,15 @@ enum AmenityName {
   FIRST_AID
   REFEREE_SERVICE
   CAFETERIA
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  NO_SHOW
+  CANCELLED
+  COMPLETED
 }
 
 enum PitchStatus {
@@ -91,26 +106,55 @@ enum GroundPolicy {
   LENIENT
 }
 
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  INACTIVE
+}
+
+enum PriceType {
+  BASE
+  PEAK
+  DISCOUNT
+}
+
 enum PaymentMethod {
   CASH
   CREDIT_CARD
   WALLET
 }
 
-model RefreshToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
-  createdAt DateTime @default(now())
+enum RefundStatus {
+  NOT_APPLICABLE
+  PENDING
+  PROCESSED
+  FORFEITED
+}
+
+enum InvitationStatus {
+  PENDING
+  EXPIRED
+  ACCEPTED
+  REJECTED
+}
+
+enum RecurringPaymentSchedule {
+  UPFRONT
+  PER_BOOKING
+}
+
+model Session {
+  id           String @id @default(cuid())
+  refreshToken String @unique
+  userId       String
+  user         User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime  @default(now())
   expiresAt DateTime
   revokedAt DateTime?
 
   ipAddress String?
   userAgent String?
-
-  @@index([userId])
 }
 
 model User {
@@ -121,29 +165,32 @@ model User {
   password  String
   language  Language @default(EN)
 
-  street    String?
-  area           String?
-  city           String?
-  country        Country? @default(EG)
+  street  String?
+  area    String?
+  city    String?
+  country Country? @default(EG)
 
-  tokens RefreshToken[]
-  isVerified Boolean @default(false)
-  status UserStatus @default(ACTIVE)
+  sessions   Session[]
+  isVerified Boolean    @default(false)
+  status     UserStatus @default(ACTIVE)
 
   pitches PitchPermissions[]
+
+  bookings        Booking[]
+  createdBookings Booking[]      @relation("createdBookings")
+  reschedulings   Rescheduling[]
+  cancellations   Cancellation[]
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
-  @@index([phone, status])
 }
 
 model PitchPermissions {
   userId      String
   pitchId     String
   permissions Json
-  role        Role
+  role        PermissionsRole
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
@@ -155,10 +202,10 @@ model PitchPermissions {
 }
 
 model Pitch {
-  id            String  @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String
-  taxId         String?
+  taxId       String?
 
   street         String
   area           String
@@ -168,46 +215,46 @@ model Pitch {
   longitude      Float
   googleMapsLink String
   amenityList    AmenityName[]
-  images     String[]
+  images         String[]
 
   status PitchStatus @default(DRAFT)
 
-  groundCount      Int           @default(1)
-  sports           GroundSport[]
-  sizes            GroundSize[]
-  hasCombinations  Boolean       @default(false)
-  minimumPrice     Int
-  maximumPrice     Int
-  operationalHours Bytes[]
+  layout       Json
+  sports       GroundSport[]
+  sizes        GroundSize[]
+  minimumPrice Int
+  maximumPrice Int
 
-  permissions     PitchPermissions[]
-  amenities Amenity[]
-  grounds   Ground[]
+  permissions PitchPermissions[]
+  amenities   Amenity[]
+  grounds     Ground[]
+  invitations Invitation[]
+  bookings    Booking[]
 
   rejectionReason String?
-  verifiedBy      String?
+  reviewedBy      String?
 
-  approvedAt      DateTime?
-  deletedAt       DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  approvedAt DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  @@index([country, city, status])
-  @@index([longitude, latitude])
+  combinations Combination[]
 }
 
 model Ground {
   id      String @id @default(cuid())
   pitchId String
 
-  name        String
-  description String?
-  images        String[]
-  sport         GroundSport
-  surface       GroundSurface
-  size          GroundSize
+  name         String
+  description  String?
+  images       String[]
+  sport        GroundSport
+  surface      GroundSurface
+  size         GroundSize
+  combinations CombinationGround[]
 
-  status         GroundStatus
+  status GroundStatus
 
   policy         GroundPolicy    @default(STRICT)
   paymentMethods PaymentMethod[]
@@ -216,11 +263,39 @@ model Ground {
   peakPrice      Int?
   discountPrice  Int?
 
-  operatingHours Bytes[]
-  peakHours      Bytes[]
-  discountHours  Bytes[]
+  bookings Booking[]
+  slots    GroundSlot[]
 
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  schedule          Schedule[]
+  scheduleOverrides ScheduleOverride[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model CombinationGround {
+  combinationId String
+  groundId      String
+
+  combination Combination @relation(fields: [combinationId], references: [id], onDelete: Cascade)
+  ground      Ground      @relation(fields: [groundId], references: [id], onDelete: Restrict)
+
+  @@id([combinationId, groundId])
+}
+
+model Combination {
+  id      String @id @default(cuid())
+  pitchId String
+  pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  name     String
+  grounds  CombinationGround[]
+  size     GroundSize
+  isActive Boolean             @default(true)
+  bookings GroupBooking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -237,4 +312,176 @@ model Amenity {
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
   @@id([pitchId, order])
+}
+
+model Invitation {
+  id      String @id @default(cuid())
+  pitchId String
+
+  pitch  Pitch            @relation(fields: [pitchId], references: [id])
+  phone  String
+  status InvitationStatus @default(PENDING)
+
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  rejectedAt DateTime?
+
+  createdBy String
+  createdAt DateTime @default(now())
+}
+
+model GroundSlot {
+  id String @id @default(cuid())
+
+  pitchId  String
+  groundId String
+  ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  date     DateTime @db.Date
+  startsAt DateTime
+  endsAt   DateTime
+
+  status    SlotStatus @default(AVAILABLE)
+  priceType PriceType  @default(BASE)
+
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  @@unique([groundId, startsAt])
+}
+
+model Schedule {
+  id       String @id @default(cuid())
+  groundId String
+  ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  dayOfWeek      Int
+  operatingHours Bytes
+  peakHours      Bytes
+  discountHours  Bytes
+
+  isActive Boolean @default(true)
+
+  @@unique([groundId, dayOfWeek])
+}
+
+model ScheduleOverride {
+  id       String @id @default(cuid())
+  groundId String
+  ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  date           DateTime @db.Date
+  operatingHours Bytes
+  reason         String?
+
+  @@unique([groundId, date])
+}
+
+model GroupBooking {
+  id            String      @id @default(cuid())
+  bookings      Booking[]
+  combinationId String
+  combination   Combination @relation(fields: [combinationId], references: [id])
+}
+
+model RecurringBooking {
+  id String @id @default(cuid())
+
+  interval        Int
+  endDate         DateTime
+  paymentSchedule RecurringPaymentSchedule
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id       String @id @default(cuid())
+  pitchId  String
+  groundId String
+
+  pitch   Pitch        @relation(fields: [pitchId], references: [id])
+  ground  Ground       @relation(fields: [groundId], references: [id])
+  slots   GroundSlot[]
+  payment Payment?
+
+  userId     String?
+  user       User?   @relation(fields: [userId], references: [id])
+  guestPhone String?
+
+  bookerId   String
+  bookedBy   User         @relation("createdBookings", fields: [bookerId], references: [id])
+  bookerRole BookingActor
+
+  startTime       DateTime
+  endTime         DateTime
+  pricingSnapshot Json
+  depositFee      Int?
+  totalAmount     Int
+
+  paymentMethod PaymentMethod
+  status        BookingStatus @default(PENDING)
+
+  groupBookingId     String?
+  groupBooking       GroupBooking?     @relation(fields: [groupBookingId], references: [id])
+  recurringBookingId String?
+  recurringBooking   RecurringBooking? @relation(fields: [recurringBookingId], references: [id])
+
+  rescheduledFrom Rescheduling? @relation("rescheduledFrom")
+  rescheduledTo   Rescheduling? @relation("rescheduledTo")
+  cancellation    Cancellation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rescheduling {
+  id     String  @id @default(cuid())
+  fromId String  @unique
+  toId   String  @unique
+  from   Booking @relation("rescheduledFrom", fields: [fromId], references: [id])
+  to     Booking @relation("rescheduledTo", fields: [toId], references: [id])
+
+  userRole BookingActor
+  userId   String
+  user     User         @relation(fields: [userId], references: [id])
+  reason   String?
+
+  refundDelta   Int?
+  rescheduledAt DateTime @default(now())
+}
+
+model Payment {
+  id        String  @id @default(cuid())
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  method  PaymentMethod
+  total   Int
+  deposit Int?
+
+  transactionRef String?
+
+  refundStatus    RefundStatus @default(NOT_APPLICABLE)
+  refundAmount    Int?
+  refundReference String?
+  refundedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cancellation {
+  id        String  @id @default(cuid())
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  userId String
+  user   User         @relation(fields: [userId], references: [id])
+  actor  BookingActor
+
+  reason      String?
+  cancelledAt DateTime @default(now())
 }
