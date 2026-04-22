@@ -9,7 +9,7 @@ datasource db {
 
 enum UserStatus {
   ACTIVE
-  SUSPENED
+  SUSPENDED
   BANNED
   DELETED
 }
@@ -118,6 +118,35 @@ enum PaymentMethod {
   WALLET
 }
 
+enum PayoutTrigger {
+  MANUAL
+  SCHEDULED
+}
+
+// Update later to mimic methods better
+enum PayoutMethod {
+  BANK_TRANSFER
+  WALLET
+  MANUAL
+}
+
+enum LedgerAction {
+  BOOKING_REVENUE // Owner's share of a booking
+  PLATFORM_FEE_DEBIT // Platform's 5% cut deducted from owner
+  SERVICE_FEE_CREDIT // Service fee collected from user (platform's)
+  CASH_FEE_DEBT // Platform fee owed from a cash booking (not yet settled)
+  PAYOUT // A payout was issued
+  PAYOUT_REVERSAL // A payout was reversed/failed
+  ADJUSTMENT // Manual correction
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum RefundStatus {
   NOT_APPLICABLE
   PENDING
@@ -169,7 +198,8 @@ model User {
 
   firstName String
   lastName  String
-  phone     String @unique
+  phone     String  @unique
+  email     String? @unique
   password  String
 
   street  String?
@@ -187,7 +217,8 @@ model User {
   reschedulings   Rescheduling[]
   cancellations   Cancellation[]
 
-  preferences UserPreferences?
+  preferences        UserPreferences?
+  payoutDestinations PayoutDestination[]
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -248,6 +279,7 @@ model Pitch {
   grounds     Ground[]
   invitations Invitation[]
   bookings    Booking[]
+  ledger      PitchLedger?
 
   rejectionReason String?
   reviewedBy      String?
@@ -451,10 +483,11 @@ model Booking {
   pitchId  String
   groundId String
 
-  pitch   Pitch        @relation(fields: [pitchId], references: [id])
-  ground  Ground       @relation(fields: [groundId], references: [id])
-  slots   GroundSlot[]
-  payment Payment?
+  pitch         Pitch         @relation(fields: [pitchId], references: [id])
+  ground        Ground        @relation(fields: [groundId], references: [id])
+  slots         GroundSlot[]
+  payment       Payment?
+  ledgerEntries LedgerEntry[]
 
   userId     String?
   user       User?   @relation(fields: [userId], references: [id])
@@ -469,9 +502,9 @@ model Booking {
   pricingSnapshot Json
   depositFee      Int?
   totalAmount     Int
+  paymentMethod   PaymentMethod
 
-  paymentMethod PaymentMethod
-  status        BookingStatus @default(PENDING)
+  status BookingStatus @default(PENDING)
 
   groupBookingId     String?
   groupBooking       GroupBooking?     @relation(fields: [groupBookingId], references: [id])
@@ -533,4 +566,71 @@ model Cancellation {
 
   reason      String?
   cancelledAt DateTime @default(now())
+}
+
+model LedgerEntry {
+  id       String      @id @default(cuid())
+  ledgerId String
+  ledger   PitchLedger @relation(fields: [ledgerId], references: [id])
+
+  type      LedgerAction
+  amount    Int // Positive = owed to owner, negative = owed to platform
+  bookingId String?
+  booking   Booking?     @relation(fields: [bookingId], references: [id])
+  payoutId  String?
+  payout    Payout?      @relation(fields: [payoutId], references: [id])
+
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model PitchLedger {
+  id      String @id @default(cuid())
+  pitchId String @unique
+  pitch   Pitch  @relation(fields: [pitchId], references: [id])
+
+  balance Int @default(0)
+
+  entries LedgerEntry[]
+  payouts Payout[]
+
+  updatedAt DateTime @updatedAt
+}
+
+model Payout {
+  id       String      @id @default(cuid())
+  ledgerId String
+  ledger   PitchLedger @relation(fields: [ledgerId], references: [id])
+
+  entries LedgerEntry[]
+
+  amount         Int
+  method         PayoutMethod
+  trigger        PayoutTrigger
+  status         PayoutStatus  @default(PENDING)
+  transactionRef String?
+
+  destinationId String
+  destination   PayoutDestination @relation(fields: [destinationId], references: [id])
+
+  requestedAt   DateTime  @default(now())
+  processedAt   DateTime?
+  failedAt      DateTime?
+  failureReason String?
+}
+
+model PayoutDestination {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  payouts Payout[]
+
+  method      PayoutMethod
+  accountName String
+  accountRef  String
+  isDefault   Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
