@@ -275,9 +275,9 @@ model Ground {
 
   status GroundStatus
 
-  basePrice      Int
-  peakPrice      Int?
-  discountPrice  Int?
+  basePrice     Int
+  peakPrice     Int?
+  discountPrice Int?
 
   bookings Booking[]
   slots    GroundSlot[]
@@ -294,30 +294,30 @@ model Ground {
 
 model GroundSettings {
   groundId String @unique
-  ground   Ground  @relation(fields: [groundId], references: [id])
+  ground   Ground @relation(fields: [groundId], references: [id])
 
   minimumDuration Int @default(1) // Hours
   maximumDuration Int @default(6) // Hours
-  minimumWindow Int @default(2) // Hours
-  maximumWindow Int @default(720) // Hours
+  minimumWindow   Int @default(2) // Hours
+  maximumWindow   Int @default(720) // Hours
 
-  autoConfirm Boolean @default(true)
-  allowGuestBookings Boolean @default(true)
+  autoConfirm            Boolean @default(true)
+  allowGuestBookings     Boolean @default(true)
   allowRecurringBookings Boolean @default(true)
-  maxRecurringInterval       Int?
+  maxRecurringInterval   Int?
 
-  paymentMethods PaymentMethod[] @default([CASH])
-  allowDeposit Boolean @default(false)
-  depositPercentage      Int?
+  paymentMethods    PaymentMethod[] @default([CASH])
+  allowDeposit      Boolean         @default(false)
+  depositPercentage Int?
 
   autoExpiryLimit Int @default(30) // Minutes
 
-  allowRescheduling      Boolean @default(true)
-  rescheduleLimit     Int     @default(24) // Hours
+  allowRescheduling Boolean @default(true)
+  rescheduleLimit   Int     @default(24) // Hours
 
-  fullRefundWindow Int @default(48) // Hours
+  fullRefundWindow    Int @default(48) // Hours
   partialRefundWindow Int @default(24) // Hours
-  refundPercentage Int @default(50)
+  refundPercentage    Int @default(50)
 
   notificationsTrigger GroundActions[] @default([BOOKED, CANCELLED, RESCHEDULED])
 
