@@ -1,9 +1,15 @@
+import jwtService from "@/domains/tokens/jwt.service.js";
+import { createUserResponse } from "@/domains/auth/auth.validator.js";
+import type { FetchUserPayloadType, SignInPayloadType, SignUpPayloadType, UserResponseType } from "@/domains/auth/auth.validator.js";
+
 import prisma from "@/shared/lib/prisma.js";
-import type { SignUpPayloadType, UserResponseType } from "@/domains/auth/auth.validator.js";
-import { hashPassword } from "@/shared/lib/hash.js";
-import { ConflictError, ERROR_CODES } from "@/shared/lib/error.js";
+import { hashPassword, verifyPassword } from "@/shared/lib/hash.js";
+import { ConflictError, InternalServerError, NotFoundError, ERROR_CODES, UnauthorizedError, ForbiddenError } from "@/shared/lib/error.js";
+import { addDays } from "date-fns";
 
 export default class AuthService {
+    private readonly MAXIMUM_SESSION_LIMIT = 5;
+
     createUser = async (payload: SignUpPayloadType): Promise<UserResponseType> => {
         const exists = await prisma.user.findUnique({ where: { phone: payload.phone }});
         if (exists) throw new ConflictError("A user with the specified phone number already exists.", ERROR_CODES.USER_PHONE_ALREADY_EXISTS)
@@ -30,26 +36,123 @@ export default class AuthService {
             return { user, preferences };
         });
 
+        const permissions = user.pitchPermissions;
+
         // Parse into an object that can be used with the client's AuthContext or Mobile implementations.
-        return {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            phone: user.phone,
-            email: user.email,
-            status: user.status,
-            isVerified: user.isVerified,
-            preferences: {
-                language: preferences.language,
-                timezone: preferences.timezone,
-                notifications: preferences.notifications,
-                paymentMethod: preferences.paymentMethod
-            },
-            permissions: user.pitchPermissions.map(item => ({
-                pitchId: item.pitchId,
-                role: item.role,
-                permissions: item.permissions
-            }))
+        return createUserResponse(user, preferences, permissions);
+    };
+
+    fetchUser = async (params: FetchUserPayloadType): Promise<UserResponseType> => {
+        if (params.type === "phone") {
+            const user = await prisma.user.findUnique({ 
+                where: { phone: params.phone },
+                include: {
+                    pitchPermissions: true,
+                    preferences: true
+                }
+            });
+            
+            if (!user) throw new NotFoundError("Could not find user with the specified phone.", ERROR_CODES.USER_PHONE_DOES_NOT_EXIST);
+
+            // We can assume that preferences always exists because it is created as a transaction with the creation of the user.
+            // A user may not exist without their preferences unlike type-inference from the schema suggests.
+            const preferences = user.preferences!;
+            const permissions = user.pitchPermissions;
+
+            return createUserResponse(user, preferences, permissions);
         };
+
+        if (params.type === "id") {
+            const user = await prisma.user.findUnique({ 
+                where: { id: params.id },
+                include: {
+                    pitchPermissions: true,
+                    preferences: true
+                }
+            });
+            
+            if (!user) throw new NotFoundError("Could not find user with the specified id.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+
+            // We can assume that preferences always exists because it is created as a transaction with the creation of the user.
+            // A user may not exist without their preferences unlike type-inference from the schema suggests.
+            const preferences = user.preferences!;
+            const permissions = user.pitchPermissions;
+
+            return createUserResponse(user, preferences, permissions);
+        };
+
+        throw new InternalServerError("Either a phone or an id string must be specified to fetch a user.");
+    };
+
+    signIn = async (payload: SignInPayloadType, ipAddress: string | null, userAgent: string | null) => {
+        // Find the user account, make sure the password is correct, and make sure the status is ok to sign in.
+        const user = await prisma.user.findUnique({ 
+            where: { phone: payload.phone }, 
+            include: { 
+                preferences: true, 
+                pitchPermissions: true 
+            } 
+        });
+
+        if (!user) throw new UnauthorizedError("Could not find user account with the specified credentials.", ERROR_CODES.USER_PHONE_DOES_NOT_EXIST);
+
+        const isValid = await verifyPassword(user.password, payload.password);
+        if (!isValid) throw new UnauthorizedError("Could not find user account with the specified credentials.", ERROR_CODES.USER_PHONE_DOES_NOT_EXIST);
+
+        if (["SUSPENDED", "BANNED", "DELETED"].includes(user.status)) throw new ForbiddenError("User account is not active. You are not allowed to sign in.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
+        
+        // If the user passes the validation, generate the refresh and access tokens.
+        const { refreshToken, accessToken } = await jwtService.generateTokenPair(user.id, user.phone);
+
+        // Invalidate other sessions if they are above the maximum limit and store this session with the information extracted from the request.
+        const activeSessions = await prisma.session.findMany({
+            where: {
+                userId: user.id,
+                revokedAt: null,
+                expiresAt: { gt: new Date() }
+            },
+            orderBy: { createdAt: "asc" }, // Sort by the oldest to the newest
+            select: { id: true }
+        });
+        
+        // Wrap in a transaction to make sure this happens atomically.
+        await prisma.$transaction(async (tx) => {
+            // Revoke the oldest session to make way for the new session being created.
+            if (activeSessions.length >= this.MAXIMUM_SESSION_LIMIT) {
+                await tx.session.update({
+                    where: { id: activeSessions[0].id },
+                    data: { revokedAt: new Date() }
+                });
+            };
+    
+            await tx.session.create({
+                data: {
+                    userId: user.id,
+                    refreshToken,
+                    expiresAt: addDays(new Date(), 7),
+                    ipAddress,
+                    userAgent
+                }
+            });
+        });
+
+        const preferences = user.preferences!;
+        const permissions = user.pitchPermissions;
+
+        return { 
+            user: createUserResponse(user, preferences, permissions),
+            accessToken,
+            refreshToken
+        };
+    };
+    
+    signOut = async (token: string) => {
+        await prisma.session.updateMany({
+            where: {
+                refreshToken: token,
+                revokedAt: null,
+            },
+            data: { revokedAt: new Date() }
+        });
     }
 }

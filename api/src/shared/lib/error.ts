@@ -2,8 +2,12 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 // Create a set of standardized error codes that can be used to define and handle issues gracefully on the client-side.
 export const ERROR_CODES = {
-  USER_PHONE_ALREADY_EXISTS: "USER_PHONE_ALREADY_EXISTS",
   VALIDATION_FAILED: "VALIDATION_FAILED",
+  INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
+  USER_PHONE_ALREADY_EXISTS: "USER_PHONE_ALREADY_EXISTS",
+  USER_PHONE_DOES_NOT_EXIST: "USER_PHONE_DOES_NOT_EXIST",
+  USER_ACCOUNT_NOT_ACTIVE: "USER_ACCOUNT_NOT_ACTIVE",
+  USER_ID_DOES_NOT_EXIST: "USER_ID_DOES_NOT_EXIST",
 } as const;
 
 export type ErrorCode =
@@ -63,7 +67,7 @@ export class ValidationError extends AppError {
 };
 
 export class InternalServerError extends AppError {
-  constructor(message: string = 'Internal server error', code: ErrorCode) {
+  constructor(message: string = 'Internal server error', code: ErrorCode = "INTERNAL_SERVER_ERROR") {
     super(500, message, code, false);
   }
 };

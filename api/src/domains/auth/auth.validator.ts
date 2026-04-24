@@ -1,5 +1,11 @@
 import z from "zod";
 import type { Language, NotificationMethod, PaymentMethod, PermissionsRole, UserStatus } from "@/generated/prisma/enums.js";
+import type { PitchPermissions, User, UserPreferences } from "@/generated/prisma/client.js";
+
+// Fetch user by either phone or id.
+export type FetchUserPayloadType = 
+  | { type: "phone"; phone: string }
+  | { type: "id"; id: string };
 
 export type UserResponseType = {
     id: string,
@@ -40,3 +46,37 @@ export const signUpSchema = z.object({
         .string("Password is required")
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Password must be at least 8 characters long and include uppercase, lowercase, number, and special characters."),
 });
+
+export type SignInPayloadType = z.infer<typeof signInSchema>;
+
+export const signInSchema = z.object({
+    phone: z
+        .string("Phone number is required.")
+        .regex(/^\+[1-9]\d{7,14}$/, "Could not find user account with the specified credentials."),
+    password: z
+        .string("Password is required")
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Could not find user account with the specified credentials."),
+});
+
+export const createUserResponse = (user: User, preferences: UserPreferences, permissions: Array<PitchPermissions>): UserResponseType => {
+    return {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        email: user.email,
+        status: user.status,
+        isVerified: user.isVerified,
+        preferences: {
+            language: preferences.language,
+            timezone: preferences.timezone,
+            notifications: preferences.notifications,
+            paymentMethod: preferences.paymentMethod
+        },
+        permissions: permissions.map(item => ({
+            pitchId: item.pitchId,
+            role: item.role,
+            permissions: item.permissions
+        }))
+    };
+}

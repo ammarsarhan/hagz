@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 
-import { signUpHandler } from "@/domains/auth/auth.handlers.js";
-
-const app = new Hono();
+import { signInHandler, signOutHandler, signUpHandler } from "@/domains/auth/auth.handlers.js";
 
 // Chained for RPC type support on the frontend.
-app
-    .post('/sign-up', ...signUpHandler);
-
+const app = new Hono()
+    .post('/sign-up', ...signUpHandler)
+    .post('/sign-in', ...signInHandler)
+    .post('/sign-out', ...signOutHandler)
+    
 export default app;
 export type AppType = typeof app;
