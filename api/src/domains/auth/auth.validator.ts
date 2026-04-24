@@ -1,4 +1,26 @@
 import z from "zod";
+import type { Language, NotificationMethod, PaymentMethod, PermissionsRole, UserStatus } from "@/generated/prisma/enums.js";
+
+export type UserResponseType = {
+    id: string,
+    firstName: string,
+    lastName: string,
+    phone: string,
+    email: string | null,
+    status: UserStatus,
+    isVerified: boolean,
+    preferences: {
+        language: Language,
+        timezone: string,
+        notifications: Array<NotificationMethod>,
+        paymentMethod: PaymentMethod
+    },
+    permissions: Array<{
+        pitchId: string,
+        role: PermissionsRole,
+        permissions: any // Todo: Modify this later to accept a standardized permissions object.
+    }>
+}
 
 export type SignUpPayloadType = z.infer<typeof signUpSchema>
 

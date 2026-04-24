@@ -211,11 +211,11 @@ model User {
   isVerified Boolean    @default(false)
   status     UserStatus @default(ACTIVE)
 
-  pitches         PitchPermissions[]
-  bookings        Booking[]
-  createdBookings Booking[]          @relation("createdBookings")
-  reschedulings   Rescheduling[]
-  cancellations   Cancellation[]
+  pitchPermissions PitchPermissions[]
+  bookings         Booking[]
+  createdBookings  Booking[]          @relation("createdBookings")
+  reschedulings    Rescheduling[]
+  cancellations    Cancellation[]
 
   preferences        UserPreferences?
   payoutDestinations PayoutDestination[]
