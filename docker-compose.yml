@@ -60,6 +60,8 @@ services:
       AWS_REGION: ${AWS_REGION}
       AWS_ENDPOINT_URL: http://localstack:4566
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
     ports:
       - "8080:8080"
     depends_on:

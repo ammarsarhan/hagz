@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 8080
 
 # Start dev server (with Prisma safety)
-CMD ["sh", "-c", "npx prisma generate && npm run dev"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push && npm run dev"]

@@ -1,5 +1,6 @@
 import { sign, verify } from "hono/jwt";
 import { InternalServerError } from "@/shared/lib/error.js";
+import { randomUUID } from "crypto";
 
 interface AccessTokenPayload {
     id: string;
@@ -43,14 +44,14 @@ class JWTService {
 
     signAccessToken = async (payload: AccessTokenPayload): Promise<string> => {
         return sign(
-            { ...payload, exp: Math.floor(Date.now() / 1000) + this.ACCESS_TOKEN_EXPIRY_SECONDS },
+            { ...payload, jti: randomUUID(), exp: Math.floor(Date.now() / 1000) + this.ACCESS_TOKEN_EXPIRY_SECONDS },
             this.accessSecret
         );
     };
 
     signRefreshToken = async (payload: RefreshTokenPayload): Promise<string> => {
         return sign(
-            { ...payload, exp: Math.floor(Date.now() / 1000) + this.REFRESH_TOKEN_EXPIRY_SECONDS },
+            { ...payload, jti: randomUUID(), exp: Math.floor(Date.now() / 1000) + this.REFRESH_TOKEN_EXPIRY_SECONDS },
             this.refreshSecret
         );
     };

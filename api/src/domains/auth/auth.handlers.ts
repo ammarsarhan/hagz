@@ -47,17 +47,17 @@ export const signInHandler = factory.createHandlers(
 
         setCookie(c, "accessToken", accessToken, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "Strict",
             path: "/",
-            maxAge: 60 * 15,         // 15m
+            maxAge: 60 * 15, // 15m
         });
 
         setCookie(c, "refreshToken", refreshToken, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "Strict",
-            path: "/auth/refresh",   // Scoped such that the browser only sends it to this route.
+            path: "/",
             maxAge: 60 * 60 * 24 * 7 // 7d
         });
 
@@ -77,8 +77,8 @@ export const signOutHandler = factory.createHandlers(
 
         // Clear cookies for web client.
         deleteCookie(c, "accessToken", { path: "/" });
-        deleteCookie(c, "refreshToken", { path: "/auth/refresh" });
+        deleteCookie(c, "refreshToken", { path: "/" });
 
         return c.json({ success: true }, 200);
     }
-)
+);
