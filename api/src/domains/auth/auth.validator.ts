@@ -35,8 +35,7 @@ export const signUpSchema = z.object({
         .max(100, "Last name must be 100 characters long at most."),
     phone: z
         .string("Phone number is required.")
-        .min(10, "Phone number must be at least 10 characters long.")
-        .max(20, "Phone number may not be longer than 20 characters."),
+        .regex(/^\+[1-9]\d{7,14}$/, "Phone number must include the international code and be in an acceptable format."),
     password: z
         .string("Password is required")
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Password must be at least 8 characters long and include uppercase, lowercase, number, and special characters."),
