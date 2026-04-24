@@ -263,16 +263,16 @@ model Pitch {
   latitude       Float
   longitude      Float
   googleMapsLink String
-  amenityList    AmenityName[]
   images         String[]
 
   status PitchStatus @default(DRAFT)
 
-  layout       Json
+  amenityList  AmenityName[]
   sports       GroundSport[]
   sizes        GroundSize[]
   minimumPrice Int
   maximumPrice Int
+  layout       Json
 
   permissions PitchPermissions[]
   amenities   Amenity[]

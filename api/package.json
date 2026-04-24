@@ -8,8 +8,12 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.14",
+    "@hono/zod-validator": "^0.7.6",
+    "@node-rs/argon2": "^2.0.2",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.7.0",
-    "hono": "^4.12.14"
+    "hono": "^4.12.14",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
