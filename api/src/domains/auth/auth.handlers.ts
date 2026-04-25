@@ -2,11 +2,14 @@
 // This is the correct pattern in Hono.
 
 import { createFactory } from "hono/factory";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { zValidator } from "@hono/zod-validator";
 
 import AuthService from "@/domains/auth/auth.service.js";
+import { authorize } from "@/domains/auth/auth.middleware.js";
 import { signUpSchema, signInSchema } from "@/domains/auth/auth.validator.js";
-import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { ERROR_CODES, UnauthorizedError } from "@/shared/lib/error.js";
+import { success } from "zod";
 
 const factory = createFactory();
 const authService = new AuthService();
@@ -80,5 +83,42 @@ export const signOutHandler = factory.createHandlers(
         deleteCookie(c, "refreshToken", { path: "/" });
 
         return c.json({ success: true }, 200);
+    }
+);
+
+export const fetchSessionHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const id = c.var.id;
+        const user = await authService.fetchUser({ type: "id", id });
+
+        return c.json({ success: true, data: { user } }, 200);
+    }
+);
+
+export const refreshSessionHandler = factory.createHandlers(
+    async (c) => {
+        // Check if mobile to send back the access token in the response body.
+        const isMobile = 
+            c.req.header("X-Client-Type") === 'mobile' &&
+            !c.req.header('origin');
+
+        // If mobile, get the refresh token from the header set by the client, if not get it from the cookies.
+        const refreshToken = isMobile ? c.req.header("X-Refresh-Token") : getCookie(c, "refreshToken");
+        if (!refreshToken) throw new UnauthorizedError("A refresh token was not provided to create a new access token. Please sign in.", ERROR_CODES.USER_NOT_AUTHENTICATED);
+
+        const { accessToken } = await authService.refreshSession(refreshToken);
+
+        if (isMobile) return c.json({ success: true, data: { accessToken }}, 200);
+        
+        setCookie(c, "accessToken", accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            path: "/",
+            maxAge: 60 * 15, // 15m
+        });
+
+        return c.json({ success: true, message: "Updated user session successfully." }, 200);
     }
 );

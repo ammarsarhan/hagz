@@ -1,13 +1,13 @@
 import { sign, verify } from "hono/jwt";
-import { InternalServerError } from "@/shared/lib/error.js";
+import { ERROR_CODES, InternalServerError, UnauthorizedError } from "@/shared/lib/error.js";
 import { randomUUID } from "crypto";
 
-interface AccessTokenPayload {
+export interface AccessTokenPayload {
     id: string;
     phone: string;
 }
 
-interface RefreshTokenPayload {
+export interface RefreshTokenPayload {
     id: string;
 }
 
@@ -65,11 +65,27 @@ class JWTService {
     };
 
     verifyAccessToken = async (token: string): Promise<AccessTokenPayload> => {
-        return verify(token, this.accessSecret, "HS256") as unknown as Promise<AccessTokenPayload>;
+        try {
+            const payload = await verify(token, this.accessSecret, "HS256") as unknown as AccessTokenPayload;
+            return payload;
+        } catch (error) {
+            throw new UnauthorizedError(
+                "Access token is invalid or expired. Please refresh the user session.",
+                ERROR_CODES.USER_NOT_AUTHENTICATED
+            );
+        }
     };
 
     verifyRefreshToken = async (token: string): Promise<RefreshTokenPayload> => {
-        return verify(token, this.refreshSecret, "HS256") as unknown as Promise<RefreshTokenPayload>;
+        try {
+            const payload = await verify(token, this.refreshSecret, "HS256") as unknown as RefreshTokenPayload;
+            return payload;
+        } catch (error) {
+            throw new UnauthorizedError(
+                "Refresh token is invalid or expired. Please sign in again.",
+                ERROR_CODES.USER_SESSION_EXPIRED
+            );
+        }
     };
 }
 

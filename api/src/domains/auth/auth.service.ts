@@ -154,5 +154,32 @@ export default class AuthService {
             },
             data: { revokedAt: new Date() }
         });
-    }
+    };
+
+    refreshSession = async (refreshToken: string) => {
+        // Check if the refreshToken is valid.
+        const payload = await jwtService.verifyRefreshToken(refreshToken);
+
+        // If it is valid we can send a request to the database to fetch it and verify its status (if it has been revoked and if the user id matches up).
+        // We don't need to check expiresAt because this is already done by the JWTService and is redundant (simply there as an audit field in database).
+        const storedToken = await prisma.session.findUnique({
+            where: { refreshToken },
+            include: { user: { select: { phone: true } } }
+        });
+
+        if (!storedToken || storedToken.userId !== payload.id || storedToken.revokedAt) {
+            throw new UnauthorizedError(
+                "Session has expired or been revoked. Please sign in again.",
+                ERROR_CODES.USER_SESSION_EXPIRED
+            );
+        }
+
+        // If the refreshToken is valid, generate a new access token.
+        const accessToken = await jwtService.signAccessToken({
+            id: payload.id,
+            phone: storedToken.user.phone
+        });
+
+        return { accessToken };
+    };
 }
