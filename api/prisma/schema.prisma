@@ -238,7 +238,7 @@ model UserPreferences {
 model PitchPermissions {
   userId      String
   pitchId     String
-  permissions Json
+  permissions Json?
   role        PermissionsRole
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -270,16 +270,17 @@ model Pitch {
   amenityList  AmenityName[]
   sports       GroundSport[]
   sizes        GroundSize[]
-  minimumPrice Int
-  maximumPrice Int
-  layout       Json
+  minimumPrice Int?
+  maximumPrice Int?
+  layout       Json?
 
-  permissions PitchPermissions[]
-  amenities   Amenity[]
-  grounds     Ground[]
-  invitations Invitation[]
-  bookings    Booking[]
-  ledger      PitchLedger?
+  permissions  PitchPermissions[]
+  amenities    Amenity[]
+  grounds      Ground[]
+  combinations Combination[]
+  invitations  Invitation[]
+  bookings     Booking[]
+  ledger       PitchLedger?
 
   rejectionReason String?
   reviewedBy      String?
@@ -288,8 +289,6 @@ model Pitch {
   deletedAt  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-
-  combinations Combination[]
 }
 
 model Ground {

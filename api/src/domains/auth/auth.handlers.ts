@@ -9,7 +9,6 @@ import AuthService from "@/domains/auth/auth.service.js";
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import { signUpSchema, signInSchema } from "@/domains/auth/auth.validator.js";
 import { ERROR_CODES, UnauthorizedError } from "@/shared/lib/error.js";
-import { success } from "zod";
 
 const factory = createFactory();
 const authService = new AuthService();
