@@ -272,7 +272,6 @@ model Pitch {
   sizes        GroundSize[]
   minimumPrice Int?
   maximumPrice Int?
-  layout       Json?
 
   permissions  PitchPermissions[]
   amenities    Amenity[]
@@ -304,7 +303,7 @@ model Ground {
   combinations CombinationGround[]
   settings     GroundSettings?
 
-  status GroundStatus
+  status GroundStatus @default(ACTIVE)
 
   basePrice     Int
   peakPrice     Int?

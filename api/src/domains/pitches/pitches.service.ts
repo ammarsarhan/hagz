@@ -1,10 +1,13 @@
-import type { CreatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { PermissionsRole, PitchStatus } from "@/generated/prisma/enums.js";
-import { BadRequestError, ERROR_CODES } from "@/shared/lib/error.js";
+import type { CreateGroundPayloadType, CreatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundStatus, PermissionsRole, PitchStatus } from "@/generated/prisma/enums.js";
+import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
+    private readonly MAXIMUM_GROUNDS_PER_PITCH = 10;
+
+    private readonly ACTIVE_STATUSES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
 
     createPitch = async (userId: string, payload: CreatePitchPayloadType) => {
         return await prisma.$transaction(async (tx) => {
@@ -23,12 +26,12 @@ export default class PitchService {
                 }
             });
     
-            if (permissions.length >= this.MAXIMUM_PITCHES_PER_USER) throw new BadRequestError(`You may not create more than ${this.MAXIMUM_PITCHES_PER_USER} pitches. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.USER_EXCEEDED_PITCH_CREATE_LIMIT);
+            if (permissions.length >= this.MAXIMUM_PITCHES_PER_USER) throw new BadRequestError(`You may not create more than ${this.MAXIMUM_PITCHES_PER_USER} pitches. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.PITCH_CREATE_LIMIT_EXCEEDED);
     
             const pitches = permissions.map(item => item.pitch);
             const statuses = [PitchStatus.DRAFT, PitchStatus.SUBMITTED] as PitchStatus[];
     
-            if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch that is either a draft or has been submitted. You can have one pending pitch at a time.", ERROR_CODES.USER_PITCH_DRAFT_EXISTS);
+            if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch that is either a draft or has been submitted. You can have one pending pitch at a time.", ERROR_CODES.PITCH_DRAFT_EXISTS);
     
             // If the user passes both checks, create them a pitch under draft status.        
             const pitch = await tx.pitch.create({
@@ -44,6 +47,119 @@ export default class PitchService {
             });
     
             return pitch;
-        })
+        });
+    };
+
+    fetchPitch = async (pitchId: string) => {
+        const pitch = await prisma.pitch.findUnique({ 
+            where: { 
+                id: pitchId,
+                status: { not: PitchStatus.DELETED } 
+            } 
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        return pitch;
+    };
+
+    createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
+        return await prisma.$transaction(async (tx) => {
+            // We need the create ground service function to do five things:
+
+            // 1. Make sure the pitch is in an acceptable status to edit and add new grounds.
+            const pitch = await prisma.pitch.findUnique({ 
+                where: {
+                    id: pitchId
+                },
+                include: {
+                    grounds: {
+                        select: { 
+                            name: true,
+                            sport: true, 
+                            size: true, 
+                            basePrice: true, 
+                            discountPrice: true, 
+                            peakPrice: true 
+                        }                     
+                    }
+                }
+            });
+
+            if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+            if (!this.ACTIVE_STATUSES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE)
+
+            // 2. Make sure we haven't hit the grounds per pitch limit.
+            const existingGrounds = pitch.grounds;
+            if (existingGrounds.length >= this.MAXIMUM_GROUNDS_PER_PITCH) throw new BadRequestError(`You may not create more than ${this.MAXIMUM_GROUNDS_PER_PITCH} ground for a pitch. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.GROUND_CREATE_LIMIT_EXCEEDED);
+
+            // 3. Make sure a ground on the same pitch with the same name does not already exist.
+            if (existingGrounds.find(ground => ground.name === payload.name)) throw new BadRequestError("A ground with that name already exists on this ground. Please choose a different name and try again.", ERROR_CODES.GROUND_ALREADY_EXISTS)
+
+            // 4. Create the actual ground model and attach the data we pass down from the handler.
+            const ground = await tx.ground.create({
+                data: {
+                    ...payload,
+                    pitchId,
+                    // 5. Create the required associated models with Ground (GroundSettings as of now).
+                    settings: {
+                        create: {}
+                    }
+                }
+            });
+
+            const grounds = [...existingGrounds, ground];
+
+            const sports = [...new Set(grounds.map(g => g.sport))];
+            const sizes = [...new Set(grounds.map(g => g.size))];
+
+            // Filter out the non-number values and create an array with all the prices then compare.
+            const prices = grounds.flatMap(g => [g.basePrice, g.peakPrice, g.discountPrice].filter(Boolean)) as number[];
+            const minimumPrice = Math.min(...prices);
+            const maximumPrice = Math.max(...prices);
+
+            // 6. Attach the data into the denormalized fields on the Pitch model for quick lookups and display purposes.
+            await tx.pitch.update({
+                where: { 
+                    id: ground.pitchId
+                },
+                data: {
+                    sports,
+                    sizes,
+                    minimumPrice,
+                    maximumPrice
+                }
+            });
+
+            return ground;
+        });
+    };
+    
+    fetchGround = async (pitchId: string, groundId: string) => {
+        const ground = await prisma.ground.findUnique({
+            where: {
+                pitchId,
+                id: groundId,
+                status: { 
+                    not: GroundStatus.DELETED
+                }
+            }
+        });
+
+        if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        
+        return ground;
+    };
+
+    fetchGrounds = async (pitchId: string) => {
+        const grounds = await prisma.ground.findMany({ 
+            where: { 
+                pitchId,
+                status: {
+                    not: GroundStatus.DELETED
+                }
+            },
+        });
+
+        return grounds;
     }
 }

@@ -2,11 +2,11 @@ import { createFactory } from "hono/factory";
 import { getCookie } from "hono/cookie";
 
 import jwtService from "@/domains/tokens/jwt.service.js";
-import type { AccessTokenPayload } from "@/domains/tokens/jwt.service.js";
 
 import { ERROR_CODES, UnauthorizedError } from "@/shared/lib/error.js";
+import type { AppVariables } from "@/shared/context.js";
 
-const factory = createFactory<{ Variables: AccessTokenPayload }>();
+const factory = createFactory<{ Variables: AppVariables }>();
 
 export const authorize = factory.createMiddleware(
     async (c, next) => {
