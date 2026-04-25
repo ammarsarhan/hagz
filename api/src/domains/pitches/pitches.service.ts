@@ -28,7 +28,7 @@ export default class PitchService {
             const pitches = permissions.map(item => item.pitch);
             const statuses = [PitchStatus.DRAFT, PitchStatus.SUBMITTED] as PitchStatus[];
     
-            if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch. This means you already have a pitch draft or have submitted a request to have your pitch added.", ERROR_CODES.USER_PITCH_DRAFT_EXISTS);
+            if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch that is either a draft or has been submitted. You can have one pending pitch at a time.", ERROR_CODES.USER_PITCH_DRAFT_EXISTS);
     
             // If the user passes both checks, create them a pitch under draft status.        
             const pitch = await tx.pitch.create({

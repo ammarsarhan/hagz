@@ -3,18 +3,18 @@
 
 import { createFactory } from "hono/factory";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { zValidator } from "@hono/zod-validator";
 
 import AuthService from "@/domains/auth/auth.service.js";
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import { signUpSchema, signInSchema } from "@/domains/auth/auth.validator.js";
 import { ERROR_CODES, UnauthorizedError } from "@/shared/lib/error.js";
+import validate from "@/shared/middleware/validate.middleware.js";
 
 const factory = createFactory();
 const authService = new AuthService();
 
 export const signUpHandler = factory.createHandlers(
-    zValidator("json", signUpSchema), 
+    validate("json", signUpSchema), 
     async (c) => {
         const payload = c.req.valid("json");
         const user = await authService.createUser(payload);
@@ -23,7 +23,7 @@ export const signUpHandler = factory.createHandlers(
 );
 
 export const signInHandler = factory.createHandlers(
-    zValidator("json", signInSchema),
+    validate("json", signInSchema),
     async (c) => {
         const payload = c.req.valid("json");
 

@@ -44,8 +44,8 @@ export const createPitchSchema = z.object({
             z
                 .string()
                 .refine(
-                    val => { const words = val.split(/\s+/).filter(Boolean); return words.length >= 10 && words.length <= 200; },
-                    "Pitch description must be between 10 and 200 words."
+                    val => { const words = val.split(/\s+/).filter(Boolean); return words.length >= 5 && words.length <= 200; },
+                    "Pitch description must be between 5 and 200 words."
                 )
     ),
     taxId: z
