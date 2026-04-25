@@ -140,4 +140,11 @@ export const createGroundSchema = z.object({
         .min(25, "Ground price may not be less than 25 EGP per hour.")
         .max(1500, "Ground price may not be more than 1500 EGP per hour.")
         .optional()
-})
+});
+
+export type UpdateGroundPayloadType = z.infer<typeof updateGroundSchema>;
+
+export const updateGroundSchema = createGroundSchema.partial().refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "At least one field must be provided to update the specified ground." }
+);

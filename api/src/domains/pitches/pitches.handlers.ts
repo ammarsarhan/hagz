@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchSchema, updateGroundSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -73,4 +73,21 @@ export const getGroundsHandler = factory.createHandlers(
 
         return c.json({ success: true, data: { grounds }}, 200);
     }
-)
+);
+
+export const updateGroundHandler = factory.createHandlers(
+    guard,
+    validate("json", updateGroundSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const payload = c.req.valid("json");
+        const ground = await pitchService.updateGround(pitchId, groundId, payload);
+
+        return c.json({ success: true, data: { ground } }, 200);
+    }
+);

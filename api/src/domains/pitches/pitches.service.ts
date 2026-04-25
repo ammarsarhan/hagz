@@ -1,5 +1,6 @@
-import type { CreateGroundPayloadType, CreatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundStatus, PermissionsRole, PitchStatus } from "@/generated/prisma/enums.js";
+import type { CreateGroundPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus } from "@/generated/prisma/enums.js";
+import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
 
@@ -62,9 +63,42 @@ export default class PitchService {
         return pitch;
     };
 
+    // Helper function to keep the pitch denormalized fields in sync.
+    private readonly updatePitchDenormalizedFields = async (
+        tx: TransactionClient, 
+        pitchId: string, 
+        grounds: Array<{
+            sport: GroundSport;
+            size: GroundSize;
+            basePrice: number;
+            peakPrice: number | null;
+            discountPrice: number | null;
+        }>
+    ) => {
+        const sports = [...new Set(grounds.map(g => g.sport))];
+        const sizes = [...new Set(grounds.map(g => g.size))];
+
+        // Filter out the non-number values and create an array with all the prices then compare.
+        const prices = grounds.flatMap(g => [g.basePrice, g.peakPrice, g.discountPrice].filter(Boolean)) as number[];
+        const minimumPrice = Math.min(...prices);
+        const maximumPrice = Math.max(...prices);
+
+        await tx.pitch.update({
+            where: { 
+                id: pitchId
+            },
+            data: {
+                sports,
+                sizes,
+                minimumPrice,
+                maximumPrice
+            }
+        });
+    }
+
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
         return await prisma.$transaction(async (tx) => {
-            // We need the create ground service function to do five things:
+            // We need the create ground service function to do six things:
 
             // 1. Make sure the pitch is in an acceptable status to edit and add new grounds.
             const pitch = await prisma.pitch.findUnique({ 
@@ -107,28 +141,9 @@ export default class PitchService {
                 }
             });
 
-            const grounds = [...existingGrounds, ground];
-
-            const sports = [...new Set(grounds.map(g => g.sport))];
-            const sizes = [...new Set(grounds.map(g => g.size))];
-
-            // Filter out the non-number values and create an array with all the prices then compare.
-            const prices = grounds.flatMap(g => [g.basePrice, g.peakPrice, g.discountPrice].filter(Boolean)) as number[];
-            const minimumPrice = Math.min(...prices);
-            const maximumPrice = Math.max(...prices);
-
             // 6. Attach the data into the denormalized fields on the Pitch model for quick lookups and display purposes.
-            await tx.pitch.update({
-                where: { 
-                    id: ground.pitchId
-                },
-                data: {
-                    sports,
-                    sizes,
-                    minimumPrice,
-                    maximumPrice
-                }
-            });
+            const grounds = [...existingGrounds, ground];
+            await this.updatePitchDenormalizedFields(tx, pitchId, grounds);
 
             return ground;
         });
@@ -162,4 +177,58 @@ export default class PitchService {
 
         return grounds;
     }
+
+    updateGround = async (pitchId: string, groundId: string, payload: UpdateGroundPayloadType) => {
+        return await prisma.$transaction(async (tx) => {
+            // 1. Verify pitch exists and is in an editable state.
+            const pitch = await tx.pitch.findUnique({
+                where: { id: pitchId },
+                include: {
+                    grounds: {
+                        where: { status: { not: GroundStatus.DELETED } },
+                        select: {
+                            id: true,
+                            name: true,
+                            sport: true,
+                            size: true,
+                            basePrice: true,
+                            discountPrice: true,
+                            peakPrice: true,
+                        },
+                    },
+                },
+            });
+
+            if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+            if (!this.ACTIVE_STATUSES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+            // 2. Verify the ground actually belongs to this pitch.
+            const existing = pitch.grounds.find(g => g.id === groundId);
+            if (!existing) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+            // 3. If renaming, make sure the new name isn't already taken on this pitch.
+            if (payload.name && payload.name !== existing.name) {
+                const nameConflict = pitch.grounds.some(
+                    g => g.id !== groundId && g.name === payload.name
+                );
+                if (nameConflict) 
+                    throw new BadRequestError(
+                        "A ground with that name already exists on this pitch. Please choose a different name.",
+                        ERROR_CODES.GROUND_ALREADY_EXISTS
+                    );
+            }
+
+            // 4. Apply the update.
+            const ground = await tx.ground.update({
+                where: { id: groundId },
+                data: payload,
+            });
+
+            // 5. Re-derive aggregates using the updated ground merged into the sibling list.
+            const updatedGrounds = pitch.grounds.map(g => (g.id === groundId ? { ...g, ...payload } : g));
+            await this.updatePitchDenormalizedFields(tx, pitchId, updatedGrounds);
+
+            return ground;
+        });
+    };
 }
