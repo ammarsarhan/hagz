@@ -140,6 +140,13 @@ enum LedgerAction {
   ADJUSTMENT // Manual correction
 }
 
+enum ScheduleStatus {
+  PENDING
+  GENERATING
+  READY
+  FAILED
+}
+
 enum PayoutStatus {
   PENDING
   PROCESSING
@@ -436,11 +443,13 @@ model Schedule {
   ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
 
   dayOfWeek      Int
-  operatingHours Bytes
+  baseHours      Bytes
   peakHours      Bytes
   discountHours  Bytes
 
-  isActive Boolean @default(true)
+  status          ScheduleStatus @default(PENDING)
+  isActive        Boolean        @default(true)
+  lastGeneratedAt DateTime?
 
   @@unique([groundId, dayOfWeek])
 }

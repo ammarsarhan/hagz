@@ -8,7 +8,8 @@ import {
     getGroundsHandler, 
     updateGroundHandler,
     getGroundSettingsHandler,
-    updateGroundSettingsHandler
+    updateGroundSettingsHandler,
+    upsertGroundSchedule
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
@@ -21,6 +22,8 @@ const app = new Hono()
     .patch('/:pitchId/grounds/:groundId', ...updateGroundHandler)
     .get('/:pitchId/grounds/:groundId/settings', ...getGroundSettingsHandler)
     .patch('/:pitchId/grounds/:groundId/settings', ...updateGroundSettingsHandler)
+    .put('/:pitchId/grounds/:groundId/schedule/:dayOfWeek', ...upsertGroundSchedule)
+    // .get('/:pitchId/grounds/:groundId/schedule', ...fetchGroundSchedule)
 
 export default app;
 export type AppType = typeof app;

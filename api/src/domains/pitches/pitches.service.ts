@@ -1,8 +1,9 @@
-import type { CreateGroundPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus } from "@/generated/prisma/enums.js";
+import type { CreateGroundPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
+import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -268,9 +269,17 @@ export default class PitchService {
         const merged = { ...settings, ...payload };
         
         // allowRecurringBookings & maxRecurringSessions
-        if (merged.allowRecurringBookings && !merged.maxRecurringSessions) throw new BadRequestError("Maximum recurring sessions is required when recurring bookings are enabled.", ERROR_CODES.VALIDATION_FAILED);
+        if (merged.allowRecurringBookings && !merged.maxRecurringSessions) {
+            // Only throw if the user is touching one of these two fields
+            if ('allowRecurringBookings' in payload || 'maxRecurringSessions' in payload)
+                throw new BadRequestError("Maximum recurring sessions is required when recurring bookings are enabled.", ERROR_CODES.VALIDATION_FAILED);
+        }
+
         // allowDeposit & depositPercentage
-        if (merged.allowDeposit && !merged.depositPercentage) throw new BadRequestError("Deposit percentage is required when deposits are enabled.", ERROR_CODES.VALIDATION_FAILED);
+        if (merged.allowDeposit && !merged.depositPercentage) {
+            if ('allowDeposit' in payload || 'depositPercentage' in payload)
+                throw new BadRequestError("Deposit percentage is required when deposits are enabled.", ERROR_CODES.VALIDATION_FAILED);
+        }
 
         // Update the settings with the specified fields from the validated schema.
         const updated = await prisma.groundSettings.update({
@@ -279,5 +288,56 @@ export default class PitchService {
         });
 
         return updated;
-    }
+    };
+
+    upsertGroundSchedule = async (pitchId: string, groundId: string, dayOfWeek: number, payload: UpsertGroundSchemaPayloadType) => {
+        // Check if the schedule/ground exists and is in a state allowed to accept updates.
+        const [ground, schedule] = await Promise.all([
+            prisma.ground.findUnique({
+                where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } }
+            }),
+            prisma.schedule.findUnique({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek } },
+                select: { status: true }
+            })
+        ]);
+
+        if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        if (schedule && schedule.status === ScheduleStatus.GENERATING) throw new BadRequestError("Schedule is currently generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
+
+        // Convert the time ranges from numerical values to bytes.
+        const baseHours = timeRangesToBytes(payload.baseHours);
+        const peakHours = timeRangesToBytes(payload.peakHours);
+        const discountHours = timeRangesToBytes(payload.discountHours);
+
+        const updated = await prisma.schedule.upsert({
+            where: {
+                groundId_dayOfWeek: {
+                    groundId,
+                    dayOfWeek
+                }
+            },
+            create: {
+                groundId,
+                dayOfWeek,
+                baseHours,
+                peakHours,
+                discountHours,
+                isActive: payload.isActive
+            },
+            update: {
+                baseHours,
+                peakHours,
+                discountHours,
+                isActive: payload.isActive
+            }
+        });
+
+        return {
+            ...updated,
+            baseHours: bytesToTimeRanges(updated.baseHours),
+            peakHours: bytesToTimeRanges(updated.peakHours),
+            discountHours: bytesToTimeRanges(updated.discountHours),
+        };
+    };
 }

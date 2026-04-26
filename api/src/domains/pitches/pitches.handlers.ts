@@ -2,11 +2,11 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
-import { ERROR_CODES, NotFoundError } from "@/shared/lib/error.js";
+import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/error.js";
 
 const factory = createFactory();
 const pitchService = new PitchService();
@@ -119,5 +119,26 @@ export const updateGroundSettingsHandler = factory.createHandlers(
 
         const settings = await pitchService.updateGroundSettings(pitchId, groundId, payload);
         return c.json({ success: true, data: { settings } }, 200);
+    }
+);
+
+export const upsertGroundSchedule = factory.createHandlers(
+    guard,
+    validate("json", upsertGroundScheduleSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+        const dayOfWeek = c.req.param("dayOfWeek");
+        const payload = c.req.valid("json");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!dayOfWeek || parseInt(dayOfWeek) < 1 || parseInt(dayOfWeek) > 7) {
+            throw new BadRequestError("Day of week must be a valid number from 1 to 7.", ERROR_CODES.VALIDATION_FAILED);
+        }
+    
+        const schedule = await pitchService.upsertGroundSchedule(pitchId, groundId, parseInt(dayOfWeek), payload);
+        return c.json({ success: true, data: { schedule } }, 200);
     }
 )

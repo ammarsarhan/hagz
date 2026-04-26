@@ -236,3 +236,44 @@ export const updateGroundSettingsSchema = groundSettingsSchema.partial().refine(
     if (data.allowDeposit === true && data.depositPercentage === null)
         ctx.addIssue({ code: "custom", path: ["depositPercentage"], message: "Deposit percentage is required when deposits are enabled." });
 });
+
+const timeRangesSchema = z.array(
+    z.object({
+        start: z
+            .int("Start time must be a valid number.")
+            .min(0, "Start time for day may not be less than 00:00.")
+            .max(22, "Start time for day may not be more than 11:00."),
+        end: z
+            .int("End time must be a valid number.")
+            .min(1, "End time for day may not be less than 01:00.")
+            .max(23, "End time for day may not be more than 12:00.")
+    })
+    .refine(({ start, end }) => start < end, {
+        message: "Start time must be before end time.",
+    })
+)
+.refine((ranges) => ranges.every((range, i) => i === 0 || range.start >= ranges[i - 1].end), "Time ranges must be in order and must not overlap.");
+
+export type UpsertGroundSchemaPayloadType = z.infer<typeof upsertGroundScheduleSchema>;
+
+export const upsertGroundScheduleSchema = z.object({
+    isActive: z.boolean(),
+    baseHours: timeRangesSchema,
+    peakHours: timeRangesSchema,
+    discountHours: timeRangesSchema
+})
+.superRefine(({ isActive, baseHours, peakHours, discountHours }, ctx) => {
+    if (isActive && baseHours.length === 0) {
+        ctx.addIssue({ code: "custom", path: ["baseHours"], message: "At least one base hour range is required when the schedule is active." });
+    }
+
+    if (!isActive && (baseHours.length > 0 || peakHours.length > 0 || discountHours.length > 0)) {
+        ctx.addIssue({ code: "custom", path: ["baseHours"], message: "All hour ranges must be empty when the schedule is inactive." });
+    }
+
+    const all = [...baseHours, ...peakHours, ...discountHours].sort((a, b) => a.start - b.start);
+    const hasOverlap = !all.every((range, i) => i === 0 || range.start >= all[i - 1].end);
+    if (hasOverlap) {
+        ctx.addIssue({ code: "custom", path: ["baseHours"], message: "Time ranges must not overlap across all hour types." });
+    }
+})
