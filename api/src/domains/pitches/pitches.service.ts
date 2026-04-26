@@ -1,7 +1,7 @@
-import type { CreateGroundPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
-import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/error.js";
+import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
 
 export default class PitchService {
@@ -101,7 +101,7 @@ export default class PitchService {
             // We need the create ground service function to do six things:
 
             // 1. Make sure the pitch is in an acceptable status to edit and add new grounds.
-            const pitch = await prisma.pitch.findUnique({ 
+            const pitch = await tx.pitch.findUnique({ 
                 where: {
                     id: pitchId
                 },
@@ -136,7 +136,9 @@ export default class PitchService {
                     pitchId,
                     // 5. Create the required associated models with Ground (GroundSettings as of now).
                     settings: {
-                        create: {}
+                        create: {
+                            
+                        }
                     }
                 }
             });
@@ -231,4 +233,51 @@ export default class PitchService {
             return ground;
         });
     };
+
+    getGroundSettings = async (pitchId: string, groundId: string) => {
+        // Find the settings for the associated not-deleted ground.
+        const settings = await prisma.groundSettings.findUnique({
+            where: {
+                groundId,
+                ground: {
+                    pitchId,
+                    status: { not: GroundStatus.DELETED }
+                }
+            }
+        });
+        
+        if (!settings) throw new InternalServerError("Could not find settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+        return settings;
+    };
+
+    updateGroundSettings = async (pitchId: string, groundId: string, payload: UpdateGroundSettingsPayloadType) => {
+        // Check if the ground exists and is in a state allowed to accept updates.
+        const settings = await prisma.groundSettings.findUnique({
+            where: {
+                groundId,
+                ground: {
+                    pitchId,
+                    status: { not: GroundStatus.DELETED }
+                },
+            },
+        });
+
+        if (!settings) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        // Check for conflicts with values that depend on one another:
+        const merged = { ...settings, ...payload };
+        
+        // allowRecurringBookings & maxRecurringSessions
+        if (merged.allowRecurringBookings && !merged.maxRecurringSessions) throw new BadRequestError("Maximum recurring sessions is required when recurring bookings are enabled.", ERROR_CODES.VALIDATION_FAILED);
+        // allowDeposit & depositPercentage
+        if (merged.allowDeposit && !merged.depositPercentage) throw new BadRequestError("Deposit percentage is required when deposits are enabled.", ERROR_CODES.VALIDATION_FAILED);
+
+        // Update the settings with the specified fields from the validated schema.
+        const updated = await prisma.groundSettings.update({
+            where: { groundId },
+            data: { ...payload }
+        });
+
+        return updated;
+    }
 }

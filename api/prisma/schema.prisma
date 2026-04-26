@@ -323,18 +323,19 @@ model Ground {
 }
 
 model GroundSettings {
+  id       String @id @default(cuid())
   groundId String @unique
   ground   Ground @relation(fields: [groundId], references: [id])
 
   minimumDuration Int @default(1) // Hours
   maximumDuration Int @default(6) // Hours
   minimumWindow   Int @default(2) // Hours
-  maximumWindow   Int @default(720) // Hours
+  maximumWindow   Int @default(2160) // Hours
 
   autoConfirm            Boolean @default(true)
   allowGuestBookings     Boolean @default(true)
   allowRecurringBookings Boolean @default(true)
-  maxRecurringInterval   Int?
+  maxRecurringSessions   Int?
 
   paymentMethods    PaymentMethod[] @default([CASH])
   allowDeposit      Boolean         @default(false)

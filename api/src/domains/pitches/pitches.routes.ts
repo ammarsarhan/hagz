@@ -6,7 +6,9 @@ import {
     createGroundHandler, 
     getGroundHandler, 
     getGroundsHandler, 
-    updateGroundHandler 
+    updateGroundHandler,
+    getGroundSettingsHandler,
+    updateGroundSettingsHandler
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
@@ -17,6 +19,8 @@ const app = new Hono()
     .get('/:pitchId/grounds/:groundId', ...getGroundHandler)
     .get('/:pitchId/grounds', ...getGroundsHandler)
     .patch('/:pitchId/grounds/:groundId', ...updateGroundHandler)
+    .get('/:pitchId/grounds/:groundId/settings', ...getGroundSettingsHandler)
+    .patch('/:pitchId/grounds/:groundId/settings', ...updateGroundSettingsHandler)
 
 export default app;
 export type AppType = typeof app;

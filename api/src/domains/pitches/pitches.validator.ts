@@ -1,5 +1,5 @@
 import z from "zod";
-import { Country, GroundSize, GroundSport, GroundSurface, PermissionsRole } from "@/generated/prisma/enums.js";
+import { Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, PermissionsRole } from "@/generated/prisma/enums.js";
 
 export interface PitchPermissionsType {
     pitchId: string;
@@ -148,3 +148,91 @@ export const updateGroundSchema = createGroundSchema.partial().refine(
     (data) => Object.keys(data).length > 0,
     { message: "At least one field must be provided to update the specified ground." }
 );
+
+const groundSettingsSchema = z.object({
+    minimumDuration: z
+        .int("Minimum duration has to be a valid hour.")
+        .min(1, "Minimum duration must be at least 1 hour long.")
+        .max(5, "Minimum duration must be 5 hours long at most."),
+    maximumDuration: z
+        .int("Maximum duration has to be a valid hour.")
+        .min(2, "Maximum duration must be at least 2 hours long.")
+        .max(6, "Maximum duration must be 6 hours long at most."),
+    minimumWindow: z
+        .int("Minimum window has to be a valid hour.")
+        .min(1, "Minimum window must be at least 1 hour before the booking.")
+        .max(72, "Minimum window must be 3 days before the booking at most."),
+    maximumWindow: z
+        .int("Maximum window has to be a valid hour.")
+        .min(1, "Maximum window must be at least 1 hour before the booking.")
+        .max(2880, "Maximum window must be 4 months in advance at most."),
+    autoConfirm: z.boolean(),
+    allowGuestBookings: z.boolean(),
+    allowRecurringBookings: z.boolean(),
+    maxRecurringSessions: z.
+        int("Recurring booking limit must be a valid number.")
+        .min(3, "Recurring booking must have at least 3 booking sessions.")
+        .max(10, "Recurring booking limit must be up to 10 booking sessions.")
+        .nullish(),
+    paymentMethods: z
+        .array(z.enum(Object.values(PaymentMethod) as [PaymentMethod, ...PaymentMethod[]], "Please choose a valid payment method."))
+        .min(1, "Ground must have at least one payment method associated with it.")
+        .max(Object.values(PaymentMethod).length, `Ground can have up to ${Object.values(PaymentMethod).length} payment methods at most.`),
+    allowDeposit: z.boolean(),
+    depositPercentage: z
+        .int("Deposit percentage must be a valid number.")
+        .min(5, "Deposit percentage must be at least 5% of the value of the booking.")
+        .max(85, "Deposit percentage may not be greater than 85% of the value of the booking.")
+        .nullish(),
+    autoExpiryLimit: z
+        .int("Automatic expiry limit must be a valid number of minutes.")
+        .min(15, "Automatic expiry limit must be at least 15 minutes to allow the user a sensible payment grace period.")
+        .max(60, "Automatic expiry limit must be 60 minutes at most to allow the user a sensible payment grace period."),
+    allowRescheduling: z.boolean(),
+    rescheduleLimit: z
+        .int("Reschedule limit must a valid number.")
+        .min(2, "Rescheduling limit must be at least 2 hours prior to the booking.")
+        .max(48, "Rescheduling limit must be 48 hours prior to the booking at most."),
+    fullRefundWindow: z
+        .int("Full refund window must a valid number.")
+        .min(6, "Full refund window must be at least 6 hours prior to the booking.")
+        .max(72, "Full refund window must be 3 days prior to the booking at most."),
+    partialRefundWindow: z
+        .int("Partial refund window must a valid number.")
+        .min(2, "Partial refund window must be at least 2 hours prior to the booking.")
+        .max(48, "Partial refund window must be 2 days prior to the booking at most."),
+    refundPercentage: z
+        .int("Refund percentage must be a valid number.")
+        .min(25, "Refund percentage must be at least 25% of the booking price.")
+        .max(100, "Refund percentage must be the full booking price at most."),
+    notificationsTrigger: z 
+        .array(z.enum(Object.values(GroundActions) as [GroundActions, ...GroundActions[]], "Please choose a valid ground action."))
+})
+
+export type UpdateGroundSettingsPayloadType = z.infer<typeof updateGroundSettingsSchema>;
+
+export const updateGroundSettingsSchema = groundSettingsSchema.partial().refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "At least one field must be provided to update the specified ground." }
+).superRefine((data, ctx) => {
+    if (data.minimumDuration !== undefined && data.maximumDuration !== undefined) {
+        if (data.minimumDuration >= data.maximumDuration)
+            ctx.addIssue({ code: "custom", path: ["maximumDuration"], message: "Maximum duration must be greater than minimum duration." });
+    };
+
+    if (data.minimumWindow !== undefined && data.maximumWindow !== undefined) {
+        if (data.minimumWindow >= data.maximumWindow)
+            ctx.addIssue({ code: "custom", path: ["maximumWindow"], message: "Maximum window must be greater than minimum window." });
+    };
+
+    if (data.fullRefundWindow !== undefined && data.partialRefundWindow !== undefined) {
+        if (data.fullRefundWindow <= data.partialRefundWindow)
+            ctx.addIssue({ code: "custom", path: ["partialRefundWindow"], message: "Partial refund window must be closer to the booking time than the full refund window." });
+    };
+
+    if (data.allowRecurringBookings === true && data.maxRecurringSessions === null)
+        ctx.addIssue({ code: "custom", path: ["maxRecurringSessions"], message: "Maximum recurring sessions is required when recurring bookings are enabled." });
+    
+    if (data.allowDeposit === true && data.depositPercentage === null)
+        ctx.addIssue({ code: "custom", path: ["depositPercentage"], message: "Deposit percentage is required when deposits are enabled." });
+});

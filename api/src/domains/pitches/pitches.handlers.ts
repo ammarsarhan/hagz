@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchSchema, updateGroundSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -91,3 +91,33 @@ export const updateGroundHandler = factory.createHandlers(
         return c.json({ success: true, data: { ground } }, 200);
     }
 );
+
+export const getGroundSettingsHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const settings = await pitchService.getGroundSettings(pitchId, groundId);
+        return c.json({ success: true, data: { settings } }, 200);
+    }
+)
+
+export const updateGroundSettingsHandler = factory.createHandlers(
+    guard,
+    validate("json", updateGroundSettingsSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+        const payload = c.req.valid("json");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const settings = await pitchService.updateGroundSettings(pitchId, groundId, payload);
+        return c.json({ success: true, data: { settings } }, 200);
+    }
+)
