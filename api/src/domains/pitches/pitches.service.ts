@@ -340,4 +340,52 @@ export default class PitchService {
             discountHours: bytesToTimeRanges(updated.discountHours),
         };
     };
+
+    fetchGroundSchedule = async (pitchId: string, groundId: string, dayOfWeek: number) => {
+        // Check if the schedule/ground exists and is in a state allowed to fetch.
+        const [ground, schedule] = await Promise.all([
+            prisma.ground.findUnique({
+                where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } }
+            }),
+            prisma.schedule.findUnique({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek } },
+            })
+        ]);
+
+        if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        if (!schedule) throw new NotFoundError("Schedule does not exist yet. Please define your schedule and try again.", ERROR_CODES.GROUND_SCHEDULE_DOES_NOT_EXIST);
+
+        return {
+            ...schedule,
+            baseHours: bytesToTimeRanges(schedule.baseHours),
+            peakHours: bytesToTimeRanges(schedule.peakHours),
+            discountHours: bytesToTimeRanges(schedule.discountHours),
+        };
+    };
+
+    fetchGroundSchedules = async (pitchId: string, groundId: string) => {
+        // Check if the ground exists and is in a state allowed to fetch.
+        const [ground, schedules] = await Promise.all([
+            prisma.ground.findUnique({
+                where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } }
+            }),
+            prisma.schedule.findMany({
+                where: { 
+                    groundId
+                 },
+            })
+        ]);
+
+        if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        
+        // Parse the schedules into parseable form by the client.
+        const parsed = schedules.map(schedule => ({
+            ...schedule,
+            baseHours: bytesToTimeRanges(schedule.baseHours),
+            peakHours: bytesToTimeRanges(schedule.peakHours),
+            discountHours: bytesToTimeRanges(schedule.discountHours),
+        }));
+
+        return parsed;
+    };
 }

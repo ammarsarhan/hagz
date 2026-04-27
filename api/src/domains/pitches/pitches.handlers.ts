@@ -122,23 +122,57 @@ export const updateGroundSettingsHandler = factory.createHandlers(
     }
 );
 
-export const upsertGroundSchedule = factory.createHandlers(
+export const upsertGroundScheduleHandler = factory.createHandlers(
     guard,
     validate("json", upsertGroundScheduleSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
         const dayOfWeek = c.req.param("dayOfWeek");
+        
         const payload = c.req.valid("json");
-
+        
         if (!pitchId || !groundId) 
             throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
-
+        
         if (!dayOfWeek || parseInt(dayOfWeek) < 1 || parseInt(dayOfWeek) > 7) {
             throw new BadRequestError("Day of week must be a valid number from 1 to 7.", ERROR_CODES.VALIDATION_FAILED);
         }
-    
+        
         const schedule = await pitchService.upsertGroundSchedule(pitchId, groundId, parseInt(dayOfWeek), payload);
         return c.json({ success: true, data: { schedule } }, 200);
+    }
+);
+
+export const fetchGroundScheduleHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+        const dayOfWeek = c.req.param("dayOfWeek");
+        
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        
+        if (!dayOfWeek || parseInt(dayOfWeek) < 1 || parseInt(dayOfWeek) > 7) {
+            throw new BadRequestError("Day of week must be a valid number from 1 to 7.", ERROR_CODES.VALIDATION_FAILED);
+        }
+        
+        const schedule = await pitchService.fetchGroundSchedule(pitchId, groundId, parseInt(dayOfWeek));
+        return c.json({ success: true, data: { schedule } }, 200);
+    }
+);
+
+export const fetchGroundSchedulesHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+        
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        
+        const schedules = await pitchService.fetchGroundSchedules(pitchId, groundId);
+        return c.json({ success: true, data: { schedules } }, 200);
     }
 )
