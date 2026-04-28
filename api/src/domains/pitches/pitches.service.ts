@@ -15,7 +15,6 @@ export default class PitchService {
     private readonly MAXIMUM_AMENITIES_PER_PITCH = 10;
 
     private readonly EDITABLE_STATES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
-    private readonly GENERATABLE_STATES = [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
 
     createPitch = async (userId: string, payload: CreatePitchPayloadType) => {
         return await prisma.$transaction(async (tx) => {
@@ -345,15 +344,7 @@ export default class PitchService {
                 }
             });
 
-            // Make sure the pitch is not a draft before delegating background worker to generate timeslots.
-            if (this.GENERATABLE_STATES.includes(pitch.status)) {
-                // Create a job on the background worker.
-                slotQueue.add(
-                    GroundSlotAction.GENERATE, 
-                    { groundId, pitchId },
-                    { jobId: `generate:${groundId}` }
-                );
-            };
+            // Todo: Implement the logic to add a job based on the pitch's current state.
 
             return {
                 ...schedule,

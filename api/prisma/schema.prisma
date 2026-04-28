@@ -262,6 +262,18 @@ model PitchPermissions {
   @@id([userId, pitchId])
 }
 
+model PitchEvent {
+  id        String      @id @default(cuid())
+  pitch     Pitch       @relation(fields: [pitchId], references: [id])
+  pitchId   String
+
+  status    PitchStatus
+  createdBy String?
+  reason    String?
+  
+  createdAt DateTime    @default(now())
+}
+
 model Pitch {
   id          String  @id @default(cuid())
   name        String
@@ -278,6 +290,7 @@ model Pitch {
   images         String[]
 
   status PitchStatus @default(DRAFT)
+  events PitchEvent[]
 
   amenityList  AmenityName[]
   sports       GroundSport[]
@@ -293,13 +306,8 @@ model Pitch {
   bookings     Booking[]
   ledger       PitchLedger?
 
-  rejectionReason String?
-  reviewedBy      String?
-
-  approvedAt DateTime?
-  deletedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model Ground {
@@ -308,12 +316,11 @@ model Ground {
 
   name         String
   description  String?
-  images       String[]
   sport        GroundSport
   surface      GroundSurface
   size         GroundSize
-  combinations CombinationGround[]
   settings     GroundSettings?
+  images       String[]
 
   status GroundStatus @default(ACTIVE)
 
@@ -321,6 +328,7 @@ model Ground {
   peakPrice     Int?
   discountPrice Int?
 
+  combinations CombinationGround[]
   bookings Booking[]
   slots    GroundSlot[]
 

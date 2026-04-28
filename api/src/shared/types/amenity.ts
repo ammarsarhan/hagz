@@ -12,7 +12,6 @@ export const UNIQUE_AMENITIES = new Set<AmenityName>([
     AmenityName.SOUND_SYSTEM,
     AmenityName.WATER_FOUNTAIN,
     AmenityName.WIFI,
-    AmenityName.BALL_INCLUDED,
     AmenityName.FIRST_AID,
     AmenityName.REFEREE_SERVICE,
     AmenityName.CAFETERIA,
@@ -20,4 +19,5 @@ export const UNIQUE_AMENITIES = new Set<AmenityName>([
 
 export const STACKABLE_AMENITIES = new Set<AmenityName>([
     AmenityName.EQUIPMENT_RENTAL,
+    AmenityName.BALL_INCLUDED,
 ]);
