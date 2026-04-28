@@ -278,9 +278,7 @@ export const upsertGroundScheduleSchema = z.object({
     }
 });
 
-export type CreatePitchAmenityPayloadType = z.infer<typeof createPitchAmenitySchema>;
-
-export const createPitchAmenitySchema = z.object({
+const pitchAmenitySchema = z.object({
     name: z
         .enum(Object.values(AmenityName) as [AmenityName, ...AmenityName[]], "Amenity must be one of the predefined amenity names."),
     description: 
@@ -302,7 +300,11 @@ export const createPitchAmenitySchema = z.object({
     unit: z
         .enum(Object.values(AmenityPrice))
         .optional()
-}).superRefine((val, ctx) => {
+});
+
+export type CreatePitchAmenityPayloadType = z.infer<typeof createPitchAmenitySchema>;
+
+export const createPitchAmenitySchema = pitchAmenitySchema.superRefine((val, ctx) => {
     if (val.price && !val.unit) {
         ctx.addIssue({ code: "custom", message: "Amenity price unit is required when a price is provided.", path: ["unit"] });
     }
@@ -313,7 +315,7 @@ export const createPitchAmenitySchema = z.object({
 
 export type UpdatePitchAmenityPayloadType = z.infer<typeof updatePitchAmenitySchema>;
 
-export const updatePitchAmenitySchema = createPitchAmenitySchema.partial().refine(
+export const updatePitchAmenitySchema = pitchAmenitySchema.partial().refine(
     (data) => Object.keys(data).length > 0,
     { message: "At least one field must be provided to update the specified amenity." }
 );
