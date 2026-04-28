@@ -3,7 +3,7 @@ import { createFactory } from "hono/factory";
 import { authorize } from "@/domains/auth/auth.middleware.js";
 
 import prisma from "@/shared/lib/prisma.js";
-import type { AppVariables } from "@/shared/context.js";
+import type { AppVariables } from "@/shared/types/context.js";
 import { ERROR_CODES, ForbiddenError } from "@/shared/lib/error.js";
 
 const factory = createFactory<{ Variables: AppVariables }>();

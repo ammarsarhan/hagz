@@ -7,10 +7,12 @@ import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus, Sc
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 import { slotQueue } from "@/jobs/queues/slots.queue.js";
 import { GroundSlotAction } from "@/jobs/workers/slots.worker.js";
+import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
     private readonly MAXIMUM_GROUNDS_PER_PITCH = 10;
+    private readonly MAXIMUM_AMENITIES_PER_PITCH = 10;
 
     private readonly EDITABLE_STATES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
     private readonly GENERATABLE_STATES = [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
@@ -428,7 +430,13 @@ export default class PitchService {
         if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Make sure the pitch does not have more than 10 amenity records.
-        if (pitch.amenities.length > 10) throw new BadRequestError("Pitch may not have more than 10 amenities. Please delete one or try updating it first.", ERROR_CODES.PITCH_AMENITY_LIMIT_EXCEEDED);
+        if (pitch.amenities.length > this.MAXIMUM_AMENITIES_PER_PITCH) throw new BadRequestError(`Pitch may not have more than ${this.MAXIMUM_AMENITIES_PER_PITCH} amenities. Please delete one or try updating it first.`, ERROR_CODES.PITCH_AMENITY_LIMIT_EXCEEDED);
+
+        // Make sure the pitch does not already have a unique amenity of the specified payload type.
+        if (UNIQUE_AMENITIES.has(payload.name)) {
+            const exists = pitch.amenities.some(a => a.name === payload.name);
+            if (exists) throw new BadRequestError(`Pitch already has a ${payload.name} amenity. This amenity can only be added once.`, ERROR_CODES.PITCH_AMENITY_DUPLICATE);
+        };
 
         // Create the actual amenity object and update the pitch to keep the denormalized field in sync.
         const amenity = await prisma.$transaction(async (tx) => {
@@ -444,7 +452,7 @@ export default class PitchService {
 
             const amenityList = [...pitch.amenityList, payload.name];
 
-            await prisma.pitch.update({
+            await tx.pitch.update({
                 where: { id: pitchId },
                 data: { amenityList }
             });
@@ -477,7 +485,6 @@ export default class PitchService {
         });
 
         if (!amenity) throw new NotFoundError("Could not find amenity with the specified ID.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
-
         return amenity;
     };
 
@@ -514,6 +521,19 @@ export default class PitchService {
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Check if the amenity even exists on the specified pitch.
+        const target = pitch.amenities.find(a => a.order === order);
+        if (!target) throw new NotFoundError("Could not find amenity with the specified order.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
+
+        // If the name is being changed, check for duplicates on unique amenities.
+        if (payload.name && UNIQUE_AMENITIES.has(payload.name)) {
+            const exists = pitch.amenities.some(a => a.name === payload.name && a.order !== order);
+            if (exists) throw new BadRequestError(
+                `Pitch already has a ${payload.name} amenity. This amenity can only be added once.`,
+                ERROR_CODES.PITCH_AMENITY_DUPLICATE
+            );
+        };
 
         // Update the amenity for the requested pitch on the index provided.
         return await prisma.$transaction(async (tx) => {

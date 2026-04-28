@@ -287,8 +287,8 @@ const pitchAmenitySchema = z.object({
             z
                 .string()
                 .refine(
-                    val => { const words = val.split(/\s+/).filter(Boolean); return words.length >= 5 && words.length <= 75; },
-                    "Amenity description must be between 5 and 75 words."
+                    val => { const words = val.split(/\s+/).filter(Boolean); return words.length >= 3 && words.length <= 75; },
+                    "Amenity description must be between 3 and 75 words."
                 )
         )
         .optional(),
@@ -298,24 +298,43 @@ const pitchAmenitySchema = z.object({
         .max(500, "Amenity price must be between 5 EGP and 500 EGP.")
         .optional(),
     unit: z
-        .enum(Object.values(AmenityPrice))
+        .enum(Object.values(AmenityPrice) as [AmenityPrice, ...AmenityPrice[]])
         .optional()
 });
 
 export type CreatePitchAmenityPayloadType = z.infer<typeof createPitchAmenitySchema>;
 
 export const createPitchAmenitySchema = pitchAmenitySchema.superRefine((val, ctx) => {
-    if (val.price && !val.unit) {
+    if (val.price && !val.unit)
         ctx.addIssue({ code: "custom", message: "Amenity price unit is required when a price is provided.", path: ["unit"] });
-    }
-    if (val.unit && !val.price) {
+    if (val.unit && !val.price)
         ctx.addIssue({ code: "custom", message: "Amenity price is required when a price unit is provided.", path: ["price"] });
-    }
 });
 
 export type UpdatePitchAmenityPayloadType = z.infer<typeof updatePitchAmenitySchema>;
 
-export const updatePitchAmenitySchema = pitchAmenitySchema.partial().refine(
-    (data) => Object.keys(data).length > 0,
-    { message: "At least one field must be provided to update the specified amenity." }
-);
+export const updatePitchAmenitySchema = pitchAmenitySchema
+    .extend({
+        price: z
+            .int("Price must be a valid number.")
+            .min(5, "Amenity price must be between 5 EGP and 500 EGP.")
+            .max(500, "Amenity price must be between 5 EGP and 500 EGP.")
+            .nullish(),
+        unit: z
+            .enum(Object.values(AmenityPrice) as [AmenityPrice, ...AmenityPrice[]])
+            .nullish()
+    })
+    .partial()
+    .refine(
+        (data) => Object.keys(data).length > 0,
+        { message: "At least one field must be provided to update the specified amenity." }
+    )
+    .superRefine((val, ctx) => {
+        const price = val.price != null;
+        const unit = val.unit != null;
+
+        if (price && !unit)
+            ctx.addIssue({ code: "custom", message: "Amenity price unit is required when a price is provided.", path: ["unit"] });
+        if (unit && !price)
+            ctx.addIssue({ code: "custom", message: "Amenity price is required when a price unit is provided.", path: ["price"] });
+    });
