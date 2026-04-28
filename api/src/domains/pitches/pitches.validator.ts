@@ -1,5 +1,5 @@
 import z from "zod";
-import { Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, PermissionsRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, PermissionsRole } from "@/generated/prisma/enums.js";
 
 export interface PitchPermissionsType {
     pitchId: string;
@@ -276,4 +276,44 @@ export const upsertGroundScheduleSchema = z.object({
     if (hasOverlap) {
         ctx.addIssue({ code: "custom", path: ["baseHours"], message: "Time ranges must not overlap across all hour types." });
     }
-})
+});
+
+export type CreatePitchAmenityPayloadType = z.infer<typeof createPitchAmenitySchema>;
+
+export const createPitchAmenitySchema = z.object({
+    name: z
+        .enum(Object.values(AmenityName) as [AmenityName, ...AmenityName[]], "Amenity must be one of the predefined amenity names."),
+    description: 
+        trim("Amenity description must be valid text.")
+        .pipe(
+            z
+                .string()
+                .refine(
+                    val => { const words = val.split(/\s+/).filter(Boolean); return words.length >= 5 && words.length <= 75; },
+                    "Amenity description must be between 5 and 75 words."
+                )
+        )
+        .optional(),
+    price: z
+        .int("Price must be a valid number.")
+        .min(5, "Amenity price must be between 5 EGP and 500 EGP.")
+        .max(500, "Amenity price must be between 5 EGP and 500 EGP.")
+        .optional(),
+    unit: z
+        .enum(Object.values(AmenityPrice))
+        .optional()
+}).superRefine((val, ctx) => {
+    if (val.price && !val.unit) {
+        ctx.addIssue({ code: "custom", message: "Amenity price unit is required when a price is provided.", path: ["unit"] });
+    }
+    if (val.unit && !val.price) {
+        ctx.addIssue({ code: "custom", message: "Amenity price is required when a price unit is provided.", path: ["price"] });
+    }
+});
+
+export type UpdatePitchAmenityPayloadType = z.infer<typeof updatePitchAmenitySchema>;
+
+export const updatePitchAmenitySchema = createPitchAmenitySchema.partial().refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "At least one field must be provided to update the specified amenity." }
+);

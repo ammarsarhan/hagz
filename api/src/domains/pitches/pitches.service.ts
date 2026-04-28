@@ -1,15 +1,19 @@
-import type { CreateGroundPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
-import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
+import type { CreateGroundPayloadType, CreatePitchAmenityPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
+
+import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
+import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
+import { slotQueue } from "@/jobs/queues/slots.queue.js";
+import { GroundSlotAction } from "@/jobs/workers/slots.worker.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
     private readonly MAXIMUM_GROUNDS_PER_PITCH = 10;
 
-    private readonly ACTIVE_STATUSES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+    private readonly EDITABLE_STATES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+    private readonly GENERATABLE_STATES = [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
 
     createPitch = async (userId: string, payload: CreatePitchPayloadType) => {
         return await prisma.$transaction(async (tx) => {
@@ -121,7 +125,7 @@ export default class PitchService {
             });
 
             if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-            if (!this.ACTIVE_STATUSES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE)
+            if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE)
 
             // 2. Make sure we haven't hit the grounds per pitch limit.
             const existingGrounds = pitch.grounds;
@@ -203,7 +207,7 @@ export default class PitchService {
             });
 
             if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-            if (!this.ACTIVE_STATUSES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now.", ERROR_CODES.PITCH_NOT_ACTIVE);
+            if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
             // 2. Verify the ground actually belongs to this pitch.
             const existing = pitch.grounds.find(g => g.id === groundId);
@@ -292,9 +296,13 @@ export default class PitchService {
 
     upsertGroundSchedule = async (pitchId: string, groundId: string, dayOfWeek: number, payload: UpsertGroundSchemaPayloadType) => {
         // Check if the schedule/ground exists and is in a state allowed to accept updates.
-        const [ground, schedule] = await Promise.all([
+        const [pitch, ground, schedule] = await Promise.all([
+            prisma.pitch.findUnique({
+                where: { id: pitchId, status: { not: PitchStatus.DELETED }, },
+                select: { status: true }
+            }),
             prisma.ground.findUnique({
-                where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } }
+                where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } },
             }),
             prisma.schedule.findUnique({
                 where: { groundId_dayOfWeek: { groundId, dayOfWeek } },
@@ -302,43 +310,58 @@ export default class PitchService {
             })
         ]);
 
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
         if (schedule && schedule.status === ScheduleStatus.GENERATING) throw new BadRequestError("Schedule is currently generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
 
-        // Convert the time ranges from numerical values to bytes.
-        const baseHours = timeRangesToBytes(payload.baseHours);
-        const peakHours = timeRangesToBytes(payload.peakHours);
-        const discountHours = timeRangesToBytes(payload.discountHours);
+        const updated = await prisma.$transaction(async (tx) => {
+            // Convert the time ranges from numerical values to bytes.
+            const baseHours = timeRangesToBytes(payload.baseHours);
+            const peakHours = timeRangesToBytes(payload.peakHours);
+            const discountHours = timeRangesToBytes(payload.discountHours);
 
-        const updated = await prisma.schedule.upsert({
-            where: {
-                groundId_dayOfWeek: {
+            const schedule = await tx.schedule.upsert({
+                where: {
+                    groundId_dayOfWeek: {
+                        groundId,
+                        dayOfWeek
+                    }
+                },
+                create: {
                     groundId,
-                    dayOfWeek
+                    dayOfWeek,
+                    baseHours,
+                    peakHours,
+                    discountHours,
+                    isActive: payload.isActive
+                },
+                update: {
+                    baseHours,
+                    peakHours,
+                    discountHours,
+                    isActive: payload.isActive
                 }
-            },
-            create: {
-                groundId,
-                dayOfWeek,
-                baseHours,
-                peakHours,
-                discountHours,
-                isActive: payload.isActive
-            },
-            update: {
-                baseHours,
-                peakHours,
-                discountHours,
-                isActive: payload.isActive
-            }
-        });
+            });
 
-        return {
-            ...updated,
-            baseHours: bytesToTimeRanges(updated.baseHours),
-            peakHours: bytesToTimeRanges(updated.peakHours),
-            discountHours: bytesToTimeRanges(updated.discountHours),
-        };
+            // Make sure the pitch is not a draft before delegating background worker to generate timeslots.
+            if (this.GENERATABLE_STATES.includes(pitch.status)) {
+                // Create a job on the background worker.
+                slotQueue.add(
+                    GroundSlotAction.GENERATE, 
+                    { groundId, pitchId },
+                    { jobId: `generate:${groundId}` }
+                );
+            };
+
+            return {
+                ...schedule,
+                baseHours: bytesToTimeRanges(schedule.baseHours),
+                peakHours: bytesToTimeRanges(schedule.peakHours),
+                discountHours: bytesToTimeRanges(schedule.discountHours),
+            };
+        })
+        
+        return updated;
     };
 
     fetchGroundSchedule = async (pitchId: string, groundId: string, dayOfWeek: number) => {
@@ -387,5 +410,176 @@ export default class PitchService {
         }));
 
         return parsed;
+    };
+
+    createPitchAmenity = async (pitchId: string, payload: CreatePitchAmenityPayloadType) => {
+        // Find the pitch and make sure it is in an editable state.
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            include: {
+                amenities: true
+            }
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Make sure the pitch does not have more than 10 amenity records.
+        if (pitch.amenities.length > 10) throw new BadRequestError("Pitch may not have more than 10 amenities. Please delete one or try updating it first.", ERROR_CODES.PITCH_AMENITY_LIMIT_EXCEEDED);
+
+        // Create the actual amenity object and update the pitch to keep the denormalized field in sync.
+        const amenity = await prisma.$transaction(async (tx) => {
+            const order = pitch.amenities.length + 1;
+
+            const amenity = await tx.amenity.create({
+                data: { 
+                    ...payload,
+                    pitchId,
+                    order
+                }
+            });
+
+            const amenityList = [...pitch.amenityList, payload.name];
+
+            await prisma.pitch.update({
+                where: { id: pitchId },
+                data: { amenityList }
+            });
+
+            return amenity;
+        });
+
+        return amenity;
+    };
+
+    fetchPitchAmenity = async (pitchId: string, order: number) => {
+        // Find the pitch and make sure it is in an queryable state.
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            }
+        });
+    
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Fetch the amenity associated with the pitch and the requested order.
+        const amenity = await prisma.amenity.findUnique({
+            where: {
+                pitchId_order: {
+                    pitchId,
+                    order
+                }
+            }
+        });
+
+        if (!amenity) throw new NotFoundError("Could not find amenity with the specified ID.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
+
+        return amenity;
+    };
+
+    fetchPitchAmenities = async (pitchId: string) => {
+        // Find the pitch and make sure it is in an queryable state.
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            }
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Fetch the amenities associated with the pitch.
+        const amenities = await prisma.amenity.findMany({
+            where: { pitchId }
+        });
+
+        return amenities;
+    };
+
+    updatePitchAmenity = async (pitchId: string, order: number, payload: UpdatePitchAmenityPayloadType) => {
+        // Find the pitch and make sure it is in an editable state.
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            include: {
+                amenities: true
+            }
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Update the amenity for the requested pitch on the index provided.
+        return await prisma.$transaction(async (tx) => {
+            const amenity = await tx.amenity.update({
+                where: { pitchId_order: { pitchId, order } },
+                data: { ...payload }
+            });
+
+            // Update the denormalized amenity list on the pitch to keep it in sync.
+            if (payload.name) {
+                const amenityList = pitch.amenities.map(a => 
+                    a.order === order ? payload.name! : a.name
+                );
+
+                await tx.pitch.update({
+                    where: { id: pitchId },
+                    data: { amenityList }
+                });
+            }
+
+            return amenity;
+        });
+    };
+
+    deletePitchAmenity = async (pitchId: string, order: number) => {
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            include: {
+                amenities: true
+            }
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        const target = pitch.amenities.find(a => a.order === order);
+        if (!target) throw new NotFoundError("Could not find amenity with the specified order.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
+
+        return await prisma.$transaction(async (tx) => {
+            // Delete the amenity.
+            await tx.amenity.delete({
+                where: { pitchId_order: { pitchId, order } }
+            });
+
+            // Reorder the remaining amenities so there are no gaps.
+            const remaining = pitch.amenities
+                .filter(a => a.order !== order)
+                .sort((a, b) => a.order - b.order);
+
+            await Promise.all(
+                remaining.map((a, i) =>
+                    tx.amenity.update({
+                        where: { pitchId_order: { pitchId, order: a.order } },
+                        data: { order: i + 1 }
+                    })
+                )
+            );
+
+            // Sync the denormalized amenity list.
+            await tx.pitch.update({
+                where: { id: pitchId },
+                data: { amenityList: remaining.map(a => a.name) }
+            });
+        });
     };
 }

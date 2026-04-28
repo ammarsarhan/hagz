@@ -75,24 +75,28 @@ services:
       - ./api:/app
       - api_node_modules:/app/node_modules
 
-  # Worker (BullMQ) - Update later when the worker service is in development.
-  # worker:
-  #   build:
-  #     context: ./worker
-  #   environment:
-  #     NODE_ENV: ${NODE_ENV}
-  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #     postgres:
-  #       condition: service_healthy
-  #   networks:
-  #     - hagz-network
-  #   volumes:
-  #     - ./worker:/app
-  #     - worker_node_modules:/app/node_modules
+  # Worker (BullMQ)
+  worker:
+    build:
+      context: ./api
+    command: sh -c "npm run worker"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hagz-network
+    volumes:
+      - ./api:/app
+      - api_node_modules:/app/node_modules
+    restart: unless-stopped
 
   # Frontend (React + Vite)
   web:
@@ -111,7 +115,6 @@ services:
       - web_node_modules:/app/node_modules
 
 volumes:
-  # worker_node_modules:
   postgres_data:
   redis_data:
   localstack_data:

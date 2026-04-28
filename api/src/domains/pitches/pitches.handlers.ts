@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchAmenitySchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -175,4 +175,85 @@ export const fetchGroundSchedulesHandler = factory.createHandlers(
         const schedules = await pitchService.fetchGroundSchedules(pitchId, groundId);
         return c.json({ success: true, data: { schedules } }, 200);
     }
-)
+);
+
+export const getPitchAmenityHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const order = c.req.param("order");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!order || parseInt(order) < 1 || parseInt(order) > 10)
+            throw new BadRequestError("Amenity order must be a valid number from 1 to 10.", ERROR_CODES.VALIDATION_FAILED);
+        
+        const amenity = await pitchService.fetchPitchAmenity(pitchId, parseInt(order));
+        return c.json({ success: true, data: { amenity } }, 200);
+    }
+);
+
+export const getPitchAmenitiesHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const amenities = await pitchService.fetchPitchAmenities(pitchId);
+        return c.json({ success: true, data: { amenities } }, 200);
+    }
+);
+
+export const createPitchAmenityHandler = factory.createHandlers(
+    guard,
+    validate("json", createPitchAmenitySchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const payload = c.req.valid("json");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const amenity = await pitchService.createPitchAmenity(pitchId, payload);
+        return c.json({ success: true, data: { amenity } }, 200);
+    }
+);
+
+export const updatePitchAmenityHandler = factory.createHandlers(
+    guard,
+    validate("json", updatePitchAmenitySchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const order = c.req.param("order");
+        const payload = c.req.valid("json");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!order || parseInt(order) < 1 || parseInt(order) > 10)
+            throw new BadRequestError("Amenity order must be a valid number from 1 to 10.", ERROR_CODES.VALIDATION_FAILED);
+
+        const amenity = await pitchService.updatePitchAmenity(pitchId, parseInt(order), payload);
+        return c.json({ success: true, data: { amenity } }, 200);
+    }
+);
+
+export const deletePitchAmenityHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const order = c.req.param("order");
+
+        if (!pitchId)
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!order || parseInt(order) < 1 || parseInt(order) > 10)
+            throw new BadRequestError("Amenity order must be a valid number from 1 to 10.", ERROR_CODES.VALIDATION_FAILED);
+
+        await pitchService.deletePitchAmenity(pitchId, parseInt(order));
+        return c.json({ success: true, data: null }, 200);
+    }
+);

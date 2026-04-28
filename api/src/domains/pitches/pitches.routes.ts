@@ -11,13 +11,23 @@ import {
     updateGroundSettingsHandler,
     upsertGroundScheduleHandler,
     fetchGroundScheduleHandler,
-    fetchGroundSchedulesHandler
+    fetchGroundSchedulesHandler,
+    getPitchAmenityHandler,
+    getPitchAmenitiesHandler,
+    createPitchAmenityHandler,
+    updatePitchAmenityHandler,
+    deletePitchAmenityHandler
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
     .post('/', ...createPitchHandler)
     .get('/:pitchId', ...getPitchHandler)
+    .get('/:pitchId/amenities', ...getPitchAmenitiesHandler)
+    .post('/:pitchId/amenities', ...createPitchAmenityHandler)
+    .get('/:pitchId/amenities/:order', ...getPitchAmenityHandler)
+    .patch('/:pitchId/amenities/:order', ...updatePitchAmenityHandler)
+    .delete('/:pitchId/amenities/:order', ...deletePitchAmenityHandler)
     .post('/:pitchId/grounds', ...createGroundHandler)
     .get('/:pitchId/grounds/:groundId', ...getGroundHandler)
     .get('/:pitchId/grounds', ...getGroundsHandler)
