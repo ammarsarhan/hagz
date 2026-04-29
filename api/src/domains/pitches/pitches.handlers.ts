@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchAmenitySchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchAmenitySchema, createPitchMediaPresignLinkSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -255,5 +255,21 @@ export const deletePitchAmenityHandler = factory.createHandlers(
 
         await pitchService.deletePitchAmenity(pitchId, parseInt(order));
         return c.json({ success: true, data: null }, 200);
+    }
+);
+
+export const createPitchMediaPresignLinkHandler = factory.createHandlers(
+    guard,
+    validate("json", createPitchMediaPresignLinkSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const payload = c.req.valid("json");
+
+        if (!pitchId)
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const link = await pitchService.generatePitchMediaPresignLink(pitchId, payload);
+
+        return c.json({ success: true, data: { link } }, 200); 
     }
 );

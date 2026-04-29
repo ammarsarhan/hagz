@@ -61,6 +61,8 @@ app.onError((err, c) => {
   }
 
   // If neither this nor that, return an internal server error.
+  console.error("Unhandled error:", err);
+  
   return c.json({
     success: false,
     error: {

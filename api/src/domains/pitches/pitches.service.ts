@@ -1,13 +1,15 @@
-import type { CreateGroundPayloadType, CreatePitchAmenityPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
 
 import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
-import { slotQueue } from "@/jobs/queues/slots.queue.js";
-import { GroundSlotAction } from "@/jobs/workers/slots.worker.js";
 import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
+import { randomUUID } from "crypto";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { BUCKET, s3 } from "@/shared/lib/s3.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -550,6 +552,7 @@ export default class PitchService {
     };
 
     deletePitchAmenity = async (pitchId: string, order: number) => {
+        // Find the pitch and make sure it is in an editable state.
         const pitch = await prisma.pitch.findUnique({
             where: {
                 id: pitchId,
@@ -593,4 +596,38 @@ export default class PitchService {
             });
         });
     };
+
+    generatePitchMediaPresignLink = async (pitchId: string, payload: CreatePitchMediaPresignLinkPayloadType) => {
+        // Find the pitch and make sure it is in an editable state.
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            include: {
+                amenities: true
+            }
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Extract the file extension and generate the key.
+        const extension = payload.contentType.split("/")[1];
+        const key = `uploads/${randomUUID()}.${extension}`;
+
+        const command = new PutObjectCommand({
+            Bucket: BUCKET,
+            Key: key,
+            ContentType: payload.contentType
+        })
+
+        const url = await getSignedUrl(
+            s3.presign,
+            command,
+            { expiresIn: 300 }
+        );
+
+        return url;
+    }
 }

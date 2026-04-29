@@ -338,3 +338,10 @@ export const updatePitchAmenitySchema = pitchAmenitySchema
         if (unit && !price)
             ctx.addIssue({ code: "custom", message: "Amenity price is required when a price unit is provided.", path: ["price"] });
     });
+
+export type CreatePitchMediaPresignLinkPayloadType = z.infer<typeof createPitchMediaPresignLinkSchema>;
+
+export const createPitchMediaPresignLinkSchema = z.object({
+    contentType: z.enum(["image/jpeg", "image/png", "image/webp"], "Please select a valid image type."),
+    size: z.number().positive().max(5 * 1024 * 1024, "Image must be less than 5 MBs."),
+})
