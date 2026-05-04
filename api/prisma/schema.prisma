@@ -77,6 +77,17 @@ enum PitchStatus {
   DELETED
 }
 
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaStatus {
+  PENDING
+  UPLOADED
+  DELETED
+}
+
 enum GroundStatus {
   ACTIVE
   MAINTENANCE
@@ -223,7 +234,7 @@ model User {
   isVerified Boolean    @default(false)
   status     UserStatus @default(ACTIVE)
 
-  pitchPermissions PitchPermissions[]
+  pitches          PitchUser[]
   bookings         Booking[]
   createdBookings  Booking[]          @relation("createdBookings")
   reschedulings    Rescheduling[]
@@ -247,7 +258,7 @@ model UserPreferences {
   timezone      String               @default("Africa/Cairo")
 }
 
-model PitchPermissions {
+model PitchUser {
   userId      String
   pitchId     String
   permissions Json?
@@ -255,6 +266,7 @@ model PitchPermissions {
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  events  PitchEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -263,15 +275,35 @@ model PitchPermissions {
 }
 
 model PitchEvent {
-  id        String      @id @default(cuid())
-  pitch     Pitch       @relation(fields: [pitchId], references: [id])
-  pitchId   String
+  id      String @id @default(cuid())
+  pitch   Pitch  @relation(fields: [pitchId], references: [id])
+  pitchId String
 
   status    PitchStatus
-  createdBy String?
+  actorId   String?
+  actor     PitchUser? @relation(fields: [actorId, pitchId], references: [userId, pitchId])
   reason    String?
-  
-  createdAt DateTime    @default(now())
+
+  createdAt DateTime @default(now())
+}
+
+model PitchMedia {
+  id      String @id @default(cuid())
+  pitchId String
+  pitch   Pitch  @relation(fields: [pitchId], references: [id])
+
+  key         String
+  url         String
+  type        MediaType   @default(IMAGE)
+  contentType String
+  status      MediaStatus @default(PENDING)
+  order       Int         @default(autoincrement())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pitchId, order])
+  @@index([pitchId])
 }
 
 model Pitch {
@@ -287,9 +319,9 @@ model Pitch {
   latitude       Float
   longitude      Float
   googleMapsLink String
-  images         String[]
+  media          PitchMedia[]
 
-  status PitchStatus @default(DRAFT)
+  status PitchStatus  @default(DRAFT)
   events PitchEvent[]
 
   amenityList  AmenityName[]
@@ -298,7 +330,7 @@ model Pitch {
   minimumPrice Int?
   maximumPrice Int?
 
-  permissions  PitchPermissions[]
+  users        PitchUser[]
   amenities    Amenity[]
   grounds      Ground[]
   combinations Combination[]
@@ -306,21 +338,20 @@ model Pitch {
   bookings     Booking[]
   ledger       PitchLedger?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Ground {
   id      String @id @default(cuid())
   pitchId String
 
-  name         String
-  description  String?
-  sport        GroundSport
-  surface      GroundSurface
-  size         GroundSize
-  settings     GroundSettings?
-  images       String[]
+  name        String
+  description String?
+  sport       GroundSport
+  surface     GroundSurface
+  size        GroundSize
+  settings    GroundSettings?
 
   status GroundStatus @default(ACTIVE)
 
@@ -329,8 +360,8 @@ model Ground {
   discountPrice Int?
 
   combinations CombinationGround[]
-  bookings Booking[]
-  slots    GroundSlot[]
+  bookings     Booking[]
+  slots        GroundSlot[]
 
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
@@ -436,8 +467,8 @@ model GroundSlot {
   pitchId  String
   groundId String
   ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
-  
-  startsAt DateTime
+
+  startsAt  DateTime
   status    SlotStatus @default(AVAILABLE)
   priceType PriceType  @default(BASE)
 
@@ -452,10 +483,10 @@ model Schedule {
   groundId String
   ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
 
-  dayOfWeek      Int
-  baseHours      Bytes
-  peakHours      Bytes
-  discountHours  Bytes
+  dayOfWeek     Int
+  baseHours     Bytes
+  peakHours     Bytes
+  discountHours Bytes
 
   status          ScheduleStatus @default(PENDING)
   isActive        Boolean        @default(true)

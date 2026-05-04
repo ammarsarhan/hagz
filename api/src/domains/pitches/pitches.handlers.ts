@@ -268,8 +268,38 @@ export const createPitchMediaPresignLinkHandler = factory.createHandlers(
         if (!pitchId)
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        const link = await pitchService.generatePitchMediaPresignLink(pitchId, payload);
+        const { url, id } = await pitchService.generatePitchMediaPresignLink(pitchId, payload);
 
-        return c.json({ success: true, data: { link } }, 200); 
+        return c.json({ success: true, data: { url, id } }, 200); 
     }
 );
+
+export const confirmPitchMediaUploadHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const mediaId = c.req.param("mediaId");
+
+        if (!pitchId)
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!mediaId)
+            throw new NotFoundError("Could not find media with the specified ID.", ERROR_CODES.PITCH_MEDIA_NOT_FOUND);
+
+        const media = await pitchService.confirmPitchMediaUpload(pitchId, mediaId);
+        return c.json({ success: true, data: { media } }, 200); 
+    }
+);
+
+export const submitPitchHandler = factory.createHandlers(
+    guard,
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const pitch = await pitchService.submitPitch(pitchId);
+        return c.json({ success: true, data: { pitch } }, 200); 
+    }
+)

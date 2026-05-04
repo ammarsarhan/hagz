@@ -3,13 +3,14 @@ import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from
 import prisma from "@/shared/lib/prisma.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
 
-import { GroundSize, GroundSport, GroundStatus, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
 import { randomUUID } from "crypto";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { BUCKET, s3 } from "@/shared/lib/s3.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import z from "zod";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -620,7 +621,7 @@ export default class PitchService {
             Bucket: BUCKET,
             Key: key,
             ContentType: payload.contentType
-        })
+        });
 
         const url = await getSignedUrl(
             s3.presign,
@@ -628,6 +629,119 @@ export default class PitchService {
             { expiresIn: 300 }
         );
 
-        return url;
+        // Generate the record in the database to store the media.
+        const media = await prisma.pitchMedia.create({
+            data: {
+                pitchId,
+                key,
+                url,
+                type: MediaType.IMAGE,
+                contentType: payload.contentType,
+            }
+        })
+
+        return { url, id: media.id };
+    };
+
+    confirmPitchMediaUpload = async (pitchId: string, mediaId: string) => {
+        // Fetch the media and make sure that it is both pending and that the pitch is not deleted.
+        const media = await prisma.pitchMedia.findUnique({
+            where: { 
+                id: mediaId, 
+                status: MediaStatus.PENDING,
+                pitch: {
+                    id: pitchId,
+                    status: { not: PitchStatus.DELETED }
+                }
+            }
+        });
+
+        if (!media) throw new NotFoundError("Could not find pending media upload with the specified ID.", ERROR_CODES.PITCH_MEDIA_NOT_FOUND);
+
+        // Create the command sent to s3 to fetch the object data.
+        const command = new HeadObjectCommand({ Bucket: BUCKET, Key: media.key });
+        
+        // If that object can not be found then the upload has failed or can not be verified.
+        try {
+            await s3.default.send(command);
+        } catch {
+            throw new BadRequestError("Upload could not be verified. Please try uploading again.", ERROR_CODES.PITCH_MEDIA_CONFIRMATION_FAILED);
+        };
+
+        // Update the media to confirm that it is uploaded and active.
+        const updated = await prisma.pitchMedia.update({
+            where: { id: mediaId },
+            data: { status: MediaStatus.UPLOADED }
+        });
+
+        return updated;
+    };
+
+    submitPitch = async (pitchId: string) => {
+        // Find the pitch and ensure that it is a draft before sending it for submission.
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: PitchStatus.DRAFT
+            },
+            include: {
+                amenities: true,
+                grounds: {
+                    include: {
+                        settings: true,
+                        schedule: true
+                    }
+                },
+                media: true
+            }
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch draft with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Our check needs to pass by four checks to ensure validity for submission.
+        // 1. Ensure that the taxId has been submitted.
+        const schema = z.string().length(9, "Tax ID must be exactly 9 characters.").regex(/^\d+$/, "Tax ID must contain numbers only.");
+        if (!schema.safeParse(pitch.taxId).success) throw new BadRequestError("Tax ID must be provided in the correct format to submit pitch.", ERROR_CODES.VALIDATION_FAILED);
+
+        // 2. Ensure that the pitch has at least one amenity and that they are both in-sync.
+        if (pitch.amenities.length !== pitch.amenityList.length)
+            throw new InternalServerError("Pitch amenities are out of sync on the denormalized field. Please contact customer support.");
+
+        if (pitch.amenities.length < 1 || pitch.amenityList.length < 1)
+            throw new BadRequestError("Pitch needs to have at least one amenity.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
+
+        // 3. Ensure that the pitch has at least one ground, that the settings are created successfully, and that each ground has exactly 7 schedule records, one of which has to be active.
+        if (pitch.grounds.length < 1) 
+            throw new BadRequestError("Pitch needs to have at least one ground.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (pitch.grounds.some(ground => !ground.settings))
+            throw new InternalServerError("Could not find settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+
+        if (pitch.grounds.some(ground => ground.schedule.length !== 7))
+            throw new BadRequestError("Each ground needs to have a set schedule for each day.", ERROR_CODES.GROUND_SCHEDULE_MISSING);
+
+        if (pitch.grounds.some(ground => ground.schedule.every(schedule => !schedule.isActive)))
+            throw new BadRequestError("Ground schedule must have at least one active day per week.", ERROR_CODES.GROUND_SCHEDULE_NOT_ACTIVE);
+
+        // 4. Ensure that there is at least three verified pitch images.
+        if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
+            throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
+
+        // After the draft passes all the checks, make sure that both the pitch are submitted and this is logged as an event by the system.
+        return await prisma.$transaction(async (tx) => {
+            const updated = await tx.pitch.update({
+                where: { id: pitchId },
+                data: { status: PitchStatus.SUBMITTED }
+            });
+
+            await tx.pitchEvent.create({
+                data: { 
+                    pitchId, 
+                    status: PitchStatus.SUBMITTED,
+                }
+            });
+
+            return updated;
+        });
     }
 }

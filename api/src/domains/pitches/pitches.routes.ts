@@ -17,7 +17,9 @@ import {
     createPitchAmenityHandler,
     updatePitchAmenityHandler,
     deletePitchAmenityHandler,
-    createPitchMediaPresignLinkHandler
+    createPitchMediaPresignLinkHandler,
+    confirmPitchMediaUploadHandler,
+    submitPitchHandler
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
@@ -39,6 +41,8 @@ const app = new Hono()
     .put('/:pitchId/grounds/:groundId/schedule/:dayOfWeek', ...upsertGroundScheduleHandler)
     .get('/:pitchId/grounds/:groundId/schedule/:dayOfWeek', ...fetchGroundScheduleHandler)
     .post('/:pitchId/media/presign', ...createPitchMediaPresignLinkHandler)
+    .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
+    .post('/:pitchId/submit', ...submitPitchHandler)
 
 export default app;
 export type AppType = typeof app;

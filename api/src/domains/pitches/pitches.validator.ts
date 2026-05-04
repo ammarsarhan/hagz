@@ -57,6 +57,7 @@ export const createPitchSchema = z.object({
     taxId: z
         .string()
         .length(9, "Tax ID must be exactly 9 characters.")
+        .regex(/^\d+$/, "Tax ID must contain numbers only.")
         .nullish(),
     street: 
         trim("Street name is required.")
