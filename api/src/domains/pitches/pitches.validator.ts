@@ -1,10 +1,10 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, PermissionsRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, StaffRole } from "@/generated/prisma/enums.js";
 
-export interface PitchPermissionsType {
+export interface StaffType {
     pitchId: string;
     permissions: any | null;
-    role: PermissionsRole;
+    role: StaffRole;
 }
 
 export type CreatePitchPayloadType = z.infer<typeof createPitchSchema>;

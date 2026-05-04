@@ -24,7 +24,7 @@ export default class AuthService {
                     password: hashed
                 },
                 include: {
-                    pitchPermissions: true
+                    pitches: true
                 }
             });
 
@@ -36,10 +36,10 @@ export default class AuthService {
             return { user, preferences };
         });
 
-        const permissions = user.pitchPermissions;
+        const pitches = user.pitches;
 
         // Parse into an object that can be used with the client's AuthContext or Mobile implementations.
-        return createUserResponse(user, preferences, permissions);
+        return createUserResponse(user, preferences, pitches);
     };
 
     fetchUser = async (params: FetchUserPayloadType): Promise<UserResponseType> => {
@@ -47,7 +47,7 @@ export default class AuthService {
             const user = await prisma.user.findUnique({ 
                 where: { phone: params.phone },
                 include: {
-                    pitchPermissions: true,
+                    pitches: true,
                     preferences: true
                 }
             });
@@ -57,16 +57,16 @@ export default class AuthService {
             // We can assume that preferences always exists because it is created as a transaction with the creation of the user.
             // A user may not exist without their preferences unlike type-inference from the schema suggests.
             const preferences = user.preferences!;
-            const permissions = user.pitchPermissions;
+            const pitches = user.pitches;
 
-            return createUserResponse(user, preferences, permissions);
+            return createUserResponse(user, preferences, pitches);
         };
 
         if (params.type === "id") {
             const user = await prisma.user.findUnique({ 
                 where: { id: params.id },
                 include: {
-                    pitchPermissions: true,
+                    pitches: true,
                     preferences: true
                 }
             });
@@ -76,9 +76,9 @@ export default class AuthService {
             // We can assume that preferences always exists because it is created as a transaction with the creation of the user.
             // A user may not exist without their preferences unlike type-inference from the schema suggests.
             const preferences = user.preferences!;
-            const permissions = user.pitchPermissions;
+            const pitches = user.pitches;
 
-            return createUserResponse(user, preferences, permissions);
+            return createUserResponse(user, preferences, pitches);
         };
 
         throw new InternalServerError("Either a phone or an id string must be specified to fetch a user.");
@@ -90,7 +90,7 @@ export default class AuthService {
             where: { phone: payload.phone }, 
             include: { 
                 preferences: true, 
-                pitchPermissions: true 
+                pitches: true 
             } 
         });
 
@@ -137,10 +137,10 @@ export default class AuthService {
         });
 
         const preferences = user.preferences!;
-        const permissions = user.pitchPermissions;
+        const pitches = user.pitches;
 
         return { 
-            user: createUserResponse(user, preferences, permissions),
+            user: createUserResponse(user, preferences, pitches),
             accessToken,
             refreshToken
         };

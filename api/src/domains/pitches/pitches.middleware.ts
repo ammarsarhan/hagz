@@ -16,15 +16,15 @@ const guard = factory.createMiddleware(async (c, next) => {
     const userId = c.var.id;
     const pitchId = c.req.param("pitchId");
 
-    const permissions = await prisma.pitchPermissions.findMany({
+    const pitches = await prisma.staff.findMany({
         where: {
             userId
         }
     });
 
-    const target = permissions.find(item => item.pitchId === pitchId);
+    const target = pitches.find(item => item.pitchId === pitchId);
 
-    // If that user's permissions do not contain any record of that pitch within the PitchPermissions model then they are not allowed to move forward.
+    // If that user's permissions do not contain any record of that pitch within the Staff model then they are not allowed to move forward.
     if (!target) throw new ForbiddenError("You are not allowed to access this resource.", ERROR_CODES.PITCH_ACCESS_FORBIDDEN);
 
     // If they are allowed to access, pass down their permissions and move forward.
@@ -34,7 +34,7 @@ const guard = factory.createMiddleware(async (c, next) => {
         permissions: target.permissions
     };
 
-    c.set("permissions", data);
+    c.set("pitches", data);
 
     await next();
 });

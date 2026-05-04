@@ -3,7 +3,7 @@ import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from
 import prisma from "@/shared/lib/prisma.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
 
-import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, PermissionsRole, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, PitchStatus, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
 import { randomUUID } from "crypto";
@@ -22,7 +22,7 @@ export default class PitchService {
     createPitch = async (userId: string, payload: CreatePitchPayloadType) => {
         return await prisma.$transaction(async (tx) => {
             // The user should be allowed a maximum of 5 pitches to own and may not create any new pitches as long they already have a draft or is under review.
-            const permissions = await tx.pitchPermissions.findMany({
+            const staff = await tx.staff.findMany({
                 where: { 
                     userId,
                     role: "OWNER"
@@ -36,9 +36,9 @@ export default class PitchService {
                 }
             });
     
-            if (permissions.length >= this.MAXIMUM_PITCHES_PER_USER) throw new BadRequestError(`You may not create more than ${this.MAXIMUM_PITCHES_PER_USER} pitches. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.PITCH_CREATE_LIMIT_EXCEEDED);
+            if (staff.length >= this.MAXIMUM_PITCHES_PER_USER) throw new BadRequestError(`You may not create more than ${this.MAXIMUM_PITCHES_PER_USER} pitches. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.PITCH_CREATE_LIMIT_EXCEEDED);
     
-            const pitches = permissions.map(item => item.pitch);
+            const pitches = staff.map(item => item.pitch);
             const statuses = [PitchStatus.DRAFT, PitchStatus.SUBMITTED] as PitchStatus[];
     
             if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch that is either a draft or has been submitted. You can have one pending pitch at a time.", ERROR_CODES.PITCH_DRAFT_EXISTS);
@@ -47,10 +47,10 @@ export default class PitchService {
             const pitch = await tx.pitch.create({
                 data: {
                     ...payload,
-                    permissions: {
+                    staff: {
                         create: {
                             userId,
-                            role: PermissionsRole.OWNER
+                            role: StaffRole.OWNER
                         }
                     }
                 },

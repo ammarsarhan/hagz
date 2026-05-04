@@ -1,6 +1,6 @@
 import z from "zod";
-import type { Language, NotificationMethod, PaymentMethod, PermissionsRole, UserStatus } from "@/generated/prisma/enums.js";
-import type { PitchPermissions, User, UserPreferences } from "@/generated/prisma/client.js";
+import type { Language, NotificationMethod, PaymentMethod, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
+import type { Staff, User, UserPreferences } from "@/generated/prisma/client.js";
 
 // Fetch user by either phone or id.
 export type FetchUserPayloadType = 
@@ -21,9 +21,9 @@ export type UserResponseType = {
         notifications: Array<NotificationMethod>,
         paymentMethod: PaymentMethod
     },
-    permissions: Array<{
+    pitches: Array<{
         pitchId: string,
-        role: PermissionsRole,
+        role: StaffRole,
         permissions: any // Todo: Modify this later to accept a standardized permissions object.
     }>
 }
@@ -58,7 +58,7 @@ export const signInSchema = z.object({
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Could not find user account with the specified credentials."),
 });
 
-export const createUserResponse = (user: User, preferences: UserPreferences, permissions: Array<PitchPermissions>): UserResponseType => {
+export const createUserResponse = (user: User, preferences: UserPreferences, pitches: Array<Staff>): UserResponseType => {
     return {
         id: user.id,
         firstName: user.firstName,
@@ -73,7 +73,7 @@ export const createUserResponse = (user: User, preferences: UserPreferences, per
             notifications: preferences.notifications,
             paymentMethod: preferences.paymentMethod
         },
-        permissions: permissions.map(item => ({
+        pitches: pitches.map(item => ({
             pitchId: item.pitchId,
             role: item.role,
             permissions: item.permissions
