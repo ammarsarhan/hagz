@@ -20,7 +20,7 @@ enum BookingActor {
   OWNER
 }
 
-enum PermissionsRole {
+enum StaffRole {
   MANAGER
   OWNER
 }
@@ -234,11 +234,11 @@ model User {
   isVerified Boolean    @default(false)
   status     UserStatus @default(ACTIVE)
 
-  pitches          PitchUser[]
-  bookings         Booking[]
-  createdBookings  Booking[]          @relation("createdBookings")
-  reschedulings    Rescheduling[]
-  cancellations    Cancellation[]
+  pitches         Staff[]
+  bookings        Booking[]
+  createdBookings Booking[]      @relation("createdBookings")
+  reschedulings   Rescheduling[]
+  cancellations   Cancellation[]
 
   preferences        UserPreferences?
   payoutDestinations PayoutDestination[]
@@ -258,15 +258,16 @@ model UserPreferences {
   timezone      String               @default("Africa/Cairo")
 }
 
-model PitchUser {
+model Staff {
   userId      String
   pitchId     String
+  role        StaffRole
   permissions Json?
-  role        PermissionsRole
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
-  events  PitchEvent[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch       Pitch        @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  events      PitchEvent[]
+  invitations Invitation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -279,10 +280,10 @@ model PitchEvent {
   pitch   Pitch  @relation(fields: [pitchId], references: [id])
   pitchId String
 
-  status    PitchStatus
-  actorId   String?
-  actor     PitchUser? @relation(fields: [actorId, pitchId], references: [userId, pitchId])
-  reason    String?
+  status  PitchStatus
+  actorId String?
+  actor   Staff?      @relation(fields: [actorId, pitchId], references: [userId, pitchId])
+  reason  String?
 
   createdAt DateTime @default(now())
 }
@@ -330,7 +331,7 @@ model Pitch {
   minimumPrice Int?
   maximumPrice Int?
 
-  users        PitchUser[]
+  staff        Staff[]
   amenities    Amenity[]
   grounds      Ground[]
   combinations Combination[]
@@ -448,16 +449,18 @@ model Amenity {
 model Invitation {
   id      String @id @default(cuid())
   pitchId String
+  pitch   Pitch  @relation(fields: [pitchId], references: [id])
 
-  pitch  Pitch            @relation(fields: [pitchId], references: [id])
   phone  String
+  token  String           @unique
   status InvitationStatus @default(PENDING)
 
   expiresAt  DateTime
   acceptedAt DateTime?
   rejectedAt DateTime?
 
-  createdBy String
+  creatorId String
+  creator   Staff    @relation(fields: [creatorId, pitchId], references: [userId, pitchId])
   createdAt DateTime @default(now())
 }
 
