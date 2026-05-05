@@ -1,4 +1,4 @@
-import type { CreateGroundPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpdatePitchPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/error.js";
 import prisma from "@/shared/lib/prisma.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
@@ -11,6 +11,8 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { BUCKET, s3 } from "@/shared/lib/s3.js";
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import z from "zod";
+import { slotQueue } from "@/jobs/queues/slots.queue.js";
+import { GroundSlotAction } from "@/jobs/workers/slots.worker.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -18,6 +20,46 @@ export default class PitchService {
     private readonly MAXIMUM_AMENITIES_PER_PITCH = 10;
 
     private readonly EDITABLE_STATES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+
+    private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
+        await Promise.all(
+            grounds.map(async (groundId) => {
+                await slotQueue.add(GroundSlotAction.GENERATE, { pitchId, groundId });
+            })
+        );
+    }
+    // Helper function to keep the pitch denormalized fields in sync.
+    private readonly updatePitchDenormalizedFields = async (
+        tx: TransactionClient, 
+        pitchId: string, 
+        grounds: Array<{
+            sport: GroundSport;
+            size: GroundSize;
+            basePrice: number;
+            peakPrice: number | null;
+            discountPrice: number | null;
+        }>
+    ) => {
+        const sports = [...new Set(grounds.map(g => g.sport))];
+        const sizes = [...new Set(grounds.map(g => g.size))];
+
+        // Filter out the non-number values and create an array with all the prices then compare.
+        const prices = grounds.flatMap(g => [g.basePrice, g.peakPrice, g.discountPrice].filter(Boolean)) as number[];
+        const minimumPrice = Math.min(...prices);
+        const maximumPrice = Math.max(...prices);
+
+        await tx.pitch.update({
+            where: { 
+                id: pitchId
+            },
+            data: {
+                sports,
+                sizes,
+                minimumPrice,
+                maximumPrice
+            }
+        });
+    }
 
     createPitch = async (userId: string, payload: CreatePitchPayloadType) => {
         return await prisma.$transaction(async (tx) => {
@@ -72,38 +114,9 @@ export default class PitchService {
         return pitch;
     };
 
-    // Helper function to keep the pitch denormalized fields in sync.
-    private readonly updatePitchDenormalizedFields = async (
-        tx: TransactionClient, 
-        pitchId: string, 
-        grounds: Array<{
-            sport: GroundSport;
-            size: GroundSize;
-            basePrice: number;
-            peakPrice: number | null;
-            discountPrice: number | null;
-        }>
-    ) => {
-        const sports = [...new Set(grounds.map(g => g.sport))];
-        const sizes = [...new Set(grounds.map(g => g.size))];
-
-        // Filter out the non-number values and create an array with all the prices then compare.
-        const prices = grounds.flatMap(g => [g.basePrice, g.peakPrice, g.discountPrice].filter(Boolean)) as number[];
-        const minimumPrice = Math.min(...prices);
-        const maximumPrice = Math.max(...prices);
-
-        await tx.pitch.update({
-            where: { 
-                id: pitchId
-            },
-            data: {
-                sports,
-                sizes,
-                minimumPrice,
-                maximumPrice
-            }
-        });
-    }
+    updatePitch = async (pitchId: string, payload: UpdatePitchPayloadType) => {
+        
+    };
 
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
         return await prisma.$transaction(async (tx) => {
@@ -724,8 +737,8 @@ export default class PitchService {
             throw new BadRequestError("Ground schedule must have at least one active day per week.", ERROR_CODES.GROUND_SCHEDULE_NOT_ACTIVE);
 
         // 4. Ensure that there is at least three verified pitch images.
-        if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
-            throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
+        // if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
+        //     throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
 
         // After the draft passes all the checks, make sure that both the pitch are submitted and this is logged as an event by the system.
         return await prisma.$transaction(async (tx) => {
@@ -743,5 +756,42 @@ export default class PitchService {
 
             return updated;
         });
+    }
+
+    // Todo: Create a better command line interface to approve the pitch.
+    approvePitch = async (pitchId: string) => {
+        console.log("This is an exemplary respresentation of how pitch approval will work and should be better implemented before production.");
+        if (!pitchId) {
+            console.log("No pitchId was provided. Could not update pitch.");
+            return;
+        }
+        
+        const pitch = await prisma.pitch.findUnique({
+            where: {
+                id: pitchId,
+                status: PitchStatus.SUBMITTED
+            },
+            include: {
+                grounds: true
+            }
+        });
+
+        if (!pitch) {
+            console.log("Could not find a submitted pitch with the specified ID.");
+            return;
+        };
+
+        // Update the pitch status to accepted and add the job to the BullMQ slot generation queue.
+        await prisma.pitch.update({
+            where: { id: pitchId },
+            data: { status: PitchStatus.ACCEPTED }
+        });
+
+        console.log("Updated pitch status to ACCEPTED.")
+        
+        const grounds = pitch.grounds.map(ground => ground.id);
+        await this.enqueueGroundSlotGeneration(pitchId, grounds);
+
+        console.log("Added GENERATE jobs to each of the grounds on the pitch.");
     }
 }

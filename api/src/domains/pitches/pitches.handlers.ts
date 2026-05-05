@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchAmenitySchema, createPitchMediaPresignLinkSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchAmenitySchema, updatePitchSchema, createPitchMediaPresignLinkSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -29,12 +29,27 @@ export const getPitchHandler = factory.createHandlers(
     async (c) => {
         const pitchId = c.req.param("pitchId");
         if (!pitchId) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-
+        
         const pitch = await pitchService.fetchPitch(pitchId);
         
         return c.json({ success: true, data: { pitch }}, 200);
     }
 );
+
+export const updatePitchHandler = factory.createHandlers(
+    guard,
+    validate("json", updatePitchSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const payload = c.req.valid("json");
+        
+        if (!pitchId) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        
+        const pitch = await pitchService.updatePitch(pitchId, payload);
+        
+        return c.json({ success: true, data: { pitch }}, 200);
+    }
+)
 
 export const createGroundHandler = factory.createHandlers(
     guard,

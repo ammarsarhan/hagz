@@ -7,8 +7,6 @@ export interface StaffType {
     role: StaffRole;
 }
 
-export type CreatePitchPayloadType = z.infer<typeof createPitchSchema>;
-
 const trim = 
     (error: string) => z
         .string(error)
@@ -35,7 +33,7 @@ const extractCoordinates = (url: string) => {
     return null;
 };
 
-export const createPitchSchema = z.object({
+const pitchSchema = z.object({
     name: 
         trim("Pitch name is required.")
         .pipe(
@@ -87,8 +85,11 @@ export const createPitchSchema = z.object({
         .enum(Object.values(Country) as [Country, ...Country[]], "Your country may not be supported yet."),
     googleMapsLink: z
         .url("Please provide a valid Google Maps link."),
-})
-.transform((data, ctx) => {
+});
+
+export type CreatePitchPayloadType = z.infer<typeof createPitchSchema>;
+
+export const createPitchSchema = pitchSchema.transform((data, ctx) => {
     const coords = extractCoordinates(data.googleMapsLink);
 
     if (!coords) {
@@ -97,6 +98,24 @@ export const createPitchSchema = z.object({
     };
 
     return { ...data, ...coords };
+});
+
+export type UpdatePitchPayloadType = z.infer<typeof updatePitchSchema>;
+
+export const updatePitchSchema = pitchSchema.partial().refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "At least one field must be provided to update the specified ground." }
+).transform((data, ctx) => {
+    if (data.googleMapsLink) {
+        const coords = extractCoordinates(data.googleMapsLink);
+    
+        if (!coords) {
+            ctx.addIssue({ code: "custom", path: ["googleMapsLink"], message: "Could not extract coordinates from this link." });
+            return z.NEVER;
+        };
+    
+        return { ...data, ...coords };
+    };
 });
 
 export type CreateGroundPayloadType = z.infer<typeof createGroundSchema>;

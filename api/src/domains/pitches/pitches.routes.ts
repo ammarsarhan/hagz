@@ -19,13 +19,15 @@ import {
     deletePitchAmenityHandler,
     createPitchMediaPresignLinkHandler,
     confirmPitchMediaUploadHandler,
-    submitPitchHandler
+    submitPitchHandler,
+    updatePitchHandler
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
     .post('/', ...createPitchHandler)
     .get('/:pitchId', ...getPitchHandler)
+    .patch('/:pitchId', ...updatePitchHandler)
     .get('/:pitchId/amenities', ...getPitchAmenitiesHandler)
     .post('/:pitchId/amenities', ...createPitchAmenityHandler)
     .get('/:pitchId/amenities/:order', ...getPitchAmenityHandler)
