@@ -116,6 +116,8 @@ export const updatePitchSchema = pitchSchema.partial().refine(
     
         return { ...data, ...coords };
     };
+
+    return data;
 });
 
 export type CreateGroundPayloadType = z.infer<typeof createGroundSchema>;
