@@ -113,9 +113,35 @@ export default class PitchService {
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         return pitch;
     };
-
+    
     updatePitch = async (pitchId: string, payload: UpdatePitchPayloadType) => {
-        
+        const pitch = await prisma.pitch.findUnique({
+            where: { 
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: {
+                status: true
+            }
+        });
+
+        // Check if the pitch exists and has not been soft-deleted.
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Check if the pitch is even in a state to allow edits.
+        if (!this.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // If the pitch passes the checks, update it with the provided payload.
+        const updated = await prisma.pitch.update({
+            where: {
+                id: pitchId
+            },
+            data: {
+                ...payload
+            }
+        });
+
+        return updated;
     };
 
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
@@ -158,9 +184,7 @@ export default class PitchService {
                     pitchId,
                     // 5. Create the required associated models with Ground (GroundSettings as of now).
                     settings: {
-                        create: {
-                            
-                        }
+                        create: {}
                     }
                 }
             });
