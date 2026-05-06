@@ -234,11 +234,11 @@ model User {
   isVerified Boolean    @default(false)
   status     UserStatus @default(ACTIVE)
 
-  pitches         Staff[]
-  bookings        Booking[]
-  createdBookings Booking[]      @relation("createdBookings")
-  reschedulings   Rescheduling[]
-  cancellations   Cancellation[]
+  profiles      PitchCustomer[]
+  bookings      Booking[]
+  pitches       Staff[]
+  reschedulings Rescheduling[]
+  cancellations Cancellation[]
 
   preferences        UserPreferences?
   payoutDestinations PayoutDestination[]
@@ -337,6 +337,7 @@ model Pitch {
   combinations Combination[]
   invitations  Invitation[]
   bookings     Booking[]
+  customers    PitchCustomer[]
   ledger       PitchLedger?
 
   createdAt DateTime @default(now())
@@ -467,7 +468,7 @@ model Invitation {
 model GroundSlot {
   id String @id @default(cuid())
 
-  pitchId  String
+  pitchId  String // Intentionally denormalized for query performance
   groundId String
   ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
 
@@ -530,6 +531,27 @@ model RecurringBooking {
   updatedAt DateTime @updatedAt
 }
 
+model PitchCustomer {
+  id      String @id @default(cuid())
+  pitchId String
+  pitch   Pitch  @relation(fields: [pitchId], references: [id])
+
+  firstName String?
+  lastName  String?
+  phone     String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@unique([pitchId, phone])
+}
+
 model Booking {
   id       String @id @default(cuid())
   pitchId  String
@@ -541,13 +563,11 @@ model Booking {
   payment       Payment?
   ledgerEntries LedgerEntry[]
 
-  userId     String?
-  user       User?   @relation(fields: [userId], references: [id])
-  guestPhone String?
-
-  bookerId   String
-  bookedBy   User         @relation("createdBookings", fields: [bookerId], references: [id])
-  bookerRole BookingActor
+  assigneeId  String
+  assignee    PitchCustomer @relation(fields: [assigneeId], references: [id])
+  initiatorId String
+  initiator   User          @relation(fields: [initiatorId], references: [id])
+  bookerRole  BookingActor
 
   startTime       DateTime
   endTime         DateTime
@@ -578,10 +598,10 @@ model Rescheduling {
   from   Booking @relation("rescheduledFrom", fields: [fromId], references: [id])
   to     Booking @relation("rescheduledTo", fields: [toId], references: [id])
 
-  userRole BookingActor
-  userId   String
-  user     User         @relation(fields: [userId], references: [id])
-  reason   String?
+  userRole    BookingActor
+  initiatorId String
+  initiator   User         @relation(fields: [initiatorId], references: [id])
+  reason      String?
 
   refundDelta   Int?
   rescheduledAt DateTime @default(now())
@@ -612,9 +632,9 @@ model Cancellation {
   bookingId String  @unique
   booking   Booking @relation(fields: [bookingId], references: [id])
 
-  userId String
-  user   User         @relation(fields: [userId], references: [id])
-  actor  BookingActor
+  initiatorId String
+  initiator   User         @relation(fields: [initiatorId], references: [id])
+  actor       BookingActor
 
   reason      String?
   cancelledAt DateTime @default(now())
