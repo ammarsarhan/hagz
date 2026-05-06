@@ -189,17 +189,40 @@ enum RecurringPaymentSchedule {
   PER_BOOKING
 }
 
+enum GroundActions {
+  BOOKED
+  RESCHEDULED
+  CANCELLED
+  EXPIRED
+}
+
 enum NotificationMethod {
   SMS
   WHATSAPP
   EMAIL
 }
 
-enum GroundActions {
-  BOOKED
-  RESCHEDULED
-  CANCELLED
-  EXPIRED
+enum NotificationEvent {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  BOOKING_REMINDER
+  BOOKING_STARTED
+  BOOKING_EXPIRED
+  BOOKING_NO_SHOW
+  PAYOUT_PROCESSED
+  PAYOUT_FAILED
+  INVITATION_CREATED
+  INVITATION_RECEIVED
+  INVITATION_ACCEPTED
+  PITCH_UPDATED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
 }
 
 model Session {
@@ -241,6 +264,7 @@ model User {
   cancellations Cancellation[]
 
   preferences        UserPreferences?
+  notifications      Notification[]
   payoutDestinations PayoutDestination[]
 
   deletedAt DateTime?
@@ -705,4 +729,24 @@ model PayoutDestination {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  phone  String
+
+  event     NotificationEvent
+  method    NotificationMethod
+  status    NotificationStatus @default(PENDING)
+
+  template      String?
+  variables     Json?
+  providerRef   String
+
+  scheduledAt DateTime  @default(now())
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
 }
