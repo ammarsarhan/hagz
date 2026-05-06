@@ -5,12 +5,7 @@ import { ERROR_CODES, InternalServerError } from "@/shared/lib/error.js";
 import { PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { addDays, getDay, setHours, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-
-export const GroundSlotAction = {
-    GENERATE: "GENERATE",
-    EXTEND: "EXTEND",
-    ADJUST:  "ADJUST",
-} as const;
+import { GroundSlotAction } from "@/shared/types/slots.js";
 
 const slotWorker = new Worker("slot", 
     async (job) => {
@@ -21,10 +16,13 @@ const slotWorker = new Worker("slot",
                 return await handleExtendSlots(job.data);
             case GroundSlotAction.ADJUST:
                 return await handleAdjustSlots(job.data);
-
         }
     },
-    { connection: redis.consumer }
+    { 
+        connection: redis.consumer,
+        stalledInterval: 30000,
+        lockDuration: 60000, 
+    }
 );
 
 interface GenerateSlotsPayload {
@@ -32,38 +30,37 @@ interface GenerateSlotsPayload {
     pitchId: string;
 };
 
-type SlotPayloadType = { startsAt: Date; priceType: PriceType };
+type SlotPayloadType = { 
+    startsAt: Date; 
+    priceType: PriceType 
+};
 
 export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPayload) {
-    // Fetch the settings and make sure they exist.
     const settings = await prisma.groundSettings.findUnique({ where: { groundId } });
     if (!settings) throw new InternalServerError("Could not find settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
     
     const { maximumWindow } = settings;
 
-    // Fetch the schedule and mark it as generating.
-    const schedules = await prisma.schedule.updateManyAndReturn({
-        where: { groundId },
-        data: { status: ScheduleStatus.GENERATING }
-    });
-
+    const schedules = await prisma.schedule.findMany({ where: { groundId } });
     if (schedules.length !== 7) throw new InternalServerError("Ground schedule contains less than or more than 7 day records.", ERROR_CODES.GROUND_SCHEDULE_MISSING);
 
     const TIMEZONE = "Africa/Cairo";
 
-    // Parse the data into constraints for now and the generation limit.
     const now = startOfDay(toZonedTime(new Date(), TIMEZONE));
-    const limit = Math.ceil(maximumWindow / 24); // Divide by 24 to convert to days.
-
+    const limit = Math.ceil(maximumWindow / 24);
     const dates = Array.from({ length: limit }, (_, i) => addDays(now, i));
 
-    // Rather than mapping through each schedule and waiting to generate synchronously, do them in parallel.
-    await Promise.all(
-        schedules.map(async (schedule) => {
-            // Generate slots for each matching date.
+    for (const schedule of schedules) {
+        try {
+            await prisma.schedule.update({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
+                data: { status: ScheduleStatus.GENERATING }
+            });
+
+            console.log(`Started generating for Day ${schedule.dayOfWeek}.`);
+
             const target = dates.filter(d => getDay(d) === schedule.dayOfWeek);
-        
-            // Parse the masks into a full 24-bit mask per pricing type.
+
             const baseMask = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
             const peakMask = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
             const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
@@ -72,10 +69,13 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
                 const hours: Array<SlotPayloadType> = [];
 
                 for (let h = 0; h < 24; h++) {
-                    if (peakMask & (1 << h))          hours.push({ startsAt: setHours(date, h), priceType: PriceType.PEAK });
-                    else if (discountMask & (1 << h)) hours.push({ startsAt: setHours(date, h), priceType: PriceType.DISCOUNT });
-                    else if (baseMask & (1 << h))     hours.push({ startsAt: setHours(date, h), priceType: PriceType.BASE });
+                    const bit = 1 << (23 - h);
+                    if (peakMask & bit)          hours.push({ startsAt: setHours(date, h), priceType: PriceType.PEAK });
+                    else if (discountMask & bit) hours.push({ startsAt: setHours(date, h), priceType: PriceType.DISCOUNT });
+                    else if (baseMask & bit)     hours.push({ startsAt: setHours(date, h), priceType: PriceType.BASE });
                 }
+
+                console.log(`[${new Date().toISOString()}] Generating slots on ground ${groundId} for ${date.toLocaleDateString()}.`);
 
                 return hours;
             });
@@ -92,18 +92,21 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
             });
 
             await prisma.schedule.update({
-                where: { 
-                    groundId_dayOfWeek: {
-                        groundId,
-                        dayOfWeek: schedule.dayOfWeek
-                    }
-                },
-                data: {
-                    status: ScheduleStatus.READY
-                }
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
+                data: { status: ScheduleStatus.READY }
             });
-        })
-    );
+
+            console.log(`Finished generating for Day ${schedule.dayOfWeek}.`);
+        } catch (err) {
+            await prisma.schedule.update({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
+                data: { status: ScheduleStatus.FAILED }
+            });
+            throw err;
+        }
+    }
+
+    console.log(`[${new Date().toISOString()}] Finished slot generation for ground ${groundId}.`);
 };
 
 export async function handleExtendSlots({ groundId }: GenerateSlotsPayload) {
@@ -124,4 +127,4 @@ slotWorker.on("failed", async (job, err) => {
     });
 
     console.error(`[slot-worker] job ${job.id} (${job.name}) failed for ground ${job.data.groundId}:`, err.message);
-})
+});

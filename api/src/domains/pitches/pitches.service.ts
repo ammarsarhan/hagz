@@ -12,7 +12,7 @@ import { BUCKET, s3 } from "@/shared/lib/s3.js";
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import z from "zod";
 import { slotQueue } from "@/jobs/queues/slots.queue.js";
-import { GroundSlotAction } from "@/jobs/workers/slots.worker.js";
+import { GroundSlotAction } from "@/shared/types/slots.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -21,13 +21,23 @@ export default class PitchService {
 
     private readonly EDITABLE_STATES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
 
+    // Helper function to add each of the ground IDs to the ground slot generation queue.
     private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
         await Promise.all(
             grounds.map(async (groundId) => {
-                await slotQueue.add(GroundSlotAction.GENERATE, { pitchId, groundId });
+                await slotQueue.add(
+                    GroundSlotAction.GENERATE, 
+                    { pitchId, groundId },
+                    {
+                        attempts: 3,
+                        backoff: { type: "exponential", delay: 5000 },
+                        jobId: `generate-${groundId}`,
+                    }
+                );
             })
         );
-    }
+    };
+
     // Helper function to keep the pitch denormalized fields in sync.
     private readonly updatePitchDenormalizedFields = async (
         tx: TransactionClient, 
@@ -760,6 +770,7 @@ export default class PitchService {
         if (pitch.grounds.some(ground => ground.schedule.every(schedule => !schedule.isActive)))
             throw new BadRequestError("Ground schedule must have at least one active day per week.", ERROR_CODES.GROUND_SCHEDULE_NOT_ACTIVE);
 
+        // Todo: Uncomment this in testing on the frontend.
         // 4. Ensure that there is at least three verified pitch images.
         // if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
         //     throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
@@ -783,20 +794,18 @@ export default class PitchService {
     }
 
     // Todo: Create a better command line interface to approve the pitch.
-    approvePitch = async (pitchId: string) => {
-        console.log("This is an exemplary respresentation of how pitch approval will work and should be better implemented before production.");
-        if (!pitchId) {
-            console.log("No pitchId was provided. Could not update pitch.");
-            return;
-        }
-        
+    approvePitch = async (pitchId: string) => {        
         const pitch = await prisma.pitch.findUnique({
             where: {
                 id: pitchId,
                 status: PitchStatus.SUBMITTED
             },
             include: {
-                grounds: true
+                grounds: {
+                    include: {
+                        schedule: true
+                    }
+                },
             }
         });
 
@@ -805,17 +814,31 @@ export default class PitchService {
             return;
         };
 
+        if (pitch.grounds.some(ground => ground.schedule.some(schedule => schedule.status !== ScheduleStatus.PENDING))) {
+            console.log("Ground schedules are no longer pending. Please verify the schedule status before enqueueing.");
+            return;
+        }
+
         // Update the pitch status to accepted and add the job to the BullMQ slot generation queue.
-        await prisma.pitch.update({
-            where: { id: pitchId },
-            data: { status: PitchStatus.ACCEPTED }
+        await prisma.$transaction(async (tx) => {
+            await tx.pitch.update({
+                where: { id: pitchId },
+                data: { status: PitchStatus.ACCEPTED }
+            });
+
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    status: PitchStatus.ACCEPTED,
+                }
+            });
         });
 
-        console.log("Updated pitch status to ACCEPTED.")
+        console.log("Updated pitch status to ACCEPTED and added event log.");
         
         const grounds = pitch.grounds.map(ground => ground.id);
-        await this.enqueueGroundSlotGeneration(pitchId, grounds);
+        console.log("Adding GENERATE jobs to each of the grounds on the pitch.");
 
-        console.log("Added GENERATE jobs to each of the grounds on the pitch.");
+        await this.enqueueGroundSlotGeneration(pitchId, grounds);
     }
 }

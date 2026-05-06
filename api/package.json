@@ -3,8 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "worker": "tsx watch src/jobs/worker.ts",
-    "pitch:approve": "tsx src/internal/approve.ts",
+    "worker": "tsx src/jobs/worker.ts",
+    "pitch:approve": "tsx --env-file=.env.local src/internal/approve.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },

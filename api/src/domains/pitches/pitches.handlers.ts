@@ -29,7 +29,6 @@ export const getPitchHandler = factory.createHandlers(
     async (c) => {
         const pitchId = c.req.param("pitchId");
         if (!pitchId) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-        
         const pitch = await pitchService.fetchPitch(pitchId);
         
         return c.json({ success: true, data: { pitch }}, 200);
