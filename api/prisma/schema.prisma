@@ -494,6 +494,8 @@ model Invitation {
   creatorId String
   creator   Staff    @relation(fields: [creatorId, pitchId], references: [userId, pitchId])
   createdAt DateTime @default(now())
+
+  @@unique([pitchId, phone, status])
 }
 
 model GroundSlot {

@@ -18,6 +18,7 @@ import { GroundSlotAction } from "@/shared/types/slots.js";
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import { differenceInMilliseconds } from "date-fns";
 import { invitationsQueue } from "@/jobs/queues/invitations.queue.js";
+import type { Permissions } from "@/shared/types/staff.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -38,7 +39,7 @@ export default class PitchService {
         layout: PermissionLevel.READ,
         team: PermissionLevel.READ,
         properties: PermissionLevel.READ
-    });
+    } as Permissions);
 
     // Helper function to add each of the ground IDs to the ground slot generation queue.
     private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
@@ -137,7 +138,7 @@ export default class PitchService {
                 layout: PermissionLevel.WRITE,
                 team: PermissionLevel.WRITE,
                 properties: PermissionLevel.WRITE
-            };
+            } as Permissions;
 
             // If the user passes both checks, create them a pitch under draft status.        
             const pitch = await tx.pitch.create({
