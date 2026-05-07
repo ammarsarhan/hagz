@@ -129,6 +129,16 @@ export default class PitchService {
     
             if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch that is either a draft or has been submitted. You can have one pending pitch at a time.", ERROR_CODES.PITCH_DRAFT_EXISTS);
     
+            const permissions = {
+                settings: PermissionLevel.WRITE,
+                bookings: PermissionLevel.WRITE,
+                analytics: PermissionLevel.WRITE,
+                payments: PermissionLevel.WRITE,
+                layout: PermissionLevel.WRITE,
+                team: PermissionLevel.WRITE,
+                properties: PermissionLevel.WRITE
+            };
+
             // If the user passes both checks, create them a pitch under draft status.        
             const pitch = await tx.pitch.create({
                 data: {
@@ -136,7 +146,8 @@ export default class PitchService {
                     staff: {
                         create: {
                             userId,
-                            role: StaffRole.OWNER
+                            permissions,
+                            role: StaffRole.OWNER,
                         }
                     }
                 },
