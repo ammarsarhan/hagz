@@ -46,7 +46,7 @@ const app = new Hono()
     .post('/:pitchId/media/presign', ...createPitchMediaPresignLinkHandler)
     .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
-    .post('/:pitchId/team/invite', ...createPitchInvitationHandler)
+    .post('/:pitchId/team/invitations', ...createPitchInvitationHandler)
 
 export default app;
 export type AppType = typeof app;

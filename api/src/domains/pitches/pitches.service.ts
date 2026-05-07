@@ -881,7 +881,7 @@ export default class PitchService {
                 data: {
                     pitchId,
                     actorId: creatorId,
-                    status: PitchStatus.SUBMITTED,
+                    status: pitch.status,
                     reason: `Created an invitation on the pitch for ${payload.phone}.`
                 }
             });
@@ -897,7 +897,7 @@ export default class PitchService {
             data: {
                 pitchName: pitch.name,
                 expiresAt: payload.expiresAt.toISOString(),
-                deepLink: `http://localhost:3000/pitch/${pitchId}/invitations/${token}`
+                deepLink: `${process.env.FRONTEND_URL}/pitch/${pitchId}/invitations/${token}`
             },
         });
 

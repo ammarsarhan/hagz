@@ -127,8 +127,8 @@ export const templates: TemplateMap = {
     },
 };
 
-export function resolveNotificationTemplate<E extends NotificationEvent>(event: E, channel: NotificationChannel, ctx: NotificationPayloadMap[E]): Template {
+export function resolveTemplate<E extends NotificationEvent>(event: E, channel: NotificationChannel, ctx: NotificationPayloadMap[E]): Template {
     const template = templates[event]?.[channel];
     if (!template) throw new Error(`No template defined for event=${event} channel=${channel}`);
     return template(ctx);
-}
+};

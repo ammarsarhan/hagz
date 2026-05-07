@@ -3,10 +3,12 @@ import { redis } from "@/shared/lib/utils/redis.js";
 import type { NotificationsJobPayload } from "@/shared/types/notifications.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { NotificationChannel, NotificationStatus } from "@/generated/prisma/enums.js";
+import sendWhatsapp from "@/shared/lib/providers/whatsapp.js";
+import { resolveTemplate } from "@/shared/lib/providers/templates.js";
 
 const notificationsWorker = new Worker<NotificationsJobPayload>("notifications", 
     async (job) => {
-        const { deliveryId, channel } = job.data;
+        const { deliveryId, event, channel, phone, payload } = job.data;
 
         // Fetch the delivery to make sure it exists and isn't already sent.
         const delivery = await prisma.notificationDelivery.findUnique({
@@ -22,7 +24,9 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
             // Dispatch to the right provider.
             switch (channel) {
                 case NotificationChannel.WHATSAPP: {
-                    // providerRef = await sendWhatsApp({ phone: phone!, event, payload });
+                    const template = resolveTemplate(event, channel, payload);
+                    const result = await sendWhatsapp({ to: phone!, body: template.body });
+                    providerRef = result.messages?.[0]?.id;
                     break;
                 }
                 case NotificationChannel.EMAIL: {
