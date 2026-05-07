@@ -7,6 +7,7 @@ import { createGroundSchema, createPitchAmenitySchema, updatePitchSchema, create
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
 import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
+import { PermissionLevel } from "@/generated/prisma/enums.js";
 
 const factory = createFactory();
 const pitchService = new PitchService();
@@ -25,7 +26,7 @@ export const createPitchHandler = factory.createHandlers(
 );
 
 export const getPitchHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         if (!pitchId) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
@@ -36,7 +37,7 @@ export const getPitchHandler = factory.createHandlers(
 );
 
 export const updatePitchHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     validate("json", updatePitchSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -51,7 +52,7 @@ export const updatePitchHandler = factory.createHandlers(
 )
 
 export const createGroundHandler = factory.createHandlers(
-    guard,
+    guard("layout", PermissionLevel.WRITE),
     validate("json", createGroundSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -65,7 +66,7 @@ export const createGroundHandler = factory.createHandlers(
 );
 
 export const getGroundHandler = factory.createHandlers(
-    guard,
+    guard("layout", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
@@ -78,7 +79,7 @@ export const getGroundHandler = factory.createHandlers(
 );
 
 export const getGroundsHandler = factory.createHandlers(
-    guard,
+    guard("layout", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
 
@@ -90,7 +91,7 @@ export const getGroundsHandler = factory.createHandlers(
 );
 
 export const updateGroundHandler = factory.createHandlers(
-    guard,
+    guard("layout", PermissionLevel.WRITE),
     validate("json", updateGroundSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -107,7 +108,7 @@ export const updateGroundHandler = factory.createHandlers(
 );
 
 export const getGroundSettingsHandler = factory.createHandlers(
-    guard,
+    guard("settings", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
@@ -121,7 +122,7 @@ export const getGroundSettingsHandler = factory.createHandlers(
 )
 
 export const updateGroundSettingsHandler = factory.createHandlers(
-    guard,
+    guard("settings", PermissionLevel.WRITE),
     validate("json", updateGroundSettingsSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -137,7 +138,7 @@ export const updateGroundSettingsHandler = factory.createHandlers(
 );
 
 export const upsertGroundScheduleHandler = factory.createHandlers(
-    guard,
+    guard("schedule", PermissionLevel.WRITE),
     validate("json", upsertGroundScheduleSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -159,7 +160,7 @@ export const upsertGroundScheduleHandler = factory.createHandlers(
 );
 
 export const fetchGroundScheduleHandler = factory.createHandlers(
-    guard,
+    guard("schedule", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
@@ -178,7 +179,7 @@ export const fetchGroundScheduleHandler = factory.createHandlers(
 );
 
 export const fetchGroundSchedulesHandler = factory.createHandlers(
-    guard,
+    guard("schedule", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
@@ -192,7 +193,7 @@ export const fetchGroundSchedulesHandler = factory.createHandlers(
 );
 
 export const getPitchAmenityHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const order = c.req.param("order");
@@ -209,7 +210,7 @@ export const getPitchAmenityHandler = factory.createHandlers(
 );
 
 export const getPitchAmenitiesHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
 
@@ -222,7 +223,7 @@ export const getPitchAmenitiesHandler = factory.createHandlers(
 );
 
 export const createPitchAmenityHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     validate("json", createPitchAmenitySchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -237,7 +238,7 @@ export const createPitchAmenityHandler = factory.createHandlers(
 );
 
 export const updatePitchAmenityHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     validate("json", updatePitchAmenitySchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -256,7 +257,7 @@ export const updatePitchAmenityHandler = factory.createHandlers(
 );
 
 export const deletePitchAmenityHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const order = c.req.param("order");
@@ -273,7 +274,7 @@ export const deletePitchAmenityHandler = factory.createHandlers(
 );
 
 export const createPitchMediaPresignLinkHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     validate("json", createPitchMediaPresignLinkSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -289,7 +290,7 @@ export const createPitchMediaPresignLinkHandler = factory.createHandlers(
 );
 
 export const confirmPitchMediaUploadHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const mediaId = c.req.param("mediaId");
@@ -306,7 +307,7 @@ export const confirmPitchMediaUploadHandler = factory.createHandlers(
 );
 
 export const submitPitchHandler = factory.createHandlers(
-    guard,
+    guard("properties", PermissionLevel.WRITE),
     async (c) => {
         const pitchId = c.req.param("pitchId");
 
@@ -319,7 +320,7 @@ export const submitPitchHandler = factory.createHandlers(
 );
 
 export const createPitchInvitationHandler = factory.createHandlers(
-    guard,
+    guard("team", PermissionLevel.WRITE),
     validate("json", createInvitationSchema),
     async (c) => {
         const userId = c.var.id;
@@ -364,4 +365,4 @@ export const rejectPitchInvitationHandler = factory.createHandlers(
 
         return c.json({ success: true, data: { staff } }, 200);
     }
-)
+);

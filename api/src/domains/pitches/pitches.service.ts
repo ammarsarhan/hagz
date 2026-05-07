@@ -33,6 +33,7 @@ export default class PitchService {
     // Helper function that returns default permissions per domain.
     private readonly createDefaultPermissions = () => ({
         settings: PermissionLevel.READ,
+        schedule: PermissionLevel.WRITE,
         bookings: PermissionLevel.WRITE,
         analytics: PermissionLevel.READ,
         payments: PermissionLevel.READ,
@@ -132,6 +133,7 @@ export default class PitchService {
     
             const permissions = {
                 settings: PermissionLevel.WRITE,
+                schedule: PermissionLevel.WRITE,
                 bookings: PermissionLevel.WRITE,
                 analytics: PermissionLevel.WRITE,
                 payments: PermissionLevel.WRITE,
