@@ -1,5 +1,5 @@
 import z from "zod";
-import type { Language, NotificationMethod, PaymentMethod, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
+import type { Language, NotificationChannel, PaymentMethod, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
 import type { Staff, User, UserPreferences } from "@/generated/prisma/client.js";
 
 // Fetch user by either phone or id.
@@ -18,7 +18,7 @@ export type UserResponseType = {
     preferences: {
         language: Language,
         timezone: string,
-        notifications: Array<NotificationMethod>,
+        notifications: Array<NotificationChannel>,
         paymentMethod: PaymentMethod
     },
     pitches: Array<{

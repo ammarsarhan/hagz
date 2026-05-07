@@ -1,5 +1,5 @@
 import { sign, verify } from "hono/jwt";
-import { ERROR_CODES, InternalServerError, UnauthorizedError } from "@/shared/lib/error.js";
+import { ERROR_CODES, InternalServerError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import { randomUUID } from "crypto";
 
 export interface AccessTokenPayload {

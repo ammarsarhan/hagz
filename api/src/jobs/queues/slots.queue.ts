@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
-import { redis } from "@/shared/lib/redis.js";
+import { redis } from "@/shared/lib/utils/redis.js";
 
-export const slotQueue = new Queue("slot", {
+export const slotsQueue = new Queue("slots", {
     connection: redis.producer
 });

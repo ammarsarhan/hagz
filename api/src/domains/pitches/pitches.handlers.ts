@@ -2,11 +2,11 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/pitches.service.js";
-import { createGroundSchema, createPitchAmenitySchema, updatePitchSchema, createPitchMediaPresignLinkSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, createPitchAmenitySchema, updatePitchSchema, createPitchMediaPresignLinkSchema, createPitchSchema, updateGroundSchema, updateGroundSettingsSchema, updatePitchAmenitySchema, upsertGroundScheduleSchema, createInvitationSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
-import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/error.js";
+import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
 
 const factory = createFactory();
 const pitchService = new PitchService();
@@ -312,8 +312,24 @@ export const submitPitchHandler = factory.createHandlers(
 
         if (!pitchId) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-
+        
         const pitch = await pitchService.submitPitch(pitchId);
         return c.json({ success: true, data: { pitch } }, 200); 
+    }
+);
+
+export const createPitchInvitationHandler = factory.createHandlers(
+    guard,
+    validate("json", createInvitationSchema),
+    async (c) => {
+        const userId = c.var.id;
+        const pitchId = c.req.param("pitchId");
+        const payload = c.req.valid("json");
+        
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const invitation = await pitchService.createInvitation(pitchId, userId, payload);
+        return c.json({ success: true, data: { invitation }}, 201);
     }
 )

@@ -2,9 +2,9 @@ import jwtService from "@/domains/tokens/jwt.service.js";
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
 import type { FetchUserPayloadType, SignInPayloadType, SignUpPayloadType, UserResponseType } from "@/domains/auth/auth.validator.js";
 
-import prisma from "@/shared/lib/prisma.js";
-import { hashPassword, verifyPassword } from "@/shared/lib/hash.js";
-import { ConflictError, InternalServerError, NotFoundError, ERROR_CODES, UnauthorizedError, ForbiddenError } from "@/shared/lib/error.js";
+import prisma from "@/shared/lib/utils/prisma.js";
+import { hashPassword, verifyPassword } from "@/shared/lib/utils/hash.js";
+import { ConflictError, InternalServerError, NotFoundError, ERROR_CODES, UnauthorizedError, ForbiddenError } from "@/shared/lib/utils/error.js";
 import { addDays } from "date-fns";
 
 export default class AuthService {

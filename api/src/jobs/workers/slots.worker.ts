@@ -1,13 +1,13 @@
 import { Worker } from "bullmq";
-import { redis } from "@/shared/lib/redis.js";
-import prisma from "@/shared/lib/prisma.js";
-import { ERROR_CODES, InternalServerError } from "@/shared/lib/error.js";
+import { redis } from "@/shared/lib/utils/redis.js";
+import prisma from "@/shared/lib/utils/prisma.js";
+import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
 import { PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { addDays, getDay, setHours, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { GroundSlotAction } from "@/shared/types/slots.js";
 
-const slotWorker = new Worker("slot", 
+const slotsWorker = new Worker("slots", 
     async (job) => {
         switch (job.name) {
             case GroundSlotAction.GENERATE:
@@ -18,11 +18,7 @@ const slotWorker = new Worker("slot",
                 return await handleAdjustSlots(job.data);
         }
     },
-    { 
-        connection: redis.consumer,
-        stalledInterval: 30000,
-        lockDuration: 60000, 
-    }
+    { connection: redis.consumer }
 );
 
 interface GenerateSlotsPayload {
@@ -118,7 +114,7 @@ export async function handleAdjustSlots({ groundId }: GenerateSlotsPayload) {
 };
 
 // Handle failing and mark for manual resolving.
-slotWorker.on("failed", async (job, err) => {
+slotsWorker.on("failed", async (job, err) => {
     if (!job) return;
 
     await prisma.schedule.updateMany({

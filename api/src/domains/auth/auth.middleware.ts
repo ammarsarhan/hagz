@@ -3,7 +3,7 @@ import { getCookie } from "hono/cookie";
 
 import jwtService from "@/domains/tokens/jwt.service.js";
 
-import { ERROR_CODES, UnauthorizedError } from "@/shared/lib/error.js";
+import { ERROR_CODES, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import type { AppVariables } from "@/shared/types/context.js";
 
 const factory = createFactory<{ Variables: AppVariables }>();

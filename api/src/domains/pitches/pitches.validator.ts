@@ -1,5 +1,6 @@
 import z from "zod";
 import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, StaffRole } from "@/generated/prisma/enums.js";
+import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
     pitchId: string;
@@ -367,3 +368,22 @@ export const createPitchMediaPresignLinkSchema = z.object({
     contentType: z.enum(["image/jpeg", "image/png", "image/webp"], "Please select a valid image type."),
     size: z.number().positive().max(5 * 1024 * 1024, "Image must be less than 5 MBs."),
 })
+
+export type CreateInvitationPayloadType = z.infer<typeof createInvitationSchema>;
+
+export const createInvitationSchema = z.object({
+    phone: z
+        .string("Phone number is required.")
+        .regex(/^\+[1-9]\d{7,14}$/, "Phone number must include the international code and be in an acceptable format."),
+    expiresAt: z
+        .coerce
+        .date()
+        .refine((date) => {
+            const now = new Date();
+
+            const min = addHours(now, 24);
+            const max = addDays(now, 7);
+
+            return isAfter(date, min) && isBefore(date, max);
+        }, "Expiration date must be between 24 hours and 7 days from now."),
+});

@@ -9,7 +9,7 @@ import { ZodError } from 'zod'
 import auth from '@/domains/auth/auth.routes.js';
 import pitches from '@/domains/pitches/pitches.routes.js';
 
-import AppError from '@/shared/lib/error.js'
+import AppError from '@/shared/lib/utils/error.js'
 
 const app = new Hono();
 

@@ -20,7 +20,8 @@ import {
     createPitchMediaPresignLinkHandler,
     confirmPitchMediaUploadHandler,
     submitPitchHandler,
-    updatePitchHandler
+    updatePitchHandler,
+    createPitchInvitationHandler
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
@@ -45,6 +46,7 @@ const app = new Hono()
     .post('/:pitchId/media/presign', ...createPitchMediaPresignLinkHandler)
     .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
+    .post('/:pitchId/team/invite', ...createPitchInvitationHandler)
 
 export default app;
 export type AppType = typeof app;

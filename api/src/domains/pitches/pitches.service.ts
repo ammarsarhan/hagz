@@ -3,18 +3,19 @@ import { randomUUID } from "crypto";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-import type { CreateGroundPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpdatePitchPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, PitchStatus, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
+import NotificationsService from "@/domains/notifications/notifications.service.js";
+import type { CreateGroundPayloadType, CreateInvitationPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpdatePitchPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, NotificationEvent, PitchStatus, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
-import prisma from "@/shared/lib/prisma.js";
-import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/error.js";
-import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/time.js";
+import prisma from "@/shared/lib/utils/prisma.js";
+import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
+import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
 import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
-import { BUCKET, s3 } from "@/shared/lib/s3.js";
+import { BUCKET, s3 } from "@/shared/lib/utils/s3.js";
 import { GroundSlotAction } from "@/shared/types/slots.js";
 
-import { slotQueue } from "@/jobs/queues/slots.queue.js";
+import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -22,12 +23,15 @@ export default class PitchService {
     private readonly MAXIMUM_AMENITIES_PER_PITCH = 10;
 
     private readonly EDITABLE_STATES = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+    private readonly ACTIVE_STATES = [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+
+    private readonly notificationsService = new NotificationsService();
 
     // Helper function to add each of the ground IDs to the ground slot generation queue.
     private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
         await Promise.all(
             grounds.map(async (groundId) => {
-                await slotQueue.add(
+                await slotsQueue.add(
                     GroundSlotAction.GENERATE, 
                     { pitchId, groundId },
                     {
@@ -842,5 +846,61 @@ export default class PitchService {
         console.log("Adding GENERATE jobs to each of the grounds on the pitch.");
 
         await this.enqueueGroundSlotGeneration(pitchId, grounds);
+    };
+
+    createInvitation = async (pitchId: string, creatorId: string, payload: CreateInvitationPayloadType) => {
+        // Find pitch and ensure that it is not deleted.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Make sure that it is active to start adding staff to it.
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not send invitation on inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Create the actual invitation record in the database and store the event in the event log.
+        const token = randomUUID();
+
+        const invitation = await prisma.$transaction(async tx => {
+            const invitation = await tx.invitation.create({
+                data: {
+                    pitchId,
+                    creatorId,
+                    token,
+                    ...payload
+                }
+            });
+
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    actorId: creatorId,
+                    status: PitchStatus.SUBMITTED,
+                    reason: `Created an invitation on the pitch for ${payload.phone}.`
+                }
+            });
+
+            return invitation;
+        })
+
+        // Call the notifications service to send out the deliveries.
+        // Todo: Extend this later to ensure that it is typed safely and there is a standard message template based on the channel, domain, and event.
+        await this.notificationsService.createNotification({ 
+            phone: payload.phone, 
+            event: NotificationEvent.INVITATION_RECEIVED,
+            data: {
+                pitchName: pitch.name,
+                expiresAt: payload.expiresAt.toISOString(),
+                deepLink: `http://localhost:3000/pitch/${pitchId}/invitations/${token}`
+            },
+        });
+
+        return invitation;
     }
 }
