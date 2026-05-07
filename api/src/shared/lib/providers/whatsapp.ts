@@ -5,7 +5,7 @@ export default async function sendWhatsapp({ to, body } : { to: string, body: st
     if (!id || !token)
         throw new Error("Whatsapp Phone ID or Token have not been set in the environment variables. Please make sure they have been set and try again.");
 
-    const target = `https://graph.facebook.com/v19.0/${id}/messages`;
+    const target = `https://graph.facebook.com/v25.0/${id}/messages`;
 
     const res = await fetch(target, {
         method: "POST",
@@ -16,8 +16,11 @@ export default async function sendWhatsapp({ to, body } : { to: string, body: st
         body: JSON.stringify({
             messaging_product: "whatsapp",
             to,
-            type: "text",
-            text: { body }
+            type: "template",
+            template: {
+                name: "hello_world",
+                language: { code: "en_US" }
+            }
         })
     });
 
@@ -26,5 +29,6 @@ export default async function sendWhatsapp({ to, body } : { to: string, body: st
         throw new Error(JSON.stringify(error));
     };
 
-    return res.json();
+    const data = await res.json();
+    return data;
 };

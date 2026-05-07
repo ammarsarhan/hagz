@@ -15,7 +15,7 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
             where: { id: deliveryId },
         });
 
-        if (!delivery) throw new Error(`Delivery ${deliveryId} not found. Please try again later.`);
+        if (!delivery) throw new Error(`Delivery ${deliveryId} not found.`);
         if (delivery.status === NotificationStatus.SENT) return;
 
         try {
@@ -65,3 +65,15 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
     },
     { connection: redis.consumer }
 );
+
+// Handle failing and mark for manual resolving.
+notificationsWorker.on("failed", async (job, err) => {
+    if (!job) return;
+
+    await prisma.notification.updateMany({
+        where: { id: job.data.notificationId },
+        data: { status: NotificationStatus.FAILED }
+    });
+
+    console.error(`[notifications-worker] job ${job.id} (${job.name}) failed for notification ${job.data.notificationId}:`, err.message);
+});

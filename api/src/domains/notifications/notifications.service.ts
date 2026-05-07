@@ -42,7 +42,7 @@ export default class NotificationsService {
 
     createNotification = async ({ userId, phone, event, data } : CreateNotificationPayload) => {
         // Get the channels based on the provided payload.
-        const channels =  await this.resolveChannels(userId, phone);
+        const channels = await this.resolveChannels(userId, phone);
 
         const { deliveries } = await prisma.$transaction(async tx => {
             // Create the notification record and figure out the channels we want to send it through.
