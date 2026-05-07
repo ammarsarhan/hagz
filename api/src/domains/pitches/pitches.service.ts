@@ -5,17 +5,19 @@ import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
 import NotificationsService from "@/domains/notifications/notifications.service.js";
 import type { CreateGroundPayloadType, CreateInvitationPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpdatePitchPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, NotificationEvent, PitchStatus, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, InvitationStatus, MediaStatus, MediaType, NotificationEvent, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
-import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
+import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
 import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
 import { BUCKET, s3 } from "@/shared/lib/utils/s3.js";
 import { GroundSlotAction } from "@/shared/types/slots.js";
 
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
+import { differenceInMilliseconds } from "date-fns";
+import { invitationsQueue } from "@/jobs/queues/invitations.queue.js";
 
 export default class PitchService {
     private readonly MAXIMUM_PITCHES_PER_USER = 5;
@@ -26,6 +28,17 @@ export default class PitchService {
     private readonly ACTIVE_STATES = [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
 
     private readonly notificationsService = new NotificationsService();
+
+    // Helper function that returns default permissions per domain.
+    private readonly createDefaultPermissions = () => ({
+        settings: PermissionLevel.READ,
+        bookings: PermissionLevel.WRITE,
+        analytics: PermissionLevel.READ,
+        payments: PermissionLevel.READ,
+        layout: PermissionLevel.READ,
+        team: PermissionLevel.READ,
+        properties: PermissionLevel.READ
+    });
 
     // Helper function to add each of the ground IDs to the ground slot generation queue.
     private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
@@ -42,6 +55,21 @@ export default class PitchService {
                 );
             })
         );
+    };
+
+    // Helper function to add/remove the invitation to the queue to auto-expire.
+    private readonly enqueueInvitationExpiry = async (invitationId: string, pitchId: string, expiresAt: Date) => {
+        // Math.max to ensure that any delays that bypass get passed as 0 rather than negatives.
+        const delay = Math.max(0, differenceInMilliseconds(expiresAt, new Date()));
+        await invitationsQueue.add(
+            "invitations", 
+            { invitationId, pitchId },
+            { delay, attempts: 3, jobId: `invitation-${invitationId}` }
+        );
+    } 
+
+    private readonly dequeueInvitationExpiry = async (invitationId: string) => {
+        await invitationsQueue.remove(`expire-${invitationId}`);
     };
 
     // Helper function to keep the pitch denormalized fields in sync.
@@ -839,12 +867,8 @@ export default class PitchService {
                 }
             });
         });
-
-        console.log("Updated pitch status to ACCEPTED and added event log.");
         
         const grounds = pitch.grounds.map(ground => ground.id);
-        console.log("Adding GENERATE jobs to each of the grounds on the pitch.");
-
         await this.enqueueGroundSlotGeneration(pitchId, grounds);
     };
 
@@ -862,12 +886,36 @@ export default class PitchService {
 
         // Make sure that it is active to start adding staff to it.
         if (!this.ACTIVE_STATES.includes(pitch.status))
-            throw new BadRequestError("Pitch is not active. Can not send invitation on inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+            throw new BadRequestError("Pitch is not active. Can not send invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Make sure the phone number does not exist with either an invitation or a staff member on the pitch already.
+        const user = await prisma.user.findUnique({
+            where: {
+                phone: payload.phone,
+                pitches: {
+                    some: {
+                        pitchId
+                    }
+                }
+            }
+        });
+
+        if (user) throw new BadRequestError("User with the specified phone number already exists as a staff member on the pitch. Can not create invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
+
+        const invitation = await prisma.invitation.findFirst({ 
+            where: { 
+                pitchId, 
+                phone: payload.phone, 
+                status: InvitationStatus.PENDING 
+            }
+        });
+
+        if (invitation) throw new BadRequestError("User with the specified phone number already has an invitation on the pitch. Can not create invitation.", ERROR_CODES.PITCH_INVITATION_ALREADY_EXISTS);
 
         // Create the actual invitation record in the database and store the event in the event log.
         const token = randomUUID();
 
-        const invitation = await prisma.$transaction(async tx => {
+        const data = await prisma.$transaction(async tx => {
             const invitation = await tx.invitation.create({
                 data: {
                     pitchId,
@@ -887,10 +935,12 @@ export default class PitchService {
             });
 
             return invitation;
-        })
+        });
 
         // Call the notifications service to send out the deliveries.
         // Todo: Extend this later to ensure that it is typed safely and there is a standard message template based on the channel, domain, and event.
+        await this.enqueueInvitationExpiry(data.id, pitch.id, data.expiresAt);
+
         await this.notificationsService.createNotification({ 
             phone: payload.phone, 
             event: NotificationEvent.INVITATION_RECEIVED,
@@ -901,6 +951,136 @@ export default class PitchService {
             },
         });
 
-        return invitation;
-    }
+        return data;
+    };
+
+    acceptPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
+        // Make sure that the pitch is in a state to accept new users.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+        
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not accept invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        
+        // Make sure that the user is in a state to be added to the pitch.
+        const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
+        
+        if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+        if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
+        if (user.pitches.find(item => item.pitchId === pitchId)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not accept invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
+
+        // Make sure that the invitation is still pending and has not expired yet.
+        const invitation = await prisma.invitation.findUnique({ 
+            where: {
+                id: invitationId,
+                status: InvitationStatus.PENDING,
+                acceptedAt: null,
+                rejectedAt: null,
+                expiresAt: { gt: new Date() }
+            }
+        });
+
+        if (!invitation) throw new BadRequestError("No pending invitation with the specified ID has been found. Please request one from the pitch owner or a user with permissions.", ERROR_CODES.PITCH_INVITATION_NOT_PENDING);
+        if (invitation.phone !== user.phone) throw new UnauthorizedError("You are not authorized to perform this action. Please sign in as the target user behind the invitation before accepting it.", ERROR_CODES.UNAUTHORIZED);
+
+        // Add their record as a manager on the Staff table with the default permissions for a manager member on a pitch.
+        const permissions = this.createDefaultPermissions();
+
+        // Wrap it in a transaction to ensure that both get updated atomically.
+        const staff = await prisma.$transaction(async tx => {
+            const staff = await tx.staff.create({ 
+                data: {
+                    pitchId,
+                    userId,
+                    role: StaffRole.MANAGER,
+                    permissions
+                }
+            });
+
+            await tx.invitation.update({ 
+                where: {
+                    id: invitationId
+                },
+                data: {
+                    status: InvitationStatus.ACCEPTED,
+                    acceptedAt: new Date()
+                }
+            });
+
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    actorId: userId,
+                    status: pitch.status,
+                    reason: `Accepted an invitation on the pitch for ${user.phone}.`
+                }
+            });
+
+            return staff;
+        });
+
+        // Remove the expiration job from the queue and return the new staff role.
+        await this.dequeueInvitationExpiry(invitation.id);
+        return staff;
+    };
+
+    rejectPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
+        // Make sure that the pitch is in a state to reject invitations.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not reject invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        
+        // Make sure that the user is in a state to be added to the pitch.
+        const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
+        
+        if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+        if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
+        if (user.pitches.find(item => item.pitchId === pitchId)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not reject invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
+
+        // Make sure that the invitation is still pending and has not expired yet.
+        const invitation = await prisma.invitation.findUnique({ 
+            where: {
+                id: invitationId,
+                status: InvitationStatus.PENDING,
+                acceptedAt: null,
+                rejectedAt: null,
+                expiresAt: { gt: new Date() }
+            }
+        });
+
+        if (!invitation) throw new BadRequestError("No pending invitation with the specified ID has been found. Please request one from the pitch owner or a user with permissions.", ERROR_CODES.PITCH_INVITATION_NOT_PENDING);
+        if (invitation.phone !== user.phone) throw new UnauthorizedError("You are not authorized to perform this action. Please sign in as the target user behind the invitation before rejecting it.", ERROR_CODES.UNAUTHORIZED);
+
+        // Update the invitation to reject, remove the job, and return the updated invitation.
+        const data = await prisma.invitation.update({
+            where: {
+                id: invitationId
+            },
+            data: {
+                status: InvitationStatus.REJECTED,
+                rejectedAt: new Date()
+            }
+        });
+
+        await this.dequeueInvitationExpiry(invitation.id);
+        return data;
+    };
 }

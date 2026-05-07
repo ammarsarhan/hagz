@@ -226,6 +226,12 @@ enum NotificationStatus {
   SKIPPED
 }
 
+enum PermissionLevel {
+  NONE
+  READ
+  WRITE
+}
+
 model Session {
   id           String @id @default(cuid())
   refreshToken String @unique

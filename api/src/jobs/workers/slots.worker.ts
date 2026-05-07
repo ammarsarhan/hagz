@@ -53,7 +53,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
                 data: { status: ScheduleStatus.GENERATING }
             });
 
-            console.log(`Started generating for Day ${schedule.dayOfWeek}.`);
+            console.log(`[slots-worker] Started generating for Day ${schedule.dayOfWeek}.`);
 
             const target = dates.filter(d => getDay(d) === schedule.dayOfWeek);
 
@@ -71,7 +71,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
                     else if (baseMask & bit)     hours.push({ startsAt: setHours(date, h), priceType: PriceType.BASE });
                 }
 
-                console.log(`[${new Date().toISOString()}] Generating slots on ground ${groundId} for ${date.toLocaleDateString()}.`);
+                console.log(`[slots-worker] [${new Date().toISOString()}] Generating slots on ground ${groundId} for ${date.toLocaleDateString()}.`);
 
                 return hours;
             });
@@ -92,7 +92,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
                 data: { status: ScheduleStatus.READY }
             });
 
-            console.log(`Finished generating for Day ${schedule.dayOfWeek}.`);
+            console.log(`[slots-worker] Finished generating for Day ${schedule.dayOfWeek}.`);
         } catch (err) {
             await prisma.schedule.update({
                 where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
@@ -102,7 +102,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
         }
     }
 
-    console.log(`[${new Date().toISOString()}] Finished slot generation for ground ${groundId}.`);
+    console.log(`[slots-worker] [${new Date().toISOString()}] Finished slot generation for ground ${groundId}.`);
 };
 
 export async function handleExtendSlots({ groundId }: GenerateSlotsPayload) {

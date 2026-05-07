@@ -332,4 +332,36 @@ export const createPitchInvitationHandler = factory.createHandlers(
         const invitation = await pitchService.createInvitation(pitchId, userId, payload);
         return c.json({ success: true, data: { invitation }}, 201);
     }
+);
+
+export const acceptPitchInvitationHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const pitchId = c.req.param("pitchId");
+        const invitationId = c.req.param("invitationId");
+
+        if (!pitchId || !invitationId) 
+            throw new NotFoundError("Could not find invitation with the specified ID.", ERROR_CODES.PITCH_INVITATION_NOT_FOUND);
+
+        const staff = await pitchService.acceptPitchInvitation(userId, pitchId, invitationId);
+
+        return c.json({ success: true, data: { staff } }, 200);
+    }
+);
+
+export const rejectPitchInvitationHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const pitchId = c.req.param("pitchId");
+        const invitationId = c.req.param("invitationId");
+
+        if (!pitchId || !invitationId) 
+            throw new NotFoundError("Could not find invitation with the specified ID.", ERROR_CODES.PITCH_INVITATION_NOT_FOUND);
+
+        const staff = await pitchService.rejectPitchInvitation(userId, pitchId, invitationId);
+
+        return c.json({ success: true, data: { staff } }, 200);
+    }
 )
