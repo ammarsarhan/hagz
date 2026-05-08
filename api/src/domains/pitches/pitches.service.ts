@@ -4,12 +4,12 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
 import NotificationsService from "@/domains/notifications/notifications.service.js";
-import type { CreateGroundPayloadType, CreateInvitationPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpdatePitchPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, CreateInvitationPayloadType, CreatePitchAmenityPayloadType, CreatePitchMediaPresignLinkPayloadType, CreatePitchPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdatePitchAmenityPayloadType, UpdatePitchPayloadType, UpdatePitchStaffMemberPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { GroundSize, GroundSport, GroundStatus, InvitationStatus, MediaStatus, MediaType, NotificationEvent, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
-import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
+import { BadRequestError, ConflictError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
 import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
 import { BUCKET, s3 } from "@/shared/lib/utils/s3.js";
@@ -908,7 +908,8 @@ export default class PitchService {
                 phone: payload.phone,
                 pitches: {
                     some: {
-                        pitchId
+                        pitchId,
+                        deletedAt: null
                     }
                 }
             }
@@ -924,7 +925,7 @@ export default class PitchService {
             }
         });
 
-        if (invitation) throw new BadRequestError("User with the specified phone number already has an invitation on the pitch. Can not create invitation.", ERROR_CODES.PITCH_INVITATION_ALREADY_EXISTS);
+        if (invitation) throw new BadRequestError("User with the specified phone number already has an invitation for the pitch. Can not create invitation.", ERROR_CODES.PITCH_INVITATION_ALREADY_EXISTS);
 
         // Create the actual invitation record in the database and store the event in the event log.
         const token = randomUUID();
@@ -968,6 +969,74 @@ export default class PitchService {
         return data;
     };
 
+    fetchInvitations = async (pitchId: string) => {
+        // Find pitch and ensure that it is not deleted.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Make sure that the pitch is both active and we are fetching any "un-deleted" invitations.
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not fetch invitations on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        const invitations = await prisma.invitation.findMany({
+            where: {
+                pitchId,
+                status: { not: InvitationStatus.DELETED }
+            }
+        });
+
+        return invitations;
+    };
+
+    deleteInvitation = async (pitchId: string, invitationId: string) => {
+        // Make sure that the pitch is in a state to delete invitations.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+        
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not delete invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Make sure the invitation exists and is pending or expired. We don't want to delete any invitations that are accepted or rejected.
+        const invitation = await prisma.invitation.findUnique({
+            where: {
+                id: invitationId,
+                pitchId,
+                status: { in: [InvitationStatus.PENDING, InvitationStatus.EXPIRED] }
+            }
+        });
+
+        if (!invitation)
+            throw new BadRequestError("Could not find pending or expired invitation with the specified ID. Please make sure the invitation has not been accepted or rejected yet.", ERROR_CODES.PITCH_INVITATION_NOT_PENDING);
+
+        // If it passes the check, update its status to DELETED and dequeue it if it's still awaiting expiry.
+        await prisma.invitation.update({
+            where: { 
+                id: invitationId,
+                pitchId
+            },
+            data: {
+                status: InvitationStatus.DELETED
+            }
+        });
+
+        await this.dequeueInvitationExpiry(invitationId);
+    };
+
     acceptPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
         // Make sure that the pitch is in a state to accept new users.
         const pitch = await prisma.pitch.findUnique({ 
@@ -989,7 +1058,7 @@ export default class PitchService {
         
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
         if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
-        if (user.pitches.find(item => item.pitchId === pitchId)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not accept invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
+        if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not accept invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
 
         // Make sure that the invitation is still pending and has not expired yet.
         const invitation = await prisma.invitation.findUnique({ 
@@ -1010,12 +1079,24 @@ export default class PitchService {
 
         // Wrap it in a transaction to ensure that both get updated atomically.
         const staff = await prisma.$transaction(async tx => {
-            const staff = await tx.staff.create({ 
-                data: {
+            // Convert this to an upsert rather than a create to ensure that soft-deleted accounts get reactivated normally without hitting the unique constraint.
+            const staff = await tx.staff.upsert({
+                where: { 
+                    userId_pitchId: { 
+                        userId, 
+                        pitchId 
+                    } 
+                },
+                create: {
                     pitchId,
                     userId,
                     role: StaffRole.MANAGER,
                     permissions
+                },
+                update: {
+                    role: StaffRole.MANAGER,
+                    permissions,
+                    deletedAt: null
                 }
             });
 
@@ -1067,7 +1148,7 @@ export default class PitchService {
         
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
         if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
-        if (user.pitches.find(item => item.pitchId === pitchId)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not reject invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
+        if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not reject invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
 
         // Make sure that the invitation is still pending and has not expired yet.
         const invitation = await prisma.invitation.findUnique({ 
@@ -1097,4 +1178,207 @@ export default class PitchService {
         await this.dequeueInvitationExpiry(invitation.id);
         return data;
     };
+
+    // Separate functions for team and member because they return different data types. This is a cleaner pattern.
+    fetchStaff = async (pitchId: string) => {
+        // Make sure that the pitch is in a state to fetch staff.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Get all the staff associated with this pitchId that have not been deleted and return.
+        const staff = await prisma.staff.findMany({
+            where: { 
+                pitchId,
+                deletedAt: null
+            }
+        });
+
+        return staff;
+    };
+
+    fetchStaffMember = async (pitchId: string, memberId: string) => {
+        // Make sure that the pitch is in a state to fetch staff.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Get all the staff associated with this pitchId that have not been deleted and return.
+        const staff = await prisma.staff.findUnique({
+            where: { 
+                userId_pitchId: {
+                    userId: memberId,
+                    pitchId
+                },
+                deletedAt: null
+            }
+        });
+
+        if (!staff) 
+            throw new NotFoundError("Could not find staff with the specified ID.", ERROR_CODES.PITCH_STAFF_NOT_FOUND);
+
+        return staff;
+    };
+
+    updateStaffMember = async (pitchId: string, memberId: string, payload: UpdatePitchStaffMemberPayloadType, userId: string) => {
+        // Make sure that the pitch is in a state to delete the staff member.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not update staff on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Fetch the staff record, make sure that they are not updating themselves or an owner, and make sure they are in an updatable state.
+        const staff = await prisma.staff.findUnique({
+            where: {
+                userId_pitchId: {
+                    userId: memberId,
+                    pitchId
+                },
+                deletedAt: null
+            },
+            include: {
+                user: {
+                    select: {
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            }
+        });
+
+        if (!staff)
+            throw new NotFoundError("Could not find staff with the specified ID.", ERROR_CODES.PITCH_STAFF_NOT_FOUND);
+
+        if (memberId === userId)
+            throw new BadRequestError("A user may not update themselves on a pitch staff registry. Please ask a user with enough privleges to commit this action.", ERROR_CODES.VALIDATION_FAILED);
+
+        if (staff.role === StaffRole.OWNER)
+            throw new BadRequestError("Can not update an owner from the pitch staff registry. If this is an intended action, contact the owner to transfer ownership first.", ERROR_CODES.VALIDATION_FAILED);
+
+        return await prisma.$transaction(async tx => {
+            // Extract the permissions from the payload.
+            const permissions = payload.permissions;
+
+            const updated = await tx.staff.update({
+                where: {
+                    userId_pitchId: {
+                        userId: memberId,
+                        pitchId
+                    }
+                },
+                data: { permissions }
+            });
+
+            // Log the changes in the PitchEvent table to keep track of privlege escalation.
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    actorId: userId,
+                    status: pitch.status,
+                    reason: `Updated staff member ${staff.user.firstName} ${staff.user.lastName}'s permissions.`
+                }
+            })
+        })
+    }
+
+    deleteStaffMember = async (pitchId: string, memberId: string, userId: string) => {
+        // Make sure that the pitch is in a state to delete the staff member.
+        const pitch = await prisma.pitch.findUnique({ 
+            where: {
+                id: pitchId,
+                status: { not: PitchStatus.DELETED }
+            },
+            select: { status: true }
+        });
+
+        if (!pitch) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!this.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not active. Can not delete staff on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Make sure that the user is not deleting themselves, deleting an account that has already been deleted, or deleting an owner.
+        if (memberId === userId)
+            throw new BadRequestError("A user may not delete themselves from a pitch staff registry. Please ask a user with enough privleges to commit this action.", ERROR_CODES.VALIDATION_FAILED);
+
+        const staff = await prisma.staff.findUnique({
+            where: {
+                userId_pitchId: {
+                    userId: memberId,
+                    pitchId
+                },
+                deletedAt: null
+            }
+        });
+
+        if (!staff)
+            throw new NotFoundError("Could not find staff record with the specified ID under the requested pitch.", ERROR_CODES.PITCH_STAFF_NOT_FOUND);
+
+        if (staff.role === StaffRole.OWNER)
+            throw new BadRequestError("Can not remove an owner from the pitch staff registry. If this is an intended action, contact the owner to transfer ownership first.", ERROR_CODES.VALIDATION_FAILED);
+
+        // If we pass the checks, update the staff record to soft-delete the user from the pitch.
+        const updated = await prisma.$transaction(async tx => {
+            const staff = await tx.staff.update({
+                where: {
+                    userId_pitchId: {
+                        userId: memberId,
+                        pitchId
+                    },
+                },
+                data: {
+                    deletedAt: new Date()
+                },
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true
+                        }
+                    }
+                }
+            });
+
+            await tx.invitation.updateMany({
+                where: { pitchId, creatorId: memberId, status: InvitationStatus.PENDING },
+                data: { status: InvitationStatus.DELETED }
+            });
+
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    actorId: userId,
+                    status: pitch.status,
+                    reason: `Deleted staff member ${staff.user.firstName} ${staff.user.lastName} from the pitch.`
+                }
+            });
+            
+            return staff;
+        })
+
+        return updated;
+    }
 }

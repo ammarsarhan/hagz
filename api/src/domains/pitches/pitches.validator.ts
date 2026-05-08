@@ -1,5 +1,5 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, StaffRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, PermissionLevel, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
@@ -387,3 +387,23 @@ export const createInvitationSchema = z.object({
             return isAfter(date, min) && isBefore(date, max);
         }, "Expiration date must be between 24 hours and 7 days from now."),
 });
+
+// Probably a better practice to keep the permissions as a separate schema in case we need to use it later.
+export const pitchStaffMemberPermissionsSchema = z.object({
+    settings: z.enum(Object.values(PermissionLevel)),
+    schedule: z.enum(Object.values(PermissionLevel)),
+    bookings: z.enum(Object.values(PermissionLevel)),
+    analytics: z.enum(Object.values(PermissionLevel)),
+    payments: z.enum(Object.values(PermissionLevel)),
+    layout: z.enum(Object.values(PermissionLevel)),
+    team: z.enum(Object.values(PermissionLevel)),
+    properties: z.enum(Object.values(PermissionLevel)),
+});
+
+// Intentionally kept as an object within an object in case we need to scale the schema in the future to accept more fields.
+export type UpdatePitchStaffMemberPayloadType = z.infer<typeof updatePitchStaffMemberSchema>;
+
+export const updatePitchStaffMemberSchema = z.object({
+    permissions: pitchStaffMemberPermissionsSchema
+});
+

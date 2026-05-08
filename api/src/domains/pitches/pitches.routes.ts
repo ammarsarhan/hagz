@@ -22,8 +22,14 @@ import {
     submitPitchHandler,
     updatePitchHandler,
     createPitchInvitationHandler,
+    fetchPitchInvitationHandler,
+    deletePitchInvitationHandler,
     acceptPitchInvitationHandler,
-    rejectPitchInvitationHandler
+    rejectPitchInvitationHandler,
+    fetchPitchStaffHandler,
+    fetchPitchStaffMemberHandler,
+    updatePitchStaffMemberHandler,
+    deletePitchStaffMemberHandler
 } from "@/domains/pitches/pitches.handlers.js";
 
 // Chained for RPC type support on the frontend.
@@ -49,8 +55,14 @@ const app = new Hono()
     .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
     .post('/:pitchId/team/invitations', ...createPitchInvitationHandler)
+    .get('/:pitchId/team/invitations/:invitationId', ...fetchPitchInvitationHandler)
+    .delete('/:pitchId/team/invitations/:invitationId', ...deletePitchInvitationHandler)
     .post('/:pitchId/team/invitations/:invitationId/accept', ...acceptPitchInvitationHandler)
     .post('/:pitchId/team/invitations/:invitationId/reject', ...rejectPitchInvitationHandler)
+    .get('/:pitchId/team', ...fetchPitchStaffHandler)
+    .get('/:pitchId/team/:memberId', ...fetchPitchStaffMemberHandler)
+    .patch('/:pitchId/team/:memberId', ...updatePitchStaffMemberHandler)
+    .delete('/:pitchId/team/:memberId', ...deletePitchStaffMemberHandler)
 
 export default app;
 export type AppType = typeof app;
