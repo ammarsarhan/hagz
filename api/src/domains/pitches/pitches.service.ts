@@ -1300,7 +1300,9 @@ export default class PitchService {
                     status: pitch.status,
                     reason: `Updated staff member ${staff.user.firstName} ${staff.user.lastName}'s permissions.`
                 }
-            })
+            });
+
+            return updated;
         })
     }
 
