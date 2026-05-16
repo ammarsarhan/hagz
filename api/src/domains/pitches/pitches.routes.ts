@@ -5,6 +5,7 @@ import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHa
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler } from "@/domains/pitches/handlers/media.handlers.js";
 import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
+import { createStaffBookingHandler } from "@/domains/bookings/bookings.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
@@ -37,6 +38,7 @@ const app = new Hono()
     .get('/:pitchId/team/:memberId', ...fetchPitchStaffMemberHandler)
     .patch('/:pitchId/team/:memberId', ...updatePitchStaffMemberHandler)
     .delete('/:pitchId/team/:memberId', ...deletePitchStaffMemberHandler)
+    .post('/:pitchId/grounds/:groundId/bookings', ...createStaffBookingHandler)
 
 export default app;
 export type AppType = typeof app;

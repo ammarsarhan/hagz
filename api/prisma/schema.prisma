@@ -598,8 +598,8 @@ model Booking {
   payment       Payment?
   ledgerEntries LedgerEntry[]
 
-  assigneeId  String
-  assignee    PitchCustomer @relation(fields: [assigneeId], references: [id])
+  customerId  String
+  customer    PitchCustomer @relation(fields: [customerId], references: [id])
   initiatorId String
   initiator   User          @relation(fields: [initiatorId], references: [id])
   bookerRole  BookingActor
