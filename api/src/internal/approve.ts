@@ -1,4 +1,4 @@
-import PitchService from "@/domains/pitches/pitches.service.js";
+import PitchService from "@/domains/pitches/services/pitches.service.js";
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 
 const service = new PitchService();

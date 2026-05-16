@@ -1,36 +1,10 @@
 import { Hono } from "hono";
 
-import { 
-    createPitchHandler, 
-    getPitchHandler, 
-    createGroundHandler, 
-    getGroundHandler, 
-    getGroundsHandler, 
-    updateGroundHandler,
-    getGroundSettingsHandler,
-    updateGroundSettingsHandler,
-    upsertGroundScheduleHandler,
-    fetchGroundScheduleHandler,
-    fetchGroundSchedulesHandler,
-    getPitchAmenityHandler,
-    getPitchAmenitiesHandler,
-    createPitchAmenityHandler,
-    updatePitchAmenityHandler,
-    deletePitchAmenityHandler,
-    createPitchMediaPresignLinkHandler,
-    confirmPitchMediaUploadHandler,
-    submitPitchHandler,
-    updatePitchHandler,
-    createPitchInvitationHandler,
-    fetchPitchInvitationHandler,
-    deletePitchInvitationHandler,
-    acceptPitchInvitationHandler,
-    rejectPitchInvitationHandler,
-    fetchPitchStaffHandler,
-    fetchPitchStaffMemberHandler,
-    updatePitchStaffMemberHandler,
-    deletePitchStaffMemberHandler
-} from "@/domains/pitches/pitches.handlers.js";
+import { createPitchHandler, getPitchHandler, submitPitchHandler, updatePitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, getGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
+import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
+import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler } from "@/domains/pitches/handlers/media.handlers.js";
+import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()

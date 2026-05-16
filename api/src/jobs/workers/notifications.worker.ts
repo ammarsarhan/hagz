@@ -24,9 +24,9 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
             // Dispatch to the right provider.
             switch (channel) {
                 case NotificationChannel.WHATSAPP: {
-                    const template = resolveTemplate(event, channel, payload);
-                    const result = await sendWhatsapp({ to: phone!, body: template.body });
-                    providerRef = result.messages?.[0]?.id;
+                    // const template = resolveTemplate(event, channel, payload);
+                    // const result = await sendWhatsapp({ to: phone!, body: template.body });
+                    // providerRef = result.messages?.[0]?.id;
                     break;
                 }
                 case NotificationChannel.EMAIL: {

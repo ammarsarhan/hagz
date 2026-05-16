@@ -8,6 +8,7 @@ import { ZodError } from 'zod'
 
 import auth from '@/domains/auth/auth.routes.js';
 import pitches from '@/domains/pitches/pitches.routes.js';
+import bookings from '@/domains/bookings/bookings.routes.js';
 
 import AppError from '@/shared/lib/utils/error.js'
 
@@ -74,6 +75,7 @@ app.onError((err, c) => {
 // Application routing from the root level.
 app.route('/auth', auth);
 app.route('/pitches', pitches);
+app.route('/bookings', bookings);
 
 // Serve the application and expose from Docker locally.
 serve({
