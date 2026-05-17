@@ -2,41 +2,71 @@ import type { NotificationChannel, NotificationEvent } from "@/generated/prisma/
 
 // Map out each of the notification events to their specified payload.
 export type NotificationPayloadMap = {
+    [NotificationEvent.BOOKING_RESERVED]: {
+        customerName: string;   // {{1}} - "Ammar"
+        groundName: string;     // {{2}} - "Porto Sport Football Pitches"
+        pitchName: string;      // {{3}} - "Ground A"
+        startTime: string;      // {{4}} - "18/1/2025 for 3:00 PM"
+        action: "reserved. Payment is still required to confirm the spot.";     // {{5}} - "reserved"
+        deepLink: string;       // {{6}} - "https://www.hagz.com/booking/..."
+    };
     [NotificationEvent.BOOKING_CONFIRMED]: {
+        customerName: string;
+        groundName: string;
         pitchName: string;
         startTime: string;
-        endTime: string;
+        action: "confirmed successfully.";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_CANCELLED]: {
+        customerName: string;
+        groundName: string;
         pitchName: string;
         startTime: string;
+        action: "cancelled.";
         deepLink: string;
     };
+    // Todo: Modify this with a custom template for it or make sure the new time is clear in the message.
     [NotificationEvent.BOOKING_RESCHEDULED]: {
-        pitchName: string;
-        previousTime: string;
-        newTime: string;
-        deepLink: string;
-    };
-    [NotificationEvent.BOOKING_REMINDER]: {
+        customerName: string;
+        groundName: string;
         pitchName: string;
         startTime: string;
+        action: "rescheduled successfully.";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_STARTED]: {
-        pitchName: string;
-        endTime: string;
-        deepLink: string;
-    };
-    [NotificationEvent.BOOKING_EXPIRED]: {
+        customerName: string;
+        groundName: string;
         pitchName: string;
         startTime: string;
+        action: "started.";
+        deepLink: string;
+    };
+    // Todo: Modify this with a custom template for it.
+    [NotificationEvent.BOOKING_EXPIRED]: {
+        customerName: string;
+        groundName: string;
+        pitchName: string;
+        startTime: string;
+        action: "expired.";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_NO_SHOW]: {
+        customerName: string;
+        groundName: string;
         pitchName: string;
         startTime: string;
+        action: "marked as no-show.";
+        deepLink: string;
+    };
+    // Todo: Modify this with a custom template for it.
+    [NotificationEvent.BOOKING_REMINDER]: {
+        customerName: string;
+        groundName: string;
+        pitchName: string;
+        startTime: string;
+        action: "upcoming";
         deepLink: string;
     };
     [NotificationEvent.PAYOUT_PROCESSED]: {

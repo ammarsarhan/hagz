@@ -243,7 +243,8 @@ export default class GroundService {
                     baseHours,
                     peakHours,
                     discountHours,
-                    isActive: payload.isActive
+                    isActive: payload.isActive,
+                    status: ScheduleStatus.PENDING
                 }
             });
 

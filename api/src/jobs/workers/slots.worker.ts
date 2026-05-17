@@ -3,8 +3,7 @@ import { redis } from "@/shared/lib/utils/redis.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
 import { PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
-import { addDays, getDay, setHours, startOfDay } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { addDays } from "date-fns";
 import { GroundSlotAction } from "@/shared/types/slots.js";
 
 const slotsWorker = new Worker("slots", 
@@ -40,11 +39,11 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
     const schedules = await prisma.schedule.findMany({ where: { groundId } });
     if (schedules.length !== 7) throw new InternalServerError("Ground schedule contains less than or more than 7 day records.", ERROR_CODES.GROUND_SCHEDULE_MISSING);
 
-    const TIMEZONE = "Africa/Cairo";
+    const now = new Date();
+    const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    const now = startOfDay(toZonedTime(new Date(), TIMEZONE));
     const limit = Math.ceil(maximumWindow / 24);
-    const dates = Array.from({ length: limit }, (_, i) => addDays(now, i));
+    const dates = Array.from({ length: limit }, (_, i) => addDays(utcMidnight, i));
 
     for (const schedule of schedules) {
         try {
@@ -55,23 +54,30 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
 
             console.log(`[slots-worker] Started generating for Day ${schedule.dayOfWeek}.`);
 
-            const target = dates.filter(d => getDay(d) === schedule.dayOfWeek);
+            const target = dates.filter(d => {
+                const day = d.getUTCDay();
+                const normalized = schedule.dayOfWeek === 7 ? 0 : schedule.dayOfWeek;
+                return day === normalized;
+            });
 
             const baseMask = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
             const peakMask = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
             const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
 
             const slots = target.flatMap(date => {
+                console.log(`[slots-worker] [${new Date().toLocaleDateString()}] Generating slots on ground ${groundId} for ${date.toISOString()}.`);
+                
                 const hours: Array<SlotPayloadType> = [];
 
                 for (let h = 0; h < 24; h++) {
                     const bit = 1 << (23 - h);
-                    if (peakMask & bit)          hours.push({ startsAt: setHours(date, h), priceType: PriceType.PEAK });
-                    else if (discountMask & bit) hours.push({ startsAt: setHours(date, h), priceType: PriceType.DISCOUNT });
-                    else if (baseMask & bit)     hours.push({ startsAt: setHours(date, h), priceType: PriceType.BASE });
-                }
+                    // Build timestamp purely in UTC to stop time drift issues.
+                    const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
 
-                console.log(`[slots-worker] [${new Date().toISOString()}] Generating slots on ground ${groundId} for ${date.toLocaleDateString()}.`);
+                    if (peakMask & bit)          hours.push({ startsAt, priceType: PriceType.PEAK });
+                    else if (discountMask & bit) hours.push({ startsAt, priceType: PriceType.DISCOUNT });
+                    else if (baseMask & bit)     hours.push({ startsAt, priceType: PriceType.BASE });
+                }
 
                 return hours;
             });
@@ -102,7 +108,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
         }
     }
 
-    console.log(`[slots-worker] [${new Date().toISOString()}] Finished slot generation for ground ${groundId}.`);
+    console.log(`[slots-worker] [${new Date().toLocaleDateString()}] Finished slot generation for ground ${groundId}.`);
 };
 
 export async function handleExtendSlots({ groundId }: GenerateSlotsPayload) {

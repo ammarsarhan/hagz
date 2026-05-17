@@ -1,9 +1,11 @@
+import { addHours, differenceInHours } from "date-fns";
+
 type TimeRange = { start: number; end: number };
 
 export function timeRangesToBytes(ranges: TimeRange[]): Buffer<ArrayBuffer> {
     let mask = 0;
     for (const { start, end } of ranges) {
-        for (let hour = start; hour < end; hour++) {
+        for (let hour = start; hour <= end; hour++) {
             mask |= (1 << hour);
         }
     }
@@ -11,7 +13,7 @@ export function timeRangesToBytes(ranges: TimeRange[]): Buffer<ArrayBuffer> {
     const buf = Buffer.allocUnsafe(3);
     buf.writeUIntBE(mask, 0, 3);
     return Buffer.from(buf) as Buffer<ArrayBuffer>;
-}
+};
 
 export function bytesToTimeRanges(bytes: Uint8Array): TimeRange[] {
     const buf = Buffer.from(bytes);
@@ -30,4 +32,16 @@ export function bytesToTimeRanges(bytes: Uint8Array): TimeRange[] {
     }
 
     return ranges;
-}
+};
+
+export function splitTimeRangeIntoBlocks(startTime: Date, endTime: Date) {
+    const blocks: Array<Date> = [];
+    const difference = differenceInHours(endTime, startTime);
+
+    for (let i = 0; i < difference; i++) {
+        const value = addHours(startTime, i);
+        blocks.push(value);
+    }
+
+    return blocks;
+};

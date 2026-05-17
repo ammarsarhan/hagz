@@ -17,13 +17,18 @@ export default class PitchService {
     private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
         await Promise.all(
             grounds.map(async (groundId) => {
+                const jobId = `generate-${groundId}`;
+
+                const job = await slotsQueue.getJob(jobId);
+                if (job) await job.remove();
+
                 await slotsQueue.add(
                     GroundSlotAction.GENERATE, 
                     { pitchId, groundId },
                     {
                         attempts: 3,
                         backoff: { type: "exponential", delay: 5000 },
-                        jobId: `generate-${groundId}`,
+                        jobId,
                     }
                 );
             })

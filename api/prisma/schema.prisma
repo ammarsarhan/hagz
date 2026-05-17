@@ -16,8 +16,7 @@ enum UserStatus {
 
 enum BookingActor {
   USER
-  MANAGER
-  OWNER
+  STAFF
 }
 
 enum StaffRole {
@@ -65,6 +64,11 @@ enum BookingStatus {
   NO_SHOW
   CANCELLED
   COMPLETED
+}
+
+enum BookingChannel {
+  ONLINE
+  WALK_IN
 }
 
 enum PitchStatus {
@@ -205,6 +209,7 @@ enum NotificationChannel {
 }
 
 enum NotificationEvent {
+  BOOKING_RESERVED
   BOOKING_CONFIRMED
   BOOKING_CANCELLED
   BOOKING_RESCHEDULED
@@ -606,6 +611,7 @@ model Booking {
 
   startTime       DateTime
   endTime         DateTime
+  channel         BookingChannel
   pricingSnapshot Json
   depositFee      Int?
   totalAmount     Int
