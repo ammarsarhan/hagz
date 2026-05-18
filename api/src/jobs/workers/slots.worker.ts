@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { redis } from "@/shared/lib/utils/redis.js";
+import { Redis } from "ioredis";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
 import { PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
@@ -17,7 +17,9 @@ const slotsWorker = new Worker("slots",
                 return await handleAdjustSlots(job.data);
         }
     },
-    { connection: redis.consumer }
+    {
+        connection: new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null })
+    }
 );
 
 interface GenerateSlotsPayload {

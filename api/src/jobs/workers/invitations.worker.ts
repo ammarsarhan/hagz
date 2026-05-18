@@ -1,13 +1,11 @@
 import { Worker } from "bullmq";
-import { redis } from "@/shared/lib/utils/redis.js";
+import { Redis } from "ioredis";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { InvitationStatus } from "@/generated/prisma/enums.js";
 import type { InvitationJobPayload } from "@/shared/types/invitations.js";
 
 new Worker<InvitationJobPayload>("invitations", 
     async (job) => {
-        console.log(`[invitations-worker]: Handling expiry on job: ${job.id}`);
-
         await prisma.invitation.update({ 
             where: {
                 id: job.data.invitationId,
@@ -18,6 +16,8 @@ new Worker<InvitationJobPayload>("invitations",
             }
         }) 
     },
-    { connection: redis.consumer }
+    { 
+        connection: new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null })
+    }
 );
 

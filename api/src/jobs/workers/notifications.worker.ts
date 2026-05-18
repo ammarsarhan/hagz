@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { redis } from "@/shared/lib/utils/redis.js";
+import { Redis } from "ioredis";
 import type { NotificationsJobPayload } from "@/shared/types/notifications.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { NotificationChannel, NotificationStatus } from "@/generated/prisma/enums.js";
@@ -24,9 +24,9 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
             // Dispatch to the right provider.
             switch (channel) {
                 case NotificationChannel.WHATSAPP: {
-                    // const template = resolveTemplate(event, channel, payload);
-                    // const result = await sendWhatsapp({ to: phone!, body: template.body });
-                    // providerRef = result.messages?.[0]?.id;
+                    const { templateName, variables } = resolveTemplate(event, channel, payload);
+                    const result = await sendWhatsapp({ to: phone!, templateName, variables });
+                    providerRef = result.messages?.[0]?.id;
                     break;
                 }
                 case NotificationChannel.EMAIL: {
@@ -63,7 +63,9 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
             throw err;
         }
     },
-    { connection: redis.consumer }
+    { 
+        connection: new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null })
+    }
 );
 
 // Handle failing and mark for manual resolving.

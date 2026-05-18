@@ -1,82 +1,117 @@
 import { NotificationChannel, NotificationEvent } from "@/generated/prisma/enums.js";
 import type { NotificationPayloadMap } from "@/shared/types/notifications.js";
 
-type Template = {
-    title?: string;
+type InAppTemplate = {
+    title: string;
     body: string;
 };
 
-type TemplateMap = {
-    [E in NotificationEvent]?: Partial<Record<NotificationChannel, (ctx: NotificationPayloadMap[E]) => Template>>;
+type WhatsappTemplate = {
+    templateName: string;
+    variables: string[];
 };
 
+type ChannelTemplate = {
+    [NotificationChannel.IN_APP]: InAppTemplate;
+    [NotificationChannel.WHATSAPP]: WhatsappTemplate;
+    // Todo: Implement these channels later.
+    [NotificationChannel.PUSH]: never;
+    [NotificationChannel.EMAIL]: never;
+};
+
+type TemplateMap = {
+    [E in NotificationEvent]?: {
+        [C in NotificationChannel]?: (ctx: NotificationPayloadMap[E]) => ChannelTemplate[C];
+    };
+};
+
+// Todo: Make sure each of the whatsapp messages maps out to the correct template.
 export const templates: TemplateMap = {
+    // {{1}} customerName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
+    [NotificationEvent.BOOKING_RESERVED]: {
+        [NotificationChannel.WHATSAPP]: (ctx) => ({
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+        }),
+        [NotificationChannel.IN_APP]: (ctx) => ({
+            title: `Booking Reserved`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} has been ${ctx.action}`,
+        }),
+    },
     [NotificationEvent.BOOKING_CONFIRMED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your booking at ${ctx.pitchName} is confirmed. It starts at ${ctx.startTime} and ends at ${ctx.endTime}. View details: ${ctx.deepLink}`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Confirmed`,
-            body: `Your booking at ${ctx.pitchName} is confirmed for ${ctx.startTime}.`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} has been ${ctx.action}`,
         }),
     },
     [NotificationEvent.BOOKING_CANCELLED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your booking at ${ctx.pitchName} scheduled for ${ctx.startTime} has been cancelled. View details: ${ctx.deepLink}`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Cancelled`,
-            body: `Your booking at ${ctx.pitchName} scheduled for ${ctx.startTime} has been cancelled.`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} has been ${ctx.action}`,
         }),
     },
     [NotificationEvent.BOOKING_RESCHEDULED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your booking at ${ctx.pitchName} has been rescheduled from ${ctx.previousTime} to ${ctx.newTime}. View details: ${ctx.deepLink}`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Rescheduled`,
-            body: `Your booking at ${ctx.pitchName} has moved from ${ctx.previousTime} to ${ctx.newTime}.`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} has been ${ctx.action}`,
         }),
     },
     [NotificationEvent.BOOKING_REMINDER]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Reminder: You have a booking at ${ctx.pitchName} coming up at ${ctx.startTime}. View details: ${ctx.deepLink}`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Upcoming Booking`,
-            body: `You have a booking at ${ctx.pitchName} at ${ctx.startTime}.`,
+            body: `Reminder: you have an ${ctx.action} booking at ${ctx.groundName} (${ctx.pitchName}) on ${ctx.startTime}.`,
         }),
     },
     [NotificationEvent.BOOKING_STARTED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your booking at ${ctx.pitchName} has started. It ends at ${ctx.endTime}. Enjoy your game!`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Started`,
-            body: `Your booking at ${ctx.pitchName} is now in progress. Ends at ${ctx.endTime}.`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) has ${ctx.action}`,
         }),
     },
     [NotificationEvent.BOOKING_EXPIRED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your booking at ${ctx.pitchName} scheduled for ${ctx.startTime} has expired due to no payment. View details: ${ctx.deepLink}`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Expired`,
-            body: `Your booking at ${ctx.pitchName} for ${ctx.startTime} has expired.`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} has ${ctx.action}`,
         }),
     },
     [NotificationEvent.BOOKING_NO_SHOW]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `You missed your booking at ${ctx.pitchName} scheduled for ${ctx.startTime}. View details: ${ctx.deepLink}`,
+            templateName: "booking",
+            variables: [ctx.customerName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking No-Show`,
-            body: `You were marked as a no-show for your booking at ${ctx.pitchName} on ${ctx.startTime}.`,
+            body: `Your booking at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} has been ${ctx.action}`,
         }),
     },
     [NotificationEvent.PAYOUT_PROCESSED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your payout of ${ctx.amount} EGP has been processed successfully. View details: ${ctx.deepLink}`,
+            templateName: "payout",
+            variables: [String(ctx.amount), ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Payout Processed`,
@@ -85,7 +120,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.PAYOUT_FAILED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `Your payout of ${ctx.amount} EGP failed. Reason: ${ctx.reason}. View details: ${ctx.deepLink}`,
+            templateName: "payout",
+            variables: [String(ctx.amount), ctx.reason, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Payout Failed`,
@@ -100,7 +136,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.INVITATION_RECEIVED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `You've been invited to help manage ${ctx.pitchName}. Accept here: ${ctx.deepLink}. This invitation expires on ${ctx.expiresAt}.`,
+            templateName: "invitation",
+            variables: [ctx.pitchName, ctx.expiresAt, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Pitch Invitation`,
@@ -109,7 +146,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.INVITATION_ACCEPTED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `${ctx.phone} has accepted their invitation to manage ${ctx.pitchName}. View pitch: ${ctx.deepLink}`,
+            templateName: "invitation",
+            variables: [ctx.phone, ctx.pitchName, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Invitation Accepted`,
@@ -118,7 +156,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.PITCH_UPDATED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            body: `${ctx.pitchName} has been updated. View the latest details: ${ctx.deepLink}`,
+            templateName: "pitch",
+            variables: [ctx.pitchName, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Pitch Updated`,
@@ -127,8 +166,12 @@ export const templates: TemplateMap = {
     },
 };
 
-export function resolveTemplate<E extends NotificationEvent>(event: E, channel: NotificationChannel, ctx: NotificationPayloadMap[E]): Template {
-    const template = templates[event]?.[channel];
+export function resolveTemplate<E extends NotificationEvent, C extends NotificationChannel>(
+    event: E,
+    channel: C,
+    ctx: NotificationPayloadMap[E],
+): ChannelTemplate[C] {
+    const template = templates[event]?.[channel] as ((ctx: NotificationPayloadMap[E]) => ChannelTemplate[C]) | undefined;
     if (!template) throw new Error(`No template defined for event=${event} channel=${channel}`);
     return template(ctx);
-};
+}

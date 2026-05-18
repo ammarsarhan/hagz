@@ -8,7 +8,7 @@ import { differenceInHours } from "date-fns";
 import type { Ground, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
-import type { PermissionDomain, Permissions } from "@/shared/types/staff.js";
+import type { Permissions } from "@/shared/types/staff.js";
 
 export default class BookingService {
     private readonly notificationsService = new NotificationsService();
@@ -145,8 +145,6 @@ export default class BookingService {
             }
         });
 
-        console.log(slots, targetSlots);
-
         if (slots.length !== targetSlots.length) 
             throw new BadRequestError("One or more slots have already been booked.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
@@ -232,8 +230,7 @@ export default class BookingService {
                 }
             }
 
-        this.notificationsService.createNotification({ 
-            userId: initiatorId, 
+        await this.notificationsService.createNotification({
             phone: payload.customer.phone, 
             ...notificationPayload
         });
@@ -263,12 +260,11 @@ export default class BookingService {
             });
 
             // Check if the staff member is allowed to recieve booking notifications.
-            staff.forEach(member => {
+            staff.forEach(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
                 if (isAllowed) {
-                    this.notificationsService.createNotification({
-                        userId: initiatorId, 
+                    await this.notificationsService.createNotification({
                         phone: member.user.phone, 
                         ...notificationPayload
                     });

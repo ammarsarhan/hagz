@@ -74,7 +74,7 @@ export default class NotificationsService {
         await Promise.all(
             deliveries.map((delivery) => {
                 const payload = { deliveryId: delivery.id, notificationId: delivery.notificationId, channel: delivery.channel, phone, userId, event, payload: data } as NotificationsJobPayload;
-                notificationsQueue.add("send", payload);
+                return notificationsQueue.add("send", payload);
             })
         );
     };
