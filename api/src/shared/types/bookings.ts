@@ -1,14 +1,16 @@
 import type { PriceType } from "@/generated/prisma/enums.js";
 
-export interface PriceSnapshotSlot {
+export interface PricingSnapshotSlot {
     startsAt: Date;
     priceType: PriceType;
     price: number;
 }
 
-export interface PriceSnapshot {
+export interface PricingSnapshot {
     basePrice: number;
     peakPrice: number | null;
     discountPrice: number | null;
-    slots: Array<PriceSnapshotSlot>;
+    allowDeposit: boolean;
+    depositPercentage: number | null;
+    slots: Array<PricingSnapshotSlot>;
 }

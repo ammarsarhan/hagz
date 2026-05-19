@@ -13,29 +13,6 @@ export default async function sendWhatsapp({ to, templateName, variables, langua
     const target = `https://graph.facebook.com/v25.0/${id}/messages`;
 
     // Todo: Update this once the booking template has been approved.
-    // const res = await fetch(target, {
-    //     method: "POST",
-    //     headers: {
-    //         Authorization: `Bearer ${token}`,
-    //         "Content-Type": "application/json"
-    //     },
-    //     body: JSON.stringify({
-    //         messaging_product: "whatsapp",
-    //         to,
-    //         type: "template",
-    //         template: {
-    //             name: templateName,
-    //             language: { code: languageCode },
-    //             components: [
-    //                 {
-    //                     type: "body",
-    //                     parameters: variables.map((value) => ({ type: "text", text: value })),
-    //                 }
-    //             ]
-    //         }
-    //     })
-    // });
-
     const res = await fetch(target, {
         method: "POST",
         headers: {
@@ -47,8 +24,14 @@ export default async function sendWhatsapp({ to, templateName, variables, langua
             to,
             type: "template",
             template: {
-                name: "hello_world",
-                language: { code: "en_US" }
+                name: templateName,
+                language: { code: languageCode },
+                components: [
+                    {
+                        type: "body",
+                        parameters: variables.map((value) => ({ type: "text", text: value })),
+                    }
+                ]
             }
         })
     });

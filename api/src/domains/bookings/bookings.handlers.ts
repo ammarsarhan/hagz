@@ -27,7 +27,7 @@ export const createStaffBookingHandler = factory.createHandlers(
         const payload = c.req.valid("json");
 
         const booking = await bookingService.createStaffBooking(initiatorId, pitchId, groundId, payload);
-        return c.json({ success: true, data: { booking } }, 200); 
+        return c.json({ success: true, data: { booking } }, 201); 
     }
 );
 
@@ -35,7 +35,12 @@ export const createUserBookingHandler = factory.createHandlers(
     authorize,
     validate("json", createUserBookingSchema),
     async (c) => {
-        
+        const userId = c.var.id;
+        const phone = c.var.phone;
+        const payload = c.req.valid("json");
+
+        const booking = await bookingService.createUserBooking(userId, phone, payload);
+        return c.json({ success: true, data: { booking } }, 201); 
     }
 );
 

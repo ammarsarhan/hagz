@@ -4,8 +4,20 @@ import z from "zod";
 export type CreateUserBookingPayloadType = z.infer<typeof createUserBookingSchema>;
 
 export const createUserBookingSchema = z.object({
-    
-});
+    pitchId: z
+        .uuid("A valid pitch ID must be provided to create a booking."),
+    groundId: z
+        .uuid("A valid ground ID must be provided to create a booking."),
+    startTime: z
+        .coerce
+        .date("A start time must be provided to create the booking.")
+        .refine(value => value > new Date(), "Start time must be in the future."),
+    endTime: z
+        .coerce
+        .date("An end time must be provided to create the booking."),
+    paymentMethod: z.enum(Object.values(PaymentMethod))
+})
+.refine(data => data.endTime > data.startTime, "End time must be after start time.");
 
 const createStaffBookingCustomerSchema = z.object({
     phone: z
