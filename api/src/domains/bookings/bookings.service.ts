@@ -6,7 +6,7 @@ import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
 import { differenceInHours } from "date-fns";
 import type { Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
-import NotificationsService from "@/domains/notifications/notifications.service.js";
+import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
 import type { Permissions } from "@/shared/types/staff.js";
 
@@ -223,35 +223,33 @@ export default class BookingService {
         });
 
         // Create the notification for the customer.
+        const basePayload = {
+            phone: payload.customer.phone,
+            data: {
+                recieverName: assignee.firstName ?? "",
+                groundName: ground.name,
+                pitchName: pitch.name,
+                startTime: booking.startTime.toISOString(),
+                deepLink: "https://www.hagz.com/booking/some-random-booking-id"
+            }
+        }
+
         const notificationPayload = 
             status === BookingStatus.PENDING ? 
             {
                 event: NotificationEvent.BOOKING_RESERVED,
-                data: {
-                    customerName: assignee.firstName ?? "",
-                    groundName: ground.name,
-                    pitchName: pitch.name,
-                    startTime: booking.startTime.toISOString(),
-                    action: "reserved. Payment is still required to confirm the spot." as const,
-                    deepLink: "https://www.hagz.com/booking/some-random-booking-id"
+                data: { 
+                    ...basePayload.data, 
+                    action: "reserved. Payment is still required to confirm the spot." as const 
                 }
-            } :
+            } : 
             {
                 event: NotificationEvent.BOOKING_CONFIRMED,
-                data: {
-                    customerName: assignee.firstName ?? "",
-                    groundName: ground.name,
-                    pitchName: pitch.name,
-                    startTime: booking.startTime.toISOString(),
-                    action: "confirmed successfully." as const,
-                    deepLink: "https://www.hagz.com/booking/some-random-booking-id"
-                }
-            }
+                data: { ...basePayload.data, action: "confirmed successfully." as const }
+            };
 
-        await this.notificationsService.createNotification({
-            phone: payload.customer.phone, 
-            ...notificationPayload
-        });
+
+        await this.notificationsService.createNotification(notificationPayload);
 
         // If online, trigger payment link generation and schedule expiry job.
         if (payload.channel === BookingChannel.ONLINE) {
@@ -281,11 +279,16 @@ export default class BookingService {
             staff.forEach(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
+                // Update the payload to accept the staff member's first name.
                 if (isAllowed) {
                     await this.notificationsService.createNotification({
-                        phone: member.user.phone, 
-                        ...notificationPayload
-                    });
+                        ...notificationPayload,
+                        phone: member.user.phone,
+                        data: {
+                            ...notificationPayload.data,
+                            recieverName: member.user.firstName,
+                        }
+                    } as CreateNotificationPayload);
                 }
             });
         };

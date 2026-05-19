@@ -3,7 +3,7 @@ import type { NotificationChannel, NotificationEvent } from "@/generated/prisma/
 // Map out each of the notification events to their specified payload.
 export type NotificationPayloadMap = {
     [NotificationEvent.BOOKING_RESERVED]: {
-        customerName: string;   // {{1}} - "Ammar"
+        recieverName: string;   // {{1}} - "Ammar"
         groundName: string;     // {{2}} - "Porto Sport Football Pitches"
         pitchName: string;      // {{3}} - "Ground A"
         startTime: string;      // {{4}} - "18/1/2025 for 3:00 PM"
@@ -11,7 +11,7 @@ export type NotificationPayloadMap = {
         deepLink: string;       // {{6}} - "https://www.hagz.com/booking/..."
     };
     [NotificationEvent.BOOKING_CONFIRMED]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
@@ -19,7 +19,7 @@ export type NotificationPayloadMap = {
         deepLink: string;
     };
     [NotificationEvent.BOOKING_CANCELLED]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
@@ -28,7 +28,7 @@ export type NotificationPayloadMap = {
     };
     // Todo: Modify this with a custom template for it or make sure the new time is clear in the message.
     [NotificationEvent.BOOKING_RESCHEDULED]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
@@ -36,7 +36,7 @@ export type NotificationPayloadMap = {
         deepLink: string;
     };
     [NotificationEvent.BOOKING_STARTED]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
@@ -45,7 +45,7 @@ export type NotificationPayloadMap = {
     };
     // Todo: Modify this with a custom template for it.
     [NotificationEvent.BOOKING_EXPIRED]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
@@ -53,7 +53,7 @@ export type NotificationPayloadMap = {
         deepLink: string;
     };
     [NotificationEvent.BOOKING_NO_SHOW]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
@@ -62,7 +62,7 @@ export type NotificationPayloadMap = {
     };
     // Todo: Modify this with a custom template for it.
     [NotificationEvent.BOOKING_REMINDER]: {
-        customerName: string;
+        recieverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
