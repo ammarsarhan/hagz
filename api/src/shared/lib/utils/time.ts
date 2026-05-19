@@ -25,7 +25,7 @@ export function bytesToTimeRanges(bytes: Uint8Array): TimeRange[] {
         if (mask & (1 << i)) {
             const start = i;
             while (i < 24 && (mask & (1 << i))) i++;
-            ranges.push({ start, end: i });
+            ranges.push({ start, end: i - 1 });
         } else {
             i++;
         }

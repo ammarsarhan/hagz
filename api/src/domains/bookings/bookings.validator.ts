@@ -5,9 +5,9 @@ export type CreateUserBookingPayloadType = z.infer<typeof createUserBookingSchem
 
 export const createUserBookingSchema = z.object({
     pitchId: z
-        .uuid("A valid pitch ID must be provided to create a booking."),
+        .cuid("A valid pitch ID must be provided to create a booking."),
     groundId: z
-        .uuid("A valid ground ID must be provided to create a booking."),
+        .cuid("A valid ground ID must be provided to create a booking."),
     startTime: z
         .coerce
         .date("A start time must be provided to create the booking.")

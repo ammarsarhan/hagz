@@ -4,7 +4,7 @@ import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotF
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
-import { differenceInHours } from "date-fns";
+import { differenceInHours, differenceInMinutes, startOfHour } from "date-fns";
 import type { Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
@@ -201,6 +201,7 @@ export default class BookingService {
                     totalAmount: total,
                     depositFee: deposit,
                     channel: payload.channel,
+                    isApproved: true,
                     status
                 }
             });
@@ -237,6 +238,7 @@ export default class BookingService {
         const notificationPayload = 
             status === BookingStatus.PENDING ? 
             {
+                phone: basePayload.phone,
                 event: NotificationEvent.BOOKING_RESERVED,
                 data: { 
                     ...basePayload.data, 
@@ -244,6 +246,7 @@ export default class BookingService {
                 }
             } : 
             {
+                phone: basePayload.phone,
                 event: NotificationEvent.BOOKING_CONFIRMED,
                 data: { ...basePayload.data, action: "confirmed successfully." as const }
             };
@@ -297,6 +300,22 @@ export default class BookingService {
     };   
     
     createUserBooking = async (userId: string, phone: string, payload: CreateUserBookingPayloadType) => {
+        // Ensure that the user has not been suspended/banned already and is verified and allowed to book.
+        const user = await prisma.user.findUnique({ 
+            where: { 
+                id: userId, 
+                status: { not: UserStatus.DELETED },
+            }, 
+            select: { 
+                firstName: true, 
+                lastName: true, 
+                status: true 
+            } 
+        });
+
+        if (!user || user.status != UserStatus.ACTIVE)
+            throw new ForbiddenError("Can not create booking for user. User account is not active.", ERROR_CODES.USER_NOT_ACTIVE);
+
         // Check if a pitch exists and is in an active state first.
         const pitch = await prisma.pitch.findUnique({ 
             where: {
@@ -361,24 +380,18 @@ export default class BookingService {
             maximumDuration,
             minimumWindow,
             maximumWindow,
-            paymentMethods
+            paymentMethods,
+            autoExpiryLimit,
+            allowDeposit,
+            depositPercentage,
+            autoConfirm,
+            notificationsTrigger
         } = settings;
 
-        // autoConfirm: boolean;
-        // allowGuestBookings: boolean;
-        // allowRecurringBookings: boolean;
-        // maxRecurringSessions: number | null;
-        // paymentMethods: PaymentMethod[];
-        // allowDeposit: boolean;
-        // depositPercentage: number | null;
-        // autoExpiryLimit: number;
-        // allowRescheduling: boolean;
-        // rescheduleLimit: number;
-        // fullRefundWindow: number;
-        // partialRefundWindow: number;
-        // refundPercentage: number;
+        const startTime = startOfHour(payload.startTime);
+        const endTime = startOfHour(payload.endTime);
 
-        const targetSlots = splitTimeRangeIntoBlocks(payload.startTime, payload.endTime);
+        const targetSlots = splitTimeRangeIntoBlocks(startTime, endTime);
 
         // Booking must be within the minimum and maximum duration set by the staff in the settings.
         if (targetSlots.length < minimumDuration || targetSlots.length > maximumDuration)
@@ -392,7 +405,135 @@ export default class BookingService {
             throw new BadRequestError("Requested booking time must be more than the miniumum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
 
         // Check if the selected payment method is within the allowed payment methods for this ground.
-        // if (!paymentMethods.includes(payload.paymentMethod))
-        //     throw new BadRequestError("Payment ")
+        if (!paymentMethods.includes(payload.paymentMethod))
+            throw new BadRequestError("Requested booking must be paid for in one of the allowed payment methods.", ERROR_CODES.BOOKING_PAYMENT_METHOD_NOT_ALLOWED);
+
+        if (differenceInMinutes(payload.startTime, new Date()) < autoExpiryLimit)
+            throw new BadRequestError("Booking must leave enough time for the user to handle the payment.", ERROR_CODES.BOOKING_AUTO_EXPIRY_LIMIT_HIT);
+        
+        // Query the slots as the final step and check if all of the slots are available.
+        const slots = await prisma.groundSlot.findMany({
+            where: {
+                groundId: payload.groundId,
+                startsAt: { in: targetSlots },
+                status: SlotStatus.AVAILABLE
+            }
+        });
+
+        if (slots.length !== targetSlots.length) 
+            throw new BadRequestError("One or more slots have already been booked.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+        // Calculate the priceSnapshot and total.
+        const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
+        const total = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
+        let deposit = null;
+
+        // Check if we are placing a deposit or paying in full then calculate the deposit.
+        if (allowDeposit && depositPercentage) {
+            const percentage = (depositPercentage / 100);
+            deposit = total * percentage;
+        };
+
+        const { assignee, booking } = await prisma.$transaction(async tx => {
+            const assignee = hasRecord ? customer! : await tx.pitchCustomer.create({
+                data: {
+                    pitchId: payload.pitchId,
+                    phone: phone,
+                    firstName: user.firstName,
+                    lastName: user.lastName
+                }
+            });
+
+            const booking = await tx.booking.create({
+                data: {
+                    pitchId: payload.pitchId,
+                    groundId: payload.groundId,
+                    customerId: assignee.id,
+                    initiatorId: userId,
+                    bookerRole: BookingActor.USER,
+                    startTime: payload.startTime,
+                    endTime: payload.endTime,
+                    paymentMethod: payload.paymentMethod,
+                    pricingSnapshot: pricingSnapshot,
+                    totalAmount: total,
+                    depositFee: deposit,
+                    channel: BookingChannel.ONLINE,
+                    isApproved: autoConfirm
+                }
+            });
+
+            await tx.groundSlot.updateMany({
+                where: { id: { in: slots.map(s => s.id) } },
+                data: { status: SlotStatus.BOOKED, bookingId: booking.id }
+            });
+
+            await tx.payment.create({
+                data: {
+                    bookingId: booking.id,
+                    method: payload.paymentMethod,
+                    total,
+                    deposit,
+                }
+            });
+
+            return { assignee, booking };
+        });
+
+        // Create the notification for the user/booker.
+        const notificationPayload = {
+            phone,
+            event: NotificationEvent.BOOKING_RESERVED,
+            data: { 
+                recieverName: assignee.firstName ?? "",
+                groundName: ground.name,
+                pitchName: pitch.name,
+                startTime: booking.startTime.toISOString(),
+                deepLink: "https://www.hagz.com/booking/some-random-booking-id",
+                action: "reserved. Payment is still required to confirm the spot." as const 
+            }
+        };
+
+        await this.notificationsService.createNotification(notificationPayload);
+
+        // Generate payment link via Paymob (or whatever gateway).
+
+        // Store the link/ref against the Payment record.
+
+        // Schedule expiry job for autoExpiryLimit minutes from now.
+
+        // Trigger notifications based on notificationsTrigger setting.
+        if (notificationsTrigger.includes(GroundActions.BOOKED)) {
+            // Create notification for the staff members.
+            const staff = await prisma.staff.findMany({ 
+                where: { pitchId: payload.pitchId }, 
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            phone: true
+                        }
+                    }
+                }
+            });
+
+            // Check if the staff member is allowed to recieve booking notifications.
+            staff.forEach(async (member) => {
+                const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
+
+                // Update the payload to accept the staff member's first name.
+                if (isAllowed) {
+                    await this.notificationsService.createNotification({
+                        ...notificationPayload,
+                        phone: member.user.phone,
+                        data: {
+                            ...notificationPayload.data,
+                            recieverName: member.user.firstName,
+                        }
+                    } as CreateNotificationPayload);
+                }
+            });
+        };
+
+        return booking;
     }
 };

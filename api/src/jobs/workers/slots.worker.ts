@@ -72,7 +72,8 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
                 const hours: Array<SlotPayloadType> = [];
 
                 for (let h = 0; h < 24; h++) {
-                    const bit = 1 << (23 - h);
+                    // Fixed MSB and LSB flipping issue.
+                    const bit = 1 << h;
                     // Build timestamp purely in UTC to stop time drift issues.
                     const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
 

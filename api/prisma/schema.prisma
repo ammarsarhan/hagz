@@ -608,6 +608,7 @@ model Booking {
   initiatorId String
   initiator   User          @relation(fields: [initiatorId], references: [id])
   bookerRole  BookingActor
+  isApproved  Boolean
 
   startTime       DateTime
   endTime         DateTime

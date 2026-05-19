@@ -99,7 +99,7 @@ export default class AuthService {
         const isValid = await verifyPassword(user.password, payload.password);
         if (!isValid) throw new UnauthorizedError("Could not find user account with the specified credentials.", ERROR_CODES.USER_PHONE_DOES_NOT_EXIST);
 
-        if (["SUSPENDED", "BANNED", "DELETED"].includes(user.status)) throw new ForbiddenError("User account is not active. You are not allowed to sign in.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
+        if (["SUSPENDED", "BANNED", "DELETED"].includes(user.status)) throw new ForbiddenError("User account is not active. You are not allowed to sign in.", ERROR_CODES.USER_NOT_ACTIVE);
         
         // If the user passes the validation, generate the refresh and access tokens.
         const { refreshToken, accessToken } = await jwtService.generateTokenPair(user.id, user.phone);

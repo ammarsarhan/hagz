@@ -210,7 +210,7 @@ export default class StaffService {
         const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
         
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
-        if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
+        if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_NOT_ACTIVE);
         if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not accept invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
 
         // Make sure that the invitation is still pending and has not expired yet.
@@ -300,7 +300,7 @@ export default class StaffService {
         const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
         
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
-        if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_ACCOUNT_NOT_ACTIVE);
+        if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_NOT_ACTIVE);
         if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not reject invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
 
         // Make sure that the invitation is still pending and has not expired yet.
