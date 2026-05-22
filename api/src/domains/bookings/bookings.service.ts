@@ -5,10 +5,12 @@ import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
 import { differenceInHours, startOfHour } from "date-fns";
-import type { Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
+import type { Booking, Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
 import type { Permissions } from "@/shared/types/staff.js";
+import { bookingsQueue } from "@/jobs/queues/bookings.queue.js";
+import { BookingEvent } from "@/shared/types/bookings.js";
 
 export default class BookingService {
     private readonly notificationsService = new NotificationsService();
@@ -34,6 +36,14 @@ export default class BookingService {
         };
 
         return { pricingMap, pricingSnapshot };
+    };
+
+    // Helper function that recieves a booking object and passes the appropriate jobs scheduled for the booking status.
+    private readonly enqueueBookingLifecycle = async (booking: Booking) => {
+        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.APPROVAL });
+        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.PAYMENT });
+        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.IN_PROGRESS });
+        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.COMPLETE });
     };
 
     createStaffBooking = async (initiatorId: string, pitchId: string, groundId: string, payload: CreateStaffBookingPayloadType) => {
@@ -270,6 +280,7 @@ export default class BookingService {
         await this.notificationsService.createNotification(notificationPayload);
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
+        await this.enqueueBookingLifecycle(booking);
 
         // If we are dealing with an online booking, generate the payment link for them.
         if (payload.channel === BookingChannel.ONLINE) {
@@ -517,6 +528,7 @@ export default class BookingService {
         await this.notificationsService.createNotification(notificationPayload);
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
+        await this.enqueueBookingLifecycle(booking);
 
         // Generate payment intent link via Paymob (or whatever gateway).
 

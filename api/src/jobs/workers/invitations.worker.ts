@@ -6,6 +6,7 @@ import type { InvitationJobPayload } from "@/shared/types/invitations.js";
 
 const invitationsWorker = new Worker<InvitationJobPayload>("invitations", 
     async (job) => {
+        // No need for a switch because we're only ever really calling one function on the invitation creation.
         await prisma.invitation.update({ 
             where: {
                 id: job.data.invitationId,

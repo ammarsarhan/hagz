@@ -4,16 +4,16 @@ import prisma from "@/shared/lib/utils/prisma.js";
 import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
 import { PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { addDays } from "date-fns";
-import { GroundSlotAction } from "@/shared/types/slots.js";
+import { GroundSlotEvent, type GroundSlotJobPayload } from "@/shared/types/slots.js";
 
-const slotsWorker = new Worker("slots", 
+const slotsWorker = new Worker<GroundSlotJobPayload>("slots", 
     async (job) => {
-        switch (job.name) {
-            case GroundSlotAction.GENERATE:
+        switch (job.data.event) {
+            case GroundSlotEvent.GENERATE:
                 return await handleGenerateSlots(job.data);
-            case GroundSlotAction.EXTEND:
+            case GroundSlotEvent.EXTEND:
                 return await handleExtendSlots(job.data);
-            case GroundSlotAction.ADJUST:
+            case GroundSlotEvent.ADJUST:
                 return await handleAdjustSlots(job.data);
         }
     },
@@ -22,17 +22,12 @@ const slotsWorker = new Worker("slots",
     }
 );
 
-interface GenerateSlotsPayload {
-    groundId: string;
-    pitchId: string;
-};
-
-type SlotPayloadType = { 
+type GenerateSlotType = { 
     startsAt: Date; 
     priceType: PriceType 
 };
 
-export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPayload) {
+export async function handleGenerateSlots({ pitchId, groundId }: GroundSlotJobPayload) {
     const settings = await prisma.groundSettings.findUnique({ where: { groundId } });
     if (!settings) throw new InternalServerError("Could not find settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
     
@@ -69,7 +64,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
             const slots = target.flatMap(date => {
                 console.log(`[slots-worker] [${new Date().toLocaleDateString()}] Generating slots on ground ${groundId} for ${date.toISOString()}.`);
                 
-                const hours: Array<SlotPayloadType> = [];
+                const hours: Array<GenerateSlotType> = [];
 
                 for (let h = 0; h < 24; h++) {
                     // Fixed MSB and LSB flipping issue.
@@ -114,11 +109,11 @@ export async function handleGenerateSlots({ pitchId, groundId }: GenerateSlotsPa
     console.log(`[slots-worker] [${new Date().toLocaleDateString()}] Finished slot generation for ground ${groundId}.`);
 };
 
-export async function handleExtendSlots({ groundId }: GenerateSlotsPayload) {
+export async function handleExtendSlots({ groundId }: GroundSlotJobPayload) {
     
 };
 
-export async function handleAdjustSlots({ groundId }: GenerateSlotsPayload) {
+export async function handleAdjustSlots({ groundId }: GroundSlotJobPayload) {
 
 };
 
