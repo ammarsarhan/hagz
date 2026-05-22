@@ -188,7 +188,17 @@ export default class GroundService {
             if ('allowDeposit' in payload || 'depositPercentage' in payload)
                 throw new BadRequestError("Deposit percentage is required when deposits are enabled.", ERROR_CODES.VALIDATION_FAILED);
         }
-
+        
+        // minimumWindow must accommodate both expiry timers.
+        const expiryLimit = merged.approvalExpiryLimit + merged.paymentExpiryLimit;
+        
+        if (expiryLimit > merged.maximumWindow * 60) {
+            throw new BadRequestError(
+                `Minimum booking window (${merged.minimumWindow}h) must be long enough to accommodate the approval window (${merged.approvalExpiryLimit}min) and payment window (${merged.paymentExpiryLimit}min) combined.`,
+                ERROR_CODES.VALIDATION_FAILED
+            );
+        };
+            
         // Update the settings with the specified fields from the validated schema.
         const updated = await prisma.groundSettings.update({
             where: { groundId },

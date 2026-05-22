@@ -14,3 +14,5 @@ export interface PricingSnapshot {
     depositPercentage: number | null;
     slots: Array<PricingSnapshotSlot>;
 }
+
+export type BookingJobPayload = { bookingId: string };

@@ -7,7 +7,7 @@ export type NotificationPayloadMap = {
         groundName: string;     // {{2}} - "Porto Sport Football Pitches"
         pitchName: string;      // {{3}} - "Ground A"
         startTime: string;      // {{4}} - "18/1/2025 for 3:00 PM"
-        action: "reserved. Payment is still required to confirm the spot.";     // {{5}} - "reserved"
+        action: "reserved. Payment is still required to confirm the spot";     // {{5}} - "reserved"
         deepLink: string;       // {{6}} - "https://www.hagz.com/booking/..."
     };
     [NotificationEvent.BOOKING_CONFIRMED]: {
@@ -15,7 +15,7 @@ export type NotificationPayloadMap = {
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "confirmed successfully.";
+        action: "confirmed successfully";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_CANCELLED]: {

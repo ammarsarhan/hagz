@@ -207,10 +207,14 @@ const groundSettingsSchema = z.object({
         .min(5, "Deposit percentage must be at least 5% of the value of the booking.")
         .max(85, "Deposit percentage may not be greater than 85% of the value of the booking.")
         .nullish(),
-    autoExpiryLimit: z
-        .int("Automatic expiry limit must be a valid number of minutes.")
-        .min(15, "Automatic expiry limit must be at least 15 minutes to allow the user a sensible payment grace period.")
-        .max(60, "Automatic expiry limit must be 60 minutes at most to allow the user a sensible payment grace period."),
+    approvalExpiryLimit: z
+        .int("Approval expiry limit must be a valid number of minutes.")
+        .min(15, "Approval expiry limit must be at least 15 minutes to allow staff a sensible grace period.")
+        .max(60, "Approval expiry limit must be 60 minutes at most to allow staff a sensible grace period."),
+    paymentExpiryLimit: z
+        .int("Payment expiry limit must be a valid number of minutes.")
+        .min(15, "Payment expiry limit must be at least 15 minutes to allow the user a sensible payment grace period.")
+        .max(60, "Payment expiry limit must be 60 minutes at most to allow the user a sensible payment grace period."),
     allowRescheduling: z.boolean(),
     rescheduleLimit: z
         .int("Reschedule limit must a valid number.")

@@ -58,11 +58,13 @@ enum AmenityPrice {
 }
 
 enum BookingStatus {
-  PENDING
+  RESERVED
   CONFIRMED
+  EXPIRED
+  CANCELLED
+  RESCHEDULED
   IN_PROGRESS
   NO_SHOW
-  CANCELLED
   COMPLETED
 }
 
@@ -432,7 +434,8 @@ model GroundSettings {
   allowDeposit      Boolean         @default(false)
   depositPercentage Int?
 
-  autoExpiryLimit Int @default(30) // Minutes
+  approvalExpiryLimit Int @default(30) // Minutes
+  paymentExpiryLimit Int @default(15) // Minutes
 
   allowRescheduling Boolean @default(true)
   rescheduleLimit   Int     @default(24) // Hours
@@ -618,7 +621,7 @@ model Booking {
   totalAmount     Int
   paymentMethod   PaymentMethod
 
-  status BookingStatus @default(PENDING)
+  status BookingStatus @default(RESERVED)
 
   groupBookingId     String?
   groupBooking       GroupBooking?     @relation(fields: [groupBookingId], references: [id])

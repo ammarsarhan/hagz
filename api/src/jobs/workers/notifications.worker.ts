@@ -24,7 +24,9 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
             // Dispatch to the right provider.
             switch (channel) {
                 case NotificationChannel.WHATSAPP: {
+                    console.log(`[notifications-worker] ctx for ${event}:`, JSON.stringify(payload));
                     const { templateName, variables } = resolveTemplate(event, channel, payload);
+                    console.log(`[notifications-worker] variables:`, JSON.stringify(variables));
                     const result = await sendWhatsapp({ to: phone!, templateName, variables });
                     providerRef = result.messages?.[0]?.id;
                     break;

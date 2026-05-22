@@ -4,7 +4,7 @@ import prisma from "@/shared/lib/utils/prisma.js";
 import { InvitationStatus } from "@/generated/prisma/enums.js";
 import type { InvitationJobPayload } from "@/shared/types/invitations.js";
 
-new Worker<InvitationJobPayload>("invitations", 
+const invitationsWorker = new Worker<InvitationJobPayload>("invitations", 
     async (job) => {
         await prisma.invitation.update({ 
             where: {
@@ -21,3 +21,9 @@ new Worker<InvitationJobPayload>("invitations",
     }
 );
 
+// Handle failing and mark for manual resolving.
+invitationsWorker.on("failed", async (job, err) => {
+    // Removed update function from this block because it's already being done on the worker main block.
+    if (!job) return;
+    console.error(`[invitations-worker] job ${job.id} (${job.name}) failed for invitation ${job.data.invitationId}:`, err.message);
+});

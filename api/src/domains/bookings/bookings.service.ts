@@ -1,10 +1,10 @@
 import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
-import { BookingActor, BookingChannel, BookingStatus, GroundActions, GroundStatus, NotificationEvent, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
+import { BookingActor, BookingChannel, BookingStatus, GroundActions, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
-import { differenceInHours, differenceInMinutes, startOfHour } from "date-fns";
+import { differenceInHours, startOfHour } from "date-fns";
 import type { Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
@@ -131,19 +131,25 @@ export default class BookingService {
 
         // The staff will still be subject to the minimum duration and maximum duration they have chosen in the settings.
         if (targetSlots.length < minimumDuration || targetSlots.length > maximumDuration)
-            throw new BadRequestError(`Requested booking must be between ${minimumDuration} and ${maximumDuration} long.`, ERROR_CODES.BOOKING_DURATION_INVALID);
+            throw new BadRequestError(`Requested booking must be between ${minimumDuration} and ${maximumDuration} hours long.`, ERROR_CODES.BOOKING_DURATION_INVALID);
 
         // If we are booking for a walk-in or online, both channels should be subject to the maximumWindow constraint.
         if (differenceInHours(payload.startTime, new Date()) > maximumWindow)
             throw new BadRequestError("Requested booking time must be less than the maximum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
 
         // We can assume that it is confirmed if the booking is a walk-in and not subject it to maximumWindow.
-        let status: BookingStatus = BookingStatus.PENDING;
+        let status: BookingStatus = BookingStatus.RESERVED;
 
-        if (payload.channel === BookingChannel.WALK_IN) { status = BookingStatus.CONFIRMED } 
+        if (payload.channel === BookingChannel.WALK_IN) { 
+            status = BookingStatus.CONFIRMED;
+
+            // If we are booking for a walk-in, don't allow any payment methods other than cash.
+            if (payload.paymentMethod !== PaymentMethod.CASH)
+                throw new BadRequestError("Requested booking must be paid for in cash for a walk-in.", ERROR_CODES.BOOKING_PAYMENT_METHOD_NOT_ALLOWED);
+        }
         else if (payload.channel === BookingChannel.ONLINE) {
-            // If we are paying online, then the booking is pending until the payment is confirmed.
-            status = BookingStatus.PENDING;
+            // If we are paying online, then the booking is reserved until the payment is confirmed.
+            status = BookingStatus.RESERVED;
             
             // And if this is an online booking, we need the payment method to be allowed by the platform for the ground.
             if (!paymentMethods.includes(payload.paymentMethod))
@@ -159,12 +165,17 @@ export default class BookingService {
             where: {
                 groundId,
                 startsAt: { in: targetSlots },
-                status: SlotStatus.AVAILABLE
             }
         });
 
+        if (slots.find(slot => slot.status === SlotStatus.BOOKED))
+            throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+        if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
+            throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
         if (slots.length !== targetSlots.length) 
-            throw new BadRequestError("One or more slots have already been booked.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+            throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
         // Calculate the priceSnapshot and total.
         const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
@@ -172,7 +183,10 @@ export default class BookingService {
         let deposit = null;
 
         // Check if we are placing a deposit or paying in full then calculate the deposit.
-        if (payload.channel === BookingChannel.ONLINE && allowDeposit && depositPercentage) {
+        if (payload.channel === BookingChannel.ONLINE && allowDeposit) {
+            // If the owner has allowDeposit but no depositPercentage throw an error.
+            if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
+
             const percentage = (depositPercentage / 100);
             deposit = total * percentage;
         };
@@ -181,9 +195,10 @@ export default class BookingService {
             const assignee = hasRecord ? customer! : await tx.pitchCustomer.create({
                 data: {
                     pitchId,
+                    userId: match?.id ?? null,
                     phone: payload.customer.phone,
                     firstName: payload.customer.firstName,
-                    lastName: payload.customer.lastName
+                    lastName: payload.customer.lastName,
                 }
             });
 
@@ -236,31 +251,31 @@ export default class BookingService {
         }
 
         const notificationPayload = 
-            status === BookingStatus.PENDING ? 
+            status === BookingStatus.RESERVED ? 
             {
                 phone: basePayload.phone,
                 event: NotificationEvent.BOOKING_RESERVED,
                 data: { 
                     ...basePayload.data, 
-                    action: "reserved. Payment is still required to confirm the spot." as const 
+                    action: "reserved. Payment is still required to confirm the spot" as const 
                 }
             } : 
             {
                 phone: basePayload.phone,
                 event: NotificationEvent.BOOKING_CONFIRMED,
-                data: { ...basePayload.data, action: "confirmed successfully." as const }
+                data: { ...basePayload.data, action: "confirmed successfully" as const }
             };
 
-
+        // Shoot the customer a notification.
         await this.notificationsService.createNotification(notificationPayload);
 
-        // If online, trigger payment link generation and schedule expiry job.
+        // Enqueue the booking lifecycle events to be handled by the background worker.
+
+        // If we are dealing with an online booking, generate the payment link for them.
         if (payload.channel === BookingChannel.ONLINE) {
-            // Generate payment link via Paymob (or whatever gateway).
+            // Generate payment intent link via Paymob (or whatever gateway).
 
             // Store the link/ref against the Payment record.
-
-            // Schedule expiry job for autoExpiryLimit minutes from now.
         }
 
         // Trigger notifications based on notificationsTrigger setting.
@@ -381,7 +396,6 @@ export default class BookingService {
             minimumWindow,
             maximumWindow,
             paymentMethods,
-            autoExpiryLimit,
             allowDeposit,
             depositPercentage,
             autoConfirm,
@@ -395,7 +409,7 @@ export default class BookingService {
 
         // Booking must be within the minimum and maximum duration set by the staff in the settings.
         if (targetSlots.length < minimumDuration || targetSlots.length > maximumDuration)
-            throw new BadRequestError(`Requested booking must be between ${minimumDuration} and ${maximumDuration} long.`, ERROR_CODES.BOOKING_DURATION_INVALID);
+            throw new BadRequestError(`Requested booking must be between ${minimumDuration} and ${maximumDuration} hours long.`, ERROR_CODES.BOOKING_DURATION_INVALID);
 
         // Booking must be subject to both the minimumWindow and maximumWindow for a user.
         if (differenceInHours(payload.startTime, new Date()) > maximumWindow)
@@ -407,18 +421,20 @@ export default class BookingService {
         // Check if the selected payment method is within the allowed payment methods for this ground.
         if (!paymentMethods.includes(payload.paymentMethod))
             throw new BadRequestError("Requested booking must be paid for in one of the allowed payment methods.", ERROR_CODES.BOOKING_PAYMENT_METHOD_NOT_ALLOWED);
-
-        if (differenceInMinutes(payload.startTime, new Date()) < autoExpiryLimit)
-            throw new BadRequestError("Booking must leave enough time for the user to handle the payment.", ERROR_CODES.BOOKING_AUTO_EXPIRY_LIMIT_HIT);
         
         // Query the slots as the final step and check if all of the slots are available.
         const slots = await prisma.groundSlot.findMany({
             where: {
                 groundId: payload.groundId,
-                startsAt: { in: targetSlots },
-                status: SlotStatus.AVAILABLE
+                startsAt: { in: targetSlots }
             }
         });
+
+        if (slots.find(slot => slot.status === SlotStatus.BOOKED))
+            throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+        if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
+            throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
         if (slots.length !== targetSlots.length) 
             throw new BadRequestError("One or more slots have already been booked.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
@@ -429,7 +445,10 @@ export default class BookingService {
         let deposit = null;
 
         // Check if we are placing a deposit or paying in full then calculate the deposit.
-        if (allowDeposit && depositPercentage) {
+        if (allowDeposit) {
+            // If the owner has allowDeposit but no depositPercentage throw an error.
+            if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
+
             const percentage = (depositPercentage / 100);
             deposit = total * percentage;
         };
@@ -437,6 +456,7 @@ export default class BookingService {
         const { assignee, booking } = await prisma.$transaction(async tx => {
             const assignee = hasRecord ? customer! : await tx.pitchCustomer.create({
                 data: {
+                    userId,
                     pitchId: payload.pitchId,
                     phone: phone,
                     firstName: user.firstName,
@@ -489,17 +509,19 @@ export default class BookingService {
                 pitchName: pitch.name,
                 startTime: booking.startTime.toISOString(),
                 deepLink: "https://www.hagz.com/booking/some-random-booking-id",
-                action: "reserved. Payment is still required to confirm the spot." as const 
+                action: "reserved. Payment is still required to confirm the spot" as const 
             }
         };
 
+        // Shoot the user a notification.
         await this.notificationsService.createNotification(notificationPayload);
 
-        // Generate payment link via Paymob (or whatever gateway).
+        // Enqueue the booking lifecycle events to be handled by the background worker.
+
+        // Generate payment intent link via Paymob (or whatever gateway).
 
         // Store the link/ref against the Payment record.
-
-        // Schedule expiry job for autoExpiryLimit minutes from now.
+            
 
         // Trigger notifications based on notificationsTrigger setting.
         if (notificationsTrigger.includes(GroundActions.BOOKED)) {
