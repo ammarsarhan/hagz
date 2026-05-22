@@ -40,10 +40,19 @@ export default class BookingService {
 
     // Helper function that recieves a booking object and passes the appropriate jobs scheduled for the booking status.
     private readonly enqueueBookingLifecycle = async (booking: Booking) => {
-        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.APPROVAL });
-        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.PAYMENT });
-        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.IN_PROGRESS });
-        await bookingsQueue.add("booking", { bookingId: booking.id, event: BookingEvent.COMPLETE });
+        // If the booking has not been approved yet, set the approval expiry job.
+        if (!booking.isApproved) {
+            await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.APPROVAL });
+        };
+
+        // If the booking has not been paid for yet (reserved but not confirmed), set the payment expiry job.
+        if (booking.status === BookingStatus.RESERVED) {
+            await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.PAYMENT });
+        };
+
+        // Regardless of the status, bookings need to pass by both the IN_RPOGRESS and COMPLETE handlers.
+        await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.IN_PROGRESS });
+        await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.COMPLETE });
     };
 
     createStaffBooking = async (initiatorId: string, pitchId: string, groundId: string, payload: CreateStaffBookingPayloadType) => {
