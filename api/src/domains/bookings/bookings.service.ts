@@ -4,7 +4,7 @@ import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotF
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
-import { differenceInHours, startOfHour } from "date-fns";
+import { addMinutes, differenceInHours, startOfHour } from "date-fns";
 import type { Booking, Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
@@ -39,20 +39,72 @@ export default class BookingService {
     };
 
     // Helper function that recieves a booking object and passes the appropriate jobs scheduled for the booking status.
-    private readonly enqueueBookingLifecycle = async (booking: Booking) => {
+    private readonly enqueueBookingLifecycle = async (booking: Booking, settings: GroundSettings) => {
         // If the booking has not been approved yet, set the approval expiry job.
         if (!booking.isApproved) {
-            await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.APPROVAL });
+            const approvalDelay =  Math.max(0, addMinutes(new Date(), settings.approvalExpiryLimit).getTime() - Date.now());
+
+            await bookingsQueue.add("bookings", 
+                { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
+                { delay: approvalDelay, jobId: `booking:${booking.id}:approval` }
+            );
         };
 
         // If the booking has not been paid for yet (reserved but not confirmed), set the payment expiry job.
         if (booking.status === BookingStatus.RESERVED) {
-            await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.PAYMENT });
+            const paymentDelay = Math.max(0, addMinutes(new Date(), settings.paymentExpiryLimit).getTime() - Date.now());
+
+            await bookingsQueue.add("bookings", 
+                { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
+                { delay: paymentDelay, jobId: `booking:${booking.id}:payment` }
+            );
         };
 
         // Regardless of the status, bookings need to pass by both the IN_RPOGRESS and COMPLETE handlers.
-        await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.IN_PROGRESS });
-        await bookingsQueue.add("bookings", { bookingId: booking.id, event: BookingEvent.COMPLETE });
+        const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
+        await bookingsQueue.add("bookings", 
+            { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
+            { delay: inProgressDelay, jobId: `booking:${booking.id}:in_progress` }
+        );
+
+        const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
+        await bookingsQueue.add("bookings", 
+            { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
+            { delay: completeDelay, jobId: `booking:${booking.id}:complete` }
+        );
+    };
+
+    // Keep this as static because we want to be able to call it from the worker.
+    static readonly dequeueBookingLifecycle = async (bookingId: string, event: Omit<BookingEvent, "COMPLETE">) => {
+        const jobId = `booking:${bookingId}`
+        
+        switch (event) {
+            case BookingEvent.APPROVAL:
+                {
+                    await bookingsQueue.remove(`${jobId}:payment`);
+                    await bookingsQueue.remove(`${jobId}:in_progress`);
+                    await bookingsQueue.remove(`${jobId}:complete`);
+                    break;
+                }
+            case BookingEvent.PAYMENT:
+                {
+                    await bookingsQueue.remove(`${jobId}:in_progress`);
+                    await bookingsQueue.remove(`${jobId}:complete`);
+                    break;
+                }
+            case BookingEvent.IN_PROGRESS:
+                {
+                    await bookingsQueue.remove(`${jobId}:complete`);
+                    break;
+                }
+            default:
+                {
+                    await bookingsQueue.remove(`${jobId}:approval`);
+                    await bookingsQueue.remove(`${jobId}:payment`);
+                    await bookingsQueue.remove(`${jobId}:in_progress`);
+                    await bookingsQueue.remove(`${jobId}:complete`);
+                }
+        }
     };
 
     createStaffBooking = async (initiatorId: string, pitchId: string, groundId: string, payload: CreateStaffBookingPayloadType) => {
@@ -289,7 +341,7 @@ export default class BookingService {
         await this.notificationsService.createNotification(notificationPayload);
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
-        await this.enqueueBookingLifecycle(booking);
+        await this.enqueueBookingLifecycle(booking, settings);
 
         // If we are dealing with an online booking, generate the payment link for them.
         if (payload.channel === BookingChannel.ONLINE) {
@@ -537,7 +589,7 @@ export default class BookingService {
         await this.notificationsService.createNotification(notificationPayload);
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
-        await this.enqueueBookingLifecycle(booking);
+        await this.enqueueBookingLifecycle(booking, settings);
 
         // Generate payment intent link via Paymob (or whatever gateway).
 

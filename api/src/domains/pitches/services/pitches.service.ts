@@ -5,8 +5,8 @@ import { GroundSize, GroundSport, PermissionLevel, PitchStatus, ScheduleStatus, 
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
-import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
-import { GroundSlotAction } from "@/shared/types/slots.js";
+import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
+import { GroundSlotEvent } from "@/shared/types/slots.js";
 
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import type { Permissions } from "@/shared/types/staff.js";
@@ -23,7 +23,7 @@ export default class PitchService {
                 if (job) await job.remove();
 
                 await slotsQueue.add(
-                    GroundSlotAction.GENERATE, 
+                    GroundSlotEvent.GENERATE, 
                     { pitchId, groundId },
                     {
                         attempts: 3,
