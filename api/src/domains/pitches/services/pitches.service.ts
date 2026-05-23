@@ -24,7 +24,7 @@ export default class PitchService {
 
                 await slotsQueue.add(
                     GroundSlotEvent.GENERATE, 
-                    { pitchId, groundId },
+                    { pitchId, groundId, event: GroundSlotEvent.GENERATE },
                     {
                         attempts: 3,
                         backoff: { type: "exponential", delay: 5000 },

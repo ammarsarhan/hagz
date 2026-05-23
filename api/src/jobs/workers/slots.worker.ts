@@ -120,5 +120,5 @@ export async function handleAdjustSlots({ groundId }: GroundSlotJobPayload) {
 // Handle failing and log for manual resolving.
 slotsWorker.on("failed", async (job, err) => {
     if (!job) return;
-    console.error(`[slot-worker] job ${job.id} (${job.name}) failed for ground ${job.data.groundId}:`, err.message);
+    console.error(`[slots-worker] job ${job.id} (${job.name}) failed for ground ${job.data.groundId}:`, err.message);
 });

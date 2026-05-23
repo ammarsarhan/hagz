@@ -113,9 +113,11 @@ export default class StaffService {
             phone: payload.phone, 
             event: NotificationEvent.INVITATION_RECEIVED,
             data: {
-                pitchName: pitch.name,
-                expiresAt: payload.expiresAt.toISOString(),
-                deepLink: `${process.env.FRONTEND_URL}/pitch/${pitchId}/invitations/${token}`
+                receiverName: "Smith",
+                actorName: "You",
+                action: "added as a staff manager by invitation (View more: https://www.hagz.com/invitation/some-random-id)",
+                pitchName: "Ahmed's Pitch",
+                expiresAt: "12-2-2025 at 6PM"
             },
         });
 

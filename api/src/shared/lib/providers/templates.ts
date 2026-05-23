@@ -25,13 +25,18 @@ type TemplateMap = {
     };
 };
 
-// Todo: Make sure each of the whatsapp messages maps out to the correct template.
+// WhatsApp template variable reference:
+// customer:   {{1}} receiverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
+// staff:      {{1}} action, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} customerName, {{6}} deepLink
+// reminder:   {{1}} receiverName, {{2}} bookingArticle ("your"/"a"), {{3}} groundName, {{4}} pitchName, {{5}} startTime
+// payout:     {{1}} receiverName, {{2}} payoutReference, {{3}} processedAt, {{4}} action, {{5}} deepLink
+// invitation: {{1}} receiverName, {{2}} actorName, {{3}} action, {{4}} pitchName
+
 export const templates: TemplateMap = {
-    // {{1}} recieverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
     [NotificationEvent.BOOKING_RESERVED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Reserved`,
@@ -40,8 +45,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_CONFIRMED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Confirmed`,
@@ -50,8 +55,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_CANCELLED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Cancelled`,
@@ -60,8 +65,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_RESCHEDULED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Rescheduled`,
@@ -70,18 +75,18 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_REMINDER]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "reminder",
+            variables: [ctx.receiverName, ctx.bookingArticle, ctx.groundName, ctx.pitchName, ctx.startTime],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Upcoming Booking`,
-            body: `Reminder: you have an ${ctx.action} booking at ${ctx.groundName} (${ctx.pitchName}) on ${ctx.startTime}.`,
+            body: `Reminder: you have a scheduled booking at ${ctx.pitchName} (${ctx.groundName}) on ${ctx.startTime}.`,
         }),
     },
     [NotificationEvent.BOOKING_STARTED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Started`,
@@ -90,8 +95,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_EXPIRED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Expired`,
@@ -100,8 +105,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_NO_SHOW]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "booking",
-            variables: [ctx.recieverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "customer",
+            variables: [ctx.receiverName, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking No-Show`,
@@ -111,7 +116,7 @@ export const templates: TemplateMap = {
     [NotificationEvent.PAYOUT_PROCESSED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
             templateName: "payout",
-            variables: [String(ctx.amount), ctx.deepLink],
+            variables: [ctx.receiverName, ctx.payoutReference, ctx.processedAt, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Payout Processed`,
@@ -121,7 +126,7 @@ export const templates: TemplateMap = {
     [NotificationEvent.PAYOUT_FAILED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
             templateName: "payout",
-            variables: [String(ctx.amount), ctx.reason, ctx.deepLink],
+            variables: [ctx.receiverName, ctx.payoutReference, ctx.processedAt, ctx.action, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Payout Failed`,
@@ -129,6 +134,10 @@ export const templates: TemplateMap = {
         }),
     },
     [NotificationEvent.INVITATION_CREATED]: {
+        [NotificationChannel.WHATSAPP]: (ctx) => ({
+            templateName: "invitation",
+            variables: [ctx.receiverName, ctx.actorName, ctx.action, ctx.pitchName],
+        }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Invitation Sent`,
             body: `An invitation to manage ${ctx.pitchName} was sent to ${ctx.phone}. It expires on ${ctx.expiresAt}.`,
@@ -137,7 +146,7 @@ export const templates: TemplateMap = {
     [NotificationEvent.INVITATION_RECEIVED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
             templateName: "invitation",
-            variables: [ctx.pitchName, ctx.expiresAt, ctx.deepLink],
+            variables: [ctx.receiverName, ctx.actorName, ctx.action, ctx.pitchName],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Pitch Invitation`,
@@ -147,7 +156,7 @@ export const templates: TemplateMap = {
     [NotificationEvent.INVITATION_ACCEPTED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
             templateName: "invitation",
-            variables: [ctx.phone, ctx.pitchName, ctx.deepLink],
+            variables: [ctx.receiverName, ctx.actorName, ctx.action, ctx.pitchName],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Invitation Accepted`,
@@ -155,10 +164,6 @@ export const templates: TemplateMap = {
         }),
     },
     [NotificationEvent.PITCH_UPDATED]: {
-        [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "pitch",
-            variables: [ctx.pitchName, ctx.deepLink],
-        }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Pitch Updated`,
             body: `${ctx.pitchName} has been updated.`,

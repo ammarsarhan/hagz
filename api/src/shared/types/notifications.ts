@@ -2,100 +2,115 @@ import type { NotificationChannel, NotificationEvent } from "@/generated/prisma/
 
 // Map out each of the notification events to their specified payload.
 export type NotificationPayloadMap = {
+    // customer template: {{1}} receiverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
     [NotificationEvent.BOOKING_RESERVED]: {
-        recieverName: string;   // {{1}} - "Ammar"
-        groundName: string;     // {{2}} - "Porto Sport Football Pitches"
-        pitchName: string;      // {{3}} - "Ground A"
-        startTime: string;      // {{4}} - "18/1/2025 for 3:00 PM"
-        action: "reserved. Payment is still required to confirm the spot";     // {{5}} - "reserved"
-        deepLink: string;       // {{6}} - "https://www.hagz.com/booking/..."
-    };
-    [NotificationEvent.BOOKING_CONFIRMED]: {
-        recieverName: string;
+        receiverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "confirmed successfully";
+        action: "reserved";
+        deepLink: string;
+    };
+    [NotificationEvent.BOOKING_CONFIRMED]: {
+        receiverName: string;
+        groundName: string;
+        pitchName: string;
+        startTime: string;
+        action: "confirmed";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_CANCELLED]: {
-        recieverName: string;
+        receiverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "cancelled.";
+        action: "cancelled";
         deepLink: string;
     };
-    // Todo: Modify this with a custom template for it or make sure the new time is clear in the message.
+    // Todo: Consider a dedicated template to make the new time explicit.
     [NotificationEvent.BOOKING_RESCHEDULED]: {
-        recieverName: string;
+        receiverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "rescheduled successfully.";
+        action: "rescheduled";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_STARTED]: {
-        recieverName: string;
+        receiverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "started.";
+        action: "started";
         deepLink: string;
     };
-    // Todo: Modify this with a custom template for it.
     [NotificationEvent.BOOKING_EXPIRED]: {
-        recieverName: string;
+        receiverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "expired.";
+        action: "expired";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_NO_SHOW]: {
-        recieverName: string;
+        receiverName: string;
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "marked as no-show.";
+        action: "marked as no-show";
         deepLink: string;
     };
-    // Todo: Modify this with a custom template for it.
+    // reminder template: {{1}} receiverName, {{2}} bookingArticle, {{3}} groundName, {{4}} pitchName, {{5}} startTime
     [NotificationEvent.BOOKING_REMINDER]: {
-        recieverName: string;
+        receiverName: string;
+        bookingArticle: "your" | "a";
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "upcoming";
-        deepLink: string;
     };
+    // payout template: {{1}} receiverName, {{2}} payoutReference, {{3}} processedAt, {{4}} action, {{5}} deepLink
     [NotificationEvent.PAYOUT_PROCESSED]: {
-        amount: number;
+        receiverName: string;
+        payoutReference: string;
+        processedAt: string;
+        action: "approved";
+        amount: number;         // used for IN_APP message only
         deepLink: string;
     };
     [NotificationEvent.PAYOUT_FAILED]: {
-        amount: number;
-        reason: string;
+        receiverName: string;
+        payoutReference: string;
+        processedAt: string;
+        action: "failed";
+        amount: number;         // used for IN_APP message only
+        reason: string;         // used for IN_APP message only
         deepLink: string;
     };
+    // invitation template: {{1}} receiverName, {{2}} actorName, {{3}} action, {{4}} pitchName
     [NotificationEvent.INVITATION_CREATED]: {
+        receiverName: string;
+        actorName: string;
+        action: "added as a staff manager by invitation";
         pitchName: string;
-        phone: string;
-        expiresAt: string;
+        phone: string;          // used for IN_APP message only
+        expiresAt: string;      // used for IN_APP message only
     };
     [NotificationEvent.INVITATION_RECEIVED]: {
+        receiverName: string;
+        actorName: string;
+        action: string;
         pitchName: string;
-        expiresAt: string;
-        deepLink: string;
+        expiresAt: string;      // used for IN_APP message only
     };
     [NotificationEvent.INVITATION_ACCEPTED]: {
+        receiverName: string;
+        actorName: string;
+        action: "added as a staff manager by invitation";
         pitchName: string;
-        phone: string;
-        deepLink: string;
+        phone: string;          // used for IN_APP message only
     };
     [NotificationEvent.PITCH_UPDATED]: {
         pitchName: string;
-        deepLink: string;
     };
 };
 
