@@ -376,6 +376,10 @@ export const createPitchMediaPresignLinkSchema = z.object({
 export type CreateInvitationPayloadType = z.infer<typeof createInvitationSchema>;
 
 export const createInvitationSchema = z.object({
+    name: z
+        .string("Name is required.")
+        .min(2, "Name must be at least 2 characters long.")
+        .max(50, "Name may not be longer than 50 characters at most."),
     phone: z
         .string("Phone number is required.")
         .regex(/^\+[1-9]\d{7,14}$/, "Phone number must include the international code and be in an acceptable format."),

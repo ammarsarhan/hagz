@@ -98,9 +98,9 @@ export type NotificationPayloadMap = {
     [NotificationEvent.INVITATION_RECEIVED]: {
         receiverName: string;
         actorName: string;
-        action: string;
         pitchName: string;
-        expiresAt: string;      // used for IN_APP message only
+        deepLink: string;
+        expiresAt: string;
     };
     [NotificationEvent.INVITATION_ACCEPTED]: {
         receiverName: string;

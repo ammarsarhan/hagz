@@ -1,12 +1,12 @@
 import { InvitationStatus, NotificationEvent, PermissionLevel, PitchStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
-import { BadRequestError, ERROR_CODES, ForbiddenError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
+import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import type { CreateInvitationPayloadType, UpdatePitchStaffMemberPayloadType } from "@/domains/pitches/pitches.validator.js";
 import config from "@/shared/config.js";
 import { randomUUID } from "crypto";
 import type { Permissions } from "@/shared/types/staff.js";
 import NotificationsService from "@/domains/notifications/notifications.service.js";
-import { differenceInMilliseconds } from "date-fns";
+import { differenceInMilliseconds, format } from "date-fns";
 import { invitationsQueue } from "@/jobs/queues/invitations.queue.js";
 
 export default class StaffService {
@@ -109,15 +109,18 @@ export default class StaffService {
         // Todo: Extend this later to ensure that it is typed safely and there is a standard message template based on the channel, domain, and event.
         await this.enqueueInvitationExpiry(data.id, pitch.id, data.expiresAt);
 
+        const actor = await prisma.user.findUnique({ where: { id: creatorId, status: { not: UserStatus.DELETED } }, select: { firstName: true } });
+        if (!actor) throw new InternalServerError("Could not find user account after creating invitation.");
+
         await this.notificationsService.createNotification({ 
             phone: payload.phone, 
             event: NotificationEvent.INVITATION_RECEIVED,
             data: {
-                receiverName: "Smith",
-                actorName: "You",
-                action: "added as a staff manager by invitation (View more: https://www.hagz.com/invitation/some-random-id)",
-                pitchName: "Ahmed's Pitch",
-                expiresAt: "12-2-2025 at 6PM"
+                receiverName: payload.name,
+                actorName: actor.firstName,
+                pitchName: pitch.name,
+                deepLink: `https://www.hagz.com/invitation/${data.id}`,
+                expiresAt: format(data.expiresAt, "d-M-yyyy 'at' h aa")
             },
         });
 

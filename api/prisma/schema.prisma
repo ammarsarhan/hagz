@@ -493,6 +493,7 @@ model Invitation {
   pitchId String
   pitch   Pitch  @relation(fields: [pitchId], references: [id])
 
+  name   String
   phone  String
   token  String           @unique
   status InvitationStatus @default(PENDING)

@@ -31,6 +31,7 @@ type TemplateMap = {
 // reminder:   {{1}} receiverName, {{2}} bookingArticle ("your"/"a"), {{3}} groundName, {{4}} pitchName, {{5}} startTime
 // payout:     {{1}} receiverName, {{2}} payoutReference, {{3}} processedAt, {{4}} action, {{5}} deepLink
 // invitation: {{1}} receiverName, {{2}} actorName, {{3}} action, {{4}} pitchName
+// onboard:    {{1}} receiverName, {{2}} actorName, {{3}} pitchName, {{4}} deepLink, {{5}} expiresAt
 
 export const templates: TemplateMap = {
     [NotificationEvent.BOOKING_RESERVED]: {
@@ -145,8 +146,8 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.INVITATION_RECEIVED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "invitation",
-            variables: [ctx.receiverName, ctx.actorName, ctx.action, ctx.pitchName],
+            templateName: "onboard",
+            variables: [ctx.receiverName, ctx.actorName, ctx.pitchName, ctx.deepLink, ctx.expiresAt],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Pitch Invitation`,
