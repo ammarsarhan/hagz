@@ -1,3 +1,4 @@
+import type { Staff } from "@/generated/prisma/client.js";
 import type { PriceType } from "@/generated/prisma/enums.js";
 
 export interface PricingSnapshotSlot {
@@ -16,8 +17,8 @@ export interface PricingSnapshot {
 }
 
 export type BookingJobPayload = { 
-    bookingId: string, 
-    event: BookingEvent 
+    bookingId: string,
+    event: BookingEvent
 };
 
 export const BookingEvent = {

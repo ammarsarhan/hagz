@@ -14,8 +14,6 @@ import { BookingEvent } from "@/shared/types/bookings.js";
 import { formatInTimeZone } from "date-fns-tz";
 
 export default class BookingService {
-    private readonly notificationsService = new NotificationsService();
-
     private readonly buildPricingSnapshot = (ground: Ground, settings: GroundSettings, slots: Array<GroundSlot>) => {
         const pricingMap = {
             BASE: ground.basePrice,
@@ -45,7 +43,7 @@ export default class BookingService {
         if (!booking.isApproved) {
             const approvalDelay =  Math.max(0, addMinutes(new Date(), settings.approvalExpiryLimit).getTime() - Date.now());
 
-            await bookingsQueue.add("bookings", 
+            await bookingsQueue.add("approval", 
                 { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
                 { delay: approvalDelay, jobId: `bookings:${booking.id}:approval` }
             );
@@ -55,7 +53,7 @@ export default class BookingService {
         if (booking.status === BookingStatus.RESERVED) {
             const paymentDelay = Math.max(0, addMinutes(new Date(), settings.paymentExpiryLimit).getTime() - Date.now());
 
-            await bookingsQueue.add("bookings", 
+            await bookingsQueue.add("payment", 
                 { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
                 { delay: paymentDelay, jobId: `bookings:${booking.id}:payment` }
             );
@@ -63,13 +61,13 @@ export default class BookingService {
 
         // Regardless of the status, bookings need to pass by both the IN_RPOGRESS and COMPLETE handlers.
         const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
-        await bookingsQueue.add("bookings", 
+        await bookingsQueue.add("start", 
             { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
             { delay: inProgressDelay, jobId: `bookings:${booking.id}:in_progress` }
         );
 
         const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
-        await bookingsQueue.add("bookings", 
+        await bookingsQueue.add("end", 
             { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
             { delay: completeDelay, jobId: `bookings:${booking.id}:complete` }
         );
@@ -344,7 +342,7 @@ export default class BookingService {
             }
         };
 
-        await this.notificationsService.createNotification({
+        await NotificationsService.createNotification({
             phone: assignee.phone,
             ...notificationPayload
         });
@@ -381,7 +379,7 @@ export default class BookingService {
                     if (!member.user.preferences)
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
 
-                    await this.notificationsService.createNotification({
+                    await NotificationsService.createNotification({
                         phone: member.user.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
@@ -587,7 +585,7 @@ export default class BookingService {
         });
 
         // Create the notification for the customer and dispatch it.
-        await this.notificationsService.createNotification({
+        await NotificationsService.createNotification({
             phone: assignee.phone,
             event: NotificationEvent.BOOKING_RESERVED,
             data: {
@@ -631,7 +629,7 @@ export default class BookingService {
                     if (!member.user.preferences)
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
 
-                    await this.notificationsService.createNotification({
+                    await NotificationsService.createNotification({
                         phone: assignee.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {

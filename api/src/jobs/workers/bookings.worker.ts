@@ -3,9 +3,12 @@ import { Redis } from "ioredis";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { BookingEvent, type BookingJobPayload } from "@/shared/types/bookings.js";
 import { InternalServerError } from "@/shared/lib/utils/error.js";
-import { BookingStatus, SlotStatus } from "@/generated/prisma/enums.js";
-import { bookingsQueue } from "../queues/bookings.queue.js";
+import { BookingStatus, GroundActions, NotificationEvent, PermissionLevel, SlotStatus } from "@/generated/prisma/enums.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
+import NotificationsService from "@/domains/notifications/notifications.service.js";
+import { formatInTimeZone } from "date-fns-tz";
+import hasPermissions from "@/shared/lib/utils/permissions.js";
+import type { Permissions } from "@/shared/types/staff.js";
 
 const bookingsWorker = new Worker<BookingJobPayload>("bookings", 
     async (job) => {
@@ -43,7 +46,42 @@ const bookingsWorker = new Worker<BookingJobPayload>("bookings",
 );
 
 const handleApprovalExpiry = async (bookingId: string) => {
-    const booking = await prisma.booking.findUnique({ where: { id: bookingId }, include: { slots: true }});
+    // Gigantic query - rabena yestor.
+    const booking = await prisma.booking.findUnique({ 
+        where: { id: bookingId }, 
+        include: { 
+            slots: true,
+            customer: {
+                include: { 
+                    user: { 
+                        include: { preferences: true }
+                    } 
+                }
+            },
+            ground: { 
+                select: {
+                    name: true,
+                    settings: {
+                        select: {
+                            notificationsTrigger: true
+                        }
+                    }
+                },
+            },
+            pitch: { 
+                select: {
+                    name: true,
+                    staff: {
+                        include: {
+                            user: {
+                                include: { preferences: true }
+                            }
+                        }
+                    }
+                } 
+            }
+        }
+    });
 
     if (!booking)
         throw new InternalServerError("Could not find a booking with the specified ID.")
@@ -57,6 +95,54 @@ const handleApprovalExpiry = async (bookingId: string) => {
 
         // Remove all of the upcoming jobs in the booking's lifecycle because it has expired.
         await BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.APPROVAL);
+
+        // And send a notification to both the staff and the customer.
+        if (!booking.customer)
+            throw new InternalServerError("Could not find pitchCustomer record for an initiated booking.");
+
+        const receiverName = booking.customer.firstName ?? booking.customer.user?.firstName;
+        const timezone = booking.customer.user?.preferences?.timezone ?? "Africa/Cairo";
+
+        await NotificationsService.createNotification({
+            phone: booking.customer.phone,
+            event: NotificationEvent.BOOKING_EXPIRED,
+            data: {
+                receiverName: receiverName!,
+                groundName: booking.ground.name,
+                pitchName: booking.pitch.name,
+                startTime: formatInTimeZone(booking.startTime, timezone, "d-M-yyyy 'at' h aa"),
+                action: "expired because it was not approved in time",
+                deepLink: `https://www.hagz.com/bookings/${bookingId}`
+            }
+        });
+
+        if (!booking.ground.settings)
+            throw new InternalServerError("Could not resolve settings associated with the booked ground.");
+
+        if (booking.ground.settings.notificationsTrigger.includes(GroundActions.EXPIRED)) {
+            // Check if the staff member is allowed to recieve booking notifications.
+            await Promise.all(booking.pitch.staff.map(async (member) => {
+                const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
+
+                if (isAllowed) {
+                    if (!member.user.preferences)
+                        throw new InternalServerError("Could not resolve user preferences associated with the user account.")
+
+                    await NotificationsService.createNotification({
+                        phone: member.user.phone,
+                        event: NotificationEvent.BOOKING_EXPIRED,
+                        data: {
+                            receiverName: member.user.firstName,
+                            groundName: booking.ground.name,
+                            pitchName: booking.pitch.name,
+                            startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                            action: "expired because it was not approved in time",
+                            deepLink: `https://www.hagz.com/dashboard/pitches/${booking.pitchId}/grounds/${booking.groundId}/bookings/${bookingId}`
+                        }
+                    });
+                }
+            }));
+        }
     };
 };
 
@@ -76,6 +162,8 @@ const handlePaymentExpiry = async (bookingId: string) => {
 
         // Remove all of the upcoming jobs in the booking's lifecycle because it has expired.
         await BookingService.dequeueBookingLifecycle(booking.id, BookingEvent.PAYMENT);
+
+        // And send a notification to both the staff and the customer.
     };
 };
 
@@ -93,6 +181,8 @@ const handleStartBooking = async (bookingId: string) => {
 
     // If for some reason we reach this block, remove the end booking job from the booking.
     await BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.IN_PROGRESS);
+
+    // And send a notification to both the staff and the customer.
 };
 
 const handleEndBooking = async (bookingId: string) => {

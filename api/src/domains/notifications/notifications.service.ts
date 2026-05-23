@@ -17,7 +17,7 @@ export type CreateNotificationPayload = BaseNotificationPayload & {
 }[NotificationEvent];
 
 export default class NotificationsService {
-    resolveChannels = async (userId?: string, phone?: string) => {
+    private static readonly resolveChannels = async (userId?: string, phone?: string) => {
         if (userId && !phone) {
             const preferences = await prisma.userPreferences.findUnique({ 
                 where: { 
@@ -40,7 +40,7 @@ export default class NotificationsService {
         }
     };
 
-    createNotification = async ({ userId, phone, event, data } : CreateNotificationPayload) => {
+    static createNotification = async ({ userId, phone, event, data } : CreateNotificationPayload) => {
         // Get the channels based on the provided payload.
         const channels = await this.resolveChannels(userId, phone);
 
@@ -74,7 +74,7 @@ export default class NotificationsService {
         await Promise.all(
             deliveries.map((delivery) => {
                 const payload = { deliveryId: delivery.id, notificationId: delivery.notificationId, channel: delivery.channel, phone, userId, event, payload: data } as NotificationsJobPayload;
-                return notificationsQueue.add("send", payload);
+                return notificationsQueue.add("dispatch", payload);
             })
         );
     };

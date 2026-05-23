@@ -23,7 +23,7 @@ export default class PitchService {
                 if (job) await job.remove();
 
                 await slotsQueue.add(
-                    GroundSlotEvent.GENERATE, 
+                    "generate", 
                     { pitchId, groundId, event: GroundSlotEvent.GENERATE },
                     {
                         attempts: 3,

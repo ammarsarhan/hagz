@@ -57,7 +57,7 @@ export type NotificationPayloadMap = {
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "expired";
+        action: "expired because it was not approved in time" | "expired because it was not paid for in time";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_NO_SHOW]: {

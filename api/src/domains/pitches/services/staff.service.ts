@@ -11,8 +11,6 @@ import { invitationsQueue } from "@/jobs/queues/invitations.queue.js";
 import { formatInTimeZone } from "date-fns-tz";
 
 export default class StaffService {
-    private readonly notificationsService = new NotificationsService();
-
     // Helper function that returns default permissions per domain.
     private readonly createDefaultPermissions = () => ({
         settings: PermissionLevel.READ,
@@ -30,7 +28,7 @@ export default class StaffService {
         // Math.max to ensure that any delays that bypass get passed as 0 rather than negatives.
         const delay = Math.max(0, differenceInMilliseconds(expiresAt, new Date()));
         await invitationsQueue.add(
-            "invitations", 
+            "expire", 
             { invitationId, pitchId },
             { delay, attempts: 3, jobId: `invitation:${invitationId}:expire` }
         );
@@ -110,22 +108,6 @@ export default class StaffService {
         // Todo: Extend this later to ensure that it is typed safely and there is a standard message template based on the channel, domain, and event.
         await this.enqueueInvitationExpiry(data.id, pitch.id, data.expiresAt);
 
-        const actor = await prisma.user.findUnique({ where: { id: creatorId, status: { not: UserStatus.DELETED } }, include: { preferences: true } });
-        if (!actor) throw new InternalServerError("Could not find user account after creating invitation.");
-        if (!actor.preferences) throw new InternalServerError("Could not resolve preferences associated with the user account.");
-
-        await this.notificationsService.createNotification({ 
-            phone: payload.phone, 
-            event: NotificationEvent.INVITATION_RECEIVED,
-            data: {
-                receiverName: payload.name,
-                actorName: actor.firstName,
-                pitchName: pitch.name,
-                deepLink: `https://www.hagz.com/invitation/${data.id}`,
-                expiresAt: formatInTimeZone(data.expiresAt, actor.preferences.timezone, "d-M-yyyy 'at' h aa")
-            },
-        });
-
         const owner = await prisma.staff.findFirst({ 
             where: {
                 pitchId,
@@ -139,7 +121,12 @@ export default class StaffService {
         if (!owner)
             throw new InternalServerError("Could not resolve pitch owner.");
 
-        await this.notificationsService.createNotification({ 
+        const actor = await prisma.user.findUnique({ where: { id: creatorId, status: { not: UserStatus.DELETED } }, include: { preferences: true } });
+        if (!actor) throw new InternalServerError("Could not find user account after creating invitation.");
+        if (!actor.preferences) throw new InternalServerError("Could not resolve preferences associated with the user account.");
+
+        // Dispatch the owner's notification first because it has a higher priority.
+        await NotificationsService.createNotification({ 
             phone: owner.user.phone, 
             event: NotificationEvent.INVITATION_CREATED,
             data: {
@@ -148,6 +135,19 @@ export default class StaffService {
                 action: "added as a staff manager by invitation",
                 pitchName: pitch.name,
                 phone: payload.phone,
+                expiresAt: formatInTimeZone(data.expiresAt, actor.preferences.timezone, "d-M-yyyy 'at' h aa")
+            },
+        });
+
+        // Then dispatch the recipient's message.
+        await NotificationsService.createNotification({ 
+            phone: payload.phone, 
+            event: NotificationEvent.INVITATION_RECEIVED,
+            data: {
+                receiverName: payload.name,
+                actorName: actor.firstName,
+                pitchName: pitch.name,
+                deepLink: `https://www.hagz.com/invitation/${data.id}`,
                 expiresAt: formatInTimeZone(data.expiresAt, actor.preferences.timezone, "d-M-yyyy 'at' h aa")
             },
         });
