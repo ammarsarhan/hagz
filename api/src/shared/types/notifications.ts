@@ -3,6 +3,14 @@ import type { NotificationChannel, NotificationEvent } from "@/generated/prisma/
 // Map out each of the notification events to their specified payload.
 export type NotificationPayloadMap = {
     // customer template: {{1}} receiverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
+    [NotificationEvent.BOOKING_RECEIVED]: {
+        action: string;
+        groundName: string;
+        pitchName: string;
+        startTime: string;
+        customerName: string;
+        deepLink: string;
+    };
     [NotificationEvent.BOOKING_RESERVED]: {
         receiverName: string;
         groundName: string;

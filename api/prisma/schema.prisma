@@ -211,6 +211,7 @@ enum NotificationChannel {
 }
 
 enum NotificationEvent {
+  BOOKING_RECEIVED
   BOOKING_RESERVED
   BOOKING_CONFIRMED
   BOOKING_CANCELLED

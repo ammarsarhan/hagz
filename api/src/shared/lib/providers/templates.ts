@@ -34,6 +34,16 @@ type TemplateMap = {
 // onboard:    {{1}} receiverName, {{2}} actorName, {{3}} pitchName, {{4}} deepLink, {{5}} expiresAt
 
 export const templates: TemplateMap = {
+    [NotificationEvent.BOOKING_RECEIVED]: {
+        [NotificationChannel.WHATSAPP]: (ctx) => ({
+            templateName: "staff",
+            variables: [ctx.action, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.customerName, ctx.deepLink],
+        }),
+        [NotificationChannel.IN_APP]: (ctx) => ({
+            title: `Booking Received`,
+            body: `A booking has been ${ctx.action} at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} by ${ctx.customerName}.`,
+        }),
+    },
     [NotificationEvent.BOOKING_RESERVED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
             templateName: "customer",

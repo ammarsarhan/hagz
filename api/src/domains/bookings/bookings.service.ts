@@ -4,7 +4,7 @@ import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotF
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
-import { addMinutes, differenceInHours, startOfHour } from "date-fns";
+import { addMinutes, differenceInHours, format, startOfHour } from "date-fns";
 import type { Booking, Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
@@ -309,36 +309,35 @@ export default class BookingService {
             return { assignee, booking };
         });
 
-        // Create the notification for the customer.
-        const basePayload = {
-            phone: payload.customer.phone,
+        // Create the notification for the customer and dispatch it.
+        const receiverName = assignee.firstName ?? payload.customer.firstName!;
+
+        const notificationPayload = booking.status === BookingStatus.RESERVED ? {
+            event: NotificationEvent.BOOKING_RESERVED,
             data: {
-                recieverName: assignee.firstName ?? "",
+                receiverName,
                 groundName: ground.name,
                 pitchName: pitch.name,
-                startTime: booking.startTime.toISOString(),
-                deepLink: "https://www.hagz.com/booking/some-random-booking-id"
+                startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                action: "reserved" as const,
+                deepLink: `https://www.hagz.com/booking/${booking.id}`
             }
-        }
+        } : {
+            event: NotificationEvent.BOOKING_CONFIRMED,
+            data: {
+                receiverName,
+                groundName: ground.name,
+                pitchName: pitch.name,
+                startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                action: "confirmed" as const,
+                deepLink: `https://www.hagz.com/booking/${booking.id}`
+            }
+        };
 
-        const notificationPayload = 
-            status === BookingStatus.RESERVED ? 
-            {
-                phone: basePayload.phone,
-                event: NotificationEvent.BOOKING_RESERVED,
-                data: { 
-                    ...basePayload.data, 
-                    action: "reserved. Payment is still required to confirm the spot" as const 
-                }
-            } : 
-            {
-                phone: basePayload.phone,
-                event: NotificationEvent.BOOKING_CONFIRMED,
-                data: { ...basePayload.data, action: "confirmed successfully" as const }
-            };
-
-        // Shoot the customer a notification.
-        await this.notificationsService.createNotification(notificationPayload);
+        await this.notificationsService.createNotification({
+            phone: assignee.phone,
+            ...notificationPayload
+        });
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
         await this.enqueueBookingLifecycle(booking, settings);
@@ -369,16 +368,19 @@ export default class BookingService {
             await Promise.all(staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
-                // Update the payload to accept the staff member's first name.
                 if (isAllowed) {
                     await this.notificationsService.createNotification({
-                        ...notificationPayload,
                         phone: member.user.phone,
+                        event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
-                            ...notificationPayload.data,
-                            recieverName: member.user.firstName,
+                            action: booking.status === BookingStatus.CONFIRMED ? "confirmed" : "reserved",
+                            groundName: ground.name,
+                            pitchName: pitch.name,
+                            startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                            customerName: receiverName,
+                            deepLink: `https://www.hagz.com/dashboard/pitches/${pitch.id}/grounds/${ground.id}/bookings/${booking.id}`
                         }
-                    } as CreateNotificationPayload);
+                    });
                 }
             }));
         };
@@ -571,22 +573,19 @@ export default class BookingService {
             return { assignee, booking };
         });
 
-        // Create the notification for the user/booker.
-        const notificationPayload = {
-            phone,
+        // Create the notification for the customer and dispatch it.
+        await this.notificationsService.createNotification({
+            phone: assignee.phone,
             event: NotificationEvent.BOOKING_RESERVED,
-            data: { 
-                recieverName: assignee.firstName ?? "",
+            data: {
+                receiverName: user.firstName,
                 groundName: ground.name,
                 pitchName: pitch.name,
-                startTime: booking.startTime.toISOString(),
-                deepLink: "https://www.hagz.com/booking/some-random-booking-id",
-                action: "reserved. Payment is still required to confirm the spot" as const 
+                startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                action: "reserved",
+                deepLink: `https://www.hagz.com/booking/${booking.id}`
             }
-        };
-
-        // Shoot the user a notification.
-        await this.notificationsService.createNotification(notificationPayload);
+        });
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
         await this.enqueueBookingLifecycle(booking, settings);
@@ -618,13 +617,17 @@ export default class BookingService {
                 // Update the payload to accept the staff member's first name.
                 if (isAllowed) {
                     await this.notificationsService.createNotification({
-                        ...notificationPayload,
-                        phone: member.user.phone,
+                        phone: assignee.phone,
+                        event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
-                            ...notificationPayload.data,
-                            recieverName: member.user.firstName,
+                            action: "reserved",
+                            groundName: ground.name,
+                            pitchName: pitch.name,
+                            startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                            customerName: user.firstName,
+                            deepLink: `https://www.hagz.com/dashboard/pitches/${pitch.id}/grounds/${ground.id}/bookings/${booking.id}`
                         }
-                    } as CreateNotificationPayload);
+                    });
                 }
             }));
         };
