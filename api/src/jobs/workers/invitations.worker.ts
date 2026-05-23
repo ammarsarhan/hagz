@@ -24,7 +24,6 @@ const invitationsWorker = new Worker<InvitationJobPayload>("invitations",
 
 // Handle failing and mark for manual resolving.
 invitationsWorker.on("failed", async (job, err) => {
-    // Removed update function from this block because it's already being done on the worker main block.
     if (!job) return;
     console.error(`[invitations-worker] job ${job.id} (${job.name}) failed for invitation ${job.data.invitationId}:`, err.message);
 });

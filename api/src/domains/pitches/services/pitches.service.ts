@@ -17,7 +17,7 @@ export default class PitchService {
     private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
         await Promise.all(
             grounds.map(async (groundId) => {
-                const jobId = `generate-${groundId}`;
+                const jobId = `slots:${groundId}:generate`;
 
                 const job = await slotsQueue.getJob(jobId);
                 if (job) await job.remove();

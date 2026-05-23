@@ -70,7 +70,6 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
 
 // Handle failing and mark for manual resolving.
 notificationsWorker.on("failed", async (job, err) => {
-    // Removed update function from this block because it's already being done on the worker main block.
     if (!job) return;
     console.error(`[notifications-worker] job ${job.id} (${job.name}) failed for notification ${job.data.notificationId}:`, err.message);
 });

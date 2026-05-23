@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { Redis } from "ioredis";
-import { BookingEvent, type BookingJobPayload } from "@/shared/types/bookings.js";
 import prisma from "@/shared/lib/utils/prisma.js";
+import { BookingEvent, type BookingJobPayload } from "@/shared/types/bookings.js";
 import { InternalServerError } from "@/shared/lib/utils/error.js";
 import { BookingStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { bookingsQueue } from "../queues/bookings.queue.js";
@@ -56,11 +56,7 @@ const handleApprovalExpiry = async (bookingId: string) => {
         });
 
         // Remove all of the upcoming jobs in the booking's lifecycle because it has expired.
-        const baseId = `booking:${booking.id}:`
-
-        await bookingsQueue.remove(`${baseId}:payment`);
-        await bookingsQueue.remove(`${baseId}:in_progress`);
-        await bookingsQueue.remove(`${baseId}:complete`);
+        await BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.APPROVAL);
     };
 };
 
@@ -96,7 +92,7 @@ const handleStartBooking = async (bookingId: string) => {
     };
 
     // If for some reason we reach this block, remove the end booking job from the booking.
-    BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.IN_PROGRESS);
+    await BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.IN_PROGRESS);
 };
 
 const handleEndBooking = async (bookingId: string) => {
@@ -113,7 +109,6 @@ const handleEndBooking = async (bookingId: string) => {
 
 // Handle failing and mark for manual resolving.
 bookingsWorker.on("failed", async (job, err) => {
-    // Removed update function from this block because it's already being done on the worker main block.
     if (!job) return;
     console.error(`[bookings-worker] job ${job.id} (${job.name}) failed for booking ${job.data.bookingId}:`, err.message);
 });

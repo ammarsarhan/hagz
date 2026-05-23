@@ -46,7 +46,7 @@ export default class BookingService {
 
             await bookingsQueue.add("bookings", 
                 { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
-                { delay: approvalDelay, jobId: `booking:${booking.id}:approval` }
+                { delay: approvalDelay, jobId: `bookings:${booking.id}:approval` }
             );
         };
 
@@ -56,7 +56,7 @@ export default class BookingService {
 
             await bookingsQueue.add("bookings", 
                 { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
-                { delay: paymentDelay, jobId: `booking:${booking.id}:payment` }
+                { delay: paymentDelay, jobId: `bookings:${booking.id}:payment` }
             );
         };
 
@@ -64,19 +64,19 @@ export default class BookingService {
         const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
         await bookingsQueue.add("bookings", 
             { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
-            { delay: inProgressDelay, jobId: `booking:${booking.id}:in_progress` }
+            { delay: inProgressDelay, jobId: `bookings:${booking.id}:in_progress` }
         );
 
         const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
         await bookingsQueue.add("bookings", 
             { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
-            { delay: completeDelay, jobId: `booking:${booking.id}:complete` }
+            { delay: completeDelay, jobId: `bookings:${booking.id}:complete` }
         );
     };
 
     // Keep this as static because we want to be able to call it from the worker.
-    static readonly dequeueBookingLifecycle = async (bookingId: string, event: Omit<BookingEvent, "COMPLETE">) => {
-        const jobId = `booking:${bookingId}`
+    static readonly dequeueBookingLifecycle = async (bookingId: string, event?: Omit<BookingEvent, "COMPLETE">) => {
+        const jobId = `bookings:${bookingId}`
         
         switch (event) {
             case BookingEvent.APPROVAL:
@@ -366,7 +366,7 @@ export default class BookingService {
             });
 
             // Check if the staff member is allowed to recieve booking notifications.
-            staff.forEach(async (member) => {
+            await Promise.all(staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
                 // Update the payload to accept the staff member's first name.
@@ -380,7 +380,7 @@ export default class BookingService {
                         }
                     } as CreateNotificationPayload);
                 }
-            });
+            }));
         };
 
         return booking;
@@ -612,7 +612,7 @@ export default class BookingService {
             });
 
             // Check if the staff member is allowed to recieve booking notifications.
-            staff.forEach(async (member) => {
+            await Promise.all(staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
                 // Update the payload to accept the staff member's first name.
@@ -626,7 +626,7 @@ export default class BookingService {
                         }
                     } as CreateNotificationPayload);
                 }
-            });
+            }));
         };
 
         return booking;

@@ -117,14 +117,8 @@ export async function handleAdjustSlots({ groundId }: GroundSlotJobPayload) {
 
 };
 
-// Handle failing and mark for manual resolving.
+// Handle failing and log for manual resolving.
 slotsWorker.on("failed", async (job, err) => {
     if (!job) return;
-
-    await prisma.schedule.updateMany({
-        where: { groundId: job.data.groundId },
-        data: { status: ScheduleStatus.FAILED }
-    });
-
     console.error(`[slot-worker] job ${job.id} (${job.name}) failed for ground ${job.data.groundId}:`, err.message);
 });
