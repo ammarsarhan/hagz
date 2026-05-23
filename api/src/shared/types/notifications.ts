@@ -16,7 +16,7 @@ export type NotificationPayloadMap = {
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "reserved";
+        action: "reserved. Payment is still required to confirm your spot";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_CONFIRMED]: {

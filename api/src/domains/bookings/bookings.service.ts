@@ -4,13 +4,14 @@ import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotF
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
-import { addMinutes, differenceInHours, format, startOfHour } from "date-fns";
+import { addMinutes, differenceInHours, startOfHour } from "date-fns";
 import type { Booking, Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
-import NotificationsService, { type CreateNotificationPayload } from "@/domains/notifications/notifications.service.js";
+import NotificationsService from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import { bookingsQueue } from "@/jobs/queues/bookings.queue.js";
 import { BookingEvent } from "@/shared/types/bookings.js";
+import { formatInTimeZone } from "date-fns-tz";
 
 export default class BookingService {
     private readonly notificationsService = new NotificationsService();
@@ -161,7 +162,10 @@ export default class BookingService {
             hasRecord = true;
         };
 
-        const user = await prisma.user.findUnique({ where: { id: initiatorId }, select: { phone: true }});
+        const user = await prisma.user.findUnique({ 
+            where: { id: initiatorId }, 
+            include: { preferences: true }
+        });
 
         if (user && user.phone === payload.customer.phone) 
             throw new BadRequestError("A staff member may not create a booking for themselves through the dashboard. Please book through the standard user interface.", ERROR_CODES.VALIDATION_FAILED);
@@ -192,8 +196,11 @@ export default class BookingService {
             where: { 
                 phone: payload.customer.phone, 
                 status: { not: UserStatus.DELETED }
-            }}
-        );
+            },
+            include: {
+                preferences: true
+            }
+        });
 
         if (!allowGuestBookings && !match)
             throw new BadRequestError("Request booking must be for a customer with a registered user account.", ERROR_CODES.BOOKING_GUEST_NOT_ALLOWED);
@@ -312,14 +319,17 @@ export default class BookingService {
         // Create the notification for the customer and dispatch it.
         const receiverName = assignee.firstName ?? payload.customer.firstName!;
 
+        // Timezone fallback can be improved in the future, but for now within Egypt's scope, this will suffice.
+        const timezone = match?.preferences?.timezone ?? "Africa/Cairo";
+
         const notificationPayload = booking.status === BookingStatus.RESERVED ? {
             event: NotificationEvent.BOOKING_RESERVED,
             data: {
                 receiverName,
                 groundName: ground.name,
                 pitchName: pitch.name,
-                startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
-                action: "reserved" as const,
+                startTime: formatInTimeZone(booking.startTime, timezone, "d-M-yyyy 'at' h aa"),
+                action: "reserved. Payment is still required to confirm your spot" as const,
                 deepLink: `https://www.hagz.com/booking/${booking.id}`
             }
         } : {
@@ -328,7 +338,7 @@ export default class BookingService {
                 receiverName,
                 groundName: ground.name,
                 pitchName: pitch.name,
-                startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                startTime: formatInTimeZone(booking.startTime, timezone, "d-M-yyyy 'at' h aa"),
                 action: "confirmed" as const,
                 deepLink: `https://www.hagz.com/booking/${booking.id}`
             }
@@ -356,9 +366,8 @@ export default class BookingService {
                 where: { pitchId }, 
                 include: {
                     user: {
-                        select: {
-                            firstName: true,
-                            phone: true
+                        include: {
+                            preferences: true
                         }
                     }
                 }
@@ -369,6 +378,9 @@ export default class BookingService {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
                 if (isAllowed) {
+                    if (!member.user.preferences)
+                        throw new InternalServerError("Could not resolve user preferences associated with the user account.")
+
                     await this.notificationsService.createNotification({
                         phone: member.user.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
@@ -376,7 +388,7 @@ export default class BookingService {
                             action: booking.status === BookingStatus.CONFIRMED ? "confirmed" : "reserved",
                             groundName: ground.name,
                             pitchName: pitch.name,
-                            startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                            startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
                             customerName: receiverName,
                             deepLink: `https://www.hagz.com/dashboard/pitches/${pitch.id}/grounds/${ground.id}/bookings/${booking.id}`
                         }
@@ -395,15 +407,16 @@ export default class BookingService {
                 id: userId, 
                 status: { not: UserStatus.DELETED },
             }, 
-            select: { 
-                firstName: true, 
-                lastName: true, 
-                status: true 
-            } 
+            include: {
+                preferences: true
+            }
         });
 
         if (!user || user.status != UserStatus.ACTIVE)
             throw new ForbiddenError("Can not create booking for user. User account is not active.", ERROR_CODES.USER_NOT_ACTIVE);
+
+        if (!user.preferences)
+            throw new InternalServerError("Could not resolve user preferences associated with the user account.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND)
 
         // Check if a pitch exists and is in an active state first.
         const pitch = await prisma.pitch.findUnique({ 
@@ -581,8 +594,8 @@ export default class BookingService {
                 receiverName: user.firstName,
                 groundName: ground.name,
                 pitchName: pitch.name,
-                startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
-                action: "reserved",
+                startTime: formatInTimeZone(booking.startTime, user.preferences?.timezone, "d-M-yyyy 'at' h aa"),
+                action: "reserved. Payment is still required to confirm your spot",
                 deepLink: `https://www.hagz.com/booking/${booking.id}`
             }
         });
@@ -602,9 +615,8 @@ export default class BookingService {
                 where: { pitchId: payload.pitchId }, 
                 include: {
                     user: {
-                        select: {
-                            firstName: true,
-                            phone: true
+                        include: {
+                            preferences: true
                         }
                     }
                 }
@@ -616,14 +628,17 @@ export default class BookingService {
 
                 // Update the payload to accept the staff member's first name.
                 if (isAllowed) {
+                    if (!member.user.preferences)
+                        throw new InternalServerError("Could not resolve user preferences associated with the user account.")
+
                     await this.notificationsService.createNotification({
                         phone: assignee.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
-                            action: "reserved",
+                            action: "reserved. Payment is still required to confirm your spot",
                             groundName: ground.name,
                             pitchName: pitch.name,
-                            startTime: format(booking.startTime, "d-M-yyyy 'at' h aa"),
+                            startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
                             customerName: user.firstName,
                             deepLink: `https://www.hagz.com/dashboard/pitches/${pitch.id}/grounds/${ground.id}/bookings/${booking.id}`
                         }
