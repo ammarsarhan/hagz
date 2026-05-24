@@ -45,7 +45,7 @@ export default class BookingService {
 
             await bookingsQueue.add("approval", 
                 { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
-                { delay: 10000, jobId: `bookings:${booking.id}:approval` }
+                { delay: 10000, jobId: `bookings-${booking.id}-approval` }
             );
         };
 
@@ -55,7 +55,7 @@ export default class BookingService {
 
             await bookingsQueue.add("payment", 
                 { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
-                { delay: 20000, jobId: `bookings:${booking.id}:payment` }
+                { delay: 20000, jobId: `bookings-${booking.id}-payment` }
             );
         };
 
@@ -65,7 +65,7 @@ export default class BookingService {
 
             await bookingsQueue.add("reminder",
                 { bookingId: booking.id, event: BookingEvent.REMINDER },
-                { delay: 30000, jobId: `bookings:${booking.id}:reminder` }
+                { delay: 30000, jobId: `bookings-${booking.id}-reminder` }
             );
         };
 
@@ -73,48 +73,48 @@ export default class BookingService {
         const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
         await bookingsQueue.add("start", 
             { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
-            { delay: 40000, jobId: `bookings:${booking.id}:in_progress` }
+            { delay: 40000, jobId: `bookings-${booking.id}-in_progress` }
         );
 
         const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
         await bookingsQueue.add("end", 
             { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
-            { delay: 50000, jobId: `bookings:${booking.id}:complete` }
+            { delay: 50000, jobId: `bookings-${booking.id}-complete` }
         );
     };
 
     // Keep this as static because we want to be able to call it from the worker.
     static readonly dequeueBookingLifecycle = async (bookingId: string, event?: Omit<BookingEvent, "COMPLETE">) => {
-        const jobId = `bookings:${bookingId}`
+        const jobId = `bookings-${bookingId}`
         
         switch (event) {
             case BookingEvent.APPROVAL:
                 {
-                    await bookingsQueue.remove(`${jobId}:payment`);
-                    await bookingsQueue.remove(`${jobId}:reminder`);
-                    await bookingsQueue.remove(`${jobId}:in_progress`);
-                    await bookingsQueue.remove(`${jobId}:complete`);
+                    await bookingsQueue.remove(`${jobId}-payment`);
+                    await bookingsQueue.remove(`${jobId}-reminder`);
+                    await bookingsQueue.remove(`${jobId}-in_progress`);
+                    await bookingsQueue.remove(`${jobId}-complete`);
                     break;
                 }
             case BookingEvent.PAYMENT:
                 {
-                    await bookingsQueue.remove(`${jobId}:reminder`);
-                    await bookingsQueue.remove(`${jobId}:in_progress`);
-                    await bookingsQueue.remove(`${jobId}:complete`);
+                    await bookingsQueue.remove(`${jobId}-reminder`);
+                    await bookingsQueue.remove(`${jobId}-in_progress`);
+                    await bookingsQueue.remove(`${jobId}-complete`);
                     break;
                 }
             case BookingEvent.IN_PROGRESS:
                 {
-                    await bookingsQueue.remove(`${jobId}:complete`);
+                    await bookingsQueue.remove(`${jobId}-complete`);
                     break;
                 }
             default:
                 {
-                    await bookingsQueue.remove(`${jobId}:approval`);
-                    await bookingsQueue.remove(`${jobId}:payment`);
-                    await bookingsQueue.remove(`${jobId}:reminder`);
-                    await bookingsQueue.remove(`${jobId}:in_progress`);
-                    await bookingsQueue.remove(`${jobId}:complete`);
+                    await bookingsQueue.remove(`${jobId}-approval`);
+                    await bookingsQueue.remove(`${jobId}-payment`);
+                    await bookingsQueue.remove(`${jobId}-reminder`);
+                    await bookingsQueue.remove(`${jobId}-in_progress`);
+                    await bookingsQueue.remove(`${jobId}-complete`);
                 }
         }
     };

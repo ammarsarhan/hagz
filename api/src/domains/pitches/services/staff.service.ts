@@ -30,12 +30,12 @@ export default class StaffService {
         await invitationsQueue.add(
             "expire", 
             { invitationId, pitchId },
-            { delay, attempts: 3, jobId: `invitation:${invitationId}:expire` }
+            { delay, attempts: 3, jobId: `invitation-${invitationId}-expire` }
         );
     } 
 
     private readonly dequeueInvitationExpiry = async (invitationId: string) => {
-        await invitationsQueue.remove(`invitation:${invitationId}:expire`);
+        await invitationsQueue.remove(`invitation-${invitationId}-expire`);
     };
 
     createInvitation = async (pitchId: string, creatorId: string, payload: CreateInvitationPayloadType) => {

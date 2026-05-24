@@ -5,6 +5,7 @@ import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
 import { PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { addDays } from "date-fns";
 import { GroundSlotEvent, type GroundSlotJobPayload } from "@/shared/types/slots.js";
+import { slotsQueue } from "../queues/slots.queue.js";
 
 const slotsWorker = new Worker<GroundSlotJobPayload>("slots", 
     async (job) => {
@@ -18,7 +19,9 @@ const slotsWorker = new Worker<GroundSlotJobPayload>("slots",
         }
     },
     {
-        connection: new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null })
+        connection: new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null }),
+        removeOnComplete: { count: 0 },
+        removeOnFail: { count: 50 }
     }
 );
 
@@ -211,6 +214,7 @@ export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayl
 
 export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: GroundSlotJobPayload) {
     const settings = await prisma.groundSettings.findUnique({ where: { groundId } });
+    
     if (!settings) throw new InternalServerError(
         "Could not find settings associated with the specified ground.",
         ERROR_CODES.GROUND_SETTINGS_MISSING
@@ -239,19 +243,19 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
 
             // Delete only future AVAILABLE slots for this day-of-week.
             // Booked/past slots are left untouched.
-            const futureDatesForDay = dates.filter(d => {
+            const futureDates = dates.filter(d => {
                 const day = d.getUTCDay();
                 const normalized = schedule.dayOfWeek === 7 ? 0 : schedule.dayOfWeek;
                 return day === normalized;
             });
 
-            if (futureDatesForDay.length === 0) continue;
+            if (futureDates.length === 0) continue;
 
-            const startOfFirst = futureDatesForDay[0];
+            const startOfFirst = futureDates[0];
             const endOfLast = new Date(Date.UTC(
-                futureDatesForDay.at(-1)!.getUTCFullYear(),
-                futureDatesForDay.at(-1)!.getUTCMonth(),
-                futureDatesForDay.at(-1)!.getUTCDate(),
+                futureDates.at(-1)!.getUTCFullYear(),
+                futureDates.at(-1)!.getUTCMonth(),
+                futureDates.at(-1)!.getUTCDate(),
                 23
             ));
 
@@ -260,8 +264,11 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
                     groundId,
                     status: SlotStatus.AVAILABLE,
                     startsAt: {
-                        gte: startOfFirst,
-                        lte: endOfLast,
+                        in: futureDates.map(date => 
+                            Array.from({ length: 24 }, (_, h) =>
+                                new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h))
+                            )
+                        ).flat(),
                     },
                 },
             });
@@ -271,7 +278,7 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
             const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
             const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
 
-            const slots = futureDatesForDay.flatMap(date => {
+            const slots = futureDates.flatMap(date => {
                 const hours: Array<GenerateSlotType> = [];
                 for (let h = 0; h < 24; h++) {
                     const bit = 1 << h;
@@ -299,6 +306,8 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
                 where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
                 data: { status: ScheduleStatus.READY },
             });
+
+            await slotsQueue.remove(`slots-${groundId}-adjust-${dayOfWeek}`);
 
             console.log(`[slots-worker] Adjusted slots for ground ${groundId}, dayOfWeek ${schedule.dayOfWeek}.`);
         } catch (err) {

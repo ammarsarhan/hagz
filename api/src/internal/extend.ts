@@ -26,12 +26,11 @@ export async function scheduleSlotExtension() {
             },
             {
                 repeat: {
-                    // Midnight UTC every day.
-                    pattern: "0 0 * * *", 
-                    // pattern: "* * * * *",
+                    // This job needs to run at midnight UTC every day.
+                    pattern: "0 0 * * *",
                 },
                 // Delete duplicates across restarts.
-                jobId: `slots:${ground.id}:extend`,
+                jobId: `slots-${ground.id}-extend`,
             }
         );
     }
