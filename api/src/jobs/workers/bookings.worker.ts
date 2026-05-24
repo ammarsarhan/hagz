@@ -26,6 +26,12 @@ const bookingsWorker = new Worker<BookingJobPayload>("bookings",
                         await handlePaymentExpiry(bookingId);
                         break;
                     }
+                case BookingEvent.REMINDER:
+                    {
+                        const bookingId = job.data.bookingId;
+                        await handleReminder(bookingId);
+                        break;
+                    }
                 case BookingEvent.IN_PROGRESS:
                     {
                         const bookingId = job.data.bookingId;
@@ -123,7 +129,7 @@ const handleApprovalExpiry = async (bookingId: string) => {
         if (!booking.ground.settings)
             throw new InternalServerError("Could not resolve settings associated with the booked ground.");
 
-        if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_EXPIRED)) {
+        if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_UPDATED)) {
             // Check if the staff member is allowed to recieve booking notifications.
             await Promise.all(booking.pitch.staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
@@ -134,13 +140,13 @@ const handleApprovalExpiry = async (bookingId: string) => {
 
                     await NotificationsService.createNotification({
                         phone: member.user.phone,
-                        event: NotificationEvent.BOOKING_EXPIRED,
+                        event: NotificationEvent.BOOKING_UPDATED,
                         data: {
-                            receiverName: member.user.firstName,
+                            action: "marked as expired because it was not approved by staff",
                             groundName: booking.ground.name,
                             pitchName: booking.pitch.name,
                             startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
-                            action: "expired because it was not approved in time",
+                            customerName: receiverName!,
                             deepLink: `https://www.hagz.com/dashboard/pitches/${booking.pitchId}/grounds/${booking.groundId}/bookings/${bookingId}`
                         }
                     });
@@ -190,7 +196,8 @@ const handlePaymentExpiry = async (bookingId: string) => {
     if (!booking)
         throw new InternalServerError("Could not find a booking with the specified ID.");
 
-    if (booking.status !== BookingStatus.CONFIRMED) {
+    // If the booking was approved and payment was not confirmed, expire the booking.
+    if (booking.isApproved && booking.status !== BookingStatus.CONFIRMED) {
         // Update the booking to expired and allow all the groundSlots to be booked again.
         await prisma.$transaction(async tx => {
             await tx.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.EXPIRED } });
@@ -220,7 +227,7 @@ const handlePaymentExpiry = async (bookingId: string) => {
         if (!booking.ground.settings)
             throw new InternalServerError("Could not resolve settings associated with the booked ground.");
 
-        if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_EXPIRED)) {
+        if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_UPDATED)) {
             // Check if the staff member is allowed to recieve booking notifications.
             await Promise.all(booking.pitch.staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
@@ -231,13 +238,13 @@ const handlePaymentExpiry = async (bookingId: string) => {
 
                     await NotificationsService.createNotification({
                         phone: member.user.phone,
-                        event: NotificationEvent.BOOKING_EXPIRED,
+                        event: NotificationEvent.BOOKING_UPDATED,
                         data: {
-                            receiverName: member.user.firstName,
+                            action: "marked as expired because it was not paid in time",
                             groundName: booking.ground.name,
                             pitchName: booking.pitch.name,
                             startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
-                            action: "expired because it was not paid for in time",
+                            customerName: receiverName!,
                             deepLink: `https://www.hagz.com/dashboard/pitches/${booking.pitchId}/grounds/${booking.groundId}/bookings/${bookingId}`
                         }
                     });
@@ -245,6 +252,92 @@ const handlePaymentExpiry = async (bookingId: string) => {
             }));
         }
     };
+};
+
+const handleReminder = async (bookingId: string) => {
+    const booking = await prisma.booking.findUnique({ 
+        where: { id: bookingId }, 
+        include: { 
+            slots: true,
+            customer: {
+                include: { 
+                    user: { 
+                        include: { preferences: true }
+                    } 
+                }
+            },
+            ground: { 
+                select: {
+                    name: true,
+                    settings: {
+                        select: {
+                            notificationsTrigger: true
+                        }
+                    }
+                },
+            },
+            pitch: { 
+                select: {
+                    name: true,
+                    staff: {
+                        include: {
+                            user: {
+                                include: { preferences: true }
+                            }
+                        }
+                    }
+                } 
+            }
+        }
+    });
+
+    // If we can not find the booking, or it is not both approved and paid, then do not dispatch the reminder notification.
+    if (!booking || !booking.isApproved || booking.status != BookingStatus.CONFIRMED)
+        return;
+    
+    // Send a reminder notification to both the staff and the customer.
+    const receiverName = booking.customer.firstName ?? booking.customer.user?.firstName;
+    const timezone = booking.customer.user?.preferences?.timezone ?? "Africa/Cairo";
+
+    await NotificationsService.createNotification({
+        phone: booking.customer.phone,
+        event: NotificationEvent.BOOKING_REMINDER,
+        data: {
+            // ctx.receiverName, ctx.bookingArticle, ctx.groundName, ctx.pitchName, ctx.startTime
+            receiverName: receiverName!,
+            bookingArticle: "Your",
+            groundName: booking.ground.name,
+            pitchName: booking.pitch.name,
+            startTime: formatInTimeZone(booking.startTime, timezone, "d-M-yyyy 'at' h aa")
+        }
+    });
+
+    if (!booking.ground.settings)
+        throw new InternalServerError("Could not resolve settings associated with the booked ground.");
+
+    if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_REMINDER)) {
+        // Check if the staff member is allowed to recieve booking notifications.
+        await Promise.all(booking.pitch.staff.map(async (member) => {
+            const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
+
+            if (isAllowed) {
+                if (!member.user.preferences)
+                    throw new InternalServerError("Could not resolve user preferences associated with the user account.")
+
+                await NotificationsService.createNotification({
+                    phone: member.user.phone,
+                    event: NotificationEvent.BOOKING_REMINDER,
+                    data: {
+                        receiverName: member.user.firstName,
+                        bookingArticle: "The",
+                        groundName: booking.ground.name,
+                        pitchName: booking.pitch.name,
+                        startTime: formatInTimeZone(booking.startTime, timezone, "d-M-yyyy 'at' h aa")
+                    }
+                });
+            }
+        }));
+    }
 };
 
 const handleStartBooking = async (bookingId: string) => {
@@ -287,14 +380,14 @@ const handleStartBooking = async (bookingId: string) => {
     if (!booking)
         throw new InternalServerError("Could not find a booking with the specified ID.");
     
-    // Only start the booking if the booking has not been expired.
-    if (booking.status === BookingStatus.CONFIRMED) {
-        await prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.IN_PROGRESS } });
+    // If for some reason we reach this block, remove the end booking job from the booking.
+    if (booking.status !== BookingStatus.CONFIRMED) {
+        await BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.IN_PROGRESS);
         return;
     };
-
-    // If for some reason we reach this block, remove the end booking job from the booking.
-    await BookingService.dequeueBookingLifecycle(bookingId, BookingEvent.IN_PROGRESS);
+    
+    // Only start the booking if the booking has not been expired.
+    await prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.IN_PROGRESS } });
 
     // And send a notification to both the staff and the customer.
     const receiverName = booking.customer.firstName ?? booking.customer.user?.firstName;
@@ -316,7 +409,7 @@ const handleStartBooking = async (bookingId: string) => {
     if (!booking.ground.settings)
         throw new InternalServerError("Could not resolve settings associated with the booked ground.");
 
-    if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_EXPIRED)) {
+    if (booking.ground.settings.notificationsTrigger.includes(NotificationEvent.BOOKING_UPDATED)) {
         // Check if the staff member is allowed to recieve booking notifications.
         await Promise.all(booking.pitch.staff.map(async (member) => {
             const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
@@ -327,13 +420,13 @@ const handleStartBooking = async (bookingId: string) => {
 
                 await NotificationsService.createNotification({
                     phone: member.user.phone,
-                    event: NotificationEvent.BOOKING_STARTED,
+                    event: NotificationEvent.BOOKING_UPDATED,
                     data: {
-                        receiverName: member.user.firstName,
+                        action: "marked as in progress",
                         groundName: booking.ground.name,
                         pitchName: booking.pitch.name,
                         startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
-                        action: "marked as in progress",
+                        customerName: receiverName!,
                         deepLink: `https://www.hagz.com/dashboard/pitches/${booking.pitchId}/grounds/${booking.groundId}/bookings/${bookingId}`
                     }
                 });

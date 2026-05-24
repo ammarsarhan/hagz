@@ -24,6 +24,7 @@ export type BookingJobPayload = {
 export const BookingEvent = {
   APPROVAL: 'APPROVAL',
   PAYMENT: 'PAYMENT',
+  REMINDER: 'REMINDER',
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETE: 'COMPLETE'
 } as const

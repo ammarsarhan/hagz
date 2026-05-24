@@ -28,13 +28,23 @@ type TemplateMap = {
 // WhatsApp template variable reference:
 // customer:   {{1}} receiverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
 // staff:      {{1}} action, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} customerName, {{6}} deepLink
-// reminder:   {{1}} receiverName, {{2}} bookingArticle ("your"/"a"), {{3}} groundName, {{4}} pitchName, {{5}} startTime
+// reminder:   {{1}} receiverName, {{2}} bookingArticle ("Your"/"The"), {{3}} groundName, {{4}} pitchName, {{5}} startTime
 // payout:     {{1}} receiverName, {{2}} payoutReference, {{3}} processedAt, {{4}} action, {{5}} deepLink
 // invitation: {{1}} receiverName, {{2}} actorName, {{3}} action, {{4}} pitchName
 // onboard:    {{1}} receiverName, {{2}} actorName, {{3}} pitchName, {{4}} deepLink, {{5}} expiresAt
 
 export const templates: TemplateMap = {
     [NotificationEvent.BOOKING_RECEIVED]: {
+        [NotificationChannel.WHATSAPP]: (ctx) => ({
+            templateName: "staff",
+            variables: [ctx.action, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.customerName, ctx.deepLink],
+        }),
+        [NotificationChannel.IN_APP]: (ctx) => ({
+            title: `Booking Received`,
+            body: `A booking has been ${ctx.action} at ${ctx.groundName} (${ctx.pitchName}) for ${ctx.startTime} by ${ctx.customerName}.`,
+        }),
+    },
+    [NotificationEvent.BOOKING_UPDATED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
             templateName: "staff",
             variables: [ctx.action, ctx.groundName, ctx.pitchName, ctx.startTime, ctx.customerName, ctx.deepLink],

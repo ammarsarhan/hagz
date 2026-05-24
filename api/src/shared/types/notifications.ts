@@ -2,7 +2,7 @@ import type { NotificationChannel, NotificationEvent } from "@/generated/prisma/
 
 // Map out each of the notification events to their specified payload.
 export type NotificationPayloadMap = {
-    // customer template: {{1}} receiverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
+    // staff template: {{1}} action, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} customerName, {{6}} deepLink
     [NotificationEvent.BOOKING_RECEIVED]: {
         action: string;
         groundName: string;
@@ -11,6 +11,15 @@ export type NotificationPayloadMap = {
         customerName: string;
         deepLink: string;
     };
+    [NotificationEvent.BOOKING_UPDATED]: {
+        action: string;
+        groundName: string;
+        pitchName: string;
+        startTime: string;
+        customerName: string;
+        deepLink: string;
+    };
+    // customer template: {{1}} receiverName, {{2}} groundName, {{3}} pitchName, {{4}} startTime, {{5}} action, {{6}} deepLink
     [NotificationEvent.BOOKING_RESERVED]: {
         receiverName: string;
         groundName: string;
@@ -35,7 +44,6 @@ export type NotificationPayloadMap = {
         action: "cancelled";
         deepLink: string;
     };
-    // Todo: Consider a dedicated template to make the new time explicit.
     [NotificationEvent.BOOKING_RESCHEDULED]: {
         receiverName: string;
         groundName: string;
@@ -71,7 +79,7 @@ export type NotificationPayloadMap = {
     // reminder template: {{1}} receiverName, {{2}} bookingArticle, {{3}} groundName, {{4}} pitchName, {{5}} startTime
     [NotificationEvent.BOOKING_REMINDER]: {
         receiverName: string;
-        bookingArticle: "your" | "a";
+        bookingArticle: "Your" | "The";
         groundName: string;
         pitchName: string;
         startTime: string;

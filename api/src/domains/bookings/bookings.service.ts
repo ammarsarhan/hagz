@@ -4,7 +4,7 @@ import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotF
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
-import { addMinutes, differenceInHours, startOfHour } from "date-fns";
+import { addMinutes, differenceInHours, differenceInMilliseconds, startOfHour, subHours } from "date-fns";
 import type { Booking, Ground, GroundSettings, GroundSlot } from "@/generated/prisma/client.js";
 import NotificationsService from "@/domains/notifications/notifications.service.js";
 import hasPermissions from "@/shared/lib/utils/permissions.js";
@@ -59,6 +59,16 @@ export default class BookingService {
             );
         };
 
+        // Set a reminder 2 hours before the booking if we are booking more than 2 hours prior to the startTime.
+        if (differenceInMilliseconds(subHours(booking.startTime, 2), new Date()) > 0) {
+            const reminderDelay = differenceInMilliseconds(subHours(booking.startTime, 2), new Date());
+
+            await bookingsQueue.add("reminder",
+                { bookingId: booking.id, event: BookingEvent.REMINDER },
+                { delay: 30000, jobId: `bookings:${booking.id}:reminder` }
+            );
+        };
+
         // Regardless of the status, bookings need to pass by both the IN_PROGRESS and COMPLETE handlers.
         const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
         await bookingsQueue.add("start", 
@@ -69,7 +79,7 @@ export default class BookingService {
         const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
         await bookingsQueue.add("end", 
             { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
-            { delay: 60000, jobId: `bookings:${booking.id}:complete` }
+            { delay: 50000, jobId: `bookings:${booking.id}:complete` }
         );
     };
 
@@ -81,12 +91,14 @@ export default class BookingService {
             case BookingEvent.APPROVAL:
                 {
                     await bookingsQueue.remove(`${jobId}:payment`);
+                    await bookingsQueue.remove(`${jobId}:reminder`);
                     await bookingsQueue.remove(`${jobId}:in_progress`);
                     await bookingsQueue.remove(`${jobId}:complete`);
                     break;
                 }
             case BookingEvent.PAYMENT:
                 {
+                    await bookingsQueue.remove(`${jobId}:reminder`);
                     await bookingsQueue.remove(`${jobId}:in_progress`);
                     await bookingsQueue.remove(`${jobId}:complete`);
                     break;
@@ -100,6 +112,7 @@ export default class BookingService {
                 {
                     await bookingsQueue.remove(`${jobId}:approval`);
                     await bookingsQueue.remove(`${jobId}:payment`);
+                    await bookingsQueue.remove(`${jobId}:reminder`);
                     await bookingsQueue.remove(`${jobId}:in_progress`);
                     await bookingsQueue.remove(`${jobId}:complete`);
                 }
@@ -383,7 +396,7 @@ export default class BookingService {
                         phone: member.user.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
-                            action: booking.status === BookingStatus.CONFIRMED ? "confirmed" : "reserved",
+                            action: booking.status === BookingStatus.CONFIRMED ? "confirmed" : "reserved. Payment is still required to confirm the spot",
                             groundName: ground.name,
                             pitchName: pitch.name,
                             startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
@@ -633,7 +646,7 @@ export default class BookingService {
                         phone: member.user.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
-                            action: "reserved. Payment is still required to confirm your spot",
+                            action: "reserved. Payment is still required to confirm the spot",
                             groundName: ground.name,
                             pitchName: pitch.name,
                             startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),

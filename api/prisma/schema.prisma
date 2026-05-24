@@ -204,7 +204,7 @@ enum NotificationChannel {
 }
 
 enum NotificationEvent {
-  BOOKING_RECEIVED
+  // Customer-facing
   BOOKING_RESERVED
   BOOKING_CONFIRMED
   BOOKING_CANCELLED
@@ -213,6 +213,10 @@ enum NotificationEvent {
   BOOKING_STARTED
   BOOKING_EXPIRED
   BOOKING_NO_SHOW
+
+  // Staff-facing
+  BOOKING_RECEIVED
+  BOOKING_UPDATED
   PAYOUT_PROCESSED
   PAYOUT_FAILED
   INVITATION_CREATED
