@@ -109,12 +109,208 @@ export async function handleGenerateSlots({ pitchId, groundId }: GroundSlotJobPa
     console.log(`[slots-worker] [${new Date().toLocaleDateString()}] Finished slot generation for ground ${groundId}.`);
 };
 
-export async function handleExtendSlots({ groundId }: GroundSlotJobPayload) {
+export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayload) {
+    const settings = await prisma.groundSettings.findUnique({ where: { groundId } });
+
+    if (!settings) throw new InternalServerError(
+        "Could not find settings associated with the specified ground.",
+        ERROR_CODES.GROUND_SETTINGS_MISSING
+    );
+
+    const schedules = await prisma.schedule.findMany({ where: { groundId } });
+
+    if (schedules.length !== 7) throw new InternalServerError(
+        "Ground schedule contains less than or more than 7 day records.",
+        ERROR_CODES.GROUND_SCHEDULE_MISSING
+    );
+
+    const now = new Date();
+    const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    // Prune slots older than 30 days.
+    const pruneThreshold = addDays(utcMidnight, -30);
+    const pruned = await prisma.groundSlot.deleteMany({
+        where: { groundId, startsAt: { lt: pruneThreshold } },
+    });
     
+    console.log(`[slots-worker] Pruned ${pruned.count} stale slots for ground ${groundId}.`);
+
+    // Find the furthest existing slot and collect all missing dates up to the window end.
+    const lastSlot = await prisma.groundSlot.findFirst({
+        where: { groundId },
+        orderBy: { startsAt: "desc" },
+    });
+
+    const startFrom = lastSlot
+        ? addDays(new Date(Date.UTC(
+            lastSlot.startsAt.getUTCFullYear(),
+            lastSlot.startsAt.getUTCMonth(),
+            lastSlot.startsAt.getUTCDate(),
+        )), 1)
+        : utcMidnight;
+
+    const windowEnd = addDays(utcMidnight, Math.ceil(settings.maximumWindow / 24));
+
+    const missingDates: Date[] = [];
+    let cursor = startFrom;
+    
+    while (cursor < windowEnd) {
+        missingDates.push(cursor);
+        cursor = addDays(cursor, 1);
+    }
+
+    if (missingDates.length === 0) {
+        console.log(`[slots-worker] No missing dates to extend for ground ${groundId}.`);
+        return;
+    }
+
+    // Group missing dates by day-of-week and generate slots for each.
+    const slots: Array<GenerateSlotType & { startsAt: Date }> = [];
+
+    for (const date of missingDates) {
+        const targetDayOfWeek = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
+        const schedule = schedules.find(s => s.dayOfWeek === targetDayOfWeek);
+
+        if (!schedule) {
+            console.warn(`[slots-worker] No schedule found for dayOfWeek ${targetDayOfWeek}, skipping ${date.toISOString()}.`);
+            continue;
+        }
+
+        if (schedule.status !== ScheduleStatus.READY) {
+            console.warn(`[slots-worker] Schedule for dayOfWeek ${targetDayOfWeek} is not ready (${schedule.status}), skipping ${date.toISOString()}.`);
+            continue;
+        }
+
+        const baseMask     = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
+        const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
+        const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
+
+        for (let h = 0; h < 24; h++) {
+            const bit = 1 << h;
+            const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
+
+            if      (peakMask & bit)     slots.push({ startsAt, priceType: PriceType.PEAK });
+            else if (discountMask & bit) slots.push({ startsAt, priceType: PriceType.DISCOUNT });
+            else if (baseMask & bit)     slots.push({ startsAt, priceType: PriceType.BASE });
+        }
+    }
+
+    await prisma.groundSlot.createMany({
+        data: slots.map(({ startsAt, priceType }) => ({
+            groundId,
+            pitchId,
+            startsAt,
+            priceType,
+            status: SlotStatus.AVAILABLE,
+        })),
+        skipDuplicates: true,
+    });
+
+    console.log(`[slots-worker] Extended slots for ground ${groundId}. Added ${slots.length} slots across ${missingDates.length} days.`);
 };
 
-export async function handleAdjustSlots({ groundId }: GroundSlotJobPayload) {
+export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: GroundSlotJobPayload) {
+    const settings = await prisma.groundSettings.findUnique({ where: { groundId } });
+    if (!settings) throw new InternalServerError(
+        "Could not find settings associated with the specified ground.",
+        ERROR_CODES.GROUND_SETTINGS_MISSING
+    );
 
+    // Fetch only schedules that were recently upserted (GENERATING acts as a dirty flag,
+    // but here we adjust all — caller should mark them or pass dayOfWeek in the payload if targeted).
+    const schedules = await prisma.schedule.findMany({ 
+        where: { 
+            groundId,
+            ...(dayOfWeek !== undefined && { dayOfWeek }),
+        } 
+    });
+
+    const now = new Date();
+    const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const limit = Math.ceil(settings.maximumWindow / 24);
+    const dates = Array.from({ length: limit }, (_, i) => addDays(utcMidnight, i));
+
+    for (const schedule of schedules) {
+        try {
+            await prisma.schedule.update({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
+                data: { status: ScheduleStatus.GENERATING },
+            });
+
+            // Delete only future AVAILABLE slots for this day-of-week.
+            // Booked/past slots are left untouched.
+            const futureDatesForDay = dates.filter(d => {
+                const day = d.getUTCDay();
+                const normalized = schedule.dayOfWeek === 7 ? 0 : schedule.dayOfWeek;
+                return day === normalized;
+            });
+
+            if (futureDatesForDay.length === 0) continue;
+
+            const startOfFirst = futureDatesForDay[0];
+            const endOfLast = new Date(Date.UTC(
+                futureDatesForDay.at(-1)!.getUTCFullYear(),
+                futureDatesForDay.at(-1)!.getUTCMonth(),
+                futureDatesForDay.at(-1)!.getUTCDate(),
+                23
+            ));
+
+            await prisma.groundSlot.deleteMany({
+                where: {
+                    groundId,
+                    status: SlotStatus.AVAILABLE,
+                    startsAt: {
+                        gte: startOfFirst,
+                        lte: endOfLast,
+                    },
+                },
+            });
+
+            // Regenerate with the updated schedule config.
+            const baseMask     = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
+            const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
+            const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
+
+            const slots = futureDatesForDay.flatMap(date => {
+                const hours: Array<GenerateSlotType> = [];
+                for (let h = 0; h < 24; h++) {
+                    const bit = 1 << h;
+                    const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
+
+                    if      (peakMask & bit)     hours.push({ startsAt, priceType: PriceType.PEAK });
+                    else if (discountMask & bit) hours.push({ startsAt, priceType: PriceType.DISCOUNT });
+                    else if (baseMask & bit)     hours.push({ startsAt, priceType: PriceType.BASE });
+                }
+                return hours;
+            });
+
+            await prisma.groundSlot.createMany({
+                data: slots.map(({ startsAt, priceType }) => ({
+                    groundId,
+                    pitchId,
+                    startsAt,
+                    priceType,
+                    status: SlotStatus.AVAILABLE,
+                })),
+                skipDuplicates: true,
+            });
+
+            await prisma.schedule.update({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
+                data: { status: ScheduleStatus.READY },
+            });
+
+            console.log(`[slots-worker] Adjusted slots for ground ${groundId}, dayOfWeek ${schedule.dayOfWeek}.`);
+        } catch (err) {
+            await prisma.schedule.update({
+                where: { groundId_dayOfWeek: { groundId, dayOfWeek: schedule.dayOfWeek } },
+                data: { status: ScheduleStatus.FAILED },
+            });
+            throw err;
+        }
+    }
+
+    console.log(`[slots-worker] Finished adjusting slots for ground ${groundId}.`);
 };
 
 // Handle failing and log for manual resolving.

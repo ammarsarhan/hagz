@@ -1,6 +1,7 @@
 import z from "zod";
 import type { Language, NotificationChannel, PaymentMethod, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
 import type { Staff, User, UserPreferences } from "@/generated/prisma/client.js";
+import type { Permissions } from "@/shared/types/staff.js";
 
 // Fetch user by either phone or id.
 export type FetchUserPayloadType = 
@@ -24,7 +25,7 @@ export type UserResponseType = {
     pitches: Array<{
         pitchId: string,
         role: StaffRole,
-        permissions: any // Todo: Modify this later to accept a standardized permissions object.
+        permissions: Permissions
     }>
 }
 
@@ -76,7 +77,7 @@ export const createUserResponse = (user: User, preferences: UserPreferences, pit
         pitches: pitches.map(item => ({
             pitchId: item.pitchId,
             role: item.role,
-            permissions: item.permissions
+            permissions: item.permissions as Permissions
         }))
     };
 }

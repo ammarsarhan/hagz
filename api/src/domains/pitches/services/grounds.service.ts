@@ -5,6 +5,8 @@ import { GroundStatus, PitchStatus, ScheduleStatus } from "@/generated/prisma/en
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
 import config from "@/shared/config.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
+import { slotsQueue } from "@/jobs/queues/slots.queue.js";
+import { GroundSlotEvent } from "@/shared/types/slots.js";
 
 export default class GroundService {
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
@@ -226,7 +228,7 @@ export default class GroundService {
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
-        if (schedule && schedule.status === ScheduleStatus.GENERATING) throw new BadRequestError("Schedule is currently generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
+        if (schedule && schedule.status !== ScheduleStatus.READY) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
 
         const updated = await prisma.$transaction(async (tx) => {
             // Convert the time ranges from numerical values to bytes.
@@ -258,15 +260,28 @@ export default class GroundService {
                 }
             });
 
-            // Todo: Implement the logic to add a job based on the pitch's current state.
-
             return {
                 ...schedule,
                 baseHours: bytesToTimeRanges(schedule.baseHours),
                 peakHours: bytesToTimeRanges(schedule.peakHours),
                 discountHours: bytesToTimeRanges(schedule.discountHours),
             };
-        })
+        });
+
+        if (schedule) {
+            await slotsQueue.add(
+                "adjust",
+                {
+                    event: GroundSlotEvent.ADJUST,
+                    groundId,
+                    pitchId,
+                    dayOfWeek,
+                },
+                {
+                    jobId: `slots:${groundId}:adjust:${dayOfWeek}`,
+                }
+            )
+        }
         
         return updated;
     };

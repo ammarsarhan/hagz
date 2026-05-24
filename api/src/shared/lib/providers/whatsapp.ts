@@ -12,7 +12,6 @@ export default async function sendWhatsapp({ to, templateName, variables, langua
 
     const target = `https://graph.facebook.com/v25.0/${id}/messages`;
 
-    // Todo: Update this once the booking template has been approved.
     const res = await fetch(target, {
         method: "POST",
         headers: {

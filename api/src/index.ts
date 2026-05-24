@@ -10,6 +10,7 @@ import general from '@/general.js';
 import dashboard from '@/dashboard.js';
 
 import AppError from '@/shared/lib/utils/error.js'
+import { scheduleSlotExtension } from './internal/extend.js'
 
 const app = new Hono();
 
@@ -80,6 +81,8 @@ serve({
   fetch: app.fetch,
   port: 8080,
   hostname: '0.0.0.0'
-}, (info) => {
-  console.log(`Server is running on http://localhost:${info.port}`)
+}, async (info) => {
+  console.log(`Server is running on http://localhost:${info.port}`);
+  await scheduleSlotExtension();
+  console.log(`[slots-worker] Extend jobs scheduled for all grounds.`);
 })

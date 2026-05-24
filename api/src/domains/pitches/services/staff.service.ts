@@ -105,7 +105,6 @@ export default class StaffService {
         });
 
         // Call the notifications service to send out the deliveries.
-        // Todo: Extend this later to ensure that it is typed safely and there is a standard message template based on the channel, domain, and event.
         await this.enqueueInvitationExpiry(data.id, pitch.id, data.expiresAt);
 
         const owner = await prisma.staff.findFirst({ 

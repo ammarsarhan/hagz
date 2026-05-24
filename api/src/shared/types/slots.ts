@@ -9,5 +9,6 @@ export type GroundSlotEvent = (typeof GroundSlotEvent)[keyof typeof GroundSlotEv
 export type GroundSlotJobPayload = { 
     groundId: string, 
     pitchId: string,
-    event: GroundSlotEvent 
+    event: GroundSlotEvent,
+    dayOfWeek?: number
 };
