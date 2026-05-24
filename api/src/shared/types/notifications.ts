@@ -49,7 +49,7 @@ export type NotificationPayloadMap = {
         groundName: string;
         pitchName: string;
         startTime: string;
-        action: "started";
+        action: "marked as in progress";
         deepLink: string;
     };
     [NotificationEvent.BOOKING_EXPIRED]: {

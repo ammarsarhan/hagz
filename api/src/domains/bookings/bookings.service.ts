@@ -1,5 +1,5 @@
 import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
-import { BookingActor, BookingChannel, BookingStatus, GroundActions, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
+import { BookingActor, BookingChannel, BookingStatus, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -45,7 +45,7 @@ export default class BookingService {
 
             await bookingsQueue.add("approval", 
                 { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
-                { delay: approvalDelay, jobId: `bookings:${booking.id}:approval` }
+                { delay: 10000, jobId: `bookings:${booking.id}:approval` }
             );
         };
 
@@ -55,21 +55,21 @@ export default class BookingService {
 
             await bookingsQueue.add("payment", 
                 { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
-                { delay: paymentDelay, jobId: `bookings:${booking.id}:payment` }
+                { delay: 20000, jobId: `bookings:${booking.id}:payment` }
             );
         };
 
-        // Regardless of the status, bookings need to pass by both the IN_RPOGRESS and COMPLETE handlers.
+        // Regardless of the status, bookings need to pass by both the IN_PROGRESS and COMPLETE handlers.
         const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
         await bookingsQueue.add("start", 
             { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
-            { delay: inProgressDelay, jobId: `bookings:${booking.id}:in_progress` }
+            { delay: 40000, jobId: `bookings:${booking.id}:in_progress` }
         );
 
         const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
         await bookingsQueue.add("end", 
             { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
-            { delay: completeDelay, jobId: `bookings:${booking.id}:complete` }
+            { delay: 60000, jobId: `bookings:${booking.id}:complete` }
         );
     };
 
@@ -358,7 +358,7 @@ export default class BookingService {
         }
 
         // Trigger notifications based on notificationsTrigger setting.
-        if (notificationsTrigger.includes(GroundActions.BOOKED)) {
+        if (notificationsTrigger.includes(NotificationEvent.BOOKING_RECEIVED)) {
             // Create notification for the staff members.
             const staff = await prisma.staff.findMany({ 
                 where: { pitchId }, 
@@ -607,7 +607,7 @@ export default class BookingService {
             
 
         // Trigger notifications based on notificationsTrigger setting.
-        if (notificationsTrigger.includes(GroundActions.BOOKED)) {
+        if (notificationsTrigger.includes(NotificationEvent.BOOKING_RECEIVED)) {
             // Create notification for the staff members.
             const staff = await prisma.staff.findMany({ 
                 where: { pitchId: payload.pitchId }, 
@@ -630,7 +630,7 @@ export default class BookingService {
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
 
                     await NotificationsService.createNotification({
-                        phone: assignee.phone,
+                        phone: member.user.phone,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
                             action: "reserved. Payment is still required to confirm your spot",

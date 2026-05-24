@@ -196,13 +196,6 @@ enum RecurringPaymentSchedule {
   PER_BOOKING
 }
 
-enum GroundActions {
-  BOOKED
-  RESCHEDULED
-  CANCELLED
-  EXPIRED
-}
-
 enum NotificationChannel {
   IN_APP
   PUSH
@@ -445,7 +438,7 @@ model GroundSettings {
   partialRefundWindow Int @default(24) // Hours
   refundPercentage    Int @default(50)
 
-  notificationsTrigger GroundActions[] @default([BOOKED, CANCELLED, RESCHEDULED])
+  notificationsTrigger NotificationEvent[] @default([BOOKING_RECEIVED, BOOKING_RESERVED, BOOKING_CONFIRMED, BOOKING_CANCELLED, BOOKING_RESCHEDULED, BOOKING_REMINDER, BOOKING_STARTED, BOOKING_EXPIRED, BOOKING_NO_SHOW, PAYOUT_PROCESSED, PAYOUT_FAILED, INVITATION_CREATED, INVITATION_RECEIVED, INVITATION_ACCEPTED, PITCH_UPDATED])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

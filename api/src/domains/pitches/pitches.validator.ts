@@ -1,5 +1,5 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, Country, GroundActions, GroundSize, GroundSport, GroundSurface, PaymentMethod, PermissionLevel, StaffRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, Country, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
@@ -233,7 +233,7 @@ const groundSettingsSchema = z.object({
         .min(25, "Refund percentage must be at least 25% of the booking price.")
         .max(100, "Refund percentage must be the full booking price at most."),
     notificationsTrigger: z 
-        .array(z.enum(Object.values(GroundActions) as [GroundActions, ...GroundActions[]], "Please choose a valid ground action."))
+        .array(z.enum(Object.values(NotificationEvent) as [NotificationEvent, ...NotificationEvent[]], "Please choose a valid ground action."))
 })
 
 export type UpdateGroundSettingsPayloadType = z.infer<typeof updateGroundSettingsSchema>;
