@@ -251,14 +251,6 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
 
             if (futureDates.length === 0) continue;
 
-            const startOfFirst = futureDates[0];
-            const endOfLast = new Date(Date.UTC(
-                futureDates.at(-1)!.getUTCFullYear(),
-                futureDates.at(-1)!.getUTCMonth(),
-                futureDates.at(-1)!.getUTCDate(),
-                23
-            ));
-
             await prisma.groundSlot.deleteMany({
                 where: {
                     groundId,

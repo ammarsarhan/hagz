@@ -229,8 +229,10 @@ export default class GroundService {
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
 
-        const GENERATING_STATUS: ScheduleStatus[] = [ScheduleStatus.PENDING, ScheduleStatus.GENERATING];
-        if (schedule && GENERATING_STATUS.includes(schedule.status)) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
+        if (config.ACTIVE_STATES.includes(pitch.status)) {
+            const GENERATING_STATUS: ScheduleStatus[] = [ScheduleStatus.PENDING, ScheduleStatus.GENERATING];
+            if (schedule && GENERATING_STATUS.includes(schedule.status)) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
+        };
 
         const updated = await prisma.$transaction(async (tx) => {
             // Convert the time ranges from numerical values to bytes.
