@@ -138,8 +138,8 @@ export default class BookingService {
         if (!pitch) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        if (!config.ACTIVE_STATES.includes(pitch.status))
-            throw new BadRequestError("Pitch is not active. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (pitch.status != PitchStatus.LIVE)
+            throw new BadRequestError("Pitch is not live. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_LIVE);
 
         // Then check if the ground exists and is in an active state.
         const ground = pitch.grounds.find(ground => ground.id === groundId);
@@ -447,8 +447,8 @@ export default class BookingService {
         if (!pitch) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        if (!config.ACTIVE_STATES.includes(pitch.status))
-            throw new BadRequestError("Pitch is not active. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (pitch.status != PitchStatus.LIVE)
+            throw new BadRequestError("Pitch is not live. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_LIVE);
 
         // Then check if the ground exists and is in an active state.
         const ground = pitch.grounds.find(ground => ground.id === payload.groundId);
