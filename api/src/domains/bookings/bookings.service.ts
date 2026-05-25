@@ -663,15 +663,22 @@ export default class BookingService {
     fetchUserBooking = async (userId: string, bookingId: string) => {
         const booking = await prisma.booking.findUnique({ 
             where: {
-                id: bookingId,
+                id: bookingId
+            },
+            include: {
                 customer: {
-                    userId
+                    select: {
+                        userId: true
+                    }
                 }
             }
         });
 
         if (!booking)
             throw new NotFoundError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        if (booking.customer.userId !== userId)
+            throw new ForbiddenError("You are not authorized to access this resource.", ERROR_CODES.BOOKING_ACCESS_FORBIDDEN);
 
         return booking;
     };
