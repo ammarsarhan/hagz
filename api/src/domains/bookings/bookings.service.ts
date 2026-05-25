@@ -1,4 +1,4 @@
-import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
+import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType, RescheduleUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
 import { BookingActor, BookingChannel, BookingStatus, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -686,5 +686,13 @@ export default class BookingService {
         });
 
         return bookings;
-    }
+    };
+
+    cancelUserBooking = async (userId: string, bookingId: string) => {
+        
+    };
+
+    rescheduleUserBooking = async (userId: string, bookingId: string, payload: RescheduleUserBookingPayloadType) => {
+
+    };
 };

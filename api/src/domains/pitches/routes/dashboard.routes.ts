@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { createPitchHandler, getPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, publishPitchHandler, deactivatePitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, publishPitchHandler, deactivatePitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
 import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler } from "@/domains/pitches/handlers/media.handlers.js";
@@ -10,7 +10,7 @@ import { createStaffBookingHandler } from "@/domains/bookings/bookings.handlers.
 // Chained for RPC type support on the frontend.
 const app = new Hono()
     .post('/', ...createPitchHandler)
-    .get('/:pitchId', ...getPitchHandler)
+    .get('/:pitchId', ...getDashboardPitchHandler)
     .patch('/:pitchId', ...updatePitchHandler)
     .get('/:pitchId/amenities', ...getPitchAmenitiesHandler)
     .post('/:pitchId/amenities', ...createPitchAmenityHandler)

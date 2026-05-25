@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 import validate from "@/shared/middleware/validate.middleware.js";
 import guard from "@/domains/pitches/pitches.middleware.js";
 import { authorize } from "@/domains/auth/auth.middleware.js";
-import { createUserBookingSchema, createStaffBookingSchema } from "@/domains/bookings/bookings.validator.js";
+import { createUserBookingSchema, createStaffBookingSchema, rescheduleUserBookingSchema } from "@/domains/bookings/bookings.validator.js";
 import { PermissionLevel } from "@/generated/prisma/enums.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
 import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
@@ -67,3 +67,34 @@ export const fetchUserBookingsHandler = factory.createHandlers(
         return c.json({ success: true, data: { bookings } }, 200); 
     }
 );
+
+export const cancelUserBookingHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const bookingId = c.req.param("bookingId");
+
+        if (!bookingId)
+            throw new BadRequestError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        const booking = await bookingService.cancelUserBooking(userId, bookingId);
+        return c.json({ success: true, data: { booking } }, 200); 
+    }
+);
+
+export const rescheduleUserBookingHandler = factory.createHandlers(
+    authorize,
+    validate("json", rescheduleUserBookingSchema),
+    async (c) => {
+        const userId = c.var.id;
+        const bookingId = c.req.param("bookingId");
+
+        if (!bookingId)
+            throw new BadRequestError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        const payload = c.req.valid("json");
+
+        const booking = await bookingService.rescheduleUserBooking(userId, bookingId, payload);
+        return c.json({ success: true, data: { booking } }, 200); 
+    }
+)

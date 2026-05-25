@@ -51,3 +51,9 @@ export const createStaffBookingSchema = z.object({
 })
 .refine(data => data.endTime > data.startTime, "End time must be after start time.")
 .refine(data => data.channel !== BookingChannel.WALK_IN || data.paymentMethod === PaymentMethod.CASH, "Payment method must be cash for walk-in bookings.")
+
+export type RescheduleUserBookingPayloadType = z.infer<typeof rescheduleUserBookingSchema>;
+
+export const rescheduleUserBookingSchema = z.object({
+    
+});

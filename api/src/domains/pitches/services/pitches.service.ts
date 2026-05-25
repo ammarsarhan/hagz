@@ -1,6 +1,6 @@
 import z from "zod";
 
-import type { CreatePitchPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreatePitchPayloadType, QueryPitchesPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
@@ -122,7 +122,20 @@ export default class PitchService {
         });
     };
 
-    fetchPitch = async (pitchId: string) => {
+    // Split this into two distinct functions for when we want to send different data based on the person accessing the resource.
+    fetchDashboardPitch = async (pitchId: string) => {
+        const pitch = await prisma.pitch.findUnique({ 
+            where: { 
+                id: pitchId,
+                status: { not: PitchStatus.DELETED } 
+            } 
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        return pitch;
+    };
+
+    fetchUserPitch = async (pitchId: string) => {
         const pitch = await prisma.pitch.findUnique({ 
             where: { 
                 id: pitchId,
@@ -379,5 +392,9 @@ export default class PitchService {
         const slots = formatPitchAvailabilityQuery(rawSlots);
 
         return { slots, grounds };
-    }    
+    };
+    
+    queryPitches = async (filters: QueryPitchesPayloadType) => {
+        
+    }
 };

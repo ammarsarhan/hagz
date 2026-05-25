@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import pitches from "@/domains/pitches/pitches.routes.js";
+import pitches from "@/domains/pitches/routes/dashboard.routes.js";
 
 const app = new Hono();
 

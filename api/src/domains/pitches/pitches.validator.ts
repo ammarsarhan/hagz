@@ -444,3 +444,9 @@ export type FetchPitchAvailabilityPayloadType = z.infer<typeof fetchPitchAvailab
 export const fetchPitchAvailabilitySchema = z.object({
     date: z.coerce.date("A date is required to fetch the specified pitch's availability.")
 });
+
+export type QueryPitchesPayloadType = z.infer<typeof queryPitchesSchema>;
+
+export const queryPitchesSchema = z.object({
+    
+})
