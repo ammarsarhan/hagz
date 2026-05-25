@@ -241,10 +241,23 @@ export default class PitchService {
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Make sure that the status is in a valid state to allow this transition.
-        if (!config.ACTIVE_STATES.includes(pitch.status))
-            throw new BadRequestError(`Could not publish pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (pitch.status !== PitchStatus.LIVE)
+            throw new BadRequestError(`Could not deactivate pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_LIVE);
 
-        const updated = await prisma.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.MAINTENANCE }});
+        const updated = await prisma.$transaction(async tx => {
+            const pitch = await tx.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.MAINTENANCE }});
+
+            // Create a pitchEvent to keep track of the status changes.
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    status: PitchStatus.MAINTENANCE,
+                }
+            });
+
+            return pitch;
+        });
+
         return updated;
     };
 
@@ -256,10 +269,23 @@ export default class PitchService {
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Make sure that the status is in a valid state to allow this transition.
-        if (!config.ACTIVE_STATES.includes(pitch.status))
+        if (pitch.status !== PitchStatus.ACCEPTED && pitch.status !== PitchStatus.MAINTENANCE)
             throw new BadRequestError(`Could not publish pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_ACTIVE);
 
-        const updated = await prisma.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.LIVE }});
+        const updated = await prisma.$transaction(async tx => {
+            const pitch = await tx.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.LIVE }});
+
+            // Create a pitchEvent to keep track of the status changes.
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    status: PitchStatus.LIVE,
+                }
+            });
+
+            return pitch;
+        });
+
         return updated;
     };
 
