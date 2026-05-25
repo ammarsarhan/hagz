@@ -6,24 +6,25 @@ import { HTTPException } from 'hono/http-exception'
 import { serve } from '@hono/node-server'
 import { ZodError } from 'zod'
 
-import general from '@/general.js';
+import root from "@/root.js";
+import app from '@/app.js';
 import dashboard from '@/dashboard.js';
 
 import AppError from '@/shared/lib/utils/error.js'
 import { scheduleSlotExtension } from './internal/extend.js'
 
-const app = new Hono();
+const server = new Hono();
 
 // Middleware configuration with logger, secureHeaders and cors.
-app.use('*', logger());
-app.use('*', secureHeaders());
-app.use('*', cors({
+server.use('*', logger());
+server.use('*', secureHeaders());
+server.use('*', cors({
   origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   credentials: true,
 }));
 
 // Handle errors gracefully and globally across the application.
-app.onError((err, c) => {
+server.onError((err, c) => {
   // Handle the AppErrors we throw throughout the application's logic.
   if (err instanceof AppError) {
     return c.json({
@@ -73,12 +74,13 @@ app.onError((err, c) => {
 });
 
 // Application routing from the root level.
-app.route('/public', general);
-app.route('/dashboard', dashboard);
+server.route('/', root);
+server.route('/app', app);
+server.route('/dashboard', dashboard);
 
 // Serve the application and expose from Docker locally.
 serve({
-  fetch: app.fetch,
+  fetch: server.fetch,
   port: 8080,
   hostname: '0.0.0.0'
 }, async (info) => {
