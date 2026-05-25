@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { createPitchHandler, getPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { createPitchHandler, getPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, publishPitchHandler, deactivatePitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
 import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler } from "@/domains/pitches/handlers/media.handlers.js";
@@ -33,6 +33,8 @@ const app = new Hono()
     .post('/:pitchId/media/presign', ...createPitchMediaPresignLinkHandler)
     .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
+    .post('/:pitchId/deactivate', ...deactivatePitchHandler)
+    .post('/:pitchId/publish', ...publishPitchHandler)
     .post('/:pitchId/team/invitations', ...createPitchInvitationHandler)
     .get('/:pitchId/team/invitations/:invitationId', ...fetchPitchInvitationHandler)
     .delete('/:pitchId/team/invitations/:invitationId', ...deletePitchInvitationHandler)

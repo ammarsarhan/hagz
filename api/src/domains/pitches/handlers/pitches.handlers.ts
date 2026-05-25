@@ -64,6 +64,32 @@ export const submitPitchHandler = factory.createHandlers(
     }
 );
 
+export const deactivatePitchHandler = factory.createHandlers(
+    guard("properties", PermissionLevel.WRITE),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        
+        const pitch = await pitchService.deactivatePitch(pitchId);
+        return c.json({ success: true, data: { pitch } }, 200); 
+    }
+);
+
+export const publishPitchHandler = factory.createHandlers(
+    guard("properties", PermissionLevel.WRITE),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        
+        const pitch = await pitchService.publishPitch(pitchId);
+        return c.json({ success: true, data: { pitch } }, 200); 
+    }
+);
+
 export const fetchPitchAvailabilityHandler = factory.createHandlers(
     guard("schedule", PermissionLevel.READ),
     validate("query", fetchPitchAvailabilitySchema),

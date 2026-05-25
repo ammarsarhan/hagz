@@ -231,7 +231,37 @@ export default class PitchService {
 
             return updated;
         });
-    }
+    };
+
+    deactivatePitch = async (pitchId: string) => {
+        // Find the pitch and ensure that it has not been deleted.
+        const pitch = await prisma.pitch.findUnique({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
+
+        if (!pitch)
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Make sure that the status is in a valid state to allow this transition.
+        if (!config.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError(`Could not publish pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        const updated = await prisma.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.MAINTENANCE }});
+        return updated;
+    };
+
+    publishPitch = async (pitchId: string) => {
+        // Find the pitch and ensure that it has not been deleted.
+        const pitch = await prisma.pitch.findUnique({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
+
+        if (!pitch)
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Make sure that the status is in a valid state to allow this transition.
+        if (!config.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError(`Could not publish pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        const updated = await prisma.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.LIVE }});
+        return updated;
+    };
 
     // Todo: Create a better command line interface to approve the pitch.
     approvePitch = async (pitchId: string) => {        
