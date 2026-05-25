@@ -1,5 +1,5 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, Country, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, StaffRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, Country, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
@@ -413,5 +413,17 @@ export type UpdatePitchStaffMemberPayloadType = z.infer<typeof updatePitchStaffM
 
 export const updatePitchStaffMemberSchema = z.object({
     permissions: pitchStaffMemberPermissionsSchema
+});
+
+const groundSlotTargetSchema = z.enum(["DAY", "WEEK", "MONTH"]);
+export type GroundSlotTargetType = z.infer<typeof groundSlotTargetSchema>;
+
+export const fetchGroundSlotsSchema = z.object({
+    date: z
+        .date("A date is required to fetch slots for the specified ground."),
+    target: groundSlotTargetSchema,
+    status: z
+        .enum(Object.values(SlotStatus))
+        .optional()
 });
 

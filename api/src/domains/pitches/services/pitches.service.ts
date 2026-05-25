@@ -148,7 +148,7 @@ export default class PitchService {
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Check if the pitch is even in a state to allow edits.
-        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // If the pitch passes the checks, update it with the provided payload.
         const updated = await prisma.pitch.update({
@@ -191,7 +191,7 @@ export default class PitchService {
 
         // 2. Ensure that the pitch has at least one amenity and that they are both in-sync.
         if (pitch.amenities.length !== pitch.amenityList.length)
-            throw new InternalServerError("Pitch amenities are out of sync on the denormalized field. Please contact customer support.");
+            throw new InternalServerError("Pitch amenities are out of sync on the denormalized field. Please contact customer support immediately.");
 
         if (pitch.amenities.length < 1 || pitch.amenityList.length < 1)
             throw new BadRequestError("Pitch needs to have at least one amenity.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
@@ -276,4 +276,6 @@ export default class PitchService {
         const grounds = pitch.grounds.map(ground => ground.id);
         await this.enqueueGroundSlotGeneration(pitchId, grounds);
     };
+
+    
 };

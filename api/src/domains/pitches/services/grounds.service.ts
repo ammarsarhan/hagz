@@ -1,12 +1,13 @@
 import prisma from "@/shared/lib/utils/prisma.js";
-import type { CreateGroundPayloadType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpsertGroundSchemaPayloadType } from "../pitches.validator.js";
+import type { CreateGroundPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
-import { GroundStatus, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
+import { GroundStatus, PitchStatus, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
 import config from "@/shared/config.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import { GroundSlotEvent } from "@/shared/types/slots.js";
+import { addDays, addMonths, addWeeks, endOfDay, startOfDay, subHours } from "date-fns";
 
 export default class GroundService {
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
@@ -322,7 +323,7 @@ export default class GroundService {
             prisma.schedule.findMany({
                 where: { 
                     groundId
-                    },
+                },
             })
         ]);
 
@@ -338,4 +339,95 @@ export default class GroundService {
 
         return parsed;
     };
+
+    fetchGroundSlots = async (pitchId: string, groundId: string, target: GroundSlotTargetType, date: Date, status?: SlotStatus) => {
+        // Make sure that the pitch and ground are both active or under maintenance first before fetching.
+        const ground = await prisma.ground.findUnique({ 
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED },
+                pitch: {
+                    status: { not: PitchStatus.DELETED }
+                }
+            },
+            include: {
+                pitch: {
+                    select: {
+                        status: true
+                    },
+                }
+            }
+        });
+
+        if (!ground || !ground.pitch)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!config.ACTIVE_STATES.includes(ground.pitch.status))
+            throw new BadRequestError("Could not fetch slots on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Start parsing the date based on the target granularity.
+        const start = startOfDay(date);
+        let end: Date;
+
+        // Query the slots and return the correct response based on the granularity after setting the endDate.
+        switch (target) {
+            case "DAY":
+                {
+                    end = subHours(endOfDay(start), 1);
+
+                    const slots = await prisma.groundSlot.findMany({
+                        where: {
+                            groundId,
+                            ...(status && { status }),
+                            startsAt: { gte: start, lte: end },
+                        },
+                        orderBy: { startsAt: "asc" },
+                        take: 24,
+                    });
+
+                    return slots;
+                }
+            case "WEEK":
+                {
+                    end = subHours(endOfDay(addWeeks(start, 1)), 1);
+
+                    const slots = await prisma.groundSlot.findMany({
+                        where: {
+                            groundId,
+                            ...(status && { status }),
+                            startsAt: { gte: start, lte: end },
+                        },
+                        orderBy: { startsAt: "asc" },
+                    });
+
+                    return slots;
+                }
+            case "MONTH":
+                {
+                    end = subHours(endOfDay(addMonths(start, 1)), 1);
+
+                    // Raw query because of the way we want to group data by the "whole day" coming back from prisma.
+                    const slots = await prisma.$queryRaw<{ day: Date; available: number }[]>`
+                        SELECT 
+                            DATE("startsAt") as day,
+                            -- Cast this as an INT rather than a BIGINT to stop JSON serialization issues later on.
+                            COUNT(*)::int as available
+                        FROM "GroundSlot"
+                        WHERE 
+                            "groundId" = ${groundId}
+                            AND "startsAt" >= ${start}
+                            AND "startsAt" <= ${end}
+                            AND "status" = 'AVAILABLE'
+                        GROUP BY DATE("startsAt")
+                        ORDER BY day ASC
+                    `;
+
+                    return slots;
+                }
+            default: {
+                throw new InternalServerError(`Unhandled slot target type: ${target}.`);
+            }
+        }
+    }
 }
