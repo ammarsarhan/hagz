@@ -420,6 +420,7 @@ export type GroundSlotTargetType = z.infer<typeof groundSlotTargetSchema>;
 
 export const fetchGroundSlotsSchema = z.object({
     date: z
+        .coerce
         .date("A date is required to fetch slots for the specified ground."),
     target: groundSlotTargetSchema,
     status: z

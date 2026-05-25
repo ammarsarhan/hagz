@@ -7,7 +7,7 @@ import config from "@/shared/config.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import { GroundSlotEvent } from "@/shared/types/slots.js";
-import { addDays, addMonths, addWeeks, endOfDay, startOfDay, subHours } from "date-fns";
+import { endOfDay, endOfMonth, endOfWeek, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 
 export default class GroundService {
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
@@ -367,14 +367,15 @@ export default class GroundService {
             throw new BadRequestError("Could not fetch slots on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Start parsing the date based on the target granularity.
-        const start = startOfDay(date);
-        let end: Date;
+        let start = date;
+        let end = date;
 
         // Query the slots and return the correct response based on the granularity after setting the endDate.
         switch (target) {
             case "DAY":
                 {
-                    end = subHours(endOfDay(start), 1);
+                    start = startOfDay(date);
+                    end = endOfDay(start);
 
                     const slots = await prisma.groundSlot.findMany({
                         where: {
@@ -390,7 +391,8 @@ export default class GroundService {
                 }
             case "WEEK":
                 {
-                    end = subHours(endOfDay(addWeeks(start, 1)), 1);
+                    start = startOfWeek(date);
+                    end = endOfWeek(date);
 
                     const slots = await prisma.groundSlot.findMany({
                         where: {
@@ -405,7 +407,8 @@ export default class GroundService {
                 }
             case "MONTH":
                 {
-                    end = subHours(endOfDay(addMonths(start, 1)), 1);
+                    start = startOfMonth(date);
+                    end = endOfMonth(date);
 
                     // Raw query because of the way we want to group data by the "whole day" coming back from prisma.
                     const slots = await prisma.$queryRaw<{ day: Date; available: number }[]>`
