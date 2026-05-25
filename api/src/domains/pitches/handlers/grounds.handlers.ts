@@ -3,7 +3,7 @@ import GroundService from "@/domains/pitches/services/grounds.service.js";
 import { PermissionLevel } from "@/generated/prisma/enums.js";
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
-import { createGroundSchema, updateGroundSchema, updateGroundSettingsSchema, upsertGroundScheduleSchema, fetchGroundSlotsSchema } from "@/domains/pitches/pitches.validator.js";
+import { createGroundSchema, updateGroundSchema, updateGroundSettingsSchema, upsertGroundScheduleSchema, fetchGroundSlotsSchema, updateGroundSlotSchema } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
 import { date } from "zod";
 
@@ -152,7 +152,7 @@ export const fetchGroundSchedulesHandler = factory.createHandlers(
 );
 
 export const fetchGroundSlotsHandler = factory.createHandlers(
-    guard("bookings", PermissionLevel.READ),
+    guard("schedule", PermissionLevel.READ),
     validate("query", fetchGroundSlotsSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -163,7 +163,46 @@ export const fetchGroundSlotsHandler = factory.createHandlers(
         
         const { date, target, status } = c.req.valid("query");
 
-        const slots = await groundService.fetchGroundSlots(pitchId, groundId, target, date, status);
-        return c.json({ success: true, data: { slots } }, 200);
+        const { slots, settings } = await groundService.fetchGroundSlots(pitchId, groundId, target, date, status);
+        return c.json({ success: true, data: { slots, settings } }, 200);
     }
-)
+);
+
+export const fetchGroundSlotHandler = factory.createHandlers(
+    guard("schedule", PermissionLevel.READ),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+        const slotId = c.req.param("slotId");
+        
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!slotId)
+            throw new NotFoundError("Could not find slot with the specified ID.", ERROR_CODES.GROUND_SLOT_NOT_FOUND);
+        
+        const { slot, settings } = await groundService.fetchGroundSlot(pitchId, groundId, slotId);
+        return c.json({ success: true, data: { slot, settings } }, 200);
+    }
+);
+
+export const updateGroundSlotHandler = factory.createHandlers(
+    guard("schedule", PermissionLevel.WRITE),
+    validate("json", updateGroundSlotSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+        const slotId = c.req.param("slotId");
+        
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!slotId)
+            throw new NotFoundError("Could not find slot with the specified ID.", ERROR_CODES.GROUND_SLOT_NOT_FOUND);
+        
+        const { status } = c.req.valid("json");
+        
+        const slot = await groundService.updateGroundSlot(pitchId, groundId, slotId, status);
+        return c.json({ success: true, data: { slot } }, 200);
+    }
+);

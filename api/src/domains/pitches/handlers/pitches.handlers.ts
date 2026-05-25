@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, createPitchSchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -63,3 +63,19 @@ export const submitPitchHandler = factory.createHandlers(
         return c.json({ success: true, data: { pitch } }, 200); 
     }
 );
+
+export const fetchPitchAvailabilityHandler = factory.createHandlers(
+    guard("schedule", PermissionLevel.READ),
+    validate("query", fetchPitchAvailabilitySchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const { date } = c.req.valid("query");
+
+        const availability = await pitchService.fetchAvailability(pitchId, date);
+        return c.json({ success: true, data: { availability }}, 200);
+    }
+)

@@ -428,3 +428,19 @@ export const fetchGroundSlotsSchema = z.object({
         .optional()
 });
 
+export const UpdateGroundSlotStatus = {
+    AVAILABLE: SlotStatus.AVAILABLE,
+    INACTIVE: SlotStatus.INACTIVE
+};
+
+export type UpdateGroundSlotStatusType = (typeof UpdateGroundSlotStatus)[keyof typeof UpdateGroundSlotStatus];
+
+export const updateGroundSlotSchema = z.object({
+    status: z.enum(Object.values(UpdateGroundSlotStatus))
+});
+
+export type FetchPitchAvailabilityPayloadType = z.infer<typeof fetchPitchAvailabilitySchema>;
+
+export const fetchPitchAvailabilitySchema = z.object({
+    date: z.coerce.date("A date is required to fetch the specified pitch's availability.")
+});

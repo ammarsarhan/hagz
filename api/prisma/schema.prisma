@@ -406,7 +406,6 @@ model Ground {
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
   schedule          Schedule[]
-  scheduleOverrides ScheduleOverride[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -539,18 +538,6 @@ model Schedule {
   lastGeneratedAt DateTime?
 
   @@unique([groundId, dayOfWeek])
-}
-
-model ScheduleOverride {
-  id       String @id @default(cuid())
-  groundId String
-  ground   Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
-
-  date           DateTime @db.Date
-  operatingHours Bytes
-  reason         String?
-
-  @@unique([groundId, date])
 }
 
 model GroupBooking {

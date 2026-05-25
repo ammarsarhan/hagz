@@ -1,16 +1,17 @@
 import z from "zod";
 
 import type { CreatePitchPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
-import { GroundSlotEvent } from "@/shared/types/slots.js";
+import { formatPitchAvailabilityQuery, GroundSlotEvent } from "@/shared/types/slots.js";
 
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
+import { endOfWeek, startOfWeek } from "date-fns";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -277,5 +278,50 @@ export default class PitchService {
         await this.enqueueGroundSlotGeneration(pitchId, grounds);
     };
 
-    
+    fetchAvailability = async (pitchId: string, date: Date) => {
+        // Make sure that the pitch is not deleted and active first before attempting to build the availability.
+        const pitch = await prisma.pitch.findFirst({ 
+            where: { 
+                id: pitchId, 
+                status: { not: PitchStatus.DELETED },
+            },
+            include: {
+                grounds: {
+                    where: {
+                        status: {
+                            not: GroundStatus.DELETED
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!pitch)
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!config.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError("Could not query availability for the specified pitch. Pitch needs to be active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Start building the query's startDate, endDate, and grounds.
+        const grounds = pitch.grounds;
+
+        const start = startOfWeek(date);
+        const end = endOfWeek(date);
+
+        const rawSlots = await prisma.groundSlot.findMany({
+            where: {
+                pitchId,
+                startsAt: { gte: start, lte: end }
+            },
+            select: {
+                groundId: true,
+                startsAt: true,
+                status: true,
+            }
+        });
+
+        const slots = formatPitchAvailabilityQuery(rawSlots);
+
+        return { slots, grounds };
+    }    
 };

@@ -1,5 +1,5 @@
 import prisma from "@/shared/lib/utils/prisma.js";
-import type { CreateGroundPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdateGroundSlotStatusType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import { GroundStatus, PitchStatus, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
@@ -231,8 +231,7 @@ export default class GroundService {
         if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
 
         if (config.ACTIVE_STATES.includes(pitch.status)) {
-            const GENERATING_STATUS: ScheduleStatus[] = [ScheduleStatus.PENDING, ScheduleStatus.GENERATING];
-            if (schedule && GENERATING_STATUS.includes(schedule.status)) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SLOTS_GENERATING_CONFLICT)
+            if (schedule && config.GENERATING_STATES.includes(schedule.status)) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT)
         };
 
         const updated = await prisma.$transaction(async (tx) => {
@@ -356,12 +355,18 @@ export default class GroundService {
                     select: {
                         status: true
                     },
-                }
+                },
+                settings: true
             }
         });
 
         if (!ground || !ground.pitch)
             throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const settings = ground.settings;
+
+        if (!settings)
+            throw new InternalServerError("Could not resolve settings associated with the ground ID.", ERROR_CODES.GROUND_SETTINGS_MISSING);
 
         if (!config.ACTIVE_STATES.includes(ground.pitch.status))
             throw new BadRequestError("Could not fetch slots on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
@@ -387,7 +392,7 @@ export default class GroundService {
                         take: 24,
                     });
 
-                    return slots;
+                    return { slots, settings };
                 }
             case "WEEK":
                 {
@@ -403,7 +408,7 @@ export default class GroundService {
                         orderBy: { startsAt: "asc" },
                     });
 
-                    return slots;
+                    return { slots, settings };
                 }
             case "MONTH":
                 {
@@ -426,11 +431,128 @@ export default class GroundService {
                         ORDER BY day ASC
                     `;
 
-                    return slots;
+                    return { slots, settings };
                 }
             default: {
                 throw new InternalServerError(`Unhandled slot target type: ${target}.`);
             }
         }
-    }
+    };
+
+    fetchGroundSlot = async (pitchId: string, groundId: string, slotId: string) => {
+        // Make sure that the pitch and ground are both active or under maintenance first before fetching.
+        const ground = await prisma.ground.findUnique({ 
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED },
+                pitch: {
+                    status: { not: PitchStatus.DELETED }
+                },
+            },
+            include: {
+                pitch: {
+                    select: {
+                        status: true
+                    },
+                },
+                schedule: {
+                    select: {
+                        status: true
+                    }
+                },
+                settings: true
+            }
+        });
+
+        if (!ground || !ground.pitch)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const settings = ground.settings;
+
+        if (!settings)
+            throw new InternalServerError("Could not resolve settings associated with the ground ID.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+
+        if (!config.ACTIVE_STATES.includes(ground.pitch.status))
+            throw new BadRequestError("Could not update slot on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Make sure that all of the schedules have finalized generating and are all ready before making edits to the slots.
+        if (ground.schedule.some(item => config.GENERATING_STATES.includes(item.status)))
+            throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT)
+
+        // Fetch the slot and return it.
+        const slot = await prisma.groundSlot.findFirst({
+            where: {
+                id: slotId,
+                groundId,
+                pitchId,
+            }
+        });
+
+        if (!slot)
+            throw new NotFoundError("Could not find a ground slot with the specified ID.", ERROR_CODES.GROUND_SLOT_NOT_FOUND);
+
+        return { slot, settings };
+    };
+
+    updateGroundSlot = async (pitchId: string, groundId: string, slotId: string, status: UpdateGroundSlotStatusType) => {
+        // Make sure that the pitch and ground are both active or under maintenance first before fetching.
+        const ground = await prisma.ground.findUnique({ 
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED },
+                pitch: {
+                    status: { not: PitchStatus.DELETED }
+                },
+            },
+            include: {
+                pitch: {
+                    select: {
+                        status: true
+                    },
+                },
+                schedule: {
+                    select: {
+                        status: true
+                    }
+                }
+            }
+        });
+
+        if (!ground || !ground.pitch)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!config.ACTIVE_STATES.includes(ground.pitch.status))
+            throw new BadRequestError("Could not update slot on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        // Make sure that all of the schedules have finalized generating and are all ready before making edits to the slots.
+        if (ground.schedule.some(item => config.GENERATING_STATES.includes(item.status)))
+            throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT)
+
+        // Check the status and date of the slot and validate it such that it has not passed, and it is not booked.
+        const slot = await prisma.groundSlot.findFirst({
+            where: {
+                id: slotId,
+                groundId,
+                pitchId,
+                status: { not: SlotStatus.BOOKED },
+                bookingId: null,
+                startsAt: { gt: new Date() }
+            }
+        });
+
+        if (!slot)
+            throw new BadRequestError("Could not update slot. Requested slot has either been already booked or is in the past.", ERROR_CODES.GROUND_SLOT_NOT_EDITABLE);
+
+        // If the slot has passed the filters, then we can safely update it.
+        const updated = await prisma.groundSlot.update({
+            where: {
+                id: slotId,
+            },
+            data: { status }
+        });
+
+        return updated;
+    };
 }

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 
-import { createPitchHandler, getPitchHandler, submitPitchHandler, updatePitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
-import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotsHandler, getGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
+import { createPitchHandler, getPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler } from "@/domains/pitches/handlers/media.handlers.js";
 import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
@@ -28,7 +28,8 @@ const app = new Hono()
     .get('/:pitchId/grounds/:groundId/schedule/:dayOfWeek', ...fetchGroundScheduleHandler)
     .post('/:pitchId/grounds/:groundId/bookings', ...createStaffBookingHandler)
     .get('/:pitchId/grounds/:groundId/slots', ...fetchGroundSlotsHandler)
-    // .patch('/:pitchId/grounds/:groundId/slots/:slotId', ...updateGroundSlot)
+    .get('/:pitchId/grounds/:groundId/slots/:slotId', ...fetchGroundSlotHandler)
+    .patch('/:pitchId/grounds/:groundId/slots/:slotId', ...updateGroundSlotHandler)
     .post('/:pitchId/media/presign', ...createPitchMediaPresignLinkHandler)
     .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
@@ -41,6 +42,7 @@ const app = new Hono()
     .get('/:pitchId/team/:memberId', ...fetchPitchStaffMemberHandler)
     .patch('/:pitchId/team/:memberId', ...updatePitchStaffMemberHandler)
     .delete('/:pitchId/team/:memberId', ...deletePitchStaffMemberHandler)
+    .get('/:pitchId/availability', ...fetchPitchAvailabilityHandler)
 
 export default app;
 export type AppType = typeof app;
