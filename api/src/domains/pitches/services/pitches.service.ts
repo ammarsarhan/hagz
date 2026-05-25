@@ -15,7 +15,7 @@ import { endOfWeek, startOfWeek } from "date-fns";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
-    private readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
+    static readonly enqueueGroundSlotGeneration = async (pitchId: string, grounds: Array<string>) => {
         await Promise.all(
             grounds.map(async (groundId) => {
                 const jobId = `slots-${groundId}-generate`;
@@ -290,7 +290,7 @@ export default class PitchService {
     };
 
     // Todo: Create a better command line interface to approve the pitch.
-    approvePitch = async (pitchId: string) => {        
+    static approvePitch = async (pitchId: string) => {        
         const pitch = await prisma.pitch.findUnique({
             where: {
                 id: pitchId,
@@ -331,7 +331,7 @@ export default class PitchService {
         });
         
         const grounds = pitch.grounds.map(ground => ground.id);
-        await this.enqueueGroundSlotGeneration(pitchId, grounds);
+        await PitchService.enqueueGroundSlotGeneration(pitchId, grounds);
     };
 
     fetchAvailability = async (pitchId: string, date: Date) => {

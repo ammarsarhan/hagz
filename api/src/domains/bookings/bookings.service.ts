@@ -1,7 +1,6 @@
 import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
 import { BookingActor, BookingChannel, BookingStatus, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
-import config from "@/shared/config.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
 import { addMinutes, differenceInHours, differenceInMilliseconds, startOfHour, subHours } from "date-fns";
@@ -45,7 +44,7 @@ export default class BookingService {
 
             await bookingsQueue.add("approval", 
                 { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
-                { delay: 10000, jobId: `bookings-${booking.id}-approval` }
+                { delay: approvalDelay, jobId: `bookings-${booking.id}-approval` }
             );
         };
 
@@ -55,7 +54,7 @@ export default class BookingService {
 
             await bookingsQueue.add("payment", 
                 { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
-                { delay: 20000, jobId: `bookings-${booking.id}-payment` }
+                { delay: paymentDelay, jobId: `bookings-${booking.id}-payment` }
             );
         };
 
@@ -65,7 +64,7 @@ export default class BookingService {
 
             await bookingsQueue.add("reminder",
                 { bookingId: booking.id, event: BookingEvent.REMINDER },
-                { delay: 30000, jobId: `bookings-${booking.id}-reminder` }
+                { delay: reminderDelay, jobId: `bookings-${booking.id}-reminder` }
             );
         };
 
@@ -73,13 +72,13 @@ export default class BookingService {
         const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
         await bookingsQueue.add("start", 
             { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
-            { delay: 40000, jobId: `bookings-${booking.id}-in_progress` }
+            { delay: inProgressDelay, jobId: `bookings-${booking.id}-in_progress` }
         );
 
         const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
         await bookingsQueue.add("end", 
             { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
-            { delay: 50000, jobId: `bookings-${booking.id}-complete` }
+            { delay: completeDelay, jobId: `bookings-${booking.id}-complete` }
         );
     };
 
@@ -659,5 +658,33 @@ export default class BookingService {
         };
 
         return booking;
+    };
+
+    fetchUserBooking = async (userId: string, bookingId: string) => {
+        const booking = await prisma.booking.findUnique({ 
+            where: {
+                id: bookingId,
+                customer: {
+                    userId
+                }
+            }
+        });
+
+        if (!booking)
+            throw new NotFoundError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        return booking;
+    };
+
+    fetchUserBookings = async (userId: string) => {
+        const bookings = await prisma.booking.findMany({ 
+            where: {
+                customer: {
+                    userId
+                }
+            }
+        });
+
+        return bookings;
     }
 };

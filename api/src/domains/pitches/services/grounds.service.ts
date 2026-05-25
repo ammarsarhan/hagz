@@ -10,6 +10,41 @@ import { GroundSlotEvent } from "@/shared/types/slots.js";
 import { endOfDay, endOfMonth, endOfWeek, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 
 export default class GroundService {
+    static enqueueRetrySlotGeneration = async (scheduleId: string) => {
+        const schedule = await prisma.schedule.findUnique({ 
+            where: {
+                id: scheduleId,
+            },
+            include: {
+                ground: {
+                    select: {
+                        name: true,
+                        pitchId: true
+                    }
+                }
+            }
+        });
+
+        if (!schedule) {
+            console.error("Could not find a schedule with the specified ID.")
+            return;
+        };
+
+        const jobId = `slots-${schedule.groundId}-adjust-${schedule.dayOfWeek}`;
+        console.log(`Attempting slot generation retry for ${schedule.ground.name} on Day ${schedule.dayOfWeek} with id: ${jobId}.`)
+
+        await slotsQueue.add("adjust", 
+            {
+                groundId: schedule.groundId,
+                pitchId: schedule.ground.pitchId,
+                event: GroundSlotEvent.ADJUST
+            },
+            {
+                jobId
+            }
+        );
+    }
+
     createGround = async (pitchId: string, payload: CreateGroundPayloadType) => {
         return await prisma.$transaction(async (tx) => {
             // We need the create ground service function to do six things:

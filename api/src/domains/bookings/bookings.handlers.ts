@@ -5,7 +5,7 @@ import { authorize } from "@/domains/auth/auth.middleware.js";
 import { createUserBookingSchema, createStaffBookingSchema } from "@/domains/bookings/bookings.validator.js";
 import { PermissionLevel } from "@/generated/prisma/enums.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
-import { ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
+import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
 
 const factory = createFactory();
 const bookingService = new BookingService();
@@ -44,8 +44,26 @@ export const createUserBookingHandler = factory.createHandlers(
     }
 );
 
-export const fetchBookingHandler = factory.createHandlers(
+export const fetchUserBookingHandler = factory.createHandlers(
+    authorize,
     async (c) => {
+        const userId = c.var.id;
+        const bookingId = c.req.param("bookingId");
 
+        if (!bookingId)
+            throw new BadRequestError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        const booking = await bookingService.fetchUserBooking(userId, bookingId);
+        return c.json({ success: true, data: { booking } }, 200); 
+    }
+);
+
+export const fetchUserBookingsHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+
+        const bookings = await bookingService.fetchUserBookings(userId);
+        return c.json({ success: true, data: { bookings } }, 200); 
     }
 );
