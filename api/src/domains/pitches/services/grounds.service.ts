@@ -37,7 +37,8 @@ export default class GroundService {
             {
                 groundId: schedule.groundId,
                 pitchId: schedule.ground.pitchId,
-                event: GroundSlotEvent.ADJUST
+                event: GroundSlotEvent.ADJUST,
+                dayOfWeek: schedule.dayOfWeek
             },
             {
                 jobId
