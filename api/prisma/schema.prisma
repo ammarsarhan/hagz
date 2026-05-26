@@ -136,7 +136,7 @@ enum PriceType {
 
 enum PaymentMethod {
   CASH
-  CREDIT_CARD
+  CARD
   WALLET
 }
 
@@ -656,9 +656,9 @@ model Payment {
   bookingId String  @unique
   booking   Booking @relation(fields: [bookingId], references: [id])
 
-  method  PaymentMethod
-  total   Int
-  deposit Int?
+  method        PaymentMethod
+  totalAmount   Int
+  depositFee    Int?
 
   transactionRef String?
 

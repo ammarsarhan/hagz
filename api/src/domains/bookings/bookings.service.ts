@@ -1,5 +1,5 @@
 import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType, RescheduleUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
-import { BookingActor, BookingChannel, BookingStatus, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, PriceType, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
+import { BookingActor, BookingChannel, BookingStatus, GroundSize, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, PriceType, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
@@ -12,8 +12,11 @@ import { bookingsQueue } from "@/jobs/queues/bookings.queue.js";
 import { BookingEvent } from "@/shared/types/bookings.js";
 import { formatInTimeZone } from "date-fns-tz";
 import config from "@/shared/config.js";
+import PaymentService from "@/domains/payments/payments.service.js";
 
 export default class BookingService {
+    private readonly paymentService = new PaymentService();
+
     private readonly buildPricingSnapshot = (ground: Ground, settings: GroundSettings, slots: Array<GroundSlot>) => {
         const pricingMap = {
             BASE: ground.basePrice,
@@ -272,8 +275,31 @@ export default class BookingService {
 
         // Calculate the priceSnapshot and total.
         const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
-        const total = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
-        let deposit = null;
+        let totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
+
+        // And add into the price the user's service fee if the channel is online.
+        if (payload.channel === BookingChannel.ONLINE) {
+            let groundSize = 5 * 2;
+    
+            switch (ground.size) {
+                case GroundSize.FIVE_A_SIDE:
+                    groundSize = 5 * 2;
+                    break;
+                case GroundSize.SEVEN_A_SIDE:
+                    groundSize = 7 * 2;
+                    break;
+                case GroundSize.ELEVEN_A_SIDE:
+                    groundSize = 11 * 2;
+                    break;
+                default:
+                    groundSize = 5 * 2;
+                    break;
+            }
+
+            totalAmount = totalAmount + (slots.length * groundSize * 1.5);
+        }
+
+        let depositFee = null;
 
         // Check if we are placing a deposit or paying in full then calculate the deposit.
         if (payload.channel === BookingChannel.ONLINE && allowDeposit) {
@@ -281,7 +307,7 @@ export default class BookingService {
             if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
 
             const percentage = (depositPercentage / 100);
-            deposit = total * percentage;
+            depositFee = totalAmount * percentage;
         };
 
         const { assignee, booking } = await prisma.$transaction(async tx => {
@@ -306,8 +332,8 @@ export default class BookingService {
                     endTime: payload.endTime,
                     paymentMethod: payload.paymentMethod,
                     pricingSnapshot: pricingSnapshot,
-                    totalAmount: total,
-                    depositFee: deposit,
+                    totalAmount,
+                    depositFee,
                     channel: payload.channel,
                     isApproved: true,
                     status
@@ -323,13 +349,47 @@ export default class BookingService {
                 data: {
                     bookingId: booking.id,
                     method: payload.paymentMethod,
-                    total,
-                    deposit,
+                    totalAmount,
+                    depositFee,
                 }
             });
 
             return { assignee, booking };
         });
+
+        let checkout = null;
+
+        // If we are dealing with an online booking, generate the payment link for them.
+        if (payload.channel === BookingChannel.ONLINE) {
+            // Generate payment intent link via Paymob (or whatever gateway).
+            const allowedMethods = settings.paymentMethods.map(m => m.toLowerCase()) as any[];
+
+            const intention = await this.paymentService.createIntention({
+                // Deposit if applicable, otherwise use the full amount.
+                amount: (depositFee ?? totalAmount) * 100, // Paymob uses piasters so multiply by 100.
+                currency: "EGP",
+                expiration: settings.paymentExpiryLimit * 60, // Set the paymentExpiryLimit in seconds as the expiry of the payment intention.
+                bookingId: booking.id,
+                customer: {
+                    first_name: assignee.firstName ?? payload.customer.firstName!,
+                    last_name: assignee.lastName ?? payload.customer.lastName!,
+                    phone: assignee.phone,
+                    email: match?.email ?? undefined
+                },
+                allowedMethods
+            });
+
+            // Store the link/ref against the Payment record.
+            await prisma.payment.update({
+                where: { bookingId: booking.id },
+                data: { transactionRef: intention.client_secret }
+            });
+
+            checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.client_secret}`;
+        }
+
+        // Enqueue the booking lifecycle events to be handled by the background worker.
+        await this.enqueueBookingLifecycle(booking, settings);
 
         // Create the notification for the customer and dispatch it.
         const receiverName = assignee.firstName ?? payload.customer.firstName!;
@@ -363,16 +423,6 @@ export default class BookingService {
             phone: assignee.phone,
             ...notificationPayload
         });
-
-        // Enqueue the booking lifecycle events to be handled by the background worker.
-        await this.enqueueBookingLifecycle(booking, settings);
-
-        // If we are dealing with an online booking, generate the payment link for them.
-        if (payload.channel === BookingChannel.ONLINE) {
-            // Generate payment intent link via Paymob (or whatever gateway).
-
-            // Store the link/ref against the Payment record.
-        }
 
         // Trigger notifications based on notificationsTrigger setting.
         if (notificationsTrigger.includes(NotificationEvent.BOOKING_RECEIVED)) {
@@ -412,7 +462,7 @@ export default class BookingService {
             }));
         };
 
-        return booking;
+        return { booking, checkout };
     };   
     
     createUserBooking = async (userId: string, phone: string, payload: CreateUserBookingPayloadType) => {
@@ -547,8 +597,27 @@ export default class BookingService {
 
         // Calculate the priceSnapshot and total.
         const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
-        const total = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
-        let deposit = null;
+
+        // Resolve the groundSize to use it to calculate the user's service fee.
+        let groundSize = 5 * 2;
+
+        switch (ground.size) {
+            case GroundSize.FIVE_A_SIDE:
+                groundSize = 5 * 2;
+                break;
+            case GroundSize.SEVEN_A_SIDE:
+                groundSize = 7 * 2;
+                break;
+            case GroundSize.ELEVEN_A_SIDE:
+                groundSize = 11 * 2;
+                break;
+            default:
+                groundSize = 5 * 2;
+                break;
+        }
+
+        const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * 1.5);
+        let depositFee = null;
 
         // Check if we are placing a deposit or paying in full then calculate the deposit.
         if (allowDeposit) {
@@ -556,7 +625,7 @@ export default class BookingService {
             if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
 
             const percentage = (depositPercentage / 100);
-            deposit = total * percentage;
+            depositFee = totalAmount * percentage;
         };
 
         const { assignee, booking } = await prisma.$transaction(async tx => {
@@ -581,8 +650,8 @@ export default class BookingService {
                     endTime: payload.endTime,
                     paymentMethod: payload.paymentMethod,
                     pricingSnapshot: pricingSnapshot,
-                    totalAmount: total,
-                    depositFee: deposit,
+                    totalAmount,
+                    depositFee,
                     channel: BookingChannel.ONLINE,
                     isApproved: autoConfirm
                 }
@@ -597,13 +666,42 @@ export default class BookingService {
                 data: {
                     bookingId: booking.id,
                     method: payload.paymentMethod,
-                    total,
-                    deposit,
+                    totalAmount,
+                    depositFee,
                 }
             });
 
             return { assignee, booking };
         });
+
+        // Generate payment intent link via Paymob (or whatever gateway).
+        const allowedMethods = settings.paymentMethods.map(m => m.toLowerCase()) as any[];
+
+        const intention = await this.paymentService.createIntention({
+            // Deposit if applicable, otherwise use the full amount.
+            amount: (depositFee ?? totalAmount) * 100, // Paymob uses piasters so multiply by 100.
+            currency: "EGP",
+            expiration: settings.paymentExpiryLimit * 60, // Set the paymentExpiryLimit in seconds as the expiry of the payment intention.
+            bookingId: booking.id,
+            customer: {
+                first_name: user.firstName,
+                last_name: user.lastName,
+                phone: assignee.phone,
+                email: user.email ?? undefined
+            },
+            allowedMethods
+        });
+
+        // Store the link/ref against the Payment record.
+        await prisma.payment.update({
+            where: { bookingId: booking.id },
+            data: { transactionRef: intention.client_secret }
+        });
+
+        const checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.client_secret}`;
+
+        // Enqueue the booking lifecycle events to be handled by the background worker.
+        await this.enqueueBookingLifecycle(booking, settings);
 
         // Create the notification for the customer and dispatch it.
         await NotificationsService.createNotification({
@@ -618,14 +716,6 @@ export default class BookingService {
                 deepLink: `https://www.hagz.com/booking/${booking.id}`
             }
         });
-
-        // Enqueue the booking lifecycle events to be handled by the background worker.
-        await this.enqueueBookingLifecycle(booking, settings);
-
-        // Generate payment intent link via Paymob (or whatever gateway).
-
-        // Store the link/ref against the Payment record.
-            
 
         // Trigger notifications based on notificationsTrigger setting.
         if (notificationsTrigger.includes(NotificationEvent.BOOKING_RECEIVED)) {
@@ -666,7 +756,7 @@ export default class BookingService {
             }));
         };
 
-        return booking;
+        return { booking, checkout };
     };
 
     fetchUserBooking = async (userId: string, bookingId: string) => {
