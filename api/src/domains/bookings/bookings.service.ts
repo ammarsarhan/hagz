@@ -717,7 +717,7 @@ export default class BookingService {
         });
 
         if (!user || !user.preferences)
-            throw new UnauthorizedError("Could not find user record for the specified userId.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+            throw new UnauthorizedError("Could not find user record for the specified user ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
 
         // Fetch the booking and ensure that the current state is allowed to cancel.
         const booking = await prisma.booking.findUnique({
@@ -909,6 +909,261 @@ export default class BookingService {
     };
 
     rescheduleUserBooking = async (userId: string, bookingId: string, payload: RescheduleUserBookingPayloadType) => {
+        // Fetch the user data and make sure that they exist and are not deleted.
+        const user = await prisma.user.findUnique({ 
+            where: { 
+                id: userId, 
+                status: { not: UserStatus.DELETED } 
+            },
+            include: {
+                preferences: true
+            }
+        });
 
+        if (!user || !user.preferences)
+            throw new UnauthorizedError("Could not find user record for the specified user ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+
+        // Fetch the booking and ensure that the current state is allowed to cancel.
+        const booking = await prisma.booking.findUnique({
+            where: {
+                id: bookingId
+            },
+            include: {
+                ground: {
+                    include: {
+                        pitch: { 
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                },
+                customer: true,
+                rescheduledFrom: true,
+                rescheduledTo: true
+            }
+        });
+
+        if (!booking)
+            throw new NotFoundError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        const settings = await prisma.groundSettings.findUnique({ where: { groundId: booking.groundId } });
+
+        if (!settings)
+            throw new InternalServerError("Could not resolve settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+
+        if (booking.customer.userId !== userId)
+            throw new ForbiddenError("You are not authorized to access this resource.", ERROR_CODES.BOOKING_ACCESS_FORBIDDEN);
+
+        // The user should only be allowed to reschedule a booking that has not been paid for, or has been paid for and is still upcoming.
+        if (!config.CANCELLABLE_STATES.includes(booking.status))
+            throw new BadRequestError(`Could not cancel booking. Booking is ${booking.status.toLowerCase()}`, ERROR_CODES.BOOKING_TRANSITION_INVALID);
+
+        if (booking.rescheduledTo !== null)
+            throw new BadRequestError("Can not reschedule booking that has already been rescheduled.", ERROR_CODES.BOOKING_TRANSITION_INVALID); // We should not hit this in theory but keep it as a safe-guard, msh haykhasar.
+
+        // Make sure the ground allows rescheduling and the booking falls within the reschedulingLimit window.
+        const { minimumDuration, maximumDuration, allowRescheduling, rescheduleLimit, minimumWindow, maximumWindow } = settings;
+
+        if (!allowRescheduling)
+            throw new BadRequestError("The specified ground does not allow rescheduling. Please cancel your booking and reserve another slot.", ERROR_CODES.GROUND_SETTINGS_FORBIDDEN);
+
+        if (differenceInHours(booking.startTime, Date.now()) < rescheduleLimit) 
+            throw new BadRequestError("The specified booking starts outside of the booking rescheduling window specified by the staff. Please cancel your booking and reserve another slot.", ERROR_CODES.GROUND_SETTINGS_FORBIDDEN);
+
+        // Validate the new slots to be booked.
+        const startTime = startOfHour(payload.startTime);
+        const endTime = startOfHour(payload.endTime);
+
+        const targetSlots = splitTimeRangeIntoBlocks(startTime, endTime);
+        
+        if (targetSlots.length < minimumDuration || targetSlots.length > maximumDuration)
+            throw new BadRequestError(`Requested booking must be between ${minimumDuration} and ${maximumDuration} hours long.`, ERROR_CODES.BOOKING_DURATION_INVALID);
+        
+        if (differenceInHours(payload.startTime, new Date()) > maximumWindow)
+            throw new BadRequestError("Requested booking time must be less than the maximum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
+        
+        if (differenceInHours(payload.startTime, new Date()) < minimumWindow)
+            throw new BadRequestError("Requested booking time must be more than the miniumum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
+
+        // Query the slots as the final step and check if all of the slots are available.
+        const slots = await prisma.groundSlot.findMany({
+            where: {
+                groundId: booking.groundId,
+                startsAt: { in: targetSlots },
+            }
+        });
+
+        if (slots.find(slot => slot.status === SlotStatus.BOOKED))
+            throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+        if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
+            throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+        if (slots.length !== targetSlots.length) 
+            throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+        // Leave the most expensive query to the end. We need to loop through the chain of bookings and make sure rescheduling has not happened more than 3 times.
+        let rescheduleCount = 0;
+        let currentId = bookingId;
+
+        while (true) {
+            const rescheduling = await prisma.rescheduling.findUnique({
+                where: { toId: currentId },
+                select: { fromId: true }
+            });
+
+            if (!rescheduling) break;
+
+            rescheduleCount = rescheduleCount + 1;
+            currentId = rescheduling.fromId;
+        }
+
+        if (rescheduleCount >= 3)
+            throw new BadRequestError("Booking has been rescheduled the maximum number of times.", ERROR_CODES.BOOKING_RESCHEDULING_LIMIT_EXCEEDED);
+
+        const updated = await prisma.$transaction(async tx => {
+            // Lock and release old slots (same logic as cancel).
+            const oldSlots = await tx.groundSlot.findMany({ where: { bookingId } });
+
+            for (const slot of oldSlots) {
+                await tx.$queryRaw`SELECT id FROM "GroundSlot" WHERE id = ${slot.id} FOR UPDATE`;
+            }
+
+            const targetDays = [...new Set(oldSlots.map(slot => slot.startsAt.getUTCDay()))];
+            const schedules = await tx.schedule.findMany({
+                where: { groundId: booking.groundId, dayOfWeek: { in: targetDays } }
+            });
+
+            for (const slot of oldSlots) {
+                const targetDay = slot.startsAt.getUTCDay();
+                const hour = slot.startsAt.getUTCHours();
+                const bit = 1 << hour;
+
+                const schedule = schedules.find(s => s.dayOfWeek === targetDay);
+
+                if (!schedule) {
+                    await tx.groundSlot.delete({ where: { id: slot.id } });
+                    continue;
+                }
+
+                const baseMask     = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
+                const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
+                const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
+
+                const isAvailable = schedule.isActive && ((baseMask | peakMask | discountMask) & bit);
+
+                if (isAvailable) {
+                    const priceType = (peakMask & bit) ? PriceType.PEAK
+                                    : (discountMask & bit) ? PriceType.DISCOUNT
+                                    : PriceType.BASE;
+
+                    await tx.groundSlot.update({
+                        where: { id: slot.id },
+                        data: { status: SlotStatus.AVAILABLE, bookingId: null, priceType }
+                    });
+                } else {
+                    await tx.groundSlot.delete({ where: { id: slot.id } });
+                }
+            }
+
+            // Mark old booking as RESCHEDULED.
+            await tx.booking.update({
+                where: { id: bookingId },
+                data: { status: BookingStatus.RESCHEDULED }
+            });
+
+            // Build new pricing for the new slots.
+            const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(booking.ground, settings, slots);
+            const total = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
+
+            // 4. Create the new booking, inheriting everything from the old one
+            const created = await tx.booking.create({
+                data: {
+                    pitchId: booking.ground.pitchId,
+                    groundId: booking.groundId,
+                    customerId: booking.customerId,
+                    initiatorId: userId,
+                    bookerRole: BookingActor.USER,
+                    startTime: payload.startTime,
+                    endTime: payload.endTime,
+                    paymentMethod: booking.paymentMethod,
+                    pricingSnapshot,
+                    totalAmount: total,
+                    depositFee: booking.depositFee ? Math.round(total * (settings.depositPercentage! / 100)) : null,
+                    channel: BookingChannel.ONLINE,
+                    isApproved: booking.isApproved,
+                    status: booking.status === BookingStatus.CONFIRMED ? BookingStatus.CONFIRMED : BookingStatus.RESERVED,
+                }
+            });
+
+            // Claim the new slots with the new booking we just created.
+            await tx.groundSlot.updateMany({
+                where: { id: { in: slots.map(s => s.id) } },
+                data: { status: SlotStatus.BOOKED, bookingId: created.id }
+            });
+
+            // Create the Rescheduling link.
+            await tx.rescheduling.create({
+                data: {
+                    fromId: bookingId,
+                    toId: created.id,
+                    userRole: BookingActor.USER,
+                    initiatorId: userId,
+                    refundDelta: total - booking.totalAmount
+                }
+            });
+
+            return created;
+        });
+
+        // Dequeue old booking lifecycle, enqueue new one.
+        await BookingService.dequeueBookingLifecycle(bookingId);
+        await this.enqueueBookingLifecycle(updated, settings);
+
+        // Notify user that their booking has been rescheduled.
+        await NotificationsService.createNotification({
+            userId,
+            event: NotificationEvent.BOOKING_RESCHEDULED,
+            data: {
+                receiverName: user.firstName,
+                groundName: booking.ground.name,
+                pitchName: booking.ground.pitch.name,
+                fromDate: formatInTimeZone(booking.startTime, user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                toDate: formatInTimeZone(updated.startTime, user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                bookingArticle: "Your",
+                deepLink: `https://www.hagz.com/bookings/${updated.id}`
+            }
+        });
+
+        // Notify staff if trigger enabled.
+        if (settings.notificationsTrigger.includes(NotificationEvent.BOOKING_RESCHEDULED)) {
+            const staff = await prisma.staff.findMany({
+                where: { pitchId: booking.ground.pitchId },
+                include: { user: { include: { preferences: true } } }
+            });
+
+            await Promise.all(staff.map(async member => {
+                const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
+                if (!isAllowed || !member.user.preferences) return;
+
+                await NotificationsService.createNotification({
+                    phone: member.user.phone,
+                    event: NotificationEvent.BOOKING_RESCHEDULED,
+                    data: {
+                        receiverName: member.user.firstName,
+                        groundName: booking.ground.name,
+                        pitchName: booking.ground.pitch.name,
+                        fromDate: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                        toDate: formatInTimeZone(updated.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                        bookingArticle: "The",
+                        deepLink: `https://www.hagz.com/dashboard/pitches/${booking.ground.pitchId}/grounds/${booking.groundId}/bookings/${updated.id}`
+                    }
+                });
+            }));
+        }
+
+        return updated;
     };
 };

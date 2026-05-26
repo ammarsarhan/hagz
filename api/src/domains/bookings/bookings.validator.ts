@@ -55,5 +55,11 @@ export const createStaffBookingSchema = z.object({
 export type RescheduleUserBookingPayloadType = z.infer<typeof rescheduleUserBookingSchema>;
 
 export const rescheduleUserBookingSchema = z.object({
-    
+    startTime: z
+        .coerce
+        .date()
+        .refine(value => value > new Date(), "Start time must be in the future."),
+    endTime: z
+        .coerce
+        .date(),
 });
