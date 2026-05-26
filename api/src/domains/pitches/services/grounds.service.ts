@@ -1,7 +1,7 @@
 import prisma from "@/shared/lib/utils/prisma.js";
 import type { CreateGroundPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdateGroundSlotStatusType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
-import { GroundStatus, PitchStatus, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
+import { BookingStatus, GroundStatus, PitchStatus, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
 import config from "@/shared/config.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
@@ -70,7 +70,7 @@ export default class GroundService {
             });
 
             if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-            if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE)
+            if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_EDITABLE)
 
             // 2. Make sure we haven't hit the grounds per pitch limit.
             const existingGrounds = pitch.grounds;
@@ -150,7 +150,7 @@ export default class GroundService {
             });
 
             if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-            if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now.", ERROR_CODES.PITCH_NOT_ACTIVE);
+            if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now.", ERROR_CODES.PITCH_NOT_EDITABLE);
 
             // 2. Verify the ground actually belongs to this pitch.
             const existing = pitch.grounds.find(g => g.id === groundId);
@@ -266,9 +266,13 @@ export default class GroundService {
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         if (!ground) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
 
-        if (config.ACTIVE_STATES.includes(pitch.status)) {
-            if (schedule && config.GENERATING_STATES.includes(schedule.status)) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT)
-        };
+        // Only allow editing the schedule if the pitch is in an editable state.
+        if (!config.EDITABLE_STATES.includes(pitch.status))
+            throw new BadRequestError("Could not update ground schedule status. Pitch must be either under maintenance or a draft.", ERROR_CODES.PITCH_NOT_EDITABLE);
+
+        if (pitch.status === PitchStatus.MAINTENANCE) {
+            if (schedule && config.GENERATING_STATES.includes(schedule.status)) throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT);
+        }
 
         const updated = await prisma.$transaction(async (tx) => {
             // Convert the time ranges from numerical values to bytes.
@@ -309,7 +313,7 @@ export default class GroundService {
         });
 
         // If the pitch is not a draft, we want to enqueue slots adjustment on the upsert.
-        if (config.ACTIVE_STATES.includes(pitch.status)) {
+        if (pitch.status === PitchStatus.MAINTENANCE) {
             await slotsQueue.add(
                 "adjust",
                 {
@@ -510,7 +514,7 @@ export default class GroundService {
             throw new InternalServerError("Could not resolve settings associated with the ground ID.", ERROR_CODES.GROUND_SETTINGS_MISSING);
 
         if (!config.ACTIVE_STATES.includes(ground.pitch.status))
-            throw new BadRequestError("Could not update slot on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+            throw new BadRequestError("Could not fetch slot on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Make sure that all of the schedules have finalized generating and are all ready before making edits to the slots.
         if (ground.schedule.some(item => config.GENERATING_STATES.includes(item.status)))
@@ -591,4 +595,63 @@ export default class GroundService {
 
         return updated;
     };
+
+    deleteGround = async (pitchId: string, groundId: string) => {
+        const ground = await prisma.ground.findUnique({ 
+            where: { 
+                id: groundId, 
+                pitchId,
+                status: {
+                    not: GroundStatus.DELETED
+                }
+            },
+            include: {
+                schedule: true,
+                bookings: {
+                    where: {
+                        status: {
+                            in: [BookingStatus.RESERVED, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]
+                        }
+                    }
+                },
+                pitch: {
+                    select: {
+                        status: true,
+                        grounds: {
+                            where: {
+                                status: { not: GroundStatus.DELETED },
+                                id: { not: groundId }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        
+        if (!ground)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        
+        const pitch = ground.pitch;
+
+        if (ground.schedule.some(schedule => schedule.status === ScheduleStatus.GENERATING))
+            throw new BadRequestError("Can not delete a ground while schedule is generating slots. Please wait until slot generation is complete.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT);
+
+        if (ground.bookings.length > 0)
+            throw new BadRequestError("Can not delete a ground while bookings are undergoing or scheduled for the future. Please wait and mark the ground as under maintenance until all bookings have been completed.", ERROR_CODES.GROUND_BOOKINGS_CONFLICT);
+
+        if (ground.status !== GroundStatus.MAINTENANCE)
+            throw new BadRequestError("Can not delete a ground while it is live. Please mark it as under maintenance first before deleting.", ERROR_CODES.GROUND_TRANSITION_INVALID);
+
+        if (!config.EDITABLE_STATES.includes(pitch.status))
+            throw new BadRequestError("Can not delete ground. Pitch must be in an editable state first.", ERROR_CODES.PITCH_NOT_EDITABLE);
+
+        if (pitch.status === PitchStatus.LIVE && pitch.grounds.length === 0)
+            throw new BadRequestError("Can not delete ground. At least one ground is required while a pitch is live.", ERROR_CODES.PITCH_GROUND_REQUIRED)
+
+        await prisma.$transaction(async tx => {
+            await tx.groundSlot.deleteMany({ where: { groundId, status: { not: SlotStatus.BOOKED } }});
+            await tx.ground.update({ where: { id: groundId }, data: { status: GroundStatus.DELETED, deletedAt: new Date() } } )
+        });
+    }
 }

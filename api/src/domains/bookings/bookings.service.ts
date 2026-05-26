@@ -932,7 +932,7 @@ export default class BookingService {
             // If we are greater than the fullRefundWindow, then keep the full refund fee as the amount.
             // If we are between the fullRefundWindow and partialRefundWindow, return the refundPercentage of the booking to the user.
             if (differenceInHours(booking.startTime, Date.now()) <= settings.fullRefundWindow && differenceInHours(booking.startTime, Date.now()) >= settings.partialRefundWindow)
-                refundFee = refundFee * settings.refundPercentage;
+                refundFee = refundFee * (settings.refundPercentage / 100);
             
             // If we are less than the partialRefundWindow, do not return any money to the user.
             if (differenceInHours(booking.startTime, Date.now()) <= settings.partialRefundWindow)
@@ -1166,7 +1166,26 @@ export default class BookingService {
 
             // Build new pricing for the new slots.
             const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(booking.ground, settings, slots);
-            const total = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
+
+            // Resolve the groundSize to use it to calculate the user's service fee.
+            let groundSize = 5 * 2;
+
+            switch (booking.ground.size) {
+                case GroundSize.FIVE_A_SIDE:
+                    groundSize = 5 * 2;
+                    break;
+                case GroundSize.SEVEN_A_SIDE:
+                    groundSize = 7 * 2;
+                    break;
+                case GroundSize.ELEVEN_A_SIDE:
+                    groundSize = 11 * 2;
+                    break;
+                default:
+                    groundSize = 5 * 2;
+                    break;
+            }
+
+            const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * 1.5);
 
             // 4. Create the new booking, inheriting everything from the old one
             const created = await tx.booking.create({
@@ -1180,8 +1199,8 @@ export default class BookingService {
                     endTime: payload.endTime,
                     paymentMethod: booking.paymentMethod,
                     pricingSnapshot,
-                    totalAmount: total,
-                    depositFee: booking.depositFee ? Math.round(total * (settings.depositPercentage! / 100)) : null,
+                    totalAmount,
+                    depositFee: booking.depositFee ? Math.round(totalAmount * (settings.depositPercentage! / 100)) : null,
                     channel: BookingChannel.ONLINE,
                     isApproved: booking.isApproved,
                     status: booking.status === BookingStatus.CONFIRMED ? BookingStatus.CONFIRMED : BookingStatus.RESERVED,
@@ -1201,7 +1220,7 @@ export default class BookingService {
                     toId: created.id,
                     userRole: BookingActor.USER,
                     initiatorId: userId,
-                    refundDelta: total - booking.totalAmount
+                    refundDelta: totalAmount - booking.totalAmount
                 }
             });
 

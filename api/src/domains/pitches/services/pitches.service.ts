@@ -162,7 +162,7 @@ export default class PitchService {
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Check if the pitch is even in a state to allow edits.
-        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_EDITABLE);
 
         // If the pitch passes the checks, update it with the provided payload.
         const updated = await prisma.pitch.update({

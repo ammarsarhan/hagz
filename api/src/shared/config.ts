@@ -4,8 +4,8 @@ const config = {
     MAXIMUM_GROUNDS_PER_PITCH: 10,
     MAXIMUM_PITCHES_PER_USER: 5,
     MAXIMUM_AMENITIES_PER_PITCH: 10,
-    EDITABLE_STATES: [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[],
-    ACTIVE_STATES: [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[],
+    EDITABLE_STATES: [PitchStatus.DRAFT, PitchStatus.MAINTENANCE] as PitchStatus[],
+    ACTIVE_STATES: [PitchStatus.ACCEPTED, PitchStatus.LIVE] as PitchStatus[],
     GENERATING_STATES: [ScheduleStatus.PENDING, ScheduleStatus.GENERATING] as ScheduleStatus[],
     CANCELLABLE_STATES: [BookingStatus.RESERVED, BookingStatus.CONFIRMED] as BookingStatus[]
 }

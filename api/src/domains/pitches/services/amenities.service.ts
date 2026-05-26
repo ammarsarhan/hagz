@@ -19,7 +19,7 @@ export default class AmenityService {
         });
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_EDITABLE);
 
         // Make sure the pitch does not have more than 10 amenity records.
         if (pitch.amenities.length > config.MAXIMUM_AMENITIES_PER_PITCH) throw new BadRequestError(`Pitch may not have more than ${config.MAXIMUM_AMENITIES_PER_PITCH} amenities. Please delete one or try updating it first.`, ERROR_CODES.PITCH_AMENITY_LIMIT_EXCEEDED);
@@ -112,7 +112,7 @@ export default class AmenityService {
         });
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_EDITABLE);
 
         // Check if the amenity even exists on the specified pitch.
         const target = pitch.amenities.find(a => a.order === order);
@@ -163,10 +163,13 @@ export default class AmenityService {
         });
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept ground edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_EDITABLE);
 
         const target = pitch.amenities.find(a => a.order === order);
         if (!target) throw new NotFoundError("Could not find amenity with the specified order.", ERROR_CODES.PITCH_AMENITY_NOT_FOUND);
+
+        if (pitch.status === PitchStatus.LIVE && pitch.amenities.length <= 1)
+            throw new BadRequestError("Could not delete pitch amenity. There must be at least one amenity for an active pitch.", ERROR_CODES.PITCH_AMENITY_REQUIRED);
 
         return await prisma.$transaction(async (tx) => {
             // Delete the amenity.
