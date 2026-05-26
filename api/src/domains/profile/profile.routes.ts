@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { fetchProfileNotificationsHandler, readNotificationHandler } from "@/domains/profile/profile.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
@@ -6,8 +7,8 @@ const app = new Hono()
     .patch("/")
     .get("/settings")
     .patch("/settings")
-    .get("/notifications")
-    .patch("/notifications/:notificationId/read")
+    .get("/notifications", ...fetchProfileNotificationsHandler)
+    .patch("/notifications/:notificationId/read", ...readNotificationHandler)
     .get("/sessions")
     .delete("/sessions/:sessionId")
     .get("/history")

@@ -32,6 +32,7 @@ type TemplateMap = {
 // payout:     {{1}} receiverName, {{2}} payoutReference, {{3}} processedAt, {{4}} action, {{5}} deepLink
 // invitation: {{1}} receiverName, {{2}} actorName, {{3}} action, {{4}} pitchName
 // onboard:    {{1}} receiverName, {{2}} actorName, {{3}} pitchName, {{4}} deepLink, {{5}} expiresAt
+// reschedule: {{1}} receiverName, {{2}} bookingArticle ("Your"/"The"), {{3}} pitchName, {{4}} groundName, {{5}} fromDate, {{6}} toDate, {{7}} deepLink
 
 export const templates: TemplateMap = {
     [NotificationEvent.BOOKING_RECEIVED]: {
@@ -86,12 +87,12 @@ export const templates: TemplateMap = {
     },
     [NotificationEvent.BOOKING_RESCHEDULED]: {
         [NotificationChannel.WHATSAPP]: (ctx) => ({
-            templateName: "customer",
-            variables: [ctx.receiverName, ctx.pitchName, ctx.groundName, ctx.startTime, ctx.action, ctx.deepLink],
+            templateName: "reschedule",
+            variables: [ctx.receiverName, ctx.bookingArticle, ctx.pitchName, ctx.groundName, ctx.fromDate, ctx.toDate, ctx.deepLink],
         }),
         [NotificationChannel.IN_APP]: (ctx) => ({
             title: `Booking Rescheduled`,
-            body: `Your booking at ${ctx.pitchName} (${ctx.groundName}) for ${ctx.startTime} has been ${ctx.action}`,
+            body: `${ctx.bookingArticle} booking at ${ctx.pitchName} (${ctx.groundName}) has been rescheduled from ${ctx.fromDate} to ${ctx.toDate}.`,
         }),
     },
     [NotificationEvent.BOOKING_REMINDER]: {

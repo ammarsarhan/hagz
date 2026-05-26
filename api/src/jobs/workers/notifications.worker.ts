@@ -1,14 +1,15 @@
 import { Worker } from "bullmq";
 import { Redis } from "ioredis";
-import type { NotificationsJobPayload } from "@/shared/types/notifications.js";
 import prisma from "@/shared/lib/utils/prisma.js";
-import { NotificationChannel, NotificationStatus } from "@/generated/prisma/enums.js";
 import sendWhatsapp from "@/shared/lib/providers/whatsapp.js";
+import { NotificationChannel, NotificationStatus } from "@/generated/prisma/enums.js";
+import type { NotificationsJobPayload } from "@/shared/types/notifications.js";
 import { resolveTemplate } from "@/shared/lib/providers/templates.js";
+import { sendInApp } from "@/shared/lib/providers/app.js";
 
 const notificationsWorker = new Worker<NotificationsJobPayload>("notifications", 
     async (job) => {
-        const { deliveryId, event, channel, phone, payload } = job.data;
+        const { notificationId, deliveryId, event, channel, phone, payload } = job.data;
 
         // Fetch the delivery to make sure it exists and isn't already sent.
         const delivery = await prisma.notificationDelivery.findUnique({
@@ -27,6 +28,11 @@ const notificationsWorker = new Worker<NotificationsJobPayload>("notifications",
                     const { templateName, variables } = resolveTemplate(event, channel, payload);
                     const result = await sendWhatsapp({ to: phone!, templateName, variables });
                     providerRef = result.messages?.[0]?.id;
+                    break;
+                }
+                case NotificationChannel.IN_APP: {
+                    const delivery = await sendInApp(notificationId);
+                    providerRef = delivery.id;
                     break;
                 }
                 case NotificationChannel.EMAIL: {

@@ -765,7 +765,6 @@ model Notification {
   body  String?
   payload Json?
 
-  isRead Boolean   @default(false)
   readAt DateTime?
 
   createdAt DateTime @default(now())

@@ -48,8 +48,9 @@ export type NotificationPayloadMap = {
         receiverName: string;
         groundName: string;
         pitchName: string;
-        startTime: string;
-        action: "rescheduled";
+        fromDate: string;
+        toDate: string;
+        bookingArticle: "Your" | "The",
         deepLink: string;
     };
     [NotificationEvent.BOOKING_STARTED]: {
