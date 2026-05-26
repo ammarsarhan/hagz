@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, publishPitchHandler, deactivatePitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
 import { createGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
-import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler } from "@/domains/pitches/handlers/media.handlers.js";
+import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
 import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
 import { createStaffBookingHandler } from "@/domains/bookings/bookings.handlers.js";
 
@@ -32,6 +32,8 @@ const app = new Hono()
     .patch('/:pitchId/grounds/:groundId/slots/:slotId', ...updateGroundSlotHandler)
     .post('/:pitchId/media/presign', ...createPitchMediaPresignLinkHandler)
     .post('/:pitchId/media/:mediaId/confirm', ...confirmPitchMediaUploadHandler)
+    .get('/:pitchId/media', ...fetchPitchMediaHandler)
+    .delete('/:pitchId/media/:mediaId', ...deletePitchMediaHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
     .post('/:pitchId/deactivate', ...deactivatePitchHandler)
     .post('/:pitchId/publish', ...publishPitchHandler)
