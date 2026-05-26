@@ -1,4 +1,4 @@
-import { PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
+import { BookingStatus, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
 
 const config = {
     MAXIMUM_GROUNDS_PER_PITCH: 10,
@@ -6,7 +6,8 @@ const config = {
     MAXIMUM_AMENITIES_PER_PITCH: 10,
     EDITABLE_STATES: [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[],
     ACTIVE_STATES: [PitchStatus.ACCEPTED, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[],
-    GENERATING_STATES: [ScheduleStatus.PENDING, ScheduleStatus.GENERATING] as ScheduleStatus[]
+    GENERATING_STATES: [ScheduleStatus.PENDING, ScheduleStatus.GENERATING] as ScheduleStatus[],
+    CANCELLABLE_STATES: [BookingStatus.RESERVED, BookingStatus.CONFIRMED] as BookingStatus[]
 }
 
 export default config;

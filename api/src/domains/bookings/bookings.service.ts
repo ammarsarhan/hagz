@@ -1,6 +1,6 @@
 import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType, RescheduleUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
-import { BookingActor, BookingChannel, BookingStatus, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
-import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
+import { BookingActor, BookingChannel, BookingStatus, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, PriceType, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
+import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
 import { addMinutes, differenceInHours, differenceInMilliseconds, startOfHour, subHours } from "date-fns";
@@ -11,6 +11,7 @@ import type { Permissions } from "@/shared/types/staff.js";
 import { bookingsQueue } from "@/jobs/queues/bookings.queue.js";
 import { BookingEvent } from "@/shared/types/bookings.js";
 import { formatInTimeZone } from "date-fns-tz";
+import config from "@/shared/config.js";
 
 export default class BookingService {
     private readonly buildPricingSnapshot = (ground: Ground, settings: GroundSettings, slots: Array<GroundSlot>) => {
@@ -136,6 +137,10 @@ export default class BookingService {
 
         if (!pitch) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        // Ensure that the requestor knows that this is due to the pitch being under maintenance.
+        if (pitch.status === PitchStatus.MAINTENANCE)
+            throw new BadRequestError("Pitch is temporarily unavailable. Please try again shortly.", ERROR_CODES.PITCH_UNDER_MAINTENANCE);
 
         if (pitch.status != PitchStatus.LIVE)
             throw new BadRequestError("Pitch is not live. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_LIVE);
@@ -446,6 +451,10 @@ export default class BookingService {
         if (!pitch) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
+        // Ensure that the requestor knows that this is due to the pitch being under maintenance.
+        if (pitch.status === PitchStatus.MAINTENANCE)
+            throw new BadRequestError("Pitch is temporarily unavailable. Please try again shortly.", ERROR_CODES.PITCH_UNDER_MAINTENANCE);
+
         if (pitch.status != PitchStatus.LIVE)
             throw new BadRequestError("Pitch is not live. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_LIVE);
 
@@ -696,7 +705,207 @@ export default class BookingService {
     };
 
     cancelUserBooking = async (userId: string, bookingId: string) => {
+        // Fetch the user data and make sure that they exist and are not deleted.
+        const user = await prisma.user.findUnique({ 
+            where: { 
+                id: userId, 
+                status: { not: UserStatus.DELETED } 
+            },
+            include: {
+                preferences: true
+            }
+        });
+
+        if (!user || !user.preferences)
+            throw new UnauthorizedError("Could not find user record for the specified userId.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+
+        // Fetch the booking and ensure that the current state is allowed to cancel.
+        const booking = await prisma.booking.findUnique({
+            where: {
+                id: bookingId
+            },
+            select: {
+                groundId: true,
+                status: true,
+                totalAmount: true,
+                depositFee: true,
+                startTime: true,
+                customer: {
+                    select: {
+                        userId: true
+                    }
+                },
+                ground: {
+                    include: {
+                        pitch: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        },
+                    }
+                }
+            }
+        });
+
+        if (!booking)
+            throw new NotFoundError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
         
+        const settings = await prisma.groundSettings.findUnique({ where: { groundId: booking.groundId } });
+
+        if (!settings)
+            throw new InternalServerError("Could not resolve settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+
+        if (booking.customer.userId !== userId)
+            throw new ForbiddenError("You are not authorized to access this resource.", ERROR_CODES.BOOKING_ACCESS_FORBIDDEN);
+
+        // The user should only be allowed to cancel a booking that has not been paid for, or has been paid for and is still upcoming.
+        if (!config.CANCELLABLE_STATES.includes(booking.status))
+            throw new BadRequestError(`Could not cancel booking. Booking is ${booking.status.toLowerCase()}`, ERROR_CODES.BOOKING_TRANSITION_INVALID);
+
+        // Start the cancellation process - rabena yestor.
+        const updated = await prisma.$transaction(async tx => {
+            const slots = await tx.groundSlot.findMany({
+                where: {
+                    bookingId
+                }
+            });
+
+            if (slots.length <= 0)
+                throw new InternalServerError("Could not cancel booking. No associated ground slots were found.");
+
+            // Loop through each of the slots and lock them to ensure nothing else edits them.
+            for await (const slot of slots) {
+                await tx.$queryRaw`
+                    SELECT id FROM "GroundSlot" WHERE id = ${slot.id} FOR UPDATE
+                `;
+            };
+
+            // Update the actual booking record.
+            const booking = await tx.booking.update({
+                where: { id: bookingId },
+                data: { status: BookingStatus.CANCELLED }
+            });
+
+            // Fetch the slots for the target ground.
+            const targetDays = [...new Set(slots.map(slot => slot.startsAt.getUTCDay()))];
+
+            const schedules = await tx.schedule.findMany({ 
+                where: {
+                    dayOfWeek: {
+                        in: targetDays
+                    },
+                    groundId: booking.groundId
+                }
+            });
+
+            // Loop through each of the slots to check the schedule for the associated day and figure out what the slot should be set as.
+            for await (const slot of slots) {
+                const targetDay = slot.startsAt.getUTCDay();
+                const hour = slot.startsAt.getUTCHours();
+                const bit = 1 << hour;
+
+                const schedule = schedules.find(schedule => schedule.dayOfWeek === targetDay)!;
+
+                const isAvailable = schedule.isActive && (() => {
+                    const baseMask     = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
+                    const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
+                    const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
+                    
+                    return (baseMask | peakMask | discountMask) & bit;
+                })();
+
+                if (isAvailable) {
+                    const peakMask     = Buffer.from(schedule!.peakHours).readUIntBE(0, 3);
+                    const discountMask = Buffer.from(schedule!.discountHours).readUIntBE(0, 3);
+
+                    const priceType = (peakMask & bit) ? PriceType.PEAK
+                                    : (discountMask & bit) ? PriceType.DISCOUNT
+                                    : PriceType.BASE;
+
+                    await tx.groundSlot.update({
+                        where: { id: slot.id },
+                        data: { status: SlotStatus.AVAILABLE, bookingId: null, priceType }
+                    });
+                } else {
+                    await tx.groundSlot.delete({ where: { id: slot.id } });
+                };
+            };
+
+            return booking;
+        });
+
+        // Calculate the refund if needed based on the original booking status and issue it based on the ground policy.
+        if (booking.status === BookingStatus.CONFIRMED) {
+            let refundFee = booking.depositFee ?? booking.totalAmount;
+
+            // If we are greater than the fullRefundWindow, then keep the full refund fee as the amount.
+            // If we are between the fullRefundWindow and partialRefundWindow, return the refundPercentage of the booking to the user.
+            if (differenceInHours(booking.startTime, Date.now()) <= settings.fullRefundWindow && differenceInHours(booking.startTime, Date.now()) >= settings.partialRefundWindow)
+                refundFee = refundFee * settings.refundPercentage;
+            
+            // If we are less than the partialRefundWindow, do not return any money to the user.
+            if (differenceInHours(booking.startTime, Date.now()) <= settings.partialRefundWindow)
+                refundFee = 0;
+
+            // Todo: Initiate the actual refund process on Paymob.
+        };
+
+        // Dequeue the booking fron the bookingQueue and send out notifications to both the user and the staff members.
+        await BookingService.dequeueBookingLifecycle(bookingId);
+
+        await NotificationsService.createNotification({ 
+            userId, 
+            event: NotificationEvent.BOOKING_CANCELLED,
+            data: {
+                receiverName: user.firstName,
+                pitchName: booking.ground.pitch.name,
+                groundName: booking.ground.name,
+                startTime: formatInTimeZone(booking.startTime, user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                action: "cancelled",
+                deepLink: `https://www.hagz.com/bookings/${bookingId}`
+                
+            }
+        });
+
+        if (settings.notificationsTrigger.includes(NotificationEvent.BOOKING_CANCELLED)) {
+            // Create notification for the staff members.
+            const staff = await prisma.staff.findMany({ 
+                where: { pitchId: booking.ground.pitchId }, 
+                include: {
+                    user: {
+                        include: {
+                            preferences: true
+                        }
+                    }
+                }
+            });
+
+            // Check if the staff member is allowed to recieve booking notifications.
+            await Promise.all(staff.map(async (member) => {
+                const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
+
+                if (isAllowed) {
+                    if (!member.user.preferences)
+                        throw new InternalServerError("Could not resolve user preferences associated with the user account.")
+
+                    await NotificationsService.createNotification({
+                        phone: member.user.phone,
+                        event: NotificationEvent.BOOKING_CANCELLED,
+                        data: {
+                            receiverName: member.user.firstName,
+                            pitchName: booking.ground.pitch.name,
+                            groundName: booking.ground.name,
+                            startTime: formatInTimeZone(booking.startTime, member.user.preferences.timezone, "d-M-yyyy 'at' h aa"),
+                            action: "cancelled",
+                            deepLink: `https://www.hagz.com/dashboard/pitches/${booking.ground.pitch.id}/grounds/${booking.ground.id}/bookings/${bookingId}`
+                        }
+                    });
+                }
+            }));
+        };
+
+        return updated;
     };
 
     rescheduleUserBooking = async (userId: string, bookingId: string, payload: RescheduleUserBookingPayloadType) => {
