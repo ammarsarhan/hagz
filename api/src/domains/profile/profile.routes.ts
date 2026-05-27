@@ -1,17 +1,18 @@
 import { Hono } from "hono";
-import { fetchProfileNotificationsHandler, readNotificationHandler } from "@/domains/profile/profile.handlers.js";
+import { fetchProfileNotificationsHandler, readNotificationHandler, getProfileHandler, updateProfileHandler, getPreferencesHandler, updatePreferencesHandler, fetchSessionsHandler, deleteSessionHandler } from "@/domains/profile/profile.handlers.js";
+import { fetchUserBookingsHandler } from "../bookings/bookings.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
-    .get("/")
-    .patch("/")
-    .get("/settings")
-    .patch("/settings")
+    .get("/", ...getProfileHandler)
+    .patch("/", ...updateProfileHandler)
+    .get("/preferences", ...getPreferencesHandler)
+    .patch("/preferences", ...updatePreferencesHandler)
     .get("/notifications", ...fetchProfileNotificationsHandler)
     .patch("/notifications/:notificationId/read", ...readNotificationHandler)
-    .get("/sessions")
-    .delete("/sessions/:sessionId")
-    .get("/history")
+    .get("/sessions", ...fetchSessionsHandler)
+    .delete("/sessions/:sessionId", ...deleteSessionHandler)
+    .get("/history", ...fetchUserBookingsHandler)
 
 export default app;
 export type AppType = typeof app;

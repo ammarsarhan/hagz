@@ -9,7 +9,7 @@ import NotificationsService from "@/domains/notifications/notifications.service.
 import hasPermissions from "@/shared/lib/utils/permissions.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import { bookingsQueue } from "@/jobs/queues/bookings.queue.js";
-import { BookingEvent } from "@/shared/types/bookings.js";
+import { BookingEvent, formatUserBooking } from "@/shared/types/bookings.js";
 import { formatInTimeZone } from "date-fns-tz";
 import config from "@/shared/config.js";
 import PaymentService from "@/domains/payments/payments.service.js";
@@ -361,31 +361,17 @@ export default class BookingService {
 
         // If we are dealing with an online booking, generate the payment link for them.
         if (payload.channel === BookingChannel.ONLINE) {
-            // Generate payment intent link via Paymob (or whatever gateway).
-            const allowedMethods = settings.paymentMethods.map(m => m.toLowerCase()) as any[];
 
-            const intention = await this.paymentService.createIntention({
-                // Deposit if applicable, otherwise use the full amount.
-                amount: (depositFee ?? totalAmount) * 100, // Paymob uses piasters so multiply by 100.
-                currency: "EGP",
-                expiration: settings.paymentExpiryLimit * 60, // Set the paymentExpiryLimit in seconds as the expiry of the payment intention.
-                bookingId: booking.id,
-                customer: {
-                    first_name: assignee.firstName ?? payload.customer.firstName!,
-                    last_name: assignee.lastName ?? payload.customer.lastName!,
-                    phone: assignee.phone,
-                    email: match?.email ?? undefined
-                },
-                allowedMethods
-            });
+            // Generate payment intent link via Paymob (or whatever gateway).
+            const intention = await this.paymentService.createIntention();
 
             // Store the link/ref against the Payment record.
             await prisma.payment.update({
                 where: { bookingId: booking.id },
-                data: { transactionRef: intention.client_secret }
+                data: { transactionRef: intention.transactionRef }
             });
 
-            checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.client_secret}`;
+            checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.clientSecret}`;
         }
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
@@ -675,30 +661,15 @@ export default class BookingService {
         });
 
         // Generate payment intent link via Paymob (or whatever gateway).
-        const allowedMethods = settings.paymentMethods.map(m => m.toLowerCase()) as any[];
-
-        const intention = await this.paymentService.createIntention({
-            // Deposit if applicable, otherwise use the full amount.
-            amount: (depositFee ?? totalAmount) * 100, // Paymob uses piasters so multiply by 100.
-            currency: "EGP",
-            expiration: settings.paymentExpiryLimit * 60, // Set the paymentExpiryLimit in seconds as the expiry of the payment intention.
-            bookingId: booking.id,
-            customer: {
-                first_name: user.firstName,
-                last_name: user.lastName,
-                phone: assignee.phone,
-                email: user.email ?? undefined
-            },
-            allowedMethods
-        });
+        const intention = await this.paymentService.createIntention();
 
         // Store the link/ref against the Payment record.
         await prisma.payment.update({
             where: { bookingId: booking.id },
-            data: { transactionRef: intention.client_secret }
+            data: { transactionRef: intention.transactionRef }
         });
 
-        const checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.client_secret}`;
+        const checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.clientSecret}`;
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
         await this.enqueueBookingLifecycle(booking, settings);
@@ -788,10 +759,19 @@ export default class BookingService {
                 customer: {
                     userId
                 }
+            },
+            include: {
+                ground: true,
+                pitch: true,
+                slots: true,
+                payment: true,
+                rescheduledFrom: true,
+                rescheduledTo: true,
+                cancellation: true
             }
         });
 
-        return bookings;
+        return formatUserBooking(bookings);
     };
 
     cancelUserBooking = async (userId: string, bookingId: string) => {

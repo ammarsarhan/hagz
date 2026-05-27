@@ -62,7 +62,6 @@ export const fetchUserBookingsHandler = factory.createHandlers(
     authorize,
     async (c) => {
         const userId = c.var.id;
-
         const bookings = await bookingService.fetchUserBookings(userId);
         return c.json({ success: true, data: { bookings } }, 200); 
     }

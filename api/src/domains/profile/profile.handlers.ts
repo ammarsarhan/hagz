@@ -1,10 +1,36 @@
 import { Factory } from "hono/factory"
 import { authorize } from "@/domains/auth/auth.middleware.js";
-import NotificationsService from "../notifications/notifications.service.js";
-import { BadRequestError, ERROR_CODES } from "@/shared/lib/utils/error.js";
+import validate from "@/shared/middleware/validate.middleware.js";
+import NotificationsService from "@/domains/notifications/notifications.service.js";
+import ProfileService from "@/domains/profile/profile.service.js";
+import { BadRequestError, ERROR_CODES, UnauthorizedError } from "@/shared/lib/utils/error.js";
+import { updateUserProfileSchema, updateUserPreferencesSchema } from "@/domains/profile/profile.validator.js";
+import { getCookie } from "hono/cookie";
 
 const factory = new Factory();
+const profileService = new ProfileService();
 const notificationsService = new NotificationsService();
+
+export const getProfileHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const profile = await profileService.getUserProfile(userId);
+        return c.json({ success: true, data: { profile } }, 200);
+    }
+);
+
+export const updateProfileHandler = factory.createHandlers(
+    authorize,
+    validate("json", updateUserProfileSchema),
+    async (c) => {
+        const userId = c.var.id;
+        const payload = c.req.valid("json");
+
+        const profile = await profileService.updateUserProfile(userId, payload);
+        return c.json({ success: true, data: { profile } }, 200); 
+    }
+)
 
 export const fetchProfileNotificationsHandler = factory.createHandlers(
     authorize,
@@ -13,6 +39,28 @@ export const fetchProfileNotificationsHandler = factory.createHandlers(
         return c.json({ success: true, data: { notifications } }, 200);
     }
 );
+
+export const getPreferencesHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const preferences = await profileService.getUserPreferences(userId);
+        return c.json({ success: true, data: { preferences } }, 200);
+    }
+);
+
+export const updatePreferencesHandler = factory.createHandlers(
+    authorize,
+    validate("json", updateUserPreferencesSchema),
+    async (c) => {
+        const userId = c.var.id;
+        const payload = c.req.valid("json");
+
+        const preferences = await profileService.updateUserPreferences(userId, payload);
+
+        return c.json({ success: true, data: { preferences } }, 200);
+    }
+)
 
 export const readNotificationHandler = factory.createHandlers(
     authorize,
@@ -25,4 +73,43 @@ export const readNotificationHandler = factory.createHandlers(
         const notification = await notificationsService.readUserInAppNotification(c.var.id, notificationId);
         return c.json({ success: true, data: { notification } }, 200); 
     }
-)
+);
+
+export const fetchSessionsHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+    
+        const currentToken = 
+            getCookie(c, "refreshToken") ||   // Web
+            c.req.header("X-Refresh-Token");  // Mobile
+
+        if (!currentToken)
+            throw new UnauthorizedError("Could not fetch the current refresh token associated with this session. Please sign in again.", ERROR_CODES.UNAUTHORIZED);
+
+        const sessions = await profileService.fetchUserActiveSessions(userId, currentToken);
+        return c.json({ success: true, data: { sessions } }, 200); 
+    }
+);
+
+export const deleteSessionHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const sessionId = c.req.param("sessionId");
+
+        const currentToken = 
+            getCookie(c, "refreshToken") ||   // Web
+            c.req.header("X-Refresh-Token");  // Mobile
+
+        if (!currentToken)
+            throw new UnauthorizedError("Could not fetch the current refresh token associated with this session. Please sign in again.", ERROR_CODES.UNAUTHORIZED);
+
+        if (!sessionId)
+            throw new BadRequestError("Could not delete session. No session ID provided in the parameters.", ERROR_CODES.USER_SESSION_NOT_FOUND);
+
+        await profileService.deleteUserSession(userId, sessionId, currentToken);
+        return c.json({ success: true, data: null }, 200); 
+    }
+);
+
