@@ -296,7 +296,7 @@ export default class BookingService {
                     break;
             }
 
-            totalAmount = totalAmount + (slots.length * groundSize * 1.5);
+            totalAmount = totalAmount + (slots.length * groundSize * config.SERVICE_RATE);
         }
 
         let depositFee = null;
@@ -602,7 +602,7 @@ export default class BookingService {
                 break;
         }
 
-        const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * 1.5);
+        const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * config.SERVICE_RATE);
         let depositFee = null;
 
         // Check if we are placing a deposit or paying in full then calculate the deposit.
@@ -1172,7 +1172,7 @@ export default class BookingService {
                     break;
             }
 
-            const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * 1.5);
+            const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * config.SERVICE_RATE);
 
             // 4. Create the new booking, inheriting everything from the old one
             const created = await tx.booking.create({

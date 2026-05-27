@@ -58,6 +58,7 @@ export const fetchUserBookingHandler = factory.createHandlers(
     }
 );
 
+// Todo: Add pagination on this.
 export const fetchUserBookingsHandler = factory.createHandlers(
     authorize,
     async (c) => {
