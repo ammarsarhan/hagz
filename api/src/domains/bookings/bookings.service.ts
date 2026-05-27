@@ -740,7 +740,14 @@ export default class BookingService {
                     select: {
                         userId: true
                     }
-                }
+                },
+                ground: true,
+                pitch: true,
+                slots: true,
+                payment: true,
+                rescheduledFrom: true,
+                rescheduledTo: true,
+                cancellation: true
             }
         });
 
@@ -750,7 +757,7 @@ export default class BookingService {
         if (booking.customer.userId !== userId)
             throw new ForbiddenError("You are not authorized to access this resource.", ERROR_CODES.BOOKING_ACCESS_FORBIDDEN);
 
-        return booking;
+        return formatUserBooking([booking])[0];
     };
 
     fetchUserBookings = async (userId: string) => {
