@@ -289,10 +289,10 @@ model UserPreferences {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
 
-  language      Language             @default(EN)
+  language      Language              @default(EN)
   notifications NotificationChannel[] @default([WHATSAPP])
-  paymentMethod PaymentMethod        @default(CASH)
-  timezone      String               @default("Africa/Cairo")
+  paymentMethod PaymentMethod         @default(CASH)
+  timezone      String                @default("Africa/Cairo")
 }
 
 model Staff {
@@ -357,6 +357,8 @@ model Pitch {
   country        Country
   latitude       Float
   longitude      Float
+  // Prisma is being annoying. Mark this as nullable then roll that back in the actual migration.
+  location       Unsupported("geography(Point, 4326)")? 
   googleMapsLink String
   media          PitchMedia[]
 
@@ -405,7 +407,7 @@ model Ground {
 
   pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
 
-  schedule          Schedule[]
+  schedule Schedule[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -432,7 +434,7 @@ model GroundSettings {
   depositPercentage Int?
 
   approvalExpiryLimit Int @default(30) // Minutes
-  paymentExpiryLimit Int @default(15) // Minutes
+  paymentExpiryLimit  Int @default(15) // Minutes
 
   allowRescheduling Boolean @default(true)
   rescheduleLimit   Int     @default(24) // Hours
@@ -494,7 +496,7 @@ model Invitation {
   phone  String
   token  String           @unique
   status InvitationStatus @default(PENDING)
-  
+
   expiresAt  DateTime
   acceptedAt DateTime?
   rejectedAt DateTime?
@@ -577,8 +579,8 @@ model PitchCustomer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId])
   @@unique([pitchId, phone])
+  @@index([userId])
 }
 
 model Booking {
@@ -586,8 +588,8 @@ model Booking {
   pitchId  String
   groundId String
 
-  pitch         Pitch         @relation(fields: [pitchId], references: [id])
-  ground        Ground        @relation(fields: [groundId], references: [id])
+  pitch         Pitch          @relation(fields: [pitchId], references: [id])
+  ground        Ground         @relation(fields: [groundId], references: [id])
   slots         GroundSlot[]
   payment       Payment?
   ledgerEntries LedgerEntry[]
@@ -624,13 +626,13 @@ model Booking {
 }
 
 model BookingEvent {
-  id        String @id @default(cuid())
-  booking   Booking  @relation(fields: [bookingId], references: [id])
+  id        String  @id @default(cuid())
+  booking   Booking @relation(fields: [bookingId], references: [id])
   bookingId String
 
-  previousStatus  BookingStatus
-  updatedStatus   BookingStatus
-  logs  String?
+  previousStatus BookingStatus
+  updatedStatus  BookingStatus
+  logs           String?
 
   createdAt DateTime @default(now())
 }
@@ -656,9 +658,9 @@ model Payment {
   bookingId String  @unique
   booking   Booking @relation(fields: [bookingId], references: [id])
 
-  method        PaymentMethod
-  totalAmount   Int
-  depositFee    Int?
+  method      PaymentMethod
+  totalAmount Int
+  depositFee  Int?
 
   transactionRef String?
 
@@ -755,14 +757,14 @@ model Notification {
   id String @id @default(cuid())
 
   userId String?
-  user   User? @relation(fields: [userId], references: [id])
-  phone String?
+  user   User?   @relation(fields: [userId], references: [id])
+  phone  String?
 
-  event NotificationEvent
+  event      NotificationEvent
   deliveries NotificationDelivery[]
 
-  title String?
-  body  String?
+  title   String?
+  body    String?
   payload Json?
 
   readAt DateTime?
@@ -777,13 +779,13 @@ model NotificationDelivery {
   notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   channel NotificationChannel
-  status  NotificationStatus @default(PENDING)
+  status  NotificationStatus  @default(PENDING)
 
   template    String?
   variables   Json?
   providerRef String?
 
-  scheduledAt DateTime @default(now())
+  scheduledAt DateTime  @default(now())
   sentAt      DateTime?
 
   error String?

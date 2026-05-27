@@ -40,7 +40,6 @@ export const queryPitchesHandler = factory.createHandlers(
     validate("query", queryPitchesSchema),
     async (c) => {
         const filters = c.req.valid("query");
-
         const pitches = await pitchService.queryPitches(filters);
         return c.json({ success: true, data: { pitches }}, 200);
     }
