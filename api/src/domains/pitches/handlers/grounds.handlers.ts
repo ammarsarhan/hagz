@@ -37,6 +37,19 @@ export const getGroundHandler = factory.createHandlers(
     }
 );
 
+export const deleteGroundHandler = factory.createHandlers(
+    guard("layout", PermissionLevel.WRITE),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId || !groundId) throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+        const ground = await groundService.deleteGround(pitchId, groundId);
+
+        return c.json({ success: true, data: { ground }}, 200);
+    }
+);
+
 export const getGroundsHandler = factory.createHandlers(
     guard("layout", PermissionLevel.READ),
     async (c) => {
