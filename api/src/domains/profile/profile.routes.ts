@@ -11,8 +11,6 @@ const app = new Hono()
     .patch("/notifications/:notificationId/read", ...readNotificationHandler)
     .get("/sessions", ...fetchSessionsHandler)
     .delete("/sessions/:sessionId", ...deleteSessionHandler)
-    // Todo: Change this such that it exposes the user's full activity log and history. Not just bookings.
-    .get("/history", )
 
 export default app;
 export type AppType = typeof app;

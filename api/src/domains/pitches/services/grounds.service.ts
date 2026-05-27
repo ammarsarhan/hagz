@@ -654,4 +654,82 @@ export default class GroundService {
             await tx.ground.update({ where: { id: groundId }, data: { status: GroundStatus.DELETED, deletedAt: new Date() } } )
         });
     }
+
+    deactivateGround = async (pitchId: string, groundId: string) => {
+        const ground = await prisma.ground.findUnique({
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED }
+            },
+            include: {
+                pitch: {
+                    select: { status: true }
+                },
+                schedule: {
+                    select: { status: true }
+                }
+            }
+        });
+
+        if (!ground)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const states = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+
+        if (!states.includes(ground.pitch.status))
+            throw new BadRequestError(`Could not deactivate ground. Pitch must be in draft, live, or maintenance status.`, ERROR_CODES.PITCH_NOT_EDITABLE);
+
+        if (ground.status !== GroundStatus.ACTIVE)
+            throw new BadRequestError(`Could not deactivate ground because it is currently ${ground.status.toLowerCase()}.`, ERROR_CODES.GROUND_TRANSITION_INVALID);
+
+        if (ground.schedule.some(item => config.GENERATING_STATES.includes(item.status)))
+            throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT);
+
+        const updated = await prisma.ground.update({
+            where: { id: groundId },
+            data: { status: GroundStatus.MAINTENANCE }
+        });
+
+        return updated;
+    }
+
+    activateGround = async (pitchId: string, groundId: string) => {
+        const ground = await prisma.ground.findUnique({
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED }
+            },
+            include: {
+                pitch: {
+                    select: { status: true }
+                },
+                schedule: {
+                    select: { status: true }
+                }
+            }
+        });
+
+        if (!ground)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const states = [PitchStatus.DRAFT, PitchStatus.LIVE, PitchStatus.MAINTENANCE] as PitchStatus[];
+
+        if (!states.includes(ground.pitch.status))
+            throw new BadRequestError(`Could not activate ground. Pitch must be in draft, live, or maintenance status.`, ERROR_CODES.PITCH_NOT_EDITABLE);
+
+        if (ground.status !== GroundStatus.MAINTENANCE)
+            throw new BadRequestError(`Could not activate ground because it is currently ${ground.status.toLowerCase()}.`, ERROR_CODES.GROUND_TRANSITION_INVALID);
+
+        if (ground.schedule.some(item => config.GENERATING_STATES.includes(item.status)))
+            throw new BadRequestError("Schedule is currently loading or generating slots. Please wait until generation is complete before making changes.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT);
+
+        const updated = await prisma.ground.update({
+            where: { id: groundId },
+            data: { status: GroundStatus.ACTIVE }
+        });
+
+        return updated;
+    }
 }

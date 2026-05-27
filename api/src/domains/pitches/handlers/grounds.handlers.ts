@@ -219,3 +219,33 @@ export const updateGroundSlotHandler = factory.createHandlers(
         return c.json({ success: true, data: { slot } }, 200);
     }
 );
+
+export const deactivateGroundHandler = factory.createHandlers(
+    guard("layout", PermissionLevel.WRITE),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const ground = await groundService.deactivateGround(pitchId, groundId);
+
+        return c.json({ success: true, data: { ground } }, 200);
+    }
+);
+
+export const activateGroundHandler = factory.createHandlers(
+    guard("layout", PermissionLevel.WRITE),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const ground = await groundService.activateGround(pitchId, groundId);
+
+        return c.json({ success: true, data: { ground } }, 200);
+    }
+);
