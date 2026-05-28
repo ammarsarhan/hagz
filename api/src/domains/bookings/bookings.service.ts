@@ -760,7 +760,10 @@ export default class BookingService {
         return formatUserBooking([booking])[0];
     };
 
-    fetchUserBookings = async (userId: string) => {
+    fetchUserBookings = async (userId: string, cursor?: string) => {
+        const limit = 20;
+        const take = limit + 1;
+
         const bookings = await prisma.booking.findMany({ 
             where: {
                 customer: {
@@ -775,10 +778,21 @@ export default class BookingService {
                 rescheduledFrom: true,
                 rescheduledTo: true,
                 cancellation: true
-            }
+            },
+            take,
+            ...(cursor && {
+                cursor: { id: cursor },
+                skip: 1,
+            }),
         });
 
-        return formatUserBooking(bookings);
+        const data = bookings.length > limit ? bookings.slice(0, -1) : bookings;
+        const next = bookings.length > limit ? data[data.length - 1].id : null;
+
+        return {
+            bookings: formatUserBooking(data),
+            cursor: next,
+        };
     };
 
     cancelUserBooking = async (userId: string, bookingId: string) => {
