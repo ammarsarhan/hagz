@@ -1,5 +1,5 @@
 import prisma from "@/shared/lib/utils/prisma.js";
-import type { CreateGroundPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdateGroundSlotStatusType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, GetStaffBookingsFiltersPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdateGroundSlotStatusType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import { BookingStatus, GroundStatus, PitchStatus, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
@@ -731,5 +731,100 @@ export default class GroundService {
         });
 
         return updated;
-    }
+    };
+
+    fetchStaffBookings = async (pitchId: string, groundId: string, filters: GetStaffBookingsFiltersPayloadType) => {
+        const ground = await prisma.ground.findUnique({
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED },
+                pitch: {
+                    status: { not: PitchStatus.DELETED }
+                }
+            },
+            include: {
+                pitch: {
+                    select: { status: true }
+                }
+            }
+        });
+
+        if (!ground || !ground.pitch)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!config.ACTIVE_STATES.includes(ground.pitch.status))
+            throw new BadRequestError("Could not fetch bookings on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        const { status, startDate, endDate, page, limit } = filters;
+
+        const [bookings, total] = await Promise.all([
+            prisma.booking.findMany({
+                where: {
+                    groundId,
+                    pitchId,
+                    ...(status && { status }),
+                    createdAt: { gte: startDate, lte: endDate }
+                },
+                orderBy: { createdAt: "desc" },
+                skip: (page - 1) * limit,
+                take: limit
+            }),
+            prisma.booking.count({
+                where: {
+                    groundId,
+                    pitchId,
+                    ...(status && { status }),
+                    createdAt: { gte: startDate, lte: endDate }
+                }
+            })
+        ]);
+
+        return {
+            bookings,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        };
+    };
+
+    fetchStaffBooking = async (pitchId: string, groundId: string, bookingId: string) => {
+        const ground = await prisma.ground.findUnique({
+            where: {
+                id: groundId,
+                pitchId,
+                status: { not: GroundStatus.DELETED },
+                pitch: {
+                    status: { not: PitchStatus.DELETED }
+                }
+            },
+            include: {
+                pitch: {
+                    select: { status: true }
+                }
+            }
+        });
+
+        if (!ground || !ground.pitch)
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        if (!config.ACTIVE_STATES.includes(ground.pitch.status))
+            throw new BadRequestError("Could not fetch booking on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+
+        const booking = await prisma.booking.findFirst({
+            where: {
+                id: bookingId,
+                groundId,
+                pitchId,
+            }
+        });
+
+        if (!booking)
+            throw new NotFoundError("Could not find a booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
+
+        return booking;
+    };
 }

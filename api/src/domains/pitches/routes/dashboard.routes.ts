@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 
 import { createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, publishPitchHandler, deactivatePitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
-import { createGroundHandler, deactivateGroundHandler, activateGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, deleteGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
+import { createGroundHandler, deactivateGroundHandler, activateGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, deleteGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler, getStaffBookingsHandler, getStaffBookingHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
 import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
@@ -30,8 +30,8 @@ const app = new Hono()
     .post('/:pitchId/grounds/:groundId/deactivate', ...deactivateGroundHandler)
     .post('/:pitchId/grounds/:groundId/activate', ...activateGroundHandler)
     .post('/:pitchId/grounds/:groundId/bookings', ...createStaffBookingHandler)
-    // .get('/:pitchId/grounds/:groundId/bookings', ...getStaffBookingsHandler)
-    // .get('/:pitchId/grounds/:groundId/bookings/:bookingId', ...getStaffBookingHandler)
+    .get('/:pitchId/grounds/:groundId/bookings', ...getStaffBookingsHandler)
+    .get('/:pitchId/grounds/:groundId/bookings/:bookingId', ...getStaffBookingHandler)
     .get('/:pitchId/grounds/:groundId/slots', ...fetchGroundSlotsHandler)
     .get('/:pitchId/grounds/:groundId/slots/:slotId', ...fetchGroundSlotHandler)
     .patch('/:pitchId/grounds/:groundId/slots/:slotId', ...updateGroundSlotHandler)

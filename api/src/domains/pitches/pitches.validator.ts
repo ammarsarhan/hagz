@@ -1,5 +1,5 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, Country, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, BookingStatus, Country, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
@@ -601,3 +601,28 @@ export const queryPitchesSchema = z.object({
         })
         .optional(),
 });
+
+export type GetStaffBookingsFiltersPayloadType = z.infer<typeof getStaffBookingsFiltersSchema>;
+
+export const getStaffBookingsFiltersSchema = z.object({
+    status: z
+        .enum(Object.values(BookingStatus) as [BookingStatus, ...BookingStatus[]], "Please choose a valid booking status.")
+        .optional(),
+    startDate: z
+        .coerce
+        .date("A valid start date is required."),
+    endDate: z
+        .coerce
+        .date("A valid end date is required."),
+    page: z
+        .int("Page must be a valid number.")
+        .min(1, "Page must be at least 1."),
+    limit: z
+        .int("Limit must be a valid number.")
+        .min(1, "Limit must be at least 1.")
+        .max(100, "Limit may not exceed 100 results per page."),
+})
+.refine(
+    ({ startDate, endDate }) => startDate <= endDate,
+    { message: "Start date must be before or equal to the end date.", path: ["endDate"] }
+);
