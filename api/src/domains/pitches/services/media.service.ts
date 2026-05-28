@@ -10,7 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export default class MediaService {
     generatePitchMediaPresignLink = async (pitchId: string, payload: CreatePitchMediaPresignLinkPayloadType) => {
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -59,7 +59,7 @@ export default class MediaService {
     };
 
     confirmPitchMediaUpload = async (pitchId: string, mediaId: string) => {
-        const media = await prisma.pitchMedia.findUnique({
+        const media = await prisma.pitchMedia.findFirst({
             where: { 
                 id: mediaId, 
                 status: MediaStatus.PENDING,
@@ -91,7 +91,7 @@ export default class MediaService {
 
     deletePitchMedia = async (pitchId: string, mediaId: string) => {
         const [media, pitch] = await Promise.all([
-            prisma.pitchMedia.findUnique({
+            prisma.pitchMedia.findFirst({
                 where: {
                     id: mediaId,
                     pitchId,
@@ -133,7 +133,7 @@ export default class MediaService {
     };
 
     fetchPitchMedia = async (pitchId: string) => {
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: { id: pitchId, status: { not: PitchStatus.DELETED } }
         });
 

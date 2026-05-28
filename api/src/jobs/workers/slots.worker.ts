@@ -230,7 +230,7 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
     });
 
     // Update the pitch to be under maintenance while we are adjusting the slots.
-    const pitch = await prisma.pitch.findUnique({ where: { id: pitchId, status: { not: PitchStatus.DELETED } }, select: { status: true } });
+    const pitch = await prisma.pitch.findFirst({ where: { id: pitchId, status: { not: PitchStatus.DELETED } }, select: { status: true } });
 
     if (!pitch) {
         console.error("Could not find pitch. Unable to adjust slots.")

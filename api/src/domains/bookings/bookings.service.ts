@@ -44,10 +44,10 @@ export default class BookingService {
     private readonly enqueueBookingLifecycle = async (booking: Booking, settings: GroundSettings) => {
         // If the booking has not been approved yet, set the approval expiry job.
         if (!booking.isApproved) {
-            const approvalDelay =  Math.max(0, addMinutes(new Date(), settings.approvalExpiryLimit).getTime() - Date.now());
+            const approvalDelay = Math.max(0, addMinutes(new Date(), settings.approvalExpiryLimit).getTime() - Date.now());
 
-            await bookingsQueue.add("approval", 
-                { bookingId: booking.id, event: BookingEvent.APPROVAL }, 
+            await bookingsQueue.add("approval",
+                { bookingId: booking.id, event: BookingEvent.APPROVAL },
                 { delay: approvalDelay, jobId: `bookings-${booking.id}-approval` }
             );
         };
@@ -56,8 +56,8 @@ export default class BookingService {
         if (booking.status === BookingStatus.RESERVED) {
             const paymentDelay = Math.max(0, addMinutes(new Date(), settings.paymentExpiryLimit).getTime() - Date.now());
 
-            await bookingsQueue.add("payment", 
-                { bookingId: booking.id, event: BookingEvent.PAYMENT }, 
+            await bookingsQueue.add("payment",
+                { bookingId: booking.id, event: BookingEvent.PAYMENT },
                 { delay: paymentDelay, jobId: `bookings-${booking.id}-payment` }
             );
         };
@@ -73,23 +73,23 @@ export default class BookingService {
         };
 
         // Regardless of the status, bookings need to pass by both the IN_PROGRESS and COMPLETE handlers.
-        const inProgressDelay =  Math.max(0, new Date(booking.startTime).getTime() - Date.now());
-        await bookingsQueue.add("start", 
-            { bookingId: booking.id, event: BookingEvent.IN_PROGRESS }, 
+        const inProgressDelay = Math.max(0, new Date(booking.startTime).getTime() - Date.now());
+        await bookingsQueue.add("start",
+            { bookingId: booking.id, event: BookingEvent.IN_PROGRESS },
             { delay: inProgressDelay, jobId: `bookings-${booking.id}-in_progress` }
         );
 
-        const completeDelay =  Math.max(0, new Date(booking.endTime).getTime() - Date.now());
-        await bookingsQueue.add("end", 
-            { bookingId: booking.id, event: BookingEvent.COMPLETE }, 
+        const completeDelay = Math.max(0, new Date(booking.endTime).getTime() - Date.now());
+        await bookingsQueue.add("end",
+            { bookingId: booking.id, event: BookingEvent.COMPLETE },
             { delay: completeDelay, jobId: `bookings-${booking.id}-complete` }
         );
     };
 
     // Keep this as static because we want to be able to call it from the worker.
     static readonly dequeueBookingLifecycle = async (bookingId: string, event?: Omit<BookingEvent, "COMPLETE">) => {
-        const jobId = `bookings-${bookingId}`
-        
+        const jobId = `bookings-${bookingId}`;
+
         switch (event) {
             case BookingEvent.APPROVAL:
                 {
@@ -124,21 +124,21 @@ export default class BookingService {
 
     createStaffBooking = async (initiatorId: string, pitchId: string, groundId: string, payload: CreateStaffBookingPayloadType) => {
         // Check if a pitch exists and is in an active state first.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findUnique({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
             },
-            include: { 
-                grounds: { 
+            include: {
+                grounds: {
                     where: {
                         id: groundId,
                     }
-                } 
+                }
             }
         });
 
-        if (!pitch) 
+        if (!pitch)
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Ensure that the requestor knows that this is due to the pitch being under maintenance.
@@ -157,9 +157,9 @@ export default class BookingService {
         if (ground.status != GroundStatus.ACTIVE)
             throw new BadRequestError("Ground is not active. Can not create booking on an inactive ground.", ERROR_CODES.GROUND_NOT_ACTIVE);
 
-        // Check if a customer account already exists or not for the specified phone number and check if they are booking for themselves on their account.
+        // Check if a customer account already exists or not for the specified phone number.
         let hasRecord: boolean = false;
-        
+
         const customer = await prisma.pitchCustomer.findUnique({
             where: {
                 pitchId_phone: {
@@ -170,22 +170,21 @@ export default class BookingService {
         });
 
         if (!customer) {
-            // Set the flag to invoke to create function on booking creation for the customer record.
             hasRecord = false;
 
             // And if they do not exist and a first/last name was not provided, fail the request.
-            if (!payload.customer.firstName || !payload.customer.lastName) 
+            if (!payload.customer.firstName || !payload.customer.lastName)
                 throw new BadRequestError("A customer account has not been found for the specified phone number on this pitch. Please specify a first name and last name to create the booking.", ERROR_CODES.VALIDATION_FAILED);
         } else {
             hasRecord = true;
         };
 
-        const user = await prisma.user.findUnique({ 
-            where: { id: initiatorId }, 
+        const user = await prisma.user.findUnique({
+            where: { id: initiatorId },
             include: { preferences: true }
         });
 
-        if (user && user.phone === payload.customer.phone) 
+        if (user && user.phone === payload.customer.phone)
             throw new BadRequestError("A staff member may not create a booking for themselves through the dashboard. Please book through the standard user interface.", ERROR_CODES.VALIDATION_FAILED);
 
         // Start validating the ground settings by fetching, comparing the required fields, and overriding the staff-set constraints for users.
@@ -198,21 +197,21 @@ export default class BookingService {
         if (!settings)
             throw new InternalServerError("Could not resolve ground settings for the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
 
-        const { 
-            minimumDuration, 
-            maximumDuration, 
-            minimumWindow, 
-            maximumWindow, 
-            paymentMethods, 
-            allowDeposit, 
+        const {
+            minimumDuration,
+            maximumDuration,
+            minimumWindow,
+            maximumWindow,
+            paymentMethods,
+            allowDeposit,
             allowGuestBookings,
-            depositPercentage, 
-            notificationsTrigger 
+            depositPercentage,
+            notificationsTrigger
         } = settings;
 
-        const match = await prisma.user.findUnique({ 
-            where: { 
-                phone: payload.customer.phone, 
+        const match = await prisma.user.findUnique({
+            where: {
+                phone: payload.customer.phone,
                 status: { not: UserStatus.DELETED }
             },
             include: {
@@ -236,7 +235,7 @@ export default class BookingService {
         // We can assume that it is confirmed if the booking is a walk-in and not subject it to maximumWindow.
         let status: BookingStatus = BookingStatus.RESERVED;
 
-        if (payload.channel === BookingChannel.WALK_IN) { 
+        if (payload.channel === BookingChannel.WALK_IN) {
             status = BookingStatus.CONFIRMED;
 
             // If we are booking for a walk-in, don't allow any payment methods other than cash.
@@ -246,7 +245,7 @@ export default class BookingService {
         else if (payload.channel === BookingChannel.ONLINE) {
             // If we are paying online, then the booking is reserved until the payment is confirmed.
             status = BookingStatus.RESERVED;
-            
+
             // And if this is an online booking, we need the payment method to be allowed by the platform for the ground.
             if (!paymentMethods.includes(payload.paymentMethod))
                 throw new BadRequestError("Requested booking must be paid for in one of the allowed payment methods.", ERROR_CODES.BOOKING_PAYMENT_METHOD_NOT_ALLOWED);
@@ -256,61 +255,67 @@ export default class BookingService {
                 throw new BadRequestError("Requested booking time must be greater than the minimum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
         };
 
-        // Query the slots as the final step and check if all of the slots are available.
-        const slots = await prisma.groundSlot.findMany({
-            where: {
-                groundId,
-                startsAt: { in: targetSlots },
+        const { assignee, booking, totalAmount, pricingSnapshot, depositFee } = await prisma.$transaction(async tx => {
+            // 1. Lock slots in a consistent order to prevent deadlocks.
+            const targets = await tx.$queryRaw<{ id: string }[]>`
+                SELECT id FROM "GroundSlot"
+                WHERE "groundId" = ${groundId}
+                AND "startsAt" = ANY(${targetSlots}::timestamptz[])
+                ORDER BY id
+                FOR UPDATE
+            `;
+
+            // 2. Re-read full slot data now that they are locked and fresh.
+            const slots = await tx.groundSlot.findMany({
+                where: { id: { in: targets.map(t => t.id) } }
+            });
+
+            // 3. Validate on fresh locked data.
+            if (slots.find(slot => slot.status === SlotStatus.BOOKED))
+                throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+            if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
+                throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+            if (slots.length !== targetSlots.length)
+                throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+            // 4. Calculate the priceSnapshot and total.
+            const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
+            let totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
+
+            // Add the user's service fee if the channel is online.
+            if (payload.channel === BookingChannel.ONLINE) {
+                let groundSize = 5 * 2;
+
+                switch (ground.size) {
+                    case GroundSize.FIVE_A_SIDE:
+                        groundSize = 5 * 2;
+                        break;
+                    case GroundSize.SEVEN_A_SIDE:
+                        groundSize = 7 * 2;
+                        break;
+                    case GroundSize.ELEVEN_A_SIDE:
+                        groundSize = 11 * 2;
+                        break;
+                    default:
+                        groundSize = 5 * 2;
+                        break;
+                }
+
+                totalAmount = totalAmount + (slots.length * groundSize * config.SERVICE_RATE);
             }
-        });
 
-        if (slots.find(slot => slot.status === SlotStatus.BOOKED))
-            throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+            let depositFee = null;
 
-        if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
-            throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+            // Check if we are placing a deposit or paying in full then calculate the deposit.
+            if (payload.channel === BookingChannel.ONLINE && allowDeposit) {
+                if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
 
-        if (slots.length !== targetSlots.length) 
-            throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+                const percentage = (depositPercentage / 100);
+                depositFee = totalAmount * percentage;
+            };
 
-        // Calculate the priceSnapshot and total.
-        const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
-        let totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
-
-        // And add into the price the user's service fee if the channel is online.
-        if (payload.channel === BookingChannel.ONLINE) {
-            let groundSize = 5 * 2;
-    
-            switch (ground.size) {
-                case GroundSize.FIVE_A_SIDE:
-                    groundSize = 5 * 2;
-                    break;
-                case GroundSize.SEVEN_A_SIDE:
-                    groundSize = 7 * 2;
-                    break;
-                case GroundSize.ELEVEN_A_SIDE:
-                    groundSize = 11 * 2;
-                    break;
-                default:
-                    groundSize = 5 * 2;
-                    break;
-            }
-
-            totalAmount = totalAmount + (slots.length * groundSize * config.SERVICE_RATE);
-        }
-
-        let depositFee = null;
-
-        // Check if we are placing a deposit or paying in full then calculate the deposit.
-        if (payload.channel === BookingChannel.ONLINE && allowDeposit) {
-            // If the owner has allowDeposit but no depositPercentage throw an error.
-            if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
-
-            const percentage = (depositPercentage / 100);
-            depositFee = totalAmount * percentage;
-        };
-
-        const { assignee, booking } = await prisma.$transaction(async tx => {
             const assignee = hasRecord ? customer! : await tx.pitchCustomer.create({
                 data: {
                     pitchId,
@@ -354,7 +359,7 @@ export default class BookingService {
                 }
             });
 
-            return { assignee, booking };
+            return { assignee, booking, totalAmount, pricingSnapshot, depositFee };
         });
 
         let checkout = null;
@@ -412,9 +417,8 @@ export default class BookingService {
 
         // Trigger notifications based on notificationsTrigger setting.
         if (notificationsTrigger.includes(NotificationEvent.BOOKING_RECEIVED)) {
-            // Create notification for the staff members.
-            const staff = await prisma.staff.findMany({ 
-                where: { pitchId }, 
+            const staff = await prisma.staff.findMany({
+                where: { pitchId },
                 include: {
                     user: {
                         include: {
@@ -424,7 +428,6 @@ export default class BookingService {
                 }
             });
 
-            // Check if the staff member is allowed to recieve booking notifications.
             await Promise.all(staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
@@ -449,15 +452,15 @@ export default class BookingService {
         };
 
         return { booking, checkout };
-    };   
-    
+    };
+
     createUserBooking = async (userId: string, phone: string, payload: CreateUserBookingPayloadType) => {
         // Ensure that the user has not been suspended/banned already and is verified and allowed to book.
-        const user = await prisma.user.findUnique({ 
-            where: { 
-                id: userId, 
+        const user = await prisma.user.findUnique({
+            where: {
+                id: userId,
                 status: { not: UserStatus.DELETED },
-            }, 
+            },
             include: {
                 preferences: true
             }
@@ -470,31 +473,29 @@ export default class BookingService {
             throw new InternalServerError("Could not resolve user preferences associated with the user account.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND)
 
         // Check if a pitch exists and is in an active state first.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findUnique({
             where: {
                 id: payload.pitchId,
                 status: { not: PitchStatus.DELETED }
             },
-            include: { 
-                grounds: { 
+            include: {
+                grounds: {
                     where: {
                         id: payload.groundId,
                     }
-                } 
+                }
             }
         });
 
-        if (!pitch) 
+        if (!pitch)
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        // Ensure that the requestor knows that this is due to the pitch being under maintenance.
         if (pitch.status === PitchStatus.MAINTENANCE)
             throw new BadRequestError("Pitch is temporarily unavailable. Please try again shortly.", ERROR_CODES.PITCH_UNDER_MAINTENANCE);
 
         if (pitch.status != PitchStatus.LIVE)
             throw new BadRequestError("Pitch is not live. Can not create booking on an inactive pitch.", ERROR_CODES.PITCH_NOT_LIVE);
 
-        // Then check if the ground exists and is in an active state.
         const ground = pitch.grounds.find(ground => ground.id === payload.groundId);
 
         if (!ground)
@@ -503,9 +504,8 @@ export default class BookingService {
         if (ground.status != GroundStatus.ACTIVE)
             throw new BadRequestError("Ground is not active. Can not create booking on an inactive ground.", ERROR_CODES.GROUND_NOT_ACTIVE);
 
-        // Check if a customer account already exists or not for the specified phone number and check if they are booking for themselves on their account.
         let hasRecord: boolean = false;
-        
+
         const customer = await prisma.pitchCustomer.findUnique({
             where: {
                 pitchId_phone: {
@@ -516,13 +516,11 @@ export default class BookingService {
         });
 
         if (!customer) {
-            // Set the flag to invoke to create function on booking creation for the customer record.
             hasRecord = false;
         } else {
             hasRecord = true;
         };
 
-        // Start validating the ground settings by fetching, comparing the required fields, and overriding the staff-set constraints for users.
         const settings = await prisma.groundSettings.findUnique({
             where: {
                 groundId: payload.groundId
@@ -532,8 +530,8 @@ export default class BookingService {
         if (!settings)
             throw new InternalServerError("Could not resolve ground settings for the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
 
-        const { 
-            minimumDuration, 
+        const {
+            minimumDuration,
             maximumDuration,
             minimumWindow,
             maximumWindow,
@@ -556,65 +554,69 @@ export default class BookingService {
         // Booking must be subject to both the minimumWindow and maximumWindow for a user.
         if (differenceInHours(payload.startTime, new Date()) > maximumWindow)
             throw new BadRequestError("Requested booking time must be less than the maximum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
-        
+
         if (differenceInHours(payload.startTime, new Date()) < minimumWindow)
             throw new BadRequestError("Requested booking time must be more than the miniumum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
 
         // Check if the selected payment method is within the allowed payment methods for this ground.
         if (!paymentMethods.includes(payload.paymentMethod))
             throw new BadRequestError("Requested booking must be paid for in one of the allowed payment methods.", ERROR_CODES.BOOKING_PAYMENT_METHOD_NOT_ALLOWED);
-        
-        // Query the slots as the final step and check if all of the slots are available.
-        const slots = await prisma.groundSlot.findMany({
-            where: {
-                groundId: payload.groundId,
-                startsAt: { in: targetSlots }
-            }
-        });
-
-        if (slots.find(slot => slot.status === SlotStatus.BOOKED))
-            throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
-
-        if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
-            throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
-
-        if (slots.length !== targetSlots.length) 
-            throw new BadRequestError("One or more slots have already been booked.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
-
-        // Calculate the priceSnapshot and total.
-        const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
-
-        // Resolve the groundSize to use it to calculate the user's service fee.
-        let groundSize = 5 * 2;
-
-        switch (ground.size) {
-            case GroundSize.FIVE_A_SIDE:
-                groundSize = 5 * 2;
-                break;
-            case GroundSize.SEVEN_A_SIDE:
-                groundSize = 7 * 2;
-                break;
-            case GroundSize.ELEVEN_A_SIDE:
-                groundSize = 11 * 2;
-                break;
-            default:
-                groundSize = 5 * 2;
-                break;
-        }
-
-        const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * config.SERVICE_RATE);
-        let depositFee = null;
-
-        // Check if we are placing a deposit or paying in full then calculate the deposit.
-        if (allowDeposit) {
-            // If the owner has allowDeposit but no depositPercentage throw an error.
-            if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
-
-            const percentage = (depositPercentage / 100);
-            depositFee = totalAmount * percentage;
-        };
 
         const { assignee, booking } = await prisma.$transaction(async tx => {
+            // 1. Lock slots in a consistent order to prevent deadlocks.
+            const targets = await tx.$queryRaw<{ id: string }[]>`
+                SELECT id FROM "GroundSlot"
+                WHERE "groundId" = ${payload.groundId}
+                AND "startsAt" = ANY(${targetSlots}::timestamptz[])
+                ORDER BY id
+                FOR UPDATE
+            `;
+
+            // 2. Re-read full slot data now that they are locked and fresh.
+            const slots = await tx.groundSlot.findMany({
+                where: { id: { in: targets.map(t => t.id) } }
+            });
+
+            // 3. Validate on fresh locked data.
+            if (slots.find(slot => slot.status === SlotStatus.BOOKED))
+                throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+            if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
+                throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+            if (slots.length !== targetSlots.length)
+                throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+
+            // 4. Calculate the priceSnapshot and total.
+            const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
+
+            let groundSize = 5 * 2;
+
+            switch (ground.size) {
+                case GroundSize.FIVE_A_SIDE:
+                    groundSize = 5 * 2;
+                    break;
+                case GroundSize.SEVEN_A_SIDE:
+                    groundSize = 7 * 2;
+                    break;
+                case GroundSize.ELEVEN_A_SIDE:
+                    groundSize = 11 * 2;
+                    break;
+                default:
+                    groundSize = 5 * 2;
+                    break;
+            }
+
+            const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * config.SERVICE_RATE);
+            let depositFee = null;
+
+            if (allowDeposit) {
+                if (!depositPercentage) throw new InternalServerError("The ground allows deposits but has not set a deposit percentage value.", ERROR_CODES.GROUND_SETTINGS_INVALID);
+
+                const percentage = (depositPercentage / 100);
+                depositFee = totalAmount * percentage;
+            };
+
             const assignee = hasRecord ? customer! : await tx.pitchCustomer.create({
                 data: {
                     userId,
@@ -690,9 +692,8 @@ export default class BookingService {
 
         // Trigger notifications based on notificationsTrigger setting.
         if (notificationsTrigger.includes(NotificationEvent.BOOKING_RECEIVED)) {
-            // Create notification for the staff members.
-            const staff = await prisma.staff.findMany({ 
-                where: { pitchId: payload.pitchId }, 
+            const staff = await prisma.staff.findMany({
+                where: { pitchId: payload.pitchId },
                 include: {
                     user: {
                         include: {
@@ -702,11 +703,9 @@ export default class BookingService {
                 }
             });
 
-            // Check if the staff member is allowed to recieve booking notifications.
             await Promise.all(staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
-                // Update the payload to accept the staff member's first name.
                 if (isAllowed) {
                     if (!member.user.preferences)
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
@@ -731,7 +730,7 @@ export default class BookingService {
     };
 
     fetchUserBooking = async (userId: string, bookingId: string) => {
-        const booking = await prisma.booking.findUnique({ 
+        const booking = await prisma.booking.findUnique({
             where: {
                 id: bookingId
             },
@@ -764,7 +763,7 @@ export default class BookingService {
         const limit = 20;
         const take = limit + 1;
 
-        const bookings = await prisma.booking.findMany({ 
+        const bookings = await prisma.booking.findMany({
             where: {
                 customer: {
                     userId
@@ -796,11 +795,10 @@ export default class BookingService {
     };
 
     cancelUserBooking = async (userId: string, bookingId: string) => {
-        // Fetch the user data and make sure that they exist and are not deleted.
-        const user = await prisma.user.findUnique({ 
-            where: { 
-                id: userId, 
-                status: { not: UserStatus.DELETED } 
+        const user = await prisma.user.findFirst({
+            where: {
+                id: userId,
+                status: { not: UserStatus.DELETED }
             },
             include: {
                 preferences: true
@@ -810,7 +808,6 @@ export default class BookingService {
         if (!user || !user.preferences)
             throw new UnauthorizedError("Could not find user record for the specified user ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
 
-        // Fetch the booking and ensure that the current state is allowed to cancel.
         const booking = await prisma.booking.findUnique({
             where: {
                 id: bookingId
@@ -841,7 +838,7 @@ export default class BookingService {
 
         if (!booking)
             throw new NotFoundError("Could not find booking with the specified ID.", ERROR_CODES.BOOKING_NOT_FOUND);
-        
+
         const settings = await prisma.groundSettings.findUnique({ where: { groundId: booking.groundId } });
 
         if (!settings)
@@ -850,7 +847,6 @@ export default class BookingService {
         if (booking.customer.userId !== userId)
             throw new ForbiddenError("You are not authorized to access this resource.", ERROR_CODES.BOOKING_ACCESS_FORBIDDEN);
 
-        // The user should only be allowed to cancel a booking that has not been paid for, or has been paid for and is still upcoming.
         if (!config.CANCELLABLE_STATES.includes(booking.status))
             throw new BadRequestError(`Could not cancel booking. Booking is ${booking.status.toLowerCase()}`, ERROR_CODES.BOOKING_TRANSITION_INVALID);
 
@@ -865,10 +861,11 @@ export default class BookingService {
             if (slots.length <= 0)
                 throw new InternalServerError("Could not cancel booking. No associated ground slots were found.");
 
-            // Loop through each of the slots and lock them to ensure nothing else edits them.
-            for await (const slot of slots) {
+            // Lock slots in consistent order to prevent deadlocks.
+            const targets = slots.map(s => s.id).sort();
+            for (const id of targets) {
                 await tx.$queryRaw`
-                    SELECT id FROM "GroundSlot" WHERE id = ${slot.id} FOR UPDATE
+                    SELECT id FROM "GroundSlot" WHERE id = ${id} FOR UPDATE
                 `;
             };
 
@@ -878,10 +875,9 @@ export default class BookingService {
                 data: { status: BookingStatus.CANCELLED }
             });
 
-            // Fetch the slots for the target ground.
             const targetDays = [...new Set(slots.map(slot => slot.startsAt.getUTCDay()))];
 
-            const schedules = await tx.schedule.findMany({ 
+            const schedules = await tx.schedule.findMany({
                 where: {
                     dayOfWeek: {
                         in: targetDays
@@ -890,7 +886,6 @@ export default class BookingService {
                 }
             });
 
-            // Loop through each of the slots to check the schedule for the associated day and figure out what the slot should be set as.
             for await (const slot of slots) {
                 const targetDay = slot.startsAt.getUTCDay();
                 const hour = slot.startsAt.getUTCHours();
@@ -899,20 +894,20 @@ export default class BookingService {
                 const schedule = schedules.find(schedule => schedule.dayOfWeek === targetDay)!;
 
                 const isAvailable = schedule.isActive && (() => {
-                    const baseMask     = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
-                    const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
+                    const baseMask = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
+                    const peakMask = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
                     const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
-                    
+
                     return (baseMask | peakMask | discountMask) & bit;
                 })();
 
                 if (isAvailable) {
-                    const peakMask     = Buffer.from(schedule!.peakHours).readUIntBE(0, 3);
+                    const peakMask = Buffer.from(schedule!.peakHours).readUIntBE(0, 3);
                     const discountMask = Buffer.from(schedule!.discountHours).readUIntBE(0, 3);
 
                     const priceType = (peakMask & bit) ? PriceType.PEAK
-                                    : (discountMask & bit) ? PriceType.DISCOUNT
-                                    : PriceType.BASE;
+                        : (discountMask & bit) ? PriceType.DISCOUNT
+                            : PriceType.BASE;
 
                     await tx.groundSlot.update({
                         where: { id: slot.id },
@@ -930,23 +925,19 @@ export default class BookingService {
         if (booking.status === BookingStatus.CONFIRMED) {
             let refundFee = booking.depositFee ?? booking.totalAmount;
 
-            // If we are greater than the fullRefundWindow, then keep the full refund fee as the amount.
-            // If we are between the fullRefundWindow and partialRefundWindow, return the refundPercentage of the booking to the user.
             if (differenceInHours(booking.startTime, Date.now()) <= settings.fullRefundWindow && differenceInHours(booking.startTime, Date.now()) >= settings.partialRefundWindow)
                 refundFee = refundFee * (settings.refundPercentage / 100);
-            
-            // If we are less than the partialRefundWindow, do not return any money to the user.
+
             if (differenceInHours(booking.startTime, Date.now()) <= settings.partialRefundWindow)
                 refundFee = 0;
 
             // Todo: Initiate the actual refund process on Paymob.
         };
 
-        // Dequeue the booking fron the bookingQueue and send out notifications to both the user and the staff members.
         await BookingService.dequeueBookingLifecycle(bookingId);
 
-        await NotificationsService.createNotification({ 
-            userId, 
+        await NotificationsService.createNotification({
+            userId,
             event: NotificationEvent.BOOKING_CANCELLED,
             data: {
                 receiverName: user.firstName,
@@ -955,14 +946,12 @@ export default class BookingService {
                 startTime: formatInTimeZone(booking.startTime, user.preferences.timezone, "d-M-yyyy 'at' h aa"),
                 action: "cancelled",
                 deepLink: `https://www.hagz.com/bookings/${bookingId}`
-                
             }
         });
 
         if (settings.notificationsTrigger.includes(NotificationEvent.BOOKING_CANCELLED)) {
-            // Create notification for the staff members.
-            const staff = await prisma.staff.findMany({ 
-                where: { pitchId: booking.ground.pitchId }, 
+            const staff = await prisma.staff.findMany({
+                where: { pitchId: booking.ground.pitchId },
                 include: {
                     user: {
                         include: {
@@ -972,7 +961,6 @@ export default class BookingService {
                 }
             });
 
-            // Check if the staff member is allowed to recieve booking notifications.
             await Promise.all(staff.map(async (member) => {
                 const isAllowed = hasPermissions(member.permissions as Permissions, member.role, "bookings", PermissionLevel.READ);
 
@@ -1000,11 +988,10 @@ export default class BookingService {
     };
 
     rescheduleUserBooking = async (userId: string, bookingId: string, payload: RescheduleUserBookingPayloadType) => {
-        // Fetch the user data and make sure that they exist and are not deleted.
-        const user = await prisma.user.findUnique({ 
-            where: { 
-                id: userId, 
-                status: { not: UserStatus.DELETED } 
+        const user = await prisma.user.findUnique({
+            where: {
+                id: userId,
+                status: { not: UserStatus.DELETED }
             },
             include: {
                 preferences: true
@@ -1014,7 +1001,6 @@ export default class BookingService {
         if (!user || !user.preferences)
             throw new UnauthorizedError("Could not find user record for the specified user ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
 
-        // Fetch the booking and ensure that the current state is allowed to cancel.
         const booking = await prisma.booking.findUnique({
             where: {
                 id: bookingId
@@ -1022,7 +1008,7 @@ export default class BookingService {
             include: {
                 ground: {
                     include: {
-                        pitch: { 
+                        pitch: {
                             select: {
                                 id: true,
                                 name: true
@@ -1047,87 +1033,95 @@ export default class BookingService {
         if (booking.customer.userId !== userId)
             throw new ForbiddenError("You are not authorized to access this resource.", ERROR_CODES.BOOKING_ACCESS_FORBIDDEN);
 
-        // The user should only be allowed to reschedule a booking that has not been paid for, or has been paid for and is still upcoming.
         if (!config.CANCELLABLE_STATES.includes(booking.status))
             throw new BadRequestError(`Could not cancel booking. Booking is ${booking.status.toLowerCase()}`, ERROR_CODES.BOOKING_TRANSITION_INVALID);
 
         if (booking.rescheduledTo !== null)
-            throw new BadRequestError("Can not reschedule booking that has already been rescheduled.", ERROR_CODES.BOOKING_TRANSITION_INVALID); // We should not hit this in theory but keep it as a safe-guard, msh haykhasar.
+            throw new BadRequestError("Can not reschedule booking that has already been rescheduled.", ERROR_CODES.BOOKING_TRANSITION_INVALID);
 
-        // Make sure the ground allows rescheduling and the booking falls within the reschedulingLimit window.
         const { minimumDuration, maximumDuration, allowRescheduling, rescheduleLimit, minimumWindow, maximumWindow } = settings;
 
         if (!allowRescheduling)
             throw new BadRequestError("The specified ground does not allow rescheduling. Please cancel your booking and reserve another slot.", ERROR_CODES.GROUND_SETTINGS_FORBIDDEN);
 
-        if (differenceInHours(booking.startTime, Date.now()) < rescheduleLimit) 
+        if (differenceInHours(booking.startTime, Date.now()) < rescheduleLimit)
             throw new BadRequestError("The specified booking starts outside of the booking rescheduling window specified by the staff. Please cancel your booking and reserve another slot.", ERROR_CODES.GROUND_SETTINGS_FORBIDDEN);
 
-        // Validate the new slots to be booked.
+        // Validate the new slot times before entering the transaction.
         const startTime = startOfHour(payload.startTime);
         const endTime = startOfHour(payload.endTime);
 
         const targetSlots = splitTimeRangeIntoBlocks(startTime, endTime);
-        
+
         if (targetSlots.length < minimumDuration || targetSlots.length > maximumDuration)
             throw new BadRequestError(`Requested booking must be between ${minimumDuration} and ${maximumDuration} hours long.`, ERROR_CODES.BOOKING_DURATION_INVALID);
-        
+
         if (differenceInHours(payload.startTime, new Date()) > maximumWindow)
             throw new BadRequestError("Requested booking time must be less than the maximum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
-        
+
         if (differenceInHours(payload.startTime, new Date()) < minimumWindow)
             throw new BadRequestError("Requested booking time must be more than the miniumum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
 
-        // Query the slots as the final step and check if all of the slots are available.
-        const slots = await prisma.groundSlot.findMany({
-            where: {
-                groundId: booking.groundId,
-                startsAt: { in: targetSlots },
+        const updated = await prisma.$transaction(async tx => {
+            // 1. Lock and release old slots in consistent order to prevent deadlocks.
+            const previous = await tx.groundSlot.findMany({ where: { bookingId } });
+
+            const previousTargets = previous.map(s => s.id).sort();
+            for (const id of previousTargets) {
+                await tx.$queryRaw`SELECT id FROM "GroundSlot" WHERE id = ${id} FOR UPDATE`;
             }
-        });
 
-        if (slots.find(slot => slot.status === SlotStatus.BOOKED))
-            throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
+            // 2. Lock new slots in consistent order.
+            const targets = await tx.$queryRaw<{ id: string }[]>`
+                SELECT id FROM "GroundSlot"
+                WHERE "groundId" = ${booking.groundId}
+                AND "startsAt" = ANY(${targetSlots}::timestamptz[])
+                ORDER BY id
+                FOR UPDATE
+            `;
 
-        if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
-            throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
-
-        if (slots.length !== targetSlots.length) 
-            throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
-
-        // Leave the most expensive query to the end. We need to loop through the chain of bookings and make sure rescheduling has not happened more than 3 times.
-        let rescheduleCount = 0;
-        let currentId = bookingId;
-
-        while (true) {
-            const rescheduling = await prisma.rescheduling.findUnique({
-                where: { toId: currentId },
-                select: { fromId: true }
+            // 3. Re-read full new slot data now that they are locked and fresh.
+            const slots = await tx.groundSlot.findMany({
+                where: { id: { in: targets.map(item => item.id) } }
             });
 
-            if (!rescheduling) break;
+            // 4. Validate new slots on fresh locked data.
+            if (slots.find(slot => slot.status === SlotStatus.BOOKED))
+                throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
-            rescheduleCount = rescheduleCount + 1;
-            currentId = rescheduling.fromId;
-        }
+            if (slots.find(slot => slot.status === SlotStatus.INACTIVE))
+                throw new BadRequestError("One or more slots are outside of the pitch's operating hours. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
-        if (rescheduleCount >= 3)
-            throw new BadRequestError("Booking has been rescheduled the maximum number of times.", ERROR_CODES.BOOKING_RESCHEDULING_LIMIT_EXCEEDED);
+            if (slots.length !== targetSlots.length)
+                throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
-        const updated = await prisma.$transaction(async tx => {
-            // Lock and release old slots (same logic as cancel).
-            const oldSlots = await tx.groundSlot.findMany({ where: { bookingId } });
+            // 5. Count reschedules inside the transaction using tx to prevent a concurrent reschedule racing past the limit.
+            let rescheduleCount = 0;
+            let currentId = bookingId;
 
-            for (const slot of oldSlots) {
-                await tx.$queryRaw`SELECT id FROM "GroundSlot" WHERE id = ${slot.id} FOR UPDATE`;
+            while (true) {
+                const rescheduling = await tx.rescheduling.findUnique({
+                    where: { toId: currentId },
+                    select: { fromId: true }
+                });
+
+                if (!rescheduling) break;
+
+                rescheduleCount++;
+                currentId = rescheduling.fromId;
             }
 
-            const targetDays = [...new Set(oldSlots.map(slot => slot.startsAt.getUTCDay()))];
+            if (rescheduleCount >= 3)
+                throw new BadRequestError("Booking has been rescheduled the maximum number of times.", ERROR_CODES.BOOKING_RESCHEDULING_LIMIT_EXCEEDED);
+
+            // 6. Release old slots back to available (or delete if outside schedule).
+            const targetDays = [...new Set(previous.map(slot => slot.startsAt.getUTCDay()))];
+
             const schedules = await tx.schedule.findMany({
                 where: { groundId: booking.groundId, dayOfWeek: { in: targetDays } }
             });
 
-            for (const slot of oldSlots) {
+            for (const slot of previous) {
                 const targetDay = slot.startsAt.getUTCDay();
                 const hour = slot.startsAt.getUTCHours();
                 const bit = 1 << hour;
@@ -1139,16 +1133,16 @@ export default class BookingService {
                     continue;
                 }
 
-                const baseMask     = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
-                const peakMask     = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
+                const baseMask = Buffer.from(schedule.baseHours).readUIntBE(0, 3);
+                const peakMask = Buffer.from(schedule.peakHours).readUIntBE(0, 3);
                 const discountMask = Buffer.from(schedule.discountHours).readUIntBE(0, 3);
 
                 const isAvailable = schedule.isActive && ((baseMask | peakMask | discountMask) & bit);
 
                 if (isAvailable) {
                     const priceType = (peakMask & bit) ? PriceType.PEAK
-                                    : (discountMask & bit) ? PriceType.DISCOUNT
-                                    : PriceType.BASE;
+                        : (discountMask & bit) ? PriceType.DISCOUNT
+                            : PriceType.BASE;
 
                     await tx.groundSlot.update({
                         where: { id: slot.id },
@@ -1159,16 +1153,15 @@ export default class BookingService {
                 }
             }
 
-            // Mark old booking as RESCHEDULED.
+            // 7. Mark old booking as RESCHEDULED.
             await tx.booking.update({
                 where: { id: bookingId },
                 data: { status: BookingStatus.RESCHEDULED }
             });
 
-            // Build new pricing for the new slots.
+            // 8. Build new pricing for the new slots.
             const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(booking.ground, settings, slots);
 
-            // Resolve the groundSize to use it to calculate the user's service fee.
             let groundSize = 5 * 2;
 
             switch (booking.ground.size) {
@@ -1188,7 +1181,7 @@ export default class BookingService {
 
             const totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0) + (slots.length * groundSize * config.SERVICE_RATE);
 
-            // 4. Create the new booking, inheriting everything from the old one
+            // 9. Create the new booking, inheriting everything from the old one.
             const created = await tx.booking.create({
                 data: {
                     pitchId: booking.ground.pitchId,
@@ -1208,13 +1201,13 @@ export default class BookingService {
                 }
             });
 
-            // Claim the new slots with the new booking we just created.
+            // 10. Claim the new slots.
             await tx.groundSlot.updateMany({
                 where: { id: { in: slots.map(s => s.id) } },
                 data: { status: SlotStatus.BOOKED, bookingId: created.id }
             });
 
-            // Create the Rescheduling link.
+            // 11. Create the rescheduling link.
             await tx.rescheduling.create({
                 data: {
                     fromId: bookingId,

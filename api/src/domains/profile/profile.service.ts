@@ -6,7 +6,7 @@ import type { UpdateUserPreferencesPayloadType, UpdateUserProfilePayloadType } f
 
 export default class ProfileService {
     getUserProfile = async (userId: string) => {
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
             include: { preferences: true, pitches: true }
         });
@@ -21,7 +21,7 @@ export default class ProfileService {
     }
 
     updateUserProfile = async (userId: string, payload: UpdateUserProfilePayloadType) => {
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
         });
 
@@ -48,7 +48,7 @@ export default class ProfileService {
     };
 
     getUserPreferences = async (userId: string) => {
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
             include: { preferences: true }
         });  
@@ -65,7 +65,7 @@ export default class ProfileService {
     };
 
     updateUserPreferences = async (userId: string, payload: UpdateUserPreferencesPayloadType) => {
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
             include: { preferences: true }
         });  
@@ -89,7 +89,7 @@ export default class ProfileService {
     };
 
     fetchUserActiveSessions = async (userId: string, currentToken: string) => {
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
             include: { 
                 sessions: {

@@ -20,7 +20,7 @@ export type CreateNotificationPayload = BaseNotificationPayload & {
 export default class NotificationsService {
     private static readonly resolveChannels = async (userId?: string, phone?: string) => {
         if (userId && !phone) {
-            const user = await prisma.user.findUnique({ 
+            const user = await prisma.user.findFirst({ 
                 where: {
                     id: userId,
                     status: UserStatus.ACTIVE
@@ -92,7 +92,7 @@ export default class NotificationsService {
     };
 
     fetchUserInAppNotifications = async (userId: string, unreadOnly: boolean = false) => {
-        const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }});
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }});
 
         if (!user)
             throw new UnauthorizedError("Could not fetch user notifications. Can not find user account.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
@@ -114,7 +114,7 @@ export default class NotificationsService {
     };
 
     readUserInAppNotification = async (userId: string, notificationId: string) => {
-        const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }});
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }});
 
         if (!user)
             throw new UnauthorizedError("Could not fetch user notifications. Can not find user account.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);

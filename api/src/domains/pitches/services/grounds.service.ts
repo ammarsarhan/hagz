@@ -100,7 +100,7 @@ export default class GroundService {
     };
     
     fetchGround = async (pitchId: string, groundId: string) => {
-        const ground = await prisma.ground.findUnique({
+        const ground = await prisma.ground.findFirst({
             where: {
                 pitchId,
                 id: groundId,
@@ -184,7 +184,7 @@ export default class GroundService {
 
     getGroundSettings = async (pitchId: string, groundId: string) => {
         // Find the settings for the associated not-deleted ground.
-        const settings = await prisma.groundSettings.findUnique({
+        const settings = await prisma.groundSettings.findFirst({
             where: {
                 groundId,
                 ground: {
@@ -200,7 +200,7 @@ export default class GroundService {
 
     updateGroundSettings = async (pitchId: string, groundId: string, payload: UpdateGroundSettingsPayloadType) => {
         // Check if the ground exists and is in a state allowed to accept updates.
-        const settings = await prisma.groundSettings.findUnique({
+        const settings = await prisma.groundSettings.findFirst({
             where: {
                 groundId,
                 ground: {
@@ -250,11 +250,11 @@ export default class GroundService {
     upsertGroundSchedule = async (pitchId: string, groundId: string, dayOfWeek: number, payload: UpsertGroundSchemaPayloadType) => {
         // Check if the schedule/ground exists and is in a state allowed to accept updates.
         const [pitch, ground, schedule] = await Promise.all([
-            prisma.pitch.findUnique({
+            prisma.pitch.findFirst({
                 where: { id: pitchId, status: { not: PitchStatus.DELETED }, },
                 select: { status: true }
             }),
-            prisma.ground.findUnique({
+            prisma.ground.findFirst({
                 where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } },
             }),
             prisma.schedule.findUnique({
@@ -334,7 +334,7 @@ export default class GroundService {
     fetchGroundSchedule = async (pitchId: string, groundId: string, dayOfWeek: number) => {
         // Check if the schedule/ground exists and is in a state allowed to fetch.
         const [ground, schedule] = await Promise.all([
-            prisma.ground.findUnique({
+            prisma.ground.findFirst({
                 where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } }
             }),
             prisma.schedule.findUnique({
@@ -356,7 +356,7 @@ export default class GroundService {
     fetchGroundSchedules = async (pitchId: string, groundId: string) => {
         // Check if the ground exists and is in a state allowed to fetch.
         const [ground, schedules] = await Promise.all([
-            prisma.ground.findUnique({
+            prisma.ground.findFirst({
                 where: { id: groundId, pitchId, status: { not: GroundStatus.DELETED } }
             }),
             prisma.schedule.findMany({
@@ -381,7 +381,7 @@ export default class GroundService {
 
     fetchGroundSlots = async (pitchId: string, groundId: string, target: GroundSlotTargetType, date: Date, status?: SlotStatus) => {
         // Make sure that the pitch and ground are both active or under maintenance first before fetching.
-        const ground = await prisma.ground.findUnique({ 
+        const ground = await prisma.ground.findFirst({ 
             where: {
                 id: groundId,
                 pitchId,
@@ -481,7 +481,7 @@ export default class GroundService {
 
     fetchGroundSlot = async (pitchId: string, groundId: string, slotId: string) => {
         // Make sure that the pitch and ground are both active or under maintenance first before fetching.
-        const ground = await prisma.ground.findUnique({ 
+        const ground = await prisma.ground.findFirst({ 
             where: {
                 id: groundId,
                 pitchId,
@@ -537,7 +537,7 @@ export default class GroundService {
 
     updateGroundSlot = async (pitchId: string, groundId: string, slotId: string, status: UpdateGroundSlotStatusType) => {
         // Make sure that the pitch and ground are both active or under maintenance first before fetching.
-        const ground = await prisma.ground.findUnique({ 
+        const ground = await prisma.ground.findFirst({ 
             where: {
                 id: groundId,
                 pitchId,
@@ -597,7 +597,7 @@ export default class GroundService {
     };
 
     deleteGround = async (pitchId: string, groundId: string) => {
-        const ground = await prisma.ground.findUnique({ 
+        const ground = await prisma.ground.findFirst({ 
             where: { 
                 id: groundId, 
                 pitchId,
@@ -656,7 +656,7 @@ export default class GroundService {
     }
 
     deactivateGround = async (pitchId: string, groundId: string) => {
-        const ground = await prisma.ground.findUnique({
+        const ground = await prisma.ground.findFirst({
             where: {
                 id: groundId,
                 pitchId,
@@ -695,7 +695,7 @@ export default class GroundService {
     }
 
     activateGround = async (pitchId: string, groundId: string) => {
-        const ground = await prisma.ground.findUnique({
+        const ground = await prisma.ground.findFirst({
             where: {
                 id: groundId,
                 pitchId,
@@ -734,7 +734,7 @@ export default class GroundService {
     };
 
     fetchStaffBookings = async (pitchId: string, groundId: string, filters: GetStaffBookingsFiltersPayloadType) => {
-        const ground = await prisma.ground.findUnique({
+        const ground = await prisma.ground.findFirst({
             where: {
                 id: groundId,
                 pitchId,

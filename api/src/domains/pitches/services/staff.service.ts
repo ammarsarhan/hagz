@@ -40,7 +40,7 @@ export default class StaffService {
 
     createInvitation = async (pitchId: string, creatorId: string, payload: CreateInvitationPayloadType) => {
         // Find pitch and ensure that it is not deleted.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -55,7 +55,7 @@ export default class StaffService {
             throw new BadRequestError("Pitch is not active. Can not send invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Make sure the phone number does not exist with either an invitation or a staff member on the pitch already.
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: {
                 phone: payload.phone,
                 pitches: {
@@ -120,7 +120,7 @@ export default class StaffService {
         if (!owner)
             throw new InternalServerError("Could not resolve pitch owner.");
 
-        const actor = await prisma.user.findUnique({ where: { id: creatorId, status: { not: UserStatus.DELETED } }, include: { preferences: true } });
+        const actor = await prisma.user.findFirst({ where: { id: creatorId, status: { not: UserStatus.DELETED } }, include: { preferences: true } });
         if (!actor) throw new InternalServerError("Could not find user account after creating invitation.");
         if (!actor.preferences) throw new InternalServerError("Could not resolve preferences associated with the user account.");
 
@@ -156,7 +156,7 @@ export default class StaffService {
 
     fetchInvitations = async (pitchId: string) => {
         // Find pitch and ensure that it is not deleted.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -182,7 +182,7 @@ export default class StaffService {
 
     deleteInvitation = async (pitchId: string, invitationId: string) => {
         // Make sure that the pitch is in a state to delete invitations.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -197,7 +197,7 @@ export default class StaffService {
             throw new BadRequestError("Pitch is not active. Can not delete invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Make sure the invitation exists and is pending or expired. We don't want to delete any invitations that are accepted or rejected.
-        const invitation = await prisma.invitation.findUnique({
+        const invitation = await prisma.invitation.findFirst({
             where: {
                 id: invitationId,
                 pitchId,
@@ -224,7 +224,7 @@ export default class StaffService {
 
     acceptPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
         // Make sure that the pitch is in a state to accept new users.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -239,14 +239,14 @@ export default class StaffService {
             throw new BadRequestError("Pitch is not active. Can not accept invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
         
         // Make sure that the user is in a state to be added to the pitch.
-        const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
         
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
         if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_NOT_ACTIVE);
         if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not accept invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
 
         // Make sure that the invitation is still pending and has not expired yet.
-        const invitation = await prisma.invitation.findUnique({ 
+        const invitation = await prisma.invitation.findFirst({ 
             where: {
                 id: invitationId,
                 status: InvitationStatus.PENDING,
@@ -314,7 +314,7 @@ export default class StaffService {
 
     rejectPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
         // Make sure that the pitch is in a state to reject invitations.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -329,14 +329,14 @@ export default class StaffService {
             throw new BadRequestError("Pitch is not active. Can not reject invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
         
         // Make sure that the user is in a state to be added to the pitch.
-        const user = await prisma.user.findUnique({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
         
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
         if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_NOT_ACTIVE);
         if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not reject invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
 
         // Make sure that the invitation is still pending and has not expired yet.
-        const invitation = await prisma.invitation.findUnique({ 
+        const invitation = await prisma.invitation.findFirst({ 
             where: {
                 id: invitationId,
                 status: InvitationStatus.PENDING,
@@ -367,7 +367,7 @@ export default class StaffService {
     // Separate functions for team and member because they return different data types. This is a cleaner pattern.
     fetchStaff = async (pitchId: string) => {
         // Make sure that the pitch is in a state to fetch staff.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -391,7 +391,7 @@ export default class StaffService {
 
     fetchStaffMember = async (pitchId: string, memberId: string) => {
         // Make sure that the pitch is in a state to fetch staff.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -403,12 +403,10 @@ export default class StaffService {
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Get all the staff associated with this pitchId that have not been deleted and return.
-        const staff = await prisma.staff.findUnique({
+        const staff = await prisma.staff.findFirst({
             where: { 
-                userId_pitchId: {
-                    userId: memberId,
-                    pitchId
-                },
+                userId: memberId,
+                pitchId,
                 deletedAt: null
             }
         });
@@ -421,7 +419,7 @@ export default class StaffService {
 
     updateStaffMember = async (pitchId: string, memberId: string, payload: UpdatePitchStaffMemberPayloadType, userId: string) => {
         // Make sure that the pitch is in a state to delete the staff member.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -436,12 +434,10 @@ export default class StaffService {
             throw new BadRequestError("Pitch is not active. Can not update staff on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Fetch the staff record, make sure that they are not updating themselves or an owner, and make sure they are in an updatable state.
-        const staff = await prisma.staff.findUnique({
+        const staff = await prisma.staff.findFirst({
             where: {
-                userId_pitchId: {
-                    userId: memberId,
-                    pitchId
-                },
+                userId: memberId,
+                pitchId,
                 deletedAt: null
             },
             include: {
@@ -493,7 +489,7 @@ export default class StaffService {
 
     deleteStaffMember = async (pitchId: string, memberId: string, userId: string) => {
         // Make sure that the pitch is in a state to delete the staff member.
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -511,12 +507,10 @@ export default class StaffService {
         if (memberId === userId)
             throw new BadRequestError("A user may not delete themselves from a pitch staff registry. Please ask a user with enough privleges to commit this action.", ERROR_CODES.VALIDATION_FAILED);
 
-        const staff = await prisma.staff.findUnique({
+        const staff = await prisma.staff.findFirst({
             where: {
-                userId_pitchId: {
-                    userId: memberId,
-                    pitchId
-                },
+                userId: memberId,
+                pitchId,
                 deletedAt: null
             }
         });

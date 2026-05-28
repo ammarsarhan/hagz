@@ -8,7 +8,7 @@ import { UNIQUE_AMENITIES } from "@/shared/types/amenity.js";
 export default class AmenityService {
     createPitchAmenity = async (pitchId: string, payload: CreatePitchAmenityPayloadType) => {
         // Find the pitch and make sure it is in an editable state.
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -57,7 +57,7 @@ export default class AmenityService {
 
     fetchPitchAmenity = async (pitchId: string, order: number) => {
         // Find the pitch and make sure it is in an queryable state.
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -82,7 +82,7 @@ export default class AmenityService {
 
     fetchPitchAmenities = async (pitchId: string) => {
         // Find the pitch and make sure it is in an queryable state.
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -101,7 +101,7 @@ export default class AmenityService {
 
     updatePitchAmenity = async (pitchId: string, order: number, payload: UpdatePitchAmenityPayloadType) => {
         // Find the pitch and make sure it is in an editable state.
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -152,7 +152,7 @@ export default class AmenityService {
 
     deletePitchAmenity = async (pitchId: string, order: number) => {
         // Find the pitch and make sure it is in an editable state.
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }

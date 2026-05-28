@@ -326,7 +326,7 @@ export default class PitchService {
 
     // Split this into two distinct functions for when we want to send different data based on the person accessing the resource.
     fetchDashboardPitch = async (pitchId: string) => {
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: { 
                 id: pitchId,
                 status: { not: PitchStatus.DELETED } 
@@ -338,7 +338,7 @@ export default class PitchService {
     };
 
     fetchUserPitch = async (pitchId: string) => {
-        const pitch = await prisma.pitch.findUnique({ 
+        const pitch = await prisma.pitch.findFirst({ 
             where: { 
                 id: pitchId,
                 status: { not: PitchStatus.DELETED } 
@@ -350,7 +350,7 @@ export default class PitchService {
     };
     
     updatePitch = async (pitchId: string, payload: UpdatePitchPayloadType) => {
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: { 
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
@@ -381,7 +381,7 @@ export default class PitchService {
 
     submitPitch = async (pitchId: string) => {
         // Find the pitch and ensure that it is a draft before sending it for submission.
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: PitchStatus.DRAFT
@@ -450,7 +450,7 @@ export default class PitchService {
 
     deactivatePitch = async (pitchId: string) => {
         // Find the pitch and ensure that it has not been deleted.
-        const pitch = await prisma.pitch.findUnique({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
+        const pitch = await prisma.pitch.findFirst({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
 
         if (!pitch)
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
@@ -478,7 +478,7 @@ export default class PitchService {
 
     publishPitch = async (pitchId: string) => {
         // Find the pitch and ensure that it has not been deleted.
-        const pitch = await prisma.pitch.findUnique({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
+        const pitch = await prisma.pitch.findFirst({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
 
         if (!pitch)
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
@@ -506,7 +506,7 @@ export default class PitchService {
 
     // Todo: Create a better command line interface to approve the pitch.
     static approvePitch = async (pitchId: string) => {        
-        const pitch = await prisma.pitch.findUnique({
+        const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
                 status: PitchStatus.SUBMITTED
