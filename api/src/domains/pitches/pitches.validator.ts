@@ -439,6 +439,11 @@ export const updateGroundSlotSchema = z.object({
     status: z.enum(Object.values(UpdateGroundSlotStatus))
 });
 
+export const updateGroundSlotsSchema = z.object({
+    targets: z.array(z.cuid("A list of ground slot IDs is required to update."), "An array of slot IDs must be provided."),
+    status: z.enum(Object.values(UpdateGroundSlotStatus))
+});
+
 export type FetchPitchAvailabilityPayloadType = z.infer<typeof fetchPitchAvailabilitySchema>;
 
 export const fetchPitchAvailabilitySchema = z.object({
@@ -492,12 +497,10 @@ export const queryPitchesSchema = z.object({
             price: z
                 .object({
                     minimum: z
-                        .number()
                         .int()
                         .nonnegative("Minimum price must be a positive number.")
                         .optional(),
                     maximum: z
-                        .number()
                         .int()
                         .nonnegative("Maximum price must be a positive number.")
                         .optional(),
