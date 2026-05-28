@@ -3,7 +3,7 @@ import { getUserPitchHandler, queryPitchesHandler } from "@/domains/pitches/hand
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
-    .get("/", ...queryPitchesHandler)
+    .post("/search", ...queryPitchesHandler)
     .get("/:pitchId", ...getUserPitchHandler)
 
 export default app;

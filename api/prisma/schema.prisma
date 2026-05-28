@@ -523,6 +523,7 @@ model GroundSlot {
   booking   Booking? @relation(fields: [bookingId], references: [id])
 
   @@unique([groundId, startsAt])
+  @@index([pitchId, startsAt])
 }
 
 model Schedule {
