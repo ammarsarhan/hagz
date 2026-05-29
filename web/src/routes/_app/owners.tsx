@@ -1,8 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import Badge from '#/components/shared/Badge'
+import Button from '@/components/shared/Button';
 import IconCard from '#/components/app/IconCard'
 import StandardCard from '@/components/app/StandardCard';
-import { TbBrandWhatsapp, TbCurrentLocationFilled, TbGraph, TbListCheck, TbLiveView, TbMoodSmile, TbSoccerField, TbTableHeart, TbUserPlus, TbUsersGroup } from 'react-icons/tb'
+import { TbArrowRight, TbBrandWhatsapp, TbCurrentLocationFilled, TbGraph, TbListCheck, TbLiveView, TbMoodSmile, TbSoccerField, TbTableHeart, TbUserPlus, TbUsersGroup } from 'react-icons/tb'
 import Pitch from "@/assets/samples/pitch.jpg";
 
 export const Route = createFileRoute('/_app/owners')({
@@ -107,7 +108,7 @@ function RouteComponent() {
                             <div className='grid grid-cols-3 gap-x-6 w-full'>
                                 <div className='text-center flex-center flex-col gap-y-0.75'>
                                     <span className='text-base font-medium'>Cash</span>
-                                    <p className='text-xs'>Pay at 300,000+ supermarkets nationwide. No card needed.</p>
+                                    <p className='text-xs'>Pay at 300,000+ Fawry machines nationwide. No card needed.</p>
                                 </div>
                                 <div className='text-center flex-center flex-col gap-y-0.75'>
                                     <span className='text-base font-medium'>Credit Card</span>
@@ -159,7 +160,45 @@ function RouteComponent() {
                     <StandardCard icon={<TbGraph/>} title='Revenue Analytics' description='The system automatically generates analytics reports to help you cater better to customers.'/>
                     <StandardCard icon={<TbBrandWhatsapp/>} title='Channel Integrations' description='Accept bookings through every single channel possible: WhatsApp, phone, manual, or walk-ins. We&apos;ve taken it all into account.'/>
                     <StandardCard icon={<TbUsersGroup/>} title='Teams & Permissions' description='You can add up to 20 staff members to help you manage your pitch. And you can pick exactly what they are allowed to see.'/>
-                    <StandardCard icon={<TbSoccerField/>} title='Payment Channels' description='Any booking that comes through Hagz will always be paid for. In full. Always.' link="/how-it-works"/>
+                    <StandardCard icon={<TbSoccerField/>} title='Payment Channels' description='Any booking that comes through Hagz will always be paid for. In full. Always.' link="/product"/>
+                </div>
+            </section>
+            <section className='h-screen pt-20'>
+                <div className='h-full text-center flex-center flex-col gap-y-16 px-8'>
+                    <div className='flex flex-col gap-y-3 max-w-1/2'>
+                        <h1 className='font-medium text-4xl'>Still not convinced?</h1>
+                        <p className='text-gray-500'>We understand making the decison to switch to a digital system can be scary. We've set up multiple channels so we can answer any remaining questions you may have.</p>
+                    </div>
+                    <div className='grid grid-cols-4 gap-x-8 text-left'>
+                        <div className='flex flex-col gap-y-2 px-4 border-r border-gray-200'>
+                            <h2 className='text-base font-medium'>Chat to sales</h2>
+                            <p className='text-gray-500 text-sm'>Need assistance with making the switch? Speak to our team.</p>
+                            <span className='text-sm font-semibold'>sales@hagz.com</span>
+                        </div>
+                        <div className='flex flex-col gap-y-2 px-4 border-r border-gray-200'>
+                            <h2 className='text-base font-medium'>Email support</h2>
+                            <p className='text-gray-500 text-sm'>Email us and we'll get back to you within a few hours.</p>
+                            <span className='text-sm font-semibold'>support@hagz.com</span>
+                        </div>
+                        <div className='flex flex-col gap-y-1.5 px-4 border-r border-gray-200'>
+                            <h2 className='text-base font-medium'>Call us</h2>
+                            <p className='text-gray-500 text-sm mb-4'>Sun-Sat, excluding Fri, 9:00 AM-9:00 PM. </p>
+                            <span className='text-sm font-semibold'>+20 111 111 1111</span>
+                            <span className='text-sm font-semibold'>+20 222 222 2222</span>
+                        </div>
+                        <div className='flex flex-col gap-y-2 px-4'>
+                            <h2 className='text-base font-medium'>Shoot us a DM</h2>
+                            <p className='text-gray-500 text-sm'>Find us on Instagram, we reply quick over there.</p>
+                            <span className='text-sm font-semibold'>@hagz.co</span>
+                        </div>
+                    </div>
+                    <span>or</span>
+                    <Link to="/auth/sign-up">
+                        <Button className='bg-primary hover:bg-primary/75 group'>
+                            <span className='font-medium'>Try it, completely free of charge</span>
+                            <TbArrowRight className='group-hover:-rotate-45 transition-all' />
+                        </Button>
+                    </Link>
                 </div>
             </section>
         </>

@@ -27,7 +27,7 @@ export default function Navigation() {
                             <span className="">Explore</span>
                         </Link>
                         <Link 
-                            to={"/how-it-works"}
+                            to={"/product"}
                             activeProps={{ className: "font-semibold" }}
                             inactiveProps={{ className: "font-normal" }}
                         >

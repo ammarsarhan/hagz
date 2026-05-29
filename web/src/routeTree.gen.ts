@@ -13,8 +13,8 @@ import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as AppProductRouteImport } from './routes/_app/product'
 import { Route as AppOwnersRouteImport } from './routes/_app/owners'
-import { Route as AppHowItWorksRouteImport } from './routes/_app/how-it-works'
 import { Route as AppContactRouteImport } from './routes/_app/contact'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
 
@@ -37,14 +37,14 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/auth/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppProductRoute = AppProductRouteImport.update({
+  id: '/product',
+  path: '/product',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppOwnersRoute = AppOwnersRouteImport.update({
   id: '/owners',
   path: '/owners',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppHowItWorksRoute = AppHowItWorksRouteImport.update({
-  id: '/how-it-works',
-  path: '/how-it-works',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppContactRoute = AppContactRouteImport.update({
@@ -61,16 +61,16 @@ const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/contact': typeof AppContactRoute
-  '/how-it-works': typeof AppHowItWorksRoute
   '/owners': typeof AppOwnersRoute
+  '/product': typeof AppProductRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRoutesByTo {
   '/contact': typeof AppContactRoute
-  '/how-it-works': typeof AppHowItWorksRoute
   '/owners': typeof AppOwnersRoute
+  '/product': typeof AppProductRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/': typeof AppIndexRoute
@@ -80,8 +80,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/_app/contact': typeof AppContactRoute
-  '/_app/how-it-works': typeof AppHowItWorksRoute
   '/_app/owners': typeof AppOwnersRoute
+  '/_app/product': typeof AppProductRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
@@ -92,16 +92,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/contact'
-    | '/how-it-works'
     | '/owners'
+    | '/product'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/pitches/search/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/contact'
-    | '/how-it-works'
     | '/owners'
+    | '/product'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/'
@@ -110,8 +110,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_app/contact'
-    | '/_app/how-it-works'
     | '/_app/owners'
+    | '/_app/product'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/_app/'
@@ -154,18 +154,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/product': {
+      id: '/_app/product'
+      path: '/product'
+      fullPath: '/product'
+      preLoaderRoute: typeof AppProductRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/owners': {
       id: '/_app/owners'
       path: '/owners'
       fullPath: '/owners'
       preLoaderRoute: typeof AppOwnersRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/_app/how-it-works': {
-      id: '/_app/how-it-works'
-      path: '/how-it-works'
-      fullPath: '/how-it-works'
-      preLoaderRoute: typeof AppHowItWorksRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/contact': {
@@ -187,16 +187,16 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteRouteChildren {
   AppContactRoute: typeof AppContactRoute
-  AppHowItWorksRoute: typeof AppHowItWorksRoute
   AppOwnersRoute: typeof AppOwnersRoute
+  AppProductRoute: typeof AppProductRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPitchesSearchIndexRoute: typeof AppPitchesSearchIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppContactRoute: AppContactRoute,
-  AppHowItWorksRoute: AppHowItWorksRoute,
   AppOwnersRoute: AppOwnersRoute,
+  AppProductRoute: AppProductRoute,
   AppIndexRoute: AppIndexRoute,
   AppPitchesSearchIndexRoute: AppPitchesSearchIndexRoute,
 }
