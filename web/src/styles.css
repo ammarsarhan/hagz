@@ -5,15 +5,13 @@
 @theme {
   /* Brand */
   --color-primary: #D4FF00;
+  --color-primary-muted: #5b6e00;
   --color-secondary: #2B00FF;
+  --text-base: 0.9rem;
 }
 
 .flex-center {
     @apply flex;
     @apply items-center;
     @apply justify-center;
-}
-
-* {
-  font-size: 0.925rem;
 }

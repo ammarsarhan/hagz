@@ -4,7 +4,7 @@ import Button from "@/components/shared/Button";
 
 export default function Navigation() {
     return (
-        <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100">
+        <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
             <div className="h-2 bg-primary"></div>
             <div className="flex items-center justify-between px-6">
                 <div className="flex-center size-10 rounded-md bg-primary">
@@ -12,20 +12,39 @@ export default function Navigation() {
                 </div>
                 <div className="flex items-center gap-x-8">
                     <div className="flex items-center gap-x-6">
-                        <Link to={"/"}>
-                            <span className="font-semibold">Home</span>
+                        <Link 
+                            to={"/"}
+                            activeProps={{ className: "font-semibold" }}
+                            inactiveProps={{ className: "font-normal" }}
+                        >
+                            <span>Home</span>
                         </Link>
-                        <Link to={"/"}>
+                        <Link 
+                            to={"/pitches/search"}
+                            activeProps={{ className: "font-semibold" }}
+                            inactiveProps={{ className: "font-normal" }}
+                        >
                             <span className="">Explore</span>
                         </Link>
-                        <Link to="/" className="flex items-center gap-x-1.5">
-                            <span>How it works</span>
-                            <TbChevronDown className="size-4" />
+                        <Link 
+                            to={"/how-it-works"}
+                            activeProps={{ className: "font-semibold" }}
+                            inactiveProps={{ className: "font-normal" }}
+                        >
+                            <span className="">How it works</span>
                         </Link>
-                        <Link to={"/"}>
+                        <Link 
+                            to={"/contact"}
+                            activeProps={{ className: "font-semibold" }}
+                            inactiveProps={{ className: "font-normal" }}
+                        >
                             <span className="">Contact</span>
                         </Link>
-                        <Link to={"/"}>
+                        <Link 
+                            to={"/owners"}
+                            activeProps={{ className: "font-semibold" }}
+                            inactiveProps={{ className: "font-normal" }}
+                        >
                             <span className="">Own a pitch?</span>
                         </Link>
                     </div>
