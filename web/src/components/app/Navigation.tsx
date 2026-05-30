@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { TbBallFootball } from "react-icons/tb";
+import { TbBallFootball, TbBell, TbSettings } from "react-icons/tb";
 import Button from "#/components/shared/Button";
 import type User from "#/lib/types/user";
 
 export default function Navigation({ user } : { user: User | null }) {
+    const isOwner = (user && user.pitches.length > 0);
+
     return (
         <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
             <div className="h-2 bg-primary"></div>
@@ -28,7 +30,7 @@ export default function Navigation({ user } : { user: User | null }) {
                             <span className="">Explore</span>
                         </Link>
                         <Link 
-                            to={"/product"}
+                            to={isOwner ? "/product/owners" : "/product/users"}
                             activeProps={{ className: "font-semibold" }}
                             inactiveProps={{ className: "font-normal" }}
                         >
@@ -41,18 +43,43 @@ export default function Navigation({ user } : { user: User | null }) {
                         >
                             <span className="">Contact</span>
                         </Link>
-                        <Link 
-                            to={"/owners"}
-                            activeProps={{ className: "font-semibold" }}
-                            inactiveProps={{ className: "font-normal" }}
-                        >
-                            <span>Own a pitch?</span>
-                        </Link>
+                        {
+                            isOwner &&
+                            <Link to={`/dashboard/pitches/$pitchId`} params={{ pitchId: user.pitches[0].pitchId }}>
+                                <Button className="bg-primary hover:bg-primary/85">
+                                    <span className="font-medium">Dashboard</span>
+                                </Button>
+                            </Link>
+                        }
+                        {
+                            !user &&
+                            <Link 
+                                to={"/owners"}
+                                activeProps={{ className: "font-semibold" }}
+                                inactiveProps={{ className: "font-normal" }}
+                            >
+                                <span>Own a pitch?</span>
+                            </Link>
+                        }
                     </div>
                     {
                         user ?
                         <div className="flex items-center gap-x-3">
-                            
+                            <Link to={"/profile/settings"}>
+                                <div className="size-9 flex-center rounded-md border border-transparent bg-black hover:bg-black/75 cursor-pointer transition-colors">
+                                    <TbSettings size={16} className="text-white"/> 
+                                </div>
+                            </Link>
+                            <Link to={"/profile/notifications"}>
+                                <div className="size-9 flex-center rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <TbBell size={16}/> 
+                                </div>
+                            </Link>
+                            <Link to={"/profile"}>
+                                <div className="flex-center size-9 rounded-full bg-gray-50 border border-gray-200">
+                                    <span className="text-sm font-medium">{user.firstName[0].toUpperCase()}{user.lastName[0].toUpperCase()}</span>
+                                </div>
+                            </Link>
                         </div> :
                         <div className="flex items-center gap-x-3">   
                             <Link to="/auth/sign-in">

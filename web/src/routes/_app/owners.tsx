@@ -160,7 +160,7 @@ function RouteComponent() {
                     <StandardCard icon={<TbGraph/>} title='Revenue Analytics' description='The system automatically generates analytics reports to help you cater better to customers.'/>
                     <StandardCard icon={<TbBrandWhatsapp/>} title='Channel Integrations' description='Accept bookings through every single channel possible: WhatsApp, phone, manual, or walk-ins. We&apos;ve taken it all into account.'/>
                     <StandardCard icon={<TbUsersGroup/>} title='Teams & Permissions' description='You can add up to 20 staff members to help you manage your pitch. And you can pick exactly what they are allowed to see.'/>
-                    <StandardCard icon={<TbSoccerField/>} title='Payment Channels' description='Any booking that comes through Hagz will always be paid for. In full. Always.' link="/product"/>
+                    <StandardCard icon={<TbSoccerField/>} title='Payment Channels' description='Any booking that comes through Hagz will always be paid for. In full. Always.' link="/product/owners"/>
                 </div>
             </section>
             <section className='h-screen pt-20'>
