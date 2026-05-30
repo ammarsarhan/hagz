@@ -23,6 +23,9 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  context: () => ({
+    user: null,
+  }),
   beforeLoad: async () => {
     try {
       const res = await client.auth.session.$get();
