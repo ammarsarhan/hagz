@@ -73,8 +73,6 @@ export default class ProfileService {
         if (!user)
             throw new NotFoundError("Could not find user profile with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
 
-        const preferences = user.preferences;
-
         if (!user.preferences)
             throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
 

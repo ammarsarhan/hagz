@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useForm } from "@tanstack/react-form";
-import Input from '@/components/shared/Input';
-import Button from '@/components/shared/Button';
+import Input from '#/components/shared/Input';
+import Button from '#/components/shared/Button';
 import { TbBallFootball } from 'react-icons/tb'
 import { useState } from 'react';
 import { z } from "zod";
@@ -17,6 +17,7 @@ const signInSchema = z.object({
       .pipe(z.string().regex(/^\+[1-9]\d{7,14}$/, "Phone number must be in the correct format.")),
   password: z
       .string("Password is required.")
+      .min(1, "Password is required.")
       .max(100, "Password may not be longer than 100 characters."),
 });
 
@@ -46,7 +47,8 @@ function RouteComponent() {
       <div className='h-full w-2/5 bg-gray-50 rounded-md p-4'>
 
       </div>
-      <div className='h-full flex-center relative w-3/5 bg-gray-50 rounded-md p-4'>
+      <div className='h-full flex-center relative w-3/5 bg-gray-50 rounded-md p-4 overflow-clip'>
+        <TbBallFootball className='absolute -bottom-24 -right-24 size-96 text-primary-muted opacity-5 z-0'/>
         <Link to="/" className='absolute top-4 left-4'>
             <div className="flex-center size-10 rounded-md bg-primary">
                 <TbBallFootball className="size-6.5" strokeWidth={2}/>

@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import Badge from '#/components/shared/Badge'
-import Button from '@/components/shared/Button';
+import Button from '#/components/shared/Button';
 import IconCard from '#/components/app/IconCard'
-import StandardCard from '@/components/app/StandardCard';
+import StandardCard from '#/components/app/StandardCard';
 import { TbArrowRight, TbBrandWhatsapp, TbCurrentLocationFilled, TbGraph, TbListCheck, TbLiveView, TbMoodSmile, TbSoccerField, TbTableHeart, TbUserPlus, TbUsersGroup } from 'react-icons/tb'
-import Pitch from "@/assets/samples/pitch.jpg";
+import Pitch from "#/assets/samples/pitch.jpg";
 
 export const Route = createFileRoute('/_app/owners')({
   component: RouteComponent,

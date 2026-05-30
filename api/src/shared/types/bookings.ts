@@ -1,4 +1,4 @@
-import type { Booking, Cancellation, Ground, GroundSlot, Payment, Pitch, Rescheduling, Staff } from "@/generated/prisma/client.js";
+import type { Booking, Cancellation, Ground, GroundSlot, Payment, Pitch, Rescheduling } from "@/generated/prisma/client.js";
 import type { BookingChannel, BookingStatus, Country, GroundSize, GroundSport, GroundSurface, PaymentMethod, PriceType, RefundStatus } from "@/generated/prisma/enums.js";
 
 export interface PricingSnapshotSlot {

@@ -255,7 +255,7 @@ export default class BookingService {
                 throw new BadRequestError("Requested booking time must be greater than the minimum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
         };
 
-        const { assignee, booking, totalAmount, pricingSnapshot, depositFee } = await prisma.$transaction(async tx => {
+        const { assignee, booking, totalAmount: _totalAmount, pricingSnapshot: _pricingSnapshot, depositFee: _depositFee } = await prisma.$transaction(async tx => {
             // 1. Lock slots in a consistent order to prevent deadlocks.
             const targets = await tx.$queryRaw<{ id: string }[]>`
                 SELECT id FROM "GroundSlot"

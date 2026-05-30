@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { TbBallFootball } from "react-icons/tb";
-import Button from "@/components/shared/Button";
+import Button from "#/components/shared/Button";
 
 export default function Navigation() {
     return (

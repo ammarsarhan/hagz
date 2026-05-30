@@ -1,7 +1,7 @@
 import z from "zod";
 
 import type { CreatePitchPayloadType, QueryPitchesPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";

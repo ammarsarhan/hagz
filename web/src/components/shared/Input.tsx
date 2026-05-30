@@ -28,7 +28,7 @@ export default function Input({ type = "text", value, onChange, placeholder, cla
             <div className="flex w-full">
                 {
                     type === "phone" &&
-                    <div className={`flex-center text-sm bg-white rounded-md rounded-r-none px-2 border border-r-transparent ${error ? "border-red-500" : "border-gray-200"}`}>
+                    <div className={`select-none cursor-not-allowed flex-center text-sm bg-white rounded-md rounded-r-none px-2 border border-r-transparent ${error ? "border-red-500" : "border-gray-200"}`}>
                         +20
                     </div>
                 }
