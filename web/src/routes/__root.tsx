@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import appCss from '../styles.css?url'
+import { client } from '#/lib/client'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -22,6 +23,17 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  beforeLoad: async () => {
+    try {
+      const res = await client.auth.session.$get();
+      if (!res.ok) return { user: null };
+
+      const { data } = await res.json();
+      return { user: data.user };
+    } catch {
+      return { user: null }
+    }
+  },  
   shellComponent: RootDocument,
 })
 

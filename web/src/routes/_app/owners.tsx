@@ -195,7 +195,7 @@ function RouteComponent() {
                     <span>or</span>
                     <Link to="/auth/sign-up">
                         <Button className='bg-primary hover:bg-primary/75 group'>
-                            <span className='font-medium'>Try it, completely free of charge</span>
+                            <span>Try it, completely free of charge</span>
                             <TbArrowRight className='group-hover:-rotate-45 transition-all' />
                         </Button>
                     </Link>

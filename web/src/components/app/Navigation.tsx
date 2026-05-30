@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { TbBallFootball } from "react-icons/tb";
 import Button from "#/components/shared/Button";
+import type User from "#/lib/types/user";
 
-export default function Navigation() {
+export default function Navigation({ user } : { user: User | null }) {
     return (
         <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
             <div className="h-2 bg-primary"></div>
@@ -45,21 +46,27 @@ export default function Navigation() {
                             activeProps={{ className: "font-semibold" }}
                             inactiveProps={{ className: "font-normal" }}
                         >
-                            <span className="">Own a pitch?</span>
+                            <span>Own a pitch?</span>
                         </Link>
                     </div>
-                    <div className="flex items-center gap-x-3">   
-                        <Link to="/auth/sign-in">
-                            <Button className="bg-primary hover:bg-primary/85">
-                                <span className="font-medium">Log In</span>
-                            </Button>
-                        </Link>
-                        <Link to="/auth/sign-up">
-                            <Button className="border-gray-200! hover:bg-gray-50">
-                                <span className="font-medium">Sign Up</span>
-                            </Button>
-                        </Link>
-                    </div>
+                    {
+                        user ?
+                        <div className="flex items-center gap-x-3">
+                            
+                        </div> :
+                        <div className="flex items-center gap-x-3">   
+                            <Link to="/auth/sign-in">
+                                <Button className="bg-primary hover:bg-primary/85">
+                                    <span className="font-medium">Log In</span>
+                                </Button>
+                            </Link>
+                            <Link to="/auth/sign-up">
+                                <Button className="border-gray-200! hover:bg-gray-50">
+                                    <span className="font-medium">Sign Up</span>
+                                </Button>
+                            </Link>
+                        </div>
+                    }
                 </div>
             </div>
         </nav>

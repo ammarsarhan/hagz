@@ -6,9 +6,11 @@ export const Route = createFileRoute('/_app')({
 })
 
 function RouteComponent() {
+  const { user } = Route.useRouteContext();
+
   return (
     <>
-        <Navigation />
+        <Navigation user={user} />
         <Outlet />
     </>
   )

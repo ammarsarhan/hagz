@@ -58,7 +58,7 @@ function RouteComponent() {
       if (!user.isVerified)
         redirectPath = "/auth/verify/send";
       
-      navigate({ to: redirectPath });
+      await navigate({ to: redirectPath });
     }
   });
 
@@ -129,7 +129,7 @@ function RouteComponent() {
               {
                 ([isSubmitting]) => (
                   <Button disabled={isSubmitting} type="submit" className={`mx-auto mt-4 ${isSubmitting ? "bg-primary/75 cursor-wait" : "bg-primary hover:bg-primary/75"}`}>
-                    <span className='text-base font-medium'>{isSubmitting ? "Loading..." : "Sign in"}</span>
+                    <span className='text-base'>{isSubmitting ? "Loading..." : "Sign in"}</span>
                   </Button>
                 )
               }
