@@ -16,7 +16,9 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AppProductRouteImport } from './routes/_app/product'
 import { Route as AppOwnersRouteImport } from './routes/_app/owners'
 import { Route as AppContactRouteImport } from './routes/_app/contact'
+import { Route as AuthVerifyIndexRouteImport } from './routes/auth/verify/index'
 import { Route as AuthResetIndexRouteImport } from './routes/auth/reset/index'
+import { Route as AuthVerifySendRouteImport } from './routes/auth/verify/send'
 import { Route as AuthResetSendRouteImport } from './routes/auth/reset/send'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
 
@@ -54,9 +56,19 @@ const AppContactRoute = AppContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AuthVerifyIndexRoute = AuthVerifyIndexRouteImport.update({
+  id: '/auth/verify/',
+  path: '/auth/verify/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthResetIndexRoute = AuthResetIndexRouteImport.update({
   id: '/auth/reset/',
   path: '/auth/reset/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifySendRoute = AuthVerifySendRouteImport.update({
+  id: '/auth/verify/send',
+  path: '/auth/verify/send',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthResetSendRoute = AuthResetSendRouteImport.update({
@@ -78,7 +90,9 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/reset/send': typeof AuthResetSendRoute
+  '/auth/verify/send': typeof AuthVerifySendRoute
   '/auth/reset/': typeof AuthResetIndexRoute
+  '/auth/verify/': typeof AuthVerifyIndexRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,7 +103,9 @@ export interface FileRoutesByTo {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/': typeof AppIndexRoute
   '/auth/reset/send': typeof AuthResetSendRoute
+  '/auth/verify/send': typeof AuthVerifySendRoute
   '/auth/reset': typeof AuthResetIndexRoute
+  '/auth/verify': typeof AuthVerifyIndexRoute
   '/pitches/search': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRoutesById {
@@ -102,7 +118,9 @@ export interface FileRoutesById {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
   '/auth/reset/send': typeof AuthResetSendRoute
+  '/auth/verify/send': typeof AuthVerifySendRoute
   '/auth/reset/': typeof AuthResetIndexRoute
+  '/auth/verify/': typeof AuthVerifyIndexRoute
   '/_app/pitches/search/': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRouteTypes {
@@ -115,7 +133,9 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/auth/reset/send'
+    | '/auth/verify/send'
     | '/auth/reset/'
+    | '/auth/verify/'
     | '/pitches/search/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -126,7 +146,9 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/'
     | '/auth/reset/send'
+    | '/auth/verify/send'
     | '/auth/reset'
+    | '/auth/verify'
     | '/pitches/search'
   id:
     | '__root__'
@@ -138,7 +160,9 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/_app/'
     | '/auth/reset/send'
+    | '/auth/verify/send'
     | '/auth/reset/'
+    | '/auth/verify/'
     | '/_app/pitches/search/'
   fileRoutesById: FileRoutesById
 }
@@ -147,7 +171,9 @@ export interface RootRouteChildren {
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
   AuthResetSendRoute: typeof AuthResetSendRoute
+  AuthVerifySendRoute: typeof AuthVerifySendRoute
   AuthResetIndexRoute: typeof AuthResetIndexRoute
+  AuthVerifyIndexRoute: typeof AuthVerifyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -201,11 +227,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContactRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/auth/verify/': {
+      id: '/auth/verify/'
+      path: '/auth/verify'
+      fullPath: '/auth/verify/'
+      preLoaderRoute: typeof AuthVerifyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/reset/': {
       id: '/auth/reset/'
       path: '/auth/reset'
       fullPath: '/auth/reset/'
       preLoaderRoute: typeof AuthResetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify/send': {
+      id: '/auth/verify/send'
+      path: '/auth/verify/send'
+      fullPath: '/auth/verify/send'
+      preLoaderRoute: typeof AuthVerifySendRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/reset/send': {
@@ -250,7 +290,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
   AuthResetSendRoute: AuthResetSendRoute,
+  AuthVerifySendRoute: AuthVerifySendRoute,
   AuthResetIndexRoute: AuthResetIndexRoute,
+  AuthVerifyIndexRoute: AuthVerifyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

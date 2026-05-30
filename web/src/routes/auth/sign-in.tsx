@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useForm } from "@tanstack/react-form";
 import Input from '#/components/shared/Input';
 import Button from '#/components/shared/Button';
 import { TbBallFootball } from 'react-icons/tb'
 import { useState } from 'react';
 import { z } from "zod";
+import { client, type ErrorResponse } from '#/lib/client';
 
 export const Route = createFileRoute('/auth/sign-in')({
   component: RouteComponent,
@@ -22,6 +23,7 @@ const signInSchema = z.object({
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
 
   const form = useForm({
@@ -38,7 +40,25 @@ function RouteComponent() {
         phone: value.phone.startsWith('+') ? value.phone : `+20${value.phone}`,
       };
 
-      console.log(payload);
+      const res = await client.auth['sign-in'].$post({ json: payload });
+      
+      if (!res.ok) {
+        const data = await res.json() as unknown as ErrorResponse;
+        throw new Error(data.error.message);
+      }
+
+      let redirectPath = "/";
+
+      const { data } = await res.json();
+      const user = data.user;
+
+      if (user.pitches.length > 0)
+        redirectPath = `/dashboard/pitches/${user.pitches[0].pitchId}`;
+
+      if (!user.isVerified)
+        redirectPath = "/auth/verify/send";
+      
+      navigate({ to: redirectPath });
     }
   });
 
@@ -105,9 +125,15 @@ function RouteComponent() {
                 )
               }}
             />
-            <Button type="submit" className='mx-auto bg-primary hover:bg-primary/75 mt-4'>
-              <span className='text-base font-medium'>Sign in</span>
-            </Button>
+            <form.Subscribe selector={(state) => [state.isSubmitting]}>
+              {
+                ([isSubmitting]) => (
+                  <Button disabled={isSubmitting} type="submit" className={`mx-auto mt-4 ${isSubmitting ? "bg-primary/75 cursor-wait" : "bg-primary hover:bg-primary/75"}`}>
+                    <span className='text-base font-medium'>{isSubmitting ? "Loading..." : "Sign in"}</span>
+                  </Button>
+                )
+              }
+            </form.Subscribe>
           </div>
         </form>
         <span className='text-gray-500 absolute bottom-4 text-xs'>© Hagz 2026. All rights reserved.</span>
