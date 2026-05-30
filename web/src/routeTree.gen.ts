@@ -16,6 +16,8 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AppProductRouteImport } from './routes/_app/product'
 import { Route as AppOwnersRouteImport } from './routes/_app/owners'
 import { Route as AppContactRouteImport } from './routes/_app/contact'
+import { Route as AuthResetIndexRouteImport } from './routes/auth/reset/index'
+import { Route as AuthResetSendRouteImport } from './routes/auth/reset/send'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
 
 const AppRouteRoute = AppRouteRouteImport.update({
@@ -52,6 +54,16 @@ const AppContactRoute = AppContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AuthResetIndexRoute = AuthResetIndexRouteImport.update({
+  id: '/auth/reset/',
+  path: '/auth/reset/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetSendRoute = AuthResetSendRouteImport.update({
+  id: '/auth/reset/send',
+  path: '/auth/reset/send',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
   id: '/pitches/search/',
   path: '/pitches/search/',
@@ -65,6 +77,8 @@ export interface FileRoutesByFullPath {
   '/product': typeof AppProductRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/reset/send': typeof AuthResetSendRoute
+  '/auth/reset/': typeof AuthResetIndexRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +88,8 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/': typeof AppIndexRoute
+  '/auth/reset/send': typeof AuthResetSendRoute
+  '/auth/reset': typeof AuthResetIndexRoute
   '/pitches/search': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRoutesById {
@@ -85,6 +101,8 @@ export interface FileRoutesById {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
+  '/auth/reset/send': typeof AuthResetSendRoute
+  '/auth/reset/': typeof AuthResetIndexRoute
   '/_app/pitches/search/': typeof AppPitchesSearchIndexRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +114,8 @@ export interface FileRouteTypes {
     | '/product'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/auth/reset/send'
+    | '/auth/reset/'
     | '/pitches/search/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +125,8 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/'
+    | '/auth/reset/send'
+    | '/auth/reset'
     | '/pitches/search'
   id:
     | '__root__'
@@ -115,6 +137,8 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/_app/'
+    | '/auth/reset/send'
+    | '/auth/reset/'
     | '/_app/pitches/search/'
   fileRoutesById: FileRoutesById
 }
@@ -122,6 +146,8 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  AuthResetSendRoute: typeof AuthResetSendRoute
+  AuthResetIndexRoute: typeof AuthResetIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -175,6 +201,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContactRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/auth/reset/': {
+      id: '/auth/reset/'
+      path: '/auth/reset'
+      fullPath: '/auth/reset/'
+      preLoaderRoute: typeof AuthResetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset/send': {
+      id: '/auth/reset/send'
+      path: '/auth/reset/send'
+      fullPath: '/auth/reset/send'
+      preLoaderRoute: typeof AuthResetSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/pitches/search/': {
       id: '/_app/pitches/search/'
       path: '/pitches/search'
@@ -209,6 +249,8 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  AuthResetSendRoute: AuthResetSendRoute,
+  AuthResetIndexRoute: AuthResetIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
