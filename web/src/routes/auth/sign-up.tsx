@@ -111,7 +111,7 @@ function RouteComponent() {
                   <span className='font-medium text-sm'>I am a user</span>
                   <p className='text-xs text-gray-500'>I want to find pitches and book.</p>
                 </div>
-                <input type="radio" checked={role === "User"} className='absolute top-4 right-4 accent-primary-muted'/>
+                <input type="radio" readOnly checked={role === "User"} className='absolute top-4 right-4 accent-primary-muted'/>
               </div>
               <div onClick={() => setRole("Owner")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
                 <div className='flex flex-col gap-y-0.5'>
@@ -121,7 +121,7 @@ function RouteComponent() {
                   <span className='font-medium text-sm'>I am an owner</span>
                   <p className='text-xs text-gray-500'>I want to add my venue.</p>
                 </div>
-                <input type="radio" checked={role === "Owner"} className='absolute top-4 right-4 accent-primary-muted'/>
+                <input type="radio" readOnly checked={role === "Owner"} className='absolute top-4 right-4 accent-primary-muted'/>
               </div>
             </div>
             <div className='flex flex-col gap-y-4'>
