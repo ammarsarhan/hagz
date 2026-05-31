@@ -25,6 +25,7 @@ import { Route as AuthVerifySendRouteImport } from './routes/auth/verify/send'
 import { Route as AuthResetSendRouteImport } from './routes/auth/reset/send'
 import { Route as AppProductUsersRouteImport } from './routes/_app/product/users'
 import { Route as AppProductOwnersRouteImport } from './routes/_app/product/owners'
+import { Route as DashboardPitchesCreateIndexRouteImport } from './routes/dashboard/pitches/create/index'
 import { Route as DashboardPitchesPitchIdIndexRouteImport } from './routes/dashboard/pitches/$pitchId/index'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
 
@@ -107,6 +108,12 @@ const AppProductOwnersRoute = AppProductOwnersRouteImport.update({
   path: '/product/owners',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const DashboardPitchesCreateIndexRoute =
+  DashboardPitchesCreateIndexRouteImport.update({
+    id: '/dashboard/pitches/create/',
+    path: '/dashboard/pitches/create/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardPitchesPitchIdIndexRoute =
   DashboardPitchesPitchIdIndexRouteImport.update({
     id: '/dashboard/pitches/$pitchId/',
@@ -137,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/auth/verify/': typeof AuthVerifyIndexRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId/': typeof DashboardPitchesPitchIdIndexRoute
+  '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRoutesByTo {
   '/contact': typeof AppContactRoute
@@ -156,6 +164,7 @@ export interface FileRoutesByTo {
   '/auth/verify': typeof AuthVerifyIndexRoute
   '/pitches/search': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId': typeof DashboardPitchesPitchIdIndexRoute
+  '/dashboard/pitches/create': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -177,6 +186,7 @@ export interface FileRoutesById {
   '/auth/verify/': typeof AuthVerifyIndexRoute
   '/_app/pitches/search/': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId/': typeof DashboardPitchesPitchIdIndexRoute
+  '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/auth/verify/'
     | '/pitches/search/'
     | '/dashboard/pitches/$pitchId/'
+    | '/dashboard/pitches/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/contact'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/pitches/search'
     | '/dashboard/pitches/$pitchId'
+    | '/dashboard/pitches/create'
   id:
     | '__root__'
     | '/_app'
@@ -237,6 +249,7 @@ export interface FileRouteTypes {
     | '/auth/verify/'
     | '/_app/pitches/search/'
     | '/dashboard/pitches/$pitchId/'
+    | '/dashboard/pitches/create/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -252,6 +265,7 @@ export interface RootRouteChildren {
   AuthResetIndexRoute: typeof AuthResetIndexRoute
   AuthVerifyIndexRoute: typeof AuthVerifyIndexRoute
   DashboardPitchesPitchIdIndexRoute: typeof DashboardPitchesPitchIdIndexRoute
+  DashboardPitchesCreateIndexRoute: typeof DashboardPitchesCreateIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -368,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProductOwnersRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/dashboard/pitches/create/': {
+      id: '/dashboard/pitches/create/'
+      path: '/dashboard/pitches/create'
+      fullPath: '/dashboard/pitches/create/'
+      preLoaderRoute: typeof DashboardPitchesCreateIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/pitches/$pitchId/': {
       id: '/dashboard/pitches/$pitchId/'
       path: '/dashboard/pitches/$pitchId'
@@ -420,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthResetIndexRoute: AuthResetIndexRoute,
   AuthVerifyIndexRoute: AuthVerifyIndexRoute,
   DashboardPitchesPitchIdIndexRoute: DashboardPitchesPitchIdIndexRoute,
+  DashboardPitchesCreateIndexRoute: DashboardPitchesCreateIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

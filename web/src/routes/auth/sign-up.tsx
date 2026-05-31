@@ -1,11 +1,11 @@
-import Alert, { type AlertProps } from '#/components/shared/Alert';
+import Alert from '#/components/shared/Alert';
 import Button from '#/components/shared/Button';
 import Input from '#/components/shared/Input';
 import { client, ERROR_CODES, type ErrorResponse } from '#/lib/client';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react';
-import { TbBallFootball } from 'react-icons/tb';
+import { TbBallFootball, TbUser, TbUsers } from 'react-icons/tb';
 import z from 'zod';
 
 export const Route = createFileRoute('/auth/sign-up')({
@@ -37,8 +37,9 @@ const signUpSchema = z.object({
 });
 
 function RouteComponent() {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
+  const [role, setRole] = useState<"User" | "Owner">("User");
   const [error, setError] = useState<{ message: string, code?: string } | null>(null);
 
   const form = useForm({
@@ -70,9 +71,12 @@ function RouteComponent() {
         
         setError({ message, code });
         return;
-      }
+      };
 
-      const { data } = await res.json();
+      let redirectPath = "/";
+      if (role == "Owner") redirectPath = "/dashboard/pitches/create";
+
+      await navigate({ to: redirectPath });
     }
   });
 
@@ -88,15 +92,37 @@ function RouteComponent() {
               </div>
           </Link>
           <form 
-            className='w-sm'
+            className='w-md'
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
             }}
           >
-            <div className='flex flex-col gap-y-2 mb-8'>
+            <div className='flex flex-col gap-y-2 mb-6'>
               <h1 className='text-3xl font-medium'>Create An Account</h1>
               <p className='text-gray-500 text-base'>Already have an account? <Link to="/auth/sign-in" className='text-primary-muted hover:underline'>Sign in</Link></p>
+            </div>
+            <div className='flex gap-x-4 mb-6'>
+              <div onClick={() => setRole("User")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
+                <div className='flex flex-col gap-y-0.5'>
+                  <div className='size-8 rounded-md border border-gray-200 flex-center mb-2.5 bg-white'>
+                    <TbUser/>
+                  </div>
+                  <span className='font-medium text-sm'>I am a user</span>
+                  <p className='text-xs text-gray-500'>I want to find pitches and book.</p>
+                </div>
+                <input type="radio" checked={role === "User"} className='absolute top-4 right-4 accent-primary-muted'/>
+              </div>
+              <div onClick={() => setRole("Owner")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
+                <div className='flex flex-col gap-y-0.5'>
+                  <div className='size-8 rounded-md border border-gray-200 flex-center mb-2.5 bg-white'>
+                    <TbUsers/>
+                  </div>
+                  <span className='font-medium text-sm'>I am an owner</span>
+                  <p className='text-xs text-gray-500'>I want to add my venue.</p>
+                </div>
+                <input type="radio" checked={role === "Owner"} className='absolute top-4 right-4 accent-primary-muted'/>
+              </div>
             </div>
             <div className='flex flex-col gap-y-4'>
               <div className='flex gap-x-4'>
