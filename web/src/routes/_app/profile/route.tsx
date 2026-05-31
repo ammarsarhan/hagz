@@ -1,8 +1,11 @@
 import ProfileAside from '#/components/app/ProfileAside'
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_app/profile')({
   component: RouteComponent,
+  beforeLoad: ({ context }) => {
+    if (!context.user) throw redirect({ to: '/auth/sign-in' });
+  },
 })
 
 function RouteComponent() {

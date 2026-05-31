@@ -27,8 +27,7 @@ const signUpSchema = z.object({
       .pipe(z.string().regex(/^\+[1-9]\d{7,14}$/, "Phone number must be in the correct format.")),
   password: z
       .string("Password is required.")
-      .min(1, "Password is required.")
-      .max(100, "Password may not be longer than 100 characters."),
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Password must be at least 8 characters long and include uppercase, lowercase, number, and special characters."),
   confirmPassword: z
       .string("Password is required.")
 }).superRefine((data, ctx) => {
@@ -63,12 +62,21 @@ function RouteComponent() {
       
       if (!res.ok) {
         const data = await res.json() as unknown as ErrorResponse;
-
         const code = data.error.code;
-        let message = "An unknown error has occurred.";
 
+        if (data.error.fields?.length) {
+          data.error.fields.forEach(({ field, message }) => {
+            form.setFieldMeta(field as keyof typeof form.state.values, (meta) => ({
+              ...meta,
+              errors: [{ message }],
+              errorMap: { onSubmit: { message } }
+            }));
+          });
+          return;
+        }
+
+        let message = "An unknown error has occurred.";
         if (code) message = ERROR_CODES[code];
-        
         setError({ message, code });
         return;
       };
@@ -221,8 +229,12 @@ function RouteComponent() {
           </form>
           <span className='text-gray-500 absolute bottom-4 text-xs'>© Hagz 2026. All rights reserved.</span>
         </div>
-        <div className='h-full w-1/5 bg-gray-50 rounded-md p-4'>
-
+        <div className='h-full w-1/5 bg-linear-to-br from-primary to-primary-muted rounded-md p-4 relative overflow-hidden'>
+          <div className="blob"/>
+          <div className="blob"/>
+          <div className="blob"/>
+          <div className="blob"/>
+          <div className="blob"/>
         </div>
       </div>
     </>

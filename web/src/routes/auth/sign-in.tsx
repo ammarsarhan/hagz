@@ -46,13 +46,21 @@ function RouteComponent() {
       
       if (!res.ok) {
         const data = await res.json() as unknown as ErrorResponse;
-
         const code = data.error.code;
-        let message = "An unknown error has occurred.";
 
+        if (data.error.fields?.length) {
+          data.error.fields.forEach(({ field, message }) => {
+            form.setFieldMeta(field as keyof typeof form.state.values, (meta) => ({
+              ...meta,
+              errors: [{ message }],
+              errorMap: { onSubmit: { message } }
+            }));
+          });
+          return;
+        }
+
+        let message = "An unknown error has occurred.";
         if (code) message = ERROR_CODES[code];
-        console.log(data);
-        
         setError({ message, code });
         return;
       }

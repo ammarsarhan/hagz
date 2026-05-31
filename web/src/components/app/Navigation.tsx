@@ -10,9 +10,11 @@ export default function Navigation({ user } : { user: User | null }) {
         <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
             <div className="h-2 bg-primary"></div>
             <div className="flex items-center justify-between px-6">
-                <div className="flex-center size-10 rounded-md bg-primary">
-                    <TbBallFootball className="size-6.5" strokeWidth={2}/>
-                </div>
+                <Link to="/">
+                    <div className="flex-center size-10 rounded-md bg-primary">
+                        <TbBallFootball className="size-6.5" strokeWidth={2}/>
+                    </div>
+                </Link>
                 <div className="flex items-center gap-x-8">
                     <div className="flex items-center gap-x-6">
                         <Link 
