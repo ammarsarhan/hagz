@@ -6,6 +6,7 @@ import { useForm } from '@tanstack/react-form';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react';
 import { TbBallFootball, TbUser, TbUsers } from 'react-icons/tb';
+import hero from '#/assets/samples/auth.mp4';
 import z from 'zod';
 
 export const Route = createFileRoute('/auth/sign-up')({
@@ -229,12 +230,8 @@ function RouteComponent() {
           </form>
           <span className='text-gray-500 absolute bottom-4 text-xs'>© Hagz 2026. All rights reserved.</span>
         </div>
-        <div className='h-full w-1/5 bg-linear-to-br from-primary to-primary-muted rounded-md p-4 relative overflow-hidden'>
-          <div className="blob"/>
-          <div className="blob"/>
-          <div className="blob"/>
-          <div className="blob"/>
-          <div className="blob"/>
+        <div className='h-full w-1/5 bg-gray-50 rounded-md relative overflow-hidden'>
+          <video src={hero} className='w-full h-full object-cover' muted autoPlay loop/>
         </div>
       </div>
     </>
