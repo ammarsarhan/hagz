@@ -53,10 +53,10 @@ export type SignInPayloadType = z.infer<typeof signInSchema>;
 export const signInSchema = z.object({
     phone: z
         .string("Phone number is required.")
-        .regex(/^\+[1-9]\d{7,14}$/, "Could not find user account with the specified credentials."),
+        .regex(/^\+[1-9]\d{7,14}$/, "Phone number must be in a valid format."),
     password: z
-        .string("Password is required")
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Could not find user account with the specified credentials."),
+        .string("Password is required.")
+        .min(2, "Password is required."),
 });
 
 export const createUserResponse = (user: User, preferences: UserPreferences, pitches: Array<Staff>): UserResponseType => {

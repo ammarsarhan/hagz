@@ -13,14 +13,14 @@ interface InputProps {
 };
 
 export default function Input({ type = "text", value, onChange, placeholder, className, label, error } : InputProps) {
-    let base = `w-full text-base bg-white border px-2 py-1.5 rounded-md ${error ? "border-red-500 outline-none" : "border-gray-200 outline-primary-muted"} ${className}`;
+    let base = `w-full text-base bg-white border px-2 py-1.5 rounded-md ${error ? "border-red-500 outline-none" : "border-gray-200 outline-primary-muted"}`;
 
     if (type === "phone") {
         base += " rounded-l-none";
     }
 
     return (
-        <div className="flex flex-col gap-y-1.5">
+        <div className={`flex flex-col gap-y-1.5 ${className}`}>
             {
                 label &&
                 <span className="text-base">{label}</span>
