@@ -1,5 +1,5 @@
 import { hc } from 'hono/client'
-import { getRequest } from '@tanstack/react-start/server'
+import { getRequest, getResponseHeaders } from '@tanstack/react-start/server'
 import type { AppType } from '@/index';
 
 export interface ErrorResponse {
@@ -93,14 +93,12 @@ const target = isServer ? 'http://api:8080' : 'http://localhost:8080';
 const appFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   const headers = new Headers(init?.headers);
 
-  // Forward the cookies coming in from the request and use them to refresh the session if needed.
   if (isServer) {
     const request = getRequest();
     const cookie = request?.headers.get('cookie');
     if (cookie) headers.set('cookie', cookie);
   };
 
-  // If we are not on the server, treat it like a normal credentials client-side request.
   const res = await fetch(input, { ...init, headers, credentials: 'include' });
 
   if (res.status !== 401) return res;
@@ -113,9 +111,31 @@ const appFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<R
 
   if (!refresh.ok) return res;
 
+  // Forward Set-Cookie from the refresh response to the browser.
+  if (isServer) {
+    const headers = getResponseHeaders();
+    const setCookie = refresh.headers.get('set-cookie');
+
+    if (setCookie) {
+      headers.append('set-cookie', setCookie);
+    };
+  };
+
+  // Also forward the new cookie into the retry request.
+  if (isServer) {
+    const setCookie = refresh.headers.get('set-cookie');
+
+    if (setCookie) {
+      // Extract the cookie value to use in the retry.
+      const updatedCookie = setCookie.split(';')[0];
+      const existingCookie = headers.get('cookie') ?? '';
+
+      headers.set('cookie', existingCookie ? `${existingCookie}; ${updatedCookie}` : updatedCookie);
+    }
+  };
+
   return fetch(input, { ...init, headers, credentials: 'include' });
 };
-
 export const client = hc<AppType>(target, {
   fetch: appFetch
 });

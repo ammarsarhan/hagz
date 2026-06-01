@@ -189,7 +189,7 @@ function RouteComponent() {
                         <div className='flex flex-col gap-y-2 px-4'>
                             <h2 className='text-base font-medium'>Shoot us a DM</h2>
                             <p className='text-gray-500 text-sm'>Find us on Instagram, we reply quick over there.</p>
-                            <span className='text-sm font-semibold'>@hagz.co</span>
+                            <a href="https://www.instagram.com/hagz.co" target="_blank" className='text-sm font-semibold'>@hagz.co</a>
                         </div>
                     </div>
                     <span>or</span>
