@@ -1,4 +1,4 @@
-import { Country, Language, NotificationChannel, PaymentMethod } from "@/generated/prisma/enums.js";
+import { Language, NotificationChannel, PaymentMethod } from "@/generated/prisma/enums.js";
 import z from "zod";
 
 const trim = 
@@ -24,41 +24,7 @@ export const updateUserProfileSchema = z.object({
         .regex(/^\+[1-9]\d{7,14}$/, "Phone number must include the international code and be in an acceptable format.")
         .optional(),
     email: z
-        .string()
         .email("Email must be a valid email address.")
-        .optional(),
-    street: z
-        .optional(
-            trim("Street name is required.")
-            .pipe(
-                z
-                    .string()
-                    .min(3, "Street name must be more than 3 characters long.")
-                    .max(100, "Street name must be less than 100 characters long.")
-            )
-        ),
-    area: z
-        .optional(
-            trim("Area is required.")
-            .pipe(
-                z
-                    .string()
-                    .min(3, "Area name must be more than 3 characters long.")
-                    .max(100, "Area name must be less than 100 characters long.")
-            )
-        ),
-    city: z
-        .optional(
-            trim("City is required.")
-            .pipe(
-                z
-                    .string()
-                    .min(3, "City name must be more than 3 characters long.")
-                    .max(100, "City name must be less than 100 characters long.")
-            )
-        ),
-    country: z
-        .enum(Object.values(Country) as [Country, ...Country[]], "Your country may not be supported yet.")
         .optional(),
 });
 

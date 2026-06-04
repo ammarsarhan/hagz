@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [postgis]
 }
 
 enum UserStatus {
@@ -12,6 +14,11 @@ enum UserStatus {
   SUSPENDED
   BANNED
   DELETED
+}
+
+enum UserRole {
+  USER
+  OWNER
 }
 
 enum BookingActor {
@@ -149,13 +156,13 @@ enum PayoutMethod {
 }
 
 enum LedgerAction {
-  BOOKING_REVENUE     // Owner's share of a booking
-  PLATFORM_FEE_DEBIT  // Platform's 5% cut deducted from owner
-  SERVICE_FEE_CREDIT  // Service fee collected from user (platform's)
-  CASH_FEE_DEBT       // Platform fee owed from a cash booking (not yet settled)
-  PAYOUT              // A payout was issued
-  PAYOUT_REVERSAL     // A payout was reversed/failed
-  ADJUSTMENT          // Manual correction
+  BOOKING_REVENUE // Owner's share of a booking
+  PLATFORM_FEE_DEBIT // Platform's 5% cut deducted from owner
+  SERVICE_FEE_CREDIT // Service fee collected from user (platform's)
+  CASH_FEE_DEBT // Platform fee owed from a cash booking (not yet settled)
+  PAYOUT // A payout was issued
+  PAYOUT_REVERSAL // A payout was reversed/failed
+  ADJUSTMENT // Manual correction
 }
 
 enum ScheduleStatus {
@@ -235,11 +242,11 @@ enum PermissionLevel {
 }
 
 model Area {
-  id String @id @default(cuid())
+  id   String @id @default(cuid())
   name String
 
   governorateId String
-  governorate Governorate @relation(fields: [governorateId], references: [id])
+  governorate   Governorate @relation(fields: [governorateId], references: [id])
 
   pitches Pitch[]
   users   UserPreferences[]
@@ -248,10 +255,10 @@ model Area {
 }
 
 model Governorate {
-  id String @id @default(cuid())
-  name String
+  id   String @id @default(cuid())
+  name String @unique
 
-  areas Area[]
+  areas   Area[]
   pitches Pitch[]
 }
 
@@ -298,10 +305,11 @@ model User {
 }
 
 model UserPreferences {
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-  areaId        String?
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
+  areaId String?
 
+  role          UserRole
   language      Language              @default(EN)
   notifications NotificationChannel[] @default([WHATSAPP])
   timezone      String                @default("Africa/Cairo")
@@ -368,16 +376,16 @@ model Pitch {
   description String
   taxId       String?
 
-  street           String
-  areaId           String
-  area             Area     @relation(fields: [areaId], references: [id])
-  governorateId    String
-  governorate      Governorate @relation(fields: [governorateId], references: [id])
+  street        String
+  areaId        String
+  area          Area        @relation(fields: [areaId], references: [id])
+  governorateId String
+  governorate   Governorate @relation(fields: [governorateId], references: [id])
 
   latitude       Float
   longitude      Float
   // Prisma is being annoying. Mark this as nullable then roll that back in the actual migration.
-  location       Unsupported("geography(Point, 4326)")? 
+  location       Unsupported("geography(Point, 4326)")?
   googleMapsLink String
   media          PitchMedia[]
 

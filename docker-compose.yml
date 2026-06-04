@@ -10,6 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - hagz-network
     healthcheck:
@@ -46,7 +47,7 @@ services:
     volumes:
       - localstack_data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./scripts/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+      - ./scripts/localstack.sh:/etc/localstack/init/ready.d/init.sh
     networks:
       - hagz-network
     healthcheck:

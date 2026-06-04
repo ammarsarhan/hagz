@@ -16,4 +16,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run dev"]
+CMD ["sh", "-c", "npx prisma db push && npm run dev"]

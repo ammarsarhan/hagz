@@ -1,5 +1,5 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, BookingStatus, Country, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, BookingStatus, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
@@ -74,16 +74,14 @@ const pitchSchema = z.object({
                 .min(3, "Area name must be more than 3 characters long.")
                 .max(100, "Area name must be less than 100 characters long.")
         ),
-    city: 
-        trim("City is required.")
+    governorate: 
+        trim("Governorate is required.")
         .pipe(
             z
                 .string()
-                .min(3, "City name must be more than 3 characters long.")
-                .max(100, "City name must be less than 100 characters long.")
+                .min(3, "Governorate name must be more than 3 characters long.")
+                .max(100, "Governorate name must be less than 100 characters long.")
             ),
-    country: z
-        .enum(Object.values(Country) as [Country, ...Country[]], "Your country may not be supported yet."),
     googleMapsLink: z
         .url("Please provide a valid Google Maps link."),
 });

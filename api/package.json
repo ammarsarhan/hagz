@@ -4,6 +4,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "worker": "tsx src/jobs/worker.ts",
+    "db:push": "prisma db push && docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -f /dev/stdin < scripts/update.sql",
+    "db:reset": "prisma db push --force-reset && docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -f /dev/stdin < scripts/update.sql",
+    "seed:locations": "tsx --env-file=.env.local src/internal/seed/locations.ts",
     "pitch:approve": "tsx --env-file=.env.local src/internal/approve.ts",
     "schedule:retry": "tsx --env-file=.env.local src/internal/retry.ts",
     "build": "tsc",

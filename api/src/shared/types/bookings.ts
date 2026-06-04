@@ -1,5 +1,5 @@
 import type { Booking, Cancellation, Ground, GroundSlot, Payment, Pitch, Rescheduling } from "@/generated/prisma/client.js";
-import type { BookingChannel, BookingStatus, Country, GroundSize, GroundSport, GroundSurface, PaymentMethod, PriceType, RefundStatus } from "@/generated/prisma/enums.js";
+import type { BookingChannel, BookingStatus, GroundSize, GroundSport, GroundSurface, PaymentMethod, PriceType, RefundStatus } from "@/generated/prisma/enums.js";
 
 export interface PricingSnapshotSlot {
     startsAt: Date;
@@ -33,7 +33,7 @@ export type BookingEvent = (typeof BookingEvent)[keyof typeof BookingEvent];
 
 type ExtendedBooking = Booking & {
     ground: Ground;
-    pitch: Pick<Pitch, "id" | "name" | "street" | "area" | "city" | "country" | "latitude" | "longitude" | "googleMapsLink">;
+    pitch: Pick<Pitch, "id" | "name" | "street" | "latitude" | "longitude" | "googleMapsLink">;
     slots: GroundSlot[];
     payment: Payment | null;
     rescheduledFrom: Rescheduling | null;
@@ -49,9 +49,6 @@ export interface UserBooking {
         id: string;
         name: string;
         street: string;
-        area: string;
-        city: string;
-        country: Country;
         latitude: number;
         longitude: number;
         googleMapsLink: string;
@@ -112,9 +109,6 @@ export function formatUserBooking(bookings: ExtendedBooking[]): UserBooking[] {
             id: booking.pitch.id,
             name: booking.pitch.name,
             street: booking.pitch.street,
-            area: booking.pitch.area,
-            city: booking.pitch.city,
-            country: booking.pitch.country,
             latitude: booking.pitch.latitude,
             longitude: booking.pitch.longitude,
             googleMapsLink: booking.pitch.googleMapsLink,
