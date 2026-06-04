@@ -29,10 +29,6 @@ enum Language {
   AR
 }
 
-enum Country {
-  EG
-}
-
 enum AmenityName {
   LIGHTING
   SEATING
@@ -238,6 +234,28 @@ enum PermissionLevel {
   WRITE
 }
 
+model Area {
+  id String @id @default(cuid())
+  name String
+
+  governorateId String
+  governorate Governorate @relation(fields: [governorateId], references: [id])
+
+  pitches Pitch[]
+  users   User[]
+
+  @@unique([name, governorateId])
+}
+
+model Governorate {
+  id String @id @default(cuid())
+  name String
+
+  areas Area[]
+  pitches Pitch[]
+  users   User[]
+}
+
 model Session {
   id           String @id @default(cuid())
   refreshToken String @unique
@@ -261,10 +279,10 @@ model User {
   email     String? @unique
   password  String
 
-  street  String?
-  area    String?
-  city    String?
-  country Country? @default(EG)
+  areaId           String
+  area             Area     @relation(fields: [areaId], references: [id])
+  governorateId    String
+  governorate      Governorate @relation(fields: [governorateId], references: [id])
 
   sessions   Session[]
   isVerified Boolean    @default(false)
@@ -351,10 +369,12 @@ model Pitch {
   description String
   taxId       String?
 
-  street         String
-  area           String
-  city           String
-  country        Country
+  street           String
+  areaId           String
+  area             Area     @relation(fields: [areaId], references: [id])
+  governorateId    String
+  governorate      Governorate @relation(fields: [governorateId], references: [id])
+
   latitude       Float
   longitude      Float
   // Prisma is being annoying. Mark this as nullable then roll that back in the actual migration.
