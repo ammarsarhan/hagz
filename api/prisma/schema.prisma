@@ -149,13 +149,13 @@ enum PayoutMethod {
 }
 
 enum LedgerAction {
-  BOOKING_REVENUE // Owner's share of a booking
-  PLATFORM_FEE_DEBIT // Platform's 5% cut deducted from owner
-  SERVICE_FEE_CREDIT // Service fee collected from user (platform's)
-  CASH_FEE_DEBT // Platform fee owed from a cash booking (not yet settled)
-  PAYOUT // A payout was issued
-  PAYOUT_REVERSAL // A payout was reversed/failed
-  ADJUSTMENT // Manual correction
+  BOOKING_REVENUE     // Owner's share of a booking
+  PLATFORM_FEE_DEBIT  // Platform's 5% cut deducted from owner
+  SERVICE_FEE_CREDIT  // Service fee collected from user (platform's)
+  CASH_FEE_DEBT       // Platform fee owed from a cash booking (not yet settled)
+  PAYOUT              // A payout was issued
+  PAYOUT_REVERSAL     // A payout was reversed/failed
+  ADJUSTMENT          // Manual correction
 }
 
 enum ScheduleStatus {
@@ -242,7 +242,7 @@ model Area {
   governorate Governorate @relation(fields: [governorateId], references: [id])
 
   pitches Pitch[]
-  users   User[]
+  users   UserPreferences[]
 
   @@unique([name, governorateId])
 }
@@ -253,7 +253,6 @@ model Governorate {
 
   areas Area[]
   pitches Pitch[]
-  users   User[]
 }
 
 model Session {
@@ -279,11 +278,6 @@ model User {
   email     String? @unique
   password  String
 
-  areaId           String
-  area             Area     @relation(fields: [areaId], references: [id])
-  governorateId    String
-  governorate      Governorate @relation(fields: [governorateId], references: [id])
-
   sessions   Session[]
   isVerified Boolean    @default(false)
   status     UserStatus @default(ACTIVE)
@@ -306,11 +300,16 @@ model User {
 model UserPreferences {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
+  areaId        String?
 
-  
   language      Language              @default(EN)
   notifications NotificationChannel[] @default([WHATSAPP])
   timezone      String                @default("Africa/Cairo")
+  area          Area?                 @relation(fields: [areaId], references: [id])
+  latitude      Float?
+  longitude     Float?
+  sport         GroundSport[]         @default([])
+  size          GroundSize[]          @default([])
 }
 
 model Staff {
