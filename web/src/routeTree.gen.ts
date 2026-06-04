@@ -17,19 +17,19 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AppPolicyRouteImport } from './routes/_app/policy'
 import { Route as AppOwnersRouteImport } from './routes/_app/owners'
 import { Route as AppContactRouteImport } from './routes/_app/contact'
-import { Route as AppProfileRouteRouteImport } from './routes/_app/profile/route'
+import { Route as AppAccountRouteRouteImport } from './routes/_app/account/route'
 import { Route as AuthVerifyIndexRouteImport } from './routes/auth/verify/index'
 import { Route as AuthResetIndexRouteImport } from './routes/auth/reset/index'
-import { Route as AppProfileIndexRouteImport } from './routes/_app/profile/index'
+import { Route as AppAccountIndexRouteImport } from './routes/_app/account/index'
 import { Route as AuthVerifySendRouteImport } from './routes/auth/verify/send'
 import { Route as AuthResetSendRouteImport } from './routes/auth/reset/send'
-import { Route as AppProfileSettingsRouteImport } from './routes/_app/profile/settings'
-import { Route as AppProfileSessionsRouteImport } from './routes/_app/profile/sessions'
-import { Route as AppProfileReferralsRouteImport } from './routes/_app/profile/referrals'
-import { Route as AppProfileNotificationsRouteImport } from './routes/_app/profile/notifications'
-import { Route as AppProfileHistoryRouteImport } from './routes/_app/profile/history'
 import { Route as AppProductUsersRouteImport } from './routes/_app/product/users'
 import { Route as AppProductOwnersRouteImport } from './routes/_app/product/owners'
+import { Route as AppAccountSettingsRouteImport } from './routes/_app/account/settings'
+import { Route as AppAccountSessionsRouteImport } from './routes/_app/account/sessions'
+import { Route as AppAccountReferralsRouteImport } from './routes/_app/account/referrals'
+import { Route as AppAccountNotificationsRouteImport } from './routes/_app/account/notifications'
+import { Route as AppAccountBookingsRouteImport } from './routes/_app/account/bookings'
 import { Route as DashboardPitchesCreateIndexRouteImport } from './routes/dashboard/pitches/create/index'
 import { Route as DashboardPitchesPitchIdIndexRouteImport } from './routes/dashboard/pitches/$pitchId/index'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
@@ -73,9 +73,9 @@ const AppContactRoute = AppContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppProfileRouteRoute = AppProfileRouteRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const AppAccountRouteRoute = AppAccountRouteRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AuthVerifyIndexRoute = AuthVerifyIndexRouteImport.update({
@@ -88,10 +88,10 @@ const AuthResetIndexRoute = AuthResetIndexRouteImport.update({
   path: '/auth/reset/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppProfileIndexRoute = AppProfileIndexRouteImport.update({
+const AppAccountIndexRoute = AppAccountIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppProfileRouteRoute,
+  getParentRoute: () => AppAccountRouteRoute,
 } as any)
 const AuthVerifySendRoute = AuthVerifySendRouteImport.update({
   id: '/auth/verify/send',
@@ -103,31 +103,6 @@ const AuthResetSendRoute = AuthResetSendRouteImport.update({
   path: '/auth/reset/send',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppProfileSettingsRoute = AppProfileSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppProfileRouteRoute,
-} as any)
-const AppProfileSessionsRoute = AppProfileSessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
-  getParentRoute: () => AppProfileRouteRoute,
-} as any)
-const AppProfileReferralsRoute = AppProfileReferralsRouteImport.update({
-  id: '/referrals',
-  path: '/referrals',
-  getParentRoute: () => AppProfileRouteRoute,
-} as any)
-const AppProfileNotificationsRoute = AppProfileNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => AppProfileRouteRoute,
-} as any)
-const AppProfileHistoryRoute = AppProfileHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => AppProfileRouteRoute,
-} as any)
 const AppProductUsersRoute = AppProductUsersRouteImport.update({
   id: '/product/users',
   path: '/product/users',
@@ -137,6 +112,31 @@ const AppProductOwnersRoute = AppProductOwnersRouteImport.update({
   id: '/product/owners',
   path: '/product/owners',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAccountSettingsRoute = AppAccountSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppAccountRouteRoute,
+} as any)
+const AppAccountSessionsRoute = AppAccountSessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => AppAccountRouteRoute,
+} as any)
+const AppAccountReferralsRoute = AppAccountReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
+  getParentRoute: () => AppAccountRouteRoute,
+} as any)
+const AppAccountNotificationsRoute = AppAccountNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppAccountRouteRoute,
+} as any)
+const AppAccountBookingsRoute = AppAccountBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AppAccountRouteRoute,
 } as any)
 const DashboardPitchesCreateIndexRoute =
   DashboardPitchesCreateIndexRouteImport.update({
@@ -159,22 +159,22 @@ const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/waitlist': typeof WaitlistRoute
-  '/profile': typeof AppProfileRouteRouteWithChildren
+  '/account': typeof AppAccountRouteRouteWithChildren
   '/contact': typeof AppContactRoute
   '/owners': typeof AppOwnersRoute
   '/policy': typeof AppPolicyRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/account/bookings': typeof AppAccountBookingsRoute
+  '/account/notifications': typeof AppAccountNotificationsRoute
+  '/account/referrals': typeof AppAccountReferralsRoute
+  '/account/sessions': typeof AppAccountSessionsRoute
+  '/account/settings': typeof AppAccountSettingsRoute
   '/product/owners': typeof AppProductOwnersRoute
   '/product/users': typeof AppProductUsersRoute
-  '/profile/history': typeof AppProfileHistoryRoute
-  '/profile/notifications': typeof AppProfileNotificationsRoute
-  '/profile/referrals': typeof AppProfileReferralsRoute
-  '/profile/sessions': typeof AppProfileSessionsRoute
-  '/profile/settings': typeof AppProfileSettingsRoute
   '/auth/reset/send': typeof AuthResetSendRoute
   '/auth/verify/send': typeof AuthVerifySendRoute
-  '/profile/': typeof AppProfileIndexRoute
+  '/account/': typeof AppAccountIndexRoute
   '/auth/reset/': typeof AuthResetIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
@@ -189,16 +189,16 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/': typeof AppIndexRoute
+  '/account/bookings': typeof AppAccountBookingsRoute
+  '/account/notifications': typeof AppAccountNotificationsRoute
+  '/account/referrals': typeof AppAccountReferralsRoute
+  '/account/sessions': typeof AppAccountSessionsRoute
+  '/account/settings': typeof AppAccountSettingsRoute
   '/product/owners': typeof AppProductOwnersRoute
   '/product/users': typeof AppProductUsersRoute
-  '/profile/history': typeof AppProfileHistoryRoute
-  '/profile/notifications': typeof AppProfileNotificationsRoute
-  '/profile/referrals': typeof AppProfileReferralsRoute
-  '/profile/sessions': typeof AppProfileSessionsRoute
-  '/profile/settings': typeof AppProfileSettingsRoute
   '/auth/reset/send': typeof AuthResetSendRoute
   '/auth/verify/send': typeof AuthVerifySendRoute
-  '/profile': typeof AppProfileIndexRoute
+  '/account': typeof AppAccountIndexRoute
   '/auth/reset': typeof AuthResetIndexRoute
   '/auth/verify': typeof AuthVerifyIndexRoute
   '/pitches/search': typeof AppPitchesSearchIndexRoute
@@ -209,23 +209,23 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/waitlist': typeof WaitlistRoute
-  '/_app/profile': typeof AppProfileRouteRouteWithChildren
+  '/_app/account': typeof AppAccountRouteRouteWithChildren
   '/_app/contact': typeof AppContactRoute
   '/_app/owners': typeof AppOwnersRoute
   '/_app/policy': typeof AppPolicyRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/account/bookings': typeof AppAccountBookingsRoute
+  '/_app/account/notifications': typeof AppAccountNotificationsRoute
+  '/_app/account/referrals': typeof AppAccountReferralsRoute
+  '/_app/account/sessions': typeof AppAccountSessionsRoute
+  '/_app/account/settings': typeof AppAccountSettingsRoute
   '/_app/product/owners': typeof AppProductOwnersRoute
   '/_app/product/users': typeof AppProductUsersRoute
-  '/_app/profile/history': typeof AppProfileHistoryRoute
-  '/_app/profile/notifications': typeof AppProfileNotificationsRoute
-  '/_app/profile/referrals': typeof AppProfileReferralsRoute
-  '/_app/profile/sessions': typeof AppProfileSessionsRoute
-  '/_app/profile/settings': typeof AppProfileSettingsRoute
   '/auth/reset/send': typeof AuthResetSendRoute
   '/auth/verify/send': typeof AuthVerifySendRoute
-  '/_app/profile/': typeof AppProfileIndexRoute
+  '/_app/account/': typeof AppAccountIndexRoute
   '/auth/reset/': typeof AuthResetIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
   '/_app/pitches/search/': typeof AppPitchesSearchIndexRoute
@@ -237,22 +237,22 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/waitlist'
-    | '/profile'
+    | '/account'
     | '/contact'
     | '/owners'
     | '/policy'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/account/bookings'
+    | '/account/notifications'
+    | '/account/referrals'
+    | '/account/sessions'
+    | '/account/settings'
     | '/product/owners'
     | '/product/users'
-    | '/profile/history'
-    | '/profile/notifications'
-    | '/profile/referrals'
-    | '/profile/sessions'
-    | '/profile/settings'
     | '/auth/reset/send'
     | '/auth/verify/send'
-    | '/profile/'
+    | '/account/'
     | '/auth/reset/'
     | '/auth/verify/'
     | '/pitches/search/'
@@ -267,16 +267,16 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/'
+    | '/account/bookings'
+    | '/account/notifications'
+    | '/account/referrals'
+    | '/account/sessions'
+    | '/account/settings'
     | '/product/owners'
     | '/product/users'
-    | '/profile/history'
-    | '/profile/notifications'
-    | '/profile/referrals'
-    | '/profile/sessions'
-    | '/profile/settings'
     | '/auth/reset/send'
     | '/auth/verify/send'
-    | '/profile'
+    | '/account'
     | '/auth/reset'
     | '/auth/verify'
     | '/pitches/search'
@@ -286,23 +286,23 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/waitlist'
-    | '/_app/profile'
+    | '/_app/account'
     | '/_app/contact'
     | '/_app/owners'
     | '/_app/policy'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/_app/'
+    | '/_app/account/bookings'
+    | '/_app/account/notifications'
+    | '/_app/account/referrals'
+    | '/_app/account/sessions'
+    | '/_app/account/settings'
     | '/_app/product/owners'
     | '/_app/product/users'
-    | '/_app/profile/history'
-    | '/_app/profile/notifications'
-    | '/_app/profile/referrals'
-    | '/_app/profile/sessions'
-    | '/_app/profile/settings'
     | '/auth/reset/send'
     | '/auth/verify/send'
-    | '/_app/profile/'
+    | '/_app/account/'
     | '/auth/reset/'
     | '/auth/verify/'
     | '/_app/pitches/search/'
@@ -381,11 +381,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContactRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_app/profile': {
-      id: '/_app/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AppProfileRouteRouteImport
+    '/_app/account': {
+      id: '/_app/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AppAccountRouteRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/auth/verify/': {
@@ -402,12 +402,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthResetIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/profile/': {
-      id: '/_app/profile/'
+    '/_app/account/': {
+      id: '/_app/account/'
       path: '/'
-      fullPath: '/profile/'
-      preLoaderRoute: typeof AppProfileIndexRouteImport
-      parentRoute: typeof AppProfileRouteRoute
+      fullPath: '/account/'
+      preLoaderRoute: typeof AppAccountIndexRouteImport
+      parentRoute: typeof AppAccountRouteRoute
     }
     '/auth/verify/send': {
       id: '/auth/verify/send'
@@ -423,41 +423,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthResetSendRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/profile/settings': {
-      id: '/_app/profile/settings'
-      path: '/settings'
-      fullPath: '/profile/settings'
-      preLoaderRoute: typeof AppProfileSettingsRouteImport
-      parentRoute: typeof AppProfileRouteRoute
-    }
-    '/_app/profile/sessions': {
-      id: '/_app/profile/sessions'
-      path: '/sessions'
-      fullPath: '/profile/sessions'
-      preLoaderRoute: typeof AppProfileSessionsRouteImport
-      parentRoute: typeof AppProfileRouteRoute
-    }
-    '/_app/profile/referrals': {
-      id: '/_app/profile/referrals'
-      path: '/referrals'
-      fullPath: '/profile/referrals'
-      preLoaderRoute: typeof AppProfileReferralsRouteImport
-      parentRoute: typeof AppProfileRouteRoute
-    }
-    '/_app/profile/notifications': {
-      id: '/_app/profile/notifications'
-      path: '/notifications'
-      fullPath: '/profile/notifications'
-      preLoaderRoute: typeof AppProfileNotificationsRouteImport
-      parentRoute: typeof AppProfileRouteRoute
-    }
-    '/_app/profile/history': {
-      id: '/_app/profile/history'
-      path: '/history'
-      fullPath: '/profile/history'
-      preLoaderRoute: typeof AppProfileHistoryRouteImport
-      parentRoute: typeof AppProfileRouteRoute
-    }
     '/_app/product/users': {
       id: '/_app/product/users'
       path: '/product/users'
@@ -471,6 +436,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/product/owners'
       preLoaderRoute: typeof AppProductOwnersRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/_app/account/settings': {
+      id: '/_app/account/settings'
+      path: '/settings'
+      fullPath: '/account/settings'
+      preLoaderRoute: typeof AppAccountSettingsRouteImport
+      parentRoute: typeof AppAccountRouteRoute
+    }
+    '/_app/account/sessions': {
+      id: '/_app/account/sessions'
+      path: '/sessions'
+      fullPath: '/account/sessions'
+      preLoaderRoute: typeof AppAccountSessionsRouteImport
+      parentRoute: typeof AppAccountRouteRoute
+    }
+    '/_app/account/referrals': {
+      id: '/_app/account/referrals'
+      path: '/referrals'
+      fullPath: '/account/referrals'
+      preLoaderRoute: typeof AppAccountReferralsRouteImport
+      parentRoute: typeof AppAccountRouteRoute
+    }
+    '/_app/account/notifications': {
+      id: '/_app/account/notifications'
+      path: '/notifications'
+      fullPath: '/account/notifications'
+      preLoaderRoute: typeof AppAccountNotificationsRouteImport
+      parentRoute: typeof AppAccountRouteRoute
+    }
+    '/_app/account/bookings': {
+      id: '/_app/account/bookings'
+      path: '/bookings'
+      fullPath: '/account/bookings'
+      preLoaderRoute: typeof AppAccountBookingsRouteImport
+      parentRoute: typeof AppAccountRouteRoute
     }
     '/dashboard/pitches/create/': {
       id: '/dashboard/pitches/create/'
@@ -496,30 +496,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AppProfileRouteRouteChildren {
-  AppProfileHistoryRoute: typeof AppProfileHistoryRoute
-  AppProfileNotificationsRoute: typeof AppProfileNotificationsRoute
-  AppProfileReferralsRoute: typeof AppProfileReferralsRoute
-  AppProfileSessionsRoute: typeof AppProfileSessionsRoute
-  AppProfileSettingsRoute: typeof AppProfileSettingsRoute
-  AppProfileIndexRoute: typeof AppProfileIndexRoute
+interface AppAccountRouteRouteChildren {
+  AppAccountBookingsRoute: typeof AppAccountBookingsRoute
+  AppAccountNotificationsRoute: typeof AppAccountNotificationsRoute
+  AppAccountReferralsRoute: typeof AppAccountReferralsRoute
+  AppAccountSessionsRoute: typeof AppAccountSessionsRoute
+  AppAccountSettingsRoute: typeof AppAccountSettingsRoute
+  AppAccountIndexRoute: typeof AppAccountIndexRoute
 }
 
-const AppProfileRouteRouteChildren: AppProfileRouteRouteChildren = {
-  AppProfileHistoryRoute: AppProfileHistoryRoute,
-  AppProfileNotificationsRoute: AppProfileNotificationsRoute,
-  AppProfileReferralsRoute: AppProfileReferralsRoute,
-  AppProfileSessionsRoute: AppProfileSessionsRoute,
-  AppProfileSettingsRoute: AppProfileSettingsRoute,
-  AppProfileIndexRoute: AppProfileIndexRoute,
+const AppAccountRouteRouteChildren: AppAccountRouteRouteChildren = {
+  AppAccountBookingsRoute: AppAccountBookingsRoute,
+  AppAccountNotificationsRoute: AppAccountNotificationsRoute,
+  AppAccountReferralsRoute: AppAccountReferralsRoute,
+  AppAccountSessionsRoute: AppAccountSessionsRoute,
+  AppAccountSettingsRoute: AppAccountSettingsRoute,
+  AppAccountIndexRoute: AppAccountIndexRoute,
 }
 
-const AppProfileRouteRouteWithChildren = AppProfileRouteRoute._addFileChildren(
-  AppProfileRouteRouteChildren,
+const AppAccountRouteRouteWithChildren = AppAccountRouteRoute._addFileChildren(
+  AppAccountRouteRouteChildren,
 )
 
 interface AppRouteRouteChildren {
-  AppProfileRouteRoute: typeof AppProfileRouteRouteWithChildren
+  AppAccountRouteRoute: typeof AppAccountRouteRouteWithChildren
   AppContactRoute: typeof AppContactRoute
   AppOwnersRoute: typeof AppOwnersRoute
   AppPolicyRoute: typeof AppPolicyRoute
@@ -530,7 +530,7 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
-  AppProfileRouteRoute: AppProfileRouteRouteWithChildren,
+  AppAccountRouteRoute: AppAccountRouteRouteWithChildren,
   AppContactRoute: AppContactRoute,
   AppOwnersRoute: AppOwnersRoute,
   AppPolicyRoute: AppPolicyRoute,

@@ -68,17 +68,17 @@ export default function Navigation({ user } : { user: User | null }) {
                     {
                         user ?
                         <div className="flex items-center gap-x-3">
-                            <Link to={"/profile/settings"}>
+                            <Link to={"/account/settings"}>
                                 <div className="size-9 flex-center rounded-md border border-transparent bg-black hover:bg-black/75 cursor-pointer transition-colors">
                                     <TbSettings size={16} className="text-white"/> 
                                 </div>
                             </Link>
-                            <Link to={"/profile/notifications"}>
+                            <Link to={"/account/notifications"}>
                                 <div className="size-9 flex-center rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
                                     <TbBell size={16}/> 
                                 </div>
                             </Link>
-                            <Link to={"/profile"}>
+                            <Link to={"/account"}>
                                 <Avatar className="hover:bg-gray-100" label={user.firstName[0].toUpperCase()}/>
                             </Link>
                         </div> :
