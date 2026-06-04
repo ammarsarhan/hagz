@@ -33,7 +33,7 @@ function RouteComponent() {
                 </div>
                 <div className='flex flex-col gap-y-1 my-6'>
                     <h2 className='text-xl font-medium'>Join the waitlist and get exclusive perks</h2>
-                    <p className='text-sm text-gray-500'>Get <span className='underline'>10% off your next booking</span> with us if you join the waitlist right now.</p>
+                    <p className='text-sm text-gray-500'>Get your next booking <span className='underline'>for free</span> with us if you join the waitlist right now.</p>
                 </div>
                 <div className='flex items-center gap-x-1'>
                     <Input type="phone" placeholder='Phone number' value={phone} onChange={(e) => setPhone(e.target.value)} className='flex-1 py-2!'/>
@@ -51,7 +51,7 @@ function RouteComponent() {
                     <TbBrandTiktok className='size-5'/>
                 </a>
             </div>
-            <span className='absolute bottom-4 text-gray-500 text-xs'>© Hagz 2026. All rights reserved.</span>
+            <span className='absolute bottom-4 text-gray-500 text-xs'>© Hagz 2026. Terms and conditions apply.</span>
         </div>
     )
 }

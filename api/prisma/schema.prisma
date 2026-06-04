@@ -289,9 +289,9 @@ model UserPreferences {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
 
+  
   language      Language              @default(EN)
   notifications NotificationChannel[] @default([WHATSAPP])
-  paymentMethod PaymentMethod         @default(CASH)
   timezone      String                @default("Africa/Cairo")
 }
 

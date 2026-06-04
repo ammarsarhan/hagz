@@ -10,11 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WaitlistRouteImport } from './routes/waitlist'
+import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
-import { Route as AppPolicyRouteImport } from './routes/_app/policy'
 import { Route as AppOwnersRouteImport } from './routes/_app/owners'
 import { Route as AppContactRouteImport } from './routes/_app/contact'
 import { Route as AppAccountRouteRouteImport } from './routes/_app/account/route'
@@ -39,6 +39,11 @@ const WaitlistRoute = WaitlistRouteImport.update({
   path: '/waitlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PolicyRoute = PolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -57,11 +62,6 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   id: '/auth/sign-in',
   path: '/auth/sign-in',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AppPolicyRoute = AppPolicyRouteImport.update({
-  id: '/policy',
-  path: '/policy',
-  getParentRoute: () => AppRouteRoute,
 } as any)
 const AppOwnersRoute = AppOwnersRouteImport.update({
   id: '/owners',
@@ -158,11 +158,11 @@ const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/account': typeof AppAccountRouteRouteWithChildren
   '/contact': typeof AppContactRoute
   '/owners': typeof AppOwnersRoute
-  '/policy': typeof AppPolicyRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/account/bookings': typeof AppAccountBookingsRoute
@@ -182,10 +182,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRoutesByTo {
+  '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/contact': typeof AppContactRoute
   '/owners': typeof AppOwnersRoute
-  '/policy': typeof AppPolicyRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/': typeof AppIndexRoute
@@ -208,11 +208,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
+  '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/_app/account': typeof AppAccountRouteRouteWithChildren
   '/_app/contact': typeof AppContactRoute
   '/_app/owners': typeof AppOwnersRoute
-  '/_app/policy': typeof AppPolicyRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
@@ -236,11 +236,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/policy'
     | '/waitlist'
     | '/account'
     | '/contact'
     | '/owners'
-    | '/policy'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/account/bookings'
@@ -260,10 +260,10 @@ export interface FileRouteTypes {
     | '/dashboard/pitches/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/policy'
     | '/waitlist'
     | '/contact'
     | '/owners'
-    | '/policy'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/'
@@ -285,11 +285,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/policy'
     | '/waitlist'
     | '/_app/account'
     | '/_app/contact'
     | '/_app/owners'
-    | '/_app/policy'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/_app/'
@@ -312,6 +312,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  PolicyRoute: typeof PolicyRoute
   WaitlistRoute: typeof WaitlistRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
@@ -330,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/waitlist'
       fullPath: '/waitlist'
       preLoaderRoute: typeof WaitlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy': {
+      id: '/policy'
+      path: '/policy'
+      fullPath: '/policy'
+      preLoaderRoute: typeof PolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -359,13 +367,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/sign-in'
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_app/policy': {
-      id: '/_app/policy'
-      path: '/policy'
-      fullPath: '/policy'
-      preLoaderRoute: typeof AppPolicyRouteImport
-      parentRoute: typeof AppRouteRoute
     }
     '/_app/owners': {
       id: '/_app/owners'
@@ -522,7 +523,6 @@ interface AppRouteRouteChildren {
   AppAccountRouteRoute: typeof AppAccountRouteRouteWithChildren
   AppContactRoute: typeof AppContactRoute
   AppOwnersRoute: typeof AppOwnersRoute
-  AppPolicyRoute: typeof AppPolicyRoute
   AppIndexRoute: typeof AppIndexRoute
   AppProductOwnersRoute: typeof AppProductOwnersRoute
   AppProductUsersRoute: typeof AppProductUsersRoute
@@ -533,7 +533,6 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAccountRouteRoute: AppAccountRouteRouteWithChildren,
   AppContactRoute: AppContactRoute,
   AppOwnersRoute: AppOwnersRoute,
-  AppPolicyRoute: AppPolicyRoute,
   AppIndexRoute: AppIndexRoute,
   AppProductOwnersRoute: AppProductOwnersRoute,
   AppProductUsersRoute: AppProductUsersRoute,
@@ -546,6 +545,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
+  PolicyRoute: PolicyRoute,
   WaitlistRoute: WaitlistRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
