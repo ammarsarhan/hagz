@@ -66,22 +66,6 @@ const pitchSchema = z.object({
                 .min(3, "Street name must be more than 3 characters long.")
                 .max(100, "Street name must be less than 100 characters long.")
             ),
-    area: 
-        trim("Area is required.")
-        .pipe(
-            z
-                .string()
-                .min(3, "Area name must be more than 3 characters long.")
-                .max(100, "Area name must be less than 100 characters long.")
-        ),
-    governorate: 
-        trim("Governorate is required.")
-        .pipe(
-            z
-                .string()
-                .min(3, "Governorate name must be more than 3 characters long.")
-                .max(100, "Governorate name must be less than 100 characters long.")
-            ),
     googleMapsLink: z
         .url("Please provide a valid Google Maps link."),
 });
