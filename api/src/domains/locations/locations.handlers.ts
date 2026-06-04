@@ -1,5 +1,5 @@
 import { createFactory } from "hono/factory";
-import LocationService from "@/domains/pitches/services/locations.service.js";
+import LocationService from "@/domains/locations/locations.service.js";
 
 const factory = createFactory();
 const locationService = new LocationService();

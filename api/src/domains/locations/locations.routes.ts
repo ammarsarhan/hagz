@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { getLocationsHandler } from "@/domains/locations/locations.handler.js";
+import { fetchLocationsHandler } from "@/domains/locations/locations.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
-    .get("/", ...getLocationsHandler)
+    .get("/", ...fetchLocationsHandler);
 
 export default app;
 export type AppType = typeof app;
