@@ -625,9 +625,17 @@ export default class PitchService {
             params.push(filters.price.maximum);
             conditions.push(`"minimumPrice" <= $${params.length}`);
         }
+        if (filters?.areaId) {
+            params.push(filters.areaId);
+            conditions.push(`"areaId" = $${params.length}`);
+        }
+        if (filters?.governorateId) {
+            params.push(filters.governorateId);
+            conditions.push(`"areaId" IN (SELECT id FROM "Area" WHERE "governorateId" = $${params.length})`);
+        }
         if (filters?.text) {
             params.push(`%${filters.text}%`);
-            conditions.push(`(name ILIKE $${params.length} OR description ILIKE $${params.length} OR area ILIKE $${params.length})`);
+            conditions.push(`(name ILIKE $${params.length} OR description ILIKE $${params.length})`);
         }
         
         const sqlWhere = conditions.join(" AND ");
@@ -635,7 +643,7 @@ export default class PitchService {
         // Phase 1: Location & Initial Filtering
         let candidateIds: string[] | null = null;
 
-        if (location.mode === "nearby") {
+        if (location?.mode === "nearby") {
             const { latitude, longitude, radius } = location;
             const geoParams = [...params, longitude, latitude, radius * 1000];
             const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(`
@@ -646,7 +654,7 @@ export default class PitchService {
             `, ...geoParams);
             candidateIds = rows.map(r => r.id);
             if (!candidateIds.length) return { type: "list" as const, pitches: [], cursor: null };
-        } else if (location.mode === "map") {
+        } else if (location?.mode === "map") {
             const { boundingBox, zoomLevel } = location;
             const [minLon, minLat, maxLon, maxLat] = boundingBox;
             const gridSize = getGridSize(zoomLevel);
@@ -677,13 +685,15 @@ export default class PitchService {
             `, ...mapParams);
             candidateIds = rows.map(r => r.id);
             if (!candidateIds.length) return { type: "list" as const, pitches: [], cursor: null };
-        }
-
-        // Defensive: If for any reason candidateIds was not populated (e.g. optional location in future),
-        // we should fetch all IDs to avoid breaking the loop logic.
-        if (!candidateIds) {
-            const rows = await prisma.pitch.findMany({ where: { status: PitchStatus.LIVE }, select: { id: true } });
+        } else {
+            // Standard filtering without geospatial constraints.
+            const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(`
+                SELECT id FROM "Pitch"
+                WHERE ${sqlWhere}
+                ORDER BY "createdAt" DESC
+            `, ...params);
             candidateIds = rows.map(r => r.id);
+            if (!candidateIds.length) return { type: "list" as const, pitches: [], cursor: null };
         }
 
         // Phase 2 & 3: Fetching with Late Filtering & Pagination
@@ -707,7 +717,11 @@ export default class PitchService {
                 select: {
                     id: true,
                     name: true,
-                    area: true,
+                    area: {
+                        include: {
+                            governorate: true
+                        }
+                    },
                     latitude: true,
                     longitude: true,
                     amenityList: true,

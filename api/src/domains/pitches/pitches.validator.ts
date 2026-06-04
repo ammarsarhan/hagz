@@ -66,6 +66,8 @@ const pitchSchema = z.object({
                 .min(3, "Street name must be more than 3 characters long.")
                 .max(100, "Street name must be less than 100 characters long.")
             ),
+    areaId: z.
+        cuid("Area ID is required."),
     googleMapsLink: z
         .url("Please provide a valid Google Maps link."),
 });
@@ -461,9 +463,16 @@ export const queryPitchesSchema = z.object({
                     .max(21, "Zoom level may not exceed 21."),
             }),
         ]
-    ),
+    )
+    .optional(),
     filters: z
         .object({
+            governorateId: z
+                .cuid("Please choose a valid governorate.")
+                .optional(),
+            areaId: z
+                .cuid("Please choose a valid area.")
+                .optional(),
             sports: z
                 .array(z.enum(Object.values(GroundSport) as [GroundSport, ...GroundSport[]], "Please choose a valid sport type."))
                 .optional(),

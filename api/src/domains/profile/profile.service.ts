@@ -76,11 +76,17 @@ export default class ProfileService {
         if (!user.preferences)
             throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
 
+        const { sports, sizes, ...rest } = payload;
+
         const updated = await prisma.userPreferences.update({
             where: {
                 userId,
             },
-            data: payload,
+            data: {
+                ...rest,
+                ...(sports && { sport: sports }),
+                ...(sizes && { size: sizes }),
+            },
         });
         
         return updated;

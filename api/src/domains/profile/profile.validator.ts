@@ -1,4 +1,4 @@
-import { Language, NotificationChannel, PaymentMethod } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, Language, NotificationChannel, PaymentMethod, UserRole } from "@/generated/prisma/enums.js";
 import z from "zod";
 
 const trim = 
@@ -31,6 +31,9 @@ export const updateUserProfileSchema = z.object({
 export type UpdateUserPreferencesPayloadType = z.infer<typeof updateUserPreferencesSchema>;
 
 export const updateUserPreferencesSchema = z.object({
+    role: z
+        .enum(Object.values(UserRole) as [UserRole, ...UserRole[]], "Please select a valid role.")
+        .optional(),
     language: z
         .enum(Object.values(Language) as [Language, ...Language[]], "Please select a valid language.")
         .optional(),
@@ -45,4 +48,23 @@ export const updateUserPreferencesSchema = z.object({
     timezone: z
         .string("Please enter a valid timezone.")
         .optional(),
+    areaId: z
+        .cuid("Please select a valid area.")
+        .optional(),
+    latitude: z
+        .number("Latitude must be a valid number.")
+        .min(-90, "Latitude must be a valid number between -90 and 90.")
+        .max(90, "Latitude must be a valid number between -90 and 90.")
+        .optional(),
+    longitude: z.
+        number("Longitude must be a valid number.")
+        .min(-180, "Longitude must be a valid number between -180 and 180.")
+        .max(180, "Longitude must be a valid number between -180 and 180.")
+        .optional(),
+    sports: z
+        .array(z.enum(Object.values(GroundSport) as [GroundSport, ...GroundSport[]]), "Please select one of the default provided sports.")
+        .optional(),
+    sizes: z
+        .array(z.enum(Object.values(GroundSize) as [GroundSize, ...GroundSize[]]), "Please select one of the default provided ground sizes.")
+        .optional()
 });

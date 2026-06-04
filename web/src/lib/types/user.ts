@@ -1,4 +1,4 @@
-import type { Language, NotificationChannel, PaymentMethod, PermissionLevel, StaffRole, UserStatus } from "@/generated/prisma/enums"
+import type { Language, NotificationChannel, PermissionLevel, StaffRole, UserStatus } from "@/generated/prisma/enums"
 
 export type PermissionDomain = "settings" | "schedule" | "bookings" | "analytics" | "payments" | "layout" | "team" | "properties";
 export type Permissions = Record<PermissionDomain, PermissionLevel>;
@@ -15,7 +15,6 @@ export default interface User {
         language: Language,
         timezone: string,
         notifications: Array<NotificationChannel>,
-        paymentMethod: PaymentMethod
     },
     pitches: Array<{
         pitchId: string,

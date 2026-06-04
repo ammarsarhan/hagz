@@ -259,7 +259,6 @@ model Governorate {
   name String @unique
 
   areas   Area[]
-  pitches Pitch[]
 }
 
 model Session {
@@ -379,8 +378,6 @@ model Pitch {
   street        String
   areaId        String
   area          Area        @relation(fields: [areaId], references: [id])
-  governorateId String
-  governorate   Governorate @relation(fields: [governorateId], references: [id])
 
   latitude       Float
   longitude      Float

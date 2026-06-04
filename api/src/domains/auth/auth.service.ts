@@ -30,7 +30,10 @@ export default class AuthService {
 
             // Create userPreferences to store data about the display/action preferences.
             const preferences = await tx.userPreferences.create({
-                data: { userId: user.id }
+                data: { 
+                    role: payload.role,
+                    userId: user.id 
+                }
             });
 
             return { user, preferences };

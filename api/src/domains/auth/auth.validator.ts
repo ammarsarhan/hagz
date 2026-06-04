@@ -1,12 +1,10 @@
 import z from "zod";
-import type { Language, NotificationChannel, PaymentMethod, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
-import type { Staff, User, UserPreferences } from "@/generated/prisma/client.js";
+import { UserRole, type Language, type NotificationChannel, type StaffRole, type UserStatus } from "@/generated/prisma/enums.js";
+import type { GroundSize, GroundSport, Staff, User, UserPreferences } from "@/generated/prisma/client.js";
 import type { Permissions } from "@/shared/types/staff.js";
 
 // Fetch user by either phone or id.
-export type FetchUserPayloadType = 
-  | { type: "phone"; phone: string }
-  | { type: "id"; id: string };
+export type FetchUserPayloadType = | { type: "phone"; phone: string } | { type: "id"; id: string };
 
 export type UserResponseType = {
     id: string,
@@ -17,10 +15,17 @@ export type UserResponseType = {
     status: UserStatus,
     isVerified: boolean,
     preferences: {
+        role: UserRole,
         language: Language,
         timezone: string,
         notifications: Array<NotificationChannel>,
-        paymentMethod: PaymentMethod
+        location: {
+            area: string | null,
+            longitude: number | null,
+            latitude: number | null
+        },
+        sports: Array<GroundSport>,
+        sizes: Array<GroundSize>
     },
     pitches: Array<{
         pitchId: string,
@@ -46,6 +51,7 @@ export const signUpSchema = z.object({
     password: z
         .string("Password is required")
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/, "Password must be at least 8 characters long and include uppercase, lowercase, number, and special characters."),
+    role: z.enum(Object.values(UserRole), "User role is required.")
 });
 
 export type SignInPayloadType = z.infer<typeof signInSchema>;
@@ -69,10 +75,17 @@ export const createUserResponse = (user: User, preferences: UserPreferences, pit
         status: user.status,
         isVerified: user.isVerified,
         preferences: {
+            role: preferences.role,
             language: preferences.language,
             timezone: preferences.timezone,
             notifications: preferences.notifications,
-            paymentMethod: preferences.paymentMethod
+            location: {
+                area: preferences.areaId,
+                longitude: preferences.longitude,
+                latitude: preferences.latitude
+            },
+            sports: preferences.sport,
+            sizes: preferences.size
         },
         pitches: pitches.map(item => ({
             pitchId: item.pitchId,
