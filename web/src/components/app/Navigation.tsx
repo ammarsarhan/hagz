@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { TbBallFootball, TbBell, TbSettings } from "react-icons/tb";
 import Button from "#/components/shared/Button";
 import type User from "#/lib/types/user";
+import Avatar from "#/components/shared/Avatar";
 
 export default function Navigation({ user } : { user: User | null }) {
     const isOwner = (user && user.pitches.length > 0);
@@ -78,9 +79,7 @@ export default function Navigation({ user } : { user: User | null }) {
                                 </div>
                             </Link>
                             <Link to={"/profile"}>
-                                <div className="flex-center size-9 rounded-full bg-gray-50 border border-gray-200">
-                                    <span className="text-sm font-medium">{user.firstName[0].toUpperCase()}{user.lastName[0].toUpperCase()}</span>
-                                </div>
+                                <Avatar className="hover:bg-gray-100" label={user.firstName[0].toUpperCase()}/>
                             </Link>
                         </div> :
                         <div className="flex items-center gap-x-3">   

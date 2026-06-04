@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WaitlistRouteImport } from './routes/waitlist'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
@@ -33,6 +34,11 @@ import { Route as DashboardPitchesCreateIndexRouteImport } from './routes/dashbo
 import { Route as DashboardPitchesPitchIdIndexRouteImport } from './routes/dashboard/pitches/$pitchId/index'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
 
+const WaitlistRoute = WaitlistRouteImport.update({
+  id: '/waitlist',
+  path: '/waitlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -152,6 +158,7 @@ const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/waitlist': typeof WaitlistRoute
   '/profile': typeof AppProfileRouteRouteWithChildren
   '/contact': typeof AppContactRoute
   '/owners': typeof AppOwnersRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRoutesByTo {
+  '/waitlist': typeof WaitlistRoute
   '/contact': typeof AppContactRoute
   '/owners': typeof AppOwnersRoute
   '/policy': typeof AppPolicyRoute
@@ -200,6 +208,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
+  '/waitlist': typeof WaitlistRoute
   '/_app/profile': typeof AppProfileRouteRouteWithChildren
   '/_app/contact': typeof AppContactRoute
   '/_app/owners': typeof AppOwnersRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/waitlist'
     | '/profile'
     | '/contact'
     | '/owners'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/dashboard/pitches/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/waitlist'
     | '/contact'
     | '/owners'
     | '/policy'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/waitlist'
     | '/_app/profile'
     | '/_app/contact'
     | '/_app/owners'
@@ -300,6 +312,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  WaitlistRoute: typeof WaitlistRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
   AuthResetSendRoute: typeof AuthResetSendRoute
@@ -312,6 +325,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/waitlist': {
+      id: '/waitlist'
+      path: '/waitlist'
+      fullPath: '/waitlist'
+      preLoaderRoute: typeof WaitlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -526,6 +546,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
+  WaitlistRoute: WaitlistRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
   AuthResetSendRoute: AuthResetSendRoute,
