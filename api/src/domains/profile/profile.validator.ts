@@ -36,7 +36,6 @@ export const createAvatarPresignLinkSchema = z.object({
     size: z.number().positive().max(5 * 1024 * 1024, "Image must be less than 5 MBs."),
 })
 
-
 export type UpdateUserPreferencesPayloadType = z.infer<typeof updateUserPreferencesSchema>;
 
 export const updateUserPreferencesSchema = z.object({

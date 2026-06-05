@@ -83,7 +83,7 @@ export default class ProfileService {
         if (!user)
             throw new NotFoundError("Could not find user profile with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
 
-        // Security check: Ensure the key actually belongs to this user.
+        // Ensure the key actually belongs to this user.
         if (!key.startsWith(`profiles/${userId}/`))
             throw new ForbiddenError("You do not have permission to confirm this upload.", ERROR_CODES.PROFILE_ACCESS_FORBIDDEN);
 
@@ -94,17 +94,9 @@ export default class ProfileService {
             throw new BadRequestError("Upload could not be verified. Please try uploading again.", ERROR_CODES.USER_AVATAR_CONFIRMATION_FAILED);
         };
 
-        // If there was a previous avatar, we should delete it from S3.
-        if (user.avatarKey && user.avatarKey !== key) {
-            try {
-                await s3.default.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: user.avatarKey }));
-            } catch (e) {
-                console.error(`Failed to delete old avatar for user ${userId}: ${e}`);
-            }
-        }
-
         // Construct the permanent public read URL.
         const url = `https://${process.env.CLOUDFRONT_DOMAIN}/${key}`;
+        const previousKey = user.avatarKey;
 
         const updated = await prisma.user.update({
             where: { id: userId },
@@ -117,6 +109,15 @@ export default class ProfileService {
 
         if (!updated.preferences)
             throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
+
+        // If there was a previous avatar, we should delete it from S3.
+        if (previousKey && previousKey !== key) {
+            try {
+                await s3.default.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: previousKey }));
+            } catch (e) {
+                console.error(`Failed to delete old avatar for user ${userId}: ${e}`);
+            }
+        }
 
         return createUserResponse(updated, updated.preferences, updated.pitches);
     };
