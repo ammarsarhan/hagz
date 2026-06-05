@@ -62,7 +62,7 @@ function RouteComponent() {
                             </div>  
                             <div className='flex flex-col gap-y-1'>
                                 <h2 className='font-medium text-lg'>Booking Options</h2>
-                                <p className='text-sm'>Hagz offers many different booking options to cater to all audiences/users, whether that be a <span className='text-nowrap'><div className='size-4 border rounded-full flex-center inline-flex! mx-0.5 text-xs'>1</div> standard booking,</span><span className='text-nowrap'><div className='size-4 border rounded-full flex-center inline-flex! mx-0.5 text-xs'>2</div> recurring booking,</span> or <span className='text-nowrap'><div className='size-4 border rounded-full flex-center inline-flex! mx-0.5 text-xs'>3</div> group booking.</span></p>
+                                <p className='text-sm'>Hagz offers many different booking options to cater to all audiences/users, whether that be a <span className='text-nowrap'><span className='size-4 border rounded-full flex-center inline-flex! mx-0.5 text-xs'>1</span> standard booking,</span><span className='text-nowrap'><span className='size-4 border rounded-full flex-center inline-flex! mx-0.5 text-xs'>2</span> recurring booking,</span> or <span className='text-nowrap'><span className='size-4 border rounded-full flex-center inline-flex! mx-0.5 text-xs'>3</span> group booking.</span></p>
                             </div>
                         </div>
                         <div className='relative border bg-linear-to-br from-white to-gray-100 border-gray-200 rounded-md px-4 py-5 flex items-end'>

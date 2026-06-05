@@ -1,8 +1,9 @@
+import Avatar from '#/components/shared/Avatar';
 import Button from '#/components/shared/Button';
 import Input from '#/components/shared/Input'
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { TbArrowRight, TbExclamationCircle } from 'react-icons/tb';
+import { TbArrowRight, TbExclamationCircle, TbUpload } from 'react-icons/tb';
 
 export const Route = createFileRoute('/_app/account/')({
   component: RouteComponent
@@ -81,8 +82,17 @@ function RouteComponent() {
             <span className='font-medium'>Profile Picture</span>
             <p className='text-gray-500 text-sm'>Adding a picture helps venues identify you more accurately, making booking verification easier on their part.</p>
           </div>
-          <div className="w-1/2 flex gap-x-4">
-            
+          <div className="w-1/2 flex items-center justify-between">
+            <div className="flex-center gap-x-2.5">
+              <Avatar label={user.firstName[0]}/>
+              <div className='flex flex-col'>
+                <span className='text-sm text-gray-500'>Profile picture not provided.</span>
+              </div>
+            </div>
+            <Button className='border-gray-200! hover:bg-gray-50'>
+              <TbUpload />
+              <span className='text-[0.8125rem]'>Upload</span>
+            </Button>
           </div>
         </div>
         <div className='flex gap-x-12 py-4'>

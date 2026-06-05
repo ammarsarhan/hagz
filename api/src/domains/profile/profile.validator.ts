@@ -29,6 +29,14 @@ export const updateUserProfileSchema = z.object({
         .optional(),
 });
 
+export type CreateAvatarPresignLinkPayloadType = z.infer<typeof createAvatarPresignLinkSchema>;
+
+export const createAvatarPresignLinkSchema = z.object({
+    contentType: z.enum(["image/jpeg", "image/png", "image/webp"], "Please select a valid image type."),
+    size: z.number().positive().max(5 * 1024 * 1024, "Image must be less than 5 MBs."),
+})
+
+
 export type UpdateUserPreferencesPayloadType = z.infer<typeof updateUserPreferencesSchema>;
 
 export const updateUserPreferencesSchema = z.object({

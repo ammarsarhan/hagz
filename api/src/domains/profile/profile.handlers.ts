@@ -4,7 +4,7 @@ import validate from "@/shared/middleware/validate.middleware.js";
 import NotificationsService from "@/domains/notifications/notifications.service.js";
 import ProfileService from "@/domains/profile/profile.service.js";
 import { BadRequestError, ERROR_CODES, UnauthorizedError } from "@/shared/lib/utils/error.js";
-import { updateUserProfileSchema, updateUserPreferencesSchema } from "@/domains/profile/profile.validator.js";
+import { updateUserProfileSchema, updateUserPreferencesSchema, createAvatarPresignLinkSchema } from "@/domains/profile/profile.validator.js";
 import { getCookie } from "hono/cookie";
 
 const factory = new Factory();
@@ -30,7 +30,43 @@ export const updateProfileHandler = factory.createHandlers(
         const profile = await profileService.updateUserProfile(userId, payload);
         return c.json({ success: true, data: { profile } }, 200); 
     }
-)
+);
+
+export const createAvatarPresignLinkHandler = factory.createHandlers(
+    authorize,
+    validate("json", createAvatarPresignLinkSchema),
+    async (c) => {
+        const userId = c.var.id;
+        const payload = c.req.valid("json");
+
+        const { presign, id } = await profileService.generateAvatarPresignLink(userId, payload);
+
+        return c.json({ success: true, data: { presign, id } }, 200); 
+    }
+);
+
+export const confirmAvatarUploadHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const avatarId = c.req.param("avatarId");
+
+        if (!avatarId)
+            throw new BadRequestError("User profile avatar was not provided.", ERROR_CODES.USER_AVATAR_NOT_FOUND);
+
+        const profile = await profileService.confirmAvatarUpload(userId, avatarId);
+        return c.json({ success: true, data: { profile } }, 200);
+    }
+);
+
+export const deleteAvatarHandler = factory.createHandlers(
+    authorize,
+    async (c) => {
+        const userId = c.var.id;
+        const profile = await profileService.deleteAvatar(userId);
+        return c.json({ success: true, data: { profile } }, 200);
+    }
+);
 
 export const fetchProfileNotificationsHandler = factory.createHandlers(
     authorize,
@@ -112,4 +148,3 @@ export const deleteSessionHandler = factory.createHandlers(
         return c.json({ success: true, data: null }, 200); 
     }
 );
-

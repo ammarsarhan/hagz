@@ -38,11 +38,12 @@ export default class MediaService {
         const command = new PutObjectCommand({
             Bucket: BUCKET,
             Key: key,
-            ContentType: payload.contentType
+            ContentType: payload.contentType,
+            ContentLength: payload.size
         });
 
         // Temporary presigned URL returned to the client for uploading.
-        const presignUrl = await getSignedUrl(s3.presign, command, { expiresIn: 300 });
+        const presign = await getSignedUrl(s3.presign, command, { expiresIn: 300 });
 
         const media = await prisma.pitchMedia.create({
             data: {
@@ -55,7 +56,7 @@ export default class MediaService {
             }
         });
 
-        return { presignUrl, id: media.id };
+        return { presign, id: media.id };
     };
 
     confirmPitchMediaUpload = async (pitchId: string, mediaId: string) => {

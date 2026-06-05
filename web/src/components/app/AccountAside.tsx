@@ -3,13 +3,13 @@ import { TbExternalLink } from "react-icons/tb";
 
 export default function AccountAside() {
     return (
-        <aside className="px-4 py-10 h-full flex flex-col justify-between w-64">
+        <aside className="px-4 py-10 h-full flex flex-col justify-between">
             <div className="flex flex-col gap-y-4">
                 <h1 className="font-medium text-lg">Account</h1>
                 <div className="flex flex-col gap-y-1 text-nowrap">
                     <Link 
                         to="/account" 
-                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >
@@ -17,7 +17,7 @@ export default function AccountAside() {
                     </Link>
                     <Link 
                         to="/account/settings"
-                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >
@@ -25,7 +25,7 @@ export default function AccountAside() {
                     </Link>
                     <Link 
                         to="/account/bookings" 
-                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >
@@ -33,7 +33,7 @@ export default function AccountAside() {
                     </Link>
                     <Link 
                         to="/account/notifications"
-                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >
@@ -41,7 +41,7 @@ export default function AccountAside() {
                     </Link>
                     <Link 
                         to="/account/sessions" 
-                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >
@@ -49,7 +49,7 @@ export default function AccountAside() {
                     </Link>
                     <Link 
                         to="/account/referrals" 
-                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >
@@ -57,7 +57,7 @@ export default function AccountAside() {
                     </Link>
                     <Link 
                         to="/policy" 
-                        className="flex items-center gap-x-1.5 py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all"
+                        className="flex items-center gap-x-1.5 py-2 px-4 rounded-md text-sm text-gray-500 hover:bg-gray-50 transition-all w-52"
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                     >

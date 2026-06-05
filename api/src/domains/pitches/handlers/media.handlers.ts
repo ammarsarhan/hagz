@@ -19,9 +19,9 @@ export const createPitchMediaPresignLinkHandler = factory.createHandlers(
         if (!pitchId)
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        const { presignUrl, id } = await mediaService.generatePitchMediaPresignLink(pitchId, payload);
+        const { presign, id } = await mediaService.generatePitchMediaPresignLink(pitchId, payload);
 
-        return c.json({ success: true, data: { presignUrl, id } }, 200); 
+        return c.json({ success: true, data: { presign, id } }, 200); 
     }
 );
 

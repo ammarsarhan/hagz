@@ -353,8 +353,8 @@ export const updatePitchAmenitySchema = pitchAmenitySchema
 export type CreatePitchMediaPresignLinkPayloadType = z.infer<typeof createPitchMediaPresignLinkSchema>;
 
 export const createPitchMediaPresignLinkSchema = z.object({
-    contentType: z.enum(["image/jpeg", "image/png", "image/webp"], "Please select a valid image type."),
-    size: z.number().positive().max(5 * 1024 * 1024, "Image must be less than 5 MBs."),
+    contentType: z.enum(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/mpeg", "video/quicktime"], "Please select a valid media type."),
+    size: z.number().positive().max(20 * 1024 * 1024, "Media must be less than 20 MBs."),
 })
 
 export type CreateInvitationPayloadType = z.infer<typeof createInvitationSchema>;

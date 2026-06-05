@@ -13,7 +13,7 @@ export default function StandardCard({ icon, title, description, link } : { icon
                 <p className='text-gray-500 text-[0.8125rem]'>{description}</p>
                 {
                     link &&
-                    <a href={link} className="w-fit text-[0.8125rem] flex items-center gap-x-1.5 mt-2 group text-primary-muted">Learn more <TbArrowRight className="rotate-0 group-hover:-rotate-45 transition-all"/></a>
+                    <a href={link} className="w-fit text-[0.8125rem] flex items-center gap-x-1.5 mt-2 group text-primary-muted">Learn how <TbArrowRight className="rotate-0 group-hover:-rotate-45 transition-all"/></a>
                 }
             </div>
         </div>

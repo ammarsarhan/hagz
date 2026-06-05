@@ -282,6 +282,8 @@ model User {
   lastName  String
   phone     String  @unique
   email     String? @unique
+  avatarUrl String?
+  avatarKey String?
   password  String
 
   sessions   Session[]
