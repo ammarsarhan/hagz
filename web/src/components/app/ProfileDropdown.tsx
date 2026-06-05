@@ -37,16 +37,6 @@ export default function ProfileDropdown({ user, onClose } : { user: User, onClos
                 </div>
             </Link>
             <Link
-                to="/account/notifications"
-                onClick={onClose}
-                className="flex items-center gap-x-2 px-2 py-2 hover:bg-gray-50 transition-all"
-                activeOptions={{ exact: true }}
-                activeProps={{ className: "bg-gray-100 hover:bg-gray-100" }}
-            >
-                <TbBell className="text-gray-500 size-4"/>
-                <span className="">Notifications</span>
-            </Link>
-            <Link
                 to="/account/settings"
                 onClick={onClose}
                 className="flex items-center gap-x-2 px-2 py-2 hover:bg-gray-50 transition-all"
@@ -55,6 +45,16 @@ export default function ProfileDropdown({ user, onClose } : { user: User, onClos
             >
                 <TbSettings className="text-gray-500 size-4"/>
                 <span className="">Settings</span>
+            </Link>
+            <Link
+                to="/account/notifications"
+                onClick={onClose}
+                className="flex items-center gap-x-2 px-2 py-2 hover:bg-gray-50 transition-all"
+                activeOptions={{ exact: true }}
+                activeProps={{ className: "bg-gray-100 hover:bg-gray-100" }}
+            >
+                <TbBell className="text-gray-500 size-4"/>
+                <span className="">Notifications</span>
             </Link>
             <button
                 onClick={signOut}

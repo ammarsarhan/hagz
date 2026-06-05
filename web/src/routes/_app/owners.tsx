@@ -40,7 +40,7 @@ function RouteComponent() {
                 <div className='flex-center flex-col gap-y-6 max-w-1/2 text-center'>
                     <Badge>Get your pitch up and running in less than 24 hours.</Badge>
                     <h1 className='font-medium text-4xl'>We've got an entire process dedicated to ensuring the smoothest experience for both you and your customers.</h1>
-                    <p className='text-gray-500'>Our flow is designed to have you up and running with as least friction as possible!</p>
+                    <p className='text-gray-500 text-base'>Our flow is designed to have you up and running with as least friction as possible!</p>
                 </div>
                 <div className='flex items-center gap-x-8'>
                     {
@@ -195,7 +195,7 @@ function RouteComponent() {
                     <span>or</span>
                     <Link to="/auth/sign-up">
                         <Button className='bg-primary hover:bg-primary/75 group'>
-                            <span>Try it, completely free of charge</span>
+                            <span className='font-medium'>Try it, completely free of charge</span>
                             <TbArrowRight className='group-hover:-rotate-45 transition-all' />
                         </Button>
                     </Link>

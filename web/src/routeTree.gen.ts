@@ -13,6 +13,7 @@ import { Route as WaitlistRouteImport } from './routes/waitlist'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
@@ -53,6 +54,11 @@ const DashboardRouteRoute = DashboardRouteRouteImport.update({
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/owners': typeof AppOwnersRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/account/bookings': typeof AppAccountBookingsRoute
   '/account/notifications': typeof AppAccountNotificationsRoute
   '/account/referrals': typeof AppAccountReferralsRoute
@@ -189,7 +196,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRoutesByTo {
-  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/contact': typeof AppContactRoute
@@ -197,6 +203,7 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/': typeof AppIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/account/bookings': typeof AppAccountBookingsRoute
   '/account/notifications': typeof AppAccountNotificationsRoute
   '/account/referrals': typeof AppAccountReferralsRoute
@@ -225,6 +232,7 @@ export interface FileRoutesById {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/_app/account/bookings': typeof AppAccountBookingsRoute
   '/_app/account/notifications': typeof AppAccountNotificationsRoute
   '/_app/account/referrals': typeof AppAccountReferralsRoute
@@ -253,6 +261,7 @@ export interface FileRouteTypes {
     | '/owners'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/dashboard/'
     | '/account/bookings'
     | '/account/notifications'
     | '/account/referrals'
@@ -270,7 +279,6 @@ export interface FileRouteTypes {
     | '/dashboard/pitches/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/dashboard'
     | '/policy'
     | '/waitlist'
     | '/contact'
@@ -278,6 +286,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/'
+    | '/dashboard'
     | '/account/bookings'
     | '/account/notifications'
     | '/account/referrals'
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/_app/'
+    | '/dashboard/'
     | '/_app/account/bookings'
     | '/_app/account/notifications'
     | '/_app/account/referrals'
@@ -364,6 +374,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/_app/': {
       id: '/_app/'
@@ -562,11 +579,13 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 )
 
 interface DashboardRouteRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardPitchesPitchIdIndexRoute: typeof DashboardPitchesPitchIdIndexRoute
   DashboardPitchesCreateIndexRoute: typeof DashboardPitchesCreateIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
   DashboardPitchesPitchIdIndexRoute: DashboardPitchesPitchIdIndexRoute,
   DashboardPitchesCreateIndexRoute: DashboardPitchesCreateIndexRoute,
 }

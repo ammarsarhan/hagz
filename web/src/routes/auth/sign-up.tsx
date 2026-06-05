@@ -221,7 +221,7 @@ function RouteComponent() {
                 {
                   ([isSubmitting]) => (
                     <Button disabled={isSubmitting} type="submit" className={`mx-auto mt-4 ${isSubmitting ? "bg-primary/75 cursor-wait" : "bg-primary hover:bg-primary/75"}`}>
-                      <span className='text-base'>{isSubmitting ? "Loading..." : "Sign up"}</span>
+                      <span className='text-base font-medium'>{isSubmitting ? "Loading..." : "Sign up"}</span>
                     </Button>
                   )
                 }

@@ -1,6 +1,7 @@
 import { GroundSize, GroundSport, Language, NotificationChannel, PaymentMethod, UserRole } from "@/generated/prisma/enums.js";
 import z from "zod";
 
+// Todo: Check where we're using this function in this file.
 const trim = 
     (error: string) => z
         .string(error)

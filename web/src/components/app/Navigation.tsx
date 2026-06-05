@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { TbBallFootball, TbBell, TbBlocks, TbLayoutDashboard, TbSettings } from "react-icons/tb";
+import { TbBallFootball, TbBell, TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import type User from "#/lib/types/user";
 import Button from "#/components/shared/Button";
 import Avatar from "#/components/shared/Avatar";
@@ -28,7 +28,6 @@ export default function Navigation({ user } : { user: User | null }) {
     }, []);
 
     const isOwner = user && user.preferences.role === "OWNER";
-    const hasPitches = user && user.pitches.length > 0;
 
     return (
         <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
@@ -85,29 +84,18 @@ export default function Navigation({ user } : { user: User | null }) {
                         <div className="flex items-center gap-x-3">
                             {
                                 isOwner ?
-                                (
-                                    hasPitches ?
-                                    <Link to={`/dashboard/pitches/$pitchId`} params={{ pitchId: user.pitches[0].pitchId }}>
-                                        <div className="flex items-center gap-x-2 py-1.5 pl-1.5 pr-3 bg-black hover:bg-black/75 transition-colors rounded-full">
-                                            <div className="size-6 bg-primary flex-center rounded-full">
-                                                <TbLayoutDashboard strokeWidth={2.5}/>
-                                            </div>
-                                            <span className="text-white text-[0.8125rem]">Dashboard</span>
+                                <Link to={`/dashboard`}>
+                                    <div className="flex items-center gap-x-2 py-1.5 pl-1.5 pr-3 bg-black hover:bg-black/75 transition-colors rounded-full">
+                                        <div className="size-6 bg-primary flex-center rounded-full">
+                                            <TbLayoutDashboard strokeWidth={2.5}/>
                                         </div>
-                                    </Link> :
-                                    <Link to={`/dashboard/pitches/create`}>
-                                        <div className="flex items-center gap-x-2 py-1.5 pl-1.5 pr-3 bg-black hover:bg-black/75 transition-colors rounded-full">
-                                            <div className="size-6 bg-primary flex-center rounded-full">
-                                                <TbBlocks strokeWidth={2.5}/>
-                                            </div>
-                                            <span className="text-white text-[0.8125rem]">Add Pitch</span>
-                                        </div>
-                                    </Link>
-                                ) :
+                                        <span className="text-white text-[0.8125rem]">Dashboard</span>
+                                    </div>
+                                </Link> :
                                 <>
-                                    <Link to={"/account/settings"}>
+                                    <Link to={"/account/bookings"}>
                                         <div className="size-9 flex-center rounded-md border border-transparent bg-black hover:bg-black/75 cursor-pointer transition-colors">
-                                            <TbSettings size={16} className="text-white"/> 
+                                            <TbHistory size={16} className="text-white"/> 
                                         </div>
                                     </Link>
                                     <Link to={"/account/notifications"}>
