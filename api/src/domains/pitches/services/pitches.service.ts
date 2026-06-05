@@ -277,7 +277,7 @@ export default class PitchService {
             const staff = await tx.staff.findMany({
                 where: { 
                     userId,
-                    role: "OWNER"
+                    role: StaffRole.OWNER
                 },
                 include: {
                     pitch: {

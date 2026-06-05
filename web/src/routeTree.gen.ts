@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WaitlistRouteImport } from './routes/waitlist'
 import { Route as PolicyRouteImport } from './routes/policy'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
@@ -42,6 +43,11 @@ const WaitlistRoute = WaitlistRouteImport.update({
 const PolicyRoute = PolicyRouteImport.update({
   id: '/policy',
   path: '/policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRouteRoute = AppRouteRouteImport.update({
@@ -140,15 +146,15 @@ const AppAccountBookingsRoute = AppAccountBookingsRouteImport.update({
 } as any)
 const DashboardPitchesCreateIndexRoute =
   DashboardPitchesCreateIndexRouteImport.update({
-    id: '/dashboard/pitches/create/',
-    path: '/dashboard/pitches/create/',
-    getParentRoute: () => rootRouteImport,
+    id: '/pitches/create/',
+    path: '/pitches/create/',
+    getParentRoute: () => DashboardRouteRoute,
   } as any)
 const DashboardPitchesPitchIdIndexRoute =
   DashboardPitchesPitchIdIndexRouteImport.update({
-    id: '/dashboard/pitches/$pitchId/',
-    path: '/dashboard/pitches/$pitchId/',
-    getParentRoute: () => rootRouteImport,
+    id: '/pitches/$pitchId/',
+    path: '/pitches/$pitchId/',
+    getParentRoute: () => DashboardRouteRoute,
   } as any)
 const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
   id: '/pitches/search/',
@@ -158,6 +164,7 @@ const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/account': typeof AppAccountRouteRouteWithChildren
@@ -182,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
 }
 export interface FileRoutesByTo {
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/contact': typeof AppContactRoute
@@ -208,6 +216,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/policy': typeof PolicyRoute
   '/waitlist': typeof WaitlistRoute
   '/_app/account': typeof AppAccountRouteRouteWithChildren
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/policy'
     | '/waitlist'
     | '/account'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/dashboard/pitches/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/dashboard'
     | '/policy'
     | '/waitlist'
     | '/contact'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/dashboard'
     | '/policy'
     | '/waitlist'
     | '/_app/account'
@@ -312,6 +324,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   PolicyRoute: typeof PolicyRoute
   WaitlistRoute: typeof WaitlistRoute
   AuthSignInRoute: typeof AuthSignInRoute
@@ -320,8 +333,6 @@ export interface RootRouteChildren {
   AuthVerifySendRoute: typeof AuthVerifySendRoute
   AuthResetIndexRoute: typeof AuthResetIndexRoute
   AuthVerifyIndexRoute: typeof AuthVerifyIndexRoute
-  DashboardPitchesPitchIdIndexRoute: typeof DashboardPitchesPitchIdIndexRoute
-  DashboardPitchesCreateIndexRoute: typeof DashboardPitchesCreateIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -338,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/policy'
       fullPath: '/policy'
       preLoaderRoute: typeof PolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -475,17 +493,17 @@ declare module '@tanstack/react-router' {
     }
     '/dashboard/pitches/create/': {
       id: '/dashboard/pitches/create/'
-      path: '/dashboard/pitches/create'
+      path: '/pitches/create'
       fullPath: '/dashboard/pitches/create/'
       preLoaderRoute: typeof DashboardPitchesCreateIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/pitches/$pitchId/': {
       id: '/dashboard/pitches/$pitchId/'
-      path: '/dashboard/pitches/$pitchId'
+      path: '/pitches/$pitchId'
       fullPath: '/dashboard/pitches/$pitchId/'
       preLoaderRoute: typeof DashboardPitchesPitchIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/_app/pitches/search/': {
       id: '/_app/pitches/search/'
@@ -543,8 +561,23 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
 )
 
+interface DashboardRouteRouteChildren {
+  DashboardPitchesPitchIdIndexRoute: typeof DashboardPitchesPitchIdIndexRoute
+  DashboardPitchesCreateIndexRoute: typeof DashboardPitchesCreateIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardPitchesPitchIdIndexRoute: DashboardPitchesPitchIdIndexRoute,
+  DashboardPitchesCreateIndexRoute: DashboardPitchesCreateIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   PolicyRoute: PolicyRoute,
   WaitlistRoute: WaitlistRoute,
   AuthSignInRoute: AuthSignInRoute,
@@ -553,8 +586,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthVerifySendRoute: AuthVerifySendRoute,
   AuthResetIndexRoute: AuthResetIndexRoute,
   AuthVerifyIndexRoute: AuthVerifyIndexRoute,
-  DashboardPitchesPitchIdIndexRoute: DashboardPitchesPitchIdIndexRoute,
-  DashboardPitchesCreateIndexRoute: DashboardPitchesCreateIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

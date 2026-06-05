@@ -1,4 +1,4 @@
-import type { GroundSize, GroundSport, Language, NotificationChannel, PermissionLevel, StaffRole, UserRole, UserStatus } from "@/generated/prisma/enums"
+import type { GroundSize, GroundSport, Language, NotificationChannel, PermissionLevel, StaffRole, UserStatus, UserRole } from "@/generated/prisma/enums"
 
 export type PermissionDomain = "settings" | "schedule" | "bookings" | "analytics" | "payments" | "layout" | "team" | "properties";
 export type Permissions = Record<PermissionDomain, PermissionLevel>;

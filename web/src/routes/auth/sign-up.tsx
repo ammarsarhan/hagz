@@ -39,7 +39,7 @@ const signUpSchema = z.object({
 function RouteComponent() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const [role, setRole] = useState<"User" | "Owner">("User");
+  const [role, setRole] = useState<"USER" | "OWNER">("USER");
   const [error, setError] = useState<{ message: string, code?: string } | null>(null);
 
   const form = useForm({
@@ -59,7 +59,7 @@ function RouteComponent() {
         phone: value.phone.startsWith('+') ? value.phone : `+20${value.phone}`,
       };
 
-      const res = await client.auth['sign-up'].$post({ json: payload });
+      const res = await client.auth['sign-up'].$post({ json: { ...payload, role } });
       
       if (!res.ok) {
         const data = await res.json() as unknown as ErrorResponse;
@@ -83,7 +83,7 @@ function RouteComponent() {
       };
 
       let redirectPath = "/";
-      if (role == "Owner") redirectPath = "/dashboard/pitches/create";
+      if (role == "OWNER") redirectPath = "/dashboard/pitches/create";
 
       await navigate({ to: redirectPath });
     }
@@ -112,7 +112,7 @@ function RouteComponent() {
               <p className='text-gray-500 text-base'>Already have an account? <Link to="/auth/sign-in" className='text-primary-muted hover:underline'>Sign in</Link></p>
             </div>
             <div className='flex gap-x-4 mb-6'>
-              <div onClick={() => setRole("User")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
+              <div onClick={() => setRole("USER")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
                 <div className='flex flex-col gap-y-0.5'>
                   <div className='size-8 rounded-md border border-gray-200 flex-center mb-2.5 bg-white'>
                     <TbUser/>
@@ -120,9 +120,9 @@ function RouteComponent() {
                   <span className='font-medium text-sm'>I am a user</span>
                   <p className='text-xs text-gray-500'>I want to find pitches and book.</p>
                 </div>
-                <input type="radio" readOnly checked={role === "User"} className='absolute top-4 right-4 accent-primary-muted'/>
+                <input type="radio" readOnly checked={role === "USER"} className='absolute top-4 right-4 accent-primary-muted'/>
               </div>
-              <div onClick={() => setRole("Owner")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
+              <div onClick={() => setRole("OWNER")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
                 <div className='flex flex-col gap-y-0.5'>
                   <div className='size-8 rounded-md border border-gray-200 flex-center mb-2.5 bg-white'>
                     <TbUsers/>
@@ -130,7 +130,7 @@ function RouteComponent() {
                   <span className='font-medium text-sm'>I am an owner</span>
                   <p className='text-xs text-gray-500'>I want to add my venue.</p>
                 </div>
-                <input type="radio" readOnly checked={role === "Owner"} className='absolute top-4 right-4 accent-primary-muted'/>
+                <input type="radio" readOnly checked={role === "OWNER"} className='absolute top-4 right-4 accent-primary-muted'/>
               </div>
             </div>
             <div className='flex flex-col gap-y-4'>

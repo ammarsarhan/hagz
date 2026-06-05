@@ -1,11 +1,34 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { TbBallFootball, TbBell, TbSettings } from "react-icons/tb";
-import Button from "#/components/shared/Button";
+import { TbBallFootball, TbBell, TbBlocks, TbLayoutDashboard, TbSettings } from "react-icons/tb";
 import type User from "#/lib/types/user";
+import Button from "#/components/shared/Button";
 import Avatar from "#/components/shared/Avatar";
+import ProfileDropdown from "#/components/app/ProfileDropdown";
 
 export default function Navigation({ user } : { user: User | null }) {
-    const isOwner = (user && user.pitches.length > 0);
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
+                setIsOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const isOwner = user && user.preferences.role === "OWNER";
+    const hasPitches = user && user.pitches.length > 0;
 
     return (
         <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
@@ -46,41 +69,61 @@ export default function Navigation({ user } : { user: User | null }) {
                         >
                             <span className="">Contact</span>
                         </Link>
-                        {
-                            isOwner &&
-                            <Link to={`/dashboard/pitches/$pitchId`} params={{ pitchId: user.pitches[0].pitchId }}>
-                                <Button className="bg-primary hover:bg-primary/85">
-                                    <span className="font-medium">Dashboard</span>
-                                </Button>
-                            </Link>
-                        }
-                        {
-                            !user &&
-                            <Link 
-                                to={"/owners"}
-                                activeProps={{ className: "font-semibold" }}
-                                inactiveProps={{ className: "font-normal" }}
-                            >
-                                <span>Own a pitch?</span>
-                            </Link>
-                        }
                     </div>
+                    {
+                        !user &&
+                        <Link 
+                            to={"/owners"}
+                            activeProps={{ className: "font-semibold" }}
+                            inactiveProps={{ className: "font-normal" }}
+                        >
+                            <span>Own a pitch?</span>
+                        </Link>
+                    }
                     {
                         user ?
                         <div className="flex items-center gap-x-3">
-                            <Link to={"/account/settings"}>
-                                <div className="size-9 flex-center rounded-md border border-transparent bg-black hover:bg-black/75 cursor-pointer transition-colors">
-                                    <TbSettings size={16} className="text-white"/> 
-                                </div>
-                            </Link>
-                            <Link to={"/account/notifications"}>
-                                <div className="size-9 flex-center rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
-                                    <TbBell size={16}/> 
-                                </div>
-                            </Link>
-                            <Link to={"/account"}>
-                                <Avatar className="hover:bg-gray-100" label={user.firstName[0].toUpperCase()}/>
-                            </Link>
+                            {
+                                isOwner ?
+                                (
+                                    hasPitches ?
+                                    <Link to={`/dashboard/pitches/$pitchId`} params={{ pitchId: user.pitches[0].pitchId }}>
+                                        <div className="flex items-center gap-x-2 py-1.5 pl-1.5 pr-3 bg-black hover:bg-black/75 transition-colors rounded-full">
+                                            <div className="size-6 bg-primary flex-center rounded-full">
+                                                <TbLayoutDashboard strokeWidth={2.5}/>
+                                            </div>
+                                            <span className="text-white text-[0.8125rem]">Dashboard</span>
+                                        </div>
+                                    </Link> :
+                                    <Link to={`/dashboard/pitches/create`}>
+                                        <div className="flex items-center gap-x-2 py-1.5 pl-1.5 pr-3 bg-black hover:bg-black/75 transition-colors rounded-full">
+                                            <div className="size-6 bg-primary flex-center rounded-full">
+                                                <TbBlocks strokeWidth={2.5}/>
+                                            </div>
+                                            <span className="text-white text-[0.8125rem]">Add Pitch</span>
+                                        </div>
+                                    </Link>
+                                ) :
+                                <>
+                                    <Link to={"/account/settings"}>
+                                        <div className="size-9 flex-center rounded-md border border-transparent bg-black hover:bg-black/75 cursor-pointer transition-colors">
+                                            <TbSettings size={16} className="text-white"/> 
+                                        </div>
+                                    </Link>
+                                    <Link to={"/account/notifications"}>
+                                        <div className="size-9 flex-center rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                                            <TbBell size={16}/> 
+                                        </div>
+                                    </Link>
+                                </>
+                            }
+                            <div className="relative" ref={dropdownRef}>
+                                <Avatar onClick={() => setIsOpen(v => !v)} className={`${isOpen ? "border-black!" : "border-gray-200"} cursor-pointer`} label={user.firstName[0].toUpperCase()}/>
+                                {
+                                    isOpen &&
+                                    <ProfileDropdown user={user} onClose={() => setIsOpen(false)}/>    
+                                }
+                            </div>
                         </div> :
                         <div className="flex items-center gap-x-3">   
                             <Link to="/auth/sign-in">

@@ -1,11 +1,12 @@
 interface AvatarProps {
     label: string,
-    className?: string
+    className?: string,
+    onClick?: () => void
 }
 
-export default function Avatar({ label, className }: AvatarProps) {
+export default function Avatar({ label, className, onClick }: AvatarProps) {
     return (
-        <div className={`flex-center size-9 rounded-full bg-gray-50 border border-gray-200 transition-colors text-sm ${className}`}>
+        <div onClick={onClick} className={`flex-center size-9 rounded-full bg-gray-50 border border-gray-200 transition-colors text-sm ${className}`}>
             <span className="font-medium">{label}</span>
         </div>
     );

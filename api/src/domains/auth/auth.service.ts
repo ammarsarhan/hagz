@@ -15,12 +15,13 @@ export default class AuthService {
         if (exists) throw new ConflictError("A user with the specified phone number already exists.", ERROR_CODES.USER_PHONE_ALREADY_EXISTS)
 
         const hashed = await hashPassword(payload.password);
+        const { role, ...userPayload } = payload;
         
         const { user, preferences } = await prisma.$transaction(async (tx) => {
             // Create the actual user account and return the data we need for the AuthContext on the frontend.
             const user = await tx.user.create({
                 data: {
-                    ...payload,
+                    ...userPayload,
                     password: hashed
                 },
                 include: {

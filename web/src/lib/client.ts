@@ -136,6 +136,7 @@ const appFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<R
 
   return fetch(input, { ...init, headers, credentials: 'include' });
 };
+
 export const client = hc<AppType>(target, {
   fetch: appFetch
 });
