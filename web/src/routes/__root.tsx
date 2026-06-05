@@ -25,16 +25,21 @@ export const Route = createRootRoute({
   }),
   context: () => ({
     user: null,
+    locations: null
   }),
   beforeLoad: async () => {
     try {
-      const res = await client.auth.session.$get();
-      if (!res.ok) return { user: null };
+      const [session, geography] = await Promise.all([
+        client.auth.session.$get(),
+        client.locations.$get(),
+      ]);
 
-      const { data } = await res.json();
-      return { user: data.user };
+      const user = session.ok ? (await session.json()).data.user : null;
+      const locations = geography.ok ? (await geography.json()).data.locations : null;
+
+      return { user, locations };
     } catch {
-      return { user: null }
+      return { user: null, locations: null };
     }
   },  
   shellComponent: RootDocument,
