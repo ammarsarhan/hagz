@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { TbBallFootball, TbBell, TbHistory, TbLayoutDashboard } from "react-icons/tb";
+import { TbBallFootball, TbBell, TbChevronDown, TbHistory, TbLayoutDashboard } from "react-icons/tb";
 import type User from "#/lib/types/user";
 import Button from "#/components/shared/Button";
 import Avatar from "#/components/shared/Avatar";
@@ -42,43 +42,35 @@ export default function Navigation({ user } : { user: User | null }) {
                     <div className="flex items-center gap-x-6">
                         <Link 
                             to={"/"}
-                            activeProps={{ className: "font-semibold" }}
+                            activeProps={{ className: "font-semibold hover:text-black!" }}
                             inactiveProps={{ className: "font-normal" }}
+                            className="hover:text-gray-700 transition-colors"
                         >
                             <span>Home</span>
                         </Link>
                         <Link 
                             to={"/pitches/search"}
-                            activeProps={{ className: "font-semibold" }}
+                            activeProps={{ className: "font-semibold hover:text-black!" }}
                             inactiveProps={{ className: "font-normal" }}
+                            className="hover:text-gray-700 transition-colors"
                         >
-                            <span className="">Explore</span>
+                            <span>Explore</span>
                         </Link>
-                        <Link 
-                            to={isOwner ? "/product/owners" : "/product/users"}
-                            activeProps={{ className: "font-semibold" }}
-                            inactiveProps={{ className: "font-normal" }}
+                        <button 
+                            className="flex items-center gap-x-1.25 hover:text-gray-700 transition-colors cursor-pointer"
                         >
-                            <span className="">How it works</span>
-                        </Link>
+                            <span>How it works</span>
+                            <TbChevronDown className="size-4" />
+                        </button>
                         <Link 
                             to={"/contact"}
-                            activeProps={{ className: "font-semibold" }}
+                            activeProps={{ className: "font-semibold hover:text-black!" }}
                             inactiveProps={{ className: "font-normal" }}
+                            className="hover:text-gray-700 transition-colors"
                         >
-                            <span className="">Contact</span>
+                            <span>Contact</span>
                         </Link>
                     </div>
-                    {
-                        !user &&
-                        <Link 
-                            to={"/owners"}
-                            activeProps={{ className: "font-semibold" }}
-                            inactiveProps={{ className: "font-normal" }}
-                        >
-                            <span>Own a pitch?</span>
-                        </Link>
-                    }
                     {
                         user ?
                         <div className="flex items-center gap-x-3">

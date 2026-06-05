@@ -3,6 +3,7 @@ import Button from '#/components/shared/Button';
 import Input from '#/components/shared/Input'
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useRef } from 'react';
 import { TbArrowRight, TbExclamationCircle, TbUpload } from 'react-icons/tb';
 
 export const Route = createFileRoute('/_app/account/')({
@@ -31,6 +32,12 @@ function RouteComponent() {
 
   const values = useStore(form.store, (s) => s.values);
   const isChanged = JSON.stringify(values) !== JSON.stringify(initial);
+  
+  const uploadRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileChange = () => {
+    
+  };
 
   return (
     <main className='px-4 py-10 w-full text-base'>
@@ -52,12 +59,17 @@ function RouteComponent() {
           <div className="w-1/2 flex gap-x-4">
             {
               !user.isVerified ?
-              <div className='flex flex-col gap-y-2'>
-                <TbExclamationCircle className='text-gray-500 size-4.5'/>  
-                <p className='text-gray-500 text-sm'>Your account has not been verified yet. You will need to verify your phone number before making a booking.</p>
-                <Link to="/auth/verify/send" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Verify phone <TbArrowRight className='group-hover:-rotate-45 transition' /></Link>
+              <div className='flex items-center gap-x-3.5'>
+                <TbExclamationCircle className='text-gray-500 size-5 shrink-0'/>  
+                <div className='flex flex-col gap-y-1.5'>
+                  <p className='text-gray-500 text-sm'>Your account has not been verified yet. You will need to verify your phone number before making a booking.</p>
+                  <Link to="/auth/verify/send" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Verify phone <TbArrowRight className='group-hover:-rotate-45 transition' /></Link>
+                </div>
               </div> :
-              <p className='text-gray-500 text-sm'>Your account has been verified successfully, is active, and is ready to book!</p>
+              <div className='flex flex-col gap-y-2'>
+                <p className='text-gray-500 text-sm'>Your account has been verified successfully, is active, and is ready to book!</p>
+                <Link to="/pitches/search" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Explore pitches</Link>
+              </div>
             }
           </div>
         </div>
@@ -89,7 +101,14 @@ function RouteComponent() {
                 <span className='text-sm text-gray-500'>Profile picture not provided.</span>
               </div>
             </div>
-            <Button className='border-gray-200! hover:bg-gray-50'>
+            <input
+                type="file"
+                className="hidden"
+                accept="image/jpeg,image/png,image/webp"
+                ref={uploadRef}
+                onChange={handleFileChange}
+            />
+            <Button className='border-gray-200! hover:bg-gray-50' onClick={() => uploadRef.current?.click()}>
               <TbUpload />
               <span className='text-[0.8125rem]'>Upload</span>
             </Button>
