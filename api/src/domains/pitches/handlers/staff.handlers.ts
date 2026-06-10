@@ -54,7 +54,7 @@ export const deletePitchInvitationHandler = factory.createHandlers(
 );
 
 export const acceptPitchInvitationHandler = factory.createHandlers(
-    authorize,
+    authorize(),
     async (c) => {
         const userId = c.var.id;
         const pitchId = c.req.param("pitchId");
@@ -70,7 +70,7 @@ export const acceptPitchInvitationHandler = factory.createHandlers(
 );
 
 export const rejectPitchInvitationHandler = factory.createHandlers(
-    authorize,
+    authorize(),
     async (c) => {
         const userId = c.var.id;
         const pitchId = c.req.param("pitchId");

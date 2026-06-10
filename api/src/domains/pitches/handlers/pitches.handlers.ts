@@ -13,7 +13,7 @@ const factory = createFactory();
 const pitchService = new PitchService();
 
 export const createPitchHandler = factory.createHandlers(
-    authorize,
+    authorize(),
     validate("json", createPitchSchema),
     async (c) => {
         const userId = c.var.id;
@@ -125,3 +125,10 @@ export const fetchPitchAvailabilityHandler = factory.createHandlers(
         return c.json({ success: true, data: { availability }}, 200);
     }
 );
+
+export const fetchPitchesFeedHandler = factory.createHandlers(
+    authorize({ required: false }),
+    async (c) => {
+
+    }
+)
