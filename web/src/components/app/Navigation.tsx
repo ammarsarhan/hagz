@@ -49,7 +49,7 @@ export default function Navigation({ user } : { user: User | null }) {
                             <span>Home</span>
                         </Link>
                         <Link 
-                            to={"/pitches/search"}
+                            to={"/pitches/explore"}
                             activeProps={{ className: "font-semibold hover:text-black!" }}
                             inactiveProps={{ className: "font-normal" }}
                             className="hover:text-gray-700 transition-colors"

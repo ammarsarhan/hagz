@@ -35,6 +35,7 @@ import { Route as AppAccountBookingsRouteImport } from './routes/_app/account/bo
 import { Route as DashboardPitchesCreateIndexRouteImport } from './routes/dashboard/pitches/create/index'
 import { Route as DashboardPitchesPitchIdIndexRouteImport } from './routes/dashboard/pitches/$pitchId/index'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
+import { Route as AppPitchesExploreIndexRouteImport } from './routes/_app/pitches/explore/index'
 
 const WaitlistRoute = WaitlistRouteImport.update({
   id: '/waitlist',
@@ -167,6 +168,11 @@ const AppPitchesSearchIndexRoute = AppPitchesSearchIndexRouteImport.update({
   path: '/pitches/search/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppPitchesExploreIndexRoute = AppPitchesExploreIndexRouteImport.update({
+  id: '/pitches/explore/',
+  path: '/pitches/explore/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AppAccountIndexRoute
   '/auth/reset/': typeof AuthResetIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
+  '/pitches/explore/': typeof AppPitchesExploreIndexRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId/': typeof DashboardPitchesPitchIdIndexRoute
   '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountIndexRoute
   '/auth/reset': typeof AuthResetIndexRoute
   '/auth/verify': typeof AuthVerifyIndexRoute
+  '/pitches/explore': typeof AppPitchesExploreIndexRoute
   '/pitches/search': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId': typeof DashboardPitchesPitchIdIndexRoute
   '/dashboard/pitches/create': typeof DashboardPitchesCreateIndexRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/_app/account/': typeof AppAccountIndexRoute
   '/auth/reset/': typeof AuthResetIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
+  '/_app/pitches/explore/': typeof AppPitchesExploreIndexRoute
   '/_app/pitches/search/': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId/': typeof DashboardPitchesPitchIdIndexRoute
   '/dashboard/pitches/create/': typeof DashboardPitchesCreateIndexRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/account/'
     | '/auth/reset/'
     | '/auth/verify/'
+    | '/pitches/explore/'
     | '/pitches/search/'
     | '/dashboard/pitches/$pitchId/'
     | '/dashboard/pitches/create/'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/auth/reset'
     | '/auth/verify'
+    | '/pitches/explore'
     | '/pitches/search'
     | '/dashboard/pitches/$pitchId'
     | '/dashboard/pitches/create'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/_app/account/'
     | '/auth/reset/'
     | '/auth/verify/'
+    | '/_app/pitches/explore/'
     | '/_app/pitches/search/'
     | '/dashboard/pitches/$pitchId/'
     | '/dashboard/pitches/create/'
@@ -529,6 +541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPitchesSearchIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/pitches/explore/': {
+      id: '/_app/pitches/explore/'
+      path: '/pitches/explore'
+      fullPath: '/pitches/explore/'
+      preLoaderRoute: typeof AppPitchesExploreIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -561,6 +580,7 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppProductOwnersRoute: typeof AppProductOwnersRoute
   AppProductUsersRoute: typeof AppProductUsersRoute
+  AppPitchesExploreIndexRoute: typeof AppPitchesExploreIndexRoute
   AppPitchesSearchIndexRoute: typeof AppPitchesSearchIndexRoute
 }
 
@@ -571,6 +591,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppProductOwnersRoute: AppProductOwnersRoute,
   AppProductUsersRoute: AppProductUsersRoute,
+  AppPitchesExploreIndexRoute: AppPitchesExploreIndexRoute,
   AppPitchesSearchIndexRoute: AppPitchesSearchIndexRoute,
 }
 

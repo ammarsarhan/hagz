@@ -5,14 +5,15 @@ type ExtendedInputType = HTMLInputTypeAttribute | "phone";
 interface InputProps { 
     value: string, 
     onChange: (e: ChangeEvent<HTMLInputElement>) => void, 
-    placeholder: string,
+    placeholder?: string,
+    readOnly?: boolean,
     type?: ExtendedInputType, 
     className?: string,
     label?: string,
     error?: string
 };
 
-export default function Input({ type = "text", value, onChange, placeholder, className, label, error } : InputProps) {
+export default function Input({ type = "text", value, onChange, placeholder, readOnly = false, className, label, error } : InputProps) {
     let base = `w-full text-base bg-white border px-2 py-1.5 rounded-md ${error ? "border-red-500 outline-none" : "border-gray-200 outline-primary-muted"}`;
 
     if (type === "phone") {
@@ -32,7 +33,7 @@ export default function Input({ type = "text", value, onChange, placeholder, cla
                         +20
                     </div>
                 }
-                <input type={type} value={value} placeholder={placeholder} onChange={onChange} className={base}/>
+                <input readOnly={readOnly} type={type} value={value} placeholder={placeholder} onChange={onChange} className={base}/>
             </div>
             {
                 error &&

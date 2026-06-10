@@ -46,7 +46,7 @@ function RouteComponent() {
         <span className='text-gray-500 text-sm'>Track account status and update your name, phone number, email, etc...</span>
       </div>
       <form 
-        className='flex flex-col gap-y-4 my-8' 
+        className='flex flex-col gap-y-4 my-6 border-t border-gray-200 pt-6' 
         onSubmit={(e) => { 
           e.preventDefault(); 
           form.handleSubmit(); 
@@ -60,15 +60,15 @@ function RouteComponent() {
             {
               !user.isVerified ?
               <div className='flex items-center gap-x-3.5'>
-                <TbExclamationCircle className='text-gray-500 size-5 shrink-0'/>  
-                <div className='flex flex-col gap-y-1.5'>
+                <TbExclamationCircle className='text-gray-500 size-5 shrink-0' strokeWidth={1.5}/>  
+                <div className='flex flex-col gap-y-1'>
                   <p className='text-gray-500 text-sm'>Your account has not been verified yet. You will need to verify your phone number before making a booking.</p>
                   <Link to="/auth/verify/send" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Verify phone <TbArrowRight className='group-hover:-rotate-45 transition' /></Link>
                 </div>
               </div> :
               <div className='flex flex-col gap-y-2'>
                 <p className='text-gray-500 text-sm'>Your account has been verified successfully, is active, and is ready to book!</p>
-                <Link to="/pitches/search" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Explore pitches</Link>
+                <Link to="/pitches/explore" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Explore pitches</Link>
               </div>
             }
           </div>
