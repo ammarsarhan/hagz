@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache openssl openssl-dev
+RUN apk add --no-cache openssl openssl-dev postgresql-client
 
 COPY package*.json ./
 
@@ -14,6 +14,8 @@ RUN npx prisma generate
 
 COPY . .
 
+RUN chmod +x start.sh
+
 EXPOSE 8080
 
-CMD ["sh", "-c", "npx prisma db push && npx prisma db seed && npm run dev"]
+CMD ["sh", "./start.sh"]

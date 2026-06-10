@@ -1,16 +1,12 @@
 import AreaAccordion from '#/components/app/AreaAccordion';
-import Alert from '#/components/shared/Alert';
 import Button from '#/components/shared/Button';
 import Dropdown from '#/components/shared/Dropdown';
-import Input from '#/components/shared/Input';
 import MultiDropdown from '#/components/shared/MultiDropdown';
-import { getDeviceCoordinates } from '#/lib/geolocation';
 import { NotificationChannel, type Language } from '#/lib/types/user';
 import type { GroundSize, GroundSport } from '#/lib/types/venue';
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
-import { TbBrandWhatsapp, TbLocationFilled, TbMail, TbNotification, TbUser, TbUsers } from 'react-icons/tb';
+import { TbBrandWhatsapp, TbMail, TbNotification, TbUser, TbUsers } from 'react-icons/tb';
 
 export const Route = createFileRoute('/_app/account/settings')({
   component: RouteComponent,
@@ -18,7 +14,6 @@ export const Route = createFileRoute('/_app/account/settings')({
 
 function RouteComponent() {
   const { user, locations } = Route.useRouteContext();
-  const [error, setError] = useState<string | null>(null);
   
   const governorates = locations.map(group => ({ value: group.id, label: group.name, options: group.areas.map(item => ({ label: item.name, value: item.id }))}));
 
@@ -28,15 +23,7 @@ function RouteComponent() {
     role: user.preferences.role,
     sizes: user.preferences.sizes,
     sports: user.preferences.sports,
-    location: {
-      area: user.preferences.location.area ?? null,
-      longitude: user.preferences.location.longitude
-        ? String(user.preferences.location.longitude)
-        : null,
-      latitude: user.preferences.location.latitude
-        ? String(user.preferences.location.latitude)
-        : null,
-    },
+    area: user.preferences.area ?? null,
     notifications: user.preferences.notifications
   };
 
@@ -44,28 +31,10 @@ function RouteComponent() {
     defaultValues: initial
   });
 
-  const getCoordinates = async () => {
-    setError(null);
-    const result = await getDeviceCoordinates();
-
-    if (!result.success) {
-      setError(result.error);
-      return;
-    }
-
-    form.setFieldValue("location.latitude", String(result.latitude.toFixed(4)));
-    form.setFieldValue("location.longitude", String(result.longitude.toFixed(4)));
-  };
-
   const values = useStore(form.store, (s) => s.values);
   const isChanged = JSON.stringify(values) !== JSON.stringify(initial);
 
   return (
-    <>
-      {
-        error &&
-        <Alert message={error} code={"USER_DENIED_GEOLOCATION"} onClose={() => setError(null)} />
-      }
       <main className='px-4 py-10 w-full'>
         <div className='flex flex-col gap-y-px mt-2 mb-6'>
           <h1 className='text-lg font-medium'>Settings</h1>
@@ -250,7 +219,7 @@ function RouteComponent() {
               </div>
               <div className="w-2/3 flex flex-col gap-y-2">
                 <form.Field
-                  name="location.area"
+                  name="area"
                   children={(field) => (
                     <AreaAccordion
                       groups={governorates}
@@ -259,51 +228,6 @@ function RouteComponent() {
                     />
                   )}
                 />
-              </div>
-            </div>
-            <div className='flex gap-x-12 py-8'>
-              <div className="w-1/3 flex flex-col">
-                <h2 className='text-base font-medium'>Location</h2>
-                <p className='text-sm text-gray-500'>Get more accurate search results by updating your current location coordinates.</p>
-              </div>
-              <div className="w-2/3 flex flex-col gap-y-8">
-                <div className='grid grid-cols-3 gap-x-4'>
-                  <form.Field
-                    name="location.longitude"
-                    children={(field) => (
-                      <Input 
-                        label="Longitude"
-                        value={field.state.value ?? "Not set"}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        readOnly
-                      />
-                    )}
-                  />
-                  <form.Field
-                    name="location.latitude"
-                    children={(field) => (
-                      <Input 
-                        label="Latitude"
-                        value={field.state.value ?? "Not set"} 
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        readOnly
-                      />
-                    )}
-                  />
-                  <button 
-                    className='w-fit text-primary-muted hover:underline mb-auto ml-auto cursor-pointer text-sm mx-1'
-                    onClick={() => {
-                      form.setFieldValue("location.longitude", () => null)
-                      form.setFieldValue("location.latitude", () => null)
-                    }}
-                  >
-                    Clear values
-                  </button>
-                </div>
-                <Button onClick={getCoordinates} className='text-white gap-x-2.5! w-fit bg-primary-muted hover:bg-primary-muted/75'>
-                  <TbLocationFilled className='size-3.5'/>
-                  <span className='text-[0.85rem]'>Sync coordinates</span>
-                </Button>
               </div>
             </div>
           </section>
@@ -408,6 +332,5 @@ function RouteComponent() {
           </div>
         </form>
       </main>
-    </>
   )
 }

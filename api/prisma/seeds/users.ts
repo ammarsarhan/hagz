@@ -20,7 +20,7 @@ export async function seedUsers() {
   for (let i = 0; i < 50; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const phone = faker.helpers.fromRegExp(/\+201[0125][0-9]{8}/);
+    const phone = faker.helpers.fromRegExp("+201[0125][0-9]{8}");
 
     const user = await prisma.user.upsert({
       where: { phone },

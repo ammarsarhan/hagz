@@ -313,8 +313,10 @@ model User {
 }
 
 model UserPreferences {
-  userId String  @unique
-  user   User    @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
   areaId String?
 
   role          UserRole
@@ -322,8 +324,6 @@ model UserPreferences {
   notifications NotificationChannel[] @default([WHATSAPP])
   timezone      String                @default("Africa/Cairo")
   area          Area?                 @relation(fields: [areaId], references: [id])
-  latitude      Float?
-  longitude     Float?
   sport         GroundSport[]         @default([])
   size          GroundSize[]          @default([])
 }

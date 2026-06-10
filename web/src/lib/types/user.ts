@@ -25,11 +25,7 @@ export default interface User {
         language: Language,
         timezone: string,
         notifications: Array<NotificationChannel>,
-        location: {
-            area: string | null,
-            longitude: number | null,
-            latitude: number | null
-        },
+        area: string | null,
         sports: Array<GroundSport>,
         sizes: Array<GroundSize>
     },

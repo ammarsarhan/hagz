@@ -11,7 +11,7 @@ import app from '@/app.js';
 import dashboard from '@/dashboard.js';
 
 import AppError from '@/shared/lib/utils/error.js'
-import { scheduleSlotExtension } from './internal/extend.js'
+import { scheduleSlotExtension } from '@/internal/extend.js'
 
 const server = new Hono()
   .use('*', logger())

@@ -9,6 +9,12 @@ import { seedBookings } from "./seeds/bookings.js";
 import { seedLedger } from "./seeds/ledger.js";
 
 async function main() {
+  const exists = await prisma.pitch.count();
+  if (exists > 0) {
+    console.log("Database already seeded (found existing pitches). Skipping seed...");
+    return;
+  }
+
   console.log("Starting full platform seed...");
 
   // 1. Locations (Governorates + Areas)
@@ -56,4 +62,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    process.exit(0);
   });

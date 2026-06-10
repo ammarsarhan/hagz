@@ -19,11 +19,7 @@ export type UserResponseType = {
         language: Language,
         timezone: string,
         notifications: Array<NotificationChannel>,
-        location: {
-            area: string | null,
-            longitude: number | null,
-            latitude: number | null
-        },
+        area: string | null,
         sports: Array<GroundSport>,
         sizes: Array<GroundSize>
     },
@@ -79,11 +75,7 @@ export const createUserResponse = (user: User, preferences: UserPreferences, pit
             language: preferences.language,
             timezone: preferences.timezone,
             notifications: preferences.notifications,
-            location: {
-                area: preferences.areaId,
-                longitude: preferences.longitude,
-                latitude: preferences.latitude
-            },
+            area: preferences.areaId,
             sports: preferences.sport,
             sizes: preferences.size
         },
