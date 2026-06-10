@@ -4,11 +4,12 @@ import Dropdown from '#/components/shared/Dropdown';
 import Input from '#/components/shared/Input';
 import MultiDropdown from '#/components/shared/MultiDropdown';
 import { getDeviceCoordinates } from '#/lib/geolocation';
-import type { GroundSize, GroundSport, Language } from '#/lib/types/user';
+import { NotificationChannel, type Language } from '#/lib/types/user';
+import type { GroundSize, GroundSport } from '#/lib/types/venue';
 import { useForm } from '@tanstack/react-form';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { TbUser, TbUsers } from 'react-icons/tb';
+import { TbBrandWhatsapp, TbMail, TbNotification, TbUser, TbUsers } from 'react-icons/tb';
 
 export const Route = createFileRoute('/_app/account/settings')({
   component: RouteComponent,
@@ -238,7 +239,7 @@ function RouteComponent() {
               <div className="w-1/3 flex flex-col">
                 <h2 className='text-base font-medium'>Location</h2>
                 <p className='text-sm text-gray-500'>Get more accurate search results by updating your current location coordinates.</p>
-                <button onClick={getCoordinates} className='text-primary-muted cursor-pointer w-fit text-sm mt-4'>Sync coordinates</button>
+                <button onClick={getCoordinates} className='text-primary-muted cursor-pointer w-fit text-sm mt-4 hover:underline'>Sync coordinates</button>
               </div>
               <div className="w-2/3 grid grid-cols-3 gap-x-4">
                 <form.Field
@@ -262,6 +263,66 @@ function RouteComponent() {
                       readOnly
                     />
                   )}
+                />
+              </div>
+            </div>
+          </section>
+          <section className='border-t border-gray-200 pt-6 w-full'>
+            <div className='flex flex-col mb-4'>
+              <h1 className='font-medium'>Notifications</h1>
+              <p className='text-gray-500 text-sm'>Control the way you recieve notifications from Hagz.</p>
+            </div>
+            <div className='flex gap-x-12 py-8'>
+              <div className="w-1/3 flex flex-col">
+                <h2 className='text-base font-medium'>Channels</h2>
+                <p className='text-sm text-gray-500'>Choose the platforms you want to recieve notifications on.</p>
+                {
+                  !user.email &&
+                  <p className='text-gray-500 text-sm mt-6'>You still don't have an email associated with your account. <Link to="/account" className='text-primary-muted hover:underline'>Add one</Link> now to recieve notifications.</p>
+                }
+              </div>
+              <div className="w-2/3 flex gap-x-4 flex-wrap gap-y-3">
+                <form.Field 
+                  name="notifications"
+                  children={(field) => {
+                    return (
+                        <>
+                          <div className='h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border border-gray-200 px-3.5 py-3 rounded-md gap-x-10 w-fit'>
+                            <div className='flex items-center gap-x-4'>
+                              <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
+                                <TbNotification className='size-5'/>  
+                              </div>
+                              <div className='flex flex-col max-w-32'>
+                                <span className='text-sm font-medium'>In-App</span>
+                              </div>
+                            </div>
+                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.IN_APP)} className='accent-primary-muted'/>
+                          </div>
+                          <div className='h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border border-gray-200 px-3.5 py-3 rounded-md gap-x-10 w-fit'>
+                            <div className='flex items-center gap-x-4'>
+                              <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
+                                <TbBrandWhatsapp className='size-5'/>  
+                              </div>
+                              <div className='flex flex-col max-w-32'>
+                                <span className='text-sm font-medium'>WhatsApp</span>
+                              </div>
+                            </div>
+                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.WHATSAPP)} className='accent-primary-muted'/>
+                          </div>
+                          <div className='h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border border-gray-200 px-3.5 py-3 rounded-md gap-x-10 w-fit'>
+                            <div className='flex items-center gap-x-4'>
+                              <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
+                                <TbMail className='size-5'/>  
+                              </div>
+                              <div className='flex flex-col max-w-48'>
+                                <span className='text-sm font-medium'>Email</span>
+                              </div>
+                            </div>
+                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.EMAIL)} className='accent-primary-muted'/>
+                          </div>
+                        </>
+                    )
+                  }}
                 />
               </div>
             </div>

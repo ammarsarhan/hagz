@@ -1,28 +1,16 @@
-import type { NotificationChannel, PermissionLevel, StaffRole, UserStatus, UserRole } from "@/generated/prisma/enums"
+import type { StaffRole, UserStatus, UserRole } from "@/generated/prisma/enums"
+import type { GroundSize, GroundSport } from "#/lib/types/venue";
 
-export type PermissionDomain = "settings" | "schedule" | "bookings" | "analytics" | "payments" | "layout" | "team" | "properties";
-export type Permissions = Record<PermissionDomain, PermissionLevel>;
 export type Language = "EN" | "AR";
 
-export const GroundSport = {
-  FOOTBALL: 'FOOTBALL',
-  BASKETBALL: 'BASKETBALL',
-  PADEL: 'PADEL',
-  TENNIS: 'TENNIS',
-  VOLLEYBALL: 'VOLLEYBALL'
-} as const
+export const NotificationChannel = {
+  IN_APP: 'IN_APP',
+  PUSH: 'PUSH',
+  WHATSAPP: 'WHATSAPP',
+  EMAIL: 'EMAIL'
+} as const;
 
-export type GroundSport = (typeof GroundSport)[keyof typeof GroundSport]
-
-
-export const GroundSize = {
-  FIVE_A_SIDE: 'FIVE_A_SIDE',
-  SEVEN_A_SIDE: 'SEVEN_A_SIDE',
-  ELEVEN_A_SIDE: 'ELEVEN_A_SIDE',
-  STANDARD: 'STANDARD'
-} as const
-
-export type GroundSize = (typeof GroundSize)[keyof typeof GroundSize]
+export type NotificationChannel = (typeof NotificationChannel)[keyof typeof NotificationChannel];
 
 export default interface User {
     id: string,
@@ -50,4 +38,4 @@ export default interface User {
         role: StaffRole,
         permissions: Permissions
     }>
-}
+};

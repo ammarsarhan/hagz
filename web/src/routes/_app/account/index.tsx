@@ -26,7 +26,7 @@ function RouteComponent() {
       // onSubmit: signUpSchema
     },
     onSubmit: async ({ value }) => {
-
+      
     }
   });
 
@@ -53,32 +53,11 @@ function RouteComponent() {
         }}
       >
         <div className='flex gap-x-12 py-4'>
-          <div className="w-1/2 flex items-center">
-            <span className='font-medium'>Account Status</span>
-          </div>
-          <div className="w-1/2 flex gap-x-4">
-            {
-              !user.isVerified ?
-              <div className='flex items-center gap-x-3.5'>
-                <TbExclamationCircle className='text-gray-500 size-5 shrink-0' strokeWidth={1.5}/>  
-                <div className='flex flex-col gap-y-1'>
-                  <p className='text-gray-500 text-sm'>Your account has not been verified yet. You will need to verify your phone number before making a booking.</p>
-                  <Link to="/auth/verify/send" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Verify phone <TbArrowRight className='group-hover:-rotate-45 transition' /></Link>
-                </div>
-              </div> :
-              <div className='flex flex-col gap-y-2'>
-                <p className='text-gray-500 text-sm'>Your account has been verified successfully, is active, and is ready to book!</p>
-                <Link to="/pitches/explore" className='text-primary-muted hover:underline text-sm w-fit flex items-center gap-x-1 group'>Explore pitches</Link>
-              </div>
-            }
-          </div>
-        </div>
-        <div className='flex gap-x-12 py-4'>
-          <div className="flex flex-col gap-y-0.5 w-1/2">
+          <div className="flex flex-col gap-y-0.5 w-2/5">
             <span className='font-medium'>Name</span>
             <p className='text-gray-500 text-sm'>Display name that will be shown on any bookings and payments on your part.</p>
           </div>
-          <div className="w-1/2 flex gap-x-4">
+          <div className="w-3/5 flex gap-x-4">
             <form.Field
               name="firstName"
               children={(field) => <Input label="First Name" placeholder='First name' value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} className='flex-1'/>}
