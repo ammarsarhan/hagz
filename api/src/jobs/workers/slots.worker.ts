@@ -56,7 +56,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GroundSlotJobPa
 
             const target = dates.filter(d => {
                 const day = d.getUTCDay();
-                const normalized = schedule.dayOfWeek === 7 ? 0 : schedule.dayOfWeek;
+                const normalized = schedule.dayOfWeek - 1;
                 return day === normalized;
             });
 
@@ -171,7 +171,7 @@ export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayl
     const slots: Array<GenerateSlotType & { startsAt: Date }> = [];
 
     for (const date of missingDates) {
-        const targetDayOfWeek = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
+        const targetDayOfWeek = date.getUTCDay() + 1;
         const schedule = schedules.find(s => s.dayOfWeek === targetDayOfWeek);
 
         if (!schedule) {
@@ -262,7 +262,7 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
                 // Booked/past slots are left untouched.
                 const futureDates = dates.filter(d => {
                     const day = d.getUTCDay();
-                    const normalized = schedule.dayOfWeek === 7 ? 0 : schedule.dayOfWeek;
+                    const normalized = schedule.dayOfWeek - 1;
                     return day === normalized;
                 });
     

@@ -1,9 +1,10 @@
 import prisma from "@/shared/lib/utils/prisma.js";
-import { seedLocations } from "../../../prisma/seeds/locations.js";
+import { seedGrounds } from "@/../prisma/seeds/grounds.js";
 
 async function run() {
   try {
-    await seedLocations();
+    const pitches = await prisma.pitch.findMany();
+    await seedGrounds(pitches);
   } catch (error) {
     console.error(error);
     process.exit(1);

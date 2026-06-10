@@ -6,7 +6,6 @@
     "worker": "tsx src/jobs/worker.ts",
     "db:push": "prisma db push && docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -f /dev/stdin < scripts/update.sql",
     "db:reset": "prisma db push --force-reset && docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -f /dev/stdin < scripts/update.sql",
-    "seed:locations": "tsx src/internal/seed/locations.ts",
     "pitch:approve": "tsx --env-file=.env.local src/internal/approve.ts",
     "schedule:retry": "tsx --env-file=.env.local src/internal/retry.ts",
     "build": "tsc",
@@ -17,6 +16,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1038.0",
     "@bull-board/api": "^7.1.5",
     "@bull-board/hono": "^7.1.5",
+    "@faker-js/faker": "^10.4.0",
     "@hono/node-server": "^1.19.14",
     "@hono/zod-validator": "^0.7.6",
     "@node-rs/argon2": "^2.0.2",
@@ -34,5 +34,8 @@
     "prisma": "^7.7.0",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

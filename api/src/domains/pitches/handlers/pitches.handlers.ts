@@ -129,6 +129,6 @@ export const fetchPitchAvailabilityHandler = factory.createHandlers(
 export const fetchPitchesFeedHandler = factory.createHandlers(
     authorize({ required: false }),
     async (c) => {
-
+        
     }
 )

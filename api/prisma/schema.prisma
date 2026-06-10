@@ -76,6 +76,13 @@ enum BookingChannel {
   WALK_IN
 }
 
+enum PitchTier {
+  ALPHA
+  BETA
+  STANDARD
+  PREMIUM
+}
+
 enum PitchStatus {
   DRAFT
   SUBMITTED
@@ -258,7 +265,7 @@ model Governorate {
   id   String @id @default(cuid())
   name String @unique
 
-  areas   Area[]
+  areas Area[]
 }
 
 model Session {
@@ -377,9 +384,9 @@ model Pitch {
   description String
   taxId       String?
 
-  street        String
-  areaId        String
-  area          Area        @relation(fields: [areaId], references: [id])
+  street String
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
 
   latitude       Float
   longitude      Float
@@ -391,6 +398,8 @@ model Pitch {
   status PitchStatus  @default(DRAFT)
   events PitchEvent[]
 
+  tier         PitchTier     @default(STANDARD)
+  isFeatured   Boolean       @default(false)
   amenityList  AmenityName[]
   sports       GroundSport[]
   sizes        GroundSize[]

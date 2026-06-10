@@ -150,7 +150,7 @@ export default class PitchService {
                     for (let d = 0; d < 14; d++) {
                         const start = addHours(now, d * 24);
                         start.setHours(availability.startHour, 0, 0, 0);
-                        if (start.getDay() !== (availability.dayOfWeek % 7)) continue;
+                        if (start.getDay() !== (availability.dayOfWeek - 1)) continue;
                         if (isBefore(start, earliest)) continue;
                         
                         const sessionBlocks: Date[] = [];

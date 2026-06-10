@@ -1118,11 +1118,11 @@ export default class BookingService {
             const targetDays = [...new Set(previous.map(slot => slot.startsAt.getUTCDay()))];
 
             const schedules = await tx.schedule.findMany({
-                where: { groundId: booking.groundId, dayOfWeek: { in: targetDays } }
+                where: { groundId: booking.groundId, dayOfWeek: { in: targetDays.map(d => d + 1) } }
             });
 
             for (const slot of previous) {
-                const targetDay = slot.startsAt.getUTCDay();
+                const targetDay = slot.startsAt.getUTCDay() + 1;
                 const hour = slot.startsAt.getUTCHours();
                 const bit = 1 << hour;
 
