@@ -14,8 +14,8 @@ interface AreaGroup {
 
 interface AreaAccordionProps {
     groups: AreaGroup[];
-    value: string;
-    onChange: (value: string) => void;
+    value: string | null;
+    onChange: (value: string | null) => void;
 }
 
 export default function AreaAccordion({ groups, value, onChange }: AreaAccordionProps) {
@@ -41,22 +41,20 @@ export default function AreaAccordion({ groups, value, onChange }: AreaAccordion
                         onClick={() => toggleGroup(group.value)}
                         className='flex items-center justify-between hover:bg-gray-100 cursor-pointer rounded-md p-4 transition-all'
                     >
-                    <div className='flex flex-col'>
-                        <h3 className='text-sm font-medium'>
-                            {group.label}
-                            {selectedInGroup && (
-                                <span className='ml-2 text-primary-muted font-normal'>
-                                — {selectedInGroup.label}
-                                </span>
-                            )}
-                        </h3>
-                        <span className='text-[0.8125rem] text-gray-500'>
-                            ({group.options.length} areas)
-                        </span>
-                    </div>
-                    <TbChevronDown
-                        className={`size-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                    />
+                        <div className='flex flex-col'>
+                            <h3 className='text-sm font-medium'>
+                                {group.label}
+                                {selectedInGroup && (
+                                    <span className='ml-2 text-primary-muted font-normal'>
+                                    — {selectedInGroup.label}
+                                    </span>
+                                )}
+                            </h3>
+                            <span className='text-[0.8125rem] text-gray-500'>
+                                ({group.options.length} areas)
+                            </span>
+                        </div>
+                        <TbChevronDown className={`size-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}/>
                     </div>
                     {
                         isOpen && (
@@ -69,14 +67,14 @@ export default function AreaAccordion({ groups, value, onChange }: AreaAccordion
 
                                         return (
                                             <div
-                                                key={option.value}
-                                                onClick={() => onChange(option.value)}
-                                                className={`
-                                                    flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors text-sm
-                                                    ${isSelected ? 'bg-primary-muted/10 text-primary-muted' : 'hover:bg-gray-50 text-gray-700'}
-                                                    ${index % 2 === 0 ? "border-r border-gray-100" : ""}
-                                                    ${!isLastRow ? 'border-b border-gray-100' : ''}
-                                                `}
+                                            key={option.value}
+                                            onClick={() => onChange(isSelected ? null : option.value)}
+                                            className={`
+                                                flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors text-sm
+                                                ${isSelected ? 'bg-primary-muted/10 text-primary-muted' : 'hover:bg-gray-50 text-gray-700'}
+                                                ${index % 2 === 0 ? "border-r border-gray-100" : ""}
+                                                ${!isLastRow ? 'border-b border-gray-100' : ''}
+                                            `}
                                             >
                                                 <span>{option.label}</span>
                                                 {isSelected && <TbCheck className='size-4 text-primary-muted' />}

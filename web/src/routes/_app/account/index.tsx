@@ -118,8 +118,8 @@ function RouteComponent() {
           </div>
         </div>
         <div className='py-4 flex items-center justify-end'>
-          <Button className={`${isChanged ? "cursor-pointer bg-primary hover:bg-primary/75" : "bg-gray-200 cursor-not-allowed!"}`} type="submit">
-            <span className='text-sm font-medium'>Save changes</span>
+          <Button className={`${isChanged ? "cursor-pointer  bg-primary-muted hover:bg-primary-muted/75 text-white" : "bg-gray-200 cursor-not-allowed!"}`} type="submit">
+            <span className='text-sm'>Save changes</span>
           </Button>
         </div>
       </form>

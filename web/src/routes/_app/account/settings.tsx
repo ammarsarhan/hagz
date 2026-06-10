@@ -1,20 +1,20 @@
 import AreaAccordion from '#/components/app/AreaAccordion';
 import Alert from '#/components/shared/Alert';
+import Button from '#/components/shared/Button';
 import Dropdown from '#/components/shared/Dropdown';
 import Input from '#/components/shared/Input';
 import MultiDropdown from '#/components/shared/MultiDropdown';
 import { getDeviceCoordinates } from '#/lib/geolocation';
 import { NotificationChannel, type Language } from '#/lib/types/user';
 import type { GroundSize, GroundSport } from '#/lib/types/venue';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { TbBrandWhatsapp, TbMail, TbNotification, TbUser, TbUsers } from 'react-icons/tb';
+import { TbBrandWhatsapp, TbLocationFilled, TbMail, TbNotification, TbUser, TbUsers } from 'react-icons/tb';
 
 export const Route = createFileRoute('/_app/account/settings')({
   component: RouteComponent,
-
-})
+});
 
 function RouteComponent() {
   const { user, locations } = Route.useRouteContext();
@@ -29,9 +29,13 @@ function RouteComponent() {
     sizes: user.preferences.sizes,
     sports: user.preferences.sports,
     location: {
-      area: user.preferences.location.area ?? "",
-      longitude: String(user.preferences.location.longitude ?? "Not set"),
-      latitude: String(user.preferences.location.latitude ?? "Not set"),
+      area: user.preferences.location.area ?? null,
+      longitude: user.preferences.location.longitude
+        ? String(user.preferences.location.longitude)
+        : null,
+      latitude: user.preferences.location.latitude
+        ? String(user.preferences.location.latitude)
+        : null,
     },
     notifications: user.preferences.notifications
   };
@@ -51,7 +55,10 @@ function RouteComponent() {
 
     form.setFieldValue("location.latitude", String(result.latitude.toFixed(4)));
     form.setFieldValue("location.longitude", String(result.longitude.toFixed(4)));
-  }
+  };
+
+  const values = useStore(form.store, (s) => s.values);
+  const isChanged = JSON.stringify(values) !== JSON.stringify(initial);
 
   return (
     <>
@@ -165,32 +172,6 @@ function RouteComponent() {
             </div>
             <div className='flex gap-x-12 py-8'>
               <div className="w-1/3 flex flex-col">
-                <h2 className='text-base font-medium'>Venue Size</h2>
-                <p className='text-sm text-gray-500 mb-2'>Select your preferred pitch sizes to look for by default when searching for venues.</p>
-              </div>
-              <div className="w-2/3">
-                <form.Field
-                  name="sizes"
-                  children={(field) => {
-                    return (
-                      <MultiDropdown 
-                        options={[
-                          { value: "FIVE_A_SIDE", label: "Five-a-side" },
-                          { value: "SEVEN_A_SIDE", label: "Seven-a-side" },
-                          { value: "ELEVEN_A_SIDE", label: "Eleven-a-side" },
-                        ]} 
-                        placeholder='Select sizes'
-                        value={field.state.value} 
-                        onChange={(value) => field.handleChange(value as GroundSize[])}
-                        className='max-w-sm'
-                      />
-                    )
-                  }}
-                />
-              </div>
-            </div>
-            <div className='flex gap-x-12 py-8'>
-              <div className="w-1/3 flex flex-col">
                 <h2 className='text-base font-medium'>Sports</h2>
                 <p className='text-sm text-gray-500'>Select your preferred sports to look for by default when searching for venues.</p>
               </div>
@@ -209,7 +190,52 @@ function RouteComponent() {
                         ]} 
                         placeholder='Select sports'
                         value={field.state.value} 
-                        onChange={(value) => field.handleChange(value as GroundSport[])}
+                        onChange={(value) => {
+                            const updated = value as GroundSport[];
+                            const sizes = form.getFieldValue("sizes");
+
+                            if (sizes.length > 0 && !updated.includes("FOOTBALL")) return;
+
+                            field.handleChange(updated);
+                        }}
+                        className='max-w-sm'
+                      />
+                    )
+                  }}
+                />
+              </div>
+            </div>
+            <div className='flex gap-x-12 py-8'>
+              <div className="w-1/3 flex flex-col">
+                <h2 className='text-base font-medium'>Venue Size</h2>
+                <p className='text-sm text-gray-500 mb-2'>Select your preferred pitch sizes to look for by default when searching for venues.</p>
+                <p className='text-gray-500 text-sm mt-6'>Choosing a ground size automatically adds football to your list of preferred sports.</p>
+              </div>
+              <div className="w-2/3">
+                <form.Field
+                  name="sizes"
+                  children={(field) => {
+                    return (
+                      <MultiDropdown 
+                        options={[
+                          { value: "FIVE_A_SIDE", label: "Five-a-side" },
+                          { value: "SEVEN_A_SIDE", label: "Seven-a-side" },
+                          { value: "ELEVEN_A_SIDE", label: "Eleven-a-side" },
+                        ]} 
+                        placeholder='Select sizes'
+                        value={field.state.value} 
+                        onChange={(value) => {
+                          const sizes = value as GroundSize[];
+                          field.handleChange(sizes);
+
+                          if (sizes.length > 0) {
+                            const sports = form.getFieldValue("sports");
+
+                            if (!sports.includes("FOOTBALL")) {
+                              form.setFieldValue("sports", [...sports, "FOOTBALL"]);
+                            };
+                          };
+                        }}
                         className='max-w-sm'
                       />
                     )
@@ -239,36 +265,50 @@ function RouteComponent() {
               <div className="w-1/3 flex flex-col">
                 <h2 className='text-base font-medium'>Location</h2>
                 <p className='text-sm text-gray-500'>Get more accurate search results by updating your current location coordinates.</p>
-                <button onClick={getCoordinates} className='text-primary-muted cursor-pointer w-fit text-sm mt-4 hover:underline'>Sync coordinates</button>
               </div>
-              <div className="w-2/3 grid grid-cols-3 gap-x-4">
-                <form.Field
-                  name="location.longitude"
-                  children={(field) => (
-                    <Input 
-                      label="Longitude"
-                      value={field.state.value} 
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      readOnly
-                    />
-                  )}
-                />
-                <form.Field
-                  name="location.latitude"
-                  children={(field) => (
-                    <Input 
-                      label="Latitude"
-                      value={field.state.value} 
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      readOnly
-                    />
-                  )}
-                />
+              <div className="w-2/3 flex flex-col gap-y-8">
+                <div className='grid grid-cols-3 gap-x-4'>
+                  <form.Field
+                    name="location.longitude"
+                    children={(field) => (
+                      <Input 
+                        label="Longitude"
+                        value={field.state.value ?? "Not set"}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        readOnly
+                      />
+                    )}
+                  />
+                  <form.Field
+                    name="location.latitude"
+                    children={(field) => (
+                      <Input 
+                        label="Latitude"
+                        value={field.state.value ?? "Not set"} 
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        readOnly
+                      />
+                    )}
+                  />
+                  <button 
+                    className='w-fit text-primary-muted hover:underline mb-auto ml-auto cursor-pointer text-sm mx-1'
+                    onClick={() => {
+                      form.setFieldValue("location.longitude", () => null)
+                      form.setFieldValue("location.latitude", () => null)
+                    }}
+                  >
+                    Clear values
+                  </button>
+                </div>
+                <Button onClick={getCoordinates} className='text-white gap-x-2.5! w-fit bg-primary-muted hover:bg-primary-muted/75'>
+                  <TbLocationFilled className='size-3.5'/>
+                  <span className='text-[0.85rem]'>Sync coordinates</span>
+                </Button>
               </div>
             </div>
           </section>
           <section className='border-t border-gray-200 pt-6 w-full'>
-            <div className='flex flex-col mb-4'>
+            <div className='flex flex-col mt-2 mb-4'>
               <h1 className='font-medium'>Notifications</h1>
               <p className='text-gray-500 text-sm'>Control the way you recieve notifications from Hagz.</p>
             </div>
@@ -287,35 +327,69 @@ function RouteComponent() {
                   children={(field) => {
                     return (
                         <>
-                          <div className='h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border border-gray-200 px-3.5 py-3 rounded-md gap-x-10 w-fit'>
-                            <div className='flex items-center gap-x-4'>
-                              <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
-                                <TbNotification className='size-5'/>  
-                              </div>
-                              <div className='flex flex-col max-w-32'>
-                                <span className='text-sm font-medium'>In-App</span>
-                              </div>
-                            </div>
-                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.IN_APP)} className='accent-primary-muted'/>
-                          </div>
-                          <div className='h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border border-gray-200 px-3.5 py-3 rounded-md gap-x-10 w-fit'>
-                            <div className='flex items-center gap-x-4'>
+                          <div 
+                            className={`h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${field.state.value.includes(NotificationChannel.WHATSAPP) ? "border-primary-muted" : "border-gray-200"}`}
+                            onClick={() => {
+                              const current = field.state.value;
+
+                              const next = current.includes(NotificationChannel.WHATSAPP)
+                                ? current.filter(c => c !== NotificationChannel.WHATSAPP)
+                                : [...current, NotificationChannel.WHATSAPP];
+
+                              field.handleChange(next);
+                            }}
+                          >
+                            <div className='flex items-center gap-x-2'>
                               <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
                                 <TbBrandWhatsapp className='size-5'/>  
                               </div>
                               <div className='flex flex-col max-w-32'>
-                                <span className='text-sm font-medium'>WhatsApp</span>
+                                <span className='text-[0.825rem] font-medium'>WhatsApp</span>
                               </div>
                             </div>
                             <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.WHATSAPP)} className='accent-primary-muted'/>
                           </div>
-                          <div className='h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border border-gray-200 px-3.5 py-3 rounded-md gap-x-10 w-fit'>
-                            <div className='flex items-center gap-x-4'>
+                          <div 
+                            className={`h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${field.state.value.includes(NotificationChannel.IN_APP) ? "border-primary-muted" : "border-gray-200"}`}
+                            onClick={() => {
+                              const current = field.state.value;
+
+                              const next = current.includes(NotificationChannel.IN_APP)
+                                ? current.filter(c => c !== NotificationChannel.IN_APP)
+                                : [...current, NotificationChannel.IN_APP];
+
+                              field.handleChange(next);
+                            }}
+                          >
+                            <div className='flex items-center gap-x-2'>
+                              <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
+                                <TbNotification className='size-5'/>  
+                              </div>
+                              <div className='flex flex-col max-w-32'>
+                                <span className='text-[0.825rem] font-medium'>In-App</span>
+                              </div>
+                            </div>
+                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.IN_APP)} className='accent-primary-muted'/>
+                          </div>
+                          <div 
+                            className={`h-fit flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${user.email ? "cursor-pointer" : "cursor-not-allowed"} ${field.state.value.includes(NotificationChannel.EMAIL) ? "border-primary-muted" : "border-gray-200"}`}
+                            onClick={() => {
+                              if (!user.email) return;
+                              const current = field.state.value;
+                              
+                              const next = current.includes(NotificationChannel.EMAIL)
+                                ? current.filter(c => c !== NotificationChannel.EMAIL)
+                                : [...current, NotificationChannel.EMAIL];
+                              
+                              field.handleChange(next);
+                            }}
+                          >
+                            <div className='flex items-center gap-x-2'>
                               <div className='flex-center size-8 border border-gray-200 rounded-md bg-white'>
                                 <TbMail className='size-5'/>  
                               </div>
                               <div className='flex flex-col max-w-48'>
-                                <span className='text-sm font-medium'>Email</span>
+                                <span className='text-[0.825rem] font-medium'>Email</span>
                               </div>
                             </div>
                             <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.EMAIL)} className='accent-primary-muted'/>
@@ -327,6 +401,11 @@ function RouteComponent() {
               </div>
             </div>
           </section>
+          <div className='py-4 flex items-center justify-end'>
+            <Button className={`${isChanged ? "cursor-pointer  bg-primary-muted hover:bg-primary-muted/75 text-white" : "bg-gray-200 cursor-not-allowed!"}`} type="submit">
+              <span className='text-sm'>Save changes</span>
+            </Button>
+          </div>
         </form>
       </main>
     </>
