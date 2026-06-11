@@ -1,4 +1,4 @@
-import { hc } from 'hono/client'
+import { hc, type InferResponseType } from 'hono/client'
 import { getRequest, getResponseHeaders } from '@tanstack/react-start/server'
 import type { AppType } from '@/index';
 
@@ -140,3 +140,9 @@ const appFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<R
 export const client = hc<AppType>(target, {
   fetch: appFetch
 });
+
+export type InferData<T extends (...args: any) => any> =
+  InferResponseType<T, 200> extends { data: infer D } ? D : never;
+
+export type InferItem<T extends (...args: any) => any, K extends keyof InferData<T>> = 
+  InferData<T>[K] extends Array<infer Item> ? Item : never;

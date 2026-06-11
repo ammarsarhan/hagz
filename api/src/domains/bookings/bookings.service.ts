@@ -17,7 +17,7 @@ import PaymentService from "@/domains/payments/payments.service.js";
 export default class BookingService {
     private readonly paymentService = new PaymentService();
 
-    private readonly buildPricingSnapshot = (ground: Ground, settings: GroundSettings, slots: Array<GroundSlot>) => {
+    static readonly buildPricingSnapshot = (ground: Ground, settings: GroundSettings, slots: Array<GroundSlot>) => {
         const pricingMap = {
             BASE: ground.basePrice,
             PEAK: ground.peakPrice ?? ground.basePrice,
@@ -41,7 +41,7 @@ export default class BookingService {
     };
 
     // Helper function that recieves a booking object and passes the appropriate jobs scheduled for the booking status.
-    private readonly enqueueBookingLifecycle = async (booking: Booking, settings: GroundSettings) => {
+    static readonly enqueueBookingLifecycle = async (booking: Booking, settings: GroundSettings) => {
         // If the booking has not been approved yet, set the approval expiry job.
         if (!booking.isApproved) {
             const approvalDelay = Math.max(0, addMinutes(new Date(), settings.approvalExpiryLimit).getTime() - Date.now());
@@ -281,7 +281,7 @@ export default class BookingService {
                 throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
             // 4. Calculate the priceSnapshot and total.
-            const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
+            const { pricingMap, pricingSnapshot } = BookingService.buildPricingSnapshot(ground, settings, slots);
             let totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
 
             // Add the user's service fee if the channel is online.
@@ -380,7 +380,7 @@ export default class BookingService {
         }
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
-        await this.enqueueBookingLifecycle(booking, settings);
+        await BookingService.enqueueBookingLifecycle(booking, settings);
 
         // Create the notification for the customer and dispatch it.
         const receiverName = assignee.firstName ?? payload.customer.firstName!;
@@ -588,7 +588,7 @@ export default class BookingService {
                 throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
             // 4. Calculate the priceSnapshot and total.
-            const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(ground, settings, slots);
+            const { pricingMap, pricingSnapshot } = BookingService.buildPricingSnapshot(ground, settings, slots);
 
             let groundSize = 5 * 2;
 
@@ -674,7 +674,7 @@ export default class BookingService {
         const checkout = `https://accept.paymob.com/unifiedcheckout/?publicKey=${process.env.PAYMOB_PUBLIC_KEY!}&clientSecret=${intention.clientSecret}`;
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
-        await this.enqueueBookingLifecycle(booking, settings);
+        await BookingService.enqueueBookingLifecycle(booking, settings);
 
         // Create the notification for the customer and dispatch it.
         await NotificationsService.createNotification({
@@ -1160,7 +1160,7 @@ export default class BookingService {
             });
 
             // 8. Build new pricing for the new slots.
-            const { pricingMap, pricingSnapshot } = this.buildPricingSnapshot(booking.ground, settings, slots);
+            const { pricingMap, pricingSnapshot } = BookingService.buildPricingSnapshot(booking.ground, settings, slots);
 
             let groundSize = 5 * 2;
 
@@ -1223,7 +1223,7 @@ export default class BookingService {
 
         // Dequeue old booking lifecycle, enqueue new one.
         await BookingService.dequeueBookingLifecycle(bookingId);
-        await this.enqueueBookingLifecycle(updated, settings);
+        await BookingService.enqueueBookingLifecycle(updated, settings);
 
         // Notify user that their booking has been rescheduled.
         await NotificationsService.createNotification({

@@ -64,8 +64,8 @@ export const fetchUserBookingsHandler = factory.createHandlers(
         const userId = c.var.id;
         const cursor = c.req.query("cursor");
 
-        const bookings = await bookingService.fetchUserBookings(userId, cursor);
-        return c.json({ success: true, data: { bookings } }, 200); 
+        const data = await bookingService.fetchUserBookings(userId, cursor);
+        return c.json({ success: true, data: { ...data } }, 200); 
     }
 );
 

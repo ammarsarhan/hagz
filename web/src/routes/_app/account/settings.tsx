@@ -2,7 +2,7 @@ import AreaAccordion from '#/components/app/AreaAccordion';
 import Button from '#/components/shared/Button';
 import Dropdown from '#/components/shared/Dropdown';
 import MultiDropdown from '#/components/shared/MultiDropdown';
-import { NotificationChannel, type Language } from '#/lib/types/user';
+import type { Language, NotificationChannel } from '#/lib/types/user';
 import type { GroundSize, GroundSport } from '#/lib/types/venue';
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router';
@@ -252,15 +252,15 @@ function RouteComponent() {
                     return (
                         <>
                           <div 
-                            className={`h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${field.state.value.includes(NotificationChannel.WHATSAPP) ? "border-primary-muted" : "border-gray-200"}`}
+                            className={`h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${field.state.value.includes("WHATSAPP") ? "border-primary-muted" : "border-gray-200"}`}
                             onClick={() => {
                               const current = field.state.value;
 
-                              const next = current.includes(NotificationChannel.WHATSAPP)
-                                ? current.filter(c => c !== NotificationChannel.WHATSAPP)
-                                : [...current, NotificationChannel.WHATSAPP];
+                              const next = current.includes("WHATSAPP")
+                                ? current.filter(c => c !== "WHATSAPP")
+                                : [...current, "WHATSAPP"];
 
-                              field.handleChange(next);
+                              field.handleChange(next as Array<NotificationChannel>);
                             }}
                           >
                             <div className='flex items-center gap-x-2'>
@@ -271,18 +271,18 @@ function RouteComponent() {
                                 <span className='text-[0.825rem] font-medium'>WhatsApp</span>
                               </div>
                             </div>
-                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.WHATSAPP)} className='accent-primary-muted'/>
+                            <input type="radio" readOnly checked={field.state.value.includes("WHATSAPP")} className='accent-primary-muted'/>
                           </div>
                           <div 
-                            className={`h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${field.state.value.includes(NotificationChannel.IN_APP) ? "border-primary-muted" : "border-gray-200"}`}
+                            className={`h-fit cursor-pointer flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${field.state.value.includes("IN_APP") ? "border-primary-muted" : "border-gray-200"}`}
                             onClick={() => {
                               const current = field.state.value;
 
-                              const next = current.includes(NotificationChannel.IN_APP)
-                                ? current.filter(c => c !== NotificationChannel.IN_APP)
-                                : [...current, NotificationChannel.IN_APP];
+                              const next = current.includes("IN_APP")
+                                ? current.filter(c => c !== "IN_APP")
+                                : [...current, "IN_APP"];
 
-                              field.handleChange(next);
+                              field.handleChange(next as Array<NotificationChannel>);
                             }}
                           >
                             <div className='flex items-center gap-x-2'>
@@ -293,19 +293,19 @@ function RouteComponent() {
                                 <span className='text-[0.825rem] font-medium'>In-App</span>
                               </div>
                             </div>
-                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.IN_APP)} className='accent-primary-muted'/>
+                            <input type="radio" readOnly checked={field.state.value.includes("IN_APP")} className='accent-primary-muted'/>
                           </div>
                           <div 
-                            className={`h-fit flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${user.email ? "cursor-pointer" : "cursor-not-allowed"} ${field.state.value.includes(NotificationChannel.EMAIL) ? "border-primary-muted" : "border-gray-200"}`}
+                            className={`h-fit flex items-center justify-between bg-linear-to-br from-gray-100 to-white border px-3.5 py-2.5 rounded-md gap-x-10 w-fit ${user.email ? "cursor-pointer" : "cursor-not-allowed"} ${field.state.value.includes("EMAIL") ? "border-primary-muted" : "border-gray-200"}`}
                             onClick={() => {
                               if (!user.email) return;
                               const current = field.state.value;
                               
-                              const next = current.includes(NotificationChannel.EMAIL)
-                                ? current.filter(c => c !== NotificationChannel.EMAIL)
-                                : [...current, NotificationChannel.EMAIL];
+                              const next = current.includes("EMAIL")
+                                ? current.filter(c => c !== "EMAIL")
+                                : [...current, "EMAIL"];
                               
-                              field.handleChange(next);
+                              field.handleChange(next as Array<NotificationChannel>);
                             }}
                           >
                             <div className='flex items-center gap-x-2'>
@@ -316,7 +316,7 @@ function RouteComponent() {
                                 <span className='text-[0.825rem] font-medium'>Email</span>
                               </div>
                             </div>
-                            <input type="radio" readOnly checked={field.state.value.includes(NotificationChannel.EMAIL)} className='accent-primary-muted'/>
+                            <input type="radio" readOnly checked={field.state.value.includes("EMAIL")} className='accent-primary-muted'/>
                           </div>
                         </>
                     )

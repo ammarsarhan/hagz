@@ -1,8 +1,9 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { BookingActor, BookingChannel, BookingStatus, GroundSize, PaymentMethod, PitchTier, PriceType, SlotStatus } from "@/generated/prisma/enums.js";
-import { addHours, subDays, subHours, isPast, isFuture } from "date-fns";
+import { addHours, subDays, subHours, isPast, isFuture, differenceInHours } from "date-fns";
 import config from "@/shared/config.js";
+import BookingService from "@/domains/bookings/bookings.service.js";
 
 const SERVICE_RATE = config.SERVICE_RATE || 1.5;
 
@@ -32,6 +33,9 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       const customer = faker.helpers.arrayElement(pitchCustomers);
       const initiator = customer.userId ? users.find(u => u.id === customer.userId) : faker.helpers.arrayElement(users);
 
+      const settings = await prisma.groundSettings.findUnique({ where: { groundId: ground.id } });
+      if (!settings) continue;
+
       // 1. Determine Timeline and Status
       const randTimeline = Math.random();
       let startTime: Date;
@@ -60,9 +64,13 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       const paymentMethod = channel === BookingChannel.WALK_IN ? PaymentMethod.CASH : faker.helpers.arrayElement([PaymentMethod.CARD, PaymentMethod.WALLET]);
 
       // 3. Find available slots
-      const duration = faker.helpers.arrayElement([1, 2]);
+      const duration = faker.helpers.arrayElement([settings.minimumDuration, settings.maximumDuration].filter(Boolean) as number[]);
       const endTime = addHours(startTime, duration);
       
+      // Constraint: Check windows
+      if (channel === BookingChannel.ONLINE && differenceInHours(startTime, new Date()) < settings.minimumWindow) continue;
+      if (differenceInHours(startTime, new Date()) > settings.maximumWindow) continue;
+
       const slots = await prisma.groundSlot.findMany({
         where: {
           groundId: ground.id,
@@ -74,27 +82,10 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
 
       if (slots.length < duration) continue; // Skip if slots taken
 
-      // 4. Calculate pricing
-      const pricingMap = {
-        BASE: ground.basePrice,
-        PEAK: ground.peakPrice ?? ground.basePrice,
-        DISCOUNT: ground.discountPrice ?? ground.basePrice
-      };
+      // 4. Calculate pricing using BookingService
+      const { pricingSnapshot } = BookingService.buildPricingSnapshot(ground, settings, slots);
 
-      const pricingSnapshot = {
-        basePrice: ground.basePrice,
-        peakPrice: ground.peakPrice,
-        discountPrice: ground.discountPrice,
-        allowDeposit: pitch.tier === PitchTier.PREMIUM,
-        depositPercentage: pitch.tier === PitchTier.PREMIUM ? 25 : null,
-        slots: slots.map(slot => ({
-          startsAt: slot.startsAt,
-          priceType: slot.priceType,
-          price: pricingMap[slot.priceType as keyof typeof pricingMap]
-        }))
-      };
-
-      let baseAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType as keyof typeof pricingMap], 0);
+      let baseAmount = slots.reduce((sum, slot) => sum + (pricingSnapshot.slots.find(s => s.startsAt.getTime() === slot.startsAt.getTime())?.price || 0), 0);
       let totalAmount = baseAmount;
       
       if (channel === BookingChannel.ONLINE) {
@@ -139,7 +130,10 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
         data: { status: SlotStatus.BOOKED, bookingId: booking.id }
       });
 
-      // 7. Create Events
+      // 7. Enqueue Lifecycle
+      await BookingService.enqueueBookingLifecycle(booking, settings);
+
+      // 8. Create Events (Historical events only)
       const events: { previousStatus: BookingStatus; updatedStatus: BookingStatus; logs: string }[] = [
         { previousStatus: BookingStatus.RESERVED, updatedStatus: BookingStatus.RESERVED, logs: "Booking initialized." }
       ];
