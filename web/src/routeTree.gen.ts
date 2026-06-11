@@ -36,6 +36,9 @@ import { Route as DashboardPitchesCreateIndexRouteImport } from './routes/dashbo
 import { Route as DashboardPitchesPitchIdIndexRouteImport } from './routes/dashboard/pitches/$pitchId/index'
 import { Route as AppPitchesSearchIndexRouteImport } from './routes/_app/pitches/search/index'
 import { Route as AppPitchesExploreIndexRouteImport } from './routes/_app/pitches/explore/index'
+import { Route as AppPitchesPitchIdIndexRouteImport } from './routes/_app/pitches/$pitchId/index'
+import { Route as AppBookingsBookingIdIndexRouteImport } from './routes/_app/bookings/$bookingId/index'
+import { Route as AppPitchesPitchIdBookRouteImport } from './routes/_app/pitches/$pitchId/book'
 
 const WaitlistRoute = WaitlistRouteImport.update({
   id: '/waitlist',
@@ -173,6 +176,22 @@ const AppPitchesExploreIndexRoute = AppPitchesExploreIndexRouteImport.update({
   path: '/pitches/explore/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppPitchesPitchIdIndexRoute = AppPitchesPitchIdIndexRouteImport.update({
+  id: '/pitches/$pitchId/',
+  path: '/pitches/$pitchId/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppBookingsBookingIdIndexRoute =
+  AppBookingsBookingIdIndexRouteImport.update({
+    id: '/bookings/$bookingId/',
+    path: '/bookings/$bookingId/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppPitchesPitchIdBookRoute = AppPitchesPitchIdBookRouteImport.update({
+  id: '/pitches/$pitchId/book',
+  path: '/pitches/$pitchId/book',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -197,6 +216,9 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AppAccountIndexRoute
   '/auth/reset/': typeof AuthResetIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
+  '/pitches/$pitchId/book': typeof AppPitchesPitchIdBookRoute
+  '/bookings/$bookingId/': typeof AppBookingsBookingIdIndexRoute
+  '/pitches/$pitchId/': typeof AppPitchesPitchIdIndexRoute
   '/pitches/explore/': typeof AppPitchesExploreIndexRoute
   '/pitches/search/': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId/': typeof DashboardPitchesPitchIdIndexRoute
@@ -223,6 +245,9 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountIndexRoute
   '/auth/reset': typeof AuthResetIndexRoute
   '/auth/verify': typeof AuthVerifyIndexRoute
+  '/pitches/$pitchId/book': typeof AppPitchesPitchIdBookRoute
+  '/bookings/$bookingId': typeof AppBookingsBookingIdIndexRoute
+  '/pitches/$pitchId': typeof AppPitchesPitchIdIndexRoute
   '/pitches/explore': typeof AppPitchesExploreIndexRoute
   '/pitches/search': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId': typeof DashboardPitchesPitchIdIndexRoute
@@ -253,6 +278,9 @@ export interface FileRoutesById {
   '/_app/account/': typeof AppAccountIndexRoute
   '/auth/reset/': typeof AuthResetIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
+  '/_app/pitches/$pitchId/book': typeof AppPitchesPitchIdBookRoute
+  '/_app/bookings/$bookingId/': typeof AppBookingsBookingIdIndexRoute
+  '/_app/pitches/$pitchId/': typeof AppPitchesPitchIdIndexRoute
   '/_app/pitches/explore/': typeof AppPitchesExploreIndexRoute
   '/_app/pitches/search/': typeof AppPitchesSearchIndexRoute
   '/dashboard/pitches/$pitchId/': typeof DashboardPitchesPitchIdIndexRoute
@@ -283,6 +311,9 @@ export interface FileRouteTypes {
     | '/account/'
     | '/auth/reset/'
     | '/auth/verify/'
+    | '/pitches/$pitchId/book'
+    | '/bookings/$bookingId/'
+    | '/pitches/$pitchId/'
     | '/pitches/explore/'
     | '/pitches/search/'
     | '/dashboard/pitches/$pitchId/'
@@ -309,6 +340,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/auth/reset'
     | '/auth/verify'
+    | '/pitches/$pitchId/book'
+    | '/bookings/$bookingId'
+    | '/pitches/$pitchId'
     | '/pitches/explore'
     | '/pitches/search'
     | '/dashboard/pitches/$pitchId'
@@ -338,6 +372,9 @@ export interface FileRouteTypes {
     | '/_app/account/'
     | '/auth/reset/'
     | '/auth/verify/'
+    | '/_app/pitches/$pitchId/book'
+    | '/_app/bookings/$bookingId/'
+    | '/_app/pitches/$pitchId/'
     | '/_app/pitches/explore/'
     | '/_app/pitches/search/'
     | '/dashboard/pitches/$pitchId/'
@@ -548,6 +585,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPitchesExploreIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/pitches/$pitchId/': {
+      id: '/_app/pitches/$pitchId/'
+      path: '/pitches/$pitchId'
+      fullPath: '/pitches/$pitchId/'
+      preLoaderRoute: typeof AppPitchesPitchIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/bookings/$bookingId/': {
+      id: '/_app/bookings/$bookingId/'
+      path: '/bookings/$bookingId'
+      fullPath: '/bookings/$bookingId/'
+      preLoaderRoute: typeof AppBookingsBookingIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/pitches/$pitchId/book': {
+      id: '/_app/pitches/$pitchId/book'
+      path: '/pitches/$pitchId/book'
+      fullPath: '/pitches/$pitchId/book'
+      preLoaderRoute: typeof AppPitchesPitchIdBookRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -580,6 +638,9 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppProductOwnersRoute: typeof AppProductOwnersRoute
   AppProductUsersRoute: typeof AppProductUsersRoute
+  AppPitchesPitchIdBookRoute: typeof AppPitchesPitchIdBookRoute
+  AppBookingsBookingIdIndexRoute: typeof AppBookingsBookingIdIndexRoute
+  AppPitchesPitchIdIndexRoute: typeof AppPitchesPitchIdIndexRoute
   AppPitchesExploreIndexRoute: typeof AppPitchesExploreIndexRoute
   AppPitchesSearchIndexRoute: typeof AppPitchesSearchIndexRoute
 }
@@ -591,6 +652,9 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppProductOwnersRoute: AppProductOwnersRoute,
   AppProductUsersRoute: AppProductUsersRoute,
+  AppPitchesPitchIdBookRoute: AppPitchesPitchIdBookRoute,
+  AppBookingsBookingIdIndexRoute: AppBookingsBookingIdIndexRoute,
+  AppPitchesPitchIdIndexRoute: AppPitchesPitchIdIndexRoute,
   AppPitchesExploreIndexRoute: AppPitchesExploreIndexRoute,
   AppPitchesSearchIndexRoute: AppPitchesSearchIndexRoute,
 }
