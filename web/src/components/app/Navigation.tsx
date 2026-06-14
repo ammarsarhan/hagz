@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { TbBallFootball, TbBell, TbChevronDown, TbHistory, TbLayoutDashboard } from "react-icons/tb";
-import type User from "#/lib/types/user";
+import type { User } from "#/lib/types/user";
 import Button from "#/components/shared/Button";
 import Avatar from "#/components/shared/Avatar";
 import ProfileDropdown from "#/components/app/ProfileDropdown";
@@ -27,7 +27,7 @@ export default function Navigation({ user } : { user: User | null }) {
         };
     }, []);
 
-    const isOwner = user && user.preferences.role === "OWNER";
+    const isManager = user && user.preferences.role === "STAFF";
 
     return (
         <nav className="flex flex-col gap-y-4 pb-4 border-b border-gray-100 text-base fixed top-0 w-full bg-white z-99">
@@ -75,7 +75,7 @@ export default function Navigation({ user } : { user: User | null }) {
                         user ?
                         <div className="flex items-center gap-x-3">
                             {
-                                isOwner ?
+                                isManager ?
                                 <Link to={`/dashboard`}>
                                     <div className="flex items-center gap-x-2 py-1.5 pl-1.5 pr-3 bg-black hover:bg-black/75 transition-colors rounded-full">
                                         <div className="size-6 bg-primary flex-center rounded-full">

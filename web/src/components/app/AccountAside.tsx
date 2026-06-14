@@ -22,7 +22,7 @@ export default function AccountAside() {
                             activeOptions={{ exact: true }}
                             activeProps={{ className: "py-2 px-4 rounded-md text-sm bg-gray-100 text-black! hover:bg-gray-100 font-medium" }}
                         >
-                            Preferences
+                            Settings
                         </Link>
                         <Link 
                             to="/account/bookings" 

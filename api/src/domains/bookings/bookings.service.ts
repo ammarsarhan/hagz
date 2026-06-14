@@ -1,5 +1,5 @@
 import type { CreateStaffBookingPayloadType, CreateUserBookingPayloadType, RescheduleUserBookingPayloadType } from "@/domains/bookings/bookings.validator.js";
-import { BookingActor, BookingChannel, BookingStatus, GroundSize, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, PriceType, SlotStatus, UserStatus } from "@/generated/prisma/enums.js";
+import { BookingChannel, BookingStatus, GroundSize, GroundStatus, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, PriceType, SlotStatus, UserRole, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { splitTimeRangeIntoBlocks } from "@/shared/lib/utils/time.js";
@@ -332,7 +332,7 @@ export default class BookingService {
                     groundId,
                     customerId: assignee.id,
                     initiatorId,
-                    bookerRole: BookingActor.STAFF,
+                    bookerRole: UserRole.STAFF,
                     startTime: payload.startTime,
                     endTime: payload.endTime,
                     paymentMethod: payload.paymentMethod,
@@ -633,7 +633,7 @@ export default class BookingService {
                     groundId: payload.groundId,
                     customerId: assignee.id,
                     initiatorId: userId,
-                    bookerRole: BookingActor.USER,
+                    bookerRole: UserRole.USER,
                     startTime: payload.startTime,
                     endTime: payload.endTime,
                     paymentMethod: payload.paymentMethod,
@@ -763,10 +763,16 @@ export default class BookingService {
         const limit = 20;
         const take = limit + 1;
 
-        const [bookings, analytics] = await Promise.all([
+        const [
+            bookings, 
+            // analytics
+        ] = await Promise.all([
             prisma.booking.findMany({
                 where: {
                     customer: { userId }
+                },
+                orderBy: {
+                    startTime: 'desc'
                 },
                 include: {
                     ground: true,
@@ -785,7 +791,7 @@ export default class BookingService {
             }),
             prisma.booking.findMany({
                 where: {
-                    customer: { userId }
+                    customer: { userId },
                 },
                 include: {
                     ground: true,
@@ -797,63 +803,63 @@ export default class BookingService {
         const data = bookings.length > limit ? bookings.slice(0, -1) : bookings;
         const next = bookings.length > limit ? data[data.length - 1].id : null;
 
-        const totalSpent = analytics.reduce((sum, b) => sum + b.totalAmount, 0);
-        const totalBookings = analytics.length;
+        // const totalSpent = analytics.reduce((sum, b) => sum + b.totalAmount, 0);
+        // const totalBookings = analytics.length;
 
-        const pitches = analytics.reduce((acc, b) => {
-            const key = b.pitch.name;
-            if (!acc[key]) {
-                acc[key] = { count: 0, pitchId: b.pitch.id };
-            }
-            acc[key].count += 1;
-            return acc;
-        }, {} as Record<string, { count: number; pitchId: string }>);
+        // const pitches = analytics.reduce((acc, b) => {
+        //     const key = b.pitch.name;
+        //     if (!acc[key]) {
+        //         acc[key] = { count: 0, pitchId: b.pitch.id };
+        //     }
+        //     acc[key].count += 1;
+        //     return acc;
+        // }, {} as Record<string, { count: number; pitchId: string }>);
 
-        const mostBooked = Object.entries(pitches).sort((a, b) => b[1].count - a[1].count)[0];
+        // const mostBooked = Object.entries(pitches).sort((a, b) => b[1].count - a[1].count)[0];
 
-        const weekStreak = (() => {
-            if (analytics.length === 0) return 0;
+        // const weekStreak = (() => {
+        //     if (analytics.length === 0) return 0;
 
-            const weeks = new Set(
-                analytics.map(b => {
-                    const date = new Date(b.startTime);
-                    const start = new Date(date);
-                    start.setDate(date.getDate() - date.getDay());
-                    return start.toISOString().split('T')[0];
-                })
-            );
+        //     const weeks = new Set(
+        //         analytics.map(b => {
+        //             const date = new Date(b.startTime);
+        //             const start = new Date(date);
+        //             start.setDate(date.getDate() - date.getDay());
+        //             return start.toISOString().split('T')[0];
+        //         })
+        //     );
 
-            const sorted = Array.from(weeks).sort();
-            let longest = 1;
-            let current = 1;
+        //     const sorted = Array.from(weeks).sort();
+        //     let longest = 1;
+        //     let current = 1;
 
-            for (let i = 1; i < sorted.length; i++) {
-                const prev = new Date(sorted[i - 1]);
-                const curr = new Date(sorted[i]);
-                const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24 * 7);
+        //     for (let i = 1; i < sorted.length; i++) {
+        //         const prev = new Date(sorted[i - 1]);
+        //         const curr = new Date(sorted[i]);
+        //         const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24 * 7);
 
-                if (Math.round(diff) === 1) {
-                    current++;
-                    longest = Math.max(longest, current);
-                } else {
-                    current = 1;
-                }
-            }
+        //         if (Math.round(diff) === 1) {
+        //             current++;
+        //             longest = Math.max(longest, current);
+        //         } else {
+        //             current = 1;
+        //         }
+        //     }
 
-            return longest;
-        })();
+        //     return longest;
+        // })();
 
         return {
             bookings: formatUserBooking(data),
             cursor: next,
-            analytics: {
-                totalSpent,
-                totalBookings,
-                mostBooked: mostBooked
-                    ? { name: mostBooked[0], pitchId: mostBooked[1].pitchId, count: mostBooked[1].count }
-                    : null,
-                weekStreak
-            }
+            // analytics: {
+            //     totalSpent,
+            //     totalBookings,
+            //     mostBooked: mostBooked
+            //         ? { name: mostBooked[0], pitchId: mostBooked[1].pitchId, count: mostBooked[1].count }
+            //         : null,
+            //     weekStreak
+            // }
         };
     };
 
@@ -1251,7 +1257,7 @@ export default class BookingService {
                     groundId: booking.groundId,
                     customerId: booking.customerId,
                     initiatorId: userId,
-                    bookerRole: BookingActor.USER,
+                    bookerRole: UserRole.USER,
                     startTime: payload.startTime,
                     endTime: payload.endTime,
                     paymentMethod: booking.paymentMethod,
@@ -1275,7 +1281,7 @@ export default class BookingService {
                 data: {
                     fromId: bookingId,
                     toId: created.id,
-                    userRole: BookingActor.USER,
+                    userRole: UserRole.USER,
                     initiatorId: userId,
                     refundDelta: totalAmount - booking.totalAmount
                 }

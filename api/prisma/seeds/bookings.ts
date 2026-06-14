@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
-import { BookingActor, BookingChannel, BookingStatus, GroundSize, PaymentMethod, PitchTier, PriceType, SlotStatus } from "@/generated/prisma/enums.js";
+import { BookingChannel, BookingStatus, GroundSize, PaymentMethod, PitchTier, PriceType, SlotStatus, UserRole } from "@/generated/prisma/enums.js";
 import { addHours, subDays, subHours, isPast, isFuture, differenceInHours } from "date-fns";
 import config from "@/shared/config.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
@@ -104,7 +104,7 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
           groundId: ground.id,
           customerId: customer.id,
           initiatorId: initiator.id,
-          bookerRole: channel === BookingChannel.ONLINE ? BookingActor.USER : BookingActor.STAFF,
+          bookerRole: channel === BookingChannel.ONLINE ? UserRole.USER : UserRole.STAFF,
           isApproved: true,
           startTime,
           endTime,

@@ -61,7 +61,7 @@ function RouteComponent() {
                 <form.Field
                   name="role"
                   children={(field) => {
-                    const isOwner = field.state.value === "OWNER";
+                    const isOwner = field.state.value === "STAFF";
 
                     return (
                       <>
@@ -75,12 +75,12 @@ function RouteComponent() {
                           </div>
                           <input type="radio" readOnly checked={!isOwner} className='absolute top-4 right-4 accent-primary-muted'/>
                         </div>
-                        <div onClick={() => field.handleChange("OWNER")} className={`w-60 h-fit cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border ${isOwner ? "border-primary-muted" : "border-gray-200"}`}>
+                        <div onClick={() => field.handleChange("STAFF")} className={`w-60 h-fit cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border ${isOwner ? "border-primary-muted" : "border-gray-200"}`}>
                           <div className='flex flex-col gap-y-0.5'>
                             <div className='size-8 rounded-md border border-gray-200 flex-center mb-2.5 bg-white'>
                               <TbUsers/>
                             </div>
-                            <span className='font-medium text-sm'>I am an owner</span>
+                            <span className='font-medium text-sm'>I am a manager</span>
                             <p className='text-xs text-gray-500'>I want to manage my venue and accept bookings.</p>
                           </div>
                           <input type="radio" readOnly checked={isOwner} className='absolute top-4 right-4 accent-primary-muted'/>

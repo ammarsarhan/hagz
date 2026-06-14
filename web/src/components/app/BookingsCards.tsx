@@ -25,7 +25,7 @@ export default function BookingsCards({ data } : { data: UserAnalytics }) {
                 <h2 className="font-medium">You have kept a {data.weekStreak} week streak back-to-back!</h2>
                 {
                     data.mostBooked &&
-                    <Link to="/pitches/$pitchId/book" params={{ pitchId: data.mostBooked.pitchId }} className="group flex items-center gap-x-1 text-[0.8125rem] hover:underline text-primary-muted mt-auto">
+                    <Link to="/pitches/$pitchId/book" params={{ pitchId: data.mostBooked.pitchId }} className="group flex items-center gap-x-1 text-[0.8125rem] hover:underline text-primary-muted mt-auto w-fit">
                         <span>Book again</span>
                         <TbArrowRight className="group-hover:-rotate-45 transition" />
                     </Link>

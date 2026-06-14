@@ -39,7 +39,7 @@ const signUpSchema = z.object({
 function RouteComponent() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const [role, setRole] = useState<"USER" | "OWNER">("USER");
+  const [role, setRole] = useState<"USER" | "MANAGER">("USER");
   const [error, setError] = useState<{ message: string, code?: string } | null>(null);
 
   const form = useForm({
@@ -83,7 +83,7 @@ function RouteComponent() {
       };
 
       let redirectPath = "/";
-      if (role == "OWNER") redirectPath = "/dashboard/pitches/create";
+      if (role == "MANAGER") redirectPath = "/dashboard/pitches/create";
 
       await navigate({ to: redirectPath });
     }
@@ -122,15 +122,15 @@ function RouteComponent() {
                 </div>
                 <input type="radio" readOnly checked={role === "USER"} className='absolute top-4 right-4 accent-primary-muted'/>
               </div>
-              <div onClick={() => setRole("OWNER")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
+              <div onClick={() => setRole("MANAGER")} className='cursor-pointer relative p-4 rounded-md bg-linear-to-br from-gray-100 to-white border border-gray-200 w-full'>
                 <div className='flex flex-col gap-y-0.5'>
                   <div className='size-8 rounded-md border border-gray-200 flex-center mb-2.5 bg-white'>
                     <TbUsers/>
                   </div>
-                  <span className='font-medium text-sm'>I am an owner</span>
-                  <p className='text-xs text-gray-500'>I want to add my venue.</p>
+                  <span className='font-medium text-sm'>I am a manager</span>
+                  <p className='text-xs text-gray-500'>I want to add/manage venues.</p>
                 </div>
-                <input type="radio" readOnly checked={role === "OWNER"} className='absolute top-4 right-4 accent-primary-muted'/>
+                <input type="radio" readOnly checked={role === "MANAGER"} className='absolute top-4 right-4 accent-primary-muted'/>
               </div>
             </div>
             <div className='flex flex-col gap-y-4'>

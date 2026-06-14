@@ -29,11 +29,11 @@ function RouteComponent() {
         <h1 className='text-lg font-medium'>Bookings</h1>
         <span className='text-gray-500 text-sm'>View your full bookings history, payments, and track loyalty on pitches.</span>
       </div>
-      <div className='flex flex-col gap-y-10 pl-4 my-8'>
+      <div className='flex flex-col gap-y-10 pl-4 my-6'>
         {
           data ?
           <>
-            <BookingsCards data={data.analytics}/>
+            {/* <BookingsCards data={data.analytics}/> */}
             <BookingsTable data={data.bookings}/>
           </> :
           <></>

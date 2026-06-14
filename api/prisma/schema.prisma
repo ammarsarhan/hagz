@@ -18,11 +18,6 @@ enum UserStatus {
 
 enum UserRole {
   USER
-  OWNER
-}
-
-enum BookingActor {
-  USER
   STAFF
 }
 
@@ -635,7 +630,7 @@ model Booking {
   customer    PitchCustomer @relation(fields: [customerId], references: [id])
   initiatorId String
   initiator   User          @relation(fields: [initiatorId], references: [id])
-  bookerRole  BookingActor
+  bookerRole  UserRole
   isApproved  Boolean
 
   startTime       DateTime
@@ -680,7 +675,7 @@ model Rescheduling {
   from   Booking @relation("rescheduledFrom", fields: [fromId], references: [id])
   to     Booking @relation("rescheduledTo", fields: [toId], references: [id])
 
-  userRole    BookingActor
+  userRole    UserRole
   initiatorId String
   initiator   User         @relation(fields: [initiatorId], references: [id])
   reason      String?
@@ -716,7 +711,7 @@ model Cancellation {
 
   initiatorId String
   initiator   User         @relation(fields: [initiatorId], references: [id])
-  actor       BookingActor
+  actor       UserRole
 
   reason      String?
   cancelledAt DateTime @default(now())
