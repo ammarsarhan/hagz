@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema, queryPitchesSchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -35,15 +35,6 @@ export const getUserPitchHandler = factory.createHandlers(
         return c.json({ success: true, data: { pitch }}, 200);
     }
 );
-
-export const queryPitchesHandler = factory.createHandlers(
-    validate("json", queryPitchesSchema),
-    async (c) => {
-        const filters = c.req.valid("json");
-        const pitches = await pitchService.queryPitches(filters);
-        return c.json({ success: true, data: { pitches }}, 200);
-    }
-)
 
 export const getDashboardPitchHandler = factory.createHandlers(
     guard("properties", PermissionLevel.READ),

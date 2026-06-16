@@ -298,13 +298,14 @@ model User {
   reschedulings Rescheduling[]
   cancellations Cancellation[]
 
-  preferences        UserPreferences?
-  notifications      Notification[]
-  payoutDestinations PayoutDestination[]
+  preferences   UserPreferences?
+  notifications Notification[]
+  favorites     Favorite[]
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  reviews   Review[]
 }
 
 model UserPreferences {
@@ -373,6 +374,31 @@ model PitchMedia {
   @@index([pitchId])
 }
 
+model Favorite {
+  userId  String
+  pitchId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, pitchId])
+}
+
+model Review {
+  id      String  @id @default(cuid())
+  userId  String
+  pitchId String
+  comment String?
+  rating  Int
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
 model Pitch {
   id          String  @id @default(cuid())
   name        String
@@ -393,13 +419,16 @@ model Pitch {
   status PitchStatus  @default(DRAFT)
   events PitchEvent[]
 
-  tier         PitchTier     @default(STANDARD)
-  isFeatured   Boolean       @default(false)
-  amenityList  AmenityName[]
-  sports       GroundSport[]
-  sizes        GroundSize[]
-  minimumPrice Int?
-  maximumPrice Int?
+  tier          PitchTier     @default(STANDARD)
+  isFeatured    Boolean       @default(false)
+  amenityList   AmenityName[]
+  sports        GroundSport[]
+  sizes         GroundSize[]
+  averageRating Float?
+  reviewCount   Int?
+  bookingCount  Int
+  minimumPrice  Int?
+  maximumPrice  Int?
 
   staff        Staff[]
   amenities    Amenity[]
@@ -408,10 +437,12 @@ model Pitch {
   invitations  Invitation[]
   bookings     Booking[]
   customers    PitchCustomer[]
+  favorites    Favorite[]
   ledger       PitchLedger?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  reviews   Review[]
 }
 
 model Ground {
@@ -677,7 +708,7 @@ model Rescheduling {
 
   userRole    UserRole
   initiatorId String
-  initiator   User         @relation(fields: [initiatorId], references: [id])
+  initiator   User     @relation(fields: [initiatorId], references: [id])
   reason      String?
 
   refundDelta   Int?
@@ -710,7 +741,7 @@ model Cancellation {
   booking   Booking @relation(fields: [bookingId], references: [id])
 
   initiatorId String
-  initiator   User         @relation(fields: [initiatorId], references: [id])
+  initiator   User     @relation(fields: [initiatorId], references: [id])
   actor       UserRole
 
   reason      String?
@@ -759,29 +790,12 @@ model Payout {
   status         PayoutStatus  @default(PENDING)
   transactionRef String?
 
-  destinationId String
-  destination   PayoutDestination @relation(fields: [destinationId], references: [id])
+  destination String
 
   requestedAt   DateTime  @default(now())
   processedAt   DateTime?
   failedAt      DateTime?
   failureReason String?
-}
-
-model PayoutDestination {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  payouts Payout[]
-
-  method      PayoutMethod
-  accountName String
-  accountRef  String
-  isDefault   Boolean      @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Notification {
