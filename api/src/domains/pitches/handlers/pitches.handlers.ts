@@ -122,4 +122,41 @@ export const fetchPitchesFeedHandler = factory.createHandlers(
     async (c) => {
         
     }
-)
+);
+
+export const addFavoriteHandler = factory.createHandlers(
+    authorize({ required: true }),
+    async (c) => {
+        const userId = c.var.id;
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId)
+            throw new NotFoundError("Pitch ID was not provided.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const result = await pitchService.toggleFavorite(userId, pitchId, true);
+        return c.json({ success: true, data: result }, 201);
+    }
+);
+
+export const removeFavoriteHandler = factory.createHandlers(
+    authorize({ required: true }),
+    async (c) => {
+        const userId = c.var.id;
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId)
+            throw new NotFoundError("Pitch ID was not provided.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const result = await pitchService.toggleFavorite(userId, pitchId, false);
+        return c.json({ success: true, data: result }, 200);
+    }
+);
+
+export const fetchUserFavoritesHandler = factory.createHandlers(
+    authorize({ required: true }),
+    async (c) => {
+        const userId = c.var.id;
+        const favorites = await pitchService.fetchUserFavorites(userId);
+        return c.json({ success: true, data: favorites }, 200);
+    }
+);

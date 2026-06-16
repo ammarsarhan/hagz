@@ -426,4 +426,61 @@ export default class PitchService {
 
         return { slots, grounds };
     };
+
+    toggleFavorite = async (userId: string, pitchId: string, isFavorite: boolean) => {
+        // 1. Verify pitch exists and is not deleted
+        const pitch = await prisma.pitch.findUnique({
+            where: { id: pitchId, status: { not: PitchStatus.DELETED } },
+            select: { id: true }
+        });
+
+        if (!pitch) {
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        }
+
+        if (isFavorite) {
+            // Add to favorites
+            return await prisma.favorite.upsert({
+                where: {
+                    userId_pitchId: { userId, pitchId }
+                },
+                create: { userId, pitchId },
+                update: {} // Do nothing if already exists
+            });
+        } else {
+            // Remove from favorites
+            try {
+                return await prisma.favorite.delete({
+                    where: {
+                        userId_pitchId: { userId, pitchId }
+                    }
+                });
+            } catch (error) {
+                // If it doesn't exist, we can just return success as the end state is what's desired
+                return { userId, pitchId };
+            }
+        }
+    };
+
+    fetchUserFavorites = async (userId: string) => {
+        return await prisma.favorite.findMany({
+            where: { userId },
+            include: {
+                pitch: {
+                    select: {
+                        id: true,
+                        name: true,
+                        street: true,
+                        averageRating: true,
+                        reviewCount: true,
+                        media: {
+                            where: { order: 1 },
+                            take: 1
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: "desc" }
+        });
+    };
 };
