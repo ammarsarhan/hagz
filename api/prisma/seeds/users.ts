@@ -68,7 +68,7 @@ export async function seedUsers() {
         status: UserStatus.ACTIVE,
         preferences: {
           create: {
-            role: UserRole.OWNER,
+            role: UserRole.STAFF,
             language: Language.EN,
             notifications: [NotificationChannel.WHATSAPP],
             timezone: "Africa/Cairo",

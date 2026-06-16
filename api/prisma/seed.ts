@@ -7,6 +7,8 @@ import { seedStaff } from "./seeds/staff.js";
 import { seedCustomers } from "./seeds/customers.js";
 import { seedBookings } from "./seeds/bookings.js";
 import { seedLedger } from "./seeds/ledger.js";
+import { seedReviews } from "./seeds/reviews.js";
+import { seedFavorites } from "./seeds/favorites.js";
 
 async function main() {
   const exists = await prisma.pitch.count();
@@ -41,6 +43,12 @@ async function main() {
   // 8. Ledger (entries and payouts)
   await seedLedger(pitches, bookings);
 
+  // 9. Reviews (randomly assigned to pitches from users)
+  const { reviews } = await seedReviews(pitches, users);
+
+  // 10. Favorites (randomly assigned to pitches from users)
+  const { favorites } = await seedFavorites(pitches, users);
+
   console.log(`
 Seed Summary:
 --------------
@@ -50,6 +58,8 @@ Grounds:   ${grounds.length}
 Staff:     ${staff.length}
 Customers: ${customers.length}
 Bookings:  ${bookings.length}
+Reviews:   ${reviews.length}
+Favorites: ${favorites.length}
 --------------
 Seed completed successfully! Mabrook!
   `);

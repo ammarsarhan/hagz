@@ -80,23 +80,13 @@ export async function seedLedger(pitches: any[], bookings: any[]) {
     });
     
     if (staffOwner) {
-      const destination = await prisma.payoutDestination.create({
-        data: {
-          userId: staffOwner.userId,
-          method: PayoutMethod.BANK_TRANSFER,
-          accountName: faker.person.fullName(),
-          accountRef: faker.finance.iban(),
-          isDefault: true
-        }
-      });
-
       // 5. Create Payouts
       if (balance > 1000) {
         const completedAmount = Math.round(balance * 0.7);
         const payoutCompleted = await prisma.payout.create({
           data: {
             ledgerId: pitchLedger.id,
-            destinationId: destination.id,
+            destination: "Some random destination.",
             amount: completedAmount,
             method: PayoutMethod.BANK_TRANSFER,
             trigger: PayoutTrigger.MANUAL,
@@ -122,7 +112,7 @@ export async function seedLedger(pitches: any[], bookings: any[]) {
           await prisma.payout.create({
             data: {
               ledgerId: pitchLedger.id,
-              destinationId: destination.id,
+              destination: "Some random destination.",
               amount: pendingAmount,
               method: PayoutMethod.BANK_TRANSFER,
               trigger: PayoutTrigger.SCHEDULED,
