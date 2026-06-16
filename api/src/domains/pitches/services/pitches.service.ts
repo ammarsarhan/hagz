@@ -9,9 +9,11 @@ import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from
 import { formatPitchAvailabilityQuery, GroundSlotEvent } from "@/shared/types/slots.js";
 
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
+import { pitchesQueue } from "@/jobs/queues/pitches.queue.js";
+import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
-import { addHours, endOfWeek, isBefore, startOfWeek } from "date-fns";
+import { addDays, addHours, endOfWeek, isBefore, startOfWeek } from "date-fns";
 import getGridSize from "@/shared/lib/utils/map.js";
 
 export default class PitchService {
@@ -35,6 +37,36 @@ export default class PitchService {
                 );
             })
         );
+    };
+
+    // Helper function that recieves a booking object and passes the appropriate jobs scheduled for the pitch denormalized activity.
+    static readonly enqueueWeeklyBookingExpiration = async (pitchId: string, bookingId: string) => {
+        const expirationDelay = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+        await pitchesQueue.add(
+            "expire-booking",
+            { pitchId, bookingId, event: PitchEvent.EXPIRE_BOOKING },
+            { delay: expirationDelay, jobId: `pitches-${pitchId}-weekly-decrement-${bookingId}` }
+        );
+    };
+
+    // Helper function that cancels the scheduled decrement job for a booking.
+    static readonly dequeueWeeklyBookingExpiration = async (pitchId: string, bookingId: string) => {
+        const jobId = `pitches-${pitchId}-weekly-decrement-${bookingId}`;
+        const job = await pitchesQueue.getJob(jobId);
+        if (job) await job.remove();
+    };
+
+    // Helper function to update the weeklyBookings count.
+    static readonly updateWeeklyBookings = async (tx: TransactionClient, pitchId: string, delta: number) => {
+        await tx.pitch.update({
+            where: { id: pitchId },
+            data: {
+                weeklyBookings: {
+                    [delta > 0 ? "increment" : "decrement"]: Math.abs(delta)
+                }
+            }
+        });
     };
 
     // Helper function to keep the pitch denormalized fields in sync.

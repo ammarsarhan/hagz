@@ -408,28 +408,26 @@ model Pitch {
   street String
   areaId String
   area   Area   @relation(fields: [areaId], references: [id])
-
   latitude       Float
   longitude      Float
   // Prisma is being annoying. Mark this as nullable then roll that back in the actual migration.
   location       Unsupported("geography(Point, 4326)")?
   googleMapsLink String
   media          PitchMedia[]
+  status         PitchStatus  @default(DRAFT)
 
-  status PitchStatus  @default(DRAFT)
-  events PitchEvent[]
+  tier           PitchTier     @default(STANDARD)
+  isFeatured     Boolean       @default(false)
+  amenityList    AmenityName[]
+  sports         GroundSport[]
+  sizes          GroundSize[]
+  averageRating  Float?        @default(0)
+  reviewCount    Int           @default(0)
+  weeklyBookings Int           @default(0)
+  minimumPrice   Int?
+  maximumPrice   Int?
 
-  tier          PitchTier     @default(STANDARD)
-  isFeatured    Boolean       @default(false)
-  amenityList   AmenityName[]
-  sports        GroundSport[]
-  sizes         GroundSize[]
-  averageRating Float?
-  reviewCount   Int?
-  bookingCount  Int
-  minimumPrice  Int?
-  maximumPrice  Int?
-
+  events         PitchEvent[]
   staff        Staff[]
   amenities    Amenity[]
   grounds      Ground[]

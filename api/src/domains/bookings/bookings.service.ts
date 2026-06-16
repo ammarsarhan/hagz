@@ -13,6 +13,7 @@ import { BookingEvent, formatUserBooking } from "@/shared/types/bookings.js";
 import { formatInTimeZone } from "date-fns-tz";
 import config from "@/shared/config.js";
 import PaymentService from "@/domains/payments/payments.service.js";
+import PitchService from "@/domains/pitches/services/pitches.service.js";
 
 export default class BookingService {
     private readonly paymentService = new PaymentService();
@@ -345,6 +346,10 @@ export default class BookingService {
                 }
             });
 
+            if (status === BookingStatus.CONFIRMED) {
+                await PitchService.updateWeeklyBookings(tx, pitchId, 1);
+            }
+
             await tx.groundSlot.updateMany({
                 where: { id: { in: slots.map(s => s.id) } },
                 data: { status: SlotStatus.BOOKED, bookingId: booking.id }
@@ -381,6 +386,11 @@ export default class BookingService {
 
         // Enqueue the booking lifecycle events to be handled by the background worker.
         await BookingService.enqueueBookingLifecycle(booking, settings);
+
+        // If the booking is confirmed, enqueue the weekly booking expiration job.
+        if (booking.status === BookingStatus.CONFIRMED) {
+            await PitchService.enqueueWeeklyBookingExpiration(pitchId, booking.id);
+        }
 
         // Create the notification for the customer and dispatch it.
         const receiverName = assignee.firstName ?? payload.customer.firstName!;
@@ -882,11 +892,13 @@ export default class BookingService {
                 id: bookingId
             },
             select: {
+                pitchId: true,
                 groundId: true,
                 status: true,
                 totalAmount: true,
                 depositFee: true,
                 startTime: true,
+                createdAt: true,
                 customer: {
                     select: {
                         userId: true
@@ -939,10 +951,15 @@ export default class BookingService {
             };
 
             // Update the actual booking record.
-            const booking = await tx.booking.update({
+            const updatedBooking = await tx.booking.update({
                 where: { id: bookingId },
                 data: { status: BookingStatus.CANCELLED }
             });
+
+            // If the booking was previously confirmed, decrement the weeklyBookings count.
+            if (booking.status === BookingStatus.CONFIRMED && differenceInHours(new Date(), booking.createdAt) <= 168) {
+                await PitchService.updateWeeklyBookings(tx, booking.pitchId, -1);
+            }
 
             const targetDays = [...new Set(slots.map(slot => slot.startsAt.getUTCDay()))];
 
@@ -987,7 +1004,7 @@ export default class BookingService {
                 };
             };
 
-            return booking;
+            return updatedBooking;
         });
 
         // Calculate the refund if needed based on the original booking status and issue it based on the ground policy.
@@ -1004,6 +1021,7 @@ export default class BookingService {
         };
 
         await BookingService.dequeueBookingLifecycle(bookingId);
+        await PitchService.dequeueWeeklyBookingExpiration(booking.pitchId, bookingId);
 
         await NotificationsService.createNotification({
             userId,
@@ -1228,6 +1246,11 @@ export default class BookingService {
                 data: { status: BookingStatus.RESCHEDULED }
             });
 
+            // If the old booking was confirmed and recent, decrement.
+            if (booking.status === BookingStatus.CONFIRMED && differenceInHours(new Date(), booking.createdAt) <= 168) {
+                await PitchService.updateWeeklyBookings(tx, booking.pitchId, -1);
+            }
+
             // 8. Build new pricing for the new slots.
             const { pricingMap, pricingSnapshot } = BookingService.buildPricingSnapshot(booking.ground, settings, slots);
 
@@ -1270,6 +1293,11 @@ export default class BookingService {
                 }
             });
 
+            // If the new booking is confirmed, increment.
+            if (created.status === BookingStatus.CONFIRMED) {
+                await PitchService.updateWeeklyBookings(tx, booking.pitchId, 1);
+            }
+
             // 10. Claim the new slots.
             await tx.groundSlot.updateMany({
                 where: { id: { in: slots.map(s => s.id) } },
@@ -1293,6 +1321,12 @@ export default class BookingService {
         // Dequeue old booking lifecycle, enqueue new one.
         await BookingService.dequeueBookingLifecycle(bookingId);
         await BookingService.enqueueBookingLifecycle(updated, settings);
+
+        // Dequeue old weekly expiration, enqueue new one if confirmed.
+        await PitchService.dequeueWeeklyBookingExpiration(booking.pitchId, bookingId);
+        if (updated.status === BookingStatus.CONFIRMED) {
+            await PitchService.enqueueWeeklyBookingExpiration(booking.pitchId, updated.id);
+        }
 
         // Notify user that their booking has been rescheduled.
         await NotificationsService.createNotification({

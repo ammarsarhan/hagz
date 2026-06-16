@@ -26,7 +26,7 @@ export const BookingEvent = {
   PAYMENT: 'PAYMENT',
   REMINDER: 'REMINDER',
   IN_PROGRESS: 'IN_PROGRESS',
-  COMPLETE: 'COMPLETE'
+  COMPLETE: 'COMPLETE',
 } as const
 
 export type BookingEvent = (typeof BookingEvent)[keyof typeof BookingEvent];
