@@ -49,7 +49,7 @@ export const deletePitchInvitationHandler = factory.createHandlers(
             throw new NotFoundError("Could not find invitation with the specified ID.", ERROR_CODES.PITCH_INVITATION_NOT_FOUND);
 
         await staffService.deleteInvitation(pitchId, invitationId);
-        return c.json({ success: true, data: null}, 201);
+        return c.json({ success: true, data: null }, 201);
     }
 );
 

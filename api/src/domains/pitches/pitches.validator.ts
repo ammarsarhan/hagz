@@ -434,7 +434,20 @@ export const fetchPitchAvailabilitySchema = z.object({
     date: z.coerce.date("A date is required to fetch the specified pitch's availability.")
 });
 
-export type GetStaffBookingsFiltersPayloadType = z.infer<typeof getStaffBookingsFiltersSchema>;
+export type FetchStaffBookingsFiltersPayloadType = z.infer<typeof getStaffBookingsFiltersSchema>;
+
+export const createReviewSchema = z.object({
+    rating: z
+        .int("Rating is required.")
+        .min(1, "Rating must be at least 1.")
+        .max(5, "Rating may not exceed 5."),
+    comment: z
+        .string()
+        .max(500, "Comment may not exceed 500 characters.")
+        .optional()
+});
+
+export type CreateReviewPayloadType = z.infer<typeof createReviewSchema>;
 
 export const getStaffBookingsFiltersSchema = z.object({
     status: z
