@@ -1,6 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function SettingsScreen() {
+export default function Profile() {
   return (
     <SafeAreaView className='flex-1'>
 
