@@ -6,7 +6,7 @@ async function run() {
   try {
     const pitches = await prisma.pitch.findMany();
     const owners = await prisma.user.findMany({ 
-      where: { preferences: { role: UserRole.OWNER } } 
+      where: { preferences: { role: UserRole.STAFF } } 
     });
     const users = await prisma.user.findMany({ 
       where: { preferences: { role: UserRole.USER } } 

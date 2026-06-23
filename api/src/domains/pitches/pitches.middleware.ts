@@ -19,7 +19,7 @@ const hierarchy: Record<PermissionLevel, number> = {
 const guard = (domain: PermissionDomain, level: PermissionLevel = PermissionLevel.READ) =>
     factory.createMiddleware(async (c, next) => {
         // Pass an empty function to authorize middleware to stop it from skipping early.
-        await authorize(c, async () => {});
+        await authorize()(c, async () => {});
 
         // Run the authorize middleware first to fetch the userId and then get that user's permissions.
         const userId = c.var.id;

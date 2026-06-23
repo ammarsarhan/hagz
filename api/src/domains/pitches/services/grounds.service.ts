@@ -1,5 +1,5 @@
 import prisma from "@/shared/lib/utils/prisma.js";
-import type { CreateGroundPayloadType, GetStaffBookingsFiltersPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdateGroundSlotStatusType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
+import type { CreateGroundPayloadType, FetchStaffBookingsFiltersPayloadType, GroundSlotTargetType, UpdateGroundPayloadType, UpdateGroundSettingsPayloadType, UpdateGroundSlotStatusType, UpsertGroundSchemaPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import { BookingStatus, GroundStatus, PitchStatus, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { bytesToTimeRanges, timeRangesToBytes } from "@/shared/lib/utils/time.js";
@@ -733,7 +733,7 @@ export default class GroundService {
         return updated;
     };
 
-    fetchStaffBookings = async (pitchId: string, groundId: string, filters: GetStaffBookingsFiltersPayloadType) => {
+    fetchStaffBookings = async (pitchId: string, groundId: string, filters: FetchStaffBookingsFiltersPayloadType) => {
         const ground = await prisma.ground.findFirst({
             where: {
                 id: groundId,
