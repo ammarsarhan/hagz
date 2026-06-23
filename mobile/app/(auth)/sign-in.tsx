@@ -1,6 +1,6 @@
 import Input from '@/components/shared/Input';
 import { IconChevronLeft } from '@tabler/icons-react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -13,8 +13,29 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '@/components/shared/Button';
 import Logo from '@/assets/logos/logo-cropped.svg';
+import { useState } from 'react';
+import { client } from '@/lib/client';
+import { saveTokens } from '@/lib/storage';
+import { useAuth } from '@/context/AuthContext';
 
 export default function SignIn() {
+  const { setUser } = useAuth();
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSignIn = async () => {
+    const res = await client.auth['sign-in'].$post({ json: { phone: `+20${phone}`, password } });
+
+    if (res.ok) {
+      const body = await res.json();
+      const { accessToken, refreshToken } = body.data || {};
+      
+      if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
+      setUser(body.data.user);
+      router.replace('/(tabs)');
+    };
+  };
+
   return (
     <SafeAreaView className="flex-1">
       <KeyboardAvoidingView
@@ -37,15 +58,15 @@ export default function SignIn() {
                 </Text>
               </View>
               <View className="w-full gap-y-4">
-                <Input placeholder="Phone" type="phone" label="Phone" />
-                <Input placeholder="Password" type="password" label="Password" />
+                <Input placeholder="Phone" type="phone" label="Phone" value={phone} onChangeText={(value) => setPhone(value)}/>
+                <Input placeholder="Password" type="password" label="Password" value={password} onChangeText={(value) => setPassword(value)} />
                 <View>
                   <Link href="/" className="text-primary-foreground">
                     Forgot password?
                   </Link>
                 </View>
               </View>
-              <Button className="w-1/2 border-primary bg-primary">
+              <Button className="w-1/2 border-primary bg-primary" onPress={handleSignIn}>
                 <Text className="font-medium">Sign In</Text>
               </Button>
             </View>

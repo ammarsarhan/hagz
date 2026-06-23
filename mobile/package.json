@@ -12,7 +12,6 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "hono": "4.12.23",
     "@tabler/icons-react-native": "^3.44.0",
     "@tanstack/react-query": "^5.101.0",
     "expo": "^54.0.0",
@@ -20,7 +19,10 @@
     "expo-image": "~3.0.11",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
+    "expo-secure-store": "~15.0.8",
+    "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.8",
+    "hono": "4.12.23",
     "nativewind": "latest",
     "react": "19.1.0",
     "react-dom": "19.1.0",

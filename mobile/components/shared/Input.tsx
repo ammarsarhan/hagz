@@ -5,7 +5,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 interface InputProps {
   label?: string;
   value?: string;
-  onChangeText?: () => void;
+  onChangeText?: (value: string) => void;
   placeholder?: string;
   className?: string;
   type?: 'text' | 'phone' | 'password';

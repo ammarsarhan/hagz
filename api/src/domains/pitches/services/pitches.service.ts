@@ -1,7 +1,7 @@
 import z from "zod";
 
-import type { CreatePitchPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
+import type { CreatePitchPayloadType, FetchPitchFeedPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -15,6 +15,7 @@ import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
 import { addDays, addHours, endOfWeek, isBefore, startOfWeek } from "date-fns";
 import getGridSize from "@/shared/lib/utils/map.js";
+import { Prisma } from "@/generated/prisma/client.js";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -425,6 +426,118 @@ export default class PitchService {
         const slots = formatPitchAvailabilityQuery(rawSlots);
 
         return { slots, grounds };
+    };
+
+    fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string) => {
+        const [general, personalized] = await Promise.all([
+            Promise.all([
+                prisma.pitch.findMany({
+                    where: { status: PitchStatus.LIVE, isFeatured: true },
+                    take: 10,
+                }),
+                prisma.pitch.findMany({
+                    where: { status: PitchStatus.LIVE },
+                    orderBy: { weeklyBookings: "desc" },
+                    take: 10,
+                }),
+                prisma.pitch.findMany({
+                    where: {
+                    status: PitchStatus.LIVE,
+                    reviewCount: { gte: 5 },
+                    },
+                    orderBy: { averageRating: "desc" },
+                    take: 5,
+                }),
+                prisma.pitch.findMany({
+                    where: {
+                    status: PitchStatus.LIVE,
+                    minimumPrice: { gte: 150 },
+                    maximumPrice: { lte: 250 },
+                    },
+                    take: 10,
+                }),
+                prisma.pitch.findMany({
+                    where: {
+                    status: PitchStatus.LIVE,
+                    grounds: {
+                        some: {
+                        settings: { autoConfirm: true },
+                        },
+                    },
+                    },
+                    take: 10,
+                }),
+                prisma.pitch.findMany({
+                    where: { status: PitchStatus.LIVE, tier: PitchTier.PREMIUM },
+                    take: 5,
+                }),
+            ]),
+            Promise.all([
+                userId
+                    ? prisma.pitch.findMany({
+                        where: {
+                        status: PitchStatus.LIVE,
+                        bookings: {
+                            some: { initiatorId: userId },
+                        },
+                        },
+                        take: 5,
+                    })
+                    : Promise.resolve([]),
+                payload.latitude !== undefined && payload.longitude !== undefined
+                    ? prisma.$queryRaw<
+                        Array<{
+                        id: string;
+                        distance: number;
+                        } & any>
+                    >`
+                        SELECT
+                        p.*,
+                        ST_Distance(
+                            p.location,
+                            ST_SetSRID(
+                            ST_MakePoint(${payload.longitude}, ${payload.latitude}),
+                            4326
+                            )::geography
+                        ) AS distance
+                        FROM "Pitch" p
+                        WHERE p.status = 'LIVE'
+                        AND p.location IS NOT NULL
+                        AND ST_DWithin(
+                            p.location,
+                            ST_SetSRID(
+                            ST_MakePoint(${payload.longitude}, ${payload.latitude}),
+                            4326
+                            )::geography,
+                            25000
+                        )
+                        ORDER BY p.location <-> ST_SetSRID(
+                        ST_MakePoint(${payload.longitude}, ${payload.latitude}),
+                        4326
+                        )::geography
+                        LIMIT 10
+                    `
+                    : Promise.resolve([]),
+            ]),
+        ]);
+
+        const [featured, hot, rated, budget, instant, premium] = general;
+        const [recentlyBooked, nearby] = personalized;
+
+        return {
+            general: {
+                featured,
+                hot,
+                rated,
+                budget,
+                instant,
+                premium,
+            },
+            personalized: {
+                recentlyBooked,
+                nearby,
+            },
+        };
     };
 
     toggleFavorite = async (userId: string, pitchId: string, isFavorite: boolean) => {

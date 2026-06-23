@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { IconHome, IconSearch, IconUserCircle } from '@tabler/icons-react-native';
+import { IconHeart, IconHome, IconSearch, IconUserCircle } from '@tabler/icons-react-native';
 
 export default function TabLayout() {
   return (
@@ -26,6 +26,15 @@ export default function TabLayout() {
           title: 'Search',
           tabBarIcon: ({ color, size }) => (
             <IconSearch color={color} size={size} strokeWidth={1.75} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: 'Favorites',
+          tabBarIcon: ({ color, size }) => (
+            <IconHeart color={color} size={size} strokeWidth={1.75} />
           ),
         }}
       />

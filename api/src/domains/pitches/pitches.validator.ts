@@ -436,6 +436,27 @@ export const fetchPitchAvailabilitySchema = z.object({
 
 export type FetchStaffBookingsFiltersPayloadType = z.infer<typeof getStaffBookingsFiltersSchema>;
 
+export const fetchPitchFeedSchema = z.object({
+    longitude: z
+        .number("Longitude must be a number.")
+        .min(-180, { error: "Longitude must be at least -180." })
+        .max(180, { error: "Longitude must be at most 180." })
+        .optional(),
+    latitude: z
+        .number("Latitude must be a number.")
+        .min(-90, { error: "Latitude must be at least -90." })
+        .max(90, { error: "Latitude must be at most 90." })
+        .optional(),
+    })
+    .refine(
+        ({ longitude, latitude }) =>
+            (longitude === undefined && latitude === undefined) ||
+            (longitude !== undefined && latitude !== undefined),
+            "Longitude and latitude must either both be provided or both be omitted.",
+    );
+
+export type FetchPitchFeedPayloadType = z.infer<typeof fetchPitchFeedSchema>;
+
 export const createReviewSchema = z.object({
     rating: z
         .int("Rating is required.")

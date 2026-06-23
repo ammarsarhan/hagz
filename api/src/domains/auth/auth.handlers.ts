@@ -43,27 +43,32 @@ export const signInHandler = factory.createHandlers(
 
         const { user, accessToken, refreshToken } = await authService.signIn(payload, ipAddress, userAgent);
         
-        if (isMobile) {
-            return c.json({ success: true, data: { user, accessToken, refreshToken }}, 200);
-        };
+        if (!isMobile) {
+            setCookie(c, "accessToken", accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Strict",
+                path: "/",
+                maxAge: 60 * 15, // 15m
+            });
 
-        setCookie(c, "accessToken", accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
-            path: "/",
-            maxAge: 60 * 15, // 15m
-        });
+            setCookie(c, "refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Strict",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 7 // 7d
+            });
+        }
 
-        setCookie(c, "refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
-            path: "/",
-            maxAge: 60 * 60 * 24 * 7 // 7d
-        });
-
-        return c.json({ success: true, data: { user } }, 200);
+        return c.json({ 
+            success: true, 
+            data: { 
+                user,
+                accessToken: isMobile ? accessToken : undefined,
+                refreshToken: isMobile ? refreshToken : undefined,
+            } 
+        }, 200);
     }
 );
 
@@ -108,16 +113,20 @@ export const refreshSessionHandler = factory.createHandlers(
 
         const { accessToken } = await authService.refreshSession(refreshToken);
 
-        if (isMobile) return c.json({ success: true, data: { accessToken }}, 200);
-        
-        setCookie(c, "accessToken", accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
-            path: "/",
-            maxAge: 60 * 15, // 15m
-        });
+        if (!isMobile) {
+            setCookie(c, "accessToken", accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Strict",
+                path: "/",
+                maxAge: 60 * 15, // 15m
+            });
+        }
 
-        return c.json({ success: true, message: "Updated user session successfully." }, 200);
+        return c.json({
+            success: true,
+            message: isMobile ? undefined : "Updated user session successfully.",
+            data: isMobile ? { accessToken } : undefined
+        }, 200);
     }
 );

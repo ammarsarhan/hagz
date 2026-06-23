@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema, fetchPitchFeedSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -119,8 +119,13 @@ export const fetchPitchAvailabilityHandler = factory.createHandlers(
 
 export const fetchPitchesFeedHandler = factory.createHandlers(
     authorize({ required: false }),
+    validate("query", fetchPitchFeedSchema),
     async (c) => {
-        
+        const userId = c.var.id;
+        const payload = c.req.valid("query");
+
+        const pitches = await pitchService.fetchFeed(payload, userId);
+        return c.json({ success: true, data: { ...pitches } }, 200);
     }
 );
 

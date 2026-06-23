@@ -5,7 +5,7 @@ import { createReviewHandler, deleteReviewHandler, fetchPitchReviewsHandler } fr
 // Chained for RPC type support on the frontend.
 const app = new Hono()
     .get("/favorites", ...fetchUserFavoritesHandler)
-    .post("/feed", ...fetchPitchesFeedHandler)
+    .get("/feed", ...fetchPitchesFeedHandler)
     .get("/:pitchId", ...getUserPitchHandler)
     .post("/:pitchId/reviews", ...createReviewHandler)
     .get("/:pitchId/reviews", ...fetchPitchReviewsHandler)
