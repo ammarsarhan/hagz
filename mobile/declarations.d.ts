@@ -20,6 +20,11 @@ declare module '*.gif' {
   export default value;
 }
 
+declare module '*.mp4' {
+  const value: number;
+  export default value;
+}
+
 declare module '*.svg' {
   import React from 'react';
   import { SvgProps } from 'react-native-svg';
