@@ -3,11 +3,15 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* Brand */
-  --color-primary: #D4FF00;
-  --color-primary-muted: #5b6e00;
-  --color-secondary: #2B00FF;
-  --color-secondary-muted: #110069;
+  --color-primary: #D7FF0C;
+  --color-primary-foreground: #1F4F33;
+  --color-secondary: #2314CE;
+  --color-secondary-foreground: #EFEDFF;
+  --color-card: #EBEBEB;
+  --color-card-foreground: #000000;
+  --color-muted: #6A7282;
+  --color-muted-foreground: #FFFFFF;
+  --color-accent: #EBEBEB;
   --text-base: 0.9rem;
 }
 

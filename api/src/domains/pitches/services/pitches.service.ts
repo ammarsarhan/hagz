@@ -13,9 +13,7 @@ import { pitchesQueue } from "@/jobs/queues/pitches.queue.js";
 import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
-import { addDays, addHours, endOfWeek, isBefore, startOfWeek } from "date-fns";
-import getGridSize from "@/shared/lib/utils/map.js";
-import { Prisma } from "@/generated/prisma/client.js";
+import { endOfWeek, startOfWeek } from "date-fns";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.

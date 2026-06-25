@@ -3,6 +3,7 @@ import { client } from '../lib/client';
 import { getAccessToken, clearTokens } from '../lib/storage';
 import { User } from '@/lib/types/user';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 type AuthContextType = {
   user: User | null;
@@ -14,6 +15,8 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await clearTokens();
+    queryClient.clear();
     setUser(null);
   };
 

@@ -1,9 +1,9 @@
 import { hc } from 'hono/client';
-import type { AppType } from '../../api/dist/src/index.js';
+import type { AppType } from '../../api/src/index.js'
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './storage';
 
-// Adjust to match your actual backend URL (e.g. from config/constants)
-const API_URL = 'http://192.168.1.20:8080';
+// Adjust to match actual backend URL (e.g. from config/constants).
+const API_URL = 'http://192.168.1.7:8080';
 
 export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const accessToken = await getAccessToken();

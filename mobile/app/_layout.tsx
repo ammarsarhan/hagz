@@ -12,7 +12,7 @@ import AuthModal from '@/components/AuthModal';
 SplashScreen.preventAutoHideAsync();
 
 // Hides the splash screen once auth has finished loading.
-function RootLayoutInner({ children }: { children: ReactNode }) {
+function AppLayout({ children }: { children: ReactNode }) {
   const { isLoading } = useAuth();
 
   useEffect(() => {
@@ -28,13 +28,13 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={getQueryClient()}>
       <AuthProvider>
-        <RootLayoutInner>
+        <AppLayout>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           </Stack>
           <AuthModal />
-        </RootLayoutInner>
+        </AppLayout>
       </AuthProvider>
     </QueryClientProvider>
   );
