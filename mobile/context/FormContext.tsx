@@ -1,56 +1,53 @@
-import React, { createContext, useContext, useState } from 'react';
-import { useForm } from '@tanstack/react-form';
+import React, { createContext, useContext, useRef, useState } from 'react';
 
-export type FormContextStepType = React.ReactNode;
-
-interface FormContextType {
+interface FormContextType<T> {
     error: string;
     setError: (error: string) => void;
-    isPending: boolean;
-    form: any;
+    errors: Record<string, string>;
+    setErrors: (errors: Record<string, string>) => void;
+    data: T;
+    setData: (data: T) => void;
 }
 
-const FormContext = createContext<FormContextType | undefined>(undefined);
-
-export default function useFormContext() {
-    const context = useContext(FormContext);
-
-    if (!context) {
-        throw new Error("useFormContext must be used within a FormProvider");
-    }
-
-    return context;
+export function createFormContext<T>() {
+    return createContext<FormContextType<T> | undefined>(undefined);
 }
 
-interface FormContextProviderProps<T> { 
-    children: React.ReactNode,
+interface FormContextProviderProps<T> {
+    children: React.ReactNode;
     initial: T;
-    onSubmit?: (values: T) => Promise<void> | void;
+    context: React.Context<FormContextType<T> | undefined>;
 }
 
-export function FormContextProvider<T>({ children, initial, onSubmit }: FormContextProviderProps<T>) {
-    const form = useForm({
-        defaultValues: initial as any,
-        onSubmit: async (values) => {
-            if (onSubmit) {
-                await onSubmit(values as T);
-            }
-        },
-    });
-
+export function FormContextProvider<T>({ children, initial, context: Context }: FormContextProviderProps<T>) {
+    const [data, setData] = useState<T>(initial);
     const [error, setError] = useState("");
-    const isPending = form.state.isSubmitting || form.state.isValidating;
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const value = {
-        error,
-        setError,
-        isPending,
-        form,
+    const setErrorWithTimeout = (error: string) => {
+        setError(error);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => setError(""), 3000);
+    };
+
+    const setErrorsWithTimeout = (errors: Record<string, string>) => {
+        setErrors(errors);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => setErrors({}), 3000);
     };
 
     return (
-        <FormContext.Provider value={value}>
+        <Context.Provider value={{ data, setData, error, setError: setErrorWithTimeout, errors, setErrors: setErrorsWithTimeout }}>
             {children}
-        </FormContext.Provider>
+        </Context.Provider>
     );
+}
+
+export function createFormContextHook<T>(context: React.Context<FormContextType<T> | undefined>) {
+    return function useFormContext() {
+        const ctx = useContext(context);
+        if (!ctx) throw new Error("useFormContext must be used within a FormContextProvider");
+        return ctx;
+    };
 };

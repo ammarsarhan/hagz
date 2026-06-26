@@ -51,7 +51,7 @@ export default function Introduction() {
                         <View className='gap-y-3'>
                             <Logo width={50} height={50} color={"#FFFFFF"} />
                             <Text className='text-4xl text-white font-semibold'>Book Pitches in Seconds!</Text>
-                            <Text className='text-white'>Find and book the perfect pitch for your next match, or list your venue and start filling slots without the hassle.</Text>
+                            <Text className='text-white/85'>Find and book the perfect pitch for your next match, or list your venue and start filling slots without the hassle.</Text>
                         </View>
                         <View className='gap-y-3'>
                             <Link href="/sign-up/role" asChild>

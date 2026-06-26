@@ -9,6 +9,7 @@ interface InputProps {
   placeholder?: string;
   className?: string;
   type?: 'text' | 'phone' | 'password';
+  textContentType?: 'newPassword' | 'password';
 }
 
 export default function Input({
@@ -18,17 +19,18 @@ export default function Input({
   placeholder,
   className,
   type = 'text',
+  textContentType = 'password',
 }: InputProps) {
   const [isVisible, setIsVisible] = useState(type !== 'password');
-  const base = 'w-full rounded-md px-3 h-12 border border-gray-300';
+  const base = 'w-full bg-white rounded-lg px-3 h-12 border border-gray-300';
 
   switch (type) {
     case 'phone': {
       return (
         <View className="gap-y-2">
-          {label && <Text>Phone Number</Text>}
+          {label && <Text className='font-medium'>Phone Number</Text>}
           <View className="w-full flex-row">
-            <View className="h-12 items-center justify-center rounded-l-md border-y border-l border-r border-gray-300 px-2.5">
+            <View className="h-12 items-center justify-center rounded-l-lg border-y border-l border-r border-gray-300 px-2.5 bg-white">
               <Text>+20</Text>
             </View>
             <TextInput
@@ -36,7 +38,7 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 rounded-r-md  border-y border-r border-gray-300 px-2.5 ${className ? className : ''}`}
+              className={`h-12 flex-1 rounded-r-lg bg-white border-y border-r border-gray-300 px-2.5 ${className ? className : ''}`}
             />
           </View>
         </View>
@@ -45,20 +47,20 @@ export default function Input({
     case 'password': {
       return (
         <View className="gap-y-2">
-          {label && <Text>{label}</Text>}
-          <View className="w-full flex-row rounded-md border border-gray-300">
+          {label && <Text className='font-medium'>{label}</Text>}
+          <View className="w-full flex-row rounded-lg border border-gray-300">
             <TextInput
               secureTextEntry={!isVisible}
-              textContentType="password"
+              textContentType={textContentType}
               autoComplete="password"
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 rounded-l-md border-gray-300 px-2.5 ${className ? className : ''}`}
+              className={`h-12 flex-1 rounded-l-lg bg-white border-gray-300 px-2.5 ${className ? className : ''}`}
             />
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
-              className="h-12 items-center justify-center rounded-r-md px-2.5">
+              className="h-12 items-center justify-center rounded-r-lg px-2.5">
               {isVisible ? <IconEyeOff size={20} /> : <IconEye size={20} />}
             </Pressable>
           </View>
@@ -68,7 +70,7 @@ export default function Input({
     case 'text': {
       return (
         <View className="gap-y-2">
-          {label && <Text>{label}</Text>}
+          {label && <Text className='font-medium'>{label}</Text>}
           <TextInput
             placeholder={placeholder}
             value={value}

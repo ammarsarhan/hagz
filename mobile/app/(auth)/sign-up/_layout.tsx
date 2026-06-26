@@ -1,19 +1,10 @@
-import { FormContextProvider } from '@/context/FormContext';
+import { SignUpProvider } from '@/context/forms/SignUpContext';
 import { Stack } from 'expo-router';
 
-export default function SignUpLayout() {
-    const initial = {
-        firstName: "",
-        lastName: "",
-        role: "USER",
-        phone: "",
-        password: "",
-        confirmPassword: "",
-    };
-    
+export default function SignUpLayout() {    
     return (
-        <FormContextProvider initial={initial}>
+        <SignUpProvider>
             <Stack screenOptions={{ headerShown: false }} />
-        </FormContextProvider>
+        </SignUpProvider>
     )
 }
