@@ -427,7 +427,7 @@ model Pitch {
   minimumPrice   Int?
   maximumPrice   Int?
 
-  events         PitchEvent[]
+  events       PitchEvent[]
   staff        Staff[]
   amenities    Amenity[]
   grounds      Ground[]

@@ -16,8 +16,8 @@ export type NormalizedPitchFeedType = {
     sports: GroundSport[];
     tier: PitchTier;
     amenities: AmenityName[];
-    minimumPrice: number | null;
-    maximumPrice: number | null;
+    minimumPrice: number;
+    maximumPrice: number;
     averageRating: number | null;
     reviewCount: number;
     media: {
@@ -39,8 +39,8 @@ export type PitchFeedResponseType = {
     sports: GroundSport[];
     amenities: AmenityName[];
     pricing: {
-        minimum: number | null;
-        maximum: number | null;
+        minimum: number;
+        maximum: number;
     };
     rating: {
         average: number | null;

@@ -423,7 +423,6 @@ export default class PitchService {
         });
 
         const slots = formatPitchAvailabilityQuery(rawSlots);
-
         return { slots, grounds };
     };
 
@@ -438,7 +437,7 @@ export default class PitchService {
             },
         } satisfies Prisma.PitchInclude;
 
-        const [[general, personalized], favoritedIds] = await Promise.all([
+        const [[general, personalized], favorites] = await Promise.all([
             Promise.all([
                 Promise.all([
                     prisma.pitch.findMany({
@@ -550,20 +549,20 @@ export default class PitchService {
         const [featured, hot, topRated, budget, instant, premium] = general;
         const [recents, nearby] = personalized;
 
-        const normalize = (raw: any) => normalizeRawPitchFeed(raw, favoritedIds);
+        const normalize = (raw: any) => normalizeRawPitchFeed(raw, favorites);
 
         return {
             general: {
-                featured:  createPitchFeedResponse(featured.map(normalize)),
-                hot:       createPitchFeedResponse(hot.map(normalize)),
-                topRated:  createPitchFeedResponse(topRated.map(normalize)),
-                budget:    createPitchFeedResponse(budget.map(normalize)),
-                instant:   createPitchFeedResponse(instant.map(normalize)),
-                premium:   createPitchFeedResponse(premium.map(normalize)),
+                featured: createPitchFeedResponse(featured.map(normalize)),
+                hot: createPitchFeedResponse(hot.map(normalize)),
+                topRated: createPitchFeedResponse(topRated.map(normalize)),
+                budget: createPitchFeedResponse(budget.map(normalize)),
+                instant: createPitchFeedResponse(instant.map(normalize)),
+                premium: createPitchFeedResponse(premium.map(normalize)),
             },
             personalized: {
                 recents: createPitchFeedResponse(recents.map(normalize)),
-                nearby:  createPitchFeedResponse(nearby.map(normalize)),
+                nearby: createPitchFeedResponse(nearby.map(normalize)),
             },
         };
     };
