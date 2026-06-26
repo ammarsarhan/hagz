@@ -1,5 +1,5 @@
 import z from "zod";
-import { AmenityName, AmenityPrice, BookingStatus, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { AmenityName, AmenityPrice, BookingStatus, GroundSize, GroundSport, GroundSurface, NotificationEvent, PaymentMethod, PermissionLevel, PitchStatus, PitchTier, SlotStatus, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, addHours, isAfter, isBefore } from "date-fns";
 
 export interface StaffType {
@@ -7,6 +7,52 @@ export interface StaffType {
     permissions: any | null;
     role: StaffRole;
 }
+
+export type NormalizedPitchFeedType = {
+    id: string;
+    name: string;
+    street: string;
+    area: { id: string; name: string };
+    sports: GroundSport[];
+    tier: PitchTier;
+    amenities: AmenityName[];
+    minimumPrice: number | null;
+    maximumPrice: number | null;
+    averageRating: number | null;
+    reviewCount: number;
+    media: {
+        url: string;
+        blurhash: string | null;
+    } | null;
+    isFavorited: boolean;
+    distance?: number;
+};
+
+export type PitchFeedResponseType = {
+    id: string;
+    name: string;
+    tier: PitchTier;
+    location: {
+        street: string;
+        area: { id: string; name: string };
+    };
+    sports: GroundSport[];
+    amenities: AmenityName[];
+    pricing: {
+        minimum: number | null;
+        maximum: number | null;
+    };
+    rating: {
+        average: number | null;
+        count: number;
+    };
+    media: {
+        url: string;
+        blurhash: string | null;
+    } | null;
+    isFavorited: boolean;
+    distance: number | null;
+};
 
 const trim = 
     (error: string) => z
@@ -492,3 +538,46 @@ export const getStaffBookingsFiltersSchema = z.object({
     ({ startDate, endDate }) => startDate <= endDate,
     { message: "Start date must be before or equal to the end date.", path: ["endDate"] }
 );
+
+export const normalizeRawPitchFeed = (raw: any, favorited: Set<string>): NormalizedPitchFeedType => ({
+    id: raw.id,
+    name: raw.name,
+    street: raw.street,
+    area: raw.area ?? { id: raw.area_id, name: raw.area_name },
+    sports: raw.sports ?? [],
+    tier: raw.tier,
+    amenities: (raw.amenityList ?? raw.amenity_list ?? []).slice(0, 3),
+    minimumPrice: raw.minimumPrice ?? raw.minimum_price ?? null,
+    maximumPrice: raw.maximumPrice ?? raw.maximum_price ?? null,
+    averageRating: raw.averageRating ?? raw.average_rating ?? null,
+    reviewCount: raw.reviewCount ?? raw.review_count ?? 0,
+    media: raw.media?.[0]
+        ? { url: raw.media[0].url, blurhash: raw.media[0].blurhash ?? null }
+        : null,
+    isFavorited: favorited.has(raw.id),
+    ...(raw.distance !== undefined && { distance: Number(raw.distance) }),
+});
+
+export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[]): PitchFeedResponseType[] =>
+    pitches.map((pitch) => ({
+        id: pitch.id,
+        name: pitch.name,
+        tier: pitch.tier,
+        location: {
+            street: pitch.street,
+            area: pitch.area,
+        },
+        sports: pitch.sports,
+        amenities: pitch.amenities,
+        pricing: {
+            minimum: pitch.minimumPrice,
+            maximum: pitch.maximumPrice,
+        },
+        rating: {
+            average: pitch.averageRating,
+            count: pitch.reviewCount,
+        },
+        media: pitch.media,
+        isFavorited: pitch.isFavorited,
+        distance: pitch.distance ?? null,
+    }));

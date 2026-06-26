@@ -24,8 +24,7 @@ export default function AuthModal() {
       visible={isOpen}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={() => setIsOpen(false)}
-    >
+      onRequestClose={() => setIsOpen(false)}>
       <SafeAreaView className="flex-1 bg-white p-6">
         <Pressable onPress={() => setIsOpen(false)} className="absolute right-4 top-4">
           <IconX />
@@ -46,8 +45,7 @@ export default function AuthModal() {
           <View className="gap-y-2">
             <Button
               className="border-primary bg-primary"
-              onPress={() => handleRedirect('/sign-in')}
-            >
+              onPress={() => handleRedirect('/sign-in')}>
               <Text className="font-semibold">Sign In With Phone</Text>
             </Button>
             <View className="flex-row items-center gap-x-8 px-4 py-3">
@@ -55,12 +53,14 @@ export default function AuthModal() {
               <Text className="text-center text-sm text-gray-500">Or</Text>
               <View className="h-0.5 flex-1 rounded-full bg-gray-100"></View>
             </View>
-            <Button className="bg-card-foreground" onPress={() => handleRedirect('/sign-up/introduction')}>
+            <Button
+              className="bg-card-foreground"
+              onPress={() => handleRedirect('/sign-up/introduction')}>
               <Text className="font-semibold text-card">Create Account</Text>
             </Button>
           </View>
         </View>
       </SafeAreaView>
     </Modal>
-  )
+  );
 }

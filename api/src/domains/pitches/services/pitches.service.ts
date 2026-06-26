@@ -1,7 +1,7 @@
 import z from "zod";
 
-import type { CreatePitchPayloadType, FetchPitchFeedPayloadType, UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { createPitchFeedResponse, normalizeRawPitchFeed, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -14,6 +14,7 @@ import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
 import { endOfWeek, startOfWeek } from "date-fns";
+import type { Prisma } from "@/generated/prisma/client.js";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -427,117 +428,146 @@ export default class PitchService {
     };
 
     fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string) => {
-        const [general, personalized] = await Promise.all([
+        const include = {
+            area: { select: { id: true, name: true } },
+            media: {
+                where: { status: MediaStatus.UPLOADED, type: MediaType.IMAGE },
+                orderBy: { order: "asc" as const },
+                take: 1,
+                select: { url: true },
+            },
+        } satisfies Prisma.PitchInclude;
+
+        const [[general, personalized], favoritedIds] = await Promise.all([
             Promise.all([
-                prisma.pitch.findMany({
-                    where: { status: PitchStatus.LIVE, isFeatured: true },
-                    take: 10,
-                }),
-                prisma.pitch.findMany({
-                    where: { status: PitchStatus.LIVE },
-                    orderBy: { weeklyBookings: "desc" },
-                    take: 10,
-                }),
-                prisma.pitch.findMany({
-                    where: {
-                    status: PitchStatus.LIVE,
-                    reviewCount: { gte: 5 },
-                    },
-                    orderBy: { averageRating: "desc" },
-                    take: 5,
-                }),
-                prisma.pitch.findMany({
-                    where: {
-                    status: PitchStatus.LIVE,
-                    minimumPrice: { gte: 150 },
-                    maximumPrice: { lte: 250 },
-                    },
-                    take: 10,
-                }),
-                prisma.pitch.findMany({
-                    where: {
-                    status: PitchStatus.LIVE,
-                    grounds: {
-                        some: {
-                        settings: { autoConfirm: true },
-                        },
-                    },
-                    },
-                    take: 10,
-                }),
-                prisma.pitch.findMany({
-                    where: { status: PitchStatus.LIVE, tier: PitchTier.PREMIUM },
-                    take: 5,
-                }),
-            ]),
-            Promise.all([
-                userId
-                    ? prisma.pitch.findMany({
-                        where: {
-                        status: PitchStatus.LIVE,
-                        bookings: {
-                            some: { initiatorId: userId },
-                        },
-                        },
+                Promise.all([
+                    prisma.pitch.findMany({
+                        where: { status: PitchStatus.LIVE, isFeatured: true },
+                        include,
+                        take: 10,
+                    }),
+                    prisma.pitch.findMany({
+                        where: { status: PitchStatus.LIVE },
+                        orderBy: { weeklyBookings: "desc" },
+                        include,
+                        take: 10,
+                    }),
+                    prisma.pitch.findMany({
+                        where: { status: PitchStatus.LIVE, reviewCount: { gte: 5 } },
+                        orderBy: { averageRating: "desc" },
+                        include,
                         take: 5,
-                    })
-                    : Promise.resolve([]),
-                payload.latitude !== undefined && payload.longitude !== undefined
-                    ? prisma.$queryRaw<
-                        Array<{
-                        id: string;
-                        distance: number;
-                        } & any>
-                    >`
-                        SELECT
-                        p.*,
-                        ST_Distance(
-                            p.location,
-                            ST_SetSRID(
-                            ST_MakePoint(${payload.longitude}, ${payload.latitude}),
-                            4326
+                    }),
+                    prisma.pitch.findMany({
+                        where: {
+                            status: PitchStatus.LIVE,
+                            minimumPrice: { gte: 150 },
+                            maximumPrice: { lte: 250 },
+                        },
+                        include,
+                        take: 10,
+                    }),
+                    prisma.pitch.findMany({
+                        where: {
+                            status: PitchStatus.LIVE ,
+                            grounds: { some: { settings: { autoConfirm: true } } },
+                        },
+                        include,
+                        take: 10,
+                    }),
+                    prisma.pitch.findMany({
+                        where: { status: PitchStatus.LIVE, tier: PitchTier.PREMIUM },
+                        include,
+                        take: 5,
+                    }),
+                ]),
+                Promise.all([
+                    userId
+                        ? prisma.pitch.findMany({
+                            where: {
+                                status: PitchStatus.LIVE ,
+                                bookings: { some: { initiatorId: userId } },
+                            },
+                            include,
+                            take: 5,
+                        })
+                        : Promise.resolve([]),
+                    payload.latitude !== undefined && payload.longitude !== undefined
+                        ? prisma.$queryRaw<Array<Record<string, any>>>`
+                            SELECT
+                                p.id,
+                                p.name,
+                                p.street,
+                                p.tier,
+                                p.sports,
+                                p.amenity_list,
+                                p.minimum_price,
+                                p.maximum_price,
+                                p.average_rating,
+                                p.review_count,
+                                a.id   AS area_id,
+                                a.name AS area_name,
+                                m.url  AS media_url,
+                                m.blurhash AS media_blurhash,
+                                ST_Distance(
+                                    p.location,
+                                    ST_SetSRID(ST_MakePoint(${payload.longitude}, ${payload.latitude}), 4326)::geography
+                                ) AS distance
+                            FROM "Pitch" p
+                            JOIN "Area" a ON a.id = p.area_id
+                            LEFT JOIN LATERAL (
+                                SELECT url, blurhash
+                                FROM "PitchMedia"
+                                WHERE pitch_id = p.id
+                                AND status = 'UPLOADED'
+                                AND type = 'IMAGE'
+                                ORDER BY "order" ASC
+                                LIMIT 1
+                            ) m ON true
+                            WHERE p.status = 'LIVE'
+                            AND p.location IS NOT NULL
+                            AND ST_DWithin(
+                                p.location,
+                                ST_SetSRID(ST_MakePoint(${payload.longitude}, ${payload.latitude}), 4326)::geography,
+                                25000
+                            )
+                            ORDER BY p.location <-> ST_SetSRID(
+                                ST_MakePoint(${payload.longitude}, ${payload.latitude}),
+                                4326
                             )::geography
-                        ) AS distance
-                        FROM "Pitch" p
-                        WHERE p.status = 'LIVE'
-                        AND p.location IS NOT NULL
-                        AND ST_DWithin(
-                            p.location,
-                            ST_SetSRID(
-                            ST_MakePoint(${payload.longitude}, ${payload.latitude}),
-                            4326
-                            )::geography,
-                            25000
-                        )
-                        ORDER BY p.location <-> ST_SetSRID(
-                        ST_MakePoint(${payload.longitude}, ${payload.latitude}),
-                        4326
-                        )::geography
-                        LIMIT 10
-                    `
-                    : Promise.resolve([]),
+                            LIMIT 10
+                        `
+                        : Promise.resolve([]),
+                ]),
             ]),
+            userId
+                ? prisma.favorite
+                    .findMany({ where: { userId }, select: { pitchId: true } })
+                    .then((rows) => new Set(rows.map((r) => r.pitchId)))
+                : Promise.resolve(new Set<string>()),
         ]);
 
-        const [featured, hot, rated, budget, instant, premium] = general;
-        const [recentlyBooked, nearby] = personalized;
+        const [featured, hot, topRated, budget, instant, premium] = general;
+        const [recents, nearby] = personalized;
+
+        const normalize = (raw: any) => normalizeRawPitchFeed(raw, favoritedIds);
 
         return {
             general: {
-                featured,
-                hot,
-                rated,
-                budget,
-                instant,
-                premium,
+                featured:  createPitchFeedResponse(featured.map(normalize)),
+                hot:       createPitchFeedResponse(hot.map(normalize)),
+                topRated:  createPitchFeedResponse(topRated.map(normalize)),
+                budget:    createPitchFeedResponse(budget.map(normalize)),
+                instant:   createPitchFeedResponse(instant.map(normalize)),
+                premium:   createPitchFeedResponse(premium.map(normalize)),
             },
             personalized: {
-                recentlyBooked,
-                nearby,
+                recents: createPitchFeedResponse(recents.map(normalize)),
+                nearby:  createPitchFeedResponse(nearby.map(normalize)),
             },
         };
     };
-
+    
     toggleFavorite = async (userId: string, pitchId: string, isFavorite: boolean) => {
         // 1. Verify pitch exists and is not deleted
         const pitch = await prisma.pitch.findUnique({

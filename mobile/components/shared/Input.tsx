@@ -28,9 +28,9 @@ export default function Input({
     case 'phone': {
       return (
         <View className="gap-y-2">
-          {label && <Text className='font-medium'>Phone Number</Text>}
+          {label && <Text className="font-medium">Phone Number</Text>}
           <View className="w-full flex-row gap-x-2">
-            <View className="h-12 items-center justify-center rounded-lg px-3 bg-slate-100">
+            <View className="h-12 items-center justify-center rounded-lg bg-slate-100 px-3">
               <Text>+20</Text>
             </View>
             <TextInput
@@ -47,8 +47,8 @@ export default function Input({
     case 'password': {
       return (
         <View className="gap-y-2">
-          {label && <Text className='font-medium'>{label}</Text>}
-          <View className="w-full flex-row rounded-lg overflow-hidden">
+          {label && <Text className="font-medium">{label}</Text>}
+          <View className="w-full flex-row overflow-hidden rounded-lg">
             <TextInput
               secureTextEntry={!isVisible}
               textContentType={textContentType}
@@ -60,9 +60,12 @@ export default function Input({
             />
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
-              className="h-12 items-center justify-center px-3 bg-slate-100"
-            >
-              {isVisible ? <IconEyeOff size={20} color="#AAAAAA"/> : <IconEye size={20} color="#AAAAAA"/>}
+              className="h-12 items-center justify-center bg-slate-100 px-3">
+              {isVisible ? (
+                <IconEyeOff size={20} color="#AAAAAA" />
+              ) : (
+                <IconEye size={20} color="#AAAAAA" />
+              )}
             </Pressable>
           </View>
         </View>
@@ -71,7 +74,7 @@ export default function Input({
     case 'text': {
       return (
         <View className="gap-y-2">
-          {label && <Text className='font-medium'>{label}</Text>}
+          {label && <Text className="font-medium">{label}</Text>}
           <TextInput
             placeholder={placeholder}
             value={value}
