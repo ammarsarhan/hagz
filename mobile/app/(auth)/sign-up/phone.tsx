@@ -1,13 +1,20 @@
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import { useSignUpForm } from "@/context/forms/SignUpContext";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { StatusBar, View, Text, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Phone() {
     const { data, setData } = useSignUpForm();
     const isDisabled = data.phone === "";
+
+    useFocusEffect(
+        useCallback(() => {
+            return () => Keyboard.dismiss();
+        }, [])
+    );
 
     return (
         <>

@@ -1,12 +1,20 @@
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import { useSignUpForm } from "@/context/forms/SignUpContext";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { StatusBar, View, Text, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Password() {
     const { data, setData } = useSignUpForm();
-    const isDisabled = data.password === "" || data.confirmPassword === "";
+    const isDisabled = data.password === "" || data.confirmPassword === "" || data.password !== data.confirmPassword;
+
+    useFocusEffect(
+        useCallback(() => {
+            return () => Keyboard.dismiss();
+        }, [])
+    );
 
     return (
         <>
@@ -42,7 +50,7 @@ export default function Password() {
                                     />
                                 </View>
                                 <Button className={isDisabled ? "border-gray-200 bg-gray-200 w-full" : "border-primary bg-primary w-full"}>
-                                    <Text className="font-semibold">Create Account</Text>
+                                    <Text className={`font-semibold ${isDisabled ? "text-gray-400" : "text-black"}`}>Create Account</Text>
                                 </Button>
                             </View>
                         </SafeAreaView>

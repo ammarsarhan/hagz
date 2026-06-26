@@ -22,7 +22,7 @@ export default function Input({
   textContentType = 'password',
 }: InputProps) {
   const [isVisible, setIsVisible] = useState(type !== 'password');
-  const base = 'w-full bg-white rounded-lg px-3 h-12 bg-slate-100';
+  const base = 'w-full rounded-lg px-3 h-12 bg-slate-100';
 
   switch (type) {
     case 'phone': {
