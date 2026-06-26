@@ -22,15 +22,15 @@ export default function Input({
   textContentType = 'password',
 }: InputProps) {
   const [isVisible, setIsVisible] = useState(type !== 'password');
-  const base = 'w-full bg-white rounded-lg px-3 h-12 border border-gray-300';
+  const base = 'w-full bg-white rounded-lg px-3 h-12 bg-slate-100';
 
   switch (type) {
     case 'phone': {
       return (
         <View className="gap-y-2">
           {label && <Text className='font-medium'>Phone Number</Text>}
-          <View className="w-full flex-row">
-            <View className="h-12 items-center justify-center rounded-l-lg border-y border-l border-r border-gray-300 px-2.5 bg-white">
+          <View className="w-full flex-row gap-x-2">
+            <View className="h-12 items-center justify-center rounded-lg px-3 bg-slate-100">
               <Text>+20</Text>
             </View>
             <TextInput
@@ -38,7 +38,7 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 rounded-r-lg bg-white border-y border-r border-gray-300 px-2.5 ${className ? className : ''}`}
+              className={`h-12 flex-1 rounded-lg bg-slate-100 px-3 ${className ? className : ''}`}
             />
           </View>
         </View>
@@ -48,7 +48,7 @@ export default function Input({
       return (
         <View className="gap-y-2">
           {label && <Text className='font-medium'>{label}</Text>}
-          <View className="w-full flex-row rounded-lg border border-gray-300">
+          <View className="w-full flex-row rounded-lg overflow-hidden">
             <TextInput
               secureTextEntry={!isVisible}
               textContentType={textContentType}
@@ -56,11 +56,12 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 rounded-l-lg bg-white border-gray-300 px-2.5 ${className ? className : ''}`}
+              className={`h-12 flex-1 bg-slate-100 px-3 ${className ? className : ''}`}
             />
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
-              className="h-12 items-center justify-center rounded-r-lg px-2.5">
+              className="h-12 items-center justify-center px-3 bg-slate-100"
+            >
               {isVisible ? <IconEyeOff size={20} /> : <IconEye size={20} />}
             </Pressable>
           </View>
