@@ -62,7 +62,7 @@ export default function Input({
               onPress={() => setIsVisible((v) => !v)}
               className="h-12 items-center justify-center px-3 bg-slate-100"
             >
-              {isVisible ? <IconEyeOff size={20} /> : <IconEye size={20} />}
+              {isVisible ? <IconEyeOff size={20} color="#AAAAAA"/> : <IconEye size={20} color="#AAAAAA"/>}
             </Pressable>
           </View>
         </View>
