@@ -455,7 +455,7 @@ export default class PitchService {
                         where: { status: PitchStatus.LIVE, reviewCount: { gte: 5 } },
                         orderBy: { averageRating: "desc" },
                         include,
-                        take: 5,
+                        take: 3,
                     }),
                     prisma.pitch.findMany({
                         where: {

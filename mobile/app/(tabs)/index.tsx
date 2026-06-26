@@ -37,7 +37,7 @@ export default function Home() {
   const sections = parsePitchFeedResponse(data);
 
   return (
-      <SafeAreaView className="flex-1 gap-y-6 pt-6 px-6" edges={['top']}>
+      <SafeAreaView className="flex-1 gap-y-6 p-6" edges={['top']}>
         <Text className="text-4xl font-semibold">Home</Text>
         <ScrollView contentContainerStyle={{ gap: 24 }} showsVerticalScrollIndicator={false}>
           {

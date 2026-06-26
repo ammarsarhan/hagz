@@ -4,5 +4,5 @@ export default function formatCurrency(value: number) {
         currency: "EGP",
     });
 
-    currency.format(value);
+    return currency.format(value);
 }

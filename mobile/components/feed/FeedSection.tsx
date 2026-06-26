@@ -1,6 +1,6 @@
 import { ScrollView, View } from 'react-native';
 import FeedHeader, { FeedHeaderSkeleton } from '@/components/feed/FeedHeader';
-import FeedCard, { FeedCardSkeleton } from '@/components/feed/FeedCard';
+import { FeedCardSkeleton, FeedLargeCard, FeedStandardCard } from '@/components/feed/FeedCard';
 import { FeedPitch } from '@/lib/types/pitch';
 
 export function FeedSectionSkeleton() {
@@ -14,24 +14,28 @@ export function FeedSectionSkeleton() {
                 contentContainerStyle={{ gap: 32 }}
                 showsHorizontalScrollIndicator={false}
             >
-                {skeletons.map((_, index) => <FeedCardSkeleton key={index}/>)}
+                {
+                    skeletons.map((_, index) => <FeedCardSkeleton key={index}/>)
+                }
             </ScrollView>
         </View>
     );
 };
 
 export default function FeedSection({ label, cards } : { label: string, cards: FeedPitch[] }) {
+    const isVertical = cards.length <= 3;
+
     return (
-        <View className="gap-y-4">
+        <View className={`${isVertical ? "py-4 gap-y-4" : "gap-y-4"}`}>
             <FeedHeader label={label} />
             <ScrollView
-                horizontal
+                horizontal={!isVertical}
                 contentContainerStyle={{ gap: 32 }}
                 showsHorizontalScrollIndicator={false}
             >
                 {
                     cards.map((pitch, index) => {
-                        return <FeedCard pitch={pitch} key={index}/>
+                        return isVertical ? <FeedLargeCard pitch={pitch} key={index}/> : <FeedStandardCard pitch={pitch} key={index}/>;
                     })
                 }
             </ScrollView>
