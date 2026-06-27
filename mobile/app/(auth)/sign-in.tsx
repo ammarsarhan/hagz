@@ -18,6 +18,7 @@ import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
 import Logo from '@/assets/logos/logo-cropped.svg';
 import { saveTokens } from '@/lib/storage';
+import { useTranslation } from 'react-i18next';
 
 export default function SignIn() {
   const { setUser } = useAuth();
@@ -44,6 +45,8 @@ export default function SignIn() {
 
   const isPending = useStore(form.store, (state) => state.isSubmitting || state.isValidating);
 
+  const { t } = useTranslation();
+
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -55,14 +58,14 @@ export default function SignIn() {
           <SafeAreaView className="flex-1 items-center justify-center gap-y-8 bg-white p-6">
             <View className="items-center justify-center gap-y-3">
               <Logo width={50} height={50} color={'#000000'} />
-              <Text className="text-center text-4xl font-semibold">Sign In to Hagz</Text>
+              <Text className="text-center text-4xl font-semibold">{t("auth.signIn.title")}</Text>
             </View>
             <View className="w-full gap-y-6">
               <form.Field name="phone">
                 {(field) => (
                   <Input
                     label="Phone Number"
-                    placeholder="e.g. 1023045006"
+                    placeholder={t("auth.signIn.inputs.phone.placeholder")}
                     type="phone"
                     value={field.state.value}
                     onChangeText={(text) => field.handleChange(text)}
@@ -74,7 +77,7 @@ export default function SignIn() {
                   {(field) => (
                     <Input
                       label="Password"
-                      placeholder="Password"
+                      placeholder={t("auth.signIn.inputs.password.placeholder")}
                       type="password"
                       value={field.state.value}
                       onChangeText={(text) => field.handleChange(text)}
@@ -82,7 +85,7 @@ export default function SignIn() {
                   )}
                 </form.Field>
                 <Link href="/">
-                  <Text className="text-primary-foreground">Forgot password?</Text>
+                  <Text className="text-primary-foreground text-left">{t("auth.signIn.inputs.password.forgot")}</Text>
                 </Link>
               </View>
             </View>
@@ -90,14 +93,14 @@ export default function SignIn() {
               <Button className={`w-full ${!isPending ? "border-primary bg-primary" : "border-primary/50 bg-primary/50"}`} disabled={isPending} onPress={() => form.handleSubmit()}>
                 {
                   !isPending ? 
-                  <Text className="font-semibold">Sign in</Text> :
+                  <Text className="font-semibold">{t("auth.signIn.cta")}</Text> :
                   <ActivityIndicator size="small" color="black" />
                 }
               </Button>
               <View className="flex-row gap-x-1">
-                <Text>Don&apos;t have an account?</Text>
+                <Text className='text-left'>{t("auth.signIn.alternate.label")}</Text>
                 <Link href={'/sign-up/introduction'} asChild>
-                  <Text className="text-primary-foreground">Create one!</Text>
+                  <Text className="text-primary-foreground text-left">{t("auth.signIn.alternate.link")}</Text>
                 </Link>
               </View>
             </View>

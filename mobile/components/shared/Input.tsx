@@ -1,6 +1,7 @@
 import { IconEye, IconEyeOff } from '@tabler/icons-react-native';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { I18nManager, Pressable, Text, TextInput, View } from 'react-native';
 
 interface InputProps {
   label?: string;
@@ -24,11 +25,14 @@ export default function Input({
   const [isVisible, setIsVisible] = useState(type !== 'password');
   const base = 'w-full rounded-lg px-3 h-12 bg-slate-100';
 
+  const { t } = useTranslation();
+  const isRTL = I18nManager.isRTL;
+
   switch (type) {
     case 'phone': {
       return (
         <View className="gap-y-2">
-          {label && <Text className="font-medium">Phone Number</Text>}
+          {label && <Text className="font-medium text-left">{t("components.shared.input.phone.label")}</Text>}
           <View className="w-full flex-row gap-x-2">
             <View className="h-12 items-center justify-center rounded-lg bg-slate-100 px-3">
               <Text>+20</Text>
@@ -38,7 +42,7 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 rounded-lg bg-slate-100 px-3 ${className ? className : ''}`}
+              className={`h-12 flex-1 rounded-lg bg-slate-100 px-3 ${isRTL ? "text-right" : "text-left"} ${className ? className : ''}`}
             />
           </View>
         </View>
@@ -47,7 +51,7 @@ export default function Input({
     case 'password': {
       return (
         <View className="gap-y-2">
-          {label && <Text className="font-medium">{label}</Text>}
+          {label && <Text className="font-medium text-left">{t("components.shared.input.password.label")}</Text>}
           <View className="w-full flex-row overflow-hidden rounded-lg">
             <TextInput
               secureTextEntry={!isVisible}
@@ -56,11 +60,12 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 bg-slate-100 px-3 ${className ? className : ''}`}
+              className={`h-12 flex-1 bg-slate-100 px-3 ${isRTL ? "text-right" : "text-left"} ${className ? className : ''}`}
             />
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
-              className="h-12 items-center justify-center bg-slate-100 px-3">
+              className="h-12 items-center justify-center bg-slate-100 px-3"
+            >
               {isVisible ? (
                 <IconEyeOff size={20} color="#AAAAAA" />
               ) : (
