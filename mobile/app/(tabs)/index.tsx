@@ -1,9 +1,10 @@
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { client } from '@/lib/client';
 import FeedSection, { FeedSectionSkeleton } from '@/components/feed/FeedSection';
 import { parsePitchFeedResponse } from '@/lib/types/pitch';
+import { IconSearch } from '@tabler/icons-react-native';
 
 export default function Home() {
   const { data, error, isPending, isError } = useQuery({
@@ -19,11 +20,16 @@ export default function Home() {
 
   if (isPending) {
     return (
-      <SafeAreaView className="flex-1 gap-y-6 pt-6 px-6">
-        <Text className="text-4xl font-semibold">Home</Text>
-        <ScrollView contentContainerStyle={{ gap: 24 }} showsVerticalScrollIndicator={false}>
+      <SafeAreaView className="flex-1 gap-y-6 pt-3" edges={['top']}>
+        <View className="h-14 rounded-full bg-slate-200 flex-row items-center justify-center px-4 gap-x-2">
+          <IconSearch size={18} />
+          <Text className='text-gray-500'>Search pitches...</Text>
+        </View>
+        <ScrollView contentContainerStyle={{ gap: 40 }} showsVerticalScrollIndicator={false}>
           {
-            skeletons.map((_, index) => <FeedSectionSkeleton key={index}/>)
+            skeletons.map((_, index) => {
+              return <FeedSectionSkeleton key={index}/>
+            })
           }
         </ScrollView>
       </SafeAreaView>
@@ -37,12 +43,17 @@ export default function Home() {
   const sections = parsePitchFeedResponse(data);
 
   return (
-      <SafeAreaView className="flex-1 gap-y-6 p-6" edges={['top']}>
-        <Text className="text-4xl font-semibold">Home</Text>
-        <ScrollView contentContainerStyle={{ gap: 24 }} showsVerticalScrollIndicator={false}>
+      <SafeAreaView className="flex-1 gap-y-6 pt-3" edges={['top']}>
+        <View className='px-6'>
+          <View className="h-14 rounded-full bg-slate-200 flex-row items-center justify-center px-4 gap-x-2">
+            <IconSearch size={18} />
+            <Text className='text-gray-500'>Search pitches...</Text>
+          </View>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false}>
           {
             sections.map((section, index) => {
-              return <FeedSection label={section.label} cards={section.cards} key={index}/>
+              return <FeedSection label={section.label} description={section.description} cards={section.cards} key={index}/>
             })
           }
         </ScrollView>

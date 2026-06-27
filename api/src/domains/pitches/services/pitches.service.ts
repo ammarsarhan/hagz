@@ -553,17 +553,41 @@ export default class PitchService {
 
         return {
             general: {
-                featured: createPitchFeedResponse(featured.map(normalize)),
-                hot: createPitchFeedResponse(hot.map(normalize)),
-                topRated: createPitchFeedResponse(topRated.map(normalize)),
-                budget: createPitchFeedResponse(budget.map(normalize)),
-                instant: createPitchFeedResponse(instant.map(normalize)),
-                premium: createPitchFeedResponse(premium.map(normalize)),
+                featured: {
+                    description: "Hand-picked pitches we think you'll love.",
+                    cards: createPitchFeedResponse(featured.map(normalize), "Featured"),
+                },
+                hot: {
+                    description: "The most booked pitches this week.",
+                    cards: createPitchFeedResponse(hot.map(normalize)),
+                },
+                topRated: {
+                    description: null,
+                    cards: createPitchFeedResponse(topRated.map(normalize)),
+                },
+                budget: {
+                    description: "Great value between EGP 150-250.",
+                    cards: createPitchFeedResponse(budget.map(normalize)),
+                },
+                instant: {
+                    description: "Book instantly without waiting.",
+                    cards: createPitchFeedResponse(instant.map(normalize)),
+                },
+                premium: {
+                    description: null,
+                    cards: createPitchFeedResponse(premium.map(normalize), "Premium"),
+                },
             },
             personalized: {
-                recents: createPitchFeedResponse(recents.map(normalize)),
-                nearby: createPitchFeedResponse(nearby.map(normalize)),
-            },
+                recents: {
+                    description: "Based on your previous bookings",
+                    cards: createPitchFeedResponse(recents.map(normalize)),
+                },
+                nearby: {
+                    description: payload.latitude ? "Within 25 km of your location" : null,
+                    cards: createPitchFeedResponse(nearby.map(normalize)),
+                },
+            }
         };
     };
     

@@ -3,34 +3,39 @@ import FeedHeader, { FeedHeaderSkeleton } from '@/components/feed/FeedHeader';
 import { FeedCardSkeleton, FeedLargeCard, FeedStandardCard } from '@/components/feed/FeedCard';
 import { FeedPitch } from '@/lib/types/pitch';
 
-export function FeedSectionSkeleton() {
-    const skeletons = [1, 2, 3, 4, 5];
+export function FeedSectionSkeleton({ isVertical = false }: { isVertical?: boolean }) {
+    const skeletons = [1, 2, 3];
 
     return (
-        <View className="gap-y-4">
+        <View className={`${isVertical ? "py-4 gap-y-6" : "gap-y-6"}`}>
             <FeedHeaderSkeleton />
             <ScrollView
-                horizontal
+                horizontal={!isVertical}
                 contentContainerStyle={{ gap: 32 }}
                 showsHorizontalScrollIndicator={false}
             >
                 {
-                    skeletons.map((_, index) => <FeedCardSkeleton key={index}/>)
+                    skeletons.map((_, index) => (
+                        <FeedCardSkeleton 
+                            key={index} 
+                            variant={isVertical ? 'large' : 'standard'} 
+                        />
+                    ))
                 }
             </ScrollView>
         </View>
     );
 };
 
-export default function FeedSection({ label, cards } : { label: string, cards: FeedPitch[] }) {
+export default function FeedSection({ label, description, cards } : { label: string, description: string | null, cards: FeedPitch[] }) {
     const isVertical = cards.length <= 3;
 
     return (
-        <View className={`${isVertical ? "py-4 gap-y-4" : "gap-y-4"}`}>
-            <FeedHeader label={label} />
+        <View className="gap-y-6 py-6">
+            <FeedHeader label={label} description={description}/>
             <ScrollView
                 horizontal={!isVertical}
-                contentContainerStyle={{ gap: 32 }}
+                contentContainerStyle={{ gap: 32, paddingLeft: 24, paddingRight: 24 }}
                 showsHorizontalScrollIndicator={false}
             >
                 {

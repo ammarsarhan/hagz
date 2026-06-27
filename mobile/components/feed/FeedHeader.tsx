@@ -1,4 +1,3 @@
-import { IconChevronRight } from '@tabler/icons-react-native';
 import { useEffect } from 'react';
 import { View, Text } from 'react-native';
 
@@ -24,10 +23,14 @@ export function FeedHeaderSkeleton() {
     return <Animated.View style={style} className="h-8 w-1/3 rounded-lg bg-gray-200" />;
 }
 
-export default function FeedHeader({ label } : { label: string }) {
+export default function FeedHeader({ label, description } : { label: string, description: string | null }) {
     return (
-        <View className='flex-row items-center gap-x-1'>
+        <View className='gap-y-0.5 px-6'>
             <Text className='text-2xl font-semibold'>{label}</Text>
+            {
+                description &&
+                <Text className='text-gray-500'>{description}</Text>
+            }
         </View>
     );
 }

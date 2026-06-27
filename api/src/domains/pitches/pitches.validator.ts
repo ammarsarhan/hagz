@@ -52,6 +52,7 @@ export type PitchFeedResponseType = {
     } | null;
     isFavorited: boolean;
     distance: number | null;
+    badge: string | null;
 };
 
 const trim = 
@@ -558,7 +559,7 @@ export const normalizeRawPitchFeed = (raw: any, favorited: Set<string>): Normali
     ...(raw.distance !== undefined && { distance: Number(raw.distance) }),
 });
 
-export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[]): PitchFeedResponseType[] =>
+export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[], badge?: string): PitchFeedResponseType[] =>
     pitches.map((pitch) => ({
         id: pitch.id,
         name: pitch.name,
@@ -580,4 +581,5 @@ export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[]): Pit
         media: pitch.media,
         isFavorited: pitch.isFavorited,
         distance: pitch.distance ?? null,
+        badge: badge ?? null
     }));
