@@ -7,23 +7,32 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Logo from '@/assets/logos/logo-cropped.svg';
-import Input from '@/components/shared/Input';
-import { useState } from 'react';
 import { Link } from 'expo-router';
+import { useForm } from '@tanstack/react-form';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
+import Logo from '@/assets/logos/logo-cropped.svg';
 
 export default function SignIn() {
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const form = useForm({
+    defaultValues: {
+      phone: '',
+      password: ''
+    },
+    onSubmit: async ({ value }) => {
+      console.log(value);
+    }
+  })
 
   return (
     <>
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         className="flex-1 overflow-hidden"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <SafeAreaView className="flex-1 items-center justify-center gap-y-8 bg-white p-6">
             <View className="items-center justify-center gap-y-3">
@@ -31,21 +40,29 @@ export default function SignIn() {
               <Text className="text-center text-4xl font-semibold">Sign In to Hagz</Text>
             </View>
             <View className="w-full gap-y-6">
-              <Input
-                label="Phone Number"
-                placeholder="e.g. 1023045006"
-                type="phone"
-                value={phone}
-                onChangeText={(text) => setPhone(text)}
-              />
+              <form.Field name="phone">
+                {(field) => (
+                  <Input
+                    label="Phone Number"
+                    placeholder="e.g. 1023045006"
+                    type="phone"
+                    value={field.state.value}
+                    onChangeText={(text) => field.handleChange(text)}
+                  />
+                )}
+              </form.Field>
               <View className="gap-y-2">
-                <Input
-                  label="Password"
-                  placeholder="Password"
-                  type="password"
-                  value={password}
-                  onChangeText={(text) => setPassword(text)}
-                />
+                <form.Field name="password">
+                  {(field) => (
+                    <Input
+                      label="Password"
+                      placeholder="Password"
+                      type="password"
+                      value={field.state.value}
+                      onChangeText={(text) => field.handleChange(text)}
+                    />
+                  )}
+                </form.Field>
                 <Link href="/">
                   <Text className="text-primary-foreground">Forgot password?</Text>
                 </Link>

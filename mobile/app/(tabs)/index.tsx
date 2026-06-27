@@ -1,10 +1,9 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { client } from '@/lib/client';
 import FeedSection, { FeedSectionSkeleton } from '@/components/feed/FeedSection';
 import { parsePitchFeedResponse } from '@/lib/types/pitch';
-import { IconSearch } from '@tabler/icons-react-native';
 
 export default function Home() {
   const { data, error, isPending, isError } = useQuery({
@@ -21,10 +20,6 @@ export default function Home() {
   if (isPending) {
     return (
       <SafeAreaView className="flex-1 gap-y-6 pt-3" edges={['top']}>
-        <View className="h-14 rounded-full bg-slate-200 flex-row items-center justify-center px-4 gap-x-2">
-          <IconSearch size={18} />
-          <Text className='text-gray-500'>Search pitches...</Text>
-        </View>
         <ScrollView contentContainerStyle={{ gap: 40 }} showsVerticalScrollIndicator={false}>
           {
             skeletons.map((_, index) => {
@@ -43,13 +38,7 @@ export default function Home() {
   const sections = parsePitchFeedResponse(data);
 
   return (
-      <SafeAreaView className="flex-1 gap-y-6 pt-3" edges={['top']}>
-        <View className='px-6'>
-          <View className="h-14 rounded-full bg-slate-200 flex-row items-center justify-center px-4 gap-x-2">
-            <IconSearch size={18} />
-            <Text className='text-gray-500'>Search pitches...</Text>
-          </View>
-        </View>
+      <SafeAreaView className="flex-1 gap-y-6" edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false}>
           {
             sections.map((section, index) => {
