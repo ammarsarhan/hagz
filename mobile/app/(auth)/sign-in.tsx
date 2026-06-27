@@ -6,25 +6,43 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
-import { Link } from 'expo-router';
-import { useForm } from '@tanstack/react-form';
+import { Link, router } from 'expo-router';
+import { useForm, useStore } from '@tanstack/react-form';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { client } from '@/lib/client';
+import { useAuth } from '@/context/AuthContext';
 import Input from '@/components/shared/Input';
 import Button from '@/components/shared/Button';
 import Logo from '@/assets/logos/logo-cropped.svg';
+import { saveTokens } from '@/lib/storage';
 
 export default function SignIn() {
+  const { setUser } = useAuth();
+
   const form = useForm({
     defaultValues: {
       phone: '',
       password: ''
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      const { phone, password } = value;
+      const res = await client.auth['sign-in'].$post({ json: { phone: `+20${phone}`, password } });
+
+      if (res.ok) {
+        const body = await res.json();
+        const { accessToken, refreshToken } = body.data || {};
+        
+        if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
+        setUser(body.data.user);
+        router.replace('/(tabs)');
+      };
     }
-  })
+  });
+
+  const isPending = useStore(form.store, (state) => state.isSubmitting || state.isValidating);
 
   return (
     <>
@@ -69,8 +87,12 @@ export default function SignIn() {
               </View>
             </View>
             <View className="mt-2 w-full items-center gap-y-6">
-              <Button className="w-full border-primary bg-primary">
-                <Text className="font-semibold">Sign in</Text>
+              <Button className={`w-full ${!isPending ? "border-primary bg-primary" : "border-primary/50 bg-primary/50"}`} disabled={isPending} onPress={() => form.handleSubmit()}>
+                {
+                  !isPending ? 
+                  <Text className="font-semibold">Sign in</Text> :
+                  <ActivityIndicator size="small" color="black" />
+                }
               </Button>
               <View className="flex-row gap-x-1">
                 <Text>Don&apos;t have an account?</Text>

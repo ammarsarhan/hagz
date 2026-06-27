@@ -17,8 +17,47 @@ export const signUpHandler = factory.createHandlers(
     validate("json", signUpSchema), 
     async (c) => {
         const payload = c.req.valid("json");
-        const user = await authService.createUser(payload);
-        return c.json({ success: true, data: user }, 201);
+
+        const ipAddress = c.req.header("x-forwarded-for")?.split(",")[0].trim() 
+            ?? null;
+            
+        const userAgent = c.req.header("user-agent") ?? null;
+
+        const isMobile = 
+            c.req.header("X-Client-Type") === 'mobile' &&
+            !c.req.header('origin');
+
+        await authService.createUser(payload);
+
+        // Exact same flow as the sign in handler to sign in the user directly after signing them up.
+        const { user, accessToken, refreshToken } = await authService.signIn(payload, ipAddress, userAgent);
+        
+        if (!isMobile) {
+            setCookie(c, "accessToken", accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Strict",
+                path: "/",
+                maxAge: 60 * 15, // 15m
+            });
+
+            setCookie(c, "refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Strict",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 7 // 7d
+            });
+        }
+
+        return c.json({ 
+            success: true, 
+            data: { 
+                user,
+                accessToken: isMobile ? accessToken : undefined,
+                refreshToken: isMobile ? refreshToken : undefined,
+            } 
+        }, 201);
     }
 );
 

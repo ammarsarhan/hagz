@@ -19,8 +19,8 @@ export default function Home() {
 
   if (isPending) {
     return (
-      <SafeAreaView className="flex-1 gap-y-6 pt-3" edges={['top']}>
-        <ScrollView contentContainerStyle={{ gap: 40 }} showsVerticalScrollIndicator={false}>
+      <SafeAreaView className="flex-1 gap-y-6" edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false}>
           {
             skeletons.map((_, index) => {
               return <FeedSectionSkeleton key={index}/>

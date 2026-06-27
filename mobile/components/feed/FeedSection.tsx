@@ -7,11 +7,11 @@ export function FeedSectionSkeleton({ isVertical = false }: { isVertical?: boole
     const skeletons = [1, 2, 3];
 
     return (
-        <View className={`${isVertical ? "py-4 gap-y-6" : "gap-y-6"}`}>
+        <View className="gap-y-6 py-6">
             <FeedHeaderSkeleton />
             <ScrollView
                 horizontal={!isVertical}
-                contentContainerStyle={{ gap: 32 }}
+                contentContainerStyle={{ gap: 32, paddingLeft: 24, paddingRight: 24 }}
                 showsHorizontalScrollIndicator={false}
             >
                 {

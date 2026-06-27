@@ -20,7 +20,12 @@ export function FeedHeaderSkeleton() {
         opacity: opacity.value,
     }));
 
-    return <Animated.View style={style} className="h-8 w-1/3 rounded-lg bg-gray-200" />;
+    return (
+        <View className='px-6 gap-y-3'>
+            <Animated.View style={style} className="h-6 w-1/3 rounded-lg bg-gray-200" />
+            <Animated.View style={style} className="h-6 w-2/3 rounded-lg bg-gray-200" />
+        </View>
+    );
 }
 
 export default function FeedHeader({ label, description } : { label: string, description: string | null }) {
