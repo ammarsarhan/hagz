@@ -1,7 +1,7 @@
+import { I18nManager } from 'react-native';
+import { getLocales } from 'expo-localization';
 import i18n, { changeLanguage } from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { getLocales } from 'expo-localization';
-import { I18nManager } from 'react-native';
 
 import en from '@/i18next/locales/en';
 import ar from '@/i18next/locales/ar';
@@ -11,6 +11,7 @@ export const Language = {
   AR: 'AR'
 } as const
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type Language = (typeof Language)[keyof typeof Language]
 type Locale = (typeof languages)[number];
 
@@ -33,18 +34,6 @@ function getDeviceLocale(): Locale {
 
 const deviceLocale = getDeviceLocale();
 
-i18n
-    .use(initReactI18next)
-    .init({
-        resources: { en, ar },
-        lng: deviceLocale,
-        fallbackLng: 'ar',
-        supportedLngs: ['en', 'ar'],
-        interpolation: {
-            escapeValue: false,
-        },
-    });
-
 export async function applyLocale(preferred?: Language | null) {
     const locale = (preferred != null ? languageToLocale[preferred] : null) ?? getDeviceLocale();
 
@@ -53,9 +42,29 @@ export async function applyLocale(preferred?: Language | null) {
     }
 
     const isRTL = locale === 'ar';
-    I18nManager.allowRTL(isRTL);
-    I18nManager.forceRTL(isRTL);
+
+    if (I18nManager.isRTL !== isRTL) {
+        I18nManager.allowRTL(isRTL);
+        I18nManager.forceRTL(isRTL);
+
+        if (!__DEV__) {
+            const Updates = await import('expo-updates');
+            await Updates.reloadAsync();
+        }
+    }
 }
+
+i18n
+.use(initReactI18next)
+.init({
+    resources: { en, ar },
+    lng: deviceLocale,
+    fallbackLng: 'ar',
+    supportedLngs: ['en', 'ar'],
+    interpolation: {
+        escapeValue: false,
+    },
+});
 
 applyLocale();
 export default i18n;
