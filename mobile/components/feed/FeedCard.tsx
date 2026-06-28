@@ -42,10 +42,10 @@ export function FeedLargeCard({ pitch } : { pitch: FeedPitch }) {
         <View className='flex-row items-center justify-between'>
           <Text>{isApproximate ? `${formatCurrency(pitch.pricing.minimum)}/hr` : `${formatCurrency(pitch.pricing.minimum)}/hr`}</Text>
           {
-            pitch.rating.average &&
+            pitch.rating.count > 0 && pitch.rating.average &&
             <View className='flex-row items-center gap-x-1.5'>
               <IconStarFilled size={14} color={'#9CA3AF'}/>
-              <Text className='text-gray-500'>{pitch.rating.average.toFixed(2)}</Text>
+              <Text className='text-gray-500'>{pitch.rating.average.toFixed(1)}</Text>
             </View>
           }
         </View>
@@ -84,10 +84,10 @@ export function FeedStandardCard({ pitch } : { pitch: FeedPitch }) {
         <View className='flex-row items-center justify-between'>
           <Text>{isApproximate ? `${formatCurrency(pitch.pricing.minimum)}/hr` : `${formatCurrency(pitch.pricing.minimum)}/hr`}</Text>
           {
-            pitch.rating.average &&
+            pitch.rating.count > 0 && pitch.rating.average &&
             <View className='flex-row items-center gap-x-1.5'>
               <IconStarFilled size={14} color={'#9CA3AF'}/>
-              <Text className='text-gray-500'>{pitch.rating.average.toFixed(2)}</Text>
+              <Text className='text-gray-500'>{pitch.rating.average.toFixed(1)}</Text>
             </View>
           }
         </View>

@@ -1,7 +1,7 @@
 import { hc } from 'hono/client';
 import type { AppType } from '../../api/src/index.js';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './storage';
-import i18n from '@/i18next/i18next.js';
+import i18n from '@/i18next/i18next';
 
 // Adjust to match actual backend URL (e.g. from config/constants).
 const API_URL = 'http://192.168.1.7:8080';

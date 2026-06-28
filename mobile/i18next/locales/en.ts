@@ -33,6 +33,7 @@ const en = {
                         forgot: "Forgot Password"
                     }
                 },
+                cta: "Sign In",
                 alternate: {
                     label: "Don't have an account?",
                     link: "Create one!"
