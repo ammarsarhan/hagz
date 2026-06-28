@@ -1,7 +1,7 @@
 import z from "zod";
 
 import { createPitchFeedResponse, normalizeRawPitchFeed, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -15,6 +15,7 @@ import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
 import { endOfWeek, startOfWeek } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client.js";
+import type { Locale } from "@/shared/types/locale.js";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -426,7 +427,7 @@ export default class PitchService {
         return { slots, grounds };
     };
 
-    fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string) => {
+    fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string, locale: Language = Language.EN) => {
         const include = {
             area: { select: { id: true, name: true } },
             media: {

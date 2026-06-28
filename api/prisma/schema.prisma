@@ -252,9 +252,21 @@ model Area {
 
   pitches Pitch[]
   users   UserPreferences[]
+  translations AreaTranslation[]
 
   @@unique([name, governorateId])
 }
+
+model AreaTranslation {
+  areaId String
+  locale Language
+  name   String
+
+  area Area @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@id([areaId, locale])
+}
+
 
 model Governorate {
   id   String @id @default(cuid())
@@ -437,10 +449,22 @@ model Pitch {
   customers    PitchCustomer[]
   favorites    Favorite[]
   ledger       PitchLedger?
+  translations PitchTranslation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   reviews   Review[]
+}
+
+model PitchTranslation {
+  pitchId     String
+  locale      Language
+  name        String
+  description String
+
+  pitch Pitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+
+  @@id([pitchId, locale])
 }
 
 model Ground {

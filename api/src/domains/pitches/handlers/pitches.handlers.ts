@@ -8,6 +8,7 @@ import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
 import { ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
 import { PermissionLevel } from "@/generated/prisma/enums.js";
+import { locale } from "@/shared/middleware/locale.middleware.js";
 
 const factory = createFactory();
 const pitchService = new PitchService();
@@ -118,13 +119,15 @@ export const fetchPitchAvailabilityHandler = factory.createHandlers(
 );
 
 export const fetchPitchesFeedHandler = factory.createHandlers(
+    locale,
     authorize({ required: false }),
     validate("query", fetchPitchFeedSchema),
     async (c) => {
+        const locale = c.var.locale;
         const userId = c.var.id;
         const payload = c.req.valid("query");
 
-        const pitches = await pitchService.fetchFeed(payload, userId);
+        const pitches = await pitchService.fetchFeed(payload, userId, locale);
         return c.json({ success: true, data: { ...pitches } }, 200);
     }
 );

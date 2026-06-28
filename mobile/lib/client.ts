@@ -1,6 +1,7 @@
 import { hc } from 'hono/client';
 import type { AppType } from '../../api/src/index.js';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './storage';
+import i18n from '@/i18next/i18next.js';
 
 // Adjust to match actual backend URL (e.g. from config/constants).
 const API_URL = 'http://192.168.1.7:8080';
@@ -12,9 +13,13 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
   // Identify request as mobile for the Hono backend check.
   headers.set('X-Client-Type', 'mobile');
 
+  // Set the Accept-Language header for the requests for this session.
+  const language = i18n.language;
+  headers.set('Accept-Language', language);
+
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
-  }
+  };
 
   let response = await fetch(input, { ...init, headers });
 
