@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
-import { PitchTier, PitchStatus, AmenityName } from "@/generated/prisma/enums.js";
+import { PitchTier, PitchStatus, AmenityName, Language } from "@/generated/prisma/enums.js";
+import dataset from "@/shared/types/pitches.js";
 
 export async function seedPitches() {
   console.log("Seeding pitches...");
@@ -15,15 +16,17 @@ export async function seedPitches() {
   };
 
   const amenityPool: AmenityName[] = Object.values(AmenityName);
+  let translationIndex = 0;
 
   for (const [tier, count] of Object.entries(tierCounts)) {
     for (let i = 0; i < count; i++) {
-      const name = `${faker.company.name()} Sports Club`;
-      
+      const translation = dataset[translationIndex % dataset.length];
+      translationIndex++;
+
       const pitch = await prisma.pitch.create({
         data: {
-          name,
-          description: faker.lorem.paragraph(),
+          name: translation.en.name,
+          description: translation.en.description,
           taxId: faker.string.numeric(9),
           street: faker.location.streetAddress(),
           areaId: faker.helpers.arrayElement(areas).id,
@@ -34,33 +37,33 @@ export async function seedPitches() {
           tier: tier as PitchTier,
           isFeatured: tier === PitchTier.PREMIUM,
           amenityList: faker.helpers.arrayElements(amenityPool, { min: 3, max: 8 }),
-          // Ledger initialization
-          ledger: {
-            create: {
-              balance: 0
-            }
+          translations: {
+            create: [
+              { locale: Language.EN, name: translation.en.name, description: translation.en.description },
+              { locale: Language.AR, name: translation.ar.name, description: translation.ar.description },
+            ],
           },
-          // Event logging
+          ledger: {
+            create: { balance: 0 },
+          },
           events: {
-            create: {
-              status: PitchStatus.SUBMITTED,
-              reason: "Seeded initial data"
-            }
-          }
-        }
+            create: { status: PitchStatus.SUBMITTED, reason: "Seeded initial data" },
+          },
+        },
       });
 
-      // Add actual Amenity records to match amenityList (denormalized)
-      await Promise.all(pitch.amenityList.map((name, index) => 
-        prisma.amenity.create({
-          data: {
-            pitchId: pitch.id,
-            order: index,
-            name: name as AmenityName,
-            description: faker.lorem.sentence()
-          }
-        })
-      ));
+      await Promise.all(
+        pitch.amenityList.map((name, index) =>
+          prisma.amenity.create({
+            data: {
+              pitchId: pitch.id,
+              order: index,
+              name: name as AmenityName,
+              description: faker.lorem.sentence(),
+            },
+          })
+        )
+      );
 
       pitches.push(pitch);
     }
@@ -68,4 +71,4 @@ export async function seedPitches() {
 
   console.log(`Successfully seeded ${pitches.length} pitches.`);
   return { pitches };
-}
+};
