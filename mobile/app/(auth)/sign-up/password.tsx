@@ -6,6 +6,7 @@ import { client } from '@/lib/client';
 import { saveTokens } from '@/lib/storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   StatusBar,
   View,
@@ -49,6 +50,8 @@ export default function Password() {
     setIsLoading(false);
   };
 
+  const { t } = useTranslation();
+
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -61,16 +64,15 @@ export default function Password() {
             <SafeAreaView className="w-full flex-1 items-center  justify-center p-6">
               <View className="w-full gap-y-10">
                 <View className="gap-y-3">
-                  <Text className="text-center text-4xl font-semibold">Secure your account</Text>
+                  <Text className="text-center text-4xl font-semibold">{t("auth.signUp.password.title")}</Text>
                   <Text className="text-center text-gray-500">
-                    Make sure your password has at least one lowercase and uppercase character, a
-                    number, and a special character.
+                    {t("auth.signUp.password.description")}
                   </Text>
                 </View>
                 <View className="w-full gap-y-6">
                   <Input
                     label="Password"
-                    placeholder="Min. 8 characters"
+                    placeholder={t("auth.signUp.password.inputs.password.placeholder")}
                     type="password"
                     textContentType="newPassword"
                     value={data.password}
@@ -78,7 +80,7 @@ export default function Password() {
                   />
                   <Input
                     label="Confirm Password"
-                    placeholder="Re-enter password"
+                    placeholder={t("auth.signUp.password.inputs.confirmPassword.placeholder")}
                     type="password"
                     textContentType="newPassword"
                     value={data.confirmPassword}
@@ -94,8 +96,8 @@ export default function Password() {
                     isLoading ? 
                       <ActivityIndicator size="small" color="black" /> : 
                     isDisabled ? 
-                      <Text className="font-semibold text-black/50">Create account</Text> : 
-                      <Text className="font-semibold">Create account</Text>
+                      <Text className="font-semibold text-black/50">{t("auth.signUp.password.cta.primary")}</Text> : 
+                      <Text className="font-semibold">{t("auth.signUp.password.cta.primary")}</Text>
                   }
                 </Button>
               </View>

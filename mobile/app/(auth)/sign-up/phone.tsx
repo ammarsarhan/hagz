@@ -3,6 +3,7 @@ import Input from '@/components/shared/Input';
 import { useSignUpForm } from '@/context/forms/SignUpContext';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   StatusBar,
   View,
@@ -24,6 +25,8 @@ export default function Phone() {
     }, [])
   );
 
+  const { t } = useTranslation();
+
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -35,10 +38,9 @@ export default function Phone() {
             <SafeAreaView className="w-full flex-1 items-center  justify-center p-6">
               <View className="w-full gap-y-10">
                 <View className="gap-y-3">
-                  <Text className="text-center text-4xl font-semibold">Your phone number</Text>
+                  <Text className="text-center text-4xl font-semibold">{t("auth.signUp.phone.title")}</Text>
                   <Text className="text-center text-gray-500">
-                    We&apos;ll use your number to send booking confirmations and reminders via
-                    WhatsApp.
+                    {t("auth.signUp.phone.description")}
                   </Text>
                 </View>
                 <View className="w-full gap-y-6">
@@ -57,7 +59,7 @@ export default function Phone() {
                         ? 'w-full border-primary/40 bg-primary/40'
                         : 'w-full border-primary bg-primary'
                     }>
-                    <Text className="font-semibold">Next</Text>
+                    <Text className="font-semibold">{t("auth.signUp.phone.cta.primary")}</Text>
                   </Button>
                 </Link>
               </View>

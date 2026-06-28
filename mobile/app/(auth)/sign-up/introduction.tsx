@@ -7,6 +7,7 @@ import Button from '@/components/shared/Button';
 import Logo from '@/assets/logos/logo-cropped.svg';
 import Hero from '@/assets/static/hero.mp4';
 import { Link, router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function Introduction() {
   const fade = useRef(new Animated.Value(0)).current;
@@ -30,6 +31,8 @@ export default function Introduction() {
       useNativeDriver: true,
     }).start();
   };
+
+  const { t } = useTranslation();
 
   return (
     <>
@@ -59,25 +62,22 @@ export default function Introduction() {
             <View className="gap-y-6 p-6">
               <View className="gap-y-3">
                 <Logo width={50} height={50} color={'#FFFFFF'} />
-                <Text className="text-4xl font-semibold text-white">Book Pitches in Seconds!</Text>
-                <Text className="text-white/85">
-                  Find and book the perfect pitch for your next match, or list your venue and start
-                  filling slots without the hassle.
-                </Text>
+                <Text className="text-4xl font-semibold text-white text-left">{t("auth.signUp.introduction.title")}</Text>
+                <Text className="text-white/85 text-left">{t("auth.signUp.introduction.description")}</Text>
               </View>
               <View className="gap-y-3">
                 <Link href="/sign-up/role" asChild>
                   <Button className="border-primary bg-primary">
-                    <Text className="font-semibold">Get Started</Text>
+                    <Text className="font-semibold">{t("auth.signUp.introduction.cta.primary")}</Text>
                   </Button>
                 </Link>
                 <Button className="border-white bg-white" onPress={() => router.back()}>
-                  <Text className="font-semibold">Skip & Explore</Text>
+                  <Text className="font-semibold">{t("auth.signUp.introduction.cta.secondary")}</Text>
                 </Button>
               </View>
               <View className="flex items-center">
                 <Text className="w-3/4 text-center text-sm text-white">
-                  By continuing, you agree to the platform&apos;s Terms of Use.
+                  {t("auth.signUp.introduction.disclaimer")}
                 </Text>
               </View>
             </View>

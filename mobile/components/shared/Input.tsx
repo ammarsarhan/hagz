@@ -22,11 +22,11 @@ export default function Input({
   type = 'text',
   textContentType = 'password',
 }: InputProps) {
-  const [isVisible, setIsVisible] = useState(type !== 'password');
-  const base = 'w-full rounded-lg px-3 h-12 bg-slate-100';
-
   const { t } = useTranslation();
   const isRTL = I18nManager.isRTL;
+
+  const [isVisible, setIsVisible] = useState(type !== 'password');
+  const base = `w-full rounded-lg px-3 h-12 bg-slate-100 ${isRTL ? "text-right" : "text-left"}`;
 
   switch (type) {
     case 'phone': {
@@ -79,7 +79,7 @@ export default function Input({
     case 'text': {
       return (
         <View className="gap-y-2">
-          {label && <Text className="font-medium">{label}</Text>}
+          {label && <Text className="font-medium text-left">{label}</Text>}
           <TextInput
             placeholder={placeholder}
             value={value}

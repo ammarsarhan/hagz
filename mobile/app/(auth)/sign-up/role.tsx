@@ -2,12 +2,15 @@ import Button from '@/components/shared/Button';
 import { useSignUpForm } from '@/context/forms/SignUpContext';
 import { IconBallBasketball, IconSoccerField, IconUser } from '@tabler/icons-react-native';
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StatusBar, View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Role() {
   const { data, setData } = useSignUpForm();
   const isDisabled = data.role === null;
+
+  const { t } = useTranslation();
 
   return (
     <>
@@ -20,11 +23,10 @@ export default function Role() {
           <View className="w-full gap-y-10">
             <View className="gap-y-3">
               <Text className="text-center text-4xl font-semibold">
-                Let&apos;s get you up & running!
+                {t("auth.signUp.role.title")}
               </Text>
               <Text className="text-center text-gray-500">
-                What will you use Hagz for? You can always change this later in your account
-                settings.
+                {t("auth.signUp.role.description")}
               </Text>
             </View>
             <View className="gap-y-6">
@@ -38,12 +40,14 @@ export default function Role() {
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-[1.2rem] font-semibold ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}>
-                    User
+                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}
+                  >
+                    {t("auth.signUp.role.roles.user.title")}
                   </Text>
                   <Text
-                    className={`text-sm text-gray-500 ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}>
-                    I want to discover pitches and book for as cheap as possible.
+                    className={`text-sm text-left text-gray-500 ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}
+                  >
+                    {t("auth.signUp.role.roles.user.description")}
                   </Text>
                 </View>
                 <View
@@ -62,12 +66,14 @@ export default function Role() {
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-[1.2rem] font-semibold ${data.role === 'STAFF' ? 'text-primary-foreground' : 'text-black'}`}>
-                    Owner
+                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'STAFF' ? 'text-primary-foreground' : 'text-black'}`}
+                  >
+                    {t("auth.signUp.role.roles.owner.title")}
                   </Text>
                   <Text
-                    className={`text-sm text-gray-500 ${data.role === 'STAFF' ? 'text-primary-foreground' : 'text-black'}`}>
-                    I want to manage pitches & maximize my booking occupancy.
+                    className={`text-sm text-left text-gray-500 ${data.role === 'STAFF' ? 'text-primary-foreground' : 'text-black'}`}
+                  >
+                    {t("auth.signUp.role.roles.owner.description")}
                   </Text>
                 </View>
                 <View
@@ -82,7 +88,7 @@ export default function Role() {
                 className={
                   isDisabled ? 'border-primary/40 bg-primary/40' : 'border-primary bg-primary'
                 }>
-                <Text className="font-semibold">Next</Text>
+                <Text className="font-semibold">{t("auth.signUp.role.cta.primary")}</Text>
               </Button>
             </Link>
           </View>
