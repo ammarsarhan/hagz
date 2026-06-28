@@ -105,6 +105,14 @@ const en = {
                     }
                 }
             }
+        },
+        tabs: {
+            layout: {
+                home: "Home",
+                search: "Search",
+                history: "History",
+                profile: "Profile"
+            }
         }
     }
 }

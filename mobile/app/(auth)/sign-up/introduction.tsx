@@ -71,7 +71,7 @@ export default function Introduction() {
                     <Text className="font-semibold">{t("auth.signUp.introduction.cta.primary")}</Text>
                   </Button>
                 </Link>
-                <Button className="border-white bg-white" onPress={() => router.back()}>
+                <Button className="border-white bg-white" onPress={() => router.replace("/")}>
                   <Text className="font-semibold">{t("auth.signUp.introduction.cta.secondary")}</Text>
                 </Button>
               </View>

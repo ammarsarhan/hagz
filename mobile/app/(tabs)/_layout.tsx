@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
 import { IconHistory, IconHome, IconSearch, IconUserCircle } from '@tabler/icons-react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -14,7 +17,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t("tabs.layout.home"),
           tabBarIcon: ({ color, size }) => (
             <IconHome color={color} size={size} strokeWidth={1.75} />
           ),
@@ -23,7 +26,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: t("tabs.layout.search"),
           tabBarIcon: ({ color, size }) => (
             <IconSearch color={color} size={size} strokeWidth={1.75} />
           ),
@@ -32,7 +35,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="history"
         options={{
-          title: 'History',
+          title: t("tabs.layout.history"),
           tabBarIcon: ({ color, size }) => (
             <IconHistory color={color} size={size} strokeWidth={1.75} />
           ),
@@ -41,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t("tabs.layout.profile"),
           tabBarIcon: ({ color, size }) => (
             <IconUserCircle color={color} size={size} strokeWidth={1.75} />
           ),

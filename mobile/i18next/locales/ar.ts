@@ -106,6 +106,14 @@ const ar = {
                     }
                 }
             }
+        },
+        tabs: {
+            layout: {
+                home: "الرئيسية",
+                search: "البحث",
+                history: "الحجوزات",
+                profile: "حسابي"
+            }
         }
     }
 }
