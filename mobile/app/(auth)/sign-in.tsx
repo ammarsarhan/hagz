@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useForm, useStore } from '@tanstack/react-form';
@@ -100,7 +101,9 @@ export default function SignIn() {
               <View className="flex-row gap-x-1">
                 <Text className='text-left'>{t("auth.signIn.alternate.label")}</Text>
                 <Link href={'/sign-up/introduction'} asChild>
-                  <Text className="text-primary-foreground text-left">{t("auth.signIn.alternate.link")}</Text>
+                  <Pressable>
+                    <Text className="text-primary-foreground text-left">{t("auth.signIn.alternate.link")}</Text>
+                  </Pressable>
                 </Link>
               </View>
             </View>

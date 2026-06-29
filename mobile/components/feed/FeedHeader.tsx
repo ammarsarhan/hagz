@@ -31,10 +31,10 @@ export function FeedHeaderSkeleton() {
 export default function FeedHeader({ label, description } : { label: string, description: string | null }) {
     return (
         <View className='gap-y-0.5 px-6'>
-            <Text className='text-2xl font-semibold'>{label}</Text>
+            <Text className='text-2xl font-semibold text-left'>{label}</Text>
             {
                 description &&
-                <Text className='text-gray-500'>{description}</Text>
+                <Text className='text-gray-500 text-left'>{description}</Text>
             }
         </View>
     );

@@ -11,6 +11,11 @@ const ar = {
                     }
                 }
             },
+            feed: {
+                card: {
+                    pricing: "{{price}}/ساعة"
+                }
+            },
             authModal: {
                 title: "ابحث واحجز ملاعب قريبة منك",
                 description: "سجّل دخولك أو أنشئ حسابًا جديدًا للبدء!",

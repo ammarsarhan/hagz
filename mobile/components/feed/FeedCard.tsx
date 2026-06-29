@@ -4,6 +4,8 @@ import { FeedPitch } from '@/lib/types/pitch';
 import { IconHeart, IconStarFilled } from '@tabler/icons-react-native';
 import { View, Text } from 'react-native';
 import Skeleton from '@/components/shared/Skeleton';
+import { useTranslation } from 'react-i18next';
+import { getDisplayGovernorate } from '@/i18next/maps/governorates';
 
 export function FeedCardSkeleton({ variant = 'standard' }: { variant?: 'standard' | 'large' }) {
     const isLarge = variant === 'large';
@@ -38,7 +40,7 @@ export function FeedLargeCard({ pitch } : { pitch: FeedPitch }) {
         </View>
       </View>
       <View className='gap-y-3'>
-        <Text className='font-semibold text-xl'>{pitch.name}</Text>
+        <Text className='font-semibold text-xl text-left'>{pitch.name}</Text>
         <View className='flex-row items-center justify-between'>
           <Text>{isApproximate ? `${formatCurrency(pitch.pricing.minimum)}/hr` : `${formatCurrency(pitch.pricing.minimum)}/hr`}</Text>
           {
@@ -49,7 +51,7 @@ export function FeedLargeCard({ pitch } : { pitch: FeedPitch }) {
             </View>
           }
         </View>
-        <Text className='text-gray-500'>{pitch.location.street}, {pitch.location.area.name}</Text>
+        <Text className='text-gray-500 text-left'>{pitch.location.area.name}, {getDisplayGovernorate(pitch.location.governorate)}</Text>
         <View className='flex-row gap-x-2'>
           {
             pitch.amenities.map((amenity, index) => {
@@ -66,6 +68,8 @@ export function FeedLargeCard({ pitch } : { pitch: FeedPitch }) {
 export function FeedStandardCard({ pitch } : { pitch: FeedPitch }) {
   const isApproximate = pitch.pricing.minimum !== pitch.pricing.maximum;
 
+  const { t } = useTranslation();
+
   return (
     <View className='gap-y-4 w-[60vw]'>
       <View className='aspect-square w-full bg-gray-200 rounded-lg'>
@@ -80,9 +84,9 @@ export function FeedStandardCard({ pitch } : { pitch: FeedPitch }) {
         </View>
       </View>
       <View className='gap-y-3'>
-        <Text className='font-semibold text-xl'>{pitch.name}</Text>
+        <Text className='font-semibold text-xl text-left'>{pitch.name}</Text>
         <View className='flex-row items-center justify-between'>
-          <Text>{isApproximate ? `${formatCurrency(pitch.pricing.minimum)}/hr` : `${formatCurrency(pitch.pricing.minimum)}/hr`}</Text>
+          <Text>{isApproximate ? t("components.feed.card.pricing", { price: formatCurrency(pitch.pricing.minimum) }) : t("components.feed.card.pricing", { price: formatCurrency(pitch.pricing.minimum) })}</Text>
           {
             pitch.rating.count > 0 && pitch.rating.average &&
             <View className='flex-row items-center gap-x-1.5'>
@@ -91,7 +95,7 @@ export function FeedStandardCard({ pitch } : { pitch: FeedPitch }) {
             </View>
           }
         </View>
-        <Text className='text-gray-500'>{pitch.location.street}, {pitch.location.area.name}</Text>
+        <Text className='text-gray-500 text-left'>{pitch.location.area.name}, {getDisplayGovernorate(pitch.location.governorate)}</Text>
         <View className='flex-row gap-x-2'>
           {
             pitch.amenities.map((amenity, index) => {

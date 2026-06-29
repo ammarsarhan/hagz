@@ -1,5 +1,6 @@
 import prisma from "@/shared/lib/utils/prisma.js";
 import locations from "@/shared/types/locations.js";
+import { Language } from "@/generated/prisma/enums.js";
 
 export async function seedLocations() {
   console.log("Seeding governorates and areas...");
@@ -23,6 +24,12 @@ export async function seedLocations() {
         create: {
           name: area.en,
           governorateId: governorate.id,
+          translations: {
+            create: [
+              { locale: Language.EN, name: area.en },
+              { locale: Language.AR, name: area.ar },
+            ],
+          },
         },
       });
     }

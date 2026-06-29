@@ -1,5 +1,9 @@
+import i18n from "@/i18next/i18next";
+
 export default function formatCurrency(value: number) {
-    const currency = new Intl.NumberFormat("en-EG", {
+    const format = i18n.language === "ar" ? "ar-EG" : "en-EG";
+
+    const currency = new Intl.NumberFormat(format, {
         style: "currency",
         currency: "EGP",
     });

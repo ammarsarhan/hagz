@@ -11,6 +11,11 @@ const en = {
                     }
                 }
             },
+            feed: {
+                card: {
+                    pricing: "{{price}}/hr"
+                }
+            },
             authModal: {
                 title: "Find & Book Nearby Pitches",
                 description: "Sign in to your account or create a new account to get started!",

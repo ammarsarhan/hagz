@@ -15,7 +15,7 @@ import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
 import { endOfWeek, startOfWeek } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client.js";
-import type { Locale } from "@/shared/types/locale.js";
+import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -429,7 +429,23 @@ export default class PitchService {
 
     fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string, locale: Language = Language.EN) => {
         const include = {
-            area: { select: { id: true, name: true } },
+            area: {
+                include: {
+                    translations: {
+                        where: { locale },
+                        select: { name: true },
+                        take: 1,
+                    },
+                    governorate: {
+                        select: { name: true }
+                    }
+                },
+            },
+            translations: {
+                where: { locale },
+                select: { name: true, description: true },
+                take: 1,
+            },
             media: {
                 where: { status: MediaStatus.UPLOADED, type: MediaType.IMAGE },
                 orderBy: { order: "asc" as const },
@@ -496,8 +512,7 @@ export default class PitchService {
                         ? prisma.$queryRaw<Array<Record<string, any>>>`
                             SELECT
                                 p.id,
-                                p.name,
-                                p.street,
+                                COALESCE(pt.name, p.name)  AS name,
                                 p.tier,
                                 p.sports,
                                 p.amenity_list,
@@ -505,19 +520,29 @@ export default class PitchService {
                                 p.maximum_price,
                                 p.average_rating,
                                 p.review_count,
-                                a.id   AS area_id,
-                                a.name AS area_name,
-                                m.url  AS media_url,
-                                m.blurhash AS media_blurhash,
+                                a.id                       AS area_id,
+                                COALESCE(at.name, a.name)  AS area_name,
+                                g.name                     AS governorate_name,
+                                m.url                      AS media_url,
                                 ST_Distance(
                                     p.location,
                                     ST_SetSRID(ST_MakePoint(${payload.longitude}, ${payload.latitude}), 4326)::geography
                                 ) AS distance
                             FROM "Pitch" p
                             JOIN "Area" a ON a.id = p.area_id
+                            JOIN "Governorate" g ON g.id = a.governorate_id
                             LEFT JOIN LATERAL (
-                                SELECT url, blurhash
-                                FROM "PitchMedia"
+                                SELECT name FROM "PitchTranslation"
+                                WHERE pitch_id = p.id AND locale = ${locale}
+                                LIMIT 1
+                            ) pt ON true
+                            LEFT JOIN LATERAL (
+                                SELECT name FROM "AreaTranslation"
+                                WHERE area_id = a.id AND locale = ${locale}
+                                LIMIT 1
+                            ) at ON true
+                            LEFT JOIN LATERAL (
+                                SELECT url FROM "PitchMedia"
                                 WHERE pitch_id = p.id
                                 AND status = 'UPLOADED'
                                 AND type = 'IMAGE'
@@ -552,40 +577,50 @@ export default class PitchService {
 
         const normalize = (raw: any) => normalizeRawPitchFeed(raw, favorites);
 
+        const t = pitchI18n[locale];
+
         return {
             general: {
                 featured: {
-                    description: "Hand-picked pitches we think you'll love.",
-                    cards: createPitchFeedResponse(featured.map(normalize), "Featured"),
+                    title: t.feed.general.featured.title,
+                    description: t.feed.general.featured.description,
+                    cards: createPitchFeedResponse(featured.map(normalize), t.feed.general.featured.badge),
                 },
                 hot: {
-                    description: "The most booked pitches this week.",
+                    title: t.feed.general.hot.title,
+                    description: t.feed.general.hot.description,
                     cards: createPitchFeedResponse(hot.map(normalize)),
                 },
                 topRated: {
-                    description: null,
+                    title: t.feed.general.topRated.title,
+                    description: t.feed.general.topRated.description,
                     cards: createPitchFeedResponse(topRated.map(normalize)),
                 },
                 budget: {
-                    description: "Great value between EGP 150-250.",
+                    title: t.feed.general.budget.title,
+                    description: t.feed.general.budget.description,
                     cards: createPitchFeedResponse(budget.map(normalize)),
                 },
                 instant: {
-                    description: "Book instantly without waiting.",
+                    title: t.feed.general.instant.title,
+                    description: t.feed.general.instant.description,
                     cards: createPitchFeedResponse(instant.map(normalize)),
                 },
                 premium: {
-                    description: null,
-                    cards: createPitchFeedResponse(premium.map(normalize), "Premium"),
+                    title: t.feed.general.premium.title,
+                    description: t.feed.general.premium.description,
+                    cards: createPitchFeedResponse(premium.map(normalize), t.feed.general.premium.badge),
                 },
             },
             personalized: {
                 recents: {
-                    description: "Based on your previous bookings",
+                    title: t.feed.personalized.recents.title,
+                    description: t.feed.personalized.recents.description,
                     cards: createPitchFeedResponse(recents.map(normalize)),
                 },
                 nearby: {
-                    description: payload.latitude ? "Within 25 km of your location" : null,
+                    title: t.feed.personalized.nearby.title,
+                    description: payload.latitude ? t.feed.personalized.nearby.description : null,
                     cards: createPitchFeedResponse(nearby.map(normalize)),
                 },
             }

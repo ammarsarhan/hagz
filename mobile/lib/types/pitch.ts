@@ -1,6 +1,5 @@
 import { InferResponseType } from "hono/client";
 import { client } from "@/lib/client";
-import { parseCamelCase } from "@/lib/string";
 
 export type PitchFeed = InferResponseType<typeof client.app.pitches.feed.$get, 200>["data"];
 type FeedSectionResponse = PitchFeed["general"][keyof PitchFeed["general"]];
@@ -13,7 +12,7 @@ export type FeedSection = {
     cards: FeedPitch[];
 };
 
-const entries = <T extends Record<string, { description: string | null; cards: FeedPitch[] }>>(obj: T) => Object.entries(obj) as [keyof T, T[keyof T]][];
+const entries = <T extends Record<string, { title: string; description: string | null; cards: FeedPitch[] }>>(obj: T) => Object.entries(obj) as [keyof T, T[keyof T]][];
 
 export const parsePitchFeedResponse = (feed: PitchFeed): FeedSection[] => {
     return [
@@ -21,8 +20,8 @@ export const parsePitchFeedResponse = (feed: PitchFeed): FeedSection[] => {
         ...entries(feed.general),
     ]
         .filter(([, section]) => section.cards.length > 0)
-        .map(([key, section]) => ({
-            label: parseCamelCase(String(key)),
+        .map(([, section]) => ({
+            label: section.title,
             description: section.description,
             cards: section.cards,
         }));

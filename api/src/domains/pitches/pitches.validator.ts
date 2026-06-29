@@ -6,13 +6,13 @@ export interface StaffType {
     pitchId: string;
     permissions: any | null;
     role: StaffRole;
-}
+};
 
 export type NormalizedPitchFeedType = {
     id: string;
     name: string;
-    street: string;
     area: { id: string; name: string };
+    governorate: string;
     sports: GroundSport[];
     tier: PitchTier;
     amenities: AmenityName[];
@@ -20,10 +20,7 @@ export type NormalizedPitchFeedType = {
     maximumPrice: number;
     averageRating: number | null;
     reviewCount: number;
-    media: {
-        url: string;
-        blurhash: string | null;
-    } | null;
+    media: { url: string } | null;
     isFavorited: boolean;
     distance?: number;
 };
@@ -33,8 +30,8 @@ export type PitchFeedResponseType = {
     name: string;
     tier: PitchTier;
     location: {
-        street: string;
         area: { id: string; name: string };
+        governorate: string;
     };
     sports: GroundSport[];
     amenities: AmenityName[];
@@ -46,10 +43,7 @@ export type PitchFeedResponseType = {
         average: number | null;
         count: number;
     };
-    media: {
-        url: string;
-        blurhash: string | null;
-    } | null;
+    media: { url: string } | null;
     isFavorited: boolean;
     distance: number | null;
     badge: string | null;
@@ -540,24 +534,36 @@ export const getStaffBookingsFiltersSchema = z.object({
     { message: "Start date must be before or equal to the end date.", path: ["endDate"] }
 );
 
-export const normalizeRawPitchFeed = (raw: any, favorited: Set<string>): NormalizedPitchFeedType => ({
-    id: raw.id,
-    name: raw.name,
-    street: raw.street,
-    area: raw.area ?? { id: raw.area_id, name: raw.area_name },
-    sports: raw.sports ?? [],
-    tier: raw.tier,
-    amenities: (raw.amenityList ?? raw.amenity_list ?? []).slice(0, 3),
-    minimumPrice: raw.minimumPrice ?? raw.minimum_price ?? null,
-    maximumPrice: raw.maximumPrice ?? raw.maximum_price ?? null,
-    averageRating: raw.averageRating ?? raw.average_rating ?? null,
-    reviewCount: raw.reviewCount ?? raw.review_count ?? 0,
-    media: raw.media?.[0]
-        ? { url: raw.media[0].url, blurhash: raw.media[0].blurhash ?? null }
-        : null,
-    isFavorited: favorited.has(raw.id),
-    ...(raw.distance !== undefined && { distance: Number(raw.distance) }),
-});
+export const normalizeRawPitchFeed = (raw: any, favorited: Set<string>): NormalizedPitchFeedType => {
+    const isRawQuery = raw.area_id !== undefined;
+
+    const name = raw.translations?.[0]?.name ?? raw.name;
+
+    const area = isRawQuery
+        ? (raw.area_translated_name ?? raw.area_name)
+        : (raw.area?.translations?.[0]?.name ?? raw.area?.name);
+
+    const governorate = isRawQuery
+        ? raw.governorate_name
+        : raw.area?.governorate?.name;
+
+    return {
+        id: raw.id,
+        name,
+        area: { id: isRawQuery ? raw.area_id : raw.area.id, name: area },
+        governorate,
+        sports: raw.sports ?? [],
+        tier: raw.tier,
+        amenities: (raw.amenityList ?? raw.amenity_list ?? []).slice(0, 3),
+        minimumPrice: raw.minimumPrice ?? raw.minimum_price ?? null,
+        maximumPrice: raw.maximumPrice ?? raw.maximum_price ?? null,
+        averageRating: raw.averageRating ?? raw.average_rating ?? null,
+        reviewCount: raw.reviewCount ?? raw.review_count ?? 0,
+        media: raw.media?.[0] ? { url: raw.media[0].url } : null,
+        isFavorited: favorited.has(raw.id),
+        ...(raw.distance !== undefined && { distance: Number(raw.distance) }),
+    };
+};
 
 export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[], badge?: string): PitchFeedResponseType[] =>
     pitches.map((pitch) => ({
@@ -565,8 +571,8 @@ export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[], badg
         name: pitch.name,
         tier: pitch.tier,
         location: {
-            street: pitch.street,
             area: pitch.area,
+            governorate: pitch.governorate,
         },
         sports: pitch.sports,
         amenities: pitch.amenities,
@@ -581,5 +587,5 @@ export const createPitchFeedResponse = (pitches: NormalizedPitchFeedType[], badg
         media: pitch.media,
         isFavorited: pitch.isFavorited,
         distance: pitch.distance ?? null,
-        badge: badge ?? null
+        badge: badge ?? null,
     }));
