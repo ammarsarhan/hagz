@@ -112,7 +112,7 @@ const en = {
                 }
             }
         },
-        tabs: {
+        user: {
             layout: {
                 home: "Home",
                 search: "Search",

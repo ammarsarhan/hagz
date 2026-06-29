@@ -112,7 +112,7 @@ const ar = {
                 }
             }
         },
-        tabs: {
+        user: {
             layout: {
                 home: "الرئيسية",
                 search: "البحث",
