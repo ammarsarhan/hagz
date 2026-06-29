@@ -44,7 +44,7 @@ export default function Password() {
       
       if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
       setUser(body.data.user);
-      router.replace('/(onboarding)/personalize');
+      router.replace('/(user)');
     }
 
     setIsLoading(false);

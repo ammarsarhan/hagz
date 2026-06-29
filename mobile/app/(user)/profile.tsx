@@ -22,10 +22,6 @@ export default function Profile() {
           <Pressable onPress={handleSignOut}>
             <Text>Sign out</Text>
           </Pressable>
-          <Link href="/personalize">
-            <Text>Onboarding</Text>
-          </Link>
-          <Text>{user.preferences.language}</Text>
           <Text>{i18n.language}</Text>
         </> :
         <Pressable onPress={() => router.replace('/sign-in')}>

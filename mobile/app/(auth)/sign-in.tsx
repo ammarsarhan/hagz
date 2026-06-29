@@ -39,7 +39,7 @@ export default function SignIn() {
         
         if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
         setUser(body.data.user);
-        router.replace('/(tabs)');
+        router.replace('/(user)');
       };
     }
   });

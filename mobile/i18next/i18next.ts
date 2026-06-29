@@ -6,21 +6,8 @@ import { initReactI18next } from 'react-i18next';
 import en from '@/i18next/locales/en';
 import ar from '@/i18next/locales/ar';
 
-export const Language = {
-  EN: 'EN',
-  AR: 'AR'
-} as const
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export type Language = (typeof Language)[keyof typeof Language]
-type Locale = (typeof languages)[number];
-
 const languages = ['en', 'ar'] as const;
-
-const languageToLocale: Record<Language, Locale> = {
-    [Language.EN]: 'en',
-    [Language.AR]: 'ar',
-};
+type Locale = (typeof languages)[number];
 
 function isSupportedLocale(lang: string): lang is Locale {
     return (languages as readonly string[]).includes(lang);
@@ -34,8 +21,8 @@ function getDeviceLocale(): Locale {
 
 const deviceLocale = getDeviceLocale();
 
-export async function applyLocale(preferred?: Language | null) {
-    const locale = (preferred != null ? languageToLocale[preferred] : null) ?? getDeviceLocale();
+export async function applyLocale() {
+    const locale = deviceLocale;
 
     if (i18n.language !== locale) {
         await changeLanguage(locale);

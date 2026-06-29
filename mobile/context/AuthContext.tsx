@@ -3,7 +3,6 @@ import { client } from '@/lib/client';
 import { getAccessToken, clearTokens } from '@/lib/storage';
 import { User } from '@/lib/types/user';
 import { useQueryClient } from '@tanstack/react-query';
-import { applyLocale, Language } from '@/i18next/i18next';
 
 type AuthContextType = {
   user: User | null;
@@ -22,8 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const rehydrate = async () => {
-      let language: Language | undefined;
-
       try {
         const token = await getAccessToken();
 
@@ -33,14 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (res.ok) {
             const body = await res.json();
             setUser(body.data.user);
-            language = body.data.user.preferences.language;
           } else {
             await clearTokens();
           }
         }
       } catch {
       } finally {
-        await applyLocale(language);
         setIsLoading(false);
       }
     };
