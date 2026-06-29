@@ -1,7 +1,7 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { Pressable, Text } from 'react-native';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
@@ -22,6 +22,9 @@ export default function Profile() {
           <Pressable onPress={handleSignOut}>
             <Text>Sign out</Text>
           </Pressable>
+          <Link href="/personalize">
+            <Text>Onboarding</Text>
+          </Link>
           <Text>{user.preferences.language}</Text>
           <Text>{i18n.language}</Text>
         </> :

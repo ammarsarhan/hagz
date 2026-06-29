@@ -47,7 +47,8 @@ export default function AuthModal() {
           <View className="gap-y-2">
             <Button
               className="border-primary bg-primary"
-              onPress={() => handleRedirect('/sign-in')}>
+              onPress={() => handleRedirect('/sign-in')}
+            >
               <Text className="font-semibold">{t("components.authModal.cta.signIn")}</Text>
             </Button>
             <View className="flex-row items-center gap-x-8 px-4 py-3">
@@ -57,7 +58,8 @@ export default function AuthModal() {
             </View>
             <Button
               className="bg-card-foreground"
-              onPress={() => handleRedirect('/sign-up/introduction')}>
+              onPress={() => handleRedirect('/sign-up/introduction')}
+            >
               <Text className="font-semibold text-card">{t("components.authModal.cta.signUp")}</Text>
             </Button>
           </View>
