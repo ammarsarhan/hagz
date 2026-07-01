@@ -3,6 +3,7 @@ import { client } from '@/lib/client';
 import { getAccessToken, clearTokens } from '@/lib/storage';
 import { User } from '@/lib/types/user';
 import { useQueryClient } from '@tanstack/react-query';
+import AuthModal from '@/components/shared/AuthModal';
 
 type AuthContextType = {
   user: User | null;
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const rehydrate = async () => {
@@ -43,6 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rehydrate();
   }, []);
 
+  useEffect(() => {
+    if (!isLoading) setIsOpen(!user);
+  }, [isLoading, user]);
+
   const signOut = async () => {
     await clearTokens();
     queryClient.clear();
@@ -51,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, isLoading, setUser, signOut }}>
+      <AuthModal isOpen={isOpen} setIsOpen={setIsOpen}/>  
       {children}
     </AuthContext.Provider>
   );

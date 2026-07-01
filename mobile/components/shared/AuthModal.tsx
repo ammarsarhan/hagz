@@ -1,20 +1,15 @@
-import { useState } from 'react';
 import { router } from 'expo-router';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/context/AuthContext';
 
 import Button from '@/components/shared/Button';
 
-import '../global.css';
+import '@/global.css';
 import { IconBallFootball, IconX } from '@tabler/icons-react-native';
 import Logo from '@/assets/logos/logo-cropped.svg';
 import { useTranslation } from 'react-i18next';
 
-export default function AuthModal() {
-  const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(!user ? true : false);
-
+export default function AuthModal({ isOpen, setIsOpen } : { isOpen: boolean, setIsOpen: (value: boolean) => void }) {
   const handleRedirect = (route: string) => {
     setIsOpen(false);
     router.push(route);
@@ -27,7 +22,8 @@ export default function AuthModal() {
       visible={isOpen}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={() => setIsOpen(false)}>
+      onRequestClose={() => setIsOpen(false)}
+    >
       <SafeAreaView className="flex-1 bg-white p-6">
         <Pressable onPress={() => setIsOpen(false)} className="absolute end-4 top-4">
           <IconX color={'#000000'} />
