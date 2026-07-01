@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 export default function Home() {
   return (
     <SafeAreaView className="flex-1 items-center justify-center">
-      <Text>Owner dashboard</Text>
+      <Text>Manager/Owner dashboard</Text>
     </SafeAreaView>
   );
 }

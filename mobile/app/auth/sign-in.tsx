@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useForm, useStore } from '@tanstack/react-form';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,6 +21,7 @@ import Logo from '@/assets/logos/logo-cropped.svg';
 import { saveTokens } from '@/lib/storage';
 import { useTranslation } from 'react-i18next';
 import { convertNumerals } from '@/lib/number';
+import resolveDefaultRoute from '@/lib/routing';
 
 export default function SignIn() {
   const { setUser } = useAuth();
@@ -41,8 +42,13 @@ export default function SignIn() {
         const { accessToken, refreshToken } = body.data || {};
 
         if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
-        setUser(body.data.user);
+
+        const user = body.data.user;
         // Use a helper function to properly redirect the user based on their current status.
+        setUser(user);
+        const redirectPath = resolveDefaultRoute(user);
+
+        router.push(redirectPath);
       }
     },
   });
