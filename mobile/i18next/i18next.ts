@@ -10,47 +10,45 @@ const languages = ['en', 'ar'] as const;
 type Locale = (typeof languages)[number];
 
 function isSupportedLocale(lang: string): lang is Locale {
-    return (languages as readonly string[]).includes(lang);
+  return (languages as readonly string[]).includes(lang);
 }
 
 function getDeviceLocale(): Locale {
-    const tag = getLocales()?.[0]?.languageTag ?? '';
-    const lang = tag.split('-')[0];
-    return isSupportedLocale(lang) ? lang : 'ar';
+  const tag = getLocales()?.[0]?.languageTag ?? '';
+  const lang = tag.split('-')[0];
+  return isSupportedLocale(lang) ? lang : 'ar';
 }
 
 const deviceLocale = getDeviceLocale();
 
 export async function applyLocale() {
-    const locale = deviceLocale;
+  const locale = deviceLocale;
 
-    if (i18n.language !== locale) {
-        await changeLanguage(locale);
+  if (i18n.language !== locale) {
+    await changeLanguage(locale);
+  }
+
+  const isRTL = locale === 'ar';
+
+  if (I18nManager.isRTL !== isRTL) {
+    I18nManager.allowRTL(isRTL);
+    I18nManager.forceRTL(isRTL);
+
+    if (!__DEV__) {
+      const Updates = await import('expo-updates');
+      await Updates.reloadAsync();
     }
-
-    const isRTL = locale === 'ar';
-
-    if (I18nManager.isRTL !== isRTL) {
-        I18nManager.allowRTL(isRTL);
-        I18nManager.forceRTL(isRTL);
-
-        if (!__DEV__) {
-            const Updates = await import('expo-updates');
-            await Updates.reloadAsync();
-        }
-    }
+  }
 }
 
-i18n
-.use(initReactI18next)
-.init({
-    resources: { en, ar },
-    lng: deviceLocale,
-    fallbackLng: 'ar',
-    supportedLngs: ['en', 'ar'],
-    interpolation: {
-        escapeValue: false,
-    },
+i18n.use(initReactI18next).init({
+  resources: { en, ar },
+  lng: deviceLocale,
+  fallbackLng: 'ar',
+  supportedLngs: ['en', 'ar'],
+  interpolation: {
+    escapeValue: false,
+  },
 });
 
 applyLocale();

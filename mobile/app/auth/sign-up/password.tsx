@@ -25,7 +25,8 @@ export default function Password() {
   const { setUser } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
-  const isDisabled = data.password === '' || data.confirmPassword === '' || data.password !== data.confirmPassword;
+  const isDisabled =
+    data.password === '' || data.confirmPassword === '' || data.password !== data.confirmPassword;
 
   useFocusEffect(
     useCallback(() => {
@@ -37,29 +38,30 @@ export default function Password() {
     setIsLoading(true);
 
     const { phone } = data;
-    const res = await client.auth['sign-up'].$post({ json: { ...data, phone: `+20${convertNumerals(phone)}` } });
+    const res = await client.auth['sign-up'].$post({
+      json: { ...data, phone: `+20${convertNumerals(phone)}` },
+    });
 
     if (res.ok) {
       const body = await res.json();
       const { accessToken, refreshToken } = body.data || {};
-      
+
       if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
 
       const user = body.data.user;
       setUser(user);
-      
+
       switch (user.preferences.role) {
-        case "USER":
-          router.replace("(user)/onboarding/introduction");
+        case 'USER':
+          router.replace('/user/onboarding');
           break;
-        case "MANAGER":
-          router.replace("(dashboard)/onboarding/manager/invitations");
+        case 'MANAGER':
+          router.replace('/dashboard/onboarding/manager');
           break;
-        case "OWNER":
-          router.replace("(dashboard)/onboarding/owner/details");
+        case 'OWNER':
+          router.replace('/dashboard/onboarding/owner');
           break;
       }
-
     }
 
     setIsLoading(false);
@@ -72,22 +74,23 @@ export default function Password() {
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         className="flex-1 overflow-hidden"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View className="w-full flex-1 bg-white">
             <SafeAreaView className="w-full flex-1 items-center  justify-center p-6">
               <View className="w-full gap-y-10">
                 <View className="gap-y-3">
-                  <Text className="text-center text-4xl font-semibold">{t("auth.signUp.password.title")}</Text>
+                  <Text className="text-center text-4xl font-semibold">
+                    {t('auth.signUp.password.title')}
+                  </Text>
                   <Text className="text-center text-gray-500">
-                    {t("auth.signUp.password.description")}
+                    {t('auth.signUp.password.description')}
                   </Text>
                 </View>
                 <View className="w-full gap-y-6">
                   <Input
                     label="Password"
-                    placeholder={t("auth.signUp.password.inputs.password.placeholder")}
+                    placeholder={t('auth.signUp.password.inputs.password.placeholder')}
                     type="password"
                     textContentType="newPassword"
                     value={data.password}
@@ -95,25 +98,26 @@ export default function Password() {
                   />
                   <Input
                     label="Confirm Password"
-                    placeholder={t("auth.signUp.password.inputs.confirmPassword.placeholder")}
+                    placeholder={t('auth.signUp.password.inputs.confirmPassword.placeholder')}
                     type="password"
                     textContentType="newPassword"
                     value={data.confirmPassword}
                     onChangeText={(text) => setData({ ...data, confirmPassword: text })}
                   />
                 </View>
-                <Button 
-                  className={`w-full ${!isDisabled ? "border-primary bg-primary" : "border-primary/50 bg-primary/50"}`} 
-                  disabled={isLoading || isDisabled} 
-                  onPress={handleSubmit}
-                >
-                  {
-                    isLoading ? 
-                      <ActivityIndicator size="small" color="black" /> : 
-                    isDisabled ? 
-                      <Text className="font-semibold text-black/50">{t("auth.signUp.password.cta.primary")}</Text> : 
-                      <Text className="font-semibold">{t("auth.signUp.password.cta.primary")}</Text>
-                  }
+                <Button
+                  className={`w-full ${!isDisabled ? 'border-primary bg-primary' : 'border-primary/50 bg-primary/50'}`}
+                  disabled={isLoading || isDisabled}
+                  onPress={handleSubmit}>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="black" />
+                  ) : isDisabled ? (
+                    <Text className="font-semibold text-black/50">
+                      {t('auth.signUp.password.cta.primary')}
+                    </Text>
+                  ) : (
+                    <Text className="font-semibold">{t('auth.signUp.password.cta.primary')}</Text>
+                  )}
                 </Button>
               </View>
             </SafeAreaView>

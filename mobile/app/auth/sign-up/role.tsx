@@ -1,6 +1,11 @@
 import Button from '@/components/shared/Button';
 import { useSignUpForm } from '@/context/forms/SignUpContext';
-import { IconBallBasketball, IconSoccerField, IconUser, IconUsersPlus } from '@tabler/icons-react-native';
+import {
+  IconBallBasketball,
+  IconSoccerField,
+  IconUser,
+  IconUsersPlus,
+} from '@tabler/icons-react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StatusBar, View, Text, Pressable } from 'react-native';
@@ -23,11 +28,9 @@ export default function Role() {
           <View className="w-full gap-y-10">
             <View className="gap-y-3">
               <Text className="text-center text-4xl font-semibold">
-                {t("auth.signUp.role.title")}
+                {t('auth.signUp.role.title')}
               </Text>
-              <Text className="text-center text-gray-500">
-                {t("auth.signUp.role.description")}
-              </Text>
+              <Text className="text-center text-gray-500">{t('auth.signUp.role.description')}</Text>
             </View>
             <View className="gap-y-6">
               <Pressable
@@ -40,14 +43,12 @@ export default function Role() {
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}
-                  >
-                    {t("auth.signUp.role.roles.user.title")}
+                    className={`text-left text-[1.2rem] font-semibold ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}>
+                    {t('auth.signUp.role.roles.user.title')}
                   </Text>
                   <Text
-                    className={`text-sm text-left text-gray-500 ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}
-                  >
-                    {t("auth.signUp.role.roles.user.description")}
+                    className={`text-left text-sm text-gray-500 ${data.role === 'USER' ? 'text-primary-foreground' : 'text-black'}`}>
+                    {t('auth.signUp.role.roles.user.description')}
                   </Text>
                 </View>
                 <View
@@ -66,14 +67,12 @@ export default function Role() {
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'MANAGER' ? 'text-primary-foreground' : 'text-black'}`}
-                  >
-                    {t("auth.signUp.role.roles.manager.title")}
+                    className={`text-left text-[1.2rem] font-semibold ${data.role === 'MANAGER' ? 'text-primary-foreground' : 'text-black'}`}>
+                    {t('auth.signUp.role.roles.manager.title')}
                   </Text>
                   <Text
-                    className={`text-sm text-left text-gray-500 ${data.role === 'MANAGER' ? 'text-primary-foreground' : 'text-black'}`}
-                  >
-                    {t("auth.signUp.role.roles.manager.description")}
+                    className={`text-left text-sm text-gray-500 ${data.role === 'MANAGER' ? 'text-primary-foreground' : 'text-black'}`}>
+                    {t('auth.signUp.role.roles.manager.description')}
                   </Text>
                 </View>
                 <View
@@ -92,14 +91,12 @@ export default function Role() {
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'OWNER' ? 'text-primary-foreground' : 'text-black'}`}
-                  >
-                    {t("auth.signUp.role.roles.owner.title")}
+                    className={`text-left text-[1.2rem] font-semibold ${data.role === 'OWNER' ? 'text-primary-foreground' : 'text-black'}`}>
+                    {t('auth.signUp.role.roles.owner.title')}
                   </Text>
                   <Text
-                    className={`text-sm text-left text-gray-500 ${data.role === 'OWNER' ? 'text-primary-foreground' : 'text-black'}`}
-                  >
-                    {t("auth.signUp.role.roles.owner.description")}
+                    className={`text-left text-sm text-gray-500 ${data.role === 'OWNER' ? 'text-primary-foreground' : 'text-black'}`}>
+                    {t('auth.signUp.role.roles.owner.description')}
                   </Text>
                 </View>
                 <View
@@ -109,12 +106,12 @@ export default function Role() {
                 </View>
               </Pressable>
             </View>
-            <Link asChild href={'/(auth)/sign-up/name'} disabled={isDisabled}>
+            <Link asChild href={'/auth/sign-up/name'} disabled={isDisabled}>
               <Button
                 className={
                   isDisabled ? 'border-primary/40 bg-primary/40' : 'border-primary bg-primary'
                 }>
-                <Text className="font-semibold">{t("auth.signUp.role.cta.primary")}</Text>
+                <Text className="font-semibold">{t('auth.signUp.role.cta.primary')}</Text>
               </Button>
             </Link>
           </View>

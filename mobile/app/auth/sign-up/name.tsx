@@ -39,33 +39,32 @@ export default function Name() {
               <View className="w-full gap-y-10">
                 <View className="gap-y-3">
                   <Text className="text-center text-4xl font-semibold">
-                    {t("auth.signUp.name.title")}
+                    {t('auth.signUp.name.title')}
                   </Text>
                   <Text className="text-center text-gray-500">
-                    {t("auth.signUp.name.description")}
+                    {t('auth.signUp.name.description')}
                   </Text>
                 </View>
                 <View className="gap-y-6">
                   <Input
-                    label={t("auth.signUp.name.inputs.firstName.label")}
-                    placeholder={t("auth.signUp.name.inputs.firstName.placeholder")}
+                    label={t('auth.signUp.name.inputs.firstName.label')}
+                    placeholder={t('auth.signUp.name.inputs.firstName.placeholder')}
                     value={data.firstName}
                     onChangeText={(text) => setData({ ...data, firstName: text })}
                   />
                   <Input
-                    label={t("auth.signUp.name.inputs.lastName.label")}
-                    placeholder={t("auth.signUp.name.inputs.lastName.placeholder")}
+                    label={t('auth.signUp.name.inputs.lastName.label')}
+                    placeholder={t('auth.signUp.name.inputs.lastName.placeholder')}
                     value={data.lastName}
                     onChangeText={(text) => setData({ ...data, lastName: text })}
                   />
                 </View>
-                <Link href={'/(auth)/sign-up/phone'} asChild disabled={isDisabled}>
+                <Link href={'/auth/sign-up/phone'} asChild disabled={isDisabled}>
                   <Button
                     className={
                       isDisabled ? 'border-primary/40 bg-primary/40' : 'border-primary bg-primary'
-                    }
-                  >
-                    <Text className="font-semibold">{t("auth.signUp.name.cta.primary")}</Text>
+                    }>
+                    <Text className="font-semibold">{t('auth.signUp.name.cta.primary')}</Text>
                   </Button>
                 </Link>
               </View>

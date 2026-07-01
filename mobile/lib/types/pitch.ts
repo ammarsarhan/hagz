@@ -1,28 +1,29 @@
-import { InferResponseType } from "hono/client";
-import { client } from "@/lib/client";
+import { InferResponseType } from 'hono/client';
+import { client } from '@/lib/client';
 
-export type PitchFeed = InferResponseType<typeof client.app.pitches.feed.$get, 200>["data"];
-type FeedSectionResponse = PitchFeed["general"][keyof PitchFeed["general"]];
+export type PitchFeed = InferResponseType<typeof client.app.pitches.feed.$get, 200>['data'];
+type FeedSectionResponse = PitchFeed['general'][keyof PitchFeed['general']];
 
-export type FeedPitch = FeedSectionResponse["cards"][number];
+export type FeedPitch = FeedSectionResponse['cards'][number];
 
 export type FeedSection = {
-    label: string;
-    description: string | null;
-    cards: FeedPitch[];
+  label: string;
+  description: string | null;
+  cards: FeedPitch[];
 };
 
-const entries = <T extends Record<string, { title: string; description: string | null; cards: FeedPitch[] }>>(obj: T) => Object.entries(obj) as [keyof T, T[keyof T]][];
+const entries = <
+  T extends Record<string, { title: string; description: string | null; cards: FeedPitch[] }>,
+>(
+  obj: T
+) => Object.entries(obj) as [keyof T, T[keyof T]][];
 
 export const parsePitchFeedResponse = (feed: PitchFeed): FeedSection[] => {
-    return [
-        ...entries(feed.personalized),
-        ...entries(feed.general),
-    ]
-        .filter(([, section]) => section.cards.length > 0)
-        .map(([, section]) => ({
-            label: section.title,
-            description: section.description,
-            cards: section.cards,
-        }));
+  return [...entries(feed.personalized), ...entries(feed.general)]
+    .filter(([, section]) => section.cards.length > 0)
+    .map(([, section]) => ({
+      label: section.title,
+      description: section.description,
+      cards: section.cards,
+    }));
 };

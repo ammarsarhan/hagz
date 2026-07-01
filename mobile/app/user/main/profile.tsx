@@ -9,25 +9,25 @@ export default function Profile() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.replace('/sign-in');
+    router.replace('/auth/sign-in');
   };
 
   const { i18n } = useTranslation();
 
   return (
     <SafeAreaView className="flex-1">
-      {
-        user ?
+      {user ? (
         <>
           <Pressable onPress={handleSignOut}>
             <Text>Sign out</Text>
           </Pressable>
           <Text>{i18n.language}</Text>
-        </> :
-        <Pressable onPress={() => router.replace('/sign-in')}>
+        </>
+      ) : (
+        <Pressable onPress={() => router.replace('/auth/sign-in')}>
           <Text>Sign in</Text>
         </Pressable>
-      }
+      )}
     </SafeAreaView>
   );
 }

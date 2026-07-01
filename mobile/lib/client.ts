@@ -19,7 +19,7 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
-  };
+  }
 
   let response = await fetch(input, { ...init, headers });
 

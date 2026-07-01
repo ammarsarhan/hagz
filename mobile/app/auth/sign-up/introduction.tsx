@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '@/components/shared/Button';
 import Logo from '@/assets/logos/logo-cropped.svg';
 import Hero from '@/assets/static/hero.mp4';
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 export default function Introduction() {
@@ -62,24 +62,32 @@ export default function Introduction() {
             <View className="gap-y-6 p-6">
               <View className="gap-y-3">
                 <Logo width={50} height={50} color={'#FFFFFF'} />
-                <Text className="text-4xl font-semibold text-white text-left">{t("auth.signUp.introduction.title")}</Text>
-                <Text className="text-white/85 text-left">{t("auth.signUp.introduction.description")}</Text>
+                <Text className="text-left text-4xl font-semibold text-white">
+                  {t('auth.signUp.introduction.title')}
+                </Text>
+                <Text className="text-left text-white/85">
+                  {t('auth.signUp.introduction.description')}
+                </Text>
               </View>
               <View className="gap-y-3">
-                <Link href="/(auth)/sign-up/role" asChild>
+                <Link href="/auth/sign-up/role" asChild>
                   <Button className="border-primary bg-primary">
-                    <Text className="font-semibold">{t("auth.signUp.introduction.cta.primary")}</Text>
+                    <Text className="font-semibold">
+                      {t('auth.signUp.introduction.cta.primary')}
+                    </Text>
                   </Button>
                 </Link>
-                <Link href="/(user)" asChild>
+                <Link href="/user/main" asChild>
                   <Button className="border-white bg-white">
-                    <Text className="font-semibold">{t("auth.signUp.introduction.cta.secondary")}</Text>
+                    <Text className="font-semibold">
+                      {t('auth.signUp.introduction.cta.secondary')}
+                    </Text>
                   </Button>
                 </Link>
               </View>
               <View className="flex items-center">
                 <Text className="w-3/4 text-center text-sm text-white">
-                  {t("auth.signUp.introduction.disclaimer")}
+                  {t('auth.signUp.introduction.disclaimer')}
                 </Text>
               </View>
             </View>

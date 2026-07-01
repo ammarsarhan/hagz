@@ -26,13 +26,17 @@ export default function Input({
   const isRTL = I18nManager.isRTL;
 
   const [isVisible, setIsVisible] = useState(type !== 'password');
-  const base = `w-full rounded-lg px-3 h-12 bg-slate-100 ${isRTL ? "text-right" : "text-left"}`;
+  const base = `w-full rounded-lg px-3 h-12 bg-slate-100 ${isRTL ? 'text-right' : 'text-left'}`;
 
   switch (type) {
     case 'phone': {
       return (
         <View className="gap-y-2">
-          {label && <Text className="font-medium text-left">{t("components.shared.input.phone.label")}</Text>}
+          {label && (
+            <Text className="text-left font-medium">
+              {t('components.shared.input.phone.label')}
+            </Text>
+          )}
           <View className="w-full flex-row gap-x-2">
             <View className="h-12 items-center justify-center rounded-lg bg-slate-100 px-3">
               <Text>+20</Text>
@@ -42,7 +46,7 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 rounded-lg bg-slate-100 px-3 ${isRTL ? "text-right" : "text-left"} ${className ? className : ''}`}
+              className={`h-12 flex-1 rounded-lg bg-slate-100 px-3 ${isRTL ? 'text-right' : 'text-left'} ${className ? className : ''}`}
             />
           </View>
         </View>
@@ -51,7 +55,11 @@ export default function Input({
     case 'password': {
       return (
         <View className="gap-y-2">
-          {label && <Text className="font-medium text-left">{t("components.shared.input.password.label")}</Text>}
+          {label && (
+            <Text className="text-left font-medium">
+              {t('components.shared.input.password.label')}
+            </Text>
+          )}
           <View className="w-full flex-row overflow-hidden rounded-lg">
             <TextInput
               secureTextEntry={!isVisible}
@@ -60,12 +68,11 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={`h-12 flex-1 bg-slate-100 px-3 ${isRTL ? "text-right" : "text-left"} ${className ? className : ''}`}
+              className={`h-12 flex-1 bg-slate-100 px-3 ${isRTL ? 'text-right' : 'text-left'} ${className ? className : ''}`}
             />
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
-              className="h-12 items-center justify-center bg-slate-100 px-3"
-            >
+              className="h-12 items-center justify-center bg-slate-100 px-3">
               {isVisible ? (
                 <IconEyeOff size={20} color="#AAAAAA" />
               ) : (
@@ -79,7 +86,7 @@ export default function Input({
     case 'text': {
       return (
         <View className="gap-y-2">
-          {label && <Text className="font-medium text-left">{label}</Text>}
+          {label && <Text className="text-left font-medium">{label}</Text>}
           <TextInput
             placeholder={placeholder}
             value={value}

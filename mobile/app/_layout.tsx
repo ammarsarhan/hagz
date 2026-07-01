@@ -18,11 +18,11 @@ export default function RootLayout() {
       <AuthProvider>
         <AppLayout>
           <Stack>
-            <Stack.Screen name="(user)" options={{ headerShown: false, gestureEnabled: false }} />
-            <Stack.Screen name="(dashboard)" options={{ headerShown: false, gestureEnabled: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="user" options={{ headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="dashboard" options={{ headerShown: false, gestureEnabled: false }}/>
+            <Stack.Screen name="auth" options={{ headerShown: false, gestureEnabled: false }} />
           </Stack>
-          <AuthModal/>
+          <AuthModal />
         </AppLayout>
       </AuthProvider>
     </QueryClientProvider>

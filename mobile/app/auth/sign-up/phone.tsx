@@ -38,9 +38,11 @@ export default function Phone() {
             <SafeAreaView className="w-full flex-1 items-center  justify-center p-6">
               <View className="w-full gap-y-10">
                 <View className="gap-y-3">
-                  <Text className="text-center text-4xl font-semibold">{t("auth.signUp.phone.title")}</Text>
+                  <Text className="text-center text-4xl font-semibold">
+                    {t('auth.signUp.phone.title')}
+                  </Text>
                   <Text className="text-center text-gray-500">
-                    {t("auth.signUp.phone.description")}
+                    {t('auth.signUp.phone.description')}
                   </Text>
                 </View>
                 <View className="w-full gap-y-6">
@@ -52,14 +54,14 @@ export default function Phone() {
                     onChangeText={(text) => setData({ ...data, phone: text })}
                   />
                 </View>
-                <Link asChild href={'/(auth)/sign-up/password'} disabled={isDisabled}>
+                <Link asChild href={'/auth/sign-up/password'} disabled={isDisabled}>
                   <Button
                     className={
                       isDisabled
                         ? 'w-full border-primary/40 bg-primary/40'
                         : 'w-full border-primary bg-primary'
                     }>
-                    <Text className="font-semibold">{t("auth.signUp.phone.cta.primary")}</Text>
+                    <Text className="font-semibold">{t('auth.signUp.phone.cta.primary')}</Text>
                   </Button>
                 </Link>
               </View>

@@ -21,11 +21,9 @@ export default function Home() {
     return (
       <SafeAreaView className="flex-1 gap-y-6" edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          {
-            skeletons.map((_, index) => {
-              return <FeedSectionSkeleton key={index}/>
-            })
-          }
+          {skeletons.map((_, index) => {
+            return <FeedSectionSkeleton key={index} />;
+          })}
         </ScrollView>
       </SafeAreaView>
     );
@@ -38,14 +36,19 @@ export default function Home() {
   const sections = parsePitchFeedResponse(data);
 
   return (
-      <SafeAreaView className="flex-1 gap-y-6" edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {
-            sections.map((section, index) => {
-              return <FeedSection label={section.label} description={section.description} cards={section.cards} key={index}/>
-            })
-          }
-        </ScrollView>
-      </SafeAreaView>
+    <SafeAreaView className="flex-1 gap-y-6" edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {sections.map((section, index) => {
+          return (
+            <FeedSection
+              label={section.label}
+              description={section.description}
+              cards={section.cards}
+              key={index}
+            />
+          );
+        })}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

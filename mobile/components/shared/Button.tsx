@@ -12,7 +12,10 @@ export default function Button({ children, onPress, className, disabled = false 
   const base = 'px-4 py-5 rounded-full border flex-row items-center justify-center gap-x-2';
 
   return (
-    <Pressable onPress={onPress} className={`${base} ${className ? className : ''}`} disabled={disabled}>
+    <Pressable
+      onPress={onPress}
+      className={`${base} ${className ? className : ''}`}
+      disabled={disabled}>
       {children}
     </Pressable>
   );
