@@ -1,6 +1,7 @@
 import { sign, verify } from "hono/jwt";
 import { ERROR_CODES, InternalServerError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import { randomUUID } from "crypto";
+import { UserRole } from "@/generated/prisma/enums.js";
 
 export interface AccessTokenPayload {
     id: string;

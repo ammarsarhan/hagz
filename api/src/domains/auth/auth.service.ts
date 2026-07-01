@@ -6,6 +6,7 @@ import prisma from "@/shared/lib/utils/prisma.js";
 import { hashPassword, verifyPassword } from "@/shared/lib/utils/hash.js";
 import { ConflictError, InternalServerError, NotFoundError, ERROR_CODES, UnauthorizedError, ForbiddenError } from "@/shared/lib/utils/error.js";
 import { addDays } from "date-fns";
+import { UserRole } from "@/generated/prisma/enums.js";
 
 export default class AuthService {
     private readonly MAXIMUM_SESSION_LIMIT = 5;
@@ -200,7 +201,7 @@ export default class AuthService {
         // We don't need to check expiresAt because this is already done by the JWTService and is redundant (simply there as an audit field in database).
         const storedToken = await prisma.session.findUnique({
             where: { refreshToken },
-            include: { user: { select: { phone: true } } }
+            include: { user: { select: { phone: true, preferences: { select: { role: true } } } } }
         });
 
         if (!storedToken || storedToken.userId !== payload.id || storedToken.revokedAt) {

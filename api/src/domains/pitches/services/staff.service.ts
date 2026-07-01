@@ -1,4 +1,4 @@
-import { InvitationStatus, NotificationEvent, PermissionLevel, PitchStatus, StaffRole, UserStatus } from "@/generated/prisma/enums.js";
+import { InvitationStatus, NotificationEvent, PermissionLevel, PitchStatus, StaffRole, UserRole, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import type { CreateInvitationPayloadType, UpdatePitchStaffMemberPayloadType } from "@/domains/pitches/pitches.validator.js";
@@ -24,7 +24,7 @@ export default class StaffService {
     } as Permissions);
 
     // Helper function to add/remove the invitation to the queue to auto-expire.
-    private readonly enqueueInvitationExpiry = async (invitationId: string, pitchId: string, expiresAt: Date) => {
+    static readonly enqueueInvitationExpiry = async (invitationId: string, pitchId: string, expiresAt: Date) => {
         // Math.max to ensure that any delays that bypass get passed as 0 rather than negatives.
         const delay = Math.max(0, differenceInMilliseconds(expiresAt, new Date()));
         await invitationsQueue.add(
@@ -34,7 +34,7 @@ export default class StaffService {
         );
     } 
 
-    private readonly dequeueInvitationExpiry = async (invitationId: string) => {
+    static readonly dequeueInvitationExpiry = async (invitationId: string) => {
         await invitationsQueue.remove(`invitation-${invitationId}-expire`);
     };
 
@@ -105,7 +105,7 @@ export default class StaffService {
         });
 
         // Call the notifications service to send out the deliveries.
-        await this.enqueueInvitationExpiry(data.id, pitch.id, data.expiresAt);
+        await StaffService.enqueueInvitationExpiry(data.id, pitch.id, data.expiresAt);
 
         const owner = await prisma.staff.findFirst({ 
             where: {
@@ -219,10 +219,14 @@ export default class StaffService {
             }
         });
 
-        await this.dequeueInvitationExpiry(invitationId);
+        await StaffService.dequeueInvitationExpiry(invitationId);
     };
 
     acceptPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
+        // Make sure that the user is in a state to be added to the pitch.
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true, preferences: true } });
+        if (user && user.preferences && user.preferences.role !== UserRole.MANAGER) throw new BadRequestError("User account has not been signed up as an manager. Please transfer to a manager account from account settings if this was an intended action.", ERROR_CODES.USER_ROLE_INVALID);
+
         // Make sure that the pitch is in a state to accept new users.
         const pitch = await prisma.pitch.findFirst({ 
             where: {
@@ -237,10 +241,7 @@ export default class StaffService {
 
         if (!config.ACTIVE_STATES.includes(pitch.status))
             throw new BadRequestError("Pitch is not active. Can not accept invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
-        
-        // Make sure that the user is in a state to be added to the pitch.
-        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
-        
+                
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
         if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_NOT_ACTIVE);
         if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not accept invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
@@ -308,11 +309,15 @@ export default class StaffService {
         });
 
         // Remove the expiration job from the queue and return the new staff role.
-        await this.dequeueInvitationExpiry(invitation.id);
+        await StaffService.dequeueInvitationExpiry(invitation.id);
         return staff;
     };
 
     rejectPitchInvitation = async (userId: string, pitchId: string, invitationId: string) => {
+        // Make sure that the user is in a state to be added to the pitch.
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true, preferences: true } });
+        if (user && user.preferences && user.preferences.role !== UserRole.MANAGER) throw new BadRequestError("User account has not been signed up as an manager. Please transfer to a manager account from account settings if this was an intended action.", ERROR_CODES.USER_ROLE_INVALID);
+
         // Make sure that the pitch is in a state to reject invitations.
         const pitch = await prisma.pitch.findFirst({ 
             where: {
@@ -328,9 +333,7 @@ export default class StaffService {
         if (!config.ACTIVE_STATES.includes(pitch.status))
             throw new BadRequestError("Pitch is not active. Can not reject invitation on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
         
-        // Make sure that the user is in a state to be added to the pitch.
-        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }, include: { pitches: true } });
-        
+        // Make sure that the user is in a state to be added to the pitch.        
         if (!user) throw new NotFoundError("Could not find user with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
         if (user.status != UserStatus.ACTIVE) throw new ForbiddenError("User account is not active. You are not allowed to accept this invitation.", ERROR_CODES.USER_NOT_ACTIVE);
         if (user.pitches.find(item => item.pitchId === pitchId && item.deletedAt === null)) throw new BadRequestError("User already exists with a role on the specified pitch. Can not reject invitation.", ERROR_CODES.PITCH_STAFF_ALREADY_EXISTS);
@@ -360,7 +363,7 @@ export default class StaffService {
             }
         });
 
-        await this.dequeueInvitationExpiry(invitation.id);
+        await StaffService.dequeueInvitationExpiry(invitation.id);
         return data;
     };
 

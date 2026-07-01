@@ -1,7 +1,7 @@
 import z from "zod";
 
 import { createPitchFeedResponse, normalizeRawPitchFeed, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole } from "@/generated/prisma/enums.js";
+import { GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -105,6 +105,10 @@ export default class PitchService {
 
     createPitch = async (userId: string, payload: CreatePitchPayloadType) => {
         return await prisma.$transaction(async (tx) => {
+            // Check if the user is signed up as an owner. If they are a user or a manager they shouldn't expect to be able to create a pitch.
+            const preferences = await prisma.userPreferences.findUnique({ where: { userId }});
+            if (preferences && preferences.role !== UserRole.OWNER) throw new BadRequestError("User account has not been signed up as an owner. Please transfer to an owner account from account settings if this was an intended action.", ERROR_CODES.USER_ROLE_INVALID);
+
             // The user should be allowed a maximum of 5 pitches to own and may not create any new pitches as long they already have a draft or is under review.
             const staff = await tx.staff.findMany({
                 where: { 

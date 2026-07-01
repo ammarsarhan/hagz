@@ -1,6 +1,6 @@
 import Button from '@/components/shared/Button';
 import { useSignUpForm } from '@/context/forms/SignUpContext';
-import { IconBallBasketball, IconSoccerField, IconUser } from '@tabler/icons-react-native';
+import { IconBallBasketball, IconSoccerField, IconUser, IconUsersPlus } from '@tabler/icons-react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StatusBar, View, Text, Pressable } from 'react-native';
@@ -57,29 +57,55 @@ export default function Role() {
                 </View>
               </Pressable>
               <Pressable
-                className={`flex-row items-center gap-x-5 rounded-xl p-5 ${data.role === 'STAFF' ? 'bg-[#F5FFC2]' : 'bg-gray-100'}`}
-                onPress={() => setData({ ...data, role: 'STAFF' })}>
-                <IconSoccerField
+                className={`flex-row items-center gap-x-5 rounded-xl p-5 ${data.role === 'MANAGER' ? 'bg-[#F5FFC2]' : 'bg-gray-100'}`}
+                onPress={() => setData({ ...data, role: 'MANAGER' })}>
+                <IconUsersPlus
                   height={30}
                   width={30}
-                  color={data.role === 'STAFF' ? '#1F4F33' : '#000000'}
+                  color={data.role === 'MANAGER' ? '#1F4F33' : '#000000'}
                 />
                 <View className="flex-1">
                   <Text
-                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'STAFF' ? 'text-primary-foreground' : 'text-black'}`}
+                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'MANAGER' ? 'text-primary-foreground' : 'text-black'}`}
+                  >
+                    {t("auth.signUp.role.roles.manager.title")}
+                  </Text>
+                  <Text
+                    className={`text-sm text-left text-gray-500 ${data.role === 'MANAGER' ? 'text-primary-foreground' : 'text-black'}`}
+                  >
+                    {t("auth.signUp.role.roles.manager.description")}
+                  </Text>
+                </View>
+                <View
+                  className={`size-6 border ${data.role === 'MANAGER' ? 'border-primary-foreground' : 'border-gray-300'} items-center justify-center rounded-full bg-white`}>
+                  <View
+                    className={`${data.role === 'MANAGER' ? 'bg-primary-foreground' : 'bg-white'} size-3 items-center justify-center rounded-full`}></View>
+                </View>
+              </Pressable>
+              <Pressable
+                className={`flex-row items-center gap-x-5 rounded-xl p-5 ${data.role === 'OWNER' ? 'bg-[#F5FFC2]' : 'bg-gray-100'}`}
+                onPress={() => setData({ ...data, role: 'OWNER' })}>
+                <IconSoccerField
+                  height={30}
+                  width={30}
+                  color={data.role === 'OWNER' ? '#1F4F33' : '#000000'}
+                />
+                <View className="flex-1">
+                  <Text
+                    className={`text-[1.2rem] text-left font-semibold ${data.role === 'OWNER' ? 'text-primary-foreground' : 'text-black'}`}
                   >
                     {t("auth.signUp.role.roles.owner.title")}
                   </Text>
                   <Text
-                    className={`text-sm text-left text-gray-500 ${data.role === 'STAFF' ? 'text-primary-foreground' : 'text-black'}`}
+                    className={`text-sm text-left text-gray-500 ${data.role === 'OWNER' ? 'text-primary-foreground' : 'text-black'}`}
                   >
                     {t("auth.signUp.role.roles.owner.description")}
                   </Text>
                 </View>
                 <View
-                  className={`size-6 border ${data.role === 'STAFF' ? 'border-primary-foreground' : 'border-gray-300'} items-center justify-center rounded-full bg-white`}>
+                  className={`size-6 border ${data.role === 'OWNER' ? 'border-primary-foreground' : 'border-gray-300'} items-center justify-center rounded-full bg-white`}>
                   <View
-                    className={`${data.role === 'STAFF' ? 'bg-primary-foreground' : 'bg-white'} size-3 items-center justify-center rounded-full`}></View>
+                    className={`${data.role === 'OWNER' ? 'bg-primary-foreground' : 'bg-white'} size-3 items-center justify-center rounded-full`}></View>
                 </View>
               </Pressable>
             </View>

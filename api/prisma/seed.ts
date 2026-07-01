@@ -9,6 +9,7 @@ import { seedBookings } from "./seeds/bookings.js";
 import { seedLedger } from "./seeds/ledger.js";
 import { seedReviews } from "./seeds/reviews.js";
 import { seedFavorites } from "./seeds/favorites.js";
+import { seedInvitations } from "./seeds/invitations.js";
 
 async function main() {
   const exists = await prisma.pitch.count();
@@ -33,6 +34,9 @@ async function main() {
 
   // 5. Staff (Owner per pitch, 2 Managers per pitch)
   const { staff } = await seedStaff(pitches, owners, managers);
+
+  // 5.5 Invitations (Accepted for existing managers, plus random pending/expired/rejected)
+  const { invitations } = await seedInvitations(pitches, staff, managers);
 
   // 6. Customers (15-30 per pitch)
   const { customers } = await seedCustomers(pitches, users);
@@ -60,6 +64,7 @@ Customers: ${customers.length}
 Bookings:  ${bookings.length}
 Reviews:   ${reviews.length}
 Favorites: ${favorites.length}
+Invites:   ${invitations.length}
 --------------
 Seed completed successfully! Mabrook!
   `);

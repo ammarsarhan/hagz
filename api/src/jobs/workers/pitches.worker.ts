@@ -10,12 +10,14 @@ const pitchesWorker = new Worker<PitchJobPayload>("pitches",
                 case PitchEvent.EXPIRE_BOOKING:
                     {
                         const { pitchId } = job.data;
+
                         await prisma.pitch.update({
                             where: { id: pitchId },
                             data: {
                                 weeklyBookings: { decrement: 1 }
                             }
                         });
+                        
                         break;
                     }
             }

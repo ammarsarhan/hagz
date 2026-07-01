@@ -10,5 +10,5 @@ export type SignUpPayload = {
   phone: string;
   password: string;
   confirmPassword: string;
-  role: 'USER' | 'STAFF' | null;
+  role: 'USER' | 'MANAGER' | 'OWNER' | null;
 };
