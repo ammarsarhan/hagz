@@ -3,6 +3,7 @@ import Input from '@/components/shared/Input';
 import { useAuth } from '@/context/AuthContext';
 import { useSignUpForm } from '@/context/forms/SignUpContext';
 import { client } from '@/lib/client';
+import { convertNumerals } from '@/lib/number';
 import { saveTokens } from '@/lib/storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -36,7 +37,7 @@ export default function Password() {
     setIsLoading(true);
 
     const { phone } = data;
-    const res = await client.auth['sign-up'].$post({ json: { ...data, phone: `+20${phone}` } });
+    const res = await client.auth['sign-up'].$post({ json: { ...data, phone: `+20${convertNumerals(phone)}` } });
 
     if (res.ok) {
       const body = await res.json();
@@ -44,7 +45,8 @@ export default function Password() {
       
       if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
       setUser(body.data.user);
-      router.replace('/(user)');
+      // Use a helper function to properly redirect the user based on their current status.
+      
     }
 
     setIsLoading(false);

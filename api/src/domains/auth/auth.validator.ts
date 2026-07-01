@@ -1,6 +1,6 @@
 import z from "zod";
 import { UserRole, type Language, type NotificationChannel, type StaffRole, type UserStatus } from "@/generated/prisma/enums.js";
-import type { GroundSize, GroundSport, Staff, User, UserPreferences } from "@/generated/prisma/client.js";
+import type { GroundSize, GroundSport, PitchStatus, Staff, User, UserPreferences } from "@/generated/prisma/client.js";
 import type { Permissions } from "@/shared/types/staff.js";
 
 // Fetch user by either phone or id.
@@ -61,7 +61,9 @@ export const signInSchema = z.object({
         .min(2, "Password is required."),
 });
 
-export const createUserResponse = (user: User, preferences: UserPreferences, pitches: Array<Staff>): UserResponseType => {
+type StaffPitch = Staff & { pitch: { status: PitchStatus }};
+
+export const createUserResponse = (user: User, preferences: UserPreferences, pitches: Array<StaffPitch>): UserResponseType => {
     return {
         id: user.id,
         firstName: user.firstName,
@@ -82,7 +84,8 @@ export const createUserResponse = (user: User, preferences: UserPreferences, pit
         pitches: pitches.map(item => ({
             pitchId: item.pitchId,
             role: item.role,
-            permissions: item.permissions as Permissions
+            permissions: item.permissions as Permissions,
+            status: item.pitch.status
         }))
     };
 }

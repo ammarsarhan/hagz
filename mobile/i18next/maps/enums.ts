@@ -17,7 +17,8 @@ export const userStatusTranslations: Record<string, EnumTranslation> = {
 
 export const userRoleTranslations: Record<string, EnumTranslation> = {
     USER: { en: "User", ar: "مستخدم" },
-    STAFF: { en: "Staff", ar: "موظف" },
+    MANAGER: { en: "Manager", ar: "مدير" },
+    OWNER: { en: "Owner", ar: "مالك" },
 };
 
 export const staffRoleTranslations: Record<string, EnumTranslation> = {

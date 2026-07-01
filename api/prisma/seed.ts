@@ -22,8 +22,8 @@ async function main() {
   // 1. Locations (Governorates + Areas)
   await seedLocations();
 
-  // 2. Users (50 regular + 30 owners)
-  const { users, owners } = await seedUsers();
+  // 2. Users (50 regular, 30 owners, 60 managers)
+  const { users, owners, managers } = await seedUsers();
 
   // 3. Pitches (30 total)
   const { pitches } = await seedPitches();
@@ -31,8 +31,8 @@ async function main() {
   // 4. Grounds (per pitch, with settings and schedules)
   const { grounds } = await seedGrounds(pitches);
 
-  // 5. Staff (Owner per pitch, Manager on ~40%)
-  const { staff } = await seedStaff(pitches, owners, users);
+  // 5. Staff (Owner per pitch, 2 Managers per pitch)
+  const { staff } = await seedStaff(pitches, owners, managers);
 
   // 6. Customers (15-30 per pitch)
   const { customers } = await seedCustomers(pitches, users);

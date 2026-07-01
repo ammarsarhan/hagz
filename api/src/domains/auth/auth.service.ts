@@ -25,7 +25,15 @@ export default class AuthService {
                     password: hashed
                 },
                 include: {
-                    pitches: true
+                    pitches: {
+                        include: {
+                            pitch: {
+                                select: {
+                                    status: true
+                                }
+                            }
+                        }
+                    }
                 }
             });
 
@@ -51,7 +59,15 @@ export default class AuthService {
             const user = await prisma.user.findUnique({ 
                 where: { phone: params.phone },
                 include: {
-                    pitches: true,
+                    pitches: {
+                        include: {
+                            pitch: {
+                                select: {
+                                    status: true
+                                }
+                            }
+                        }
+                    },
                     preferences: true
                 }
             });
@@ -70,7 +86,15 @@ export default class AuthService {
             const user = await prisma.user.findUnique({ 
                 where: { id: params.id },
                 include: {
-                    pitches: true,
+                    pitches: {
+                        include: {
+                            pitch: {
+                                select: {
+                                    status: true
+                                }
+                            }
+                        }
+                    },
                     preferences: true
                 }
             });
@@ -94,7 +118,15 @@ export default class AuthService {
             where: { phone: payload.phone }, 
             include: { 
                 preferences: true, 
-                pitches: true 
+                pitches: {
+                    include: {
+                        pitch: {
+                            select: {
+                                status: true
+                            }
+                        }
+                    }
+                } 
             } 
         });
 

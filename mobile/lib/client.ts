@@ -4,7 +4,7 @@ import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from './stor
 import i18n from '@/i18next/i18next';
 
 // Adjust to match actual backend URL (e.g. from config/constants).
-const API_URL = 'http://192.168.1.7:8080';
+const API_URL = 'http://192.168.1.16:8080';
 
 export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const accessToken = await getAccessToken();

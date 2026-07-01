@@ -6,12 +6,12 @@ async function run() {
   try {
     const pitches = await prisma.pitch.findMany();
     const owners = await prisma.user.findMany({ 
-      where: { preferences: { role: UserRole.STAFF } } 
+      where: { preferences: { role: UserRole.OWNER } } 
     });
-    const users = await prisma.user.findMany({ 
-      where: { preferences: { role: UserRole.USER } } 
+    const managers = await prisma.user.findMany({ 
+      where: { preferences: { role: UserRole.MANAGER } } 
     });
-    await seedStaff(pitches, owners, users);
+    await seedStaff(pitches, owners, managers);
   } catch (error) {
     console.error(error);
     process.exit(1);

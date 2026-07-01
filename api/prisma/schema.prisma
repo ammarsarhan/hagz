@@ -18,7 +18,8 @@ enum UserStatus {
 
 enum UserRole {
   USER
-  STAFF
+  MANAGER
+  OWNER
 }
 
 enum StaffRole {
@@ -443,7 +444,6 @@ model Pitch {
   staff        Staff[]
   amenities    Amenity[]
   grounds      Ground[]
-  combinations Combination[]
   invitations  Invitation[]
   bookings     Booking[]
   customers    PitchCustomer[]
@@ -484,7 +484,6 @@ model Ground {
   peakPrice     Int?
   discountPrice Int?
 
-  combinations CombinationGround[]
   bookings     Booking[]
   slots        GroundSlot[]
 
@@ -527,31 +526,6 @@ model GroundSettings {
   refundPercentage    Int @default(50)
 
   notificationsTrigger NotificationEvent[] @default([BOOKING_RECEIVED, BOOKING_UPDATED, BOOKING_RESERVED, BOOKING_CONFIRMED, BOOKING_CANCELLED, BOOKING_RESCHEDULED, BOOKING_REMINDER, BOOKING_STARTED, BOOKING_EXPIRED, BOOKING_NO_SHOW, PAYOUT_PROCESSED, PAYOUT_FAILED, INVITATION_CREATED, INVITATION_RECEIVED, INVITATION_ACCEPTED, PITCH_UPDATED])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model CombinationGround {
-  combinationId String
-  groundId      String
-
-  combination Combination @relation(fields: [combinationId], references: [id], onDelete: Cascade)
-  ground      Ground      @relation(fields: [groundId], references: [id], onDelete: Restrict)
-
-  @@id([combinationId, groundId])
-}
-
-model Combination {
-  id      String @id @default(cuid())
-  pitchId String
-  pitch   Pitch  @relation(fields: [pitchId], references: [id], onDelete: Cascade)
-
-  name     String
-  grounds  CombinationGround[]
-  size     GroundSize
-  isActive Boolean             @default(true)
-  bookings GroupBooking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -626,13 +600,6 @@ model Schedule {
   @@unique([groundId, dayOfWeek])
 }
 
-model GroupBooking {
-  id            String      @id @default(cuid())
-  bookings      Booking[]
-  combinationId String
-  combination   Combination @relation(fields: [combinationId], references: [id])
-}
-
 model RecurringBooking {
   id String @id @default(cuid())
 
@@ -696,8 +663,6 @@ model Booking {
 
   status BookingStatus @default(RESERVED)
 
-  groupBookingId     String?
-  groupBooking       GroupBooking?     @relation(fields: [groupBookingId], references: [id])
   recurringBookingId String?
   recurringBooking   RecurringBooking? @relation(fields: [recurringBookingId], references: [id])
 

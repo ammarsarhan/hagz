@@ -12,7 +12,18 @@ export default class ProfileService {
     getUserProfile = async (userId: string) => {
         const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
-            include: { preferences: true, pitches: true }
+            include: { 
+                preferences: true, 
+                pitches: {
+                    include: {
+                        pitch: {
+                            select: {
+                                status: true
+                            }
+                        }
+                    }
+                } 
+            }
         });
 
         if (!user)
@@ -42,7 +53,18 @@ export default class ProfileService {
                 status: { not: UserStatus.DELETED }
             },
             data: payload,
-            include: { preferences: true, pitches: true }
+            include: { 
+                preferences: true, 
+                pitches: {
+                    include: {
+                        pitch: {
+                            select: {
+                                status: true
+                            }
+                        }
+                    }
+                } 
+            }
         });
 
         if (!updated.preferences)
@@ -104,7 +126,18 @@ export default class ProfileService {
                 avatarUrl: url,
                 avatarKey: key
             },
-            include: { preferences: true, pitches: true }
+            include: { 
+                preferences: true, 
+                pitches: {
+                    include: {
+                        pitch: {
+                            select: {
+                                status: true
+                            }
+                        }
+                    }
+                } 
+            }
         });
 
         if (!updated.preferences)
@@ -145,7 +178,18 @@ export default class ProfileService {
                 avatarUrl: null,
                 avatarKey: null
             },
-            include: { preferences: true, pitches: true }
+            include: { 
+                preferences: true, 
+                pitches: {
+                    include: {
+                        pitch: {
+                            select: {
+                                status: true
+                            }
+                        }
+                    }
+                } 
+            }
         });
 
         if (!updated.preferences)

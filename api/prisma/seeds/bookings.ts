@@ -36,30 +36,36 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       const settings = await prisma.groundSettings.findUnique({ where: { groundId: ground.id } });
       if (!settings) continue;
 
-      // 1. Determine Timeline and Status
-      const randTimeline = Math.random();
+      // 1. Determine timeline and status.
+      const timeline = Math.random();
       let startTime: Date;
       let status: BookingStatus;
 
-      if (randTimeline < 0.85) { // Historical (last 60 days)
+      if (timeline < 0.85) { 
+        // Historical (last 60 days).
         startTime = faker.date.between({ from: subDays(new Date(), 60), to: subHours(new Date(), 24) });
         startTime.setMinutes(0, 0, 0);
         
-        const randStatus = Math.random();
-        if (randStatus < 0.75) status = BookingStatus.COMPLETED;
-        else if (randStatus < 0.90) status = BookingStatus.CANCELLED;
+        const random = Math.random();
+
+        if (random < 0.75) status = BookingStatus.COMPLETED;
+        else if (random < 0.90) status = BookingStatus.CANCELLED;
         else status = BookingStatus.NO_SHOW;
-      } else if (randTimeline < 0.95) { // Recent (last 24h)
+      } 
+      else if (timeline < 0.95) { 
+        // Recent (last 24h).
         startTime = faker.date.between({ from: subHours(new Date(), 24), to: new Date() });
         startTime.setMinutes(0, 0, 0);
         status = faker.helpers.arrayElement([BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]);
-      } else { // Upcoming (next 72h)
+      } 
+      else { 
+        // Upcoming (next 72h).
         startTime = faker.date.between({ from: new Date(), to: addHours(new Date(), 72) });
         startTime.setMinutes(0, 0, 0);
         status = Math.random() < 0.2 ? BookingStatus.RESERVED : BookingStatus.CONFIRMED;
       }
 
-      // 2. Channel and Payment Method
+      // 2. Channel and PaymentMethod.
       const channel = Math.random() < 0.75 ? BookingChannel.ONLINE : BookingChannel.WALK_IN;
       const paymentMethod = channel === BookingChannel.WALK_IN ? PaymentMethod.CASH : faker.helpers.arrayElement([PaymentMethod.CARD, PaymentMethod.WALLET]);
 
@@ -67,7 +73,7 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       const duration = faker.helpers.arrayElement([settings.minimumDuration, settings.maximumDuration].filter(Boolean) as number[]);
       const endTime = addHours(startTime, duration);
       
-      // Constraint: Check windows
+      // Constraint: Check windows.
       if (channel === BookingChannel.ONLINE && differenceInHours(startTime, new Date()) < settings.minimumWindow) continue;
       if (differenceInHours(startTime, new Date()) > settings.maximumWindow) continue;
 
@@ -80,9 +86,9 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
         orderBy: { startsAt: "asc" }
       });
 
-      if (slots.length < duration) continue; // Skip if slots taken
+      if (slots.length < duration) continue; // Skip if slots taken.
 
-      // 4. Calculate pricing using BookingService
+      // 4. Calculate pricing using BookingService.
       const { pricingSnapshot } = BookingService.buildPricingSnapshot(ground, settings, slots);
 
       let baseAmount = slots.reduce((sum, slot) => sum + (pricingSnapshot.slots.find(s => s.startsAt.getTime() === slot.startsAt.getTime())?.price || 0), 0);
@@ -93,18 +99,19 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       }
 
       let depositFee = null;
+
       if (channel === BookingChannel.ONLINE && pricingSnapshot.allowDeposit) {
         depositFee = Math.round(totalAmount * (pricingSnapshot.depositPercentage! / 100));
       }
 
-      // 5. Create Booking
+      // 5. Create booking.
       const booking = await prisma.booking.create({
         data: {
           pitchId: pitch.id,
           groundId: ground.id,
           customerId: customer.id,
           initiatorId: initiator.id,
-          bookerRole: channel === BookingChannel.ONLINE ? UserRole.USER : UserRole.STAFF,
+          bookerRole: channel === BookingChannel.ONLINE ? UserRole.USER : faker.helpers.arrayElement([UserRole.MANAGER, UserRole.OWNER]),
           isApproved: true,
           startTime,
           endTime,
@@ -124,16 +131,16 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
         }
       });
 
-      // 6. Link slots
+      // 6. Link slots.
       await prisma.groundSlot.updateMany({
         where: { id: { in: slots.map(s => s.id) } },
         data: { status: SlotStatus.BOOKED, bookingId: booking.id }
       });
 
-      // 7. Enqueue Lifecycle
+      // 7. Enqueue Lifecycle.
       await BookingService.enqueueBookingLifecycle(booking, settings);
 
-      // 8. Create Events (Historical events only)
+      // 8. Create Events (Historical events only).
       const events: { previousStatus: BookingStatus; updatedStatus: BookingStatus; logs: string }[] = [
         { previousStatus: BookingStatus.RESERVED, updatedStatus: BookingStatus.RESERVED, logs: "Booking initialized." }
       ];

@@ -2,7 +2,7 @@ import { ScrollView } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { client } from '@/lib/client';
-import FeedSection, { FeedSectionSkeleton } from '@/components/feed/FeedSection';
+import FeedSection, { FeedSectionSkeleton } from '@/components/user/feed/FeedSection';
 import { parsePitchFeedResponse } from '@/lib/types/pitch';
 
 export default function Home() {

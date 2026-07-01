@@ -130,7 +130,7 @@ export const signOutHandler = factory.createHandlers(
 );
 
 export const fetchSessionHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const id = c.var.id;
         const user = await authService.fetchUser({ type: "id", id });

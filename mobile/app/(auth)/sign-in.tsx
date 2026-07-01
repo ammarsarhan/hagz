@@ -20,6 +20,7 @@ import Button from '@/components/shared/Button';
 import Logo from '@/assets/logos/logo-cropped.svg';
 import { saveTokens } from '@/lib/storage';
 import { useTranslation } from 'react-i18next';
+import { convertNumerals } from '@/lib/number';
 
 export default function SignIn() {
   const { setUser } = useAuth();
@@ -31,7 +32,7 @@ export default function SignIn() {
     },
     onSubmit: async ({ value }) => {
       const { phone, password } = value;
-      const res = await client.auth['sign-in'].$post({ json: { phone: `+20${phone}`, password } });
+      const res = await client.auth['sign-in'].$post({ json: { phone: `+20${convertNumerals(phone)}`, password } });
 
       if (res.ok) {
         const body = await res.json();
@@ -39,7 +40,8 @@ export default function SignIn() {
         
         if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
         setUser(body.data.user);
-        router.replace('/(user)');
+        // Use a helper function to properly redirect the user based on their current status.
+        
       };
     }
   });

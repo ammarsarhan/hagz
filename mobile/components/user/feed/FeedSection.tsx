@@ -1,6 +1,6 @@
 import { ScrollView, View } from 'react-native';
-import FeedHeader, { FeedHeaderSkeleton } from '@/components/feed/FeedHeader';
-import { FeedCardSkeleton, FeedLargeCard, FeedStandardCard } from '@/components/feed/FeedCard';
+import FeedHeader, { FeedHeaderSkeleton } from '@/components/user/feed/FeedHeader';
+import { FeedCardSkeleton, FeedLargeCard, FeedStandardCard } from '@/components/user/feed/FeedCard';
 import { FeedPitch } from '@/lib/types/pitch';
 
 export function FeedSectionSkeleton({ isVertical = false }: { isVertical?: boolean }) {

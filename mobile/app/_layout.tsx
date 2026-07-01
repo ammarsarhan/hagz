@@ -19,8 +19,8 @@ export default function RootLayout() {
         <AppLayout>
           <Stack>
             <Stack.Screen name="(user)" options={{ headerShown: false }} />
+            <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
           </Stack>
           <AuthModal />
         </AppLayout>

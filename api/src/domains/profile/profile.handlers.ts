@@ -12,7 +12,7 @@ const profileService = new ProfileService();
 const notificationsService = new NotificationsService();
 
 export const getProfileHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const profile = await profileService.getUserProfile(userId);
@@ -21,7 +21,7 @@ export const getProfileHandler = factory.createHandlers(
 );
 
 export const updateProfileHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     validate("json", updateUserProfileSchema),
     async (c) => {
         const userId = c.var.id;
@@ -33,7 +33,7 @@ export const updateProfileHandler = factory.createHandlers(
 );
 
 export const createAvatarPresignLinkHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     validate("json", createAvatarPresignLinkSchema),
     async (c) => {
         const userId = c.var.id;
@@ -46,7 +46,7 @@ export const createAvatarPresignLinkHandler = factory.createHandlers(
 );
 
 export const confirmAvatarUploadHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const avatarId = c.req.param("avatarId");
@@ -60,7 +60,7 @@ export const confirmAvatarUploadHandler = factory.createHandlers(
 );
 
 export const deleteAvatarHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const profile = await profileService.deleteAvatar(userId);
@@ -69,7 +69,7 @@ export const deleteAvatarHandler = factory.createHandlers(
 );
 
 export const fetchProfileNotificationsHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const notifications = await notificationsService.fetchUserInAppNotifications(c.var.id);
         return c.json({ success: true, data: { notifications } }, 200);
@@ -77,7 +77,7 @@ export const fetchProfileNotificationsHandler = factory.createHandlers(
 );
 
 export const getPreferencesHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const preferences = await profileService.getUserPreferences(userId);
@@ -86,7 +86,7 @@ export const getPreferencesHandler = factory.createHandlers(
 );
 
 export const updatePreferencesHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     validate("json", updateUserPreferencesSchema),
     async (c) => {
         const userId = c.var.id;
@@ -99,7 +99,7 @@ export const updatePreferencesHandler = factory.createHandlers(
 )
 
 export const readNotificationHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const notificationId = c.req.param("notificationId");
 
@@ -112,7 +112,7 @@ export const readNotificationHandler = factory.createHandlers(
 );
 
 export const fetchSessionsHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
     
@@ -129,7 +129,7 @@ export const fetchSessionsHandler = factory.createHandlers(
 );
 
 export const deleteSessionHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const sessionId = c.req.param("sessionId");

@@ -16,7 +16,8 @@ export async function seedReviews(pitches: Pitch[], users: User[]) {
     const reviewers = faker.helpers.arrayElements(users, reviewCount);
 
     for (const user of reviewers) {
-      const rating = faker.number.int({ min: 3, max: 5 }); // Mostly positive reviews
+      // Mostly positive reviews
+      const rating = faker.number.int({ min: 3, max: 5 });
       totalRating += rating;
 
       const review = await prisma.review.create({

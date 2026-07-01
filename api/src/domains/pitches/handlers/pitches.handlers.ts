@@ -14,7 +14,7 @@ const factory = createFactory();
 const pitchService = new PitchService();
 
 export const createPitchHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     validate("json", createPitchSchema),
     async (c) => {
         const userId = c.var.id;

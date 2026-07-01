@@ -50,6 +50,7 @@ export async function seedUsers() {
 
   // 30 Owners
   const owners = [];
+  
   for (let i = 0; i < 30; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
@@ -68,7 +69,7 @@ export async function seedUsers() {
         status: UserStatus.ACTIVE,
         preferences: {
           create: {
-            role: UserRole.STAFF,
+            role: UserRole.OWNER,
             language: Language.EN,
             notifications: [NotificationChannel.WHATSAPP],
             timezone: "Africa/Cairo",
@@ -80,6 +81,39 @@ export async function seedUsers() {
     owners.push(owner);
   }
 
-  console.log(`Successfully seeded ${users.length} users and ${owners.length} owners.`);
-  return { users, owners };
+  // 60 Managers
+  const managers = [];
+  
+  for (let i = 0; i < 60; i++) {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const phone = faker.helpers.fromRegExp(/\+201[0125][0-9]{8}/);
+
+    const manager = await prisma.user.upsert({
+      where: { phone },
+      update: {},
+      create: {
+        firstName,
+        lastName,
+        phone,
+        email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+        password,
+        isVerified: true,
+        status: UserStatus.ACTIVE,
+        preferences: {
+          create: {
+            role: UserRole.MANAGER,
+            language: Language.EN,
+            notifications: [NotificationChannel.WHATSAPP],
+            timezone: "Africa/Cairo",
+            areaId: faker.helpers.arrayElement(areas).id,
+          }
+        }
+      }
+    });
+    managers.push(manager);
+  }
+
+  console.log(`Successfully seeded ${users.length} users, ${owners.length} owners, and ${managers.length} managers.`);
+  return { users, owners, managers };
 }

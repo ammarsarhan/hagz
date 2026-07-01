@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { StaffRole, PermissionLevel } from "@/generated/prisma/enums.js";
 
-export async function seedStaff(pitches: any[], owners: any[], users: any[]) {
+export async function seedStaff(pitches: any[], owners: any[], managers: any[]) {
   console.log("Seeding staff...");
 
   const allStaff = [];
@@ -42,14 +42,14 @@ export async function seedStaff(pitches: any[], owners: any[], users: any[]) {
         permissions: ownerPermissions
       }
     });
+
     allStaff.push(staffOwner);
 
-    // 40% chance of having a manager
-    if (faker.number.float({ min: 0, max: 1 }) < 0.40) {
-      const managerUser = faker.helpers.arrayElement(users);
-      
-      // Ensure we don't assign the same user as manager if they are already owner (unlikely here but good practice)
-      if (managerUser.id !== owner.id) {
+    // Assign exactly 2 managers
+    const pitchManagers = [managers[i * 2], managers[i * 2 + 1]];
+
+    for (const managerUser of pitchManagers) {
+      if (managerUser && managerUser.id !== owner.id) {
         const staffManager = await prisma.staff.upsert({
           where: {
             userId_pitchId: {
@@ -65,6 +65,7 @@ export async function seedStaff(pitches: any[], owners: any[], users: any[]) {
             permissions: managerPermissions
           }
         });
+        
         allStaff.push(staffManager);
       }
     }

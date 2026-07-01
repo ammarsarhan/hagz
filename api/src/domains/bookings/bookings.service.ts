@@ -333,7 +333,7 @@ export default class BookingService {
                     groundId,
                     customerId: assignee.id,
                     initiatorId,
-                    bookerRole: UserRole.STAFF,
+                    bookerRole: UserRole.MANAGER,
                     startTime: payload.startTime,
                     endTime: payload.endTime,
                     paymentMethod: payload.paymentMethod,

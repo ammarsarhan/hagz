@@ -32,7 +32,7 @@ export const createStaffBookingHandler = factory.createHandlers(
 );
 
 export const createUserBookingHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     validate("json", createUserBookingSchema),
     async (c) => {
         const userId = c.var.id;
@@ -45,7 +45,7 @@ export const createUserBookingHandler = factory.createHandlers(
 );
 
 export const fetchUserBookingHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const bookingId = c.req.param("bookingId");
@@ -59,7 +59,7 @@ export const fetchUserBookingHandler = factory.createHandlers(
 );
 
 export const fetchUserBookingsHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const cursor = c.req.query("cursor");
@@ -70,7 +70,7 @@ export const fetchUserBookingsHandler = factory.createHandlers(
 );
 
 export const cancelUserBookingHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     async (c) => {
         const userId = c.var.id;
         const bookingId = c.req.param("bookingId");
@@ -84,7 +84,7 @@ export const cancelUserBookingHandler = factory.createHandlers(
 );
 
 export const rescheduleUserBookingHandler = factory.createHandlers(
-    authorize(),
+    authorize({ required: true }),
     validate("json", rescheduleUserBookingSchema),
     async (c) => {
         const userId = c.var.id;
