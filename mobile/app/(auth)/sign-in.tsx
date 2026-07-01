@@ -102,7 +102,7 @@ export default function SignIn() {
               </Button>
               <View className="flex-row gap-x-1">
                 <Text className='text-left'>{t("auth.signIn.alternate.label")}</Text>
-                <Link href={'/sign-up/introduction'} asChild>
+                <Link href={'/(auth)/sign-up/introduction'} asChild>
                   <Pressable>
                     <Text className="text-primary-foreground text-left">{t("auth.signIn.alternate.link")}</Text>
                   </Pressable>

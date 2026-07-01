@@ -59,7 +59,7 @@ export default function Name() {
                     onChangeText={(text) => setData({ ...data, lastName: text })}
                   />
                 </View>
-                <Link asChild href={'/sign-up/phone'} disabled={isDisabled}>
+                <Link href={'/(auth)/sign-up/phone'} asChild disabled={isDisabled}>
                   <Button
                     className={
                       isDisabled ? 'border-primary/40 bg-primary/40' : 'border-primary bg-primary'

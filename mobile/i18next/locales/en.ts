@@ -62,9 +62,13 @@ const en = {
                             title: "User",
                             description: "I want to discover pitches and book for as cheap as possible."
                         },
+                        manager: {
+                            title: "Manager",
+                            description: "I want to manage pitches and manage my pitch's bookings."
+                        },
                         owner: {
                             title: "Owner",
-                            description: "I want to manage pitches & manage my booking occupancy."
+                            description: "I want to list my pitch on the platform and accept bookings."
                         }
                     },
                     cta: {

@@ -52,7 +52,7 @@ export default function Phone() {
                     onChangeText={(text) => setData({ ...data, phone: text })}
                   />
                 </View>
-                <Link asChild href={'/sign-up/password'} disabled={isDisabled}>
+                <Link asChild href={'/(auth)/sign-up/password'} disabled={isDisabled}>
                   <Button
                     className={
                       isDisabled

@@ -109,7 +109,7 @@ export default function Role() {
                 </View>
               </Pressable>
             </View>
-            <Link asChild href={'/sign-up/name'} disabled={isDisabled}>
+            <Link asChild href={'/(auth)/sign-up/name'} disabled={isDisabled}>
               <Button
                 className={
                   isDisabled ? 'border-primary/40 bg-primary/40' : 'border-primary bg-primary'

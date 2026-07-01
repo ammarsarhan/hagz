@@ -66,14 +66,16 @@ export default function Introduction() {
                 <Text className="text-white/85 text-left">{t("auth.signUp.introduction.description")}</Text>
               </View>
               <View className="gap-y-3">
-                <Link href="/sign-up/role" asChild>
+                <Link href="/(auth)/sign-up/role" asChild>
                   <Button className="border-primary bg-primary">
                     <Text className="font-semibold">{t("auth.signUp.introduction.cta.primary")}</Text>
                   </Button>
                 </Link>
-                <Button className="border-white bg-white" onPress={() => router.replace("/")}>
-                  <Text className="font-semibold">{t("auth.signUp.introduction.cta.secondary")}</Text>
-                </Button>
+                <Link href="/(user)" asChild>
+                  <Button className="border-white bg-white">
+                    <Text className="font-semibold">{t("auth.signUp.introduction.cta.secondary")}</Text>
+                  </Button>
+                </Link>
               </View>
               <View className="flex items-center">
                 <Text className="w-3/4 text-center text-sm text-white">
