@@ -44,9 +44,22 @@ export default function Password() {
       const { accessToken, refreshToken } = body.data || {};
       
       if (accessToken && refreshToken) await saveTokens(accessToken, refreshToken);
-      setUser(body.data.user);
-      // Use a helper function to properly redirect the user based on their current status.
+
+      const user = body.data.user;
+      setUser(user);
       
+      switch (user.preferences.role) {
+        case "USER":
+          router.replace("(user)/onboarding/introduction");
+          break;
+        case "MANAGER":
+          router.replace("(dashboard)/onboarding/manager/invitations");
+          break;
+        case "OWNER":
+          router.replace("(dashboard)/onboarding/owner/details");
+          break;
+      }
+
     }
 
     setIsLoading(false);
