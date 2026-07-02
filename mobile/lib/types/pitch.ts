@@ -1,4 +1,4 @@
-import { InferResponseType } from 'hono/client';
+import { InferRequestType, InferResponseType } from 'hono/client';
 import { client } from '@/lib/client';
 
 export type PitchFeed = InferResponseType<typeof client.app.pitches.feed.$get, 200>['data'];
@@ -26,4 +26,8 @@ export const parsePitchFeedResponse = (feed: PitchFeed): FeedSection[] => {
       description: section.description,
       cards: section.cards,
     }));
+};
+
+export type PitchDraft = {
+  pitch: InferRequestType<typeof client.dashboard.pitches.$post>['json'];
 };

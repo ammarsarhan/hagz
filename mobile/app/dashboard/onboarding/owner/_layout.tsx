@@ -8,7 +8,7 @@ export default function WizardLayout() {
     return (
         <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
             <Stack.Protected guard={guard}>
-                <Stack.Screen name="index" />
+                <Stack.Screen name="index"/>
             </Stack.Protected>
         </Stack>
     );
