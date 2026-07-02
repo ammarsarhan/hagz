@@ -20,7 +20,7 @@ export default function UserLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: t('user.layout.home'),
+            title: t('user.main.layout.home'),
             tabBarIcon: ({ color, size }) => (
               <IconHome color={color} size={size} strokeWidth={1.75} />
             ),
@@ -29,7 +29,7 @@ export default function UserLayout() {
         <Tabs.Screen
           name="search"
           options={{
-            title: t('user.layout.search'),
+            title: t('user.main.layout.search'),
             tabBarIcon: ({ color, size }) => (
               <IconSearch color={color} size={size} strokeWidth={1.75} />
             ),
@@ -38,7 +38,7 @@ export default function UserLayout() {
         <Tabs.Screen
           name="history"
           options={{
-            title: t('user.layout.history'),
+            title: t('user.main.layout.history'),
             tabBarIcon: ({ color, size }) => (
               <IconHistory color={color} size={size} strokeWidth={1.75} />
             ),
@@ -47,7 +47,7 @@ export default function UserLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: t('user.layout.profile'),
+            title: t('user.main.layout.profile'),
             tabBarIcon: ({ color, size }) => (
               <IconUserCircle color={color} size={size} strokeWidth={1.75} />
             ),

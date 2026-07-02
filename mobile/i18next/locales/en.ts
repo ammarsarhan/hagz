@@ -2,6 +2,15 @@ const en = {
   translation: {
     components: {
       shared: {
+        authModal: {
+          title: 'Find & Book Nearby Pitches',
+          description: 'Sign in to your account or create a new account to get started!',
+          cta: {
+            signIn: 'Sign In With Phone',
+            separator: 'Or',
+            signUp: 'Create Account',
+          },
+        },
         input: {
           phone: {
             label: 'Phone Number',
@@ -11,20 +20,19 @@ const en = {
           },
         },
       },
-      feed: {
-        card: {
-          pricing: '{{price}}/hr',
+      user: {
+        feed: {
+          card: {
+            pricing: '{{price}}/hr',
+          },
         },
       },
-      authModal: {
-        title: 'Find & Book Nearby Pitches',
-        description: 'Sign in to your account or create a new account to get started!',
-        cta: {
-          signIn: 'Sign In With Phone',
-          separator: 'Or',
-          signUp: 'Create Account',
-        },
-      },
+      dashboard: {
+        logo: {
+          first: "For",
+          second: "Owners"
+        }
+      }
     },
     auth: {
       signIn: {
@@ -121,13 +129,26 @@ const en = {
       },
     },
     user: {
-      layout: {
-        home: 'Home',
-        search: 'Search',
-        history: 'History',
-        profile: 'Profile',
-      },
+      main: {
+        layout: {
+          home: 'Home',
+          search: 'Search',
+          history: 'History',
+          profile: 'Profile',
+        },
+      }
     },
+    dashboard: {
+      onboarding: {
+        owner: {
+          index: {
+            title: "Let's get {{name}}'s pitch up and running.",
+            description: "This should take approximately 10 minutes.",
+            cta: "Get Started"
+          }
+        }
+      }
+    }
   },
 };
 

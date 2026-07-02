@@ -37,20 +37,20 @@ export default function AuthModal({ isOpen, setIsOpen } : { isOpen: boolean, set
               <Logo width={24} height={24} color={'#1F4F33'} />
             </View>
             <Text className="mt-2 text-left text-4xl font-semibold">
-              {t('components.authModal.title')}
+              {t('components.shared.authModal.title')}
             </Text>
-            <Text className="text-left text-gray-500">{t('components.authModal.description')}</Text>
+            <Text className="text-left text-gray-500">{t('components.shared.authModal.description')}</Text>
           </View>
           <View className="gap-y-2">
             <Button
               className="border-primary bg-primary"
               onPress={() => handleRedirect('/auth/sign-in')}>
-              <Text className="font-semibold">{t('components.authModal.cta.signIn')}</Text>
+              <Text className="font-semibold">{t('components.shared.authModal.cta.signIn')}</Text>
             </Button>
             <View className="flex-row items-center gap-x-8 px-4 py-3">
               <View className="h-0.5 flex-1 rounded-full bg-gray-100"></View>
               <Text className="text-center text-sm text-gray-500">
-                {t('components.authModal.cta.separator')}
+                {t('components.shared.authModal.cta.separator')}
               </Text>
               <View className="h-0.5 flex-1 rounded-full bg-gray-100"></View>
             </View>
@@ -58,7 +58,7 @@ export default function AuthModal({ isOpen, setIsOpen } : { isOpen: boolean, set
               className="bg-card-foreground"
               onPress={() => handleRedirect('/auth/sign-up/introduction')}>
               <Text className="font-semibold text-card">
-                {t('components.authModal.cta.signUp')}
+                {t('components.shared.authModal.cta.signUp')}
               </Text>
             </Button>
           </View>

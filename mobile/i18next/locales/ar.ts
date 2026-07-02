@@ -2,6 +2,15 @@ const ar = {
   translation: {
     components: {
       shared: {
+        authModal: {
+          title: 'ابحث واحجز ملاعب قريبة منك',
+          description: 'سجّل دخولك أو أنشئ حسابًا جديدًا للبدء!',
+          cta: {
+            signIn: 'سجّل الدخول برقم الهاتف',
+            separator: 'او',
+            signUp: 'أنشئ حساب',
+          },
+        },
         input: {
           phone: {
             label: 'رقم الهاتف',
@@ -11,25 +20,23 @@ const ar = {
           },
         },
       },
-      feed: {
-        card: {
-          pricing: '{{price}}/ساعة',
+      user: {
+        feed: {
+          card: {
+            pricing: '{{price}}/ساعة',
+          },
         },
       },
-      authModal: {
-        title: 'ابحث واحجز ملاعب قريبة منك',
-        description: 'سجّل دخولك أو أنشئ حسابًا جديدًا للبدء!',
-        cta: {
-          signIn: 'سجّل الدخول برقم الهاتف',
-          separator: 'او',
-          signUp: 'أنشئ حساب',
+      dashboard: {
+        logo: {
+          first: 'لـ',
+          second: 'الملاك',
         },
       },
     },
     auth: {
       signIn: {
         title: 'سجّل الدخول الى حجز',
-        cta: 'سجّل الدخول',
         inputs: {
           phone: {
             placeholder: 'e.g. 1023045006',
@@ -39,6 +46,7 @@ const ar = {
             forgot: 'نسيت كلمة المرور؟',
           },
         },
+        cta: 'سجّل الدخول',
         alternate: {
           label: 'ليس لديك حساب؟',
           link: 'أنشئ حسابًا!',
@@ -51,7 +59,7 @@ const ar = {
             'دور على الملعب المناسب لماتشك الجاي واحجزه بسهولة، أو سجّل ملعبك وابدأ تستقبل الحجوزات.',
           cta: {
             primary: 'ابدأ الآن',
-            secondary: 'تخطَّ واستكشف',
+            secondary: 'تخطَّ واستكشف',
           },
           disclaimer: 'بالمتابعة، فإنك توافق على شروط استخدام المنصة.',
         },
@@ -119,11 +127,24 @@ const ar = {
       },
     },
     user: {
-      layout: {
-        home: 'الرئيسية',
-        search: 'البحث',
-        history: 'الحجوزات',
-        profile: 'حسابي',
+      main: {
+        layout: {
+          home: 'الرئيسية',
+          search: 'البحث',
+          history: 'السجل',
+          profile: 'الملف الشخصي',
+        },
+      },
+    },
+    dashboard: {
+      onboarding: {
+        owner: {
+          index: {
+            title: 'لنجهّز ملعب {{name}} ونطلقه!',
+            description: 'سيستغرق ذلك حوالي 10 دقائق.',
+            cta: 'ابدأ الآن',
+          },
+        },
       },
     },
   },

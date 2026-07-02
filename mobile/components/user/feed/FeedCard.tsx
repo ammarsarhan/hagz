@@ -90,8 +90,8 @@ export function FeedStandardCard({ pitch }: { pitch: FeedPitch }) {
         <View className="flex-row items-center justify-between">
           <Text>
             {isApproximate
-              ? t('components.feed.card.pricing', { price: formatCurrency(pitch.pricing.minimum) })
-              : t('components.feed.card.pricing', { price: formatCurrency(pitch.pricing.minimum) })}
+              ? t('components.user.feed.card.pricing', { price: formatCurrency(pitch.pricing.minimum) })
+              : t('components.user.feed.card.pricing', { price: formatCurrency(pitch.pricing.minimum) })}
           </Text>
           {pitch.rating.count > 0 && pitch.rating.average && (
             <View className="flex-row items-center gap-x-1.5">
