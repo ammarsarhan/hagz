@@ -45,7 +45,7 @@ export default class BookingService {
     static readonly enqueueBookingLifecycle = async (booking: Booking, settings: GroundSettings) => {
         // If the booking has not been approved yet, set the approval expiry job.
         if (!booking.isApproved) {
-            const approvalDelay = Math.max(0, addMinutes(new Date(), settings.approvalExpiryLimit).getTime() - Date.now());
+            const approvalDelay = Math.max(0, differenceInMilliseconds(addMinutes(new Date(), settings.approvalExpiryLimit), new Date()));
 
             await bookingsQueue.add("approval",
                 { bookingId: booking.id, event: BookingEvent.APPROVAL },
@@ -55,7 +55,7 @@ export default class BookingService {
 
         // If the booking has not been paid for yet (reserved but not confirmed), set the payment expiry job.
         if (booking.status === BookingStatus.RESERVED) {
-            const paymentDelay = Math.max(0, addMinutes(new Date(), settings.paymentExpiryLimit).getTime() - Date.now());
+            const paymentDelay = Math.max(0, differenceInMilliseconds(addMinutes(new Date(), settings.paymentExpiryLimit), new Date()));
 
             await bookingsQueue.add("payment",
                 { bookingId: booking.id, event: BookingEvent.PAYMENT },
@@ -74,13 +74,13 @@ export default class BookingService {
         };
 
         // Regardless of the status, bookings need to pass by both the IN_PROGRESS and COMPLETE handlers.
-        const inProgressDelay = Math.max(0, new Date(booking.startTime).getTime() - Date.now());
+        const inProgressDelay = Math.max(0, differenceInMilliseconds(booking.startTime, new Date()));
         await bookingsQueue.add("start",
             { bookingId: booking.id, event: BookingEvent.IN_PROGRESS },
             { delay: inProgressDelay, jobId: `bookings-${booking.id}-in_progress` }
         );
 
-        const completeDelay = Math.max(0, new Date(booking.endTime).getTime() - Date.now());
+        const completeDelay = Math.max(0, differenceInMilliseconds(booking.endTime, new Date()));
         await bookingsQueue.add("end",
             { bookingId: booking.id, event: BookingEvent.COMPLETE },
             { delay: completeDelay, jobId: `bookings-${booking.id}-complete` }
@@ -1011,10 +1011,10 @@ export default class BookingService {
         if (booking.status === BookingStatus.CONFIRMED) {
             let refundFee = booking.depositFee ?? booking.totalAmount;
 
-            if (differenceInHours(booking.startTime, Date.now()) <= settings.fullRefundWindow && differenceInHours(booking.startTime, Date.now()) >= settings.partialRefundWindow)
+            if (differenceInHours(booking.startTime, new Date()) <= settings.fullRefundWindow && differenceInHours(booking.startTime, new Date()) >= settings.partialRefundWindow)
                 refundFee = refundFee * (settings.refundPercentage / 100);
 
-            if (differenceInHours(booking.startTime, Date.now()) <= settings.partialRefundWindow)
+            if (differenceInHours(booking.startTime, new Date()) <= settings.partialRefundWindow)
                 refundFee = 0;
 
             // Todo: Initiate the actual refund process on Paymob.
@@ -1131,7 +1131,7 @@ export default class BookingService {
         if (!allowRescheduling)
             throw new BadRequestError("The specified ground does not allow rescheduling. Please cancel your booking and reserve another slot.", ERROR_CODES.GROUND_SETTINGS_FORBIDDEN);
 
-        if (differenceInHours(booking.startTime, Date.now()) < rescheduleLimit)
+        if (differenceInHours(booking.startTime, new Date()) < rescheduleLimit)
             throw new BadRequestError("The specified booking starts outside of the booking rescheduling window specified by the staff. Please cancel your booking and reserve another slot.", ERROR_CODES.GROUND_SETTINGS_FORBIDDEN);
 
         // Validate the new slot times before entering the transaction.

@@ -1,5 +1,6 @@
 import { sign, verify } from "hono/jwt";
 import { ERROR_CODES, InternalServerError, UnauthorizedError } from "@/shared/lib/utils/error.js";
+import { getUnixTime } from "date-fns";
 import { randomUUID } from "crypto";
 import { UserRole } from "@/generated/prisma/enums.js";
 
@@ -45,14 +46,14 @@ class JWTService {
 
     signAccessToken = async (payload: AccessTokenPayload): Promise<string> => {
         return sign(
-            { ...payload, jti: randomUUID(), exp: Math.floor(Date.now() / 1000) + this.ACCESS_TOKEN_EXPIRY_SECONDS },
+            { ...payload, jti: randomUUID(), exp: getUnixTime(new Date()) + this.ACCESS_TOKEN_EXPIRY_SECONDS },
             this.accessSecret
         );
     };
 
     signRefreshToken = async (payload: RefreshTokenPayload): Promise<string> => {
         return sign(
-            { ...payload, jti: randomUUID(), exp: Math.floor(Date.now() / 1000) + this.REFRESH_TOKEN_EXPIRY_SECONDS },
+            { ...payload, jti: randomUUID(), exp: getUnixTime(new Date()) + this.REFRESH_TOKEN_EXPIRY_SECONDS },
             this.refreshSecret
         );
     };

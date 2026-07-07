@@ -3,7 +3,8 @@ import { Redis } from "ioredis";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
 import { PitchStatus, PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
-import { addDays } from "date-fns";
+import { addDays, addHours, startOfDay } from "date-fns";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { GroundSlotEvent, type GroundSlotJobPayload } from "@/shared/types/slots.js";
 import { slotsQueue } from "../queues/slots.queue.js";
 
@@ -40,7 +41,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GroundSlotJobPa
     if (schedules.length !== 7) throw new InternalServerError("Ground schedule contains less than or more than 7 day records.", ERROR_CODES.GROUND_SCHEDULE_MISSING);
 
     const now = new Date();
-    const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const utcMidnight = fromZonedTime(startOfDay(toZonedTime(now, 'UTC')), 'UTC');
 
     const limit = Math.ceil(maximumWindow / 24);
     const dates = Array.from({ length: limit }, (_, i) => addDays(utcMidnight, i));
@@ -73,7 +74,7 @@ export async function handleGenerateSlots({ pitchId, groundId }: GroundSlotJobPa
                     // Fixed MSB and LSB flipping issue.
                     const bit = 1 << h;
                     // Build timestamp purely in UTC to stop time drift issues.
-                    const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
+                    const startsAt = addHours(date, h);
 
                     if (peakMask & bit)          hours.push({ startsAt, priceType: PriceType.PEAK });
                     else if (discountMask & bit) hours.push({ startsAt, priceType: PriceType.DISCOUNT });
@@ -128,7 +129,7 @@ export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayl
     );
 
     const now = new Date();
-    const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const utcMidnight = fromZonedTime(startOfDay(toZonedTime(now, 'UTC')), 'UTC');
 
     // Prune slots older than 30 days.
     const pruneThreshold = addDays(utcMidnight, -30);
@@ -145,11 +146,7 @@ export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayl
     });
 
     const startFrom = lastSlot
-        ? addDays(new Date(Date.UTC(
-            lastSlot.startsAt.getUTCFullYear(),
-            lastSlot.startsAt.getUTCMonth(),
-            lastSlot.startsAt.getUTCDate(),
-        )), 1)
+        ? addDays(fromZonedTime(startOfDay(toZonedTime(lastSlot.startsAt, 'UTC')), 'UTC'), 1)
         : utcMidnight;
 
     const windowEnd = addDays(utcMidnight, Math.ceil(settings.maximumWindow / 24));
@@ -190,7 +187,7 @@ export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayl
 
         for (let h = 0; h < 24; h++) {
             const bit = 1 << h;
-            const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
+            const startsAt = addHours(date, h);
 
             if      (peakMask & bit)     slots.push({ startsAt, priceType: PriceType.PEAK });
             else if (discountMask & bit) slots.push({ startsAt, priceType: PriceType.DISCOUNT });
@@ -246,7 +243,7 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
 
     // Start the actual slot adjusting block.
     const now = new Date();
-    const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const utcMidnight = fromZonedTime(startOfDay(toZonedTime(now, 'UTC')), 'UTC');
     const limit = Math.ceil(settings.maximumWindow / 24);
     const dates = Array.from({ length: limit }, (_, i) => addDays(utcMidnight, i));
 
@@ -275,7 +272,7 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
                         startsAt: {
                             in: futureDates.map(date => 
                                 Array.from({ length: 24 }, (_, h) =>
-                                    new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h))
+                                    addHours(date, h)
                                 )
                             ).flat(),
                         },
@@ -291,7 +288,7 @@ export async function handleAdjustSlots({ groundId, pitchId, dayOfWeek }: Ground
                     const hours: Array<GenerateSlotType> = [];
                     for (let h = 0; h < 24; h++) {
                         const bit = 1 << h;
-                        const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h));
+                        const startsAt = addHours(date, h);
     
                         if      (peakMask & bit)     hours.push({ startsAt, priceType: PriceType.PEAK });
                         else if (discountMask & bit) hours.push({ startsAt, priceType: PriceType.DISCOUNT });

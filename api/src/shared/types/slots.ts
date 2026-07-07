@@ -28,6 +28,8 @@ export type PitchAvailabilitySlot = {
     [SlotStatus.INACTIVE]: string[];
 };
 
+import { differenceInMilliseconds } from "date-fns";
+
 // Helper function that converts the raw query data from the availability query into parseable data on the frontend.
 export function formatPitchAvailabilityQuery(slots: PitchAvailabilityRawSlot[]): PitchAvailabilitySlot[] {
     const grouped = slots.reduce((acc, slot) => {
@@ -47,6 +49,6 @@ export function formatPitchAvailabilityQuery(slots: PitchAvailabilityRawSlot[]):
     }, {} as Record<string, PitchAvailabilitySlot>);
 
     return Object.values(grouped).sort(
-        (a, b) => a.startsAt.getTime() - b.startsAt.getTime()
+        (a, b) => differenceInMilliseconds(a.startsAt, b.startsAt)
     );
 };
