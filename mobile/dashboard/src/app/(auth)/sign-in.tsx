@@ -1,9 +1,13 @@
-import { Text, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, View } from "react-native";
 
 export default function SignIn() {
   return (
-    <View className="flex-1 items-center justify-center">
-      <Text>Sign In</Text>
-    </View>
+    <KeyboardAvoidingView className="flex-1" behavior="padding">
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View className="flex-1">
+          
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
