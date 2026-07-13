@@ -1,6 +1,5 @@
 import "@/../global.css";
-import RootNavigator from "@/components/shared/RootNavigator";
-import SplashController from "@/components/shared/SplashController";
+import AppLayout from "@/components/shared/AppLayout";
 import { AuthProvider } from "@/context/AuthContext";
 import { getQueryClient } from "@/lib/query";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,8 +10,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={client}>
       <AuthProvider>
-        <SplashController />
-        <RootNavigator />
+        <AppLayout />
       </AuthProvider>
     </QueryClientProvider>
   );

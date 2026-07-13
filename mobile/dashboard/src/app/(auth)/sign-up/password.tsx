@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useNavigation, useRouter } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSignUpForm } from "@/context/forms/SignUpContext";
@@ -7,6 +7,7 @@ import Input from "@/components/shared/Input";
 import Button from "@/components/shared/Button";
 import { client } from "@/lib/client";
 import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage, parseClientError } from "@/lib/error";
 
 export default function Password() {
     const router = useRouter();
@@ -28,21 +29,42 @@ export default function Password() {
 
     const handleSubmit = async () => {
         setLoading(true);
-        const res = await client.auth["sign-up"].$post({ json: state });
-
-        if (res.ok) {
-            const { data } = await res.json();
-            const { user, accessToken, refreshToken } = data;
-
-            if (accessToken && refreshToken) {
-                saveSession(user, accessToken, refreshToken);
-            } else {
-                // We shouldn't hit this because we're sending the request with the proper X-Client headers.
-                // In case we do, just store the user.
-                setUser(user);
+        
+        try {
+            const phone = `+20${state.phone}`;
+            const res = await client.auth["sign-up"].$post({ json: {...state, phone } });
+    
+            if (res.ok) {
+                const { data } = await res.json();
+                const { user, accessToken, refreshToken } = data;
+    
+                if (accessToken && refreshToken) {
+                    saveSession(user, accessToken, refreshToken);
+                } else {
+                    // We shouldn't hit this because we're sending the request with the proper X-Client headers.
+                    // In case we do, just store the user.
+                    setUser(user);
+                };
+    
+                if (user.preferences.role === "MANAGER") router.push("/(onboarding)/manager");
+                if (user.preferences.role === "OWNER") router.push("/(onboarding)/owner");
+                return;
             };
-
-            router.push("/")
+    
+            const error = await parseClientError(res);
+            let message = error.message;
+    
+            if (error.fields?.length) {
+                message = error.fields.map(f => f.message).join("\n");
+            }
+    
+           message = getErrorMessage(error);
+           Alert.alert("Sign up failed", message);
+        } catch (err) {
+            console.log(err);
+            Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
+        } finally {
+            setLoading(false);
         };
     };
 
