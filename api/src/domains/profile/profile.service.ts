@@ -1,4 +1,4 @@
-import { UserStatus } from "@/generated/prisma/enums.js"
+import { UserRole, UserStatus } from "@/generated/prisma/enums.js"
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js"
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
@@ -117,7 +117,7 @@ export default class ProfileService {
         };
 
         // Construct the permanent public read URL.
-        const url = `https://${process.env.CLOUDFRONT_DOMAIN}/${key}`;
+        const url = process.env.NODE_ENV === "production" ? `https://${process.env.CLOUDFRONT_DOMAIN}/${key}`: `${process.env.LOCALSTACK_URL}/${BUCKET}/${key}`;
         const previousKey = user.avatarKey;
 
         const updated = await prisma.user.update({
@@ -240,6 +240,33 @@ export default class ProfileService {
             },
         });
         
+        return updated;
+    };
+
+    transferAccount = async (userId: string, role: UserRole) => {
+        const user = await prisma.user.findFirst({ 
+            where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
+            include: { preferences: true, pitches: true }
+        }); 
+        
+        if (!user)
+            throw new NotFoundError("Could not find user profile with the specified ID.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+
+        if (!user.preferences)
+            throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
+
+        if (user.pitches.length > 0)
+            throw new BadRequestError("Can not transfer account type for user with more than one pitch. Remove any management permissions first.", ERROR_CODES.USER_ROLE_INVALID);
+
+        const updated = await prisma.userPreferences.update({
+            where: {
+                userId,
+            },
+            data: {
+                role
+            }
+        });
+
         return updated;
     };
 

@@ -3,11 +3,12 @@ import { S3Client } from "@aws-sdk/client-s3";
 const config = {
     region: process.env.AWS_REGION!,
     forcePathStyle: true,
+    requestChecksumCalculation: 'WHEN_REQUIRED',
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
-};
+} as const;
 
 export const s3 = {
     default: new S3Client({

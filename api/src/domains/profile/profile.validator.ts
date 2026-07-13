@@ -39,9 +39,6 @@ export const createAvatarPresignLinkSchema = z.object({
 export type UpdateUserPreferencesPayloadType = z.infer<typeof updateUserPreferencesSchema>;
 
 export const updateUserPreferencesSchema = z.object({
-    role: z
-        .enum(Object.values(UserRole) as [UserRole, ...UserRole[]], "Please select a valid role.")
-        .optional(),
     language: z
         .enum(Object.values(Language) as [Language, ...Language[]], "Please select a valid language.")
         .optional(),
@@ -76,3 +73,8 @@ export const updateUserPreferencesSchema = z.object({
         .array(z.enum(Object.values(GroundSize) as [GroundSize, ...GroundSize[]]), "Please select one of the default provided ground sizes.")
         .optional()
 });
+
+export const transferAccountSchema = z.object({
+    role: z.enum(Object.values(UserRole) as [UserRole, ...UserRole[]], "Please select a valid role.")
+});
+

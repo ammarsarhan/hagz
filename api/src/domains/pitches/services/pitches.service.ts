@@ -165,8 +165,18 @@ export default class PitchService {
         const pitch = await prisma.pitch.findFirst({ 
             where: { 
                 id: pitchId,
-                status: { not: PitchStatus.DELETED } 
-            } 
+                status: { not: PitchStatus.DELETED }
+            },
+            include: {
+                grounds: {
+                    include: {
+                        schedule: true,
+                        settings: true
+                    }
+                },
+                amenities: true,
+                media: true
+            }
         });
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);

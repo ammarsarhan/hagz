@@ -14,6 +14,7 @@ export type UserResponseType = {
     email: string | null,
     status: UserStatus,
     isVerified: boolean,
+    avatarUrl: string | null,
     preferences: {
         role: UserRole,
         language: Language,
@@ -73,6 +74,7 @@ export const createUserResponse = (user: User, preferences: UserPreferences, pit
         email: user.email,
         status: user.status,
         isVerified: user.isVerified,
+        avatarUrl: user.avatarUrl,
         preferences: {
             role: preferences.role,
             language: preferences.language,

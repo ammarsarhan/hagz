@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { fetchProfileNotificationsHandler, readNotificationHandler, getProfileHandler, updateProfileHandler, createAvatarPresignLinkHandler, confirmAvatarUploadHandler, deleteAvatarHandler, getPreferencesHandler, updatePreferencesHandler, fetchSessionsHandler, deleteSessionHandler } from "@/domains/profile/profile.handlers.js";
+import { fetchProfileNotificationsHandler, readNotificationHandler, getProfileHandler, updateProfileHandler, createAvatarPresignLinkHandler, confirmAvatarUploadHandler, deleteAvatarHandler, getPreferencesHandler, updatePreferencesHandler, fetchSessionsHandler, deleteSessionHandler, transferAccountHandler } from "@/domains/profile/profile.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
@@ -9,6 +9,7 @@ const app = new Hono()
     .post('/avatar/:avatarId/confirm', ...confirmAvatarUploadHandler)
     .get("/preferences", ...getPreferencesHandler)
     .patch("/preferences", ...updatePreferencesHandler)
+    .post("/transfer", ...transferAccountHandler)
     .get("/notifications", ...fetchProfileNotificationsHandler)
     .patch("/notifications/:notificationId/read", ...readNotificationHandler)
     .get("/sessions", ...fetchSessionsHandler)

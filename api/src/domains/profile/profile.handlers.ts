@@ -4,7 +4,7 @@ import validate from "@/shared/middleware/validate.middleware.js";
 import NotificationsService from "@/domains/notifications/notifications.service.js";
 import ProfileService from "@/domains/profile/profile.service.js";
 import { BadRequestError, ERROR_CODES, UnauthorizedError } from "@/shared/lib/utils/error.js";
-import { updateUserProfileSchema, updateUserPreferencesSchema, createAvatarPresignLinkSchema } from "@/domains/profile/profile.validator.js";
+import { updateUserProfileSchema, updateUserPreferencesSchema, createAvatarPresignLinkSchema, transferAccountSchema } from "@/domains/profile/profile.validator.js";
 import { getCookie } from "hono/cookie";
 
 const factory = new Factory();
@@ -93,6 +93,18 @@ export const updatePreferencesHandler = factory.createHandlers(
         const payload = c.req.valid("json");
 
         const preferences = await profileService.updateUserPreferences(userId, payload);
+
+        return c.json({ success: true, data: { preferences } }, 200);
+    }
+)
+
+export const transferAccountHandler = factory.createHandlers(
+    authorize({ required: true }),
+    validate("json", transferAccountSchema),
+    async (c) => {
+        const userId = c.var.id;
+        const { role } = c.req.valid("json");
+        const preferences = await profileService.transferAccount(userId, role);
 
         return c.json({ success: true, data: { preferences } }, 200);
     }
