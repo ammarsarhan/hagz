@@ -12,7 +12,7 @@ const Header = () => {
 
   return (
     <SafeAreaView className="px-6 py-2">
-      <Pressable className="w-10 h-10 items-center justify-center rounded-full bg-gray-100" onPress={handleBack}>
+      <Pressable className="size-11 items-center justify-center rounded-full bg-gray-100" onPress={handleBack}>
         <IconChevronLeft size={18}/>
       </Pressable>
     </SafeAreaView>

@@ -1,9 +1,9 @@
-import { View, Text } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 
 export default function Index() {
     return (
-        <View className="flex-1 items-center justify-center bg-red-200">
-            <Text>Index as Owner Onboarding</Text>
-        </View>
+        <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 px-6 gap-y-8">
+
+        </Animated.View>
     )
 }

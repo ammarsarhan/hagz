@@ -7,7 +7,7 @@ export default function RootNavigator() {
   // USER accounts are created and onboarded entirely through the
   // customer app. There's no dashboard-side onboarding step for them,
   // so they're always allowed straight into (tabs).
-  const isOnboarded = !!user && (user.preferences.role === "USER" || user.pitches.length > 0);
+  const isOnboarded = !!user && (user.preferences.role === "USER" || user.pitches.some(pitch => pitch.status === "LIVE"));
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

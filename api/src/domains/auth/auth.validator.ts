@@ -27,6 +27,7 @@ export type UserResponseType = {
         pitchId: string,
         role: StaffRole,
         permissions: Permissions
+        status: PitchStatus
     }>
 }
 

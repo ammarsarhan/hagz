@@ -4,8 +4,8 @@ import { Stack } from "expo-router";
 export default function OnboardingLayout() {
     const { user } = useAuth();
 
-    const isManager = !!user && user.preferences.role === "MANAGER" && user.pitches.length <= 0;
-    const isOwner = !!user && user.preferences.role === "OWNER" && user.pitches.length <= 0;
+    const isManager = !!user && user.preferences.role === "MANAGER" && !user.pitches.some(pitch => pitch.status === "LIVE");
+    const isOwner = !!user && user.preferences.role === "OWNER" && !user.pitches.some(pitch => pitch.status === "LIVE");
 
     return (
         <Stack
