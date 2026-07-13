@@ -18,7 +18,7 @@ import cn from "@/lib/cn";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-type ButtonProps = Omit<PressableProps, "className" | "children" | "onPress"> & {
+export type ButtonProps = Omit<PressableProps, "className" | "children" | "onPress"> & {
   className?: string;
   textClassName?: string;
   children?: React.ReactNode;
@@ -72,7 +72,7 @@ export default function Button({
       disabled={isDisabled}
       style={animatedStyle}
       className={cn(
-        "flex-row items-center justify-center gap-2 px-5 py-4 rounded-full border border-transparent bg-transparent",
+        "flex-row items-center justify-center gap-2 p-5 rounded-full border border-transparent bg-transparent",
         isDisabled && "opacity-50",
         className
       )}

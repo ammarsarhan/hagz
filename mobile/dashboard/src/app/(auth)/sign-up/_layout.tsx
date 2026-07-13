@@ -23,7 +23,7 @@ export default function SignUpLayout() {
   return (
     <SignUpFormProvider>
       <StatusBar barStyle={"dark-content"}/>
-      <Stack screenOptions={{ header: () => <Header/>, contentStyle: { backgroundColor: "#FFF" }  }}/>
+      <Stack screenOptions={{ header: () => <Header/>, contentStyle: { backgroundColor: "#FFF" }, gestureEnabled: false }}/>
     </SignUpFormProvider>
   );
 }

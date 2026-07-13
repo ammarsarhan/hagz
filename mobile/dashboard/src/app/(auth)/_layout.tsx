@@ -9,9 +9,10 @@ export default function AuthLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: "#FFF" },
+          gestureEnabled: false
         }}
       >
-        <Stack.Screen name="index" />
+        <Stack.Screen name="index"/>
         <Stack.Screen name="sign-up" />
         <Stack.Screen name="sign-in" />
       </Stack>

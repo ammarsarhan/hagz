@@ -1,5 +1,5 @@
 import { client } from "@/lib/client";
-import { clearTokens, getAccessToken } from "@/lib/storage";
+import { clearTokens, getAccessToken, saveTokens } from "@/lib/storage";
 import { User } from "@/lib/types/user";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,6 +15,7 @@ type AuthContextType = {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   signOut: () => Promise<void>;
+  saveSession: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -56,8 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const saveSession = async (user: User, accessToken: string, refreshToken: string) => {
+    await saveTokens(accessToken, refreshToken);
+    setUser(user); 
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, setUser, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, setUser, signOut, saveSession }}>
       {children}
     </AuthContext.Provider>
   );
