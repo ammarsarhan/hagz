@@ -1,5 +1,18 @@
 const en = {
-  translation: {},
+  translation: {
+    components: {
+      shared: {
+        input: {
+          phone: {
+            label: "Phone Number"
+          },
+          password: {
+            label: "Password"
+          }
+        }
+      }
+    }
+  },
 };
 
 export default en;

@@ -1,5 +1,18 @@
 const ar = {
-  translation: {},
+  translation: {
+    components: {
+      shared: {
+        input: {
+          phone: {
+            label: "رقم الهاتف"
+          },
+          password: {
+            label: "كلمة السر"
+          }
+        }
+      }
+    }
+  },
 };
 
 export default ar;
