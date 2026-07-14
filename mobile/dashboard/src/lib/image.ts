@@ -38,7 +38,6 @@ export const handleUploadAvatar = async (asset: ImagePicker.ImagePickerAsset) =>
         return;
     }
 
-    console.log(profile.avatarUrl)
     return profile;
 };
 

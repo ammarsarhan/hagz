@@ -11,7 +11,7 @@ export default function Phone() {
     return (
         <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 gap-y-8 px-6">
             <Text className="text-4xl font-semibold">What is your phone number?</Text>
-            <Input type="phone" placeholder="e.g, 1023045006" label="Phone Number" value={state.phone} onChangeText={(text) => setField("phone", text)}/>
+            <Input type="phone" placeholder="e.g. 1023045006" label="Phone Number" value={state.phone} onChangeText={(text) => setField("phone", text)}/>
             <Text className="text-sm text-gray-500">Use your 10-digit Egyptian mobile number, excluding the initial zero. Example: 01023045006 becomes 1023045006.</Text>
             <Link asChild href="/(auth)/sign-up/name" onPress={Keyboard.dismiss}>    
                 <Button className="bg-primary border-primary" disabled={state.phone.length !== 10}>
