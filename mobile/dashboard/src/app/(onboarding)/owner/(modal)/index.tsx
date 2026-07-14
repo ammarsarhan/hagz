@@ -1,15 +1,17 @@
-import { Pressable, View, Text, ScrollView } from "react-native";
+import { Pressable, View, Text, ScrollView, Alert, ActivityIndicator } from "react-native";
 import ProfilePicture from "@/components/onboarding/ProfilePicture";
 import { handleUploadAvatar } from "@/lib/image";
 import * as ImagePicker from 'expo-image-picker';
 import Input from "@/components/shared/Input";
 import { useRequiredAuth } from "@/context/AuthContext";
-import { IconBell, IconChevronLeft, IconChevronRight, IconLanguage, IconTimezone, IconUserCog } from "@tabler/icons-react-native";
+import { IconBell, IconChevronRight, IconLanguage, IconTimezone, IconUserCog, IconX } from "@tabler/icons-react-native";
 import { Href, Link, router } from "expo-router";
 import { ReactNode, useEffect } from "react";
 import Animated, { createAnimatedComponent, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useForm, useStore } from '@tanstack/react-form';
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { client } from "@/lib/client";
+import { getErrorMessage, parseClientError } from "@/lib/error";
 
 const AnimatedPressable = createAnimatedComponent(Pressable);
 
@@ -59,6 +61,48 @@ export default function Index() {
             lastName: user.lastName,
             phone: user.phone.slice(3),
             email: user.email ?? ""
+        },
+        onSubmit: async ({ value }) => {
+            try {
+                const phone = `+20${value.phone}`;
+                const email = value.email.trim();
+
+                const payload = {
+                    ...value,
+                    phone,
+                    email: email === "" ? undefined : email,
+                };
+
+                const res = await client.app.profile.$patch({ json: payload });
+        
+                if (res.ok) {
+                    const { data } = await res.json();
+                    const { profile } = data;
+
+                    setUser(profile);
+
+                    form.reset({
+                        firstName: profile.firstName,
+                        lastName: profile.lastName,
+                        phone: profile.phone.slice(3),
+                        email: profile.email ?? ""
+                    });
+
+                    return;
+                };
+        
+                const error = await parseClientError(res);
+                let message = error.message;
+        
+                if (error.fields?.length) {
+                    message = error.fields.map(f => f.message).join("\n");
+                };
+        
+                message = getErrorMessage(error);
+                Alert.alert("Profile update failed", message);
+            } catch {
+                Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
+            };
         }
     })
     
@@ -84,26 +128,34 @@ export default function Index() {
         }
     };
 
+    const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
     const isDirty = useIsDirty(form);
-    const dirtyProgress = useSharedValue(0);
+
+    const isEnabled = isDirty && !isSubmitting;
+
+    const disabledProgress = useSharedValue(isEnabled ? 1 : 0);
 
     useEffect(() => {
-        dirtyProgress.value = withTiming(isDirty ? 1 : 0, { duration: 200 });
-    }, [dirtyProgress, isDirty]);
+        disabledProgress.value = withTiming(isEnabled ? 1 : 0, { duration: 200 });
+    }, [disabledProgress, isEnabled]);
 
     const saveStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(dirtyProgress.value, [0, 1], [0.5, 1]),
+        opacity: interpolate(disabledProgress.value, [0, 1], [0.5, 1]),
     }));
     
     return (
         <ScrollView className="p-6">
             <View className="flex-row items-center justify-between pb-3">
                 <Pressable className="size-11 items-center justify-center rounded-full bg-gray-100" onPress={() => router.back()}>
-                    <IconChevronLeft size={18}/>
+                    <IconX size={18}/>
                 </Pressable>
-                <AnimatedPressable disabled={!isDirty} className="rounded-lg bg-primary px-4 py-3" style={saveStyle}>
-                    <Text className="text-white text-sm font-medium">Save Changes</Text>
-                </AnimatedPressable>
+                {/* <AnimatedPressable disabled={!isEnabled} onPress={form.handleSubmit} className="rounded-lg items-center justify-center bg-primary h-11 w-1/3" style={saveStyle}>
+                    {
+                        isSubmitting ?
+                        <ActivityIndicator size={14} color="#FFFFFF"/> :
+                        <Text className="text-white text-sm font-medium">Save Changes</Text>
+                    }
+                </AnimatedPressable> */}
             </View>
             <View className="gap-y-1 py-2 mb-10">
                 <Text className="text-3xl font-semibold">Profile</Text> 
@@ -155,7 +207,7 @@ export default function Index() {
                     title="Notifications"
                     description="Select your notification delivery channels."
                 />
-                <View className="flex-row items-center gap-x-4 border-b border-gray-100 py-5 px-2">
+                <View className="flex-row items-center gap-x-4 border-b border-gray-100 py-5 px-3">
                     <IconTimezone width={22} height={22}/>
                     <View className="flex-1">
                         <Text className="font-medium">Timezone</Text> 

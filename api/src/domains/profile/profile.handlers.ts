@@ -92,9 +92,9 @@ export const updatePreferencesHandler = factory.createHandlers(
         const userId = c.var.id;
         const payload = c.req.valid("json");
 
-        const preferences = await profileService.updateUserPreferences(userId, payload);
+        const profile = await profileService.updateUserPreferences(userId, payload);
 
-        return c.json({ success: true, data: { preferences } }, 200);
+        return c.json({ success: true, data: { profile } }, 200);
     }
 )
 
@@ -104,9 +104,9 @@ export const transferAccountHandler = factory.createHandlers(
     async (c) => {
         const userId = c.var.id;
         const { role } = c.req.valid("json");
-        const preferences = await profileService.transferAccount(userId, role);
+        const profile = await profileService.transferAccount(userId, role);
 
-        return c.json({ success: true, data: { preferences } }, 200);
+        return c.json({ success: true, data: { profile } }, 200);
     }
 )
 

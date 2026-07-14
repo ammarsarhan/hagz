@@ -47,12 +47,22 @@ export default class ProfileService {
         if (user.status !== UserStatus.ACTIVE)
             throw new ForbiddenError("You may not edit your profile while the user account is not active. Please try again later.", ERROR_CODES.USER_NOT_ACTIVE);
 
+        const isPhoneChanged = payload.phone !== undefined && payload.phone !== user.phone;
+
+        if (isPhoneChanged) {
+            const exists = await prisma.user.findFirst({ where: { phone: payload.phone }});
+            if (exists) throw new BadRequestError("Another account exists with the specified phone number.", ERROR_CODES.USER_PHONE_ALREADY_EXISTS);
+        }
+
         const updated = await prisma.user.update({
             where: { 
                 id: userId,
                 status: { not: UserStatus.DELETED }
             },
-            data: payload,
+            data: {
+                ...payload,
+                ...(isPhoneChanged && { isVerified: false })
+            },
             include: { 
                 preferences: true, 
                 pitches: {
@@ -238,9 +248,24 @@ export default class ProfileService {
                 ...(sports && { sport: sports }),
                 ...(sizes && { size: sizes }),
             },
+            include: {
+                user: {
+                    include: {
+                        pitches: {
+                            include: {
+                                pitch: {
+                                    select: {
+                                        status: true
+                                    }
+                                }
+                            }
+                        } 
+                    }
+                },
+            }
         });
         
-        return updated;
+        return createUserResponse(updated.user, updated, updated.user.pitches);
     };
 
     transferAccount = async (userId: string, role: UserRole) => {
@@ -264,10 +289,25 @@ export default class ProfileService {
             },
             data: {
                 role
+            },
+            include: {
+                user: {
+                    include: {
+                        pitches: {
+                            include: {
+                                pitch: {
+                                    select: {
+                                        status: true
+                                    }
+                                }
+                            }
+                        } 
+                    }
+                },
             }
         });
 
-        return updated;
+        return createUserResponse(updated.user, updated, updated.user.pitches);
     };
 
     fetchUserActiveSessions = async (userId: string, currentToken: string) => {
