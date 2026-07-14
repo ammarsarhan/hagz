@@ -1,11 +1,9 @@
-import { useAuth } from "@/context/AuthContext";
+import { useRequiredAuth } from "@/context/AuthContext";
 import { View, Text} from "react-native";
 import { Image } from 'expo-image';
 
 export default function Avatar() {
-    const { user } = useAuth();
-
-    if (!user) return null;
+    const { user } = useRequiredAuth();
 
     return (
         <View className="bg-gray-100 size-12 rounded-full items-center justify-center">

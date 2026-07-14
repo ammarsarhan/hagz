@@ -74,3 +74,9 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within an <AuthProvider>.");
   return ctx;
 }
+
+export function useRequiredAuth() {
+  const { user, ...context } = useAuth();
+  if (!user) throw new Error("Authenticated user is required");
+  return { user, ...context };
+}

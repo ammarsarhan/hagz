@@ -1,12 +1,10 @@
-import { useAuth } from "@/context/AuthContext";
+import { useRequiredAuth } from "@/context/AuthContext";
 import { IconPlus } from "@tabler/icons-react-native";
 import { View } from "react-native";
 import { Image } from 'expo-image';
 
 export default function ProfilePicture() {
-    const { user } = useAuth();
-
-    if (!user) return null;
+    const { user } = useRequiredAuth();
 
     return (
         <View className="size-28 rounded-full bg-gray-100 items-center justify-center">
