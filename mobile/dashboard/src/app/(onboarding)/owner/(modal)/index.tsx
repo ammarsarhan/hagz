@@ -188,11 +188,14 @@ export default function Index() {
                     </form.Field>
                     <Text className="text-gray-500 text-sm">You will be required to re-verify your phone number if modified.</Text>
                 </View>
-                <form.Field name="email">
-                    {
-                        (field) => <Input label="Email" placeholder="Email Address" value={field.state.value} onChangeText={field.handleChange}/>
-                    }
-                </form.Field>
+                <View className="gap-y-2">
+                    <form.Field name="email">
+                        {
+                            (field) => <Input label="Email" placeholder="Email Address" value={field.state.value} onChangeText={field.handleChange}/>
+                        }
+                    </form.Field>
+                    <Text className="text-gray-500 text-sm">Sign up to our newsletter for early news on upcoming features and discounts.</Text>
+                </View>
             </View>
             <View className="mb-12">
                 <Drawer 

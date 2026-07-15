@@ -138,7 +138,6 @@ export default function Language() {
                     <IconChevronLeft size={18} />
                 </Pressable>
             </View>
-
             <View className="gap-y-1 py-2 mb-6">
                 <Text className="text-3xl font-semibold">
                     Language
@@ -147,7 +146,6 @@ export default function Language() {
                     Choose your preferred display language.
                 </Text>
             </View>
-
             <View className="mb-8">
                 <Drawer
                     label="English"
@@ -164,7 +162,6 @@ export default function Language() {
                     setPending={setPending}
                 />
             </View>
-
             <Text className="text-gray-500 text-sm">
                 Changes may take effect on the next application launch.
                 Restart the app if needed.
