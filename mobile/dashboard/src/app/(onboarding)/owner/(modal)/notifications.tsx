@@ -1,4 +1,3 @@
-import Button from "@/components/shared/Button";
 import { useRequiredAuth } from "@/context/AuthContext";
 import { client } from "@/lib/client";
 import cn from "@/lib/cn";
@@ -62,7 +61,7 @@ const Drawer = ({ icon, title, description, channels, pending, onToggle, value, 
                             onValueChange={() => onToggle(value)}
                             disabled={isAnyLoading || disabled}
                             className="scale-90"
-                            trackColor={{ false: "#D1D5DB", true: "#22C55E" }}
+                            trackColor={{ false: "#D1D5DB", true: "#1C04EA" }}
                             thumbColor={Platform.OS === "android" ? "#FFFFFF" : undefined}
                             ios_backgroundColor="#D1D5DB"
                         />
