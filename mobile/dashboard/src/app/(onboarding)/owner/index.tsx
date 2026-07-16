@@ -1,5 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -65,9 +65,11 @@ export default function Index() {
                         </View>
                     </View>
                 </View>
-                <Button className="bg-primary border-primary">
-                    <Text className="text-white font-medium">Get Started</Text>
-                </Button>
+                <Link asChild href="/(onboarding)/owner/details">
+                    <Button className="bg-primary border-primary">
+                        <Text className="text-white font-medium">Get Started</Text>
+                    </Button>
+                </Link>
             </SafeAreaView>
         </Animated.View>
     )

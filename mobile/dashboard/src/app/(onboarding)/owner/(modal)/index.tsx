@@ -4,7 +4,7 @@ import { handleUploadAvatar } from "@/lib/image";
 import * as ImagePicker from 'expo-image-picker';
 import Input from "@/components/shared/Input";
 import { useAuth, useRequiredAuth } from "@/context/AuthContext";
-import { IconBell, IconChevronRight, IconHelpOctagon, IconLanguage, IconLogout, IconTimezone, IconUserCog, IconX } from "@tabler/icons-react-native";
+import { IconBell, IconChevronRight, IconLanguage, IconLogout, IconTimezone, IconUserCog, IconX } from "@tabler/icons-react-native";
 import { Href, Link, router } from "expo-router";
 import { ReactNode, useEffect } from "react";
 import Animated, { createAnimatedComponent, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";

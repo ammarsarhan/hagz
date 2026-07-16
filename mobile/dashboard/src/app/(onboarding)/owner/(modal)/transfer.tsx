@@ -53,7 +53,7 @@ export default function Transfer() {
             </View>
             <View className="gap-y-1 py-2 mb-10">
                 <Text className="text-3xl font-semibold">Change Role</Text> 
-                <Text className="text-gray-500">Switch your account role.</Text> 
+                <Text className="text-gray-500">Switch your account role to a manager.</Text> 
                 <View className="py-8">  
                     <Button className="bg-primary border-primary" loading={loading} onPress={handleTransfer}>
                         <Text className="text-white font-medium">Transfer Account</Text>

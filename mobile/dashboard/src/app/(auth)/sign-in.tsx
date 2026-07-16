@@ -69,38 +69,40 @@ export default function SignIn() {
   return (
     <>
       <StatusBar barStyle={"dark-content"}/> 
-      <KeyboardAvoidingView className="flex-1" behavior="padding">
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <SafeAreaView className="flex-1 gap-y-4">
-            <View className="px-6 py-2">
-              <Pressable className="size-11 items-center justify-center rounded-full bg-gray-100" onPress={handleBack}>
-                <IconChevronLeft size={18}/>
-              </Pressable>
+      <Animated.View entering={FadeIn.duration(400).delay(100)} className={"flex-1"}>
+        <KeyboardAvoidingView className="flex-1" behavior="padding">
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View className="flex-1">
+              <SafeAreaView className="px-6 py-2">
+                <Pressable className="size-11 items-center justify-center rounded-full bg-gray-100" onPress={handleBack}>
+                  <IconChevronLeft size={18}/>
+                </Pressable>
+              </SafeAreaView>
+              <View className="flex-1 gap-y-8 px-6">
+                  <View className="gap-y-3">  
+                    <Text className="text-4xl font-semibold">Sign In to Hagz</Text>
+                    <Text className="text-gray-500">Log in back into your account to access your bookings and manage your venues.</Text>
+                  </View>
+                  <View className="gap-y-3">
+                    <form.Field name="phone">  
+                      {
+                        (field) => <Input type="phone" placeholder="Phone Number" label="Phone" value={field.state.value} onChangeText={field.handleChange}/>
+                      }
+                    </form.Field>
+                    <form.Field name="password">
+                      {
+                        (field) => <Input type="password" textContentType="password" placeholder="Password" label="Password" value={field.state.value} onChangeText={field.handleChange}/>
+                      }
+                    </form.Field>
+                  </View>
+                  <Button className="bg-primary" loading={loading} onPress={form.handleSubmit}>
+                      <Text className="text-white font-medium">Sign In</Text>
+                  </Button>
+              </View>
             </View>
-            <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 gap-y-8 px-6">
-                <View className="gap-y-3">  
-                  <Text className="text-4xl font-semibold">Sign In to Hagz</Text>
-                  <Text className="text-gray-500">Log in back into your account to access your bookings and manage your venues.</Text>
-                </View>
-                <View className="gap-y-3">
-                  <form.Field name="phone">  
-                    {
-                      (field) => <Input type="phone" placeholder="Phone Number" label="Phone" value={field.state.value} onChangeText={field.handleChange}/>
-                    }
-                  </form.Field>
-                  <form.Field name="password">
-                    {
-                      (field) => <Input type="password" textContentType="password" placeholder="Password" label="Password" value={field.state.value} onChangeText={field.handleChange}/>
-                    }
-                  </form.Field>
-                </View>
-                <Button className="bg-primary" loading={loading} onPress={form.handleSubmit}>
-                    <Text className="text-white font-medium">Sign In</Text>
-                </Button>
-            </Animated.View>
-          </SafeAreaView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Animated.View>
     </>
   );
 }
