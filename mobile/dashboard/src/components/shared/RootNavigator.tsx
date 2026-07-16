@@ -14,7 +14,7 @@ export default function RootNavigator() {
       <Stack.Protected guard={!user}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
-      <Stack.Protected guard={!isOnboarded}>
+      <Stack.Protected guard={!!user && !isOnboarded}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
       <Stack.Protected guard={isOnboarded}>

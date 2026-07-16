@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button, { ButtonProps } from "@/components/shared/Button";
+import { router } from "expo-router";
 
 interface ErrorViewProps {
     title: string;
@@ -18,4 +19,20 @@ export default function ErrorView({ title, description, actionProps } : ErrorVie
             </View>
         </SafeAreaView>
     )
+}
+
+export function createErrorBoundary() {
+    return function RootErrorBoundary() {
+        return (
+            <ErrorView 
+                title="An unexpected error has occurred." 
+                description="If this error keeps persisting, please get in touch with customer support as soon as possible." 
+                actionProps={{
+                    className: "bg-primary border-primary",
+                    onPress: () => router.push("/(auth)/sign-in"),
+                    children: <Text className="font-medium text-white">Go back</Text>
+                }} 
+            />
+        );
+    };
 }

@@ -3,8 +3,8 @@ import ProfilePicture from "@/components/onboarding/ProfilePicture";
 import { handleUploadAvatar } from "@/lib/image";
 import * as ImagePicker from 'expo-image-picker';
 import Input from "@/components/shared/Input";
-import { useRequiredAuth } from "@/context/AuthContext";
-import { IconBell, IconChevronRight, IconLanguage, IconTimezone, IconUserCog, IconX } from "@tabler/icons-react-native";
+import { useAuth, useRequiredAuth } from "@/context/AuthContext";
+import { IconBell, IconChevronRight, IconHelpOctagon, IconLanguage, IconLogout, IconTimezone, IconUserCog, IconX } from "@tabler/icons-react-native";
 import { Href, Link, router } from "expo-router";
 import { ReactNode, useEffect } from "react";
 import Animated, { createAnimatedComponent, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -49,6 +49,58 @@ const Drawer = ({ href, icon, title, description } : { href: Href, icon: ReactNo
                 </Animated.View>
             </Pressable>
         </Link>
+    )
+}
+
+const SignOutDrawer = () => {
+    const { signOut } = useAuth();
+    const pressed = useSharedValue(0);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            pressed.value,
+            [0, 1],
+            ["#FFFFFF", "#F3F4F6"]
+        )
+    }));
+
+    const handlePress = () => {
+        Alert.alert(
+            "Sign out", 
+            "Are you sure you want to leave? You'll be returned to the sign-in screen.",
+            [
+                {
+                    text: "Cancel"
+                },
+                {
+                    text: "Continue",
+                    style: "destructive",
+                    onPress: signOut
+                }
+            ]
+        )
+    };  
+
+    return (
+        <Pressable
+            onPressIn={() => {
+                pressed.value = withTiming(1, { duration: 100 });
+            }}
+            onPressOut={() => {
+                pressed.value = withTiming(0, { duration: 100 });
+            }}
+            onPress={handlePress}
+        >
+            <Animated.View
+                className="flex-row items-center gap-x-5 py-5 border-b border-gray-100 px-3 rounded-lg"
+                style={animatedStyle}
+            >
+                <IconLogout color="#EF4444"/>
+                <View className="flex-1">
+                    <Text className="font-medium text-red-500">Sign Out</Text> 
+                </View>
+            </Animated.View>
+        </Pressable>
     )
 }
 
@@ -149,13 +201,13 @@ export default function Index() {
                 <Pressable className="size-11 items-center justify-center rounded-full bg-gray-100" onPress={() => router.back()}>
                     <IconX size={18}/>
                 </Pressable>
-                {/* <AnimatedPressable disabled={!isEnabled} onPress={form.handleSubmit} className="rounded-lg items-center justify-center bg-primary h-11 w-1/3" style={saveStyle}>
+                <AnimatedPressable disabled={!isEnabled} onPress={form.handleSubmit} className="rounded-lg items-center justify-center bg-primary h-11 px-6" style={saveStyle}>
                     {
                         isSubmitting ?
                         <ActivityIndicator size={14} color="#FFFFFF"/> :
-                        <Text className="text-white text-sm font-medium">Save Changes</Text>
+                        <Text className="text-white text-sm font-medium">Save</Text>
                     }
-                </AnimatedPressable> */}
+                </AnimatedPressable>
             </View>
             <View className="gap-y-1 py-2 mb-10">
                 <Text className="text-3xl font-semibold">Profile</Text> 
@@ -223,6 +275,7 @@ export default function Index() {
                     title="Transfer"
                     description="Change your account to a manager or owner account."
                 />
+                <SignOutDrawer />
             </View>
         </ScrollView>
     )

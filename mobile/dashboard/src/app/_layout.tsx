@@ -1,5 +1,6 @@
 import "@/../global.css";
 import AppLayout from "@/components/shared/AppLayout";
+import { createErrorBoundary } from "@/components/shared/ErrorView";
 import { AuthProvider } from "@/context/AuthContext";
 import { getQueryClient } from "@/lib/query";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -15,3 +16,5 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+export const ErrorBoundary = createErrorBoundary();
