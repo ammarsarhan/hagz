@@ -60,8 +60,8 @@ export default function Password() {
     
            message = getErrorMessage(error);
            Alert.alert("Sign up failed", message);
-        } catch (err) {
-            console.log(err);
+        } catch (error) {
+            console.log(error);
             Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
         } finally {
             setLoading(false);

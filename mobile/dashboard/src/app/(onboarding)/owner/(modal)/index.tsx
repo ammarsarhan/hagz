@@ -246,7 +246,7 @@ export default function Index() {
                             (field) => <Input label="Email" placeholder="Email Address" value={field.state.value} onChangeText={field.handleChange}/>
                         }
                     </form.Field>
-                    <Text className="text-gray-500 text-sm">Sign up to our newsletter for early news on upcoming features and discounts.</Text>
+                    <Text className="text-gray-500 text-sm">Receive early updates about new features and occasional discounts.</Text>
                 </View>
             </View>
             <View className="mb-12">
