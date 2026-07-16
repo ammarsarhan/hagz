@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { client } from "@/lib/client";
 import { IconChevronLeft } from "@tabler/icons-react-native";
 import { useForm } from "@tanstack/react-form";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, View, Text, StatusBar, Pressable, Alert } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";

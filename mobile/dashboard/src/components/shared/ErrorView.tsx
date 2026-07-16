@@ -1,7 +1,8 @@
-import { View, Text } from "react-native";
+import { View, Text, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button, { ButtonProps } from "@/components/shared/Button";
 import { router } from "expo-router";
+import Icon from "@/assets/base/cropped.svg";
 
 interface ErrorViewProps {
     title: string;
@@ -11,13 +12,22 @@ interface ErrorViewProps {
 
 export default function ErrorView({ title, description, actionProps } : ErrorViewProps) {
     return (
-        <SafeAreaView className="flex-1 items-center justify-center">
-            <View className="gap-y-4">
-                <Text className="text-4xl text-center font-semibold">{title}</Text>
-                {description && <Text className="text-gray-500">{description}</Text>}
-                <Button {...actionProps}/>
-            </View>
-        </SafeAreaView>
+        <>
+            <StatusBar barStyle={'dark-content'} />
+            <SafeAreaView className="flex-1 gap-y-6 items-center justify-center p-6 bg-white">
+                <View className="flex-row items-center w-full gap-x-2">
+                    <Icon width={30} height={30} color={"#000000"}/>
+                    <Text className="text-black font-semibold">Dashboard</Text>
+                </View>
+                <View className="gap-y-4 mb-2">
+                    <Text className="text-4xl font-semibold">{title}</Text>
+                    {description && <Text className="text-gray-500">{description}</Text>}
+                </View>
+                <View className="w-full">
+                    <Button {...actionProps}/>
+                </View>
+            </SafeAreaView>
+        </>
     )
 }
 
