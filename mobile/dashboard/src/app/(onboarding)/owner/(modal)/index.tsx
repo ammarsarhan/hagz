@@ -201,13 +201,13 @@ export default function Index() {
                 <Pressable className="size-11 items-center justify-center rounded-full bg-gray-100" onPress={() => router.back()}>
                     <IconX size={18}/>
                 </Pressable>
-                <AnimatedPressable disabled={!isEnabled} onPress={form.handleSubmit} className="rounded-lg items-center justify-center bg-primary h-11 px-6" style={saveStyle}>
+                {/* <AnimatedPressable disabled={!isEnabled} onPress={form.handleSubmit} className="rounded-lg items-center justify-center bg-primary h-11 px-6" style={saveStyle}>
                     {
                         isSubmitting ?
                         <ActivityIndicator size={14} color="#FFFFFF"/> :
                         <Text className="text-white text-sm font-medium">Save</Text>
                     }
-                </AnimatedPressable>
+                </AnimatedPressable> */}
             </View>
             <View className="gap-y-1 py-2 mb-10">
                 <Text className="text-3xl font-semibold">Profile</Text> 

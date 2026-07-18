@@ -61,8 +61,6 @@ async function uploadToStorage(uri: string, presignUrl: string, mimeType: string
         const fileResponse = await fetch(uri);
         const blob = await fileResponse.blob();
 
-        console.log('Blob size:', blob.size, 'Blob type:', blob.type);
-
         const response = await fetch(presignUrl, {
             method: 'PUT',
             headers: {

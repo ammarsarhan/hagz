@@ -103,23 +103,24 @@ const Drawer = ({
                     <Text className="font-medium">{label}</Text>
                     <Text className="text-gray-500 text-sm">{sublabel}</Text>
                 </View>
-
-                {loading ? (
-                    <View style={{ transform: [{ scale: 0.8 }] }}>
-                        <ActivityIndicator
-                            size="small"
-                            color="#6B7280"
-                        />
-                    </View>
-                ) : (
-                    isSelected && (
-                        <IconCheck
-                            width={18}
-                            height={18}
-                            color="#1C04EA"
-                        />
+                {
+                    loading ? (
+                        <View style={{ transform: [{ scale: 0.8 }] }}>
+                            <ActivityIndicator
+                                size="small"
+                                color="#6B7280"
+                            />
+                        </View>
+                    ) : (
+                        isSelected && (
+                            <IconCheck
+                                width={18}
+                                height={18}
+                                color="#1C04EA"
+                            />
+                        )
                     )
-                )}
+                }
             </Animated.View>
         </Pressable>
     );

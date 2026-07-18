@@ -7,6 +7,7 @@ export default function OwnerLayout() {
             <StatusBar barStyle={"dark-content"} />
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FFF" } }}>
                 <Stack.Screen name="index"/>
+                <Stack.Screen name="(steps)"/>
                 <Stack.Screen name="(modal)" options={{ presentation: 'modal' }} />
             </Stack>
         </>

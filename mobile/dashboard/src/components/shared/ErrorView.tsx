@@ -39,7 +39,7 @@ export function createErrorBoundary() {
                 description="If this error keeps persisting, please get in touch with customer support as soon as possible." 
                 actionProps={{
                     className: "bg-primary border-primary",
-                    onPress: () => router.push("/(auth)/sign-in"),
+                    onPress: () => router.push("/"),
                     children: <Text className="font-medium text-white">Go back</Text>
                 }} 
             />

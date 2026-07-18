@@ -14,7 +14,7 @@ export default function Avatar() {
                     style={{ width: '100%', height: '100%', borderRadius: 9999 }}
                     contentFit="cover"
                 /> :
-                <Text className="font-medium text-lg">{user.firstName[0]}</Text>
+                <Text className="font-medium text-lg">{user.firstName[0].toUpperCase()}</Text>
             }
         </View>
     )

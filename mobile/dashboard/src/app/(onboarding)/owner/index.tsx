@@ -65,7 +65,7 @@ export default function Index() {
                         </View>
                     </View>
                 </View>
-                <Link asChild href="/(onboarding)/owner/details">
+                <Link asChild href="/(onboarding)/owner/(steps)/details">
                     <Button className="bg-primary border-primary">
                         <Text className="text-white font-medium">Get Started</Text>
                     </Button>

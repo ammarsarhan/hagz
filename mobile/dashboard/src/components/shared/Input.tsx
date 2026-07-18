@@ -1,8 +1,8 @@
-import { IconEye, IconEyeOff } from '@tabler/icons-react-native';
+import { IconEye, IconEyeOff, IconInfoCircle } from '@tabler/icons-react-native';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { I18nManager, Pressable, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import Egypt from '@/assets/static/flags/egypt.svg';
 
 import cn from '@/lib/cn';
@@ -14,8 +14,12 @@ interface InputProps {
   placeholder?: string;
   className?: string;
   containerClassName?: string;
-  type?: 'text' | 'phone' | 'password';
+  type?: 'text' | 'phone' | 'password' | 'number';
   textContentType?: 'newPassword' | 'password';
+  multiline?: boolean;
+  numberOfLines?: number;
+  minHeight?: number;
+  information?: string;
 }
 
 export default function Input({
@@ -27,16 +31,16 @@ export default function Input({
   containerClassName,
   type = 'text',
   textContentType = 'password',
+  multiline = false,
+  numberOfLines,
+  minHeight = 96,
+  information
 }: InputProps) {
   const { t } = useTranslation();
   const isRTL = I18nManager.isRTL;
 
   const [isVisible, setIsVisible] = useState(type !== 'password');
-
-  const base = cn(
-    'rounded-lg px-3 h-12 border border-gray-100',
-    isRTL ? 'text-right' : 'text-left'
-  );
+  const [isInformation, setIsInformation] = useState(false);
 
   switch (type) {
     case 'phone': {
@@ -104,18 +108,55 @@ export default function Input({
         </View>
       );
     }
-    case 'text': {
+    case 'text':
+    case 'number': {
       return (
-        <View className={cn('gap-y-2', containerClassName)}>
-          {label && <Text className="text-left font-medium">{label}</Text>}
+        <Animated.View
+          layout={LinearTransition.duration(200)}
+          className={cn('gap-y-2', containerClassName)}
+        >
+          {
+          (label || information) && (
+            <View className="flex-row items-center gap-x-2">
+              {!!label && <Text className="text-left font-medium">{label}</Text>}
+              {!!information && (
+                <Pressable onPress={() => setIsInformation((prev) => !prev)}>
+                  <IconInfoCircle width={20} height={20} color="#6B7280" />
+                </Pressable>
+              )}
+            </View>
+          )
+          }
           <TextInput
+            keyboardType={type === 'number' ? 'number-pad' : 'default'}
             placeholder={placeholder}
             placeholderTextColor="#6B7280"
             value={value}
             onChangeText={onChangeText}
-            className={cn(base, 'w-full', className)}
+            multiline={multiline}
+            numberOfLines={numberOfLines}
+            scrollEnabled={!multiline}
+            textAlignVertical={multiline ? 'top' : 'center'}
+            style={multiline ? { minHeight } : undefined}
+            className={cn(
+              'rounded-lg border border-gray-100 w-full px-3',
+              isRTL ? 'text-right' : 'text-left',
+              multiline ? 'py-3' : 'h-12',
+              className
+            )}
           />
-        </View>
+          {
+            isInformation &&
+            <Animated.View
+              entering={FadeIn}
+              exiting={FadeOut}
+              layout={LinearTransition.duration(200)}
+              className="pb-1"
+            >
+              <Text className="text-sm text-gray-500">{information}</Text>
+            </Animated.View>
+          }
+        </Animated.View>
       );
     }
   }
