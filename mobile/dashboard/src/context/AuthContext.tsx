@@ -1,14 +1,8 @@
 import { client } from "@/lib/client";
 import { clearTokens, getAccessToken, saveTokens } from "@/lib/storage";
 import { User } from "@/lib/types/user";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, ReactNode, useContext } from "react";
 
 type AuthContextType = {
   user: User | null;
@@ -20,50 +14,66 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+async function fetchSession(): Promise<User | null> {
+  const token = await getAccessToken();
+  if (!token) return null;
+
+  const res = await client.auth.session.$get();
+  if (!res.ok) {
+    await clearTokens();
+    return null;
+  }
+
+  const body = await res.json();
+  return body.data.user;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["session"],
+    queryFn: fetchSession,
+    staleTime: Infinity,
+    retry: false,
+  });
 
-  useEffect(() => {
-    const rehydrate = async () => {
-      try {
-        const token = await getAccessToken();
-
-        if (token) {
-          const res = await client.auth.session.$get();
-
-          if (res.ok) {
-            const body = await res.json();
-            setUser(body.data.user);
-          } else {
-            await clearTokens();
-          }
-        }
-      } catch (error) {
-        console.warn("[AuthContext] Session rehydration failed (network timeout or error):", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    rehydrate();
-  }, []);
-
-  const signOut = async () => {
-    await clearTokens();
-    queryClient.clear();
-    setUser(null);
+  const setUser = (user: User | null) => {
+    queryClient.setQueryData(["session"], user);
   };
 
   const saveSession = async (user: User, accessToken: string, refreshToken: string) => {
+    await queryClient.cancelQueries();
     await saveTokens(accessToken, refreshToken);
-    setUser(user); 
-  }
+
+    queryClient.removeQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return key !== "session";
+      },
+    });
+
+    queryClient.setQueryData(["session"], user);
+  };
+
+  const signOut = async () => {
+    await queryClient.cancelQueries();
+    await clearTokens();
+
+    queryClient.removeQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return key !== "session";
+      },
+    });
+
+    queryClient.setQueryData(["session"], null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, setUser, signOut, saveSession }}>
+    <AuthContext.Provider
+      value={{ user: user ?? null, isLoading, setUser, signOut, saveSession }}
+    >
       {children}
     </AuthContext.Provider>
   );

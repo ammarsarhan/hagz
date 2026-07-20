@@ -16,8 +16,8 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { parseClientError, getErrorMessage } from "@/lib/error";
-import { Dispatch, SetStateAction, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { ApiError, parseClientError } from "@/lib/error";
 
 type LanguageType = "EN" | "AR";
 
@@ -25,18 +25,20 @@ type DrawerProps = {
     label: string;
     sublabel: string;
     value: LanguageType;
-    pending: LanguageType | null;
-    setPending: Dispatch<SetStateAction<LanguageType | null>>;
+    pendingValue: LanguageType | undefined;
+    isAnyLoading: boolean;
+    onSelect: (value: LanguageType) => void;
 };
 
 const Drawer = ({
     label,
     sublabel,
     value,
-    pending,
-    setPending,
+    pendingValue,
+    isAnyLoading,
+    onSelect,
 }: DrawerProps) => {
-    const { user, setUser } = useRequiredAuth();
+    const { user } = useRequiredAuth();
     const pressed = useSharedValue(0);
 
     const animatedStyle = useAnimatedStyle(() => ({
@@ -48,39 +50,7 @@ const Drawer = ({
     }));
 
     const isSelected = user.preferences.language === value;
-    const loading = pending === value;
-    const isAnyLoading = pending !== null;
-
-    const onPress = async () => {
-        if (isSelected || isAnyLoading) return;
-
-        setPending(value);
-
-        try {
-            const res = await client.app.profile.preferences.$patch({
-                json: { language: value },
-            });
-
-            if (res.ok) {
-                const { data } = await res.json();
-                setUser(data.profile);
-                return;
-            }
-
-            const error = await parseClientError(res);
-            Alert.alert(
-                "Language update failed",
-                getErrorMessage(error)
-            );
-        } catch {
-            Alert.alert(
-                "Connection error",
-                "Couldn't connect. Check your connection and try again."
-            );
-        } finally {
-            setPending(null);
-        }
-    };
+    const loading = pendingValue === value;
 
     return (
         <Pressable
@@ -93,7 +63,10 @@ const Drawer = ({
             onPressOut={() => {
                 pressed.value = withTiming(0, { duration: 100 });
             }}
-            onPress={onPress}
+            onPress={() => {
+                if (isSelected || isAnyLoading) return;
+                onSelect(value);
+            }}
         >
             <Animated.View
                 className="flex-row items-center gap-x-5 border-b border-gray-100 py-5 px-3 rounded-lg"
@@ -127,7 +100,38 @@ const Drawer = ({
 };
 
 export default function Language() {
-    const [pending, setPending] = useState<LanguageType | null>(null);
+    const { setUser } = useRequiredAuth();
+
+    const updateLanguageMutation = useMutation({
+        mutationFn: async (language: LanguageType) => {
+            const res = await client.app.profile.preferences.$patch({
+                json: { language },
+            });
+
+            if (!res.ok) {
+                const error = await parseClientError(res);
+                throw new ApiError(error);
+            }
+
+            const { data } = await res.json();
+            return data.profile;
+        },
+        onSuccess: (profile) => {
+            setUser(profile);
+        },
+        onError: (err) => {
+            console.log(err);
+
+            if (err instanceof ApiError) {
+                Alert.alert("Language update failed", err.message);
+            } else {
+                Alert.alert(
+                    "Connection error",
+                    "Couldn't connect. Check your connection and try again."
+                );
+            }
+        },
+    });
 
     return (
         <SafeAreaView className="flex-1 p-6">
@@ -152,15 +156,17 @@ export default function Language() {
                     label="English"
                     sublabel="الانجليزية"
                     value="EN"
-                    pending={pending}
-                    setPending={setPending}
+                    pendingValue={updateLanguageMutation.isPending ? updateLanguageMutation.variables : undefined}
+                    isAnyLoading={updateLanguageMutation.isPending}
+                    onSelect={(value) => updateLanguageMutation.mutate(value)}
                 />
                 <Drawer
                     label="عربي"
                     sublabel="Arabic"
                     value="AR"
-                    pending={pending}
-                    setPending={setPending}
+                    pendingValue={updateLanguageMutation.isPending ? updateLanguageMutation.variables : undefined}
+                    isAnyLoading={updateLanguageMutation.isPending}
+                    onSelect={(value) => updateLanguageMutation.mutate(value)}
                 />
             </View>
             <Text className="text-gray-500 text-sm">

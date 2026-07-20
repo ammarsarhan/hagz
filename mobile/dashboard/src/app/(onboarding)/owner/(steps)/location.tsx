@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 import { client } from "@/lib/client";
 import cn from "@/lib/cn";
-import { getErrorMessage, parseClientError } from "@/lib/error";
+import { ApiError, parseClientError } from "@/lib/error";
 import { useLocations } from "@/lib/hooks/useLocations";
 import parseGoogleMapsLink from "@/lib/location";
 import trim from "@/lib/string";
@@ -17,6 +17,7 @@ import { View, Text, Pressable, I18nManager, Keyboard, Alert } from "react-nativ
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMutation } from "@tanstack/react-query";
 import * as z from 'zod';
 
 const schema = z.object({
@@ -74,34 +75,37 @@ export default function Location() {
 
   const isValid = schema.safeParse({ ...state }).success;
 
-  const handleSubmit = async () => {
-    Keyboard.dismiss();
-
-    try {
+  const createPitchMutation = useMutation({
+    mutationFn: async () => {
       const res = await client.dashboard.pitches.$post({ json: state });
 
-      if (res.ok) {
-            const { data } = await res.json();
-            const { profile } = data;
-
-            setUser(profile);
-            router.push("/(onboarding)/owner/(steps)/media");
-            return;
-        };
-
+      if (!res.ok) {
         const error = await parseClientError(res);
-        let message = error.message;
+        throw new ApiError(error);
+      }
 
-        if (error.fields?.length) {
-            message = error.fields.map(f => f.message).join("\n");
-        };
+      const { data } = await res.json();
+      return data.profile;
+    },
+    onSuccess: (profile) => {
+      setUser(profile);
+      router.push("/(onboarding)/owner/(steps)/media");
+    },
+    onError: (err) => {
+      console.log(err);
 
-        message = getErrorMessage(error);
-        Alert.alert("Pitch creation failed", message);
-    } catch {
+      if (err instanceof ApiError) {
+        Alert.alert("Pitch creation failed", err.message);
+      } else {
         Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
-    };
-  }
+      }
+    },
+  });
+
+  const handleSubmit = () => {
+    Keyboard.dismiss();
+    createPitchMutation.mutate();
+  };
 
   return (
     <>
@@ -152,8 +156,8 @@ export default function Location() {
             </View>
           </View>
         </KeyboardAwareScrollView>
-        <Footer disabled={isValid} onPress={handleSubmit}/>
+        <Footer disabled={isValid} isPending={createPitchMutation.isPending} onPress={handleSubmit}/>
       </Animated.View>
     </>
   );
-}
+};

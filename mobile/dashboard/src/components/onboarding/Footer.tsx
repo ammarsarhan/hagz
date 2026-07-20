@@ -8,7 +8,7 @@ import { Href, Link } from "expo-router";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function Footer({ disabled, href, onPress } : { disabled: boolean, href?: Href, onPress?: () => void }) {
+export default function Footer({ disabled, isPending, href, onPress } : { disabled: boolean, isPending?: boolean, href?: Href, onPress?: () => void }) {
     if (href && onPress) throw new Error("Can not pass both an href and an onPress.");
 
     const insets = useSafeAreaInsets();
@@ -59,18 +59,18 @@ export default function Footer({ disabled, href, onPress } : { disabled: boolean
                 {
                     href &&
                     <Link asChild href={href}>
-                        <Button onPress={Keyboard.dismiss} className="bg-primary border-primary w-32 py-4" disabled={disabled}>
+                        <Button onPress={Keyboard.dismiss} className="bg-primary border-primary w-32 py-4" disabled={disabled} loading={isPending}>
                             <Text className="text-white font-medium">Next</Text>
                         </Button>
                     </Link>
                 }
                 {
                     onPress &&
-                    <Button onPress={onPress} className="bg-primary border-primary w-32 py-4" disabled={disabled}>
+                    <Button onPress={onPress} className="bg-primary border-primary w-32 py-4" disabled={disabled} loading={isPending}>
                         <Text className="text-white font-medium">Next</Text>
                     </Button>
                 }
             </Animated.View>
         </KeyboardStickyView>
     )
-}
+};

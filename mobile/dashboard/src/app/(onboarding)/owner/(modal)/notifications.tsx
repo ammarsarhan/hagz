@@ -1,12 +1,13 @@
 import { useRequiredAuth } from "@/context/AuthContext";
 import { client } from "@/lib/client";
 import cn from "@/lib/cn";
-import { parseClientError, getErrorMessage } from "@/lib/error";
+import { ApiError, parseClientError } from "@/lib/error";
 import { IconBrandWhatsapp, IconChevronLeft, IconMail, IconNotification } from "@tabler/icons-react-native";
 import { router } from "expo-router";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useMutation } from "@tanstack/react-query";
 
 export const NotificationChannel = {
   IN_APP: 'IN_APP',
@@ -22,17 +23,7 @@ interface DrawerProps {
     title: string,
     description: string,
     channels: Set<NotificationChannelType>;
-    pending: NotificationChannelType | null;
-    onToggle: (value: NotificationChannelType) => void;
-    value: NotificationChannelType;
-}
-
-interface DrawerProps {
-    icon: ReactNode,
-    title: string,
-    description: string,
-    channels: Set<NotificationChannelType>;
-    pending: NotificationChannelType | null;
+    pending: NotificationChannelType | undefined;
     onToggle: (value: NotificationChannelType) => void;
     value: NotificationChannelType;
     disabled?: boolean;
@@ -40,7 +31,7 @@ interface DrawerProps {
 
 const Drawer = ({ icon, title, description, channels, pending, onToggle, value, disabled = false } : DrawerProps) => {
     const loading = pending === value;
-    const isAnyLoading = pending !== null;
+    const isAnyLoading = pending !== undefined;
 
     return (
         <View className="flex-row items-center gap-x-5 border-b border-gray-100 py-5 px-3 rounded-lg">
@@ -71,53 +62,58 @@ const Drawer = ({ icon, title, description, channels, pending, onToggle, value, 
         </View>
     )
 }
+
 export default function Notifications() {
     const { user, setUser } = useRequiredAuth();
 
-    const [channels, setChannels] = useState<Set<NotificationChannelType>>(
-        () => new Set(user.preferences.notifications)
-    );
-    const [pending, setPending] = useState<NotificationChannelType | null>(null);
+    const channels = new Set<NotificationChannelType>(user.preferences.notifications);
 
-    const onToggle = async (value: NotificationChannelType) => {
-        if (pending) return;
-        if (value === NotificationChannel.EMAIL && !user.email) return;
+    const updateNotificationsMutation = useMutation({
+        mutationFn: async (value: NotificationChannelType) => {
+            const next = new Set(channels);
+            if (next.has(value)) {
+                next.delete(value);
+            } else {
+                next.add(value);
+            }
 
-        const next = new Set(channels);
-        if (next.has(value)) {
-            next.delete(value);
-        } else {
-            next.add(value);
-        }
-
-        setPending(value);
-
-        try {
             const res = await client.app.profile.preferences.$patch({
                 json: { notifications: Array.from(next) },
             });
 
-            if (res.ok) {
-                const { data } = await res.json();
-                setUser(data.profile);
-                setChannels(next);
-                return;
+            if (!res.ok) {
+                const error = await parseClientError(res);
+                throw new ApiError(error);
             }
 
-            const error = await parseClientError(res);
-            Alert.alert(
-                "Notification update failed",
-                getErrorMessage(error)
-            );
-        } catch {
-            Alert.alert(
-                "Connection error",
-                "Couldn't connect. Check your connection and try again."
-            );
-        } finally {
-            setPending(null);
-        }
+            const { data } = await res.json();
+            return data.profile;
+        },
+        onSuccess: (profile) => {
+            setUser(profile);
+        },
+        onError: (err) => {
+            console.log(err);
+
+            if (err instanceof ApiError) {
+                Alert.alert("Notification update failed", err.message);
+            } else {
+                Alert.alert(
+                    "Connection error",
+                    "Couldn't connect. Check your connection and try again."
+                );
+            }
+        },
+    });
+
+    const onToggle = (value: NotificationChannelType) => {
+        if (updateNotificationsMutation.isPending) return;
+        if (value === NotificationChannel.EMAIL && !user.email) return;
+
+        updateNotificationsMutation.mutate(value);
     };
+
+    const pending = updateNotificationsMutation.isPending ? updateNotificationsMutation.variables : undefined;
 
     return (
         <SafeAreaView className="flex-1 p-6">

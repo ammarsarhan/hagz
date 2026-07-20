@@ -21,6 +21,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     USER_AVATAR_CONFIRMATION_FAILED: "We couldn't confirm your profile photo upload. Please try again.",
     PROFILE_ACCESS_FORBIDDEN: "You don't have access to this profile.",
 
+    // Google Maps
+    GOOGLE_MAPS_LINK_INVALID: "Please use a proper Google Maps link.",
+
     // Pitch
     PITCH_DRAFT_EXISTS: "You already have a draft pitch in progress.",
     PITCH_NOT_ACTIVE: "This pitch isn't currently active.",
@@ -110,3 +113,15 @@ export async function parseClientError(res: { json: () => Promise<unknown> }): P
     const body = (await res.json().catch(() => null)) as ClientError | null;
     return body?.error ?? { message: "Something went wrong. Please try again." };
 }
+
+export class ApiError extends Error {
+    code?: ErrorCode;
+    fields?: { field: string; message: string }[];
+
+    constructor(error: { code?: ErrorCode; message: string; fields?: { field: string; message: string }[] }) {
+        super(getErrorMessage(error));
+        this.name = "ApiError";
+        this.code = error.code;
+        this.fields = error.fields;
+    }
+};

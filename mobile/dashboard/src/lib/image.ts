@@ -1,43 +1,30 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
 import { client } from '@/lib/client';
+import { ApiError, parseClientError } from '@/lib/error';
 
 const mimeTypes = ['image/jpeg', 'image/png', 'image/webp'] as const;
 type AllowedMimeType = (typeof mimeTypes)[number];
 
-export const handleUploadAvatar = async (asset: ImagePicker.ImagePickerAsset) => {
+export async function uploadAvatar(asset: ImagePicker.ImagePickerAsset) {
     const mimeType = asset.mimeType || 'image/jpeg';
     const fileSize = asset.fileSize ?? 0;
 
     if (!isAllowedMimeType(mimeType)) {
-        Alert.alert('Invalid image type');
-        return;
+        throw new Error('Invalid image type.');
     }
 
     if (fileSize > 5 * 1024 * 1024) {
-        Alert.alert('Image must be less than 5 MBs');
-        return;
+        throw new Error('Image must be less than 5 MBs.');
     }
 
     const presignData = await getPresignedUpload(mimeType, fileSize);
-    if (!presignData) {
-        Alert.alert('Failed to get upload image');
-        return;
-    }
-
     const uploaded = await uploadToStorage(asset.uri, presignData.presign, mimeType);
+
     if (!uploaded) {
-        Alert.alert('Failed to upload image to storage provider');
-        return;
+        throw new Error('Failed to upload image to storage provider.');
     }
 
-    const profile = await confirmAvatarUpload(presignData.id);
-    if (!profile) {
-        Alert.alert('Failed to confirm avatar upload');
-        return;
-    }
-
-    return profile;
+    return confirmAvatarUpload(presignData.id);
 };
 
 function isAllowedMimeType(mimeType: string): mimeType is AllowedMimeType {
@@ -49,7 +36,10 @@ async function getPresignedUpload(mimeType: AllowedMimeType, size: number) {
         json: { contentType: mimeType, size },
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+        const error = await parseClientError(response);
+        throw new ApiError(error);
+    }
 
     const { data } = await response.json();
     return data;
@@ -62,9 +52,7 @@ async function uploadToStorage(uri: string, presignUrl: string, mimeType: string
 
         const response = await fetch(presignUrl, {
             method: 'PUT',
-            headers: {
-                'Content-Type': mimeType,
-            },
+            headers: { 'Content-Type': mimeType },
             body: blob,
         });
 
@@ -78,14 +66,17 @@ async function uploadToStorage(uri: string, presignUrl: string, mimeType: string
         console.error('Upload failed:', e);
         return false;
     }
-}
+};
 
 async function confirmAvatarUpload(avatarId: string) {
     const response = await client.app.profile.avatar[':avatarId'].confirm.$post({
         param: { avatarId: encodeURIComponent(avatarId) },
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+        const error = await parseClientError(response);
+        throw new ApiError(error);
+    }
 
     const { data } = await response.json();
     return data.profile;

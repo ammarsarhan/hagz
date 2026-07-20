@@ -1,6 +1,6 @@
 import { Pressable, View, Text, ScrollView, Alert, ActivityIndicator } from "react-native";
 import ProfilePicture from "@/components/onboarding/ProfilePicture";
-import { handleUploadAvatar } from "@/lib/image";
+import { uploadAvatar } from "@/lib/image";
 import * as ImagePicker from 'expo-image-picker';
 import Input from "@/components/shared/Input";
 import { useAuth, useRequiredAuth } from "@/context/AuthContext";
@@ -8,10 +8,11 @@ import { IconBell, IconChevronRight, IconLanguage, IconLogout, IconTimezone, Ico
 import { Href, Link, router } from "expo-router";
 import { ReactNode, useEffect } from "react";
 import Animated, { createAnimatedComponent, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import { useForm, useStore } from '@tanstack/react-form';
+import { useForm } from '@tanstack/react-form';
+import { useMutation } from "@tanstack/react-query";
 import { useIsDirty } from "@/lib/hooks/useIsDirty";
 import { client } from "@/lib/client";
-import { getErrorMessage, parseClientError } from "@/lib/error";
+import { ApiError, parseClientError } from "@/lib/error";
 
 const AnimatedPressable = createAnimatedComponent(Pressable);
 
@@ -106,7 +107,67 @@ const SignOutDrawer = () => {
 
 export default function Index() {
     const { user, setUser } = useRequiredAuth();
-    
+
+    const updateProfileMutation = useMutation({
+        mutationFn: async (value: { firstName: string; lastName: string; phone: string; email: string }) => {
+            const phone = `+20${value.phone}`;
+            const email = value.email.trim();
+
+            const payload = {
+                ...value,
+                phone,
+                email: email === "" ? undefined : email,
+            };
+
+            const res = await client.app.profile.$patch({ json: payload });
+
+            if (!res.ok) {
+                const error = await parseClientError(res);
+                throw new ApiError(error);
+            }
+
+            const { data } = await res.json();
+            return data.profile;
+        },
+        onSuccess: (profile) => {
+            setUser(profile);
+
+            form.reset({
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                phone: profile.phone.slice(3),
+                email: profile.email ?? ""
+            });
+        },
+        onError: (err) => {
+            console.log(err);
+
+            if (err instanceof ApiError) {
+                Alert.alert("Profile update failed", err.message);
+            } else {
+                Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
+            }
+        },
+    });
+
+    const uploadAvatarMutation = useMutation({
+        mutationFn: uploadAvatar,
+        onSuccess: (profile) => {
+            setUser(profile);
+        },
+        onError: (err) => {
+            console.log(err);
+
+            if (err instanceof ApiError) {
+                Alert.alert("Avatar upload failed", err.message);
+            } else if (err instanceof Error) {
+                Alert.alert("Avatar upload failed", err.message);
+            } else {
+                Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
+            }
+        },
+    });
+
     const form = useForm({
         defaultValues: {
             firstName: user.firstName,
@@ -115,46 +176,7 @@ export default function Index() {
             email: user.email ?? ""
         },
         onSubmit: async ({ value }) => {
-            try {
-                const phone = `+20${value.phone}`;
-                const email = value.email.trim();
-
-                const payload = {
-                    ...value,
-                    phone,
-                    email: email === "" ? undefined : email,
-                };
-
-                const res = await client.app.profile.$patch({ json: payload });
-        
-                if (res.ok) {
-                    const { data } = await res.json();
-                    const { profile } = data;
-
-                    setUser(profile);
-
-                    form.reset({
-                        firstName: profile.firstName,
-                        lastName: profile.lastName,
-                        phone: profile.phone.slice(3),
-                        email: profile.email ?? ""
-                    });
-
-                    return;
-                };
-        
-                const error = await parseClientError(res);
-                let message = error.message;
-        
-                if (error.fields?.length) {
-                    message = error.fields.map(f => f.message).join("\n");
-                };
-        
-                message = getErrorMessage(error);
-                Alert.alert("Profile update failed", message);
-            } catch {
-                Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
-            };
+            updateProfileMutation.mutate(value);
         }
     })
     
@@ -162,7 +184,7 @@ export default function Index() {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         
         if (!permission.granted) {
-            alert("Permission to access photos is required to upload image.");
+            Alert.alert("Permission required", "Permission to access photos is required to upload image.");
             return;
         };
 
@@ -175,12 +197,11 @@ export default function Index() {
         });
 
         if (!result.canceled) {
-            const updated = await handleUploadAvatar(result.assets[0]);
-            if (updated) setUser(updated);
+            uploadAvatarMutation.mutate(result.assets[0]);
         }
     };
 
-    const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+    const isSubmitting = updateProfileMutation.isPending;
     const isDirty = useIsDirty(form);
 
     const isEnabled = isDirty && !isSubmitting;
@@ -215,8 +236,14 @@ export default function Index() {
             </View>
             <View className="gap-y-4 mb-12 items-center justify-center">
                 <ProfilePicture /> 
-                <Pressable onPress={selectAvatar} className="rounded-lg border border-gray-500 px-4 py-3 items-center justify-center">
-                    <Text className="text-sm font-medium">{user.avatarUrl ? "Change photo" : "Upload photo"}</Text>
+                <Pressable onPress={selectAvatar} disabled={uploadAvatarMutation.isPending} className="rounded-lg border border-gray-500 px-4 py-3 items-center justify-center">
+                    {
+                        uploadAvatarMutation.isPending ? (
+                            <ActivityIndicator size={14} color="#000000" />
+                        ) : (
+                            <Text className="text-sm font-medium">{user.avatarUrl ? "Change photo" : "Upload photo"}</Text>
+                        )
+                    }
                 </Pressable>
             </View>
             <View className="gap-y-6 mb-6">
