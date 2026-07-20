@@ -14,6 +14,7 @@ export default function StepsLayout() {
             >
                 <Stack.Screen name="details" />
                 <Stack.Screen name="location" />
+                <Stack.Screen name="media" />
             </Stack>
         </PitchDraftFormProvider>
     );

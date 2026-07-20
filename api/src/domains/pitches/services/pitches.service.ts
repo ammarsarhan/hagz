@@ -16,6 +16,8 @@ import config from "@/shared/config.js";
 import { endOfWeek, startOfWeek } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client.js";
 import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
+import { createUserResponse } from "@/domains/auth/auth.validator.js";
+import verifyGoogleMapsLink from "@/shared/lib/providers/maps.js";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -142,10 +144,14 @@ export default class PitchService {
                 properties: PermissionLevel.WRITE
             } as Permissions;
 
-            // If the user passes both checks, create them a pitch under draft status.        
+            const { longitude, latitude } = await verifyGoogleMapsLink(payload.googleMapsLink);
+
+            // If the user passes both checks and the maps check, create them a pitch under draft status.        
             const pitch = await tx.pitch.create({
                 data: {
                     ...payload,
+                    longitude,
+                    latitude,
                     staff: {
                         create: {
                             userId,
@@ -155,8 +161,12 @@ export default class PitchService {
                     }
                 },
             });
-    
-            return pitch;
+
+            const user = await prisma.user.findUnique({ where: { id: userId }, include: { pitches: { include: { pitch: { select: { status: true } } } } } });
+            if (!user || !preferences) throw new InternalServerError("Failed to fetch updated user profile.");
+
+            const profile = createUserResponse(user, preferences, user.pitches);
+            return { pitch, profile };
         });
     };
 
@@ -212,13 +222,22 @@ export default class PitchService {
         // Check if the pitch is even in a state to allow edits.
         if (!config.EDITABLE_STATES.includes(pitch.status)) throw new BadRequestError("Pitch is not active or cannot accept edits right now. Please try again later.", ERROR_CODES.PITCH_NOT_EDITABLE);
 
+        // Check if the Google Maps Link is valid.
+        let coordinates = {};
+
+        if (payload.googleMapsLink) {
+            const { longitude, latitude } = await verifyGoogleMapsLink(payload.googleMapsLink);
+            coordinates = { longitude, latitude };
+        }
+
         // If the pitch passes the checks, update it with the provided payload.
         const updated = await prisma.pitch.update({
             where: {
                 id: pitchId
             },
             data: {
-                ...payload
+                ...payload,
+                ...coordinates
             }
         });
 

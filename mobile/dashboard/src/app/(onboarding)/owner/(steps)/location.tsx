@@ -2,13 +2,18 @@ import Footer from "@/components/onboarding/Footer";
 import Header from "@/components/onboarding/Header";
 import Input from "@/components/shared/Input";
 import LocationModal from "@/components/shared/location/LocationModal";
+import { useAuth } from "@/context/AuthContext";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
+import { client } from "@/lib/client";
 import cn from "@/lib/cn";
+import { getErrorMessage, parseClientError } from "@/lib/error";
 import { useLocations } from "@/lib/hooks/useLocations";
+import parseGoogleMapsLink from "@/lib/location";
 import trim from "@/lib/string";
 import { IconChevronDown, IconMapPin } from "@tabler/icons-react-native";
+import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { View, Text, Pressable, I18nManager } from "react-native";
+import { View, Text, Pressable, I18nManager, Keyboard, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,14 +31,28 @@ const schema = z.object({
     areaId: z
         .cuid("Area ID is required."),
     googleMapsLink: z
-        .url("Please provide a valid Google Maps link."),
-})
+      .url("Please provide a valid URL.")
+      .superRefine((value, context) => {
+        const parsed = parseGoogleMapsLink(value);
+
+        if (!parsed) {
+          context.addIssue({ 
+              code: "custom", 
+              path: ["googleMapsLink"], 
+              message: "Could not identify a valid location or address in this link." 
+          });
+
+          return z.NEVER;
+        }
+      }),
+});
 
 export default function Location() {
   const { state, setState } = usePitchDraftForm();
-  const locations = useLocations();
+  const { setUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const locations = useLocations();
   const insets = useSafeAreaInsets();
   const scroll = useSharedValue(0);
   const isRTL = I18nManager.isRTL;
@@ -54,6 +73,35 @@ export default function Location() {
   }, [state.areaId, locations.data]);
 
   const isValid = schema.safeParse({ ...state }).success;
+
+  const handleSubmit = async () => {
+    Keyboard.dismiss();
+
+    try {
+      const res = await client.dashboard.pitches.$post({ json: state });
+
+      if (res.ok) {
+            const { data } = await res.json();
+            const { profile } = data;
+
+            setUser(profile);
+            router.push("/(onboarding)/owner/(steps)/media");
+            return;
+        };
+
+        const error = await parseClientError(res);
+        let message = error.message;
+
+        if (error.fields?.length) {
+            message = error.fields.map(f => f.message).join("\n");
+        };
+
+        message = getErrorMessage(error);
+        Alert.alert("Pitch creation failed", message);
+    } catch {
+        Alert.alert("Connection error", "Couldn't connect. Check your connection and try again.");
+    };
+  }
 
   return (
     <>
@@ -81,10 +129,10 @@ export default function Location() {
             <View className="gap-y-6">
               <View className="gap-y-2">
                 <Text className="font-medium">Area</Text>
-                <Pressable onPress={() => setIsModalOpen(true)} className={cn('h-12 w-full flex-row items-center justify-between rounded-lg border border-gray-100 px-3', isRTL ? 'flex-row-reverse' : 'flex-row')}>
-                  <View className="flex-row items-center gap-x-2">  
+                <Pressable onPress={() => setIsModalOpen(true)} className={cn('min-h-[48px] py-3 w-full flex-row items-center justify-between rounded-lg border border-gray-100 px-3', isRTL ? 'flex-row-reverse' : 'flex-row')}>
+                  <View className="flex-row items-center gap-x-2 flex-1 pr-4">  
                     <IconMapPin width={20} height={20} strokeWidth={2} color={"#9CA3AFCC"} />
-                    <Text className={area ? "text-gray-900" : "text-gray-500"}>
+                    <Text className={cn("flex-1", area ? "text-gray-900" : "text-gray-500")}>
                       {area?.name ?? "Select location"}
                     </Text>
                   </View>
@@ -95,15 +143,16 @@ export default function Location() {
               <Input 
                   label="Google Maps Link" 
                   placeholder="https://www.google.com/maps/place/..." 
-                  information="Please use the full form of the link. Do not use shortened URLs (e.g. https://maps.app.goo.gl/)."
+                  information="Please use the full form of the link. Do not use shortened URLs (e.g. https://maps.app.goo.gl/). You can get this from the shortened version by pasting it in a browser."
                   value={state.googleMapsLink} 
                   onChangeText={(text) => setState({ ...state, googleMapsLink: text })} 
-                  multiline={false}
+                  isDetailed={true}
+                  multiline
               />
             </View>
           </View>
         </KeyboardAwareScrollView>
-        <Footer disabled={!isValid} href={"/(onboarding)/owner/(steps)/location"}/>
+        <Footer disabled={isValid} onPress={handleSubmit}/>
       </Animated.View>
     </>
   );

@@ -20,6 +20,7 @@ interface InputProps {
   numberOfLines?: number;
   minHeight?: number;
   information?: string;
+  isDetailed?: boolean;
 }
 
 export default function Input({
@@ -34,25 +35,26 @@ export default function Input({
   multiline = false,
   numberOfLines,
   minHeight = 96,
-  information
+  information,
+  isDetailed = false
 }: InputProps) {
   const { t } = useTranslation();
   const isRTL = I18nManager.isRTL;
 
   const [isVisible, setIsVisible] = useState(type !== 'password');
-  const [isInformation, setIsInformation] = useState(false);
+  const [isInformation, setIsInformation] = useState(isDetailed);
 
   switch (type) {
     case 'phone': {
       return (
-        <View className={cn('gap-y-2', containerClassName)}>
+        <View className={cn('w-full gap-y-2', containerClassName)}>
           {label && (
             <Text className="text-left font-medium">
               {t('components.shared.input.phone.label')}
             </Text>
           )}
           <View className="w-full flex-row">
-            <View className="h-12 flex-row gap-x-2 items-center justify-center rounded-l-lg border border-gray-100 px-3">
+            <View className="min-h-[48px] flex-row gap-x-2 items-center justify-center rounded-l-lg border border-gray-100 px-3">
               <Egypt width={20} height={20} />
               <Text>+20</Text>
             </View>
@@ -63,7 +65,7 @@ export default function Input({
               value={value}
               onChangeText={onChangeText}
               className={cn(
-                'h-12 flex-1 rounded-r-lg border-y border-r border-gray-100 px-3',
+                'min-h-[48px] flex-1 rounded-r-lg border-y border-r border-gray-100 px-3 py-3',
                 isRTL ? 'text-right' : 'text-left',
                 className
               )}
@@ -74,13 +76,13 @@ export default function Input({
     }
     case 'password': {
       return (
-        <View className={cn('gap-y-2', containerClassName)}>
+        <View className={cn('w-full gap-y-2', containerClassName)}>
           {label && (
             <Text className="text-left font-medium">
               {t('components.shared.input.password.label')}
             </Text>
           )}
-          <View className="w-full flex-row overflow-hidden border border-gray-100 rounded-lg">
+          <View className="w-full flex-row items-center overflow-hidden border border-gray-100 rounded-lg min-h-[48px]">
             <TextInput
               secureTextEntry={!isVisible}
               placeholderTextColor="#6B7280"
@@ -89,7 +91,7 @@ export default function Input({
               placeholder={placeholder}
               value={value}
               onChangeText={onChangeText}
-              className={cn('h-12 flex-1 px-3', isRTL ? 'text-right' : 'text-left', className)}
+              className={cn('flex-1 px-3 py-3', isRTL ? 'text-right' : 'text-left', className)}
             />
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
@@ -113,7 +115,7 @@ export default function Input({
       return (
         <Animated.View
           layout={LinearTransition.duration(200)}
-          className={cn('gap-y-2', containerClassName)}
+          className={cn('w-full gap-y-2', containerClassName)}
         >
           {
           (label || information) && (
@@ -127,24 +129,25 @@ export default function Input({
             </View>
           )
           }
-          <TextInput
-            keyboardType={type === 'number' ? 'number-pad' : 'default'}
-            placeholder={placeholder}
-            placeholderTextColor="#6B7280"
-            value={value}
-            onChangeText={onChangeText}
-            multiline={multiline}
-            numberOfLines={multiline ? numberOfLines : 1}
-            scrollEnabled={!multiline}
-            textAlignVertical={multiline ? 'top' : 'center'}
-            style={multiline ? { minHeight } : undefined}
-            className={cn(
-              'rounded-lg border border-gray-100 w-full px-3',
-              isRTL ? 'text-right' : 'text-left',
-              multiline ? 'py-3' : 'h-12',
-              className
-            )}
-          />
+          <View className="w-full flex-row">
+            <TextInput
+              keyboardType={type === 'number' ? 'number-pad' : 'default'}
+              placeholder={placeholder}
+              placeholderTextColor="#6B7280"
+              value={value}
+              onChangeText={onChangeText}
+              multiline={multiline}
+              numberOfLines={multiline ? numberOfLines : 1}
+              scrollEnabled={!multiline}
+              textAlignVertical={multiline ? 'top' : 'center'}
+              style={{ minHeight: multiline ? minHeight : 48 }}
+              className={cn(
+                'flex-1 rounded-lg border border-gray-100 px-3 py-3',
+                isRTL ? 'text-right' : 'text-left',
+                className
+              )}
+            />
+          </View>
           {
             isInformation &&
             <Animated.View

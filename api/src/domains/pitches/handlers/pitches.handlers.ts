@@ -20,9 +20,9 @@ export const createPitchHandler = factory.createHandlers(
         const userId = c.var.id;
         const payload = c.req.valid("json");
 
-        const pitch = await pitchService.createPitch(userId, payload);
+        const { pitch, profile } = await pitchService.createPitch(userId, payload);
 
-        return c.json({ success: true, data: { pitch }}, 201);
+        return c.json({ success: true, data: { pitch, profile }}, 201);
     }
 );
 

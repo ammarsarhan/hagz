@@ -1,7 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import { client } from '@/lib/client';
-import { File } from 'expo-file-system';
 
 const mimeTypes = ['image/jpeg', 'image/png', 'image/webp'] as const;
 type AllowedMimeType = (typeof mimeTypes)[number];
