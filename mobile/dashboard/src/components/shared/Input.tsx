@@ -134,7 +134,7 @@ export default function Input({
             value={value}
             onChangeText={onChangeText}
             multiline={multiline}
-            numberOfLines={numberOfLines}
+            numberOfLines={multiline ? numberOfLines : 1}
             scrollEnabled={!multiline}
             textAlignVertical={multiline ? 'top' : 'center'}
             style={multiline ? { minHeight } : undefined}

@@ -84,7 +84,7 @@ export default function Details() {
           </View>
         </View>
       </KeyboardAwareScrollView>
-      <Footer disabled={!isValid} href={"/(onboarding)/owner/(steps)/location"}/>
+      <Footer disabled={isValid} href={"/(onboarding)/owner/(steps)/location"}/>
     </Animated.View>
   );
 }
