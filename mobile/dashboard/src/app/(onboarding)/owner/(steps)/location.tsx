@@ -77,7 +77,8 @@ export default function Location() {
 
   const createPitchMutation = useMutation({
     mutationFn: async () => {
-      const res = await client.dashboard.pitches.$post({ json: state });
+      const payload = { ...state, taxId: state.taxId?.trim() === "" ? undefined : state.taxId };
+      const res = await client.dashboard.pitches.$post({ json: payload });
 
       if (!res.ok) {
         const error = await parseClientError(res);
@@ -92,8 +93,6 @@ export default function Location() {
       router.push("/(onboarding)/owner/(steps)/media");
     },
     onError: (err) => {
-      console.log(err);
-
       if (err instanceof ApiError) {
         Alert.alert("Pitch creation failed", err.message);
       } else {
@@ -156,7 +155,7 @@ export default function Location() {
             </View>
           </View>
         </KeyboardAwareScrollView>
-        <Footer disabled={isValid} isPending={createPitchMutation.isPending} onPress={handleSubmit}/>
+        <Footer disabled={!isValid} isPending={createPitchMutation.isPending} onPress={handleSubmit}/>
       </Animated.View>
     </>
   );

@@ -93,8 +93,6 @@ export default function Notifications() {
             setUser(profile);
         },
         onError: (err) => {
-            console.log(err);
-
             if (err instanceof ApiError) {
                 Alert.alert("Notification update failed", err.message);
             } else {

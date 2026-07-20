@@ -22,7 +22,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     PROFILE_ACCESS_FORBIDDEN: "You don't have access to this profile.",
 
     // Google Maps
-    GOOGLE_MAPS_LINK_INVALID: "Please use a proper Google Maps link.",
+    GOOGLE_MAPS_LINK_INVALID: "Could not find the location associated with the Google Maps link provided.",
 
     // Pitch
     PITCH_DRAFT_EXISTS: "You already have a draft pitch in progress.",

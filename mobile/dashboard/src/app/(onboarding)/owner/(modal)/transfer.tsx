@@ -27,8 +27,6 @@ export default function Transfer() {
             setUser(profile);
         },
         onError: (err) => {
-            console.log(err);
-
             if (err instanceof ApiError) {
                 Alert.alert("Account transfer failed", err.message);
             } else {

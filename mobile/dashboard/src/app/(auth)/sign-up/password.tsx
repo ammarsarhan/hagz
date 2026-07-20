@@ -44,8 +44,6 @@ export default function Password() {
             if (user.preferences.role === "OWNER") router.push("/(onboarding)/owner");
         },
         onError: (err) => {
-            console.log(err);
-
             if (err instanceof ApiError) {
                 Alert.alert("Sign up failed", err.message);
             } else {

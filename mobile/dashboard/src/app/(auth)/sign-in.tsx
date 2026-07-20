@@ -41,11 +41,8 @@ export default function SignIn() {
         setUser(user);
       }
       // Let the Stack.protected pattern we have instilled across the application handle the situation.
-      console.log("Reached here!")
     },
     onError: (err) => {
-      console.log(err);
-
       if (err instanceof ApiError) {
         Alert.alert("Sign in failed", err.message);
       } else {

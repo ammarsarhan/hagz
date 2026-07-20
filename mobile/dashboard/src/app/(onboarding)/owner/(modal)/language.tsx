@@ -120,8 +120,6 @@ export default function Language() {
             setUser(profile);
         },
         onError: (err) => {
-            console.log(err);
-
             if (err instanceof ApiError) {
                 Alert.alert("Language update failed", err.message);
             } else {

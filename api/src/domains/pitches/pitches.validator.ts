@@ -54,27 +54,6 @@ const trim =
         .string(error)
         .transform(s => s.trim());
 
-const extractCoordinates = (url: string) => {
-    const patterns = [
-        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-        /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-        /%40(-?\d+\.\d+),(-?\d+\.\d+)/,
-    ];
-
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) {
-            const lat = parseFloat(match[1]);
-            const lng = parseFloat(match[2]);
-            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180)
-                return { latitude: lat, longitude: lng };
-        }
-    };
-
-    return null;
-};
-
 const pitchSchema = z.object({
     name: 
         trim("Pitch name is required.")
@@ -112,6 +91,35 @@ const pitchSchema = z.object({
     googleMapsLink: z
         .url("Please provide a valid Google Maps link."),
 });
+
+export const parseGoogleMapsLink = (url: string) => {
+    const patterns = [
+        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+        /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+    ];
+
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1] && match[2]) {
+            return { 
+                type: 'coordinates' as const, 
+                latitude: parseFloat(match[1]), 
+                longitude: parseFloat(match[2]) 
+            };
+        }
+    }
+
+    const address = url.match(/[?&]q=([^&]+)/);
+    if (address && address[1]) {
+        return { 
+            type: 'address' as const, 
+            query: decodeURIComponent(address[1].replace(/\+/g, '%20')) 
+        };
+    }
+
+    return null;
+};
 
 export type CreatePitchPayloadType = z.infer<typeof createPitchSchema>;
 

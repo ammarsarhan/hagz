@@ -7,9 +7,9 @@ export default function parseGoogleMapsLink(url: string) {
 
     for (const pattern of patterns) {
         const match = url.match(pattern);
-        if (match) {
+        if (match && match[1] && match[2]) {
             return { 
-                type: 'coordinates', 
+                type: 'coordinates' as const, 
                 latitude: parseFloat(match[1]), 
                 longitude: parseFloat(match[2]) 
             };
@@ -17,9 +17,9 @@ export default function parseGoogleMapsLink(url: string) {
     }
 
     const address = url.match(/[?&]q=([^&]+)/);
-    if (address) {
+    if (address && address[1]) {
         return { 
-            type: 'address', 
+            type: 'address' as const, 
             query: decodeURIComponent(address[1].replace(/\+/g, '%20')) 
         };
     }

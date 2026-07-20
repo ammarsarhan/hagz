@@ -140,8 +140,6 @@ export default function Index() {
             });
         },
         onError: (err) => {
-            console.log(err);
-
             if (err instanceof ApiError) {
                 Alert.alert("Profile update failed", err.message);
             } else {
@@ -156,8 +154,6 @@ export default function Index() {
             setUser(profile);
         },
         onError: (err) => {
-            console.log(err);
-
             if (err instanceof ApiError) {
                 Alert.alert("Avatar upload failed", err.message);
             } else if (err instanceof Error) {

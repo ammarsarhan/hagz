@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { createPitchFeedResponse, normalizeRawPitchFeed, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { createPitchFeedResponse, normalizeRawPitchFeed, parseGoogleMapsLink, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
 import { GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 

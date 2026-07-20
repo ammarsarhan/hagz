@@ -64,11 +64,11 @@ const AreaRow = ({ area, selected, onSelect }: AreaRowProps) => {
             className="flex-row items-center justify-between rounded-lg px-3 py-4"
             style={animatedStyle}
         >
-            <Text className={selected ? "font-medium text-black" : "text-gray-500"}>
+            <Text className={selected ? "font-medium text-primary" : "text-gray-500"}>
                 {area.name}
             </Text>
             {
-                selected && <IconCheck size={16} className="text-primary" />
+                selected && <IconCheck size={18} color="#1C04EA" />
             }
         </AnimatedPressable>
     );
