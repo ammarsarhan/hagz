@@ -7,8 +7,10 @@ import Avatar from "@/components/shared/Avatar";
 import Button from "@/components/shared/Button";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { IconBallFootball, IconChevronRight, IconLayoutDashboard, IconPhotoAlt, IconTextCaption } from "@tabler/icons-react-native";
+import { IconBallFootball, IconCheck, IconCheckbox, IconChevronRight, IconLayoutDashboard, IconPhotoAlt, IconTextCaption } from "@tabler/icons-react-native";
 import useDraftQuery from "@/lib/hooks/useDraftQuery";
+import cn from "@/lib/cn";
+import { ReactNode } from "react";
 
 // We have 3 cases:
 // Either that the owner does not have any pitches at all yet.
@@ -16,24 +18,33 @@ import useDraftQuery from "@/lib/hooks/useDraftQuery";
 // Or they have already submitted a venue to be reviewed.
 
 interface StepProps {
+    icon: ReactNode;
     title: string;
     description: string;
-    isAccessible: boolean;
+    isActive: boolean;
+    isComplete: boolean;
     href: Href
 }
 
-const Step = ({ } : StepProps) => {
+const Step = ({ icon, title, description, href, isActive, isComplete } : StepProps) => {
+    if (isComplete) return null;
+
     return (
-        <View className="p-5 flex-row items-center gap-x-4 rounded-lg bg-white border border-gray-100">
-            <IconTextCaption color={"#000"} width={24} height={24}/>
-            <View className="flex-1">
-                <Text className="font-semibold">Details</Text>
-                <Text className="text-sm text-gray-500">Add basic information about your pitch.</Text>
-            </View>
-            <View>
-                <IconChevronRight width={20} height={20} color="#9CA3AF"/>
-            </View>
-        </View>
+        <Link asChild href={href} disabled={!isActive}>
+            <Pressable className={cn("p-5 flex-row items-center gap-x-4 rounded-lg", isActive ? "bg-white border border-gray-100 " : "bg-gray-50")}>
+                {icon}
+                <View className="flex-1">
+                    <Text className={cn(isActive ? "font-semibold" : "font-medium text-gray-400")}>{title}</Text>
+                    <Text className={cn("text-sm", isActive ? "text-gray-500" : "text-gray-400")}>{description}</Text>
+                </View>
+                {
+                    isActive &&
+                    <View>
+                        <IconChevronRight width={20} height={20} color="#9CA3AF"/>
+                    </View>
+                }
+            </Pressable>
+        </Link>
     )
 };
 
@@ -41,14 +52,28 @@ export default function Index() {
     const { user } = useRequiredAuth();
     const { draft, query } = useDraftQuery();
 
+    const pitch = query.data;
+
+    const completed = {
+        details: !!draft,
+        media: !!pitch && pitch.media.length >= 3,
+        amenities: !!pitch && pitch.amenities.length > 0,
+        grounds: !!pitch && pitch.grounds.length > 0,
+    };
+
+    const active = {
+        details: !completed.details,
+        media: completed.details && !completed.media,
+        amenities: completed.media && !completed.amenities,
+        grounds: completed.amenities && !completed.grounds,
+    };
+
     const handleCopyRef = async () => {
         if (draft) {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             await Clipboard.setStringAsync(`#${draft!.pitchId}`);
         };
     };
-
-    console.log(draft, query.data);
 
     return (
         <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1">
@@ -84,47 +109,46 @@ export default function Index() {
                     </Text> 
                 </View>
                 <View className="gap-y-4 flex-1 w-full">
-                    {
-                        !draft &&
-                        <View className="p-5 flex-row items-center gap-x-4 rounded-lg bg-white border border-gray-100">
-                            <IconTextCaption color={"#000"} width={24} height={24}/>
-                            <View className="flex-1">
-                                <Text className="font-semibold">Details</Text>
-                                <Text className="text-sm text-gray-500">Add basic information about your pitch.</Text>
-                            </View>
-                            <View>
-                                <IconChevronRight width={20} height={20} color="#9CA3AF"/>
-                            </View>
-                        </View>
-                    }
-                    <View className="p-5 flex-row items-center gap-x-4 rounded-lg bg-white border border-gray-100">
-                        <IconPhotoAlt color={"#9CA3AF"} width={24} height={24}/>
-                        <View className="flex-1">
-                            <Text className="font-medium">Media & Images</Text>
-                            <Text className="text-sm text-gray-500">Take pictures of your pitch, grounds, and amenities to show users.</Text>
-                        </View>
-                        <View>
-                            <IconChevronRight width={20} height={20} color="#9CA3AF"/>
-                        </View>
-                    </View>
-                    <View className="p-5 flex-row items-center gap-x-4 rounded-lg bg-gray-50">
-                        <IconBallFootball color={"#9CA3AF"} width={24} height={24}/>
-                        <View className="flex-1">
-                            <Text className="font-medium text-gray-400">Amenities</Text>
-                            <Text className="text-sm text-gray-400">Select amenities and how your venue prices them.</Text>
-                        </View>
-                    </View>
-                    <View className="p-5 flex-row items-center gap-x-4 rounded-lg bg-gray-50">
-                        <IconLayoutDashboard color={"#9CA3AF"} width={24} height={24}/>
-                        <View className="flex-1">
-                            <Text className="font-medium text-gray-400">Grounds</Text>
-                            <Text className="text-sm text-gray-400">Create grounds and specify their settings & schedule.</Text>
-                        </View>
-                    </View>
+                    <Step 
+                        icon={<IconTextCaption color={"#000"} width={24} height={24}/>}
+                        title="Details"
+                        description="Add basic information about your pitch."
+                        isActive={active.details}
+                        isComplete={completed.details}
+                        href="/(onboarding)/owner/(steps)/details"
+                    />
+                    <Step 
+                        icon={<IconPhotoAlt color={"#9CA3AF"} width={24} height={24}/>}
+                        title="Media & Images"
+                        description="Take pictures of your pitch, grounds, and amenities to show users."
+                        isActive={active.media}
+                        isComplete={completed.media}
+                        href="/(onboarding)/owner/(steps)/media"
+                    />
+                    <Step 
+                        icon={<IconBallFootball color={"#9CA3AF"} width={24} height={24}/>}
+                        title="Amenities"
+                        description="Select amenities and how your venue prices them."
+                        isActive={active.amenities}
+                        isComplete={completed.amenities}
+                        href="/(onboarding)/owner/(steps)/amenities"
+                    />
+                    <Step 
+                        icon={<IconLayoutDashboard color={"#9CA3AF"} width={24} height={24}/>}
+                        title="Grounds"
+                        description="Create grounds and specify their settings & schedule."
+                        isActive={active.grounds}
+                        isComplete={completed.grounds}
+                        href="/(onboarding)/owner/(steps)/grounds"
+                    />
                 </View>
                 <Link asChild href="/(onboarding)/owner/(steps)/details">
                     <Button className="bg-primary border-primary">
-                        <Text className="text-white font-medium">Get Started</Text>
+                        <Text className="text-white font-medium">
+                            {
+                                draft ? "Continue editing" : "Get Started"
+                            }
+                        </Text>
                     </Button>
                 </Link>
             </SafeAreaView>

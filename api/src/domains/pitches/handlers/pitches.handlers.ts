@@ -52,14 +52,15 @@ export const updatePitchHandler = factory.createHandlers(
     guard("properties", PermissionLevel.WRITE),
     validate("json", updatePitchSchema),
     async (c) => {
+        const userId = c.var.id;
         const pitchId = c.req.param("pitchId");
         const payload = c.req.valid("json");
         
         if (!pitchId) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         
-        const pitch = await pitchService.updatePitch(pitchId, payload);
+        const { updated, profile } = await pitchService.updatePitch(userId, pitchId, payload);
         
-        return c.json({ success: true, data: { pitch }}, 200);
+        return c.json({ success: true, data: { pitch: updated, profile }}, 200);
     }
 );
 

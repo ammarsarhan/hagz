@@ -1,41 +1,17 @@
 import Footer from "@/components/onboarding/Footer";
 import Header from "@/components/onboarding/Header";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as ImagePicker from 'expo-image-picker';
-import { IconPhotoUp, IconUpload } from "@tabler/icons-react-native";
-import Button from "@/components/shared/Button";
 
-export default function Location() {
+export default function Amenities() {
     const insets = useSafeAreaInsets();
     const scroll = useSharedValue(0);
 
     const handleScroll = useAnimatedScrollHandler((event) => {
         scroll.value = event.contentOffset.y;
     });
-
-    const selectPitchMedia = async () => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        
-        if (!permission.granted) {
-            alert("Permission to access photos is required to upload image.");
-            return;
-        };
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-            selectionLimit: 1
-        });
-
-        if (!result.canceled) {
-
-        }
-    };
 
     return (
         <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 bg-white">
@@ -47,16 +23,15 @@ export default function Location() {
                 showsVerticalScrollIndicator={false}
                 onScroll={handleScroll}
             >
-                <Header scroll={scroll} progress={40}/>
+                <Header scroll={scroll} progress={65}/>
                 <View className="px-6 flex-1 pt-3">
                     <View className="gap-y-3 mb-12">
-                        <Text className="text-4xl font-semibold">Let&apos;s add some photos of your pitch!</Text>
-                        <Text className="text-gray-500">We&apos;ll need at least 3 high quality photos to accurately portray your venue to customers.</Text>
+                        <Text className="text-4xl font-semibold">Select your amenities</Text>
+                        <Text className="text-gray-500">You&apos;ll need at least one amenity that applies to your pitch. The more the merrier!</Text>
                     </View>
-
                 </View>
             </KeyboardAwareScrollView>
-            <Footer disabled={false} href={"/(onboarding)/owner/(steps)/amenities"}/>
+            <Footer disabled={false} href={"/(onboarding)/owner/(steps)/grounds"}/>
         </Animated.View>
     );
 }

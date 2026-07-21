@@ -14,6 +14,8 @@ export default function StepsLayout() {
                 <Stack.Screen name="details" />
                 <Stack.Screen name="location" />
                 <Stack.Screen name="media" />
+                <Stack.Screen name="amenities" />
+                <Stack.Screen name="grounds" />
             </Stack>
         </>
     );

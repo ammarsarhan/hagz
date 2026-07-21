@@ -51,13 +51,13 @@ export default function Details() {
     <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 bg-white">
       <KeyboardAwareScrollView
         className="flex-1"
-        bottomOffset={100 + insets.bottom}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+        bottomOffset={120 + insets.bottom}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
       >
-        <Header scroll={scroll} progress={5} />
+        <Header scroll={scroll} progress={10}/>
         <View className="px-6 flex-1 pt-3">
           <View className="gap-y-3 mb-10">
             <Text className="text-4xl font-semibold">What is your venue&apos;s name?</Text>

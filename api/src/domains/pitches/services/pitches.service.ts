@@ -205,7 +205,7 @@ export default class PitchService {
         return pitch;
     };
     
-    updatePitch = async (pitchId: string, payload: UpdatePitchPayloadType) => {
+    updatePitch = async (userId: string, pitchId: string, payload: UpdatePitchPayloadType) => {
         const pitch = await prisma.pitch.findFirst({
             where: { 
                 id: pitchId,
@@ -241,7 +241,12 @@ export default class PitchService {
             }
         });
 
-        return updated;
+        const user = await prisma.user.findUnique({ where: { id: userId }, include: { preferences: true, pitches: { include: { pitch: { select: { status: true } } } } } });
+        if (!user || !user.preferences) throw new InternalServerError("Failed to fetch updated user profile.");
+
+        const profile = createUserResponse(user, user.preferences, user.pitches);
+
+        return { updated, profile};
     };
 
     submitPitch = async (pitchId: string) => {

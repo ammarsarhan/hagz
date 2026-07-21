@@ -19,6 +19,7 @@ import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "reac
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@tanstack/react-query";
 import * as z from 'zod';
+import useDraftQuery from "@/lib/hooks/useDraftQuery";
 
 const schema = z.object({
     street: 
@@ -50,6 +51,7 @@ const schema = z.object({
 
 export default function Location() {
   const { state, setState } = usePitchDraftForm();
+  const { draft } = useDraftQuery();
   const { setUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -78,7 +80,18 @@ export default function Location() {
   const createPitchMutation = useMutation({
     mutationFn: async () => {
       const payload = { ...state, taxId: state.taxId?.trim() === "" ? undefined : state.taxId };
-      const res = await client.dashboard.pitches.$post({ json: payload });
+
+      // Make sure the client sends a PATCH if the resource already exists.
+      const res = draft
+        ? await client.dashboard.pitches[":pitchId"].$patch({
+            param: {
+              pitchId: draft.pitchId,
+            },
+            json: payload,
+          })
+        : await client.dashboard.pitches.$post({
+            json: payload,
+          });
 
       if (!res.ok) {
         const error = await parseClientError(res);
@@ -117,13 +130,13 @@ export default function Location() {
       <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 bg-white">
         <KeyboardAwareScrollView
           className="flex-1"
-          bottomOffset={100 + insets.bottom}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+          bottomOffset={120 + insets.bottom}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
         >
-          <Header scroll={scroll} progress={15} />
+          <Header scroll={scroll} progress={20}/>
           <View className="px-6 flex-1 pt-3">
             <View className="gap-y-3 mb-10">
               <Text className="text-4xl font-semibold">Where is your venue located?</Text>
