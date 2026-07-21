@@ -162,7 +162,7 @@ export default class PitchService {
                 },
             });
 
-            const user = await prisma.user.findUnique({ where: { id: userId }, include: { pitches: { include: { pitch: { select: { status: true } } } } } });
+            const user = await tx.user.findUnique({ where: { id: userId }, include: { pitches: { include: { pitch: { select: { status: true } } } } } });
             if (!user || !preferences) throw new InternalServerError("Failed to fetch updated user profile.");
 
             const profile = createUserResponse(user, preferences, user.pitches);
