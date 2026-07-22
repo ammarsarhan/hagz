@@ -18,6 +18,7 @@ import type { Prisma } from "@/generated/prisma/client.js";
 import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
 import verifyGoogleMapsLink from "@/shared/lib/providers/maps.js";
+import { bytesToTimeRanges } from "@/shared/lib/utils/time.js";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -190,7 +191,34 @@ export default class PitchService {
         });
 
         if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-        return pitch;
+        
+        // Not the cleanest implementation but it's fine.
+        if (!pitch.grounds.every(ground => ground.settings)) {
+            const error = pitch.grounds.find((ground) => !ground.settings);
+
+            if (error) {
+                throw new InternalServerError(
+                    `Ground ${error.id} is missing settings.`,
+                    ERROR_CODES.GROUND_SETTINGS_MISSING
+                );
+            };
+        };
+
+        const data = {
+            ...pitch,
+            grounds: pitch.grounds.map((ground) => ({
+                ...ground,
+                settings: ground.settings!,
+                schedule: ground.schedule.map((schedule) => ({
+                    ...schedule,
+                    baseHours: bytesToTimeRanges(schedule.baseHours),
+                    peakHours: bytesToTimeRanges(schedule.peakHours),
+                    discountHours: bytesToTimeRanges(schedule.discountHours),
+                })),
+            })),
+        };
+
+        return data;
     };
 
     fetchUserPitch = async (pitchId: string) => {
