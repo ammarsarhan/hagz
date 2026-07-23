@@ -1,4 +1,3 @@
-import { useRequiredAuth } from "@/context/AuthContext";
 import { Href, Link, router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -7,7 +6,7 @@ import Avatar from "@/components/shared/Avatar";
 import Button from "@/components/shared/Button";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { IconBallFootball, IconCheck, IconCheckbox, IconChevronRight, IconLayoutDashboard, IconPhotoAlt, IconTextCaption } from "@tabler/icons-react-native";
+import { IconBallFootball, IconChevronRight, IconLayoutDashboard, IconPhotoAlt, IconTextCaption } from "@tabler/icons-react-native";
 import useDraftQuery from "@/lib/hooks/useDraftQuery";
 import cn from "@/lib/cn";
 import { ReactNode } from "react";
@@ -49,7 +48,6 @@ const Step = ({ icon, title, description, href, isActive, isComplete } : StepPro
 };
 
 export default function Index() {
-    const { user } = useRequiredAuth();
     const { draft, query } = useDraftQuery();
 
     const pitch = query.data;

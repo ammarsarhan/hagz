@@ -1,25 +1,41 @@
+import { useEffect, useState } from "react";
 import { Modal, Pressable } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, runOnJS } from "react-native-reanimated";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconX } from "@tabler/icons-react-native";
 
-export default function MediaScreen({ uri, setUri } : { uri: string | null, setUri: (uri: string | null) => void }) {
+export default function MediaScreen({ uri, setUri }: { uri: string | null; setUri: (uri: string | null) => void }) {
     const insets = useSafeAreaInsets();
+
+    const [contentUri, setContentUri] = useState<string | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+
+    useEffect(() => {
+        if (uri) {
+            setContentUri(uri);
+            setModalVisible(true);
+        } else {
+            setContentUri(null);
+        }
+    }, [uri]);
 
     return (
         <Modal
-            visible={uri !== null}
+            visible={modalVisible}
             transparent
             statusBarTranslucent
             animationType="none"
             onRequestClose={() => setUri(null)}
         >
             {
-                uri && (
+                contentUri && (
                     <Animated.View
                         entering={FadeIn.duration(200)}
-                        exiting={FadeOut.duration(150)}
+                        exiting={FadeOut.duration(150).withCallback((finished) => {
+                            "worklet";
+                            if (finished) runOnJS(setModalVisible)(false);
+                        })}
                         className="flex-1 bg-black"
                     >
                         <Pressable
@@ -27,9 +43,9 @@ export default function MediaScreen({ uri, setUri } : { uri: string | null, setU
                             className="flex-1 items-center justify-center"
                         >
                             <Image
-                                source={{ uri: uri }}
+                                source={{ uri: contentUri }}
                                 style={{ width: "100%", height: "100%" }}
-                                resizeMode="contain"
+                                contentFit="contain"
                             />
                         </Pressable>
                         <Pressable
@@ -43,5 +59,5 @@ export default function MediaScreen({ uri, setUri } : { uri: string | null, setU
                 )
             }
         </Modal>
-    )
+    );
 }

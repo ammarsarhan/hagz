@@ -14,7 +14,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { IconPhoto, IconPhotoPlus, IconPlus, IconX } from "@tabler/icons-react-native";
+import { IconPhoto, IconPhotoPlus, IconPlus, IconSparkle, IconX } from "@tabler/icons-react-native";
 import Button from "@/components/shared/Button";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import useDraftQuery from "@/lib/hooks/useDraftQuery";
@@ -216,7 +216,7 @@ export default function MediaView() {
                             ) : (
                                 <View className="mb-4 gap-3">
                                     {
-                                        sortedMedia.map((item) => {
+                                        sortedMedia.map((item, index) => {
                                             const key = item.state === "UPLOADED" ? item.id : item.localId;
                                             const uri = item.state === "UPLOADED" ? item.url : item.previewUrl;
                                             const isDeleting = item.state === "UPLOADED" && deletingIds.has(item.id);

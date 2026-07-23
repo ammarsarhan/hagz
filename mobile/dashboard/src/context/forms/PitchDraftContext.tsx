@@ -74,6 +74,7 @@ export function HydratePitchDraft({ children }: { children: React.ReactNode }) {
     const { draft, query } = useDraftQuery();
 
     const hydrated = useRef(false);
+    const hasRendered = useRef(false);
 
     useEffect(() => {
         if (hydrated.current) return;
@@ -86,11 +87,12 @@ export function HydratePitchDraft({ children }: { children: React.ReactNode }) {
         hydrated.current = true;
     }, [query.data, setState]);
 
-    // No draft exists — nothing to wait for, render immediately.
-    if (!draft) return <>{children}</>;
+    const isLoading = !hasRendered.current && !!draft && query.isPending;
 
-    // Draft exists but hasn't loaded yet, block rendering until hydrated.
-    if (query.isPending) return null;
+    useEffect(() => {
+        if (!isLoading) hasRendered.current = true;
+    });
 
+    if (isLoading) return null;
     return <>{children}</>;
 }
