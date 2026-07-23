@@ -33,7 +33,7 @@ export default class MediaService {
         const key = `pitches/${pitchId}/${randomUUID()}.${extension}`;
 
         // Permanent public read URL stored in the DB.
-        const url = `https://${process.env.CLOUDFRONT_DOMAIN}/${key}`;
+        const url = process.env.NODE_ENV === "production" ? `https://${process.env.CLOUDFRONT_DOMAIN}/${key}`: `${process.env.LOCALSTACK_URL}/${BUCKET}/${key}`;
 
         const command = new PutObjectCommand({
             Bucket: BUCKET,
@@ -45,16 +45,24 @@ export default class MediaService {
         // Temporary presigned URL returned to the client for uploading.
         const presign = await getSignedUrl(s3.presign, command, { expiresIn: 300 });
 
-        const media = await prisma.pitchMedia.create({
-            data: {
-                pitchId,
-                key,
-                url,
-                type: payload.contentType.startsWith("video/") ? MediaType.VIDEO : MediaType.IMAGE,
-                contentType: payload.contentType,
-                status: MediaStatus.PENDING,
-            }
-        });
+        const media = await prisma.$transaction(async (tx) => {
+            const last = await tx.pitchMedia.aggregate({
+                where: { pitchId },
+                _max: { order: true }
+            });
+
+            return tx.pitchMedia.create({
+                data: {
+                    pitchId,
+                    key,
+                    url,
+                    type: payload.contentType.startsWith("video/") ? MediaType.VIDEO : MediaType.IMAGE,
+                    contentType: payload.contentType,
+                    status: MediaStatus.PENDING,
+                    order: (last._max.order ?? -1) + 1
+                }
+            });
+        }, { isolationLevel: "Serializable" });
 
         return { presign, id: media.id };
     };

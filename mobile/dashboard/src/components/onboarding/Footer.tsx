@@ -5,10 +5,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from "react-native-reanimated";
 import Button from "@/components/shared/Button";
 import { Href, Link } from "expo-router";
+import { ReactNode } from "react";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function Footer({ disabled, isPending, href, onPress } : { disabled: boolean, isPending?: boolean, href?: Href, onPress?: () => void }) {
+export default function Footer({ disabled, isPending, href, onPress, children } : { disabled: boolean, isPending?: boolean, href?: Href, onPress?: () => void, children?: ReactNode }) {
     if (href && onPress) throw new Error("Can not pass both an href and an onPress.");
 
     const insets = useSafeAreaInsets();
@@ -49,13 +50,17 @@ export default function Footer({ disabled, isPending, href, onPress } : { disabl
                 style={containerStyle}
                 pointerEvents="box-none"
             >
-                <AnimatedPressable 
-                    className="size-14 items-center justify-center rounded-full bg-gray-100" 
-                    onPress={Keyboard.dismiss}
-                    style={chevronStyle}
-                >
-                    <IconChevronDown size={22} />
-                </AnimatedPressable>
+                {
+                    !!children ?
+                    <>{children}</> :
+                    <AnimatedPressable 
+                        className="size-14 items-center justify-center rounded-full bg-gray-100" 
+                        onPress={Keyboard.dismiss}
+                        style={chevronStyle}
+                    >
+                        <IconChevronDown size={22} />
+                    </AnimatedPressable>
+                }
                 {
                     href &&
                     <Link asChild href={href}>

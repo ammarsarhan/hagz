@@ -378,7 +378,7 @@ model PitchMedia {
   type        MediaType   @default(IMAGE)
   contentType String
   status      MediaStatus @default(PENDING)
-  order       Int         @default(autoincrement())
+  order       Int         
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

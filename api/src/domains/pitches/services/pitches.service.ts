@@ -180,13 +180,24 @@ export default class PitchService {
             },
             include: {
                 grounds: {
+                    where: {
+                        status: {
+                            not: GroundStatus.DELETED
+                        }
+                    },
                     include: {
                         schedule: true,
                         settings: true
                     }
                 },
                 amenities: true,
-                media: true
+                media: {
+                    where: {
+                        status: {
+                            not: MediaStatus.DELETED
+                        }
+                    }
+                }
             }
         });
 

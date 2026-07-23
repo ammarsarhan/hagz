@@ -1,6 +1,6 @@
 import { Pressable, View, Text, ScrollView, Alert, ActivityIndicator } from "react-native";
 import ProfilePicture from "@/components/onboarding/ProfilePicture";
-import { uploadAvatar } from "@/lib/image";
+import { uploadAvatar } from "@/lib/image/avatar";
 import * as ImagePicker from 'expo-image-picker';
 import Input from "@/components/shared/Input";
 import { useAuth, useRequiredAuth } from "@/context/AuthContext";
