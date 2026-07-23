@@ -14,7 +14,7 @@ interface InputProps {
   placeholder?: string;
   className?: string;
   containerClassName?: string;
-  type?: 'text' | 'phone' | 'password' | 'number';
+  type?: 'text' | 'phone' | 'password' | 'number' | 'price';
   textContentType?: 'newPassword' | 'password';
   multiline?: boolean;
   numberOfLines?: number;
@@ -74,14 +74,66 @@ export default function Input({
         </View>
       );
     }
+    case 'price': {
+      return (
+        <Animated.View
+          layout={LinearTransition.duration(200)}
+          className={cn('w-full gap-y-2', containerClassName)}
+        >
+          {
+            (label || information) && (
+              <View className="flex-row items-center gap-x-2">
+                {!!label && <Text className="text-left font-medium">{label}</Text>}
+                {!!information && (
+                  <Pressable onPress={() => setIsInformation((prev) => !prev)}>
+                    <IconInfoCircle width={20} height={20} color="#6B7280" />
+                  </Pressable>
+                )}
+              </View>
+            )
+          }
+          <View className="w-full flex-row">
+            <View className="min-h-[48px] flex-row items-center justify-center rounded-l-lg border-y border-l border-gray-100 pl-3">
+              <Text className="text-gray-500">EGP</Text>
+            </View>
+            <TextInput
+              keyboardType="numeric"
+              placeholderTextColor="#6B7280"
+              placeholder={placeholder}
+              value={value}
+              onChangeText={onChangeText}
+              className={cn(
+                'min-h-[48px] flex-1 rounded-r-lg border-y border-r border-gray-100 pl-2 pr-3 py-3',
+                isRTL ? 'text-right' : 'text-left',
+                className
+              )}
+            />
+          </View>
+          {
+            isInformation && (
+              <Animated.View
+                entering={FadeIn}
+                exiting={FadeOut}
+                layout={LinearTransition.duration(200)}
+                className="pb-1"
+              >
+                <Text className="text-sm text-gray-500">{information}</Text>
+              </Animated.View>
+            )
+          }
+        </Animated.View>
+      );
+    }
     case 'password': {
       return (
         <View className={cn('w-full gap-y-2', containerClassName)}>
-          {label && (
-            <Text className="text-left font-medium">
-              {t('components.shared.input.password.label')}
-            </Text>
-          )}
+          {
+            label && (
+              <Text className="text-left font-medium">
+                {t('components.shared.input.password.label')}
+              </Text>
+            )
+          }
           <View className="w-full flex-row items-center overflow-hidden border border-gray-100 rounded-lg min-h-[48px]">
             <TextInput
               secureTextEntry={!isVisible}
@@ -96,15 +148,17 @@ export default function Input({
             <Pressable
               onPress={() => setIsVisible((v) => !v)}
               className="h-12 items-center justify-center px-3">
-              {isVisible ? (
-                <Animated.View entering={FadeIn} exiting={FadeOut} key="off">
-                  <IconEyeOff size={20} color="#AAAAAA" />
-                </Animated.View>
-              ) : (
-                <Animated.View entering={FadeIn} exiting={FadeOut} key="on">
-                  <IconEye size={20} color="#AAAAAA" />
-                </Animated.View>
-              )}
+              {
+                isVisible ? (
+                  <Animated.View entering={FadeIn} exiting={FadeOut} key="off">
+                    <IconEyeOff size={20} color="#AAAAAA" />
+                  </Animated.View>
+                ) : (
+                  <Animated.View entering={FadeIn} exiting={FadeOut} key="on">
+                    <IconEye size={20} color="#AAAAAA" />
+                  </Animated.View>
+                )
+              }
             </Pressable>
           </View>
         </View>
@@ -163,4 +217,4 @@ export default function Input({
       );
     }
   }
-}
+};

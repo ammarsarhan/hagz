@@ -57,7 +57,7 @@ export async function seedPitches() {
           prisma.amenity.create({
             data: {
               pitchId: pitch.id,
-              order: index,
+              order: index + 1,
               name: name as AmenityName,
               description: faker.lorem.sentence(),
             },

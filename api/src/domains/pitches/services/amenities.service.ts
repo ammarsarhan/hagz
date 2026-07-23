@@ -182,14 +182,13 @@ export default class AmenityService {
                 .filter(a => a.order !== order)
                 .sort((a, b) => a.order - b.order);
 
-            await Promise.all(
-                remaining.map((a, i) =>
-                    tx.amenity.update({
-                        where: { pitchId_order: { pitchId, order: a.order } },
-                        data: { order: i + 1 }
-                    })
-                )
-            );
+            for (let i = 0; i < remaining.length; i++) {
+                const a = remaining[i];
+                await tx.amenity.update({
+                    where: { pitchId_order: { pitchId, order: a.order } },
+                    data: { order: i + 1 }
+                });
+            }
 
             // Sync the denormalized amenity list.
             await tx.pitch.update({

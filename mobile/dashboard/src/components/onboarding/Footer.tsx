@@ -54,7 +54,7 @@ export default function Footer({ disabled, isPending, href, onPress, children } 
                     !!children ?
                     <>{children}</> :
                     <AnimatedPressable 
-                        className="size-14 items-center justify-center rounded-full bg-gray-100" 
+                        className="size-16 items-center justify-center rounded-full bg-gray-100" 
                         onPress={Keyboard.dismiss}
                         style={chevronStyle}
                     >
@@ -64,14 +64,14 @@ export default function Footer({ disabled, isPending, href, onPress, children } 
                 {
                     href &&
                     <Link asChild href={href}>
-                        <Button onPress={Keyboard.dismiss} className="bg-primary border-primary w-32 py-4" disabled={disabled} loading={isPending}>
+                        <Button onPress={Keyboard.dismiss} className="bg-primary border-primary w-32" disabled={disabled} loading={isPending}>
                             <Text className="text-white font-medium">Next</Text>
                         </Button>
                     </Link>
                 }
                 {
                     onPress &&
-                    <Button onPress={onPress} className="bg-primary border-primary w-32 py-4" disabled={disabled} loading={isPending}>
+                    <Button onPress={onPress} className="bg-primary border-primary w-32" disabled={disabled} loading={isPending}>
                         <Text className="text-white font-medium">Next</Text>
                     </Button>
                 }

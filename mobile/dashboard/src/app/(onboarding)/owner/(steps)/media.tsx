@@ -14,7 +14,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { IconPhoto, IconPhotoPlus, IconPlus, IconSparkle, IconX } from "@tabler/icons-react-native";
+import { IconPhoto, IconPhotoPlus, IconPlus, IconX } from "@tabler/icons-react-native";
 import Button from "@/components/shared/Button";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import useDraftQuery from "@/lib/hooks/useDraftQuery";
@@ -295,7 +295,7 @@ export default function MediaView() {
                     <AnimatedPressable 
                         entering={FadeIn.duration(100)} 
                         exiting={FadeOut.duration(100)}
-                        className="size-14 items-center justify-center rounded-full bg-primary" 
+                        className="size-16 items-center justify-center rounded-full bg-primary" 
                         onPress={handleAddPhotoSheet}
                         onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)}
                     >
