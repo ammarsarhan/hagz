@@ -24,6 +24,7 @@ import { PitchMediaPresignPayload } from "@/lib/types/pitch";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 import { Media } from "@/lib/types/media";
 import MediaScreen from "@/components/shared/MediaScreen";
+import * as Crypto from "expo-crypto";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -85,9 +86,18 @@ export default function MediaView() {
         }
     };
 
+    // Compute the next order based on the highest existing order among all media items.
+    const getNextOrder = () => {
+        const orders = state.media.map((item) => {
+            // Guard against missing order property.
+            return "order" in item && typeof item.order === "number" ? item.order : 0;
+        });
+        const maxOrder = orders.length ? Math.max(...orders) : -1;
+        return maxOrder + 1;
+    };
     const addAsset = (asset: ImagePicker.ImagePickerAsset) => {
-        const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const order = state.media.length;
+        const localId = Crypto.randomUUID();
+        const order = getNextOrder();
 
         const pending: Extract<Media, { state: "UPLOADING" }> = {
             localId,
@@ -105,7 +115,15 @@ export default function MediaView() {
 
     const remove = async (item: Media) => {
         if (item.state !== "UPLOADED") {
-            if ("localId" in item) removeLocal(item.localId);
+            if ("localId" in item) {
+                removeLocal(item.localId);
+            } else {
+                // Remove any placeholder or empty media entry not uploaded
+                setState((prev) => ({
+                    ...prev,
+                    media: prev.media.filter((m) => m !== item),
+                }));
+            }
             return;
         }
 

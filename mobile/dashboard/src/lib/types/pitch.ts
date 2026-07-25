@@ -27,6 +27,9 @@ export type GroundResponse = InferResponseType<GroundRequest['$get']>;
 type CreateGroundRequest = InferRequestType<(PitchRequest['grounds']['$post'])>;
 export type CreateGroundPayload = CreateGroundRequest["json"];
 
+type UpdateGroundRequest = InferRequestType<(PitchRequest['grounds'][':groundId']['$patch'])>;
+export type UpdateGroundPayload = UpdateGroundRequest["json"];
+
 export type PitchDraftContextType = CreatePitchPayload & {
     media: Media[],
     amenities: Amenity[],

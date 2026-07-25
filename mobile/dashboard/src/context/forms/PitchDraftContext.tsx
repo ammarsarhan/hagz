@@ -31,6 +31,7 @@ const normalizeDraftData = (pitch: PitchData) => {
 
     const normalizeGrounds = (grounds: (typeof pitch)['grounds']) => {
         return grounds.map((ground) => ({
+            id: ground.id,
             name: ground.name,
             sport: ground.sport,
             size: ground.size,
@@ -39,18 +40,6 @@ const normalizeDraftData = (pitch: PitchData) => {
             description: ground.description ?? undefined,
             peakPrice: ground.peakPrice ?? undefined,
             discountPrice: ground.discountPrice ?? undefined,
-            schedule: ground.schedule.map((schedule) => ({
-                baseHours: schedule.baseHours,
-                peakHours: schedule.peakHours,
-                discountHours: schedule.discountHours,
-                id: schedule.id,
-                status: schedule.status,
-                groundId: schedule.groundId,
-                dayOfWeek: schedule.dayOfWeek,
-                isActive: schedule.isActive,
-                lastGeneratedAt: schedule.lastGeneratedAt,
-            })),
-            settings: ground.settings ?? undefined,
         }));
     }
 
@@ -70,22 +59,29 @@ const normalizeDraftData = (pitch: PitchData) => {
 };
 
 export function HydratePitchDraft({ children }: { children: React.ReactNode }) {
-    const { setState } = usePitchDraftForm();
+    const { state, setState } = usePitchDraftForm();
     const { draft, query } = useDraftQuery();
 
     const hydrated = useRef(false);
     const hasRendered = useRef(false);
 
     useEffect(() => {
+        // Prevent re‑hydration after local edits. If we already have any
+        // persisted data (e.g., amenities or media) in the form state, skip
+        // overwriting it with the draft fetched from the server.
         if (hydrated.current) return;
         if (!query.data) return;
+        // If the local form already contains user‑entered data, do not
+        // hydrate again (this can happen when the component unmounts/remounts
+        // during the onboarding flow).
+        const localState = state;
+        if (localState.amenities.length > 0 || localState.media.length > 0) return;
 
         const draft = query.data;
-        const state = normalizeDraftData(draft);
-
-        setState((prev) => ({ ...prev, ...state }));
+        const newState = normalizeDraftData(draft);
+        setState((prev) => ({ ...prev, ...newState }));
         hydrated.current = true;
-    }, [query.data, setState]);
+    }, [query.data, setState, state]);
 
     const isLoading = !hasRendered.current && !!draft && query.isPending;
 

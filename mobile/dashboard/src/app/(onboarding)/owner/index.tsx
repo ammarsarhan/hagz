@@ -10,11 +10,8 @@ import { IconBallFootball, IconChevronRight, IconLayoutDashboard, IconPhotoAlt, 
 import useDraftQuery from "@/lib/hooks/useDraftQuery";
 import cn from "@/lib/cn";
 import { ReactNode } from "react";
-
-// We have 3 cases:
-// Either that the owner does not have any pitches at all yet.
-// Or they have a draft in the works.
-// Or they have already submitted a venue to be reviewed.
+import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
+import { isDetailsComplete } from "@/lib/validation/onboarding";
 
 interface StepProps {
     icon: ReactNode;
@@ -49,21 +46,22 @@ const Step = ({ icon, title, description, href, isActive, isComplete } : StepPro
 
 export default function Index() {
     const { draft, query } = useDraftQuery();
+    const { state } = usePitchDraftForm();
 
     const pitch = query.data;
 
     const completed = {
-        details: !!draft,
-        media: !!pitch && pitch.media.length >= 3,
-        amenities: !!pitch && pitch.amenities.length > 0,
-        grounds: !!pitch && pitch.grounds.length > 0,
+        details: !!draft && isDetailsComplete(state),
+        media: state.media.filter(m => m.state === "UPLOADED").length >= 3,
+        amenities: state.amenities.length > 0,
+        grounds: !!pitch && pitch.status === "SUBMITTED",
     };
 
     const active = {
         details: !completed.details,
         media: completed.details && !completed.media,
-        amenities: completed.media && !completed.amenities,
-        grounds: completed.amenities && !completed.grounds,
+        amenities: completed.details && completed.media && !completed.amenities,
+        grounds: completed.details && completed.media && completed.amenities && !completed.grounds,
     };
 
     const handleCopyRef = async () => {
@@ -144,7 +142,7 @@ export default function Index() {
                     <Button className="bg-primary border-primary">
                         <Text className="text-white font-medium">
                             {
-                                draft ? "Continue editing" : "Get Started"
+                                draft ? "Go to details" : "Get Started"
                             }
                         </Text>
                     </Button>

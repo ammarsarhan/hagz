@@ -63,7 +63,8 @@ export default class GroundService {
                             size: true, 
                             basePrice: true, 
                             discountPrice: true, 
-                            peakPrice: true 
+                            peakPrice: true,
+                            status: true
                         }                     
                     }
                 }
@@ -77,7 +78,7 @@ export default class GroundService {
             if (existingGrounds.length >= config.MAXIMUM_GROUNDS_PER_PITCH) throw new BadRequestError(`You may not create more than ${config.MAXIMUM_GROUNDS_PER_PITCH} ground for a pitch. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.GROUND_CREATE_LIMIT_EXCEEDED);
 
             // 3. Make sure a ground on the same pitch with the same name does not already exist.
-            if (existingGrounds.find(ground => ground.name === payload.name)) throw new BadRequestError("A ground with that name already exists on this ground. Please choose a different name and try again.", ERROR_CODES.GROUND_ALREADY_EXISTS)
+            if (existingGrounds.find(ground => (ground.name === payload.name && ground.status !== GroundStatus.DELETED))) throw new BadRequestError("A ground with that name already exists on this ground. Please choose a different name and try again.", ERROR_CODES.GROUND_ALREADY_EXISTS)
 
             // 4. Create the actual ground model and attach the data we pass down from the handler.
             const ground = await tx.ground.create({
@@ -640,7 +641,7 @@ export default class GroundService {
         if (ground.bookings.length > 0)
             throw new BadRequestError("Can not delete a ground while bookings are undergoing or scheduled for the future. Please wait and mark the ground as under maintenance until all bookings have been completed.", ERROR_CODES.GROUND_BOOKINGS_CONFLICT);
 
-        if (ground.status !== GroundStatus.MAINTENANCE)
+        if (pitch.status === PitchStatus.LIVE && ground.status !== GroundStatus.MAINTENANCE)
             throw new BadRequestError("Can not delete a ground while it is live. Please mark it as under maintenance first before deleting.", ERROR_CODES.GROUND_TRANSITION_INVALID);
 
         if (!config.EDITABLE_STATES.includes(pitch.status))

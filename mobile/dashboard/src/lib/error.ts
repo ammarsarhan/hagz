@@ -64,7 +64,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     GROUND_SLOT_NOT_FOUND: "We couldn't find that time slot.",
     GROUND_SLOT_NOT_EDITABLE: "This time slot can't be edited right now.",
     GROUND_BOOKINGS_CONFLICT: "This conflicts with an existing booking.",
-    GROUND_TRANSITION_INVALID: "That change isn't allowed right now.",
+    GROUND_TRANSITION_INVALID: "That change isn't allowed right now due to your venue status. Please make sure your venue is in an editable state.",
 
     // Booking
     BOOKING_NOT_FOUND: "We couldn't find that booking.",

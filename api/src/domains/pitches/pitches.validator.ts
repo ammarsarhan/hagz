@@ -131,17 +131,14 @@ export const updatePitchSchema = pitchSchema.partial().refine(
     (data) => Object.keys(data).length > 0,
     { message: "At least one field must be provided to update the specified ground." }
 );
-
-export type CreateGroundPayloadType = z.infer<typeof createGroundSchema>;
-
-export const createGroundSchema = z.object({
+const baseGroundSchema = z.object({
     name: 
         trim("Ground name is required.")
         .pipe(
             z
                 .string()
-                .min(2, "Ground name must be at least 2 characters.").
-                max(100, "Ground name may not exceed 100 characters.")
+                .min(2, "Ground name must be at least 2 characters.")
+                .max(100, "Ground name may not exceed 100 characters.")
         ),
     description: 
         trim("Ground description must be valid text.")
@@ -176,12 +173,34 @@ export const createGroundSchema = z.object({
         .optional()
 });
 
+export type CreateGroundPayloadType = z.infer<typeof createGroundSchema>;
+
+export const createGroundSchema = baseGroundSchema
+    .refine(
+        (data) => data.peakPrice === undefined || data.peakPrice > data.basePrice,
+        { message: "Peak price must be greater than the base price.", path: ["peakPrice"] }
+    )
+    .refine(
+        (data) => data.discountPrice === undefined || data.discountPrice < data.basePrice,
+        { message: "Discount price must be less than the base price.", path: ["discountPrice"] }
+    );
+
 export type UpdateGroundPayloadType = z.infer<typeof updateGroundSchema>;
 
-export const updateGroundSchema = createGroundSchema.partial().refine(
-    (data) => Object.keys(data).length > 0,
-    { message: "At least one field must be provided to update the specified ground." }
-);
+export const updateGroundSchema = baseGroundSchema
+    .partial()
+    .refine(
+        (data) => Object.keys(data).length > 0,
+        { message: "At least one field must be provided to update the specified ground." }
+    )
+    .refine(
+        (data) => data.basePrice === undefined || data.peakPrice === undefined || data.peakPrice > data.basePrice,
+        { message: "Peak price must be greater than the base price.", path: ["peakPrice"] }
+    )
+    .refine(
+        (data) => data.basePrice === undefined || data.discountPrice === undefined || data.discountPrice < data.basePrice,
+        { message: "Discount price must be less than the base price.", path: ["discountPrice"] }
+    );
 
 const groundSettingsSchema = z.object({
     minimumDuration: z

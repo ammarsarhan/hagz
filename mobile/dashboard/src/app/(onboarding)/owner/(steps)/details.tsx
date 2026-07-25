@@ -9,7 +9,7 @@ import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "reac
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as z from 'zod';
 
-const schema = z.object({
+export const detailsSchema = z.object({
   name: 
       trim("Pitch name is required.")
       .pipe(
@@ -45,7 +45,7 @@ export default function Details() {
       scroll.value = event.contentOffset.y;
   });
 
-  const isValid = schema.safeParse({ ...state }).success;
+  const isValid = detailsSchema.safeParse({ ...state }).success;
 
   return (
     <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1 bg-white">
