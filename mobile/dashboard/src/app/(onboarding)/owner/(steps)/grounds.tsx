@@ -163,9 +163,11 @@ export default function Grounds() {
                                                         <Text className="text-gray-600">{surfaceMap[ground.surface].label.en}</Text>
                                                     </View>
                                                 </View>
-                                                <Text className="text-gray-500" numberOfLines={2}>
-                                                    {ground.description ? ground.description : "No additional description added."}
-                                                </Text>
+                                                <View>
+                                                    <Text className="text-gray-500" numberOfLines={2}>
+                                                        EGP {ground.basePrice}.00/hr
+                                                    </Text>
+                                                </View>
                                             </View>
                                             <View className="w-[18px] items-center pt-1">
                                                 <IconChevronRight size={18} color="#9CA3AF" />
