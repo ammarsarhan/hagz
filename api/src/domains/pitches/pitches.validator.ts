@@ -298,12 +298,12 @@ const timeRangesSchema = z.array(
     z.object({
         start: z
             .int("Start time must be a valid number.")
-            .min(0, "Start time for day may not be less than 00:00.")
-            .max(22, "Start time for day may not be more than 11:00."),
+            .min(0, "Start time for day may not be less than 00:00 AM.")
+            .max(22, "Start time for day may not be more than 11:00 PM."),
         end: z
             .int("End time must be a valid number.")
-            .min(1, "End time for day may not be less than 01:00.")
-            .max(23, "End time for day may not be more than 12:00.")
+            .min(1, "End time for day may not be less than 01:00 AM.")
+            .max(23, "End time for day may not be more than 12:00 PM.")
     })
     .refine(({ start, end }) => start < end, {
         message: "Start time must be before end time.",

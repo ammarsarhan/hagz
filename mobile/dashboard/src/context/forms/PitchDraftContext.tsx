@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createFormContext } from "@/context/FormContext";
 import useDraftQuery from "@/lib/hooks/useDraftQuery";
 import { PitchDraftContextType, PitchResponse } from "@/lib/types/pitch";
+import { buildScheduleDraft } from "@/lib/types/ground";
 
 const initial: PitchDraftContextType = { name: "", description: "", taxId: "", areaId: "", street: "", googleMapsLink: "", media: [], amenities: [], grounds: [] };
 export const { Provider: PitchDraftFormProvider, useFormContext: usePitchDraftForm } = createFormContext<PitchDraftContextType>(initial);
@@ -40,6 +41,7 @@ const normalizeDraftData = (pitch: PitchData) => {
             description: ground.description ?? undefined,
             peakPrice: ground.peakPrice ?? undefined,
             discountPrice: ground.discountPrice ?? undefined,
+            schedule: buildScheduleDraft(ground.schedule),
         }));
     }
 
@@ -71,6 +73,7 @@ export function HydratePitchDraft({ children }: { children: React.ReactNode }) {
         // overwriting it with the draft fetched from the server.
         if (hydrated.current) return;
         if (!query.data) return;
+        
         // If the local form already contains user‑entered data, do not
         // hydrate again (this can happen when the component unmounts/remounts
         // during the onboarding flow).
