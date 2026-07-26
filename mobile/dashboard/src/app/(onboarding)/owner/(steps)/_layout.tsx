@@ -16,6 +16,7 @@ export default function StepsLayout() {
                 <Stack.Screen name="media" />
                 <Stack.Screen name="amenities" />
                 <Stack.Screen name="grounds" />
+                <Stack.Screen name="(modal)" options={{ presentation: 'modal' }} />
             </Stack>
         </>
     );
