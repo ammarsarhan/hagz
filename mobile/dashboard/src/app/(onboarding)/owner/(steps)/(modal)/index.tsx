@@ -140,7 +140,12 @@ export default function Index() {
         if (isEdit && id) {
             updateMutation.mutate({ id, ground: form }, { onSuccess: () => router.push({ pathname: "/(onboarding)/owner/(steps)/(modal)/schedule", params: { groundId: id } }) });
         } else {
-            createMutation.mutate(form, { onSuccess: (ground) => router.push({ pathname: "/(onboarding)/owner/(steps)/(modal)/schedule", params: { groundId: ground.id } }) });
+            createMutation.mutate(form, {
+                onSuccess: (ground) => {
+                    router.setParams({ id: ground.id });
+                    router.push({ pathname: "/(onboarding)/owner/(steps)/(modal)/schedule", params: { groundId: ground.id } });
+                },
+            });
         }
     };
 
@@ -153,7 +158,8 @@ export default function Index() {
                 { text: "Cancel" },
                 { text: "Delete", style: "destructive", onPress: () => {
                     if (id) {
-                        removeMutation.mutate(id, { onSuccess: () => router.back() });
+                        removeMutation.mutate(id);
+                        router.back();
                     }
                 }}
             ]
@@ -198,7 +204,7 @@ export default function Index() {
                     </Text>
                     <Text className="text-gray-500">
                         {isEdit
-                            ? "Update your ground details, settings, schedule, and pricing whenever you need."
+                            ? "Update your ground details, settings, schedule, and pricing."
                             : "Add your ground details and set up your schedule and pricing."}
                     </Text>
                 </View>

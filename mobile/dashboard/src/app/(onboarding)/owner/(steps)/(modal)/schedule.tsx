@@ -10,7 +10,7 @@ import useDraftQuery from "@/lib/hooks/useDraftQuery";
 import { useGroundSchedule } from "@/lib/hooks/useGroundSchedule";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 import { DraftGround } from "@/lib/hooks/useGrounds";
-import { DayOfWeek, DAYS_OF_WEEK, GroundScheduleDraft } from "@/lib/types/ground";
+import { DayOfWeek, DAYS_OF_WEEK, GroundScheduleDraft, buildDefaultScheduleDraft } from "@/lib/types/ground";
 
 const DAY_CHARACTERS: Record<DayOfWeek, string> = {
     1: "S", 2: "M", 3: "T", 4: "W", 5: "T", 6: "F", 7: "S",
@@ -34,10 +34,8 @@ export default function Schedule() {
         if (!ground) router.back();
     }, [ground]);
 
-    const [scheduleDraft, setScheduleDraft] = useState<GroundScheduleDraft | null>(ground?.schedule ?? null);
     const [selectedDay, setSelectedDay] = useState<DayOfWeek>(1);
-
-    if (!scheduleDraft) return null;
+    const [scheduleDraft, setScheduleDraft] = useState<GroundScheduleDraft>(() => ground?.schedule ?? buildDefaultScheduleDraft());
 
     const activeDay = scheduleDraft[selectedDay];
 
@@ -53,7 +51,7 @@ export default function Schedule() {
 
     const handleSave = () => {
         saveMutation.mutate(scheduleDraft, {
-            onSuccess: () => router.push("/(onboarding)/owner/(steps)/grounds"),
+            onSuccess: () => router.dismissTo("/(onboarding)/owner/(steps)/grounds"),
         });
     };
 
@@ -107,6 +105,9 @@ export default function Schedule() {
                     <ScheduleCircle
                         key={selectedDay}
                         initialSchedule={activeDay}
+                        basePrice={ground?.basePrice ?? 0}
+                        peakPrice={ground?.peakPrice}
+                        discountPrice={ground?.discountPrice}
                         onChange={(schedule) => handleChange(schedule)}
                     />
                 </View>

@@ -172,9 +172,11 @@ export function fromGroundSchedule(schedule: GroundSchedule): DaySchedule {
 // Builds a full 7-day draft from whatever subset of days the server returns.
 export function buildScheduleDraft(schedules: GroundSchedule[]): GroundScheduleDraft {
     const draft = buildDefaultScheduleDraft();
+
     for (const schedule of schedules) {
         draft[schedule.dayOfWeek as DayOfWeek] = fromGroundSchedule(schedule);
-    }
+    };
+    
     return draft;
 }
 
