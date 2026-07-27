@@ -2,7 +2,7 @@ import { Worker } from "bullmq";
 import { Redis } from "ioredis";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { ERROR_CODES, InternalServerError } from "@/shared/lib/utils/error.js";
-import { PitchStatus, PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
+import { GroundStatus, PitchStatus, PriceType, ScheduleStatus, SlotStatus } from "@/generated/prisma/enums.js";
 import { addDays, addHours, startOfDay } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { GroundSlotEvent, type GroundSlotJobPayload } from "@/shared/types/slots.js";
@@ -111,6 +111,37 @@ export async function handleGenerateSlots({ pitchId, groundId }: GroundSlotJobPa
     }
 
     console.log(`[slots-worker] [${new Date().toLocaleDateString()}] Finished slot generation for ground ${groundId}.`);
+
+    // Check if all grounds for this pitch have completed slot generation.
+    const allGrounds = await prisma.ground.findMany({
+        where: { pitchId, status: { not: GroundStatus.DELETED } },
+        include: { schedule: true }
+    });
+
+    const isComplete = allGrounds.length > 0 && allGrounds.every(g =>
+        g.schedule.length === 7 && g.schedule.every(s => s.status === ScheduleStatus.READY)
+    );
+
+    if (isComplete) {
+        await prisma.$transaction(async (tx) => {
+            const res = await tx.pitch.updateMany({
+                where: { id: pitchId, status: PitchStatus.PROVISIONING },
+                data: { status: PitchStatus.LIVE }
+            });
+
+            if (res.count > 0) {
+                await tx.pitchEvent.create({
+                    data: {
+                        pitchId,
+                        previousStatus: PitchStatus.PROVISIONING,
+                        status: PitchStatus.LIVE,
+                        reason: "Background slot generation completed successfully. Pitch is now live."
+                    }
+                });
+                console.log(`[slots-worker] Pitch ${pitchId} successfully provisioned and transitioned to LIVE.`);
+            }
+        });
+    }
 };
 
 export async function handleExtendSlots({ groundId, pitchId }: GroundSlotJobPayload) {

@@ -516,6 +516,15 @@ export const createReviewSchema = z.object({
 
 export type CreateReviewPayloadType = z.infer<typeof createReviewSchema>;
 
+export const rejectPitchSchema = z.object({
+    reason: z
+        .string("Rejection reason is required.")
+        .min(1, "A rejection reason must be provided.")
+        .max(500, "Rejection reason may not exceed 500 characters.")
+});
+
+export type RejectPitchPayloadType = z.infer<typeof rejectPitchSchema>;
+
 export const getStaffBookingsFiltersSchema = z.object({
     status: z
         .enum(Object.values(BookingStatus) as [BookingStatus, ...BookingStatus[]], "Please choose a valid booking status.")

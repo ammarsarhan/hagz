@@ -75,7 +75,7 @@ export default function Index() {
         <Animated.View entering={FadeIn.duration(400).delay(100)} className="flex-1">
             <SafeAreaView className="p-6 flex-1 gap-y-10">
                 <View className="gap-y-3">
-                    <View className="mb-2">
+                    <View className="mb-2 flex-row">
                         <Pressable onPress={() => router.push("/(onboarding)/owner/profile")}>
                             <Avatar />
                         </Pressable>

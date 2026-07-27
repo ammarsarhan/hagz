@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema, fetchPitchFeedSchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema, fetchPitchFeedSchema, rejectPitchSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -91,7 +91,7 @@ export const deactivatePitchHandler = factory.createHandlers(
     }
 );
 
-export const publishPitchHandler = factory.createHandlers(
+export const activatePitchHandler = factory.createHandlers(
     guard("properties", PermissionLevel.WRITE),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -99,7 +99,23 @@ export const publishPitchHandler = factory.createHandlers(
         if (!pitchId) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
         
-        const pitch = await pitchService.publishPitch(pitchId);
+        const pitch = await pitchService.activatePitch(pitchId);
+        return c.json({ success: true, data: { pitch } }, 200); 
+    }
+);
+
+export const rejectPitchHandler = factory.createHandlers(
+    guard("properties", PermissionLevel.WRITE),
+    validate("json", rejectPitchSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const userId = c.var.id;
+        const { reason } = c.req.valid("json");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        
+        const pitch = await pitchService.rejectPitch(pitchId, reason, userId);
         return c.json({ success: true, data: { pitch } }, 200); 
     }
 );

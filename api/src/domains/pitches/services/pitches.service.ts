@@ -130,7 +130,7 @@ export default class PitchService {
             if (staff.length >= config.MAXIMUM_PITCHES_PER_USER) throw new BadRequestError(`You may not create more than ${config.MAXIMUM_PITCHES_PER_USER} pitches. If this is an intended action, please get in touch with customer support.`, ERROR_CODES.PITCH_CREATE_LIMIT_EXCEEDED);
     
             const pitches = staff.map(item => item.pitch);
-            const statuses = [PitchStatus.DRAFT, PitchStatus.SUBMITTED] as PitchStatus[];
+            const statuses = [PitchStatus.DRAFT, PitchStatus.SUBMITTED, PitchStatus.PROVISIONING] as PitchStatus[];
     
             if (pitches.some(pitch => statuses.includes(pitch.status))) throw new BadRequestError("You already have a pending pitch that is either a draft or has been submitted. You can have one pending pitch at a time.", ERROR_CODES.PITCH_DRAFT_EXISTS);
     
@@ -353,6 +353,7 @@ export default class PitchService {
             await tx.pitchEvent.create({
                 data: { 
                     pitchId, 
+                    previousStatus: PitchStatus.DRAFT,
                     status: PitchStatus.SUBMITTED,
                 }
             });
@@ -383,6 +384,7 @@ export default class PitchService {
             await tx.pitchEvent.create({
                 data: {
                     pitchId,
+                    previousStatus: PitchStatus.LIVE,
                     status: PitchStatus.MAINTENANCE,
                 }
             });
@@ -393,7 +395,7 @@ export default class PitchService {
         return updated;
     };
 
-    publishPitch = async (pitchId: string) => {
+    activatePitch = async (pitchId: string) => {
         // Find the pitch and ensure that it has not been deleted.
         const pitch = await prisma.pitch.findFirst({ where: { id: pitchId, status: { not: PitchStatus.DELETED }}});
 
@@ -401,8 +403,8 @@ export default class PitchService {
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         // Make sure that the status is in a valid state to allow this transition.
-        if (pitch.status !== PitchStatus.ACCEPTED && pitch.status !== PitchStatus.MAINTENANCE)
-            throw new BadRequestError(`Could not publish pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (pitch.status !== PitchStatus.MAINTENANCE)
+            throw new BadRequestError(`Could not activate pitch because it is currently ${pitch.status.toLowerCase()}.`, ERROR_CODES.PITCH_NOT_ACTIVE);
 
         const updated = await prisma.$transaction(async tx => {
             const pitch = await tx.pitch.update({ where: { id: pitchId }, data: { status: PitchStatus.LIVE }});
@@ -411,7 +413,9 @@ export default class PitchService {
             await tx.pitchEvent.create({
                 data: {
                     pitchId,
+                    previousStatus: PitchStatus.MAINTENANCE,
                     status: PitchStatus.LIVE,
+                    reason: "Reactivated from maintenance"
                 }
             });
 
@@ -421,8 +425,42 @@ export default class PitchService {
         return updated;
     };
 
-    // Todo: Create a better command line interface to approve the pitch.
-    static approvePitch = async (pitchId: string) => {        
+    rejectPitch = async (pitchId: string, reason: string, actorId?: string) => {
+        if (!reason || !reason.trim()) {
+            throw new BadRequestError("A rejection reason must be provided.", ERROR_CODES.VALIDATION_FAILED);
+        }
+
+        const pitch = await prisma.pitch.findFirst({
+            where: { id: pitchId, status: PitchStatus.SUBMITTED }
+        });
+
+        if (!pitch) {
+            throw new BadRequestError("Could not find a submitted pitch to reject with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        }
+
+        const updated = await prisma.$transaction(async (tx) => {
+            const pitch = await tx.pitch.update({
+                where: { id: pitchId },
+                data: { status: PitchStatus.DRAFT }
+            });
+
+            await tx.pitchEvent.create({
+                data: {
+                    pitchId,
+                    previousStatus: PitchStatus.SUBMITTED,
+                    status: PitchStatus.DRAFT,
+                    actorId: actorId ?? null,
+                    reason: reason.trim()
+                }
+            });
+
+            return pitch;
+        });
+
+        return updated;
+    };
+
+    static approvePitch = async (pitchId: string, actorId?: string) => {        
         const pitch = await prisma.pitch.findFirst({
             where: {
                 id: pitchId,
@@ -440,27 +478,39 @@ export default class PitchService {
         if (!pitch) {
             console.log("Could not find a submitted pitch with the specified ID.");
             return;
-        };
+        }
 
         if (pitch.grounds.some(ground => ground.schedule.some(schedule => schedule.status !== ScheduleStatus.PENDING))) {
             console.log("Ground schedules are no longer pending. Please verify the schedule status before enqueueing.");
             return;
         }
 
-        // Update the pitch status to accepted and add the job to the BullMQ slot generation queue.
-        await prisma.$transaction(async (tx) => {
-            await tx.pitch.update({
-                where: { id: pitchId },
-                data: { status: PitchStatus.ACCEPTED }
+        // Update the pitch status to PROVISIONING atomically and add the job to the BullMQ slot generation queue.
+        const updated = await prisma.$transaction(async (tx) => {
+            const res = await tx.pitch.updateMany({
+                where: { id: pitchId, status: PitchStatus.SUBMITTED },
+                data: { status: PitchStatus.PROVISIONING }
             });
+
+            if (res.count === 0) return false;
 
             await tx.pitchEvent.create({
                 data: {
                     pitchId,
-                    status: PitchStatus.ACCEPTED,
+                    previousStatus: PitchStatus.SUBMITTED,
+                    status: PitchStatus.PROVISIONING,
+                    actorId: actorId ?? null,
+                    reason: "Pitch approved by staff. Enqueued background setup."
                 }
             });
+
+            return true;
         });
+
+        if (!updated) {
+            console.log(`Pitch ${pitchId} is not in SUBMITTED status or was already approved.`);
+            return;
+        }
         
         const grounds = pitch.grounds.map(ground => ground.id);
         await PitchService.enqueueGroundSlotGeneration(pitchId, grounds);

@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
-import { GroundSport, GroundSurface, GroundSize, GroundStatus, PaymentMethod, PitchTier, PriceType, SlotStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
+import { GroundSport, GroundSurface, GroundSize, GroundStatus, PaymentMethod, PitchTier, PitchStatus, PriceType, SlotStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
 import { addDays, setHours, startOfDay, subDays } from "date-fns";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
 
@@ -133,9 +133,9 @@ export async function seedGrounds(pitches: any[]) {
       }
     });
 
-    // Follow the flow: Approve then Publish
+    // Follow the flow: Approve pitch (enqueues slot generation) and set LIVE for seed data
     await PitchService.approvePitch(pitch.id);
-    await pitchService.publishPitch(pitch.id);
+    await prisma.pitch.update({ where: { id: pitch.id }, data: { status: PitchStatus.LIVE } });
   }
 
   console.log(`Successfully seeded ${allGrounds.length} grounds.`);

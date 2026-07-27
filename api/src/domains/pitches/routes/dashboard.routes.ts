@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, publishPitchHandler, deactivatePitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, activatePitchHandler, deactivatePitchHandler, rejectPitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
 import { createGroundHandler, deactivateGroundHandler, activateGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, deleteGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler, getStaffBookingsHandler, getStaffBookingHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
@@ -41,7 +41,8 @@ const app = new Hono()
     .delete('/:pitchId/media/:mediaId', ...deletePitchMediaHandler)
     .post('/:pitchId/submit', ...submitPitchHandler)
     .post('/:pitchId/deactivate', ...deactivatePitchHandler)
-    .post('/:pitchId/publish', ...publishPitchHandler)
+    .post('/:pitchId/activate', ...activatePitchHandler)
+    .post('/:pitchId/reject', ...rejectPitchHandler)
     .post('/:pitchId/team/invitations', ...createPitchInvitationHandler)
     .get('/:pitchId/team/invitations/:invitationId', ...fetchPitchInvitationHandler)
     .delete('/:pitchId/team/invitations/:invitationId', ...deletePitchInvitationHandler)

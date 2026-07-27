@@ -82,8 +82,7 @@ enum PitchTier {
 enum PitchStatus {
   DRAFT
   SUBMITTED
-  ACCEPTED
-  REJECTED
+  PROVISIONING
   LIVE
   MAINTENANCE
   DELETED
@@ -356,16 +355,17 @@ model Staff {
 }
 
 model PitchEvent {
-  id      String @id @default(cuid())
-  pitch   Pitch  @relation(fields: [pitchId], references: [id])
-  pitchId String
+  id             String       @id @default(cuid())
+  pitch          Pitch        @relation(fields: [pitchId], references: [id])
+  pitchId        String
 
-  status  PitchStatus
-  actorId String?
-  actor   Staff?      @relation(fields: [actorId, pitchId], references: [userId, pitchId])
-  reason  String?
+  previousStatus PitchStatus?
+  status         PitchStatus
+  actorId        String?
+  actor          Staff?       @relation(fields: [actorId, pitchId], references: [userId, pitchId])
+  reason         String?
 
-  createdAt DateTime @default(now())
+  createdAt      DateTime     @default(now())
 }
 
 model PitchMedia {
