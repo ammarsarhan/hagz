@@ -103,7 +103,7 @@ export default function Location() {
     },
     onSuccess: (profile) => {
       setUser(profile);
-      router.push("/(onboarding)/owner/(steps)/media");
+      router.push("/(onboarding)/owner/draft/(steps)/media");
     },
     onError: (err) => {
       if (err instanceof ApiError) {

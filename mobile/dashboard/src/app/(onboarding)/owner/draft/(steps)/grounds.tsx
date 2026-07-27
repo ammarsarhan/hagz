@@ -1,4 +1,4 @@
-import { View, Text, Pressable, Keyboard } from "react-native";
+import { View, Text, Pressable, Keyboard, Alert } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
@@ -15,7 +15,7 @@ export default function Grounds() {
     const insets = useSafeAreaInsets();
     const scroll = useSharedValue(0);
     const { state } = usePitchDraftForm();
-    const { draft } = useDraftQuery();
+    const { draft, submit } = useDraftQuery();
 
     const pitchId = draft?.pitchId ?? "";
     const { updateMutation, removeMutation } = useGrounds(pitchId);
@@ -36,12 +36,45 @@ export default function Grounds() {
     });
 
     const handleAddPress = () => {
-        router.push("/(onboarding)/owner/(steps)/(modal)");
+        router.push("/(onboarding)/owner/draft/(steps)/(modal)");
     };
 
     const handleGroundPress = (id: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        router.push(`/(onboarding)/owner/(steps)/(modal)?id=${id}`);
+        router.push(`/(onboarding)/owner/draft/(steps)/(modal)?id=${id}`);
+    };
+
+    const isDisabled = grounds.length === 0;
+
+    const handleNextPress = () => {
+        const invalidGrounds = grounds.filter((ground) => {
+            const schedules = ground.schedule;
+            
+            if (!schedules) return true;
+
+            const schedulesList = Array.isArray(schedules) 
+                ? schedules 
+                : Object.values(schedules);
+
+            const hasActiveSchedule = schedulesList.some(
+                (schedule) => schedule?.isActive
+            );
+
+            return !hasActiveSchedule;
+        });
+
+        if (invalidGrounds.length > 0) {
+            const names = invalidGrounds.map((g) => g.name).join(", ");
+            
+            Alert.alert(
+                "Missing Schedules",
+                `Please ensure the following grounds have at least one active schedule filled out:\n${names}`
+            );
+
+            return;
+        };
+
+        submit.mutate();
     };
 
     return (
@@ -113,7 +146,7 @@ export default function Grounds() {
                     </View>
                 </View>
             </KeyboardAwareScrollView>
-            <Footer disabled={grounds.length <= 0} onPress={() => null} />
+            <Footer disabled={isDisabled} isPending={submit.isPending} onPress={handleNextPress} />
         </Animated.View>
     );
 };

@@ -136,7 +136,7 @@ export type GroundSettingsResponse = InferResponseType<GroundSettingsRequest['$g
 export type GroundSettings = GroundSettingsResponse['data']['settings'];
 
 export type DayOfWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = Sunday ... 7 = Saturday
-export const DAYS_OF_WEEK: DayOfWeek[] = [1, 2, 3, 4, 5, 6, 7];
+export const daysOfWeek: DayOfWeek[] = [1, 2, 3, 4, 5, 6, 7];
 
 export type DaySchedule = PriceSchedule & { isActive: boolean };
 export type GroundScheduleDraft = Record<DayOfWeek, DaySchedule>;
@@ -149,7 +149,7 @@ export const DEFAULT_DAY_SCHEDULE: DaySchedule = {
 };
 
 export function buildDefaultScheduleDraft(): GroundScheduleDraft {
-    return DAYS_OF_WEEK.reduce((acc, day) => {
+    return daysOfWeek.reduce((acc, day) => {
         acc[day] = { ...DEFAULT_DAY_SCHEDULE };
         return acc;
     }, {} as GroundScheduleDraft);

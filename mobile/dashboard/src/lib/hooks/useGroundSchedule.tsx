@@ -4,7 +4,7 @@ import { client } from "@/lib/client";
 import { ApiError, parseClientError } from "@/lib/error";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 import { DraftGround } from "@/lib/hooks/useGrounds";
-import { DAYS_OF_WEEK, GroundScheduleDraft, toUpsertPayload } from "@/lib/types/ground";
+import { daysOfWeek, GroundScheduleDraft, toUpsertPayload } from "@/lib/types/ground";
 
 export function useGroundSchedule(pitchId: string, groundId: string) {
     const queryClient = useQueryClient();
@@ -12,10 +12,8 @@ export function useGroundSchedule(pitchId: string, groundId: string) {
 
     const saveMutation = useMutation({
         mutationFn: async (draft: GroundScheduleDraft) => {
-            console.log(draft['1'], draft['2'], draft['3'], draft['4'], draft['5'], draft['6'], draft['7']);
-
             const results = await Promise.allSettled(
-                DAYS_OF_WEEK.map((day) =>
+                daysOfWeek.map((day) =>
                     client.dashboard.pitches[":pitchId"].grounds[":groundId"].schedule[":dayOfWeek"].$put({
                         param: {
                             pitchId,

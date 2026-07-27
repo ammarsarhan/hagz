@@ -288,7 +288,7 @@ export default class PitchService {
         return { updated, profile};
     };
 
-    submitPitch = async (pitchId: string) => {
+    submitPitch = async (pitchId: string, userId: string) => {
         // Find the pitch and ensure that it is a draft before sending it for submission.
         const pitch = await prisma.pitch.findFirst({
             where: {
@@ -301,6 +301,11 @@ export default class PitchService {
                     include: {
                         settings: true,
                         schedule: true
+                    },
+                    where: {
+                        status: {
+                            not: GroundStatus.DELETED
+                        }
                     }
                 },
                 media: true
@@ -334,10 +339,9 @@ export default class PitchService {
         if (pitch.grounds.some(ground => ground.schedule.every(schedule => !schedule.isActive)))
             throw new BadRequestError("Ground schedule must have at least one active day per week.", ERROR_CODES.GROUND_SCHEDULE_NOT_ACTIVE);
 
-        // Todo: Uncomment this in testing on the frontend.
         // 4. Ensure that there is at least three verified pitch images.
-        // if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
-        //     throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
+        if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
+            throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
 
         // After the draft passes all the checks, make sure that both the pitch are submitted and this is logged as an event by the system.
         return await prisma.$transaction(async (tx) => {
@@ -353,7 +357,11 @@ export default class PitchService {
                 }
             });
 
-            return updated;
+            const user = await prisma.user.findUnique({ where: { id: userId }, include: { preferences: true, pitches: { include: { pitch: { select: { status: true } } } } } });
+            if (!user || !user.preferences) throw new InternalServerError("Could not find user account associated with the submitted pitch.");
+            const profile = createUserResponse(user, user.preferences, user.pitches);
+            
+            return { profile, updated };
         });
     };
 

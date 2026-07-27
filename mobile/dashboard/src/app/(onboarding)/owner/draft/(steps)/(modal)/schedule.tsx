@@ -10,13 +10,13 @@ import useDraftQuery from "@/lib/hooks/useDraftQuery";
 import { useGroundSchedule } from "@/lib/hooks/useGroundSchedule";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 import { DraftGround } from "@/lib/hooks/useGrounds";
-import { DayOfWeek, DAYS_OF_WEEK, GroundScheduleDraft, buildDefaultScheduleDraft } from "@/lib/types/ground";
+import { DayOfWeek, daysOfWeek, GroundScheduleDraft, buildDefaultScheduleDraft } from "@/lib/types/ground";
 
-const DAY_CHARACTERS: Record<DayOfWeek, string> = {
+const dayCharacters: Record<DayOfWeek, string> = {
     1: "S", 2: "M", 3: "T", 4: "W", 5: "T", 6: "F", 7: "S",
 };
 
-const DAY_LABELS: Record<DayOfWeek, string> = {
+const dayLabels: Record<DayOfWeek, string> = {
     1: "Sunday", 2: "Monday", 3: "Tuesday", 4: "Wednesday", 5: "Thursday", 6: "Friday", 7: "Saturday",
 };
 
@@ -51,7 +51,7 @@ export default function Schedule() {
 
     const handleSave = () => {
         saveMutation.mutate(scheduleDraft, {
-            onSuccess: () => router.dismissTo("/(onboarding)/owner/(steps)/grounds"),
+            onSuccess: () => router.dismissTo("/(onboarding)/owner/draft/(steps)/grounds"),
         });
     };
 
@@ -76,7 +76,7 @@ export default function Schedule() {
                     </Text>
                 </View>
                 <View className="flex-row items-center justify-between mb-6">
-                    <Text className="font-medium">Ground open on {DAY_LABELS[selectedDay]}</Text>
+                    <Text className="font-medium">Ground open on {dayLabels[selectedDay]}</Text>
                     <Switch
                         value={activeDay.isActive}
                         onValueChange={(value) => handleChange({ isActive: value })}
@@ -87,19 +87,21 @@ export default function Schedule() {
                     />
                 </View>
                 <View className="flex-row gap-1.5 mb-8">
-                    {DAYS_OF_WEEK.map((day) => (
-                        <Pressable
-                            key={day}
-                            onPress={() => setSelectedDay(day)}
-                            className={`flex-1 items-center py-2 rounded-md border ${
-                                selectedDay === day ? "bg-primary border-primary" : "bg-gray-50 border-gray-200"
-                            } ${!scheduleDraft[day].isActive ? "opacity-40" : ""}`}
-                        >
-                            <Text className={selectedDay === day ? "text-white font-medium" : "text-gray-500"}>
-                                {DAY_CHARACTERS[day]}
-                            </Text>
-                        </Pressable>
-                    ))}
+                    {
+                        daysOfWeek.map((day) => (
+                            <Pressable
+                                key={day}
+                                onPress={() => setSelectedDay(day)}
+                                className={`flex-1 items-center py-2 rounded-md border ${
+                                    selectedDay === day ? "bg-primary border-primary" : "bg-gray-50 border-gray-200"
+                                } ${!scheduleDraft[day].isActive ? "opacity-40" : ""}`}
+                            >
+                                <Text className={selectedDay === day ? "text-white font-medium" : "text-gray-500"}>
+                                    {dayCharacters[day]}
+                                </Text>
+                            </Pressable>
+                        ))
+                    }
                 </View>
                 <View pointerEvents={activeDay.isActive ? "auto" : "none"} style={{ opacity: activeDay.isActive ? 1 : 0.4 }}>
                     <ScheduleCircle

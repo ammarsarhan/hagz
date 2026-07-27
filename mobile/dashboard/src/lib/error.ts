@@ -88,9 +88,23 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
 export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
+const GENERIC_MESSAGES = [
+    "Unauthorized", 
+    "Forbidden", 
+    "Internal server error"
+];
+
 export function getErrorMessage(error: { code?: ErrorCode; message: string; fields?: { field: string; message: string }[] }): string {
     if (error.fields?.length) {
         return error.fields.map(f => f.message).join("\n");
+    }
+
+    const isGenericMessage = 
+        GENERIC_MESSAGES.includes(error.message) || 
+        error.message === DEFAULT_ERROR_MESSAGE;
+
+    if (error.message && !isGenericMessage) {
+        return error.message;
     };
 
     if (error.code && ERROR_MESSAGES[error.code]) {
@@ -111,7 +125,7 @@ export type ClientError = {
 
 export async function parseClientError(res: { json: () => Promise<unknown> }): Promise<ClientError["error"]> {
     const body = (await res.json().catch(() => null)) as ClientError | null;
-    return body?.error ?? { message: "Something went wrong. Please try again." };
+    return body?.error ?? { message: DEFAULT_ERROR_MESSAGE };
 }
 
 export class ApiError extends Error {
@@ -124,4 +138,4 @@ export class ApiError extends Error {
         this.code = error.code;
         this.fields = error.fields;
     }
-};
+}

@@ -138,12 +138,12 @@ export default function Index() {
     const handleSave = () => {
         if (!canSave) return;
         if (isEdit && id) {
-            updateMutation.mutate({ id, ground: form }, { onSuccess: () => router.push({ pathname: "/(onboarding)/owner/(steps)/(modal)/schedule", params: { groundId: id } }) });
+            updateMutation.mutate({ id, ground: form }, { onSuccess: () => router.push({ pathname: "/(onboarding)/owner/draft/(steps)/(modal)/schedule", params: { groundId: id } }) });
         } else {
             createMutation.mutate(form, {
                 onSuccess: (ground) => {
                     router.setParams({ id: ground.id });
-                    router.push({ pathname: "/(onboarding)/owner/(steps)/(modal)/schedule", params: { groundId: ground.id } });
+                    router.push({ pathname: "/(onboarding)/owner/draft/(steps)/(modal)/schedule", params: { groundId: ground.id } });
                 },
             });
         }

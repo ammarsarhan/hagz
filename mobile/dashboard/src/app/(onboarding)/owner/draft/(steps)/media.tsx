@@ -307,7 +307,7 @@ export default function MediaView() {
                         }
                     </View>
                 </KeyboardAwareScrollView>
-                <Footer disabled={uploadedCount < 3} href={"/(onboarding)/owner/(steps)/amenities"}>
+                <Footer disabled={uploadedCount < 3} href={"/(onboarding)/owner/draft/(steps)/amenities"}>
                 {
                     uploadedCount >= 1 &&
                     <AnimatedPressable 

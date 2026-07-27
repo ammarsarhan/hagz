@@ -41,7 +41,7 @@ export default function Password() {
             }
 
             if (user.preferences.role === "MANAGER") router.push("/(onboarding)/manager");
-            if (user.preferences.role === "OWNER") router.push("/(onboarding)/owner");
+            if (user.preferences.role === "OWNER") router.push("/(onboarding)/owner/draft");
         },
         onError: (err) => {
             if (err instanceof ApiError) {

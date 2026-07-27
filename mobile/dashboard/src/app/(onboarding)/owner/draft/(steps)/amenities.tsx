@@ -99,7 +99,7 @@ export default function Amenities() {
                         </View>
                     </View>
                 </KeyboardAwareScrollView>
-                <Footer disabled={state.amenities.length <= 0} href={"/(onboarding)/owner/(steps)/grounds"} />
+                <Footer disabled={state.amenities.length <= 0} href={"/(onboarding)/owner/draft/(steps)/grounds"} />
             </Animated.View>
         </>
     );

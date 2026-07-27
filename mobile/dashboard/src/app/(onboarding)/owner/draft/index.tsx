@@ -111,7 +111,7 @@ export default function Index() {
                         description="Add basic information about your pitch."
                         isActive={active.details}
                         isComplete={completed.details}
-                        href="/(onboarding)/owner/(steps)/details"
+                        href="/(onboarding)/owner/draft/(steps)/details"
                     />
                     <Step 
                         icon={<IconPhotoAlt color={"#9CA3AF"} width={24} height={24}/>}
@@ -119,7 +119,7 @@ export default function Index() {
                         description="Take pictures of your pitch, grounds, and amenities to show users."
                         isActive={active.media}
                         isComplete={completed.media}
-                        href="/(onboarding)/owner/(steps)/media"
+                        href="/(onboarding)/owner/draft/(steps)/media"
                     />
                     <Step 
                         icon={<IconBallFootball color={"#9CA3AF"} width={24} height={24}/>}
@@ -127,7 +127,7 @@ export default function Index() {
                         description="Select amenities and how your venue prices them."
                         isActive={active.amenities}
                         isComplete={completed.amenities}
-                        href="/(onboarding)/owner/(steps)/amenities"
+                        href="/(onboarding)/owner/draft/(steps)/amenities"
                     />
                     <Step 
                         icon={<IconLayoutDashboard color={"#9CA3AF"} width={24} height={24}/>}
@@ -135,10 +135,10 @@ export default function Index() {
                         description="Create grounds and specify their settings & schedule."
                         isActive={active.grounds}
                         isComplete={completed.grounds}
-                        href="/(onboarding)/owner/(steps)/grounds"
+                        href="/(onboarding)/owner/draft/(steps)/grounds"
                     />
                 </View>
-                <Link asChild href="/(onboarding)/owner/(steps)/details">
+                <Link asChild href="/(onboarding)/owner/draft/(steps)/details">
                     <Button className="bg-primary border-primary">
                         <Text className="text-white font-medium">
                             {
