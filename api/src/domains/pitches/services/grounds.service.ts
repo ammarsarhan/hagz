@@ -598,63 +598,85 @@ export default class GroundService {
     };
 
     deleteGround = async (pitchId: string, groundId: string) => {
-        const ground = await prisma.ground.findFirst({ 
-            where: { 
-                id: groundId, 
-                pitchId,
-                status: {
-                    not: GroundStatus.DELETED
-                }
-            },
-            include: {
-                schedule: true,
-                bookings: {
-                    where: {
-                        status: {
-                            in: [BookingStatus.RESERVED, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]
-                        }
-                    }
+        await prisma.$transaction(async (tx) => {
+            // 1. Fetch data inside the transaction to avoid race conditions
+            const ground = await tx.ground.findFirst({
+                where: {
+                    id: groundId,
+                    pitchId,
+                    status: { not: GroundStatus.DELETED }
                 },
-                pitch: {
-                    select: {
-                        status: true,
-                        grounds: {
-                            where: {
-                                status: { not: GroundStatus.DELETED },
-                                id: { not: groundId }
+                include: {
+                    schedule: true,
+                    bookings: {
+                        where: {
+                            status: {
+                                in: [BookingStatus.RESERVED, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]
+                            }
+                        }
+                    },
+                    pitch: {
+                        select: {
+                            status: true,
+                            grounds: {
+                                where: {
+                                    status: { not: GroundStatus.DELETED },
+                                    id: { not: groundId }
+                                }
                             }
                         }
                     }
                 }
+            });
+
+            if (!ground) {
+                throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
             }
+
+            const pitch = ground.pitch;
+
+            // 2. Validate pitch editable state
+            if (!config.EDITABLE_STATES.includes(pitch.status)) {
+                throw new BadRequestError("Can not delete ground. Pitch must be in an editable state first.", ERROR_CODES.PITCH_NOT_EDITABLE);
+            }
+
+            // 3. Check for ongoing slot generation
+            if (ground.schedule.some(schedule => schedule.status === ScheduleStatus.GENERATING)) {
+                throw new BadRequestError("Can not delete a ground while schedule is generating slots. Please wait until slot generation is complete.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT);
+            }
+
+            // 4. Check active/pending bookings
+            if (ground.bookings.length > 0) {
+                throw new BadRequestError("Can not delete a ground while bookings are undergoing or scheduled for the future. Please wait and mark the ground as under maintenance until all bookings have been completed.", ERROR_CODES.GROUND_BOOKINGS_CONFLICT);
+            }
+
+            // 5. Require maintenance status if Pitch is LIVE
+            if (pitch.status === PitchStatus.LIVE && ground.status !== GroundStatus.MAINTENANCE) {
+                throw new BadRequestError("Can not delete a ground while it is live. Please mark it as under maintenance first before deleting.", ERROR_CODES.GROUND_TRANSITION_INVALID);
+            }
+
+            // 6. Ensure pitch retains at least 1 non-deleted ground if LIVE
+            if (pitch.status === PitchStatus.LIVE && pitch.grounds.length === 0) {
+                throw new BadRequestError("Can not delete ground. At least one ground is required while a pitch is live.", ERROR_CODES.PITCH_GROUND_REQUIRED);
+            }
+
+            // 7. Cleanup & Soft Delete
+            await tx.groundSlot.deleteMany({
+                where: { groundId, status: { not: SlotStatus.BOOKED } }
+            });
+            
+            // Soft delete or delete schedule depending on schema relations
+            await tx.schedule.deleteMany({ where: { groundId } });
+
+            await tx.ground.update({
+                where: { id: groundId },
+                data: {
+                    status: GroundStatus.DELETED,
+                    deletedAt: new Date()
+                }
+            });
         });
-
-        
-        if (!ground)
-            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
-        
-        const pitch = ground.pitch;
-
-        if (ground.schedule.some(schedule => schedule.status === ScheduleStatus.GENERATING))
-            throw new BadRequestError("Can not delete a ground while schedule is generating slots. Please wait until slot generation is complete.", ERROR_CODES.GROUND_SCHEDULE_GENERATING_CONFLICT);
-
-        if (ground.bookings.length > 0)
-            throw new BadRequestError("Can not delete a ground while bookings are undergoing or scheduled for the future. Please wait and mark the ground as under maintenance until all bookings have been completed.", ERROR_CODES.GROUND_BOOKINGS_CONFLICT);
-
-        if (pitch.status === PitchStatus.LIVE && ground.status !== GroundStatus.MAINTENANCE)
-            throw new BadRequestError("Can not delete a ground while it is live. Please mark it as under maintenance first before deleting.", ERROR_CODES.GROUND_TRANSITION_INVALID);
-
-        if (!config.EDITABLE_STATES.includes(pitch.status))
-            throw new BadRequestError("Can not delete ground. Pitch must be in an editable state first.", ERROR_CODES.PITCH_NOT_EDITABLE);
-
-        if (pitch.status === PitchStatus.LIVE && pitch.grounds.length === 0)
-            throw new BadRequestError("Can not delete ground. At least one ground is required while a pitch is live.", ERROR_CODES.PITCH_GROUND_REQUIRED)
-
-        await prisma.$transaction(async tx => {
-            await tx.groundSlot.deleteMany({ where: { groundId, status: { not: SlotStatus.BOOKED } }});
-            await tx.ground.update({ where: { id: groundId }, data: { status: GroundStatus.DELETED, deletedAt: new Date() } } )
-        });
-    }
+    };
 
     deactivateGround = async (pitchId: string, groundId: string) => {
         const ground = await prisma.ground.findFirst({

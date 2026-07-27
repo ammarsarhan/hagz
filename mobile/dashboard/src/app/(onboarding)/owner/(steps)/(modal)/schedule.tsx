@@ -1,6 +1,6 @@
 import { useLocalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { IconChevronLeft, IconX } from "@tabler/icons-react-native";
+import { IconChevronLeft } from "@tabler/icons-react-native";
 import { Platform, Pressable, Switch, View, Text } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,7 +28,7 @@ export default function Schedule() {
 
     const ground = state.grounds.find((g) => (g as DraftGround).id === groundId) as DraftGround | undefined;
 
-    const { saveAllMutation } = useGroundSchedule(pitchId, groundId);
+    const { saveMutation } = useGroundSchedule(pitchId, groundId);
 
     useEffect(() => {
         if (!ground) router.back();
@@ -52,8 +52,8 @@ export default function Schedule() {
     };
 
     const handleSave = () => {
-        saveAllMutation.mutate(scheduleDraft, {
-            onSuccess: () => router.push("/(onboarding)/owner/(steps)/(modal)/settings"),
+        saveMutation.mutate(scheduleDraft, {
+            onSuccess: () => router.push("/(onboarding)/owner/(steps)/grounds"),
         });
     };
 
@@ -112,7 +112,7 @@ export default function Schedule() {
                 </View>
             </KeyboardAwareScrollView>
             <View className="px-6 pb-8 pt-4">
-                <Button className="bg-primary border-primary" loading={saveAllMutation.isPending} onPress={handleSave}>
+                <Button className="bg-primary border-primary" loading={saveMutation.isPending} onPress={handleSave}>
                     <Text className="font-medium text-white">Next</Text>
                 </Button>
             </View>

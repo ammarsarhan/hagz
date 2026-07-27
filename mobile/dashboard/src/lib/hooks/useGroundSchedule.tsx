@@ -7,7 +7,7 @@ import { DAYS_OF_WEEK, GroundScheduleDraft, toUpsertPayload } from "@/lib/types/
 export function useGroundSchedule(pitchId: string, groundId: string) {
     const queryClient = useQueryClient();
 
-    const saveAllMutation = useMutation({
+    const saveMutation = useMutation({
         mutationFn: async (draft: GroundScheduleDraft) => {
             console.log(draft['1'], draft['2'], draft['3'], draft['4'], draft['5'], draft['6'], draft['7']);
 
@@ -49,5 +49,5 @@ export function useGroundSchedule(pitchId: string, groundId: string) {
         },
     });
 
-    return { saveAllMutation };
+    return { saveMutation };
 };
