@@ -17,7 +17,7 @@ export default function Index() {
             <SafeAreaView className="p-6 flex-1 gap-y-10">
                 <View className="gap-y-3">
                     <View className="mb-2">
-                        <Pressable onPress={() => router.push("/(onboarding)/owner/(modal)")}>
+                        <Pressable onPress={() => router.push("/(onboarding)/owner/profile")}>
                             <Avatar />
                         </Pressable>
                     </View>

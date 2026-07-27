@@ -274,13 +274,13 @@ export default function Index() {
             </View>
             <View className="mb-12">
                 <Drawer 
-                    href="/(onboarding)/owner/(modal)/language"
+                    href="/(onboarding)/owner/profile/language"
                     icon={<IconLanguage width={22} height={22}/>}
                     title="Language"
                     description="Manage your application display preferences."
                 />
                 <Drawer 
-                    href="/(onboarding)/owner/(modal)/notifications"
+                    href="/(onboarding)/owner/profile/notifications"
                     icon={<IconBell width={22} height={22}/>}
                     title="Notifications"
                     description="Select your notification delivery channels."
@@ -293,7 +293,7 @@ export default function Index() {
                     <Text className="text-gray-500">{user.preferences.timezone}</Text>
                 </View>
                 <Drawer 
-                    href="/(onboarding)/owner/(modal)/transfer"
+                    href="/(onboarding)/owner/profile/transfer"
                     icon={<IconUserCog width={22} height={22}/>}
                     title="Transfer"
                     description="Change your account to a manager or owner account."

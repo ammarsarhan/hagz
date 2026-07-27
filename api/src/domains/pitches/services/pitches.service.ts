@@ -285,7 +285,7 @@ export default class PitchService {
 
         const profile = createUserResponse(user, user.preferences, user.pitches);
 
-        return { updated, profile};
+        return { updated, profile };
     };
 
     submitPitch = async (pitchId: string, userId: string) => {
@@ -357,7 +357,7 @@ export default class PitchService {
                 }
             });
 
-            const user = await prisma.user.findUnique({ where: { id: userId }, include: { preferences: true, pitches: { include: { pitch: { select: { status: true } } } } } });
+            const user = await tx.user.findUnique({ where: { id: userId }, include: { preferences: true, pitches: { include: { pitch: { select: { status: true } } } } } });
             if (!user || !user.preferences) throw new InternalServerError("Could not find user account associated with the submitted pitch.");
             const profile = createUserResponse(user, user.preferences, user.pitches);
             

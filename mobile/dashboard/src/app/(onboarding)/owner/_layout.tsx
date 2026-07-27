@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 export default function OwnerLayout() {
     const { user } = useRequiredAuth();
 
-    const isDraft = user.pitches.length === 1 && user.pitches[0].status === "DRAFT";
+    const isDraft = user.pitches.length === 0 || (user.pitches.length === 1 && user.pitches[0].status === "DRAFT");
     const isSubmitted = user.pitches.length === 1 && user.pitches[0].status === "SUBMITTED";
 
     return (
@@ -21,7 +21,7 @@ export default function OwnerLayout() {
             <Stack.Protected guard={isSubmitted}>
                 <Stack.Screen name="submitted" />
             </Stack.Protected>
-            <Stack.Screen name="(modal)" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="profile" options={{ presentation: 'modal' }} />
         </Stack>
     )
 }
