@@ -3,6 +3,19 @@ import { hashPassword } from "@/shared/lib/utils/hash.js";
 import prisma from "@/shared/lib/utils/prisma.js";
 import { UserRole, UserStatus, Language, NotificationChannel } from "@/generated/prisma/enums.js";
 
+const phones = new Set<string>();
+
+const generatePhone = () => {
+  let phone: string;
+
+  do {
+    phone = `+201${faker.helpers.arrayElement(["0", "1", "2", "5", "7"])}${faker.string.numeric(8)}`;
+  } while (phones.has(phone));
+
+  phones.add(phone);
+  return phone;
+}
+
 export async function seedUsers() {
   console.log("Seeding users...");
 
@@ -20,7 +33,7 @@ export async function seedUsers() {
   for (let i = 0; i < 50; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const phone = faker.helpers.fromRegExp("+201[0125][0-9]{8}");
+    const phone = generatePhone();
 
     const user = await prisma.user.upsert({
       where: { phone },
@@ -54,7 +67,9 @@ export async function seedUsers() {
   for (let i = 0; i < 30; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const phone = faker.helpers.fromRegExp(/\+201[0125][0-9]{8}/);
+    const phone = generatePhone();
+
+    console.log("Generating an OWNER with the phone number:", phone);
 
     const owner = await prisma.user.upsert({
       where: { phone },
@@ -87,7 +102,7 @@ export async function seedUsers() {
   for (let i = 0; i < 60; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const phone = faker.helpers.fromRegExp(/\+201[0125][0-9]{8}/);
+    const phone = generatePhone();
 
     const manager = await prisma.user.upsert({
       where: { phone },

@@ -1,7 +1,7 @@
 import z from "zod";
 
 import { createPitchFeedResponse, normalizeRawPitchFeed, parseGoogleMapsLink, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { BookingStatus, GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
+import { BookingStatus, GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, SlotStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -13,7 +13,7 @@ import { pitchesQueue } from "@/jobs/queues/pitches.queue.js";
 import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
-import { addDays, endOfWeek, startOfWeek, subDays } from "date-fns";
+import { addHours, subDays, subHours } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client.js";
 import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
@@ -546,17 +546,15 @@ export default class PitchService {
 
     fetchAvailability = async (pitchId: string, target?: string) => {
         // Make sure that the pitch is not deleted and active first before attempting to build the availability.
-        const pitch = await prisma.pitch.findFirst({ 
-            where: { 
-                id: pitchId, 
+        const pitch = await prisma.pitch.findFirst({
+            where: {
+                id: pitchId,
                 status: { not: PitchStatus.DELETED },
             },
             include: {
                 grounds: {
                     where: {
-                        status: {
-                            not: GroundStatus.DELETED
-                        }
+                        status: { not: GroundStatus.DELETED }
                     },
                     include: {
                         settings: true
@@ -573,8 +571,8 @@ export default class PitchService {
 
         // If a target ground is specified, verify it exists on this pitch.
         if (target) {
-            const ground = pitch.grounds.some(ground => ground.id === target);
-            if (!ground)
+            const groundExists = pitch.grounds.some(ground => ground.id === target);
+            if (!groundExists)
                 throw new NotFoundError("Could not find the specified ground on this pitch.", ERROR_CODES.GROUND_NOT_FOUND);
         }
 
@@ -586,13 +584,6 @@ export default class PitchService {
         // Start building the query's startDate, endDate, and grounds.
         const today = new Date();
 
-        const minimumWindow = Math.min(
-            ...grounds.map(ground => {
-                if (!ground.settings) throw new InternalServerError("Could not find settings associated with ground.");
-                return ground.settings.minimumWindow;
-            })
-        );
-
         const maximumWindow = Math.max(
             ...grounds.map(ground => {
                 if (!ground.settings) throw new InternalServerError("Could not find settings associated with ground.");
@@ -600,26 +591,24 @@ export default class PitchService {
             })
         );
 
-        const lowerBoundary = subDays(today, minimumWindow);
-        const upperBoundary = addDays(today, maximumWindow);
+        const lowerBoundary = subDays(today, 30);
+        const upperBoundary = addHours(today, maximumWindow);
 
-        // Fetch all active bookings (excluding CANCELLED and EXPIRED) across the relevant grounds within the availability window.
-        const bookings = await prisma.booking.findMany({
+        // Fetch every generated slot in the window and read status straight off GroundSlot, instead of re-deriving booked from Booking rows + date bucketing.
+        const bookedSlots = await prisma.groundSlot.findMany({
             where: {
                 pitchId,
                 groundId: { in: grounds.map(g => g.id) },
-                status: { notIn: [BookingStatus.CANCELLED, BookingStatus.EXPIRED] },
-                startTime: { gte: lowerBoundary },
-                endTime: { lte: upperBoundary },
+                startsAt: { gte: lowerBoundary, lte: upperBoundary },
+                status: SlotStatus.BOOKED,
             },
             select: {
-                startTime: true,
+                startsAt: true,
             },
         });
 
-        // Build a set of dates that have at least one booking.
         const bookedDates = new Set<string>(
-            bookings.map(booking => booking.startTime.toISOString().slice(0, 10))
+            bookedSlots.map(slot => slot.startsAt.toISOString().slice(0, 10))
         );
 
         // Generate one entry per calendar day across the full window.
@@ -637,9 +626,10 @@ export default class PitchService {
             cursor.setUTCDate(cursor.getUTCDate() + 1);
         }
 
-        return { constraints: { minimumWindow, maximumWindow }, availability };
+        // 30 day constraint as per the slot purging job scheduled.
+        return { constraints: { minimumWindow: 30 * 24, maximumWindow }, availability };
     };
-
+    
     fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string, locale: Language = Language.EN) => {
         const include = {
             area: {

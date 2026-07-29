@@ -1,4 +1,4 @@
-import { Href, Link, router } from "expo-router";
+import { Href, Link } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -76,9 +76,9 @@ export default function Index() {
             <SafeAreaView className="p-6 flex-1 gap-y-10">
                 <View className="gap-y-3">
                     <View className="mb-2 flex-row">
-                        <Pressable onPress={() => router.push("/(onboarding)/owner/profile")}>
+                        <Link href="/(onboarding)/owner/profile">
                             <Avatar />
-                        </Pressable>
+                        </Link>
                     </View>
                     {
                         draft &&

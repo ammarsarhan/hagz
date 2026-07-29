@@ -295,7 +295,7 @@ export const getStaffBookingHandler = factory.createHandlers(
 
 export const getStaffBookingsHandler = factory.createHandlers(
     guard("bookings", PermissionLevel.READ),
-    validate("json", getStaffBookingsFiltersSchema),
+    validate("query", getStaffBookingsFiltersSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
@@ -303,9 +303,9 @@ export const getStaffBookingsHandler = factory.createHandlers(
         if (!pitchId || !groundId) 
             throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
 
-        const filters = c.req.valid("json");
+        const filters = c.req.valid("query");
         const bookings = await groundService.fetchStaffBookings(pitchId, groundId, filters);
 
-        return c.json({ success: true, data: { bookings } }, 200);
+        return c.json({ success: true, data: { ...bookings } }, 200);
     }
 );
