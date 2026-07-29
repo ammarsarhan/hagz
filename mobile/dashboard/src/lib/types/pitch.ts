@@ -4,6 +4,9 @@ import { Media } from '@/lib/types/media';
 import { Amenity } from '@/lib/types/amenity';
 import { GroundDraftType } from '@/lib/types/ground';
 
+export type PitchesRequest = typeof client.dashboard.pitches;
+export type PitchesResponse = PitchesRequest['$get'];
+
 export type PitchRequest = (typeof client.dashboard.pitches)[':pitchId'];
 export type PitchResponse = InferResponseType<PitchRequest['$get']>;
 

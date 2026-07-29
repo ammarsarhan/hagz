@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, createPitchSchema, fetchPitchAvailabilitySchema, fetchPitchFeedSchema, rejectPitchSchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, fetchPitchAvailabilitySchema, createPitchSchema, fetchPitchFeedSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -12,6 +12,17 @@ import { locale } from "@/shared/middleware/locale.middleware.js";
 
 const factory = createFactory();
 const pitchService = new PitchService();
+
+export const getDashboardPitchesHandler = factory.createHandlers(
+    authorize({ required: true }),
+    guard("properties", PermissionLevel.READ),
+    async (c) => {
+        const userId = c.var.id;
+
+        const pitches = await pitchService.fetchDashboardPitches(userId);
+        return c.json({ success: true, data: { pitches }}, 200);
+    }
+);
 
 export const createPitchHandler = factory.createHandlers(
     authorize({ required: true }),
@@ -104,34 +115,17 @@ export const activatePitchHandler = factory.createHandlers(
     }
 );
 
-export const rejectPitchHandler = factory.createHandlers(
-    guard("properties", PermissionLevel.WRITE),
-    validate("json", rejectPitchSchema),
-    async (c) => {
-        const pitchId = c.req.param("pitchId");
-        const userId = c.var.id;
-        const { reason } = c.req.valid("json");
-
-        if (!pitchId) 
-            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-        
-        const pitch = await pitchService.rejectPitch(pitchId, reason, userId);
-        return c.json({ success: true, data: { pitch } }, 200); 
-    }
-);
-
 export const fetchPitchAvailabilityHandler = factory.createHandlers(
-    guard("schedule", PermissionLevel.READ),
+    guard("bookings", PermissionLevel.READ),
     validate("query", fetchPitchAvailabilitySchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
+        const target = c.req.query("target");
 
         if (!pitchId) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        const { date } = c.req.valid("query");
-
-        const availability = await pitchService.fetchAvailability(pitchId, date);
+        const availability = await pitchService.fetchAvailability(pitchId, target);
         return c.json({ success: true, data: { availability }}, 200);
     }
 );

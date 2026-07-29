@@ -474,10 +474,8 @@ export const updateGroundSlotsSchema = z.object({
     status: z.enum(Object.values(UpdateGroundSlotStatus))
 });
 
-export type FetchPitchAvailabilityPayloadType = z.infer<typeof fetchPitchAvailabilitySchema>;
-
 export const fetchPitchAvailabilitySchema = z.object({
-    date: z.coerce.date("A date is required to fetch the specified pitch's availability.")
+    target: z.cuid("Please use a valid ground ID to fetch availability.").optional()
 });
 
 export type FetchStaffBookingsFiltersPayloadType = z.infer<typeof getStaffBookingsFiltersSchema>;

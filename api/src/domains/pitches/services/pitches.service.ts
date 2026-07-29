@@ -1,19 +1,19 @@
 import z from "zod";
 
 import { createPitchFeedResponse, normalizeRawPitchFeed, parseGoogleMapsLink, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
+import { BookingStatus, GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
 import { BadRequestError, ERROR_CODES, InternalServerError, NotFoundError } from "@/shared/lib/utils/error.js";
-import { formatPitchAvailabilityQuery, GroundSlotEvent } from "@/shared/types/slots.js";
+import { GroundSlotEvent } from "@/shared/types/slots.js";
 
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import { pitchesQueue } from "@/jobs/queues/pitches.queue.js";
 import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
-import { endOfWeek, startOfWeek } from "date-fns";
+import { addDays, endOfWeek, startOfWeek, subDays } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client.js";
 import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
@@ -169,6 +169,43 @@ export default class PitchService {
             const profile = createUserResponse(user, preferences, user.pitches);
             return { pitch, profile };
         });
+    };
+
+    // This pertains to the initial data that we want to hydrate our PitchContext with.
+    fetchDashboardPitches = async (userId: string) => {
+        const pitches = await prisma.pitch.findMany({ 
+            where: {
+                status: { not: PitchStatus.DELETED },
+                staff: {
+                    some: {
+                        userId
+                    }
+                }
+            },
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                grounds: {
+                    where: {
+                        status: {
+                            not: GroundStatus.DELETED
+                        }
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        status: true,
+                        sport: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        });
+        
+        return pitches;
     };
 
     // Split this into two distinct functions for when we want to send different data based on the person accessing the resource.
@@ -425,7 +462,7 @@ export default class PitchService {
         return updated;
     };
 
-    rejectPitch = async (pitchId: string, reason: string, actorId?: string) => {
+    static rejectPitch = async (pitchId: string, reason: string, actorId?: string) => {
         if (!reason || !reason.trim()) {
             throw new BadRequestError("A rejection reason must be provided.", ERROR_CODES.VALIDATION_FAILED);
         }
@@ -485,14 +522,12 @@ export default class PitchService {
             return;
         }
 
-        // Update the pitch status to PROVISIONING atomically and add the job to the BullMQ slot generation queue.
-        const updated = await prisma.$transaction(async (tx) => {
-            const res = await tx.pitch.updateMany({
-                where: { id: pitchId, status: PitchStatus.SUBMITTED },
+        // Update the pitch status to PROVISIONING and add the job to the BullMQ slot generation queue.
+        await prisma.$transaction(async (tx) => {
+            await tx.pitch.update({
+                where: { id: pitchId },
                 data: { status: PitchStatus.PROVISIONING }
             });
-
-            if (res.count === 0) return false;
 
             await tx.pitchEvent.create({
                 data: {
@@ -503,20 +538,13 @@ export default class PitchService {
                     reason: "Pitch approved by staff. Enqueued background setup."
                 }
             });
-
-            return true;
         });
-
-        if (!updated) {
-            console.log(`Pitch ${pitchId} is not in SUBMITTED status or was already approved.`);
-            return;
-        }
         
         const grounds = pitch.grounds.map(ground => ground.id);
         await PitchService.enqueueGroundSlotGeneration(pitchId, grounds);
     };
 
-    fetchAvailability = async (pitchId: string, date: Date) => {
+    fetchAvailability = async (pitchId: string, target?: string) => {
         // Make sure that the pitch is not deleted and active first before attempting to build the availability.
         const pitch = await prisma.pitch.findFirst({ 
             where: { 
@@ -529,6 +557,9 @@ export default class PitchService {
                         status: {
                             not: GroundStatus.DELETED
                         }
+                    },
+                    include: {
+                        settings: true
                     }
                 }
             }
@@ -540,26 +571,73 @@ export default class PitchService {
         if (!config.ACTIVE_STATES.includes(pitch.status))
             throw new BadRequestError("Could not query availability for the specified pitch. Pitch needs to be active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
+        // If a target ground is specified, verify it exists on this pitch.
+        if (target) {
+            const ground = pitch.grounds.some(ground => ground.id === target);
+            if (!ground)
+                throw new NotFoundError("Could not find the specified ground on this pitch.", ERROR_CODES.GROUND_NOT_FOUND);
+        }
+
+        // Determine which grounds to query availability for.
+        const grounds = target
+            ? pitch.grounds.filter(ground => ground.id === target)
+            : pitch.grounds;
+
         // Start building the query's startDate, endDate, and grounds.
-        const grounds = pitch.grounds;
+        const today = new Date();
 
-        const start = startOfWeek(date);
-        const end = endOfWeek(date);
+        const minimumWindow = Math.min(
+            ...grounds.map(ground => {
+                if (!ground.settings) throw new InternalServerError("Could not find settings associated with ground.");
+                return ground.settings.minimumWindow;
+            })
+        );
 
-        const rawSlots = await prisma.groundSlot.findMany({
+        const maximumWindow = Math.max(
+            ...grounds.map(ground => {
+                if (!ground.settings) throw new InternalServerError("Could not find settings associated with ground.");
+                return ground.settings.maximumWindow;
+            })
+        );
+
+        const lowerBoundary = subDays(today, minimumWindow);
+        const upperBoundary = addDays(today, maximumWindow);
+
+        // Fetch all active bookings (excluding CANCELLED and EXPIRED) across the relevant grounds within the availability window.
+        const bookings = await prisma.booking.findMany({
             where: {
                 pitchId,
-                startsAt: { gte: start, lte: end }
+                groundId: { in: grounds.map(g => g.id) },
+                status: { notIn: [BookingStatus.CANCELLED, BookingStatus.EXPIRED] },
+                startTime: { gte: lowerBoundary },
+                endTime: { lte: upperBoundary },
             },
             select: {
-                groundId: true,
-                startsAt: true,
-                status: true,
-            }
+                startTime: true,
+            },
         });
 
-        const slots = formatPitchAvailabilityQuery(rawSlots);
-        return { slots, grounds };
+        // Build a set of dates that have at least one booking.
+        const bookedDates = new Set<string>(
+            bookings.map(booking => booking.startTime.toISOString().slice(0, 10))
+        );
+
+        // Generate one entry per calendar day across the full window.
+        const availability: { date: Date; isBooked: boolean }[] = [];
+
+        const cursor = new Date(lowerBoundary);
+        cursor.setUTCHours(0, 0, 0, 0);
+
+        const end = new Date(upperBoundary);
+        end.setUTCHours(0, 0, 0, 0);
+
+        while (cursor <= end) {
+            const key = cursor.toISOString().slice(0, 10);
+            availability.push({ date: new Date(cursor), isBooked: bookedDates.has(key) });
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+        }
+
+        return { constraints: { minimumWindow, maximumWindow }, availability };
     };
 
     fetchFeed = async (payload: FetchPitchFeedPayloadType, userId?: string, locale: Language = Language.EN) => {

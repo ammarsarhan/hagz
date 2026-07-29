@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, activatePitchHandler, deactivatePitchHandler, rejectPitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { getDashboardPitchesHandler, createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, activatePitchHandler, deactivatePitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
 import { createGroundHandler, deactivateGroundHandler, activateGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, deleteGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler, getStaffBookingsHandler, getStaffBookingHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
@@ -10,8 +10,9 @@ import { createStaffBookingHandler } from "@/domains/bookings/bookings.handlers.
 // Chained for RPC type support on the frontend.
 const app = new Hono()
     .post('/', ...createPitchHandler)
-    .get('/:pitchId', ...getDashboardPitchHandler)
+    .get('/', ...getDashboardPitchesHandler)
     .patch('/:pitchId', ...updatePitchHandler)
+    .get('/:pitchId', ...getDashboardPitchHandler)
     .get('/:pitchId/amenities', ...getPitchAmenitiesHandler)
     .post('/:pitchId/amenities', ...createPitchAmenityHandler)
     .get('/:pitchId/amenities/:order', ...getPitchAmenityHandler)
@@ -42,7 +43,6 @@ const app = new Hono()
     .post('/:pitchId/submit', ...submitPitchHandler)
     .post('/:pitchId/deactivate', ...deactivatePitchHandler)
     .post('/:pitchId/activate', ...activatePitchHandler)
-    .post('/:pitchId/reject', ...rejectPitchHandler)
     .post('/:pitchId/team/invitations', ...createPitchInvitationHandler)
     .get('/:pitchId/team/invitations/:invitationId', ...fetchPitchInvitationHandler)
     .delete('/:pitchId/team/invitations/:invitationId', ...deletePitchInvitationHandler)

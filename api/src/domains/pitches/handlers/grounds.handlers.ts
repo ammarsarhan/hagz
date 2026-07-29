@@ -291,7 +291,7 @@ export const getStaffBookingHandler = factory.createHandlers(
 
         return c.json({ success: true, data: { booking } }, 200);
     }
-)
+);
 
 export const getStaffBookingsHandler = factory.createHandlers(
     guard("bookings", PermissionLevel.READ),
@@ -308,4 +308,4 @@ export const getStaffBookingsHandler = factory.createHandlers(
 
         return c.json({ success: true, data: { bookings } }, 200);
     }
-)
+);
