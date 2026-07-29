@@ -534,9 +534,13 @@ export const getStaffBookingsFiltersSchema = z.object({
         .coerce
         .date("A valid end date is required."),
     page: z
+        .coerce
+        .number()
         .int("Page must be a valid number.")
         .min(1, "Page must be at least 1."),
     limit: z
+        .coerce
+        .number()
         .int("Limit must be a valid number.")
         .min(1, "Limit must be at least 1.")
         .max(100, "Limit may not exceed 100 results per page."),

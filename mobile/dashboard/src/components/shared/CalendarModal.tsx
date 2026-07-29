@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { IconX } from "@tabler/icons-react-native";
 import {
     eachDayOfInterval,
@@ -37,7 +37,8 @@ interface MonthSectionProps {
 // UTC, since the API represents each day as a UTC-midnight instant. Formatting
 // with plain date-fns `format()` uses the device's local timezone and can shift
 // the key onto the wrong day depending on where the app is running.
-const dayKey = (date: Date) => formatInTimeZone(date, "UTC", "yyyy-MM-dd");
+
+const dayKey = (date: Date) => format(date, "yyyy-MM-dd");
 
 function MonthSection({ month, bookedDates, selectedDate, setDate }: MonthSectionProps) {
     const today = new Date();
@@ -48,9 +49,11 @@ function MonthSection({ month, bookedDates, selectedDate, setDate }: MonthSectio
         const days = eachDayOfInterval({ start, end });
 
         const rows: Date[][] = [];
+
         for (let i = 0; i < days.length; i += 7) {
             rows.push(days.slice(i, i + 7));
         }
+        
         return rows;
     }, [month]);
 
@@ -72,6 +75,15 @@ function MonthSection({ month, bookedDates, selectedDate, setDate }: MonthSectio
                                     const isSelected = isSameDay(day, selectedDate);
                                     const isBooked = bookedDates.has(dayKey(day));
                                     const isToday = isSameDay(day, today);
+
+                                    if (format(day, "yyyy-MM-dd") === "2026-07-08") {
+                                        console.log({
+                                            day: day.toISOString(),
+                                            dayKey: dayKey(day),
+                                            isBooked,
+                                            bookedDates: [...bookedDates],
+                                        });
+                                    }
 
                                     return (
                                         <Pressable
@@ -104,7 +116,9 @@ export default function CalendarModal({ visible, onClose, date, setDate, pitch, 
     const bookedDates = useMemo(() => {
         const set = new Set<string>();
         availability?.availability.forEach((day: AvailabilityDay) => {
-            if (day.isBooked) set.add(dayKey(new Date(day.date)));
+            if (day.isBooked) {
+                set.add(format(new Date(day.date), "yyyy-MM-dd"));
+            };
         });
 
         return set;
@@ -129,10 +143,17 @@ export default function CalendarModal({ visible, onClose, date, setDate, pitch, 
         return result.sort((a, b) => a.getTime() - b.getTime());
     }, [availability]);
 
-    const handleSelectDate = (date: Date) => {
-        setDate(date);
+    const handleSelectDate = (newDate: Date) => {
+        if (!isSameDay(newDate, date)) {
+            setDate(newDate);
+        }
         onClose();
     };
+
+    useEffect(() => {
+        console.log("BOOKED DATES");
+        console.log([...bookedDates]);
+    }, [bookedDates]);
 
     return (
         <Modal

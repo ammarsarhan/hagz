@@ -794,30 +794,30 @@ export default class GroundService {
                 gte: startDate,
                 lte: endDate,
             },
-            booking: {
-                ...(status && { status }),
-            },
+            ...(!status && {
+                status: SlotStatus.BOOKED,
+            }),
+            ...(status && {
+                booking: {
+                    status,
+                },
+            }),
         };
 
-        const [slots, total] = await Promise.all([
-            prisma.groundSlot.findMany({
-                where,
-                include: {
-                    booking: {
-                        include: {
-                            customer: true,
-                            initiator: true,
-                        },
+        const slots = await prisma.groundSlot.findMany({
+            where,
+            include: {
+                booking: {
+                    include: {
+                        customer: true,
+                        initiator: true,
                     },
                 },
-                orderBy: {
-                    startsAt: "asc",
-                },
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-            prisma.groundSlot.count({ where }),
-        ]);
+            },
+            orderBy: {
+                startsAt: "asc",
+            },
+        });
 
         const bookings = slots.reduce<{hour: Date; bookings: typeof slots;}[]>((acc, slot) => {
             let group = acc.find((g) => g.hour.getTime() === slot.startsAt.getTime());
@@ -837,13 +837,14 @@ export default class GroundService {
         return {
             bookings,
             pagination: {
-                total,
+                total: bookings.length,
                 page,
                 limit,
-                pages: Math.ceil(total / limit),
+                pages: Math.ceil(bookings.length / limit),
             },
         };
     };
+    
     fetchStaffBooking = async (pitchId: string, groundId: string, bookingId: string) => {
         const ground = await prisma.ground.findUnique({
             where: {

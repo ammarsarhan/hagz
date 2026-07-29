@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { addDays, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
+import { addDays, subDays, formatDate, eachDayOfInterval, isSameDay, addHours } from 'date-fns';
 import { IconChevronRight, IconLayoutDashboard } from "@tabler/icons-react-native";
 import { usePitch } from "@/context/PitchContext";
 import CalendarModal from "@/components/shared/CalendarModal";
 import { sportMap } from "@/lib/types/ground";
 import cn from "@/lib/cn";
+import { useBookings } from "@/lib/hooks/useBookings";
+
 export default function Bookings() {
-  const { pitch, isLoading } = usePitch();
+  const { pitch, isLoading: isPitchLoading } = usePitch();
   
   const [selectedGround, setSelectedGround] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -19,16 +21,25 @@ export default function Bookings() {
   const layoutCount = useRef(0);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isPitchLoading && pitch?.grounds) {
       if (pitch.grounds.length > 1) {
         setSelectedGround('all');
-      } else {
+      } else if (pitch.grounds.length === 1) {
         setSelectedGround(pitch.grounds[0].id);
       }
-    };
-  }, [isLoading, pitch?.grounds])
+    }
+  }, [isPitchLoading, pitch?.grounds]);
 
-  if (isLoading) return null;
+  const target = selectedGround === "all" ? undefined : (selectedGround ?? undefined);
+
+  const { data, isLoading: isBookingsLoading } = useBookings(
+    selectedDate,
+    pitch?.id ?? "",
+    target,
+    !isPitchLoading && !!pitch?.id && selectedGround !== null
+  );
+
+  if (isPitchLoading || !pitch) return null;
 
   const hasAll = pitch.grounds.length > 1;
 
@@ -55,17 +66,14 @@ export default function Bookings() {
   
   return (
     <>
-      {
-        isModalOpen &&
-          <CalendarModal 
-            visible={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            date={selectedDate}
-            setDate={setSelectedDate}
-            pitch={pitch.id}
-            target={selectedGround!}
-          />
-      }
+      <CalendarModal 
+        visible={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        date={selectedDate}
+        setDate={setSelectedDate}
+        pitch={pitch.id}
+        target={selectedGround!}
+      />
       <SafeAreaView className="flex-1 py-10 gap-y-6">
         <View className="gap-y-1 px-6">
           <Text className="text-4xl font-semibold">Bookings</Text>
@@ -153,7 +161,25 @@ export default function Bookings() {
           </ScrollView>
         </View>
         <ScrollView className="flex-1" contentContainerClassName="px-6">
-
+          {
+          isBookingsLoading ?
+            <View className="py-10 items-center justify-center">
+              <ActivityIndicator />
+            </View> :
+            (
+              data &&
+              data.bookings.map(slot => {
+                return (
+                  <View key={slot.hour} className="pb-6 gap-y-1">  
+                    <Text className="underline">{formatDate(slot.hour, "hh am")} - {formatDate(addHours(slot.hour, 1), "hh am")}</Text>
+                    {
+                      slot.bookings.map(booking => <Text key={booking.id}>{booking.priceType} - {booking.startsAt}</Text>)
+                    }
+                  </View>
+                )
+              })
+            )
+          }
         </ScrollView>
       </SafeAreaView>
     </>
