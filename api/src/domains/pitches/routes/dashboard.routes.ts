@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { getDashboardPitchesHandler, createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, activatePitchHandler, deactivatePitchHandler, getDashboardPitchHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
+import { getDashboardPitchesHandler, createPitchHandler, submitPitchHandler, updatePitchHandler, fetchPitchAvailabilityHandler, activatePitchHandler, deactivatePitchHandler, getDashboardPitchHandler, fetchStaffPitchBookingsHandler } from "@/domains/pitches/handlers/pitches.handlers.js";
 import { createGroundHandler, deactivateGroundHandler, activateGroundHandler, fetchGroundScheduleHandler, fetchGroundSchedulesHandler, fetchGroundSlotHandler, fetchGroundSlotsHandler, getGroundHandler, deleteGroundHandler, getGroundSettingsHandler, getGroundsHandler, updateGroundHandler, updateGroundSettingsHandler, updateGroundSlotHandler, upsertGroundScheduleHandler, getStaffBookingsHandler, getStaffBookingHandler } from "@/domains/pitches/handlers/grounds.handlers.js";
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
@@ -53,6 +53,7 @@ const app = new Hono()
     .patch('/:pitchId/team/:memberId', ...updatePitchStaffMemberHandler)
     .delete('/:pitchId/team/:memberId', ...deletePitchStaffMemberHandler)
     .get('/:pitchId/availability', ...fetchPitchAvailabilityHandler)
+    .get('/:pitchId/bookings', ...fetchStaffPitchBookingsHandler)
 
 export default app;
 export type AppType = typeof app;

@@ -763,45 +763,76 @@ export default class GroundService {
                 pitchId,
                 status: { not: GroundStatus.DELETED },
                 pitch: {
-                    status: { not: PitchStatus.DELETED }
-                }
+                    status: { not: PitchStatus.DELETED },
+                },
             },
             include: {
                 pitch: {
-                    select: { status: true }
-                }
-            }
+                    select: { status: true },
+                },
+            },
         });
 
         if (!ground || !ground.pitch)
-            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+            throw new NotFoundError(
+                "Could not find ground with the specified ID.",
+                ERROR_CODES.GROUND_NOT_FOUND
+            );
 
         if (!config.ACTIVE_STATES.includes(ground.pitch.status))
-            throw new BadRequestError("Could not fetch bookings on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+            throw new BadRequestError(
+                "Could not fetch bookings on an inactive pitch. Make sure your pitch is active first.",
+                ERROR_CODES.PITCH_NOT_ACTIVE
+            );
 
         const { status, startDate, endDate, page, limit } = filters;
 
-        const [bookings, total] = await Promise.all([
-            prisma.booking.findMany({
-                where: {
-                    groundId,
-                    pitchId,
-                    ...(status && { status }),
-                    createdAt: { gte: startDate, lte: endDate }
+        const where = {
+            pitchId,
+            groundId,
+            startsAt: {
+                gte: startDate,
+                lte: endDate,
+            },
+            booking: {
+                ...(status && { status }),
+            },
+        };
+
+        const [slots, total] = await Promise.all([
+            prisma.groundSlot.findMany({
+                where,
+                include: {
+                    booking: {
+                        include: {
+                            customer: true,
+                            initiator: true,
+                        },
+                    },
                 },
-                orderBy: { createdAt: "desc" },
+                orderBy: {
+                    startsAt: "asc",
+                },
                 skip: (page - 1) * limit,
-                take: limit
+                take: limit,
             }),
-            prisma.booking.count({
-                where: {
-                    groundId,
-                    pitchId,
-                    ...(status && { status }),
-                    createdAt: { gte: startDate, lte: endDate }
-                }
-            })
+            prisma.groundSlot.count({ where }),
         ]);
+
+        const bookings = slots.reduce<{hour: Date; bookings: typeof slots;}[]>((acc, slot) => {
+            let group = acc.find((g) => g.hour.getTime() === slot.startsAt.getTime());
+
+            if (!group) {
+                group = {
+                    hour: slot.startsAt,
+                    bookings: [],
+                };
+                acc.push(group);
+            }
+
+            group.bookings.push(slot);
+            return acc;
+        }, []);
 
         return {
             bookings,
@@ -809,11 +840,10 @@ export default class GroundService {
                 total,
                 page,
                 limit,
-                pages: Math.ceil(total / limit)
-            }
+                pages: Math.ceil(total / limit),
+            },
         };
     };
-
     fetchStaffBooking = async (pitchId: string, groundId: string, bookingId: string) => {
         const ground = await prisma.ground.findUnique({
             where: {

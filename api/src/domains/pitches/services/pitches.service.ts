@@ -1,7 +1,7 @@
 import z from "zod";
 
-import { createPitchFeedResponse, normalizeRawPitchFeed, parseGoogleMapsLink, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
-import { BookingStatus, GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, SlotStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
+import { createPitchFeedResponse, normalizeRawPitchFeed, type CreatePitchPayloadType, type FetchPitchFeedPayloadType, type FetchStaffBookingsFiltersPayloadType, type UpdatePitchPayloadType } from "@/domains/pitches/pitches.validator.js";
+import { GroundSize, GroundSport, GroundStatus, Language, MediaStatus, MediaType, PermissionLevel, PitchStatus, PitchTier, ScheduleStatus, SlotStatus, StaffRole, UserRole } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
 
 import prisma from "@/shared/lib/utils/prisma.js";
@@ -13,7 +13,7 @@ import { pitchesQueue } from "@/jobs/queues/pitches.queue.js";
 import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
-import { addHours, subDays, subHours } from "date-fns";
+import { addHours, subDays } from "date-fns";
 import type { Prisma } from "@/generated/prisma/client.js";
 import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
@@ -885,5 +885,102 @@ export default class PitchService {
             },
             orderBy: { createdAt: "desc" }
         });
+    };
+
+    fetchStaffBookings = async (pitchId: string, filters: FetchStaffBookingsFiltersPayloadType) => {
+        const pitch = await prisma.pitch.findFirst({
+            where: {
+                id: pitchId,
+                status: {
+                    not: PitchStatus.DELETED,
+                },
+            },
+            select: {
+                status: true,
+            },
+        });
+
+        if (!pitch)
+            throw new NotFoundError(
+                "Could not find pitch with the specified ID.",
+                ERROR_CODES.PITCH_NOT_FOUND
+            );
+
+        if (!config.ACTIVE_STATES.includes(pitch.status))
+            throw new BadRequestError(
+                "Could not fetch bookings on an inactive pitch. Make sure your pitch is active first.",
+                ERROR_CODES.PITCH_NOT_ACTIVE
+            );
+
+        const { status, startDate, endDate, page, limit } = filters;
+
+        const where = {
+            pitchId,
+            startsAt: {
+                gte: startDate,
+                lte: endDate,
+            },
+            booking: {
+                ...(status && { status }),
+            },
+        };
+
+        const [slots, total] = await Promise.all([
+            prisma.groundSlot.findMany({
+                where,
+                include: {
+                    ground: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                    booking: {
+                        include: {
+                            customer: true,
+                            initiator: true,
+                        },
+                    },
+                },
+                orderBy: [
+                    {
+                        startsAt: "asc",
+                    },
+                    {
+                    ground: {
+                        name: "asc",
+                    },
+                    },
+                ],
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.groundSlot.count({ where }),
+        ]);
+
+        const bookings = slots.reduce<{hour: Date; bookings: typeof slots}[]>((acc, slot) => {
+            let group = acc.find(g => g.hour.getTime() === slot.startsAt.getTime());
+
+            if (!group) {
+                group = {
+                    hour: slot.startsAt,
+                    bookings: [],
+                };
+                acc.push(group);
+            };
+
+            group.bookings.push(slot);
+            return acc;
+        }, []);
+
+        return {
+            bookings,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit),
+            },
+        };
     };
 };

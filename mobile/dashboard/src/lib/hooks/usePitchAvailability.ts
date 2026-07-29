@@ -22,7 +22,7 @@ async function fetchAvailability(pitchId: string, target?: string): Promise<Avai
     return data.availability;
 }
 
-export function usePitchAvailability(pitchId: string, target: string | undefined, enabled: boolean = true) {
+export function usePitchAvailability(pitchId: string, target?: string, enabled: boolean = true) {
     return useQuery({
         queryKey: ["availability", pitchId, target ?? "all"],
         queryFn: () => fetchAvailability(pitchId, target),

@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, fetchPitchAvailabilitySchema, createPitchSchema, fetchPitchFeedSchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, fetchPitchAvailabilitySchema, createPitchSchema, fetchPitchFeedSchema, getStaffBookingsFiltersSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -178,5 +178,21 @@ export const fetchUserFavoritesHandler = factory.createHandlers(
         const userId = c.var.id;
         const favorites = await pitchService.fetchUserFavorites(userId);
         return c.json({ success: true, data: favorites }, 200);
+    }
+);
+
+export const fetchStaffPitchBookingsHandler = factory.createHandlers(
+    guard("bookings", PermissionLevel.READ),
+    validate("query", getStaffBookingsFiltersSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const filters = c.req.valid("query");
+        const bookings = await pitchService.fetchStaffBookings(pitchId, filters);
+
+        return c.json({ success: true, data: { ...bookings } }, 200);
     }
 );
