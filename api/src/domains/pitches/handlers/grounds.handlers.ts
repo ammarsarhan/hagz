@@ -304,8 +304,8 @@ export const getStaffBookingsHandler = factory.createHandlers(
             throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
 
         const filters = c.req.valid("query");
-        const bookings = await groundService.fetchStaffBookings(pitchId, groundId, filters);
+        const slots = await groundService.fetchStaffBookings(pitchId, groundId, filters);
 
-        return c.json({ success: true, data: { ...bookings } }, 200);
+        return c.json({ success: true, data: { ...slots } }, 200);
     }
 );

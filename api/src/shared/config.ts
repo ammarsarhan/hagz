@@ -1,11 +1,12 @@
 import { BookingStatus, PitchStatus, ScheduleStatus } from "@/generated/prisma/enums.js";
 
 const config = {
+    PLATFORM_FEE_RATE: 0.05,
     MAXIMUM_GROUNDS_PER_PITCH: 10,
     MAXIMUM_PITCHES_PER_USER: 5,
     MAXIMUM_AMENITIES_PER_PITCH: 10,
     MAXIMUM_MEDIA_PER_PITCH: 10,
-    SERVICE_RATE: 1.5,
+    SERVICE_RATE: 0.015,
     EDITABLE_STATES: [PitchStatus.DRAFT, PitchStatus.MAINTENANCE] as PitchStatus[],
     ACTIVE_STATES: [PitchStatus.LIVE] as PitchStatus[],
     GENERATING_STATES: [ScheduleStatus.PENDING, ScheduleStatus.GENERATING] as ScheduleStatus[],

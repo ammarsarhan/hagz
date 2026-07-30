@@ -608,8 +608,6 @@ export default class PitchService {
             },
         });
 
-        console.log(bookedSlots);
-
         const bookedDates = new Set(
             bookedSlots.map(slot =>
                 formatInTimeZone(slot.startsAt, "Africa/Cairo", "yyyy-MM-dd")
@@ -628,18 +626,11 @@ export default class PitchService {
         while (cursor <= end) {
             const key = cursor.toISOString().slice(0, 10);
 
-            console.log({
-                cursor: cursor.toISOString(),
-                key,
-                booked: bookedDates.has(key),
-            });
-
             availability.push({ date: new Date(cursor), isBooked: bookedDates.has(key) });
             cursor.setUTCDate(cursor.getUTCDate() + 1);
         }
 
         // 30 day constraint as per the slot purging job scheduled.
-        console.log(availability);
         return { constraints: { minimumWindow: differenceInHours(today, lowerBoundary), maximumWindow }, availability };
     };
     
@@ -927,11 +918,6 @@ export default class PitchService {
 
         const { status, startDate, endDate, page, limit } = filters;
 
-        console.log({
-            startDate,
-            endDate,
-        });
-
         const where = {
             pitchId,
             startsAt: {
@@ -946,7 +932,7 @@ export default class PitchService {
             },
         };
 
-        const slots = await prisma.groundSlot.findMany({
+        const query = await prisma.groundSlot.findMany({
             where,
             include: {
                 ground: {
@@ -956,9 +942,23 @@ export default class PitchService {
                     },
                 },
                 booking: {
-                    include: {
-                        customer: true,
-                        initiator: true,
+                    select: {
+                        id: true,
+                        status: true,
+                        pricingSnapshot: true,
+                        customer: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                            }
+                        },
+                        initiator: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                                avatarUrl: true
+                            }
+                        }
                     },
                 },
             },
@@ -974,17 +974,7 @@ export default class PitchService {
             ],
         });
 
-        console.log("Filtered slots:");
-
-        console.table(
-            slots.map(slot => ({
-                startsAt: slot.startsAt.toISOString(),
-                ground: slot.ground.name,
-                bookingStatus: slot.booking?.status,
-            }))
-        );
-
-        const bookings = slots.reduce<{hour: Date; bookings: typeof slots}[]>((acc, slot) => {
+        const slots = query.reduce<{hour: Date; bookings: typeof query}[]>((acc, slot) => {
             let group = acc.find(g => g.hour.getTime() === slot.startsAt.getTime());
 
             if (!group) {
@@ -1000,12 +990,12 @@ export default class PitchService {
         }, []);
 
         return {
-            bookings,
+            slots,
             pagination: {
-                total: bookings.length,
+                total: slots.length,
                 page,
                 limit,
-                pages: Math.ceil(bookings.length / limit),
+                pages: Math.ceil(slots.length / limit),
             },
         };
     };

@@ -1,11 +1,12 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
-import { BookingChannel, BookingStatus, GroundSize, PaymentMethod, PitchTier, PriceType, SlotStatus, UserRole } from "@/generated/prisma/enums.js";
-import { addHours, subDays, subHours, isPast, isFuture, differenceInHours } from "date-fns";
+import { BookingChannel, BookingStatus, GroundSize, LedgerAction, PaymentMethod, PitchTier, PriceType, SlotStatus, UserRole } from "@/generated/prisma/enums.js";
+import { addHours, subDays, subHours, differenceInHours } from "date-fns";
 import config from "@/shared/config.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
 
-const SERVICE_RATE = config.SERVICE_RATE || 1.5;
+const SERVICE_RATE = config.SERVICE_RATE;
+const PLATFORM_FEE_RATE = config.PLATFORM_FEE_RATE; // platform's cut on cash-direct bookings, owed via CASH_FEE_DEBT
 
 function getGroundSizeMultiplier(size: GroundSize) {
   switch (size) {
@@ -16,15 +17,60 @@ function getGroundSizeMultiplier(size: GroundSize) {
   }
 }
 
+// Channel no longer implies payment/status branching on its own — bookingMode does.
+// ONLINE is always customer-initiated checkout. WALK_IN is always staff-direct
+// (customer is physically present, nothing to check out into). WHATSAPP/PHONE/OTHER
+// can go either way depending on whether staff generated a payment link/reference
+// or logged something already settled.
+
+function resolveChannelAndMode(): { channel: BookingChannel; mode: "checkout" | "direct" } {
+  const channel = faker.helpers.weightedArrayElement([
+    { weight: 60, value: BookingChannel.ONLINE },
+    { weight: 12, value: BookingChannel.WALK_IN },
+    { weight: 14, value: BookingChannel.WHATSAPP },
+    { weight: 10, value: BookingChannel.PHONE },
+    { weight: 4, value: BookingChannel.OTHER },
+  ]);
+
+  if (channel === BookingChannel.ONLINE) return { channel, mode: "checkout" };
+  if (channel === BookingChannel.WALK_IN) return { channel, mode: "direct" };
+
+  // WHATSAPP / PHONE / OTHER: either a link was sent, or staff logged it as already settled.
+  return { channel, mode: faker.helpers.arrayElement(["checkout", "direct"]) };
+}
+
+// checkout: CASH represents a Fawry/kiosk reference, not cash-in-hand.
+// direct: any method is now valid — CARD/WALLET means it was settled externally (POS terminal etc).
+
+function resolvePaymentMethod(mode: "checkout" | "direct"): PaymentMethod {
+  return mode === "checkout"
+    ? faker.helpers.arrayElement([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.WALLET])
+    : faker.helpers.arrayElement([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.WALLET]);
+}
+
 export async function seedBookings(pitches: any[], grounds: any[], customers: any[], users: any[]) {
-  console.log("Seeding bookings, payments, and events...");
+  console.log("Seeding bookings, payments, ledger entries, and events...");
 
   const allBookings = [];
+  const ledgerCache = new Map<string, string>(); // pitchId -> ledgerId
+
+  async function resolveLedgerId(pitchId: string): Promise<string> {
+    if (ledgerCache.has(pitchId)) return ledgerCache.get(pitchId)!;
+
+    const ledger = await prisma.pitchLedger.upsert({
+      where: { pitchId },
+      create: { pitchId, balance: 0 },
+      update: {},
+    });
+
+    ledgerCache.set(pitchId, ledger.id);
+    return ledger.id;
+  }
 
   for (const pitch of pitches) {
     let bookingTarget = 40;
     if (pitch.tier === PitchTier.STANDARD) bookingTarget = 15;
-    
+
     const pitchGrounds = grounds.filter(g => g.pitchId === pitch.id);
     const pitchCustomers = customers.filter(c => c.pitchId === pitch.id);
 
@@ -41,40 +87,36 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       let startTime: Date;
       let status: BookingStatus;
 
-      if (timeline < 0.85) { 
-        // Historical (last 60 days).
+      if (timeline < 0.85) {
         startTime = faker.date.between({ from: subDays(new Date(), 60), to: subHours(new Date(), 24) });
         startTime.setMinutes(0, 0, 0);
-        
-        const random = Math.random();
 
+        const random = Math.random();
         if (random < 0.75) status = BookingStatus.COMPLETED;
         else if (random < 0.90) status = BookingStatus.CANCELLED;
         else status = BookingStatus.NO_SHOW;
-      } 
-      else if (timeline < 0.95) { 
-        // Recent (last 24h).
+      }
+      else if (timeline < 0.95) {
         startTime = faker.date.between({ from: subHours(new Date(), 24), to: new Date() });
         startTime.setMinutes(0, 0, 0);
         status = faker.helpers.arrayElement([BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]);
-      } 
-      else { 
-        // Upcoming (next 72h).
+      }
+      else {
         startTime = faker.date.between({ from: new Date(), to: addHours(new Date(), 72) });
         startTime.setMinutes(0, 0, 0);
         status = Math.random() < 0.2 ? BookingStatus.RESERVED : BookingStatus.CONFIRMED;
       }
 
-      // 2. Channel and PaymentMethod.
-      const channel = Math.random() < 0.75 ? BookingChannel.ONLINE : BookingChannel.WALK_IN;
-      const paymentMethod = channel === BookingChannel.WALK_IN ? PaymentMethod.CASH : faker.helpers.arrayElement([PaymentMethod.CARD, PaymentMethod.WALLET]);
+      // 2. Channel, mode, and payment method.
+      const { channel, mode } = resolveChannelAndMode();
+      const paymentMethod = resolvePaymentMethod(mode);
 
-      // 3. Find available slots
+      // 3. Find available slots.
       const duration = faker.helpers.arrayElement([settings.minimumDuration, settings.maximumDuration].filter(Boolean) as number[]);
       const endTime = addHours(startTime, duration);
-      
-      // Constraint: Check windows.
-      if (channel === BookingChannel.ONLINE && differenceInHours(startTime, new Date()) < settings.minimumWindow) continue;
+
+      // Constraint: checkout-mode bookings need enough lead time for payment; both modes respect maximumWindow.
+      if (mode === "checkout" && differenceInHours(startTime, new Date()) < settings.minimumWindow) continue;
       if (differenceInHours(startTime, new Date()) > settings.maximumWindow) continue;
 
       const slots = await prisma.groundSlot.findMany({
@@ -86,25 +128,27 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
         orderBy: { startsAt: "asc" }
       });
 
-      if (slots.length < duration) continue; // Skip if slots taken.
+      if (slots.length < duration) continue;
 
       // 4. Calculate pricing using BookingService.
       const { pricingSnapshot } = BookingService.buildPricingSnapshot(ground, settings, slots);
 
       let baseAmount = slots.reduce((sum, slot) => sum + (pricingSnapshot.slots.find(s => s.startsAt.getTime() === slot.startsAt.getTime())?.price || 0), 0);
       let totalAmount = baseAmount;
-      
-      if (channel === BookingChannel.ONLINE) {
+
+      // Service fee and deposit are gated on mode now, not on channel === ONLINE.
+      if (mode === "checkout") {
         totalAmount += slots.length * getGroundSizeMultiplier(ground.size) * SERVICE_RATE;
       }
 
       let depositFee = null;
-
-      if (channel === BookingChannel.ONLINE && pricingSnapshot.allowDeposit) {
+      if (mode === "checkout" && pricingSnapshot.allowDeposit) {
         depositFee = Math.round(totalAmount * (pricingSnapshot.depositPercentage! / 100));
       }
 
-      // 5. Create booking.
+      totalAmount = Math.round(totalAmount);
+
+      // 5. Create booking + payment.
       const booking = await prisma.booking.create({
         data: {
           pitchId: pitch.id,
@@ -117,14 +161,14 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
           endTime,
           channel,
           pricingSnapshot,
-          totalAmount: Math.round(totalAmount),
+          totalAmount,
           depositFee,
           paymentMethod,
           status,
           payment: {
             create: {
               method: paymentMethod,
-              totalAmount: Math.round(totalAmount),
+              totalAmount,
               depositFee,
             }
           }
@@ -137,10 +181,46 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
         data: { status: SlotStatus.BOOKED, bookingId: booking.id }
       });
 
-      // 7. Enqueue Lifecycle.
+      // 7. Direct-mode ledger entries — mirrors what PaymentService writes at creation
+      // for staff-settled bookings. Checkout-mode revenue/fee entries are left to the
+      // completion worker, same as before, so they're not simulated here.
+      if (mode === "direct") {
+        const ledgerId = await resolveLedgerId(pitch.id);
+
+        if (paymentMethod === PaymentMethod.CASH) {
+          const platformFee = Math.round(totalAmount * PLATFORM_FEE_RATE);
+
+          await prisma.ledgerEntry.create({
+            data: {
+              ledgerId,
+              bookingId: booking.id,
+              type: LedgerAction.CASH_FEE_DEBT,
+              amount: -platformFee,
+              note: "Platform fee owed from cash-settled direct booking.",
+            }
+          });
+
+          await prisma.pitchLedger.update({
+            where: { id: ledgerId },
+            data: { balance: { decrement: platformFee } }
+          });
+        } else {
+          await prisma.ledgerEntry.create({
+            data: {
+              ledgerId,
+              bookingId: booking.id,
+              type: LedgerAction.EXTERNAL_PAYMENT_LOG,
+              amount: 0,
+              note: faker.helpers.maybe(() => "Paid via venue POS terminal.", { probability: 0.5 }) ?? null,
+            }
+          });
+        }
+      }
+
+      // 8. Enqueue lifecycle.
       await BookingService.enqueueBookingLifecycle(booking, settings);
 
-      // 8. Create Events (Historical events only).
+      // 9. Create events (historical events only).
       const events: { previousStatus: BookingStatus; updatedStatus: BookingStatus; logs: string }[] = [
         { previousStatus: BookingStatus.RESERVED, updatedStatus: BookingStatus.RESERVED, logs: "Booking initialized." }
       ];
@@ -171,4 +251,4 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
 
   console.log(`Successfully seeded ${allBookings.length} bookings.`);
   return { bookings: allBookings };
-}
+};

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { IconX } from "@tabler/icons-react-native";
 import {
     eachDayOfInterval,
@@ -11,7 +11,6 @@ import {
     startOfMonth,
     startOfWeek,
 } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 import { Pressable, View, Text, ActivityIndicator, Modal, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cn from "@/lib/cn";
@@ -75,15 +74,6 @@ function MonthSection({ month, bookedDates, selectedDate, setDate }: MonthSectio
                                     const isSelected = isSameDay(day, selectedDate);
                                     const isBooked = bookedDates.has(dayKey(day));
                                     const isToday = isSameDay(day, today);
-
-                                    if (format(day, "yyyy-MM-dd") === "2026-07-08") {
-                                        console.log({
-                                            day: day.toISOString(),
-                                            dayKey: dayKey(day),
-                                            isBooked,
-                                            bookedDates: [...bookedDates],
-                                        });
-                                    }
 
                                     return (
                                         <Pressable
@@ -149,11 +139,6 @@ export default function CalendarModal({ visible, onClose, date, setDate, pitch, 
         }
         onClose();
     };
-
-    useEffect(() => {
-        console.log("BOOKED DATES");
-        console.log([...bookedDates]);
-    }, [bookedDates]);
 
     return (
         <Modal

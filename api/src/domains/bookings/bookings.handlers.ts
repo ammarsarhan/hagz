@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 import validate from "@/shared/middleware/validate.middleware.js";
 import guard from "@/domains/pitches/pitches.middleware.js";
 import { authorize } from "@/domains/auth/auth.middleware.js";
-import { createUserBookingSchema, createStaffBookingSchema, rescheduleUserBookingSchema } from "@/domains/bookings/bookings.validator.js";
+import { createStaffCheckoutBookingSchema, createStaffDirectBookingSchema, createUserBookingSchema, rescheduleUserBookingSchema } from "@/domains/bookings/bookings.validator.js";
 import { PermissionLevel } from "@/generated/prisma/enums.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
 import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
@@ -10,11 +10,12 @@ import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/
 const factory = createFactory();
 const bookingService = new BookingService();
 
-export const createStaffBookingHandler = factory.createHandlers(
+export const createStaffCheckoutBookingHandler = factory.createHandlers(
     guard("bookings", PermissionLevel.WRITE),
-    validate("json", createStaffBookingSchema),
+    validate("json", createStaffCheckoutBookingSchema),
     async (c) => {
         const initiatorId = c.var.id;
+
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
 
@@ -25,9 +26,31 @@ export const createStaffBookingHandler = factory.createHandlers(
             throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
 
         const payload = c.req.valid("json");
+        const result = await bookingService.createStaffCheckoutBooking(initiatorId, pitchId, groundId, payload);
 
-        const { booking, checkout } = await bookingService.createStaffBooking(initiatorId, pitchId, groundId, payload);
-        return c.json({ success: true, data: { booking, checkout } }, 201); 
+        return c.json({ success: true, data: { ...result } }, 201);
+    }
+);
+
+export const createStaffDirectBookingHandler = factory.createHandlers(
+    guard("bookings", PermissionLevel.WRITE),
+    validate("json", createStaffDirectBookingSchema),
+    async (c) => {
+        const initiatorId = c.var.id;
+
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        if (!groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const payload = c.req.valid("json");
+        const result = await bookingService.createStaffDirectBooking(initiatorId, pitchId, groundId, payload);
+
+        return c.json({ success: true, data: { ...result } }, 201);
     }
 );
 

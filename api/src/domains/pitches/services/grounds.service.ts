@@ -804,22 +804,44 @@ export default class GroundService {
             }),
         };
 
-        const slots = await prisma.groundSlot.findMany({
+        const query = await prisma.groundSlot.findMany({
             where,
             include: {
+                ground: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 booking: {
-                    include: {
-                        customer: true,
-                        initiator: true,
+                    select: {
+                        id: true,
+                        status: true,
+                        pricingSnapshot: true,
+                        customer: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                            }
+                        },
+                        initiator: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                                avatarUrl: true
+                            }
+                        }
                     },
                 },
             },
-            orderBy: {
-                startsAt: "asc",
-            },
+            orderBy: [
+                {
+                    startsAt: "asc",
+                }
+            ],
         });
 
-        const bookings = slots.reduce<{hour: Date; bookings: typeof slots;}[]>((acc, slot) => {
+        const slots = query.reduce<{hour: Date; bookings: typeof query;}[]>((acc, slot) => {
             let group = acc.find((g) => g.hour.getTime() === slot.startsAt.getTime());
 
             if (!group) {
@@ -835,12 +857,12 @@ export default class GroundService {
         }, []);
 
         return {
-            bookings,
+            slots,
             pagination: {
-                total: bookings.length,
+                total: slots.length,
                 page,
                 limit,
-                pages: Math.ceil(bookings.length / limit),
+                pages: Math.ceil(slots.length / limit),
             },
         };
     };

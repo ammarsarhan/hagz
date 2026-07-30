@@ -70,6 +70,9 @@ enum BookingStatus {
 enum BookingChannel {
   ONLINE
   WALK_IN
+  WHATSAPP
+  PHONE
+  OTHER
 }
 
 enum PitchTier {
@@ -158,6 +161,7 @@ enum PayoutMethod {
 }
 
 enum LedgerAction {
+  EXTERNAL_PAYMENT_LOG // Direct booking, no amount to/for.
   BOOKING_REVENUE // Owner's share of a booking
   PLATFORM_FEE_DEBIT // Platform's 5% cut deducted from owner
   SERVICE_FEE_CREDIT // Service fee collected from user (platform's)

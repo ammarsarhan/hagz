@@ -35,22 +35,35 @@ const createStaffBookingCustomerSchema = z.object({
         .optional()
 })
 
-export type CreateStaffBookingPayloadType = z.infer<typeof createStaffBookingSchema>;
+const bookingTimeRangeSchema = z.object({
+    startTime: z.coerce.date(),
+    endTime: z.coerce.date(),
+}).refine(
+    (data) => data.endTime > data.startTime,
+    { message: "endTime must be after startTime.", path: ["endTime"] }
+).refine(
+    (data) => data.startTime > new Date(),
+    { message: "startTime must be in the future.", path: ["startTime"] }
+);
 
-export const createStaffBookingSchema = z.object({
-    startTime: z
-        .coerce
-        .date()
-        .refine(value => value > new Date(), "Start time must be in the future."),
-    endTime: z
-        .coerce
-        .date(),
-    paymentMethod: z.enum(Object.values(PaymentMethod)),
+export const createStaffCheckoutBookingSchema = bookingTimeRangeSchema.and(z.object({
+    paymentMethod: z.enum([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.WALLET]),
+    // ONLINE excluded, that's customer self-service by definition.
+    // WALK_IN excluded, no reason to generate a link for someone standing in front of staff.
+    channel: z.enum([BookingChannel.WHATSAPP, BookingChannel.PHONE, BookingChannel.OTHER]),
     customer: createStaffBookingCustomerSchema,
-    channel: z.enum(Object.values(BookingChannel))
-})
-.refine(data => data.endTime > data.startTime, "End time must be after start time.")
-.refine(data => data.channel !== BookingChannel.WALK_IN || data.paymentMethod === PaymentMethod.CASH, "Payment method must be cash for walk-in bookings.")
+}));
+
+export const createStaffDirectBookingSchema = bookingTimeRangeSchema.and(z.object({
+    paymentMethod: z.enum([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.WALLET]),
+    // ONLINE excluded, same reasoning as above.
+    channel: z.enum([BookingChannel.WALK_IN, BookingChannel.WHATSAPP, BookingChannel.PHONE, BookingChannel.OTHER]),
+    paymentNote: z.string().max(500).optional(),
+    customer: createStaffBookingCustomerSchema,
+}));
+
+export type CreateStaffCheckoutBookingPayloadType = z.infer<typeof createStaffCheckoutBookingSchema>;
+export type CreateStaffDirectBookingPayloadType = z.infer<typeof createStaffDirectBookingSchema>;
 
 export type RescheduleUserBookingPayloadType = z.infer<typeof rescheduleUserBookingSchema>;
 

@@ -5,7 +5,7 @@ import { createGroundHandler, deactivateGroundHandler, activateGroundHandler, fe
 import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenitiesHandler, getPitchAmenityHandler, updatePitchAmenityHandler } from "@/domains/pitches/handlers/amenities.handlers.js";
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
 import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
-import { createStaffBookingHandler } from "@/domains/bookings/bookings.handlers.js";
+import { createStaffCheckoutBookingHandler, createStaffDirectBookingHandler } from "@/domains/bookings/bookings.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
@@ -29,9 +29,10 @@ const app = new Hono()
     .put('/:pitchId/grounds/:groundId/schedule/:dayOfWeek', ...upsertGroundScheduleHandler)
     .get('/:pitchId/grounds/:groundId/schedule/:dayOfWeek', ...fetchGroundScheduleHandler)
     .post('/:pitchId/grounds/:groundId/deactivate', ...deactivateGroundHandler)
-    .post('/:pitchId/grounds/:groundId/activate', ...activateGroundHandler)
-    .post('/:pitchId/grounds/:groundId/bookings', ...createStaffBookingHandler)
     .get('/:pitchId/grounds/:groundId/bookings', ...getStaffBookingsHandler)
+    .post('/:pitchId/grounds/:groundId/activate', ...activateGroundHandler)
+    .post('/:pitchId/grounds/:groundId/bookings/checkout', ...createStaffCheckoutBookingHandler)
+    .post('/:pitchId/grounds/:groundId/bookings/direct', ...createStaffDirectBookingHandler)
     .get('/:pitchId/grounds/:groundId/bookings/:bookingId', ...getStaffBookingHandler)
     .get('/:pitchId/grounds/:groundId/slots', ...fetchGroundSlotsHandler)
     .get('/:pitchId/grounds/:groundId/slots/:slotId', ...fetchGroundSlotHandler)

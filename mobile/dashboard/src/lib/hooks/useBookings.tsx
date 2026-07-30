@@ -7,12 +7,6 @@ export function useBookings(date: Date, pitchId: string, target?: string, enable
     const startDate = startOfDay(date).toISOString();
     const endDate = endOfDay(date).toISOString();
 
-    console.log({
-        selected: date,
-        startDate,
-        endDate,
-    });
-
     return useQuery({
         queryKey: ["bookings", pitchId, target ?? "all", startOfDay(date).getTime()],
         queryFn: async () => {
