@@ -2,7 +2,7 @@ import { createFactory } from "hono/factory";
 
 import { authorize } from "@/domains/auth/auth.middleware.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
-import { updatePitchSchema, fetchPitchAvailabilitySchema, createPitchSchema, fetchPitchFeedSchema, getStaffBookingsFiltersSchema } from "@/domains/pitches/pitches.validator.js";
+import { updatePitchSchema, fetchPitchAvailabilitySchema, createPitchSchema, fetchPitchFeedSchema, getStaffBookingsFiltersSchema, fetchPitchCustomersSchema } from "@/domains/pitches/pitches.validator.js";
 
 import guard from "@/domains/pitches/pitches.middleware.js";
 import validate from "@/shared/middleware/validate.middleware.js";
@@ -194,5 +194,21 @@ export const fetchStaffPitchBookingsHandler = factory.createHandlers(
         const slots = await pitchService.fetchStaffBookings(pitchId, filters);
 
         return c.json({ success: true, data: { ...slots } }, 200);
+    }
+);
+
+export const fetchPitchCustomersHandler = factory.createHandlers(
+    guard("bookings", PermissionLevel.READ),
+    validate("query", fetchPitchCustomersSchema),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+
+        if (!pitchId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const { phone } = c.req.valid("query");
+        const data = await pitchService.fetchPitchCustomer(pitchId, phone);
+
+        return c.json({ success: true, data: { ...data } }, 200);
     }
 );

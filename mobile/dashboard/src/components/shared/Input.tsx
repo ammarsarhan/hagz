@@ -1,13 +1,24 @@
-import { IconEye, IconEyeOff, IconInfoCircle } from '@tabler/icons-react-native';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { I18nManager, Pressable, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
-import Egypt from '@/assets/static/flags/egypt.svg';
+import { IconEye, IconEyeOff, IconInfoCircle } from "@tabler/icons-react-native";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  I18nManager,
+  Pressable,
+  Text,
+  TextInput,
+  TextInputProps,
+  View,
+} from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+} from "react-native-reanimated";
+import Egypt from "@/assets/static/flags/egypt.svg";
 
-import cn from '@/lib/cn';
+import cn from "@/lib/cn";
 
-interface InputProps {
+interface InputProps extends Omit<TextInputProps, "value" | "onChangeText"> {
   label?: string;
   value?: string;
   onChangeText?: (value: string) => void;
@@ -30,13 +41,14 @@ export default function Input({
   placeholder,
   className,
   containerClassName,
-  type = 'text',
-  textContentType = 'password',
+  type = "text",
+  textContentType = "password",
   multiline = false,
   numberOfLines,
   minHeight = 96,
   information,
-  isDetailed = false
+  isDetailed = false,
+  ...textInputProps
 }: InputProps) {
   const { t } = useTranslation();
   const isRTL = I18nManager.isRTL;
@@ -59,6 +71,7 @@ export default function Input({
               <Text>+20</Text>
             </View>
             <TextInput
+              {...textInputProps}
               keyboardType="number-pad"
               placeholderTextColor="#6B7280"
               placeholder={placeholder}
@@ -97,6 +110,7 @@ export default function Input({
               <Text className="text-gray-500">EGP</Text>
             </View>
             <TextInput
+              {...textInputProps}
               keyboardType="numeric"
               placeholderTextColor="#6B7280"
               placeholder={placeholder}
@@ -136,6 +150,7 @@ export default function Input({
           }
           <View className="w-full flex-row items-center overflow-hidden border border-gray-100 rounded-lg min-h-[48px]">
             <TextInput
+              {...textInputProps}
               secureTextEntry={!isVisible}
               placeholderTextColor="#6B7280"
               textContentType={textContentType}
@@ -185,6 +200,7 @@ export default function Input({
           }
           <View className="w-full flex-row">
             <TextInput
+              {...textInputProps}
               keyboardType={type === 'number' ? 'number-pad' : 'default'}
               placeholder={placeholder}
               placeholderTextColor="#6B7280"

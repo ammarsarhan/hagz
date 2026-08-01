@@ -90,6 +90,20 @@ export const getGroundSettingsHandler = factory.createHandlers(
         const settings = await groundService.getGroundSettings(pitchId, groundId);
         return c.json({ success: true, data: { settings } }, 200);
     }
+);
+
+export const getGroundConfigHandler = factory.createHandlers(
+    guard("settings", PermissionLevel.READ),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        const groundId = c.req.param("groundId");
+
+        if (!pitchId || !groundId) 
+            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+
+        const config = await groundService.getGroundConfig(pitchId, groundId);
+        return c.json({ success: true, data: { config } }, 200);
+    }
 )
 
 export const updateGroundSettingsHandler = factory.createHandlers(
@@ -164,7 +178,7 @@ export const fetchGroundSchedulesHandler = factory.createHandlers(
 );
 
 export const fetchGroundSlotsHandler = factory.createHandlers(
-    guard("schedule", PermissionLevel.READ),
+    guard("bookings", PermissionLevel.READ),
     validate("query", fetchGroundSlotsSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -181,7 +195,7 @@ export const fetchGroundSlotsHandler = factory.createHandlers(
 );
 
 export const fetchGroundSlotHandler = factory.createHandlers(
-    guard("schedule", PermissionLevel.READ),
+    guard("bookings", PermissionLevel.READ),
     async (c) => {
         const pitchId = c.req.param("pitchId");
         const groundId = c.req.param("groundId");
@@ -199,7 +213,7 @@ export const fetchGroundSlotHandler = factory.createHandlers(
 );
 
 export const updateGroundSlotHandler = factory.createHandlers(
-    guard("schedule", PermissionLevel.WRITE),
+    guard("bookings", PermissionLevel.WRITE),
     validate("json", updateGroundSlotSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");
@@ -220,7 +234,7 @@ export const updateGroundSlotHandler = factory.createHandlers(
 );
 
 export const updateGroundSlotsHandler = factory.createHandlers(
-    guard("schedule", PermissionLevel.WRITE),
+    guard("bookings", PermissionLevel.WRITE),
     validate("json", updateGroundSlotsSchema),
     async (c) => {
         const pitchId = c.req.param("pitchId");

@@ -78,3 +78,15 @@ export function usePitch() {
     if (!ctx) throw new Error("usePitch must be used within a <PitchProvider>.");
     return ctx;
 };
+
+export function useRequiredPitch() {
+    const ctx = usePitch();
+
+    if (ctx.isLoading) {
+        throw new Error(
+            "useRequiredPitch() was called before the active pitch was loaded."
+        );
+    }
+
+    return ctx;
+}

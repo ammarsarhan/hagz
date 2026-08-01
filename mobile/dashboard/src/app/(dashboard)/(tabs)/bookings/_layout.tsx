@@ -10,7 +10,7 @@ export default function BookingsLayout() {
             }}
         >
             <Stack.Screen name="index"/>  
-            <Stack.Screen name="create" options={{ presentation: 'modal' }}/>  
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }}/>  
         </Stack>
     )
 }

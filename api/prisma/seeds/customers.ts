@@ -1,6 +1,19 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
 
+const phones = new Set<string>();
+
+const generatePhone = () => {
+  let phone: string;
+
+  do {
+    phone = `+201${faker.helpers.arrayElement(["0", "1", "2", "5", "7"])}${faker.string.numeric(8)}`;
+  } while (phones.has(phone));
+
+  phones.add(phone);
+  return phone;
+}
+
 export async function seedCustomers(pitches: any[], users: any[]) {
   console.log("Seeding pitch customers...");
 
@@ -25,7 +38,7 @@ export async function seedCustomers(pitches: any[], users: any[]) {
       } else {
         customerData = {
           pitchId: pitch.id,
-          phone: faker.helpers.fromRegExp(/01[0125][0-9]{8}/),
+          phone: generatePhone(),
           firstName: faker.person.firstName(),
           lastName: faker.person.lastName(),
         };

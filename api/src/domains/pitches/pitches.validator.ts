@@ -445,7 +445,7 @@ export const updatePitchStaffMemberSchema = z.object({
     permissions: pitchStaffMemberPermissionsSchema
 });
 
-const groundSlotTargetSchema = z.enum(["DAY", "WEEK", "MONTH"]);
+const groundSlotTargetSchema = z.enum(["DAY", "MIDNIGHT", "WEEK", "MONTH"]);
 export type GroundSlotTargetType = z.infer<typeof groundSlotTargetSchema>;
 
 export const fetchGroundSlotsSchema = z.object({
@@ -549,6 +549,14 @@ export const getStaffBookingsFiltersSchema = z.object({
     ({ startDate, endDate }) => startDate <= endDate,
     { message: "Start date must be before or equal to the end date.", path: ["endDate"] }
 );
+
+export const fetchPitchCustomersSchema = z.object({
+    phone: z
+        .string("Phone number is required.")
+        .regex(/^\+[1-9]\d{7,14}$/, "Phone number must include the international code and be in an acceptable format."),
+});
+
+export type fetchPitchCustomersPayloadType = z.infer<typeof fetchPitchCustomersSchema>;
 
 export const normalizeRawPitchFeed = (raw: any, favorited: Set<string>): NormalizedPitchFeedType => {
     const isRawQuery = raw.area_id !== undefined;

@@ -1,5 +1,29 @@
 import { createFormContext } from "@/context/FormContext";
-import { BookingPayload } from "@/lib/types/bookings";
+import { BookingDirectPayload } from "@/lib/types/bookings";
 
-const initial: BookingPayload = { firstName: "", lastName: "", role: "OWNER", phone: "", password: ""};
-export const { Provider: CreateBookingFormProvider, useFormContext: useCreateBooking } = createFormContext<BookingPayload>(initial);
+interface BookingPayload {
+    groundId: string | null;
+    customer: {
+        phone: string;
+        firstName: string;
+        lastName: string;
+    };
+    startTime: Date | null;
+    endTime: Date | null;
+    // paymentMethod: BookingDirectPayload["paymentMethod"];
+    // channel: BookingDirectPayload["channel"];
+    // paymentNote: string;
+}
+
+const initial: BookingPayload = {
+    groundId: null,
+    customer: {
+        phone: "",
+        firstName: "",
+        lastName: ""
+    },
+    startTime: null,
+    endTime: null
+};
+
+export const { Provider: BookingFormProvider, useFormContext: useCreateBooking } = createFormContext<BookingPayload>(initial);

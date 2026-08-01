@@ -197,7 +197,8 @@ export default class PitchService {
                         id: true,
                         name: true,
                         status: true,
-                        sport: true
+                        sport: true,
+                        size: true
                     }
                 }
             },
@@ -997,6 +998,30 @@ export default class PitchService {
                 limit,
                 pages: Math.ceil(slots.length / limit),
             },
+        };
+    };
+
+    fetchPitchCustomer = async (pitchId: string, phone: string) => {
+        // We don't want to validate the pitch or ground availability here. Keep this ridiculously lightweight.
+        const customer = await prisma.pitchCustomer.findUnique({
+            where: {
+                pitchId_phone: {
+                    pitchId,
+                    phone,
+                },
+            },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                userId: true,
+            },
+        });
+
+        return {
+            exists: !!customer,
+            customer,
         };
     };
 };

@@ -7,7 +7,8 @@ import config from "@/shared/config.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import { GroundSlotEvent } from "@/shared/types/slots.js";
-import { endOfDay, endOfMonth, endOfWeek, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, addHours, endOfDay, endOfMonth, endOfWeek, format, setHours, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 export default class GroundService {
     static enqueueRetrySlotGeneration = async (scheduleId: string) => {
@@ -192,11 +193,44 @@ export default class GroundService {
                     pitchId,
                     status: { not: GroundStatus.DELETED }
                 }
-            }
+            },
         });
         
         if (!settings) throw new InternalServerError("Could not find settings associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
         return settings;
+    };
+
+    getGroundConfig = async (pitchId: string, groundId: string) => {
+        // Find the settings for the associated not-deleted ground.
+        const ground = await prisma.ground.findFirst({ 
+            where: {
+                id: groundId,
+                status: { not: GroundStatus.DELETED }
+            },
+            include: {
+                settings: true,
+                schedule: {
+                    select: {
+                        dayOfWeek: true,
+                        isActive: true
+                    }
+                }
+            }
+        });
+        
+        if (!ground || !ground.settings || !ground.schedule || ground.schedule.length <= 0) throw new InternalServerError("Could not find config associated with the specified ground.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+
+        const config = {
+            pricing: {
+                basePrice: ground.basePrice,
+                peakPrice: ground.peakPrice,
+                discountPrice: ground.discountPrice
+            },
+            settings: ground.settings,
+            schedule: ground.schedule
+        }
+
+        return config;
     };
 
     updateGroundSettings = async (pitchId: string, groundId: string, payload: UpdateGroundSettingsPayloadType) => {
@@ -382,100 +416,167 @@ export default class GroundService {
 
     fetchGroundSlots = async (pitchId: string, groundId: string, target: GroundSlotTargetType, date: Date, status?: SlotStatus) => {
         // Make sure that the pitch and ground are both active or under maintenance first before fetching.
-        const ground = await prisma.ground.findFirst({ 
+        const ground = await prisma.ground.findFirst({
             where: {
                 id: groundId,
                 pitchId,
                 status: { not: GroundStatus.DELETED },
                 pitch: {
-                    status: { not: PitchStatus.DELETED }
-                }
+                    status: { not: PitchStatus.DELETED },
+                },
             },
             include: {
                 pitch: {
                     select: {
-                        status: true
+                        status: true,
                     },
                 },
-                settings: true
-            }
+                settings: true,
+            },
         });
 
         if (!ground || !ground.pitch)
-            throw new NotFoundError("Could not find ground with the specified ID.", ERROR_CODES.GROUND_NOT_FOUND);
+            throw new NotFoundError(
+                "Could not find ground with the specified ID.",
+                ERROR_CODES.GROUND_NOT_FOUND,
+            );
 
         const settings = ground.settings;
 
         if (!settings)
-            throw new InternalServerError("Could not resolve settings associated with the ground ID.", ERROR_CODES.GROUND_SETTINGS_MISSING);
+            throw new InternalServerError(
+                "Could not resolve settings associated with the ground ID.",
+                ERROR_CODES.GROUND_SETTINGS_MISSING,
+            );
 
         if (!config.ACTIVE_STATES.includes(ground.pitch.status))
-            throw new BadRequestError("Could not fetch slots on an inactive pitch. Make sure your pitch is active first.", ERROR_CODES.PITCH_NOT_ACTIVE);
+            throw new BadRequestError(
+                "Could not fetch slots on an inactive pitch. Make sure your pitch is active first.",
+                ERROR_CODES.PITCH_NOT_ACTIVE,
+            );
 
-        // Start parsing the date based on the target granularity.
-        let start = date;
-        let end = date;
+        const timezone = "Africa/Cairo";
 
-        // Query the slots and return the correct response based on the granularity after setting the endDate.
+        const dateString =
+            typeof date === "string" ? date : format(date, "yyyy-MM-dd");
+
+        const [year, month, day] = dateString.split("-").map(Number);
+
+        // This represents midnight in Cairo on the requested day.
+        const localDate = new Date(year, month - 1, day);
+
+        const toUtcRange = (startLocal: Date, endLocal: Date) => ({
+            start: fromZonedTime(startLocal, timezone),
+            end: fromZonedTime(endLocal, timezone),
+        });
+
         switch (target) {
-            case "DAY":
-                {
-                    start = startOfDay(date);
-                    end = endOfDay(start);
+            case "DAY": {
+                const { start, end } = toUtcRange(
+                    startOfDay(localDate),
+                    addDays(startOfDay(localDate), 1),
+                );
 
-                    const slots = await prisma.groundSlot.findMany({
-                        where: {
-                            groundId,
-                            ...(status && { status }),
-                            startsAt: { gte: start, lte: end },
+                const slots = await prisma.groundSlot.findMany({
+                    where: {
+                        groundId,
+                        ...(status && { status }),
+                        startsAt: {
+                            gte: start,
+                            lt: end,
                         },
-                        orderBy: { startsAt: "asc" },
-                        take: 24,
-                    });
+                    },
+                    orderBy: {
+                        startsAt: "asc",
+                    },
+                });
 
-                    return { slots, settings };
-                }
-            case "WEEK":
-                {
-                    start = startOfWeek(date);
-                    end = endOfWeek(date);
+                return { slots, settings };
+            }
 
-                    const slots = await prisma.groundSlot.findMany({
-                        where: {
-                            groundId,
-                            ...(status && { status }),
-                            startsAt: { gte: start, lte: end },
+            case "MIDNIGHT": {
+                const { maximumDuration } = settings;
+
+                const windowBefore = Math.max(0, 24 - (maximumDuration - 1));
+                const windowAfter = Math.max(0, maximumDuration - 1);
+
+                const startLocal = new Date(localDate);
+                startLocal.setHours(windowBefore, 0, 0, 0);
+
+                const endLocal = addDays(new Date(localDate), 1);
+                endLocal.setHours(windowAfter, 0, 0, 0);
+
+                const { start, end } = toUtcRange(startLocal, endLocal);
+
+                const slots = await prisma.groundSlot.findMany({
+                    where: {
+                        groundId,
+                        ...(status && { status }),
+                        startsAt: {
+                            gte: start,
+                            lt: end,
                         },
-                        orderBy: { startsAt: "asc" },
-                    });
+                    },
+                    orderBy: {
+                        startsAt: "asc",
+                    },
+                });
 
-                    return { slots, settings };
-                }
-            case "MONTH":
-                {
-                    start = startOfMonth(date);
-                    end = endOfMonth(date);
+                return { slots, settings };
+            }
 
-                    // Raw query because of the way we want to group data by the "whole day" coming back from prisma.
-                    const slots = await prisma.$queryRaw<{ day: Date; available: number }[]>`
-                        SELECT 
-                            DATE("startsAt") as day,
-                            -- Cast this as an INT rather than a BIGINT to stop JSON serialization issues later on.
-                            COUNT(*)::int as available
-                        FROM "GroundSlot"
-                        WHERE 
-                            "groundId" = ${groundId}
-                            AND "startsAt" >= ${start}
-                            AND "startsAt" <= ${end}
-                            AND "status" = 'AVAILABLE'
-                        GROUP BY DATE("startsAt")
-                        ORDER BY day ASC
-                    `;
+            case "WEEK": {
+                const { start, end } = toUtcRange(
+                    startOfWeek(localDate),
+                    addDays(endOfWeek(localDate), 1),
+                );
 
-                    return { slots, settings };
-                }
+                const slots = await prisma.groundSlot.findMany({
+                    where: {
+                        groundId,
+                        ...(status && { status }),
+                        startsAt: {
+                            gte: start,
+                            lt: end,
+                        },
+                    },
+                    orderBy: {
+                        startsAt: "asc",
+                    },
+                });
+
+                return { slots, settings };
+            }
+
+            case "MONTH": {
+                const { start, end } = toUtcRange(
+                    startOfMonth(localDate),
+                    addDays(endOfMonth(localDate), 1),
+                );
+
+                const slots = await prisma.$queryRaw<
+                    { day: Date; available: number }[]
+                >`
+                    SELECT
+                        DATE(timezone(${timezone}, "startsAt")) AS day,
+                        COUNT(*)::int AS available
+                    FROM "GroundSlot"
+                    WHERE
+                        "groundId" = ${groundId}
+                        AND "startsAt" >= ${start}
+                        AND "startsAt" < ${end}
+                        AND "status" = 'AVAILABLE'
+                    GROUP BY DATE(timezone(${timezone}, "startsAt"))
+                    ORDER BY day ASC
+                `;
+
+                return { slots, settings };
+            }
+
             default: {
-                throw new InternalServerError(`Unhandled slot target type: ${target}.`);
+                throw new InternalServerError(
+                    `Unhandled slot target type: ${target}.`,
+                );
             }
         }
     };

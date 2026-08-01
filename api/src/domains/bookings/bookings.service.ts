@@ -136,8 +136,6 @@ export default class BookingService {
         }
     };
 
-    // ── Shared staff-booking helpers ─────────────────────────────────────────
-
     private resolveStaffBookingContext = async (
         initiatorId: string,
         pitchId: string,

@@ -259,3 +259,21 @@ export type GroundDraftType = CreateGroundPayload & {
 export type GroundSport = GroundDraftType['sport'];
 export type GroundSize = GroundDraftType['size'];
 export type GroundSurface = GroundDraftType['surface'];
+
+type GroundSlotsRequest = PitchRequest['grounds'][':groundId']['slots'];
+export type GroundSlotsResponse = InferResponseType<GroundSlotsRequest['$get']>;
+export type GroundSlotsQuery = InferRequestType<GroundSlotsRequest['$get']>['query'];
+
+export type GroundSlotTargetType = GroundSlotsQuery['target'];
+export type SlotStatus = NonNullable<GroundSlotsQuery['status']>;
+export type GroundSlot = GroundSlotsResponse['data']['slots'][number];
+
+export type GroundDaySlot = Extract<
+    GroundSlotsResponse["data"]["slots"],
+    { id: string }[]
+>[number];
+
+export type GroundMonthSlot = Extract<
+    GroundSlotsResponse["data"]["slots"],
+    { day: string }[]
+>[number];

@@ -18,11 +18,10 @@ export async function seedGrounds(pitches: any[]) {
   console.log("Seeding grounds, settings, and schedules...");
 
   const allGrounds = [];
-  const pitchService = new PitchService();
 
   const peakHours = [17, 18, 19, 20, 21];
-  const discountHours = [8, 9, 10];
-  const baseHours = [11, 12, 13, 14, 15, 16];
+  const discountHours = [5, 6, 7, 8, 9, 10];
+  const baseHours = [0, 1, 2, 3, 4, 11, 12, 13, 14, 15, 16, 22, 23];
   
   const peakMask = buildBitmask(peakHours);
   const discountMask = buildBitmask(discountHours);
