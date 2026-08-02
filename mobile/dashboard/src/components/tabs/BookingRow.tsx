@@ -7,7 +7,13 @@ type BookingRowProps = BookingRowData;
 type BookingType = NonNullable<BookingRowData['bookings'][number]['booking']>;
 
 const StatusPill = ({ status }: { status: BookingType['status'] }) => {
-    const label = `${status[0].toUpperCase()}${status.slice(1).toLowerCase()}`;
+    let label = `${status[0].toUpperCase()}${status.slice(1).toLowerCase()}`;
+
+    if (label.includes("_")) {
+        // Quite possibly the worst slew of code I've ever written bas baseeta.
+        const sections = label.split("_");
+        label = `${sections[0][0].toUpperCase()}${sections[0].slice(1).toLowerCase()} ${sections[1][0].toUpperCase()}${sections[1].slice(1).toLowerCase()}`
+    }
 
     return (
         <View className="border border-gray-200 bg-white px-4 py-2 rounded-full">

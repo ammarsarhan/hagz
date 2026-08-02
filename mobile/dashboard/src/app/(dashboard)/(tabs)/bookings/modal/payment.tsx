@@ -4,7 +4,6 @@ import { useRequiredPitch } from "@/context/PitchContext";
 import { useGroundConfig } from "@/lib/hooks/useGroundConfig";
 import { BookingDirectPayload } from "@/lib/types/bookings";
 import {
-    IconX,
     IconCash,
     IconCreditCard,
     IconWallet,
