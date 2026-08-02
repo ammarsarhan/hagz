@@ -7,7 +7,7 @@ import config from "@/shared/config.js";
 import PitchService from "@/domains/pitches/services/pitches.service.js";
 import { slotsQueue } from "@/jobs/queues/slots.queue.js";
 import { GroundSlotEvent } from "@/shared/types/slots.js";
-import { addDays, addHours, endOfDay, endOfMonth, endOfWeek, format, setHours, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, addHours, addMinutes, endOfDay, endOfMonth, endOfWeek, format, max, setHours, startOfDay, startOfHour, startOfMonth, startOfWeek } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 
 export default class GroundService {
@@ -470,6 +470,12 @@ export default class GroundService {
             end: fromZonedTime(endLocal, timezone),
         });
 
+        const earliestBookable = startOfHour(
+            addHours(addMinutes(new Date(), 59), settings.minimumWindow),
+        );
+
+        const effectiveStart = (rangeStart: Date) => max([rangeStart, earliestBookable]);
+
         switch (target) {
             case "DAY": {
                 const { start, end } = toUtcRange(
@@ -477,12 +483,14 @@ export default class GroundService {
                     addDays(startOfDay(localDate), 1),
                 );
 
+                const queryStart = effectiveStart(start);
+
                 const slots = await prisma.groundSlot.findMany({
                     where: {
                         groundId,
                         ...(status && { status }),
                         startsAt: {
-                            gte: start,
+                            gte: queryStart,
                             lt: end,
                         },
                     },
@@ -507,13 +515,14 @@ export default class GroundService {
                 endLocal.setHours(windowAfter, 0, 0, 0);
 
                 const { start, end } = toUtcRange(startLocal, endLocal);
+                const queryStart = effectiveStart(start);
 
                 const slots = await prisma.groundSlot.findMany({
                     where: {
                         groundId,
                         ...(status && { status }),
                         startsAt: {
-                            gte: start,
+                            gte: queryStart,
                             lt: end,
                         },
                     },
@@ -531,12 +540,14 @@ export default class GroundService {
                     addDays(endOfWeek(localDate), 1),
                 );
 
+                const queryStart = effectiveStart(start);
+
                 const slots = await prisma.groundSlot.findMany({
                     where: {
                         groundId,
                         ...(status && { status }),
                         startsAt: {
-                            gte: start,
+                            gte: queryStart,
                             lt: end,
                         },
                     },

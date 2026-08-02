@@ -1,7 +1,7 @@
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import { useCreateBooking } from "@/context/forms/CreateBookingContext";
-import { usePitch, useRequiredPitch } from "@/context/PitchContext";
+import { useRequiredPitch } from "@/context/PitchContext";
 import { client } from "@/lib/client";
 import useDebounce from "@/lib/hooks/useDebounce";
 import { IconChevronLeft } from "@tabler/icons-react-native";
@@ -41,9 +41,15 @@ export default function Customer() {
     const exists = !!query.data?.customer;
 
     const disabled =
-        phone.length !== 10 ||
-        state.customer.firstName.trim() === "" ||
-        state.customer.lastName.trim() === "";
+        exists ?
+        (
+            phone.length !== 10 
+        ) :
+        (
+            phone.length !== 10 ||
+            state.customer.firstName.trim() === "" ||
+            state.customer.lastName.trim() === ""
+        );
 
     return (
         <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
@@ -139,15 +145,15 @@ export default function Customer() {
                             />
                         </View>
                     </View>
+                    <View className="mt-10 flex-row justify-end">
+                        <Link asChild href="/(dashboard)/(tabs)/bookings/modal/slots">
+                            <Button className="border-primary bg-primary px-10" disabled={disabled}>
+                                <Text className="text-white font-medium">Next</Text>
+                            </Button>
+                        </Link>
+                    </View>
                 </Pressable>
             </KeyboardAvoidingView>
-            <View className="absolute bottom-10 right-6 z-10">
-                <Link asChild href="/(dashboard)/(tabs)/bookings/modal/slots">
-                    <Button className="border-primary bg-primary px-8" disabled={disabled}>
-                        <Text className="text-white font-medium">Continue</Text>
-                    </Button>
-                </Link>
-            </View>
         </SafeAreaView>
     );
 };

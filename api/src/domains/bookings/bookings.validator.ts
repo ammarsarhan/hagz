@@ -48,15 +48,12 @@ const bookingTimeRangeSchema = z.object({
 
 export const createStaffCheckoutBookingSchema = bookingTimeRangeSchema.and(z.object({
     paymentMethod: z.enum([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.WALLET]),
-    // ONLINE excluded, that's customer self-service by definition.
-    // WALK_IN excluded, no reason to generate a link for someone standing in front of staff.
     channel: z.enum([BookingChannel.WHATSAPP, BookingChannel.PHONE, BookingChannel.OTHER]),
     customer: createStaffBookingCustomerSchema,
 }));
 
 export const createStaffDirectBookingSchema = bookingTimeRangeSchema.and(z.object({
     paymentMethod: z.enum([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.WALLET]),
-    // ONLINE excluded, same reasoning as above.
     channel: z.enum([BookingChannel.WALK_IN, BookingChannel.WHATSAPP, BookingChannel.PHONE, BookingChannel.OTHER]),
     paymentNote: z.string().max(500).optional(),
     customer: createStaffBookingCustomerSchema,
