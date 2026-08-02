@@ -39,6 +39,7 @@ export default function Notes() {
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: ["bookings", pitch.id] });
+                    queryClient.invalidateQueries({ queryKey: ["availability", pitch.id] });
                     router.dismissTo("/(dashboard)/(tabs)/bookings");
                 },
                 onError: (err) => {

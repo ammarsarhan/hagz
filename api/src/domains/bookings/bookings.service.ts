@@ -218,7 +218,7 @@ export default class BookingService {
         applyServiceFee: boolean;
         applyDeposit: boolean;
     }) => {
-        const { pitch, ground, settings, hasRecord, customer, match, pitchId, groundId, initiatorId, payload, status, applyServiceFee, applyDeposit } = params;
+        const { ground, settings, hasRecord, customer, match, pitchId, groundId, initiatorId, payload, status, applyServiceFee, applyDeposit } = params;
 
         const targetSlots = splitTimeRangeIntoBlocks(payload.startTime, payload.endTime);
 

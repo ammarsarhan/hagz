@@ -28,6 +28,7 @@ import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGroundSlots } from "@/lib/hooks/useGroundSlots";
 import { GroundDaySlot } from "@/lib/types/ground";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 
 interface DateRange {
     start: Date;
@@ -43,6 +44,28 @@ interface MonthSectionProps {
     onDayPress: (day: Date) => void;
     locked: boolean;
 }
+
+const SlotSkeleton = memo(function SlotSkeleton() {
+    const opacity = useSharedValue(0.4);
+
+    useEffect(() => {
+        opacity.value = withRepeat(withTiming(1, { duration: 700 }), -1, true);
+    }, [opacity]);
+
+    const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+    return (
+        <Animated.View
+            pointerEvents="none"
+            style={animatedStyle}
+            className="px-5 py-3 rounded-full border border-gray-200 bg-gray-200 flex-row items-center gap-x-1.5"
+        >
+            <Text className="text-transparent">12:00 pm</Text>
+            <View className="w-4 h-4" />
+            <Text className="text-transparent">12:00 pm</Text>
+        </Animated.View>
+    );
+});
 
 const MonthSection = memo(function MonthSection({
     month,
@@ -326,10 +349,26 @@ export default function Slots() {
     }, [slots, selectedSlots, isLocked, maxSlotsCount]);
 
     const renderSlots = () => {
-        if (isSlotsLoading) {
+        if (isSlotsLoading) {            
             return (
-                <View className="py-8 items-center justify-center">
-                    <ActivityIndicator />
+                <View className="gap-y-6 py-6">
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerClassName="px-4 gap-x-3"
+                    >
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <SlotSkeleton key={index} />
+                        ))}
+                    </ScrollView>
+                    <View className="flex-row items-center justify-between mx-4 pt-4 border-t border-gray-50">
+                        <Button className="bg-gray-100 border-gray-100 py-5 px-8" disabled onPress={() => {}}>
+                            <Text className="font-medium">Clear</Text>
+                        </Button>
+                        <Button className="bg-primary border-primary py-5 px-10" disabled onPress={() => {}}>
+                            <Text className="font-medium text-white">Next</Text>
+                        </Button>
+                    </View>
                 </View>
             );
         }

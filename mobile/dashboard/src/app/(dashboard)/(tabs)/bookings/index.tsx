@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { addDays, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
 import { IconChevronRight, IconLayoutDashboard, IconPlus } from "@tabler/icons-react-native";
@@ -34,7 +34,7 @@ export default function Bookings() {
 
   const target = selectedGround === "all" ? undefined : (selectedGround ?? undefined);
 
-  const { data, isLoading: isBookingsLoading } = useBookings(
+  const { data, isLoading: isBookingsLoading, refetch, isRefetching } = useBookings(
     selectedDate,
     pitch?.id ?? "",
     target,
@@ -109,6 +109,14 @@ export default function Bookings() {
           className="flex-1"
           contentContainerClassName="py-10 gap-y-6"
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor="#6B728055"
+              colors={["#6B728055"]}
+            />
+          }
         >
           <View className="gap-y-1 px-6">
             <Text className="text-4xl font-semibold">Bookings</Text>
