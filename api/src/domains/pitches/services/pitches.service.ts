@@ -951,6 +951,7 @@ export default class PitchService {
                             select: {
                                 firstName: true,
                                 lastName: true,
+                                phone: true,
                             }
                         },
                         initiator: {

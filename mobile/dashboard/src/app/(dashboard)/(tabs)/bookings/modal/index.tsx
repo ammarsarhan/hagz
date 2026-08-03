@@ -65,7 +65,7 @@ function GroundOption({
         >
             <View className="flex-1">
                 <Text className="text-lg font-medium">{title}</Text>
-                <View className="gap-y-2 mt-2.5">
+                <View className="gap-y-2 mt-3">
                     <View className="flex-row items-center gap-x-1.5">
                         {SportIconNode}
                         <Text className="text-gray-500 text-sm">{sportLabel}</Text>

@@ -9,3 +9,16 @@ export type BookingDirectPayload = BookingDirectRequest['json'];
 
 type BookingCheckoutRequest = InferRequestType<PitchRequest['grounds'][':groundId']['bookings']['checkout']['$post']>;
 export type BookingCheckoutPayload = BookingCheckoutRequest['json'];
+
+export type PricingSnapshot = {
+    basePrice: number;
+    peakPrice: number | null;
+    discountPrice: number | null;
+    allowDeposit: boolean;
+    depositPercentage: number | null;
+    slots: {
+        startsAt: Date;
+        priceType: "BASE" | "PEAK" | "DISCOUNT";
+        price: number;
+    }[];
+};

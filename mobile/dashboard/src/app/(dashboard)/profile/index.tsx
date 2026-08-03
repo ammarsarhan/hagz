@@ -293,12 +293,6 @@ export default function Index() {
                     </View>
                     <Text className="text-gray-500">{user.preferences.timezone}</Text>
                 </View>
-                <Drawer 
-                    href="/(dashboard)/profile/transfer"
-                    icon={<IconUserCog width={22} height={22}/>}
-                    title="Transfer"
-                    description="Change your account to a manager or owner account."
-                />
                 <SignOutDrawer />
             </View>
         </ScrollView>

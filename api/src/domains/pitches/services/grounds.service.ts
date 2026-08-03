@@ -934,6 +934,7 @@ export default class GroundService {
                             select: {
                                 firstName: true,
                                 lastName: true,
+                                phone: true,
                             }
                         },
                         initiator: {
