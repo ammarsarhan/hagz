@@ -48,6 +48,17 @@ export const getUserPitchHandler = factory.createHandlers(
     }
 );
 
+export const getDashboardHomeHandler = factory.createHandlers(
+    guard("bookings", PermissionLevel.READ),
+    async (c) => {
+        const pitchId = c.req.param("pitchId");
+        if (!pitchId) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+        const pitch = await pitchService.fetchDashboardHome(pitchId);
+        
+        return c.json({ success: true, data: { pitch }}, 200);
+    }
+);
+
 export const getDashboardPitchHandler = factory.createHandlers(
     guard("properties", PermissionLevel.READ),
     async (c) => {

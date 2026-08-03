@@ -6,8 +6,7 @@ import { View, Text } from "react-native";
 
 type BookingRowProps = BookingRowData;
 
-const formatPriceType = (priceType: string) => 
-    `${priceType[0].toUpperCase()}${priceType.slice(1).toLowerCase()}`;
+const formatPriceType = (priceType: string) => `${priceType[0].toUpperCase()}${priceType.slice(1).toLowerCase()}`;
 
 export default function BookingRow({ hour, bookings }: BookingRowProps) {
     return (
@@ -43,13 +42,14 @@ export default function BookingRow({ hour, bookings }: BookingRowProps) {
                                     }
                                 </View>
                             </View>
-                            <View className="gap-y-1">
+                            <View className="gap-y-1 mb-2">
                                 <Text className="font-medium text-xl">{booking.customer.firstName} {booking.customer.lastName}</Text>
                                 <Text className="text-gray-500 text-[0.925rem]">{formatPhone(booking.customer.phone)}</Text>
                                 <Text className="text-gray-500 text-sm">{item.ground.name}</Text>
                             </View>
-                            <View className="">
-                                <Text className="text-sm">
+                            <View className="flex-row items-center justify-between">
+                                <Text className="text-[0.95rem]">{booking.status.charAt(0) + booking.status.slice(1).toLowerCase().replace(/_/g, " ")}</Text>
+                                <Text className="text-[0.95rem]">
                                     {slotIndex >= 0 ? `(Slot ${slotIndex + 1}/${snapshot.slots.length})` : "-"}
                                 </Text>
                             </View>

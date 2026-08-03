@@ -2,25 +2,33 @@ import Avatar from "@/components/shared/Avatar";
 import { usePitch } from "@/context/PitchContext";
 import { IconBell, IconChevronRight, IconQrcode } from "@tabler/icons-react-native";
 import { Link } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LineGraph } from "react-native-graph";
 import HomeCard from "@/components/tabs/HomeCard";
 import { formatDate } from "date-fns";
-
-const data = [
-  { date: new Date("2026-08-01T08:00:00"), value: 12 },
-  { date: new Date("2026-08-01T10:00:00"), value: 18 },
-  { date: new Date("2026-08-01T12:00:00"), value: 15 },
-  { date: new Date("2026-08-01T14:00:00"), value: 27 },
-  { date: new Date("2026-08-01T16:00:00"), value: 34 },
-  { date: new Date("2026-08-01T18:00:00"), value: 30 },
-  { date: new Date("2026-08-01T20:00:00"), value: 48 },
-];
+import { useDashboardHome } from "@/lib/hooks/useDashboardHome";
 
 export default function Index() {
   const { pitch, isLoading } = usePitch();
-  if (isLoading) return null;
+  const {
+    data: home,
+    isLoading: isHomeLoading,
+    refetch,
+    isRefetching,
+  } = useDashboardHome(pitch?.id ?? "", !!pitch?.id);
+
+  if (isLoading || isHomeLoading || !home) 
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator />
+      </View>
+    );
+
+  const trendPoints = home.overview.trend.map((point) => ({
+    date: new Date(point.date),
+    value: point.value,
+  }));
 
   return (
     <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
@@ -28,6 +36,14 @@ export default function Index() {
         className="flex-1"
         contentContainerClassName="gap-y-10 pb-10"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor="#1C04EA"
+            colors={["#1C04EA"]}
+          />
+        }
       >
         <View className="px-6 pt-6 gap-y-6">
           <View className="flex-row items-center justify-between">
@@ -44,7 +60,7 @@ export default function Index() {
             </View>
           </View>
           <View className="gap-y-1">
-            <Text className="text-4xl font-semibold">{pitch.name}</Text>
+            <Text className="text-4xl font-semibold">{home.pitch.name}</Text>
             <Text>{formatDate(new Date(), "dd MMM")}</Text>
           </View>
         </View>
@@ -55,14 +71,14 @@ export default function Index() {
               <View className="flex-1 gap-y-16">
                 <Text className="font-medium">Today&apos;s Bookings</Text>
                 <View>
-                  <Text className="text-6xl font-semibold mb-0.5">48h</Text>
+                  <Text className="text-6xl font-semibold mb-0.5">{home.overview.bookedHours}h</Text>
                   <Text className="mb-0.5">Booked</Text>
                   <Text>Venue-wide</Text>
                 </View>
               </View>
               <View className="flex-1">
                 <LineGraph
-                  points={data}
+                  points={trendPoints}
                   animated
                   color="#1C04EA"
                   gradientFillColors={["#1C04EA30", "#1C04EA00"]}
@@ -74,16 +90,14 @@ export default function Index() {
                 />
               </View>
             </View>
-            <View className="flex-row gap-x-6">
-              <View className="flex-1 justify-center gap-y-1 bg-gray-100 p-5 rounded-lg">
-                <Text className="text-2xl font-semibold">87%</Text>
-                <Text>Occupied</Text>
-                <Text className="text-gray-500 text-xs">From venue&apos;s full capacity.</Text>
-              </View>
-              <View className="flex-1 justify-center gap-y-1 bg-gray-100 p-5 rounded-lg">
-                <Text className="text-2xl font-semibold">EGP 32,000.00</Text>
-                <Text>in profit today.</Text>
-              </View>
+            <View className="flex-1 justify-center gap-y-1 bg-gray-100 px-5 py-7 rounded-lg">
+              <Text className="text-2xl font-semibold">{home.overview.occupancyRate}%</Text>
+              <Text>Occupied</Text>
+              <Text className="text-gray-500 text-[0.9rem]">From venue&apos;s full capacity.</Text>
+            </View>
+            <View className="flex-1 justify-center gap-y-1 bg-gray-100 px-5 py-7 rounded-lg">
+              <Text className="text-2xl font-semibold">EGP {Math.max(0, home.overview.profit).toFixed(2)}</Text>
+              <Text>in profit today.</Text>
             </View>
           </View>
         </View>
@@ -105,11 +119,13 @@ export default function Index() {
               style={{ flexGrow: 0 }}
               contentContainerClassName="flex-row items-center gap-x-4 px-6"
             >
-              <HomeCard />
-              <HomeCard />
-              <HomeCard />
-              <HomeCard />
-              <HomeCard />
+              {
+                home.upcoming.length > 0 ?
+                  home.upcoming.map((booking) => (
+                    <HomeCard key={booking.id} {...booking} />
+                  )) :
+                  <Text className="text-gray-500 text-[0.9rem]">No upcoming bookings yet.</Text>
+              }
             </ScrollView>
           </View>
           <View className="gap-y-4">
@@ -120,11 +136,13 @@ export default function Index() {
               style={{ flexGrow: 0 }}
               contentContainerClassName="flex-row items-center gap-x-4 px-6"
             >
-              <HomeCard />
-              <HomeCard />
-              <HomeCard />
-              <HomeCard />
-              <HomeCard />
+              {
+                home.pending.length > 0 ?
+                  home.pending.map((booking) => (
+                    <HomeCard key={booking.id} {...booking} />
+                  )) :
+                  <Text className="text-gray-500 text-[0.9rem]">No pending bookings yet.</Text>
+              } 
             </ScrollView>
           </View>
         </View>

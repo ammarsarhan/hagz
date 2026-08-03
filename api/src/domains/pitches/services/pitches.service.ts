@@ -13,13 +13,13 @@ import { pitchesQueue } from "@/jobs/queues/pitches.queue.js";
 import { PitchEvent } from "@/shared/types/pitches.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import config from "@/shared/config.js";
-import { addHours, differenceInHours, startOfMonth, subDays } from "date-fns";
-import type { Prisma } from "@/generated/prisma/client.js";
+import { addDays, addHours, differenceInHours, startOfMonth, subDays } from "date-fns";
+import { BookingStatus, type Prisma } from "@/generated/prisma/client.js";
 import { pitchI18n } from "@/domains/pitches/pitches.i18n.js";
 import { createUserResponse } from "@/domains/auth/auth.validator.js";
 import verifyGoogleMapsLink from "@/shared/lib/providers/maps.js";
 import { bytesToTimeRanges } from "@/shared/lib/utils/time.js";
-import { formatInTimeZone } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 export default class PitchService {
     // Helper function to add each of the ground IDs to the ground slot generation queue.
@@ -170,6 +170,114 @@ export default class PitchService {
             const profile = createUserResponse(user, preferences, user.pitches);
             return { pitch, profile };
         });
+    };
+
+    fetchDashboardHome = async (pitchId: string) => {
+        const pitch = await prisma.pitch.findFirst({
+            where: { id: pitchId, status: { not: PitchStatus.DELETED } },
+            select: { id: true, name: true },
+        });
+
+        if (!pitch) throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
+
+        const start = fromZonedTime(`${formatInTimeZone(new Date(), "Africa/Cairo", "yyyy-MM-dd")} 00:00:00`, "Africa/Cairo");
+        const end = addHours(start, 24);
+        const weekStart = subDays(start, 6);
+
+        const bookingInclude = {
+            ground: { select: { name: true } },
+            customer: { select: { firstName: true, lastName: true, phone: true } },
+            initiator: { select: { firstName: true, lastName: true } },
+            payment: { select: { id: true } },
+        } satisfies Prisma.BookingInclude;
+
+        const normalizeBookingCard = (booking: Prisma.BookingGetPayload<{ include: typeof bookingInclude }>) => {
+            const customerName = booking.customer.firstName && booking.customer.lastName
+                ? `${booking.customer.firstName} ${booking.customer.lastName}`
+                : `${booking.initiator.firstName} ${booking.initiator.lastName}`;
+
+            return {
+                id: booking.id,
+                startTime: booking.startTime,
+                endTime: booking.endTime,
+                groundName: booking.ground.name,
+                customerName,
+                customerPhone: booking.customer.phone,
+                totalAmount: booking.totalAmount,
+                status: booking.status,
+                isApproved: booking.isApproved,
+                isPaid: booking.status === "CONFIRMED",
+            };
+        };
+
+        const [weekSlots, todaySlots, ledgerEntries, upcoming, pending] = await Promise.all([
+            prisma.groundSlot.findMany({
+                where: { pitchId, status: SlotStatus.BOOKED, startsAt: { gte: weekStart, lt: end } },
+                select: { startsAt: true },
+            }),
+            prisma.groundSlot.findMany({
+                where: { pitchId, status: { not: SlotStatus.INACTIVE }, startsAt: { gte: start, lt: end } },
+                select: { status: true },
+            }),
+            prisma.ledgerEntry.findMany({
+                where: { ledger: { pitchId }, booking: { startTime: { gte: start, lt: end } } },
+                select: { amount: true },
+            }),
+            prisma.booking.findMany({
+                where: {
+                    pitchId,
+                    status: { in: [BookingStatus.CONFIRMED, BookingStatus.RESERVED] },
+                    isApproved: true,
+                    payment: { isNot: null },
+                    startTime: { gte: new Date() },
+                },
+                orderBy: { startTime: "asc" },
+                take: 5,
+                include: bookingInclude,
+            }),
+            prisma.booking.findMany({
+                where: {
+                    pitchId,
+                    status: BookingStatus.RESERVED,
+                    OR: [{ isApproved: false }, { payment: { isNot: null } }],
+                    startTime: { gte: new Date() },
+                },
+                orderBy: { startTime: "asc" },
+                take: 5,
+                include: bookingInclude,
+            }),
+        ]);
+
+        const bookedByDay = new Map<string, number>();
+
+        for (const slot of weekSlots) {
+            const key = formatInTimeZone(slot.startsAt, "Africa/Cairo", "yyyy-MM-dd");
+            bookedByDay.set(key, (bookedByDay.get(key) ?? 0) + 1);
+        }
+
+        const trend = Array.from({ length: 7 }, (_, i) => {
+            const day = addDays(weekStart, i);
+            const key = formatInTimeZone(day, "Africa/Cairo", "yyyy-MM-dd");
+            return { date: day, value: bookedByDay.get(key) ?? 0 };
+        });
+
+        const totalSlots = todaySlots.length;
+        const bookedSlots = todaySlots.filter((s) => s.status === SlotStatus.BOOKED).length;
+        const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0;
+
+        const profit = ledgerEntries.reduce((sum, entry) => sum + entry.amount, 0);
+
+        return {
+            pitch,
+            overview: {
+                bookedHours: trend[trend.length - 1].value,
+                trend,
+                occupancyRate,
+                profit,
+            },
+            upcoming: upcoming.map(normalizeBookingCard),
+            pending: pending.map(normalizeBookingCard),
+        };
     };
 
     // This pertains to the initial data that we want to hydrate our PitchContext with.

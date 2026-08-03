@@ -229,7 +229,6 @@ export default class BookingService {
             throw new BadRequestError("Requested booking time must be less than the maximum window provided in settings.", ERROR_CODES.BOOKING_WINDOW_INVALID);
 
         return prisma.$transaction(async tx => {
-            // 1. Lock slots in a consistent order to prevent deadlocks.
             const targets = await tx.$queryRaw<{ id: string }[]>`
                 SELECT id FROM "GroundSlot"
                 WHERE "groundId" = ${groundId}
@@ -238,10 +237,8 @@ export default class BookingService {
                 FOR UPDATE
             `;
 
-            // 2. Re-read full slot data now that they are locked and fresh.
             const slots = await tx.groundSlot.findMany({ where: { id: { in: targets.map(t => t.id) } } });
 
-            // 3. Validate on fresh locked data.
             if (slots.find(slot => slot.status === SlotStatus.BOOKED))
                 throw new BadRequestError("One or more slots already been booked. Please select another time.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
@@ -251,13 +248,14 @@ export default class BookingService {
             if (slots.length !== targetSlots.length)
                 throw new BadRequestError("One or more slots have already been booked or are outside the pitch's operating hours.", ERROR_CODES.BOOKING_SLOTS_NOT_AVAILABLE);
 
-            // 4. Calculate the priceSnapshot and total.
             const { pricingMap, pricingSnapshot } = BookingService.buildPricingSnapshot(ground, settings, slots);
-            let totalAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
+            const baseAmount = slots.reduce((sum, slot) => sum + pricingMap[slot.priceType], 0);
 
-            if (applyServiceFee) {
-                totalAmount += slots.length * BookingService.getGroundSizeMultiplier(ground.size) * config.SERVICE_RATE;
-            }
+            const serviceFeeAmount = applyServiceFee
+                ? slots.length * BookingService.getGroundSizeMultiplier(ground.size) * config.SERVICE_RATE
+                : 0;
+
+            const totalAmount = baseAmount + serviceFeeAmount;
 
             let depositFee: number | null = null;
 
@@ -306,9 +304,6 @@ export default class BookingService {
                 data: { status: SlotStatus.BOOKED, bookingId: booking.id }
             });
 
-            // Bare Payment row only — no transactionRef, no ledger entries yet.
-            // PaymentService isn't wired into this flow yet; this keeps the Payment
-            // relation non-null for downstream reads until the real integration lands.
             await tx.payment.create({
                 data: {
                     bookingId: booking.id,
@@ -317,6 +312,14 @@ export default class BookingService {
                     depositFee,
                 }
             });
+
+            if (status === BookingStatus.CONFIRMED) {
+                await PaymentService.recordBookingRevenue(tx, pitchId, booking.id, {
+                    baseAmount,
+                    serviceFee: serviceFeeAmount || undefined,
+                    collectedViaPlatform: false,
+                });
+            }
 
             return { assignee, booking };
         });
@@ -861,16 +864,20 @@ export default class BookingService {
             };
 
             // Update the actual booking record.
-            const updatedBooking = await tx.booking.update({
+            const booking = await tx.booking.update({
                 where: { id: bookingId },
                 data: { status: BookingStatus.CANCELLED }
             });
+            
+            if (booking.status === BookingStatus.CONFIRMED) {
+                await PaymentService.reverseBookingLedgerEntries(tx, booking.pitchId, bookingId, "Booking cancelled");
+            };
 
             // If the booking was previously confirmed, decrement the weeklyBookings count.
             if (booking.status === BookingStatus.CONFIRMED && differenceInHours(new Date(), booking.createdAt) <= 168) {
                 await PitchService.updateWeeklyBookings(tx, booking.pitchId, -1);
-            }
-
+            };
+            
             const targetDays = [...new Set(slots.map(slot => slot.startsAt.getUTCDay()))];
 
             const schedules = await tx.schedule.findMany({
@@ -914,7 +921,7 @@ export default class BookingService {
                 };
             };
 
-            return updatedBooking;
+            return booking;
         });
 
         // Calculate the refund if needed based on the original booking status and issue it based on the ground policy.

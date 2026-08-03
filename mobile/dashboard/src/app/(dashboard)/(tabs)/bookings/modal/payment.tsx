@@ -104,7 +104,7 @@ export default function Payment() {
                     </Pressable>
                 </View>
                 <View className="gap-y-2 py-2 mb-6">
-                    <Text className="text-3xl font-semibold">How is {state.customer.firstName} paying?</Text>
+                    <Text className="text-3xl font-semibold">How is {state.customer.firstName.trim() !== "" ? state.customer.firstName : "the customer"} paying?</Text>
                     <Text className="text-gray-500">
                         Indicate whether this booking has already been paid and select the payment method.
                     </Text>

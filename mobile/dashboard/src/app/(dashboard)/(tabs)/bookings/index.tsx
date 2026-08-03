@@ -162,13 +162,13 @@ export default function Bookings() {
             </ScrollView>
           </View>
           <View className="flex-row items-center justify-between px-6 py-2">
-            <Text>{formatDate(selectedDate, "dd MMM")}</Text>
+            <Text className="font-medium">{formatDate(selectedDate, "dd MMM")}</Text>
             <Pressable className="flex-row items-center gap-x-1" onPress={() => setIsModalOpen(true)}>
               <Text className="text-primary">Select date</Text>
               <IconChevronRight size={14} color="#1C04EA"/>
             </Pressable>
           </View>
-          <View>
+          <View className="mb-2">
             <ScrollView
               ref={dateScrollRef}
               horizontal

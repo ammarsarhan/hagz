@@ -6,7 +6,7 @@ import config from "@/shared/config.js";
 import BookingService from "@/domains/bookings/bookings.service.js";
 
 const SERVICE_RATE = config.SERVICE_RATE;
-const PLATFORM_FEE_RATE = config.PLATFORM_FEE_RATE; // platform's cut on cash-direct bookings, owed via CASH_FEE_DEBT
+const PLATFORM_FEE_RATE = config.PLATFORM_FEE_RATE;
 
 function getGroundSizeMultiplier(size: GroundSize) {
   switch (size) {
@@ -16,12 +16,6 @@ function getGroundSizeMultiplier(size: GroundSize) {
     default: return 10;
   }
 }
-
-// Channel no longer implies payment/status branching on its own — bookingMode does.
-// ONLINE is always customer-initiated checkout. WALK_IN is always staff-direct
-// (customer is physically present, nothing to check out into). WHATSAPP/PHONE/OTHER
-// can go either way depending on whether staff generated a payment link/reference
-// or logged something already settled.
 
 function resolveChannelAndMode(): { channel: BookingChannel; mode: "checkout" | "direct" } {
   const channel = faker.helpers.weightedArrayElement([
@@ -35,12 +29,8 @@ function resolveChannelAndMode(): { channel: BookingChannel; mode: "checkout" | 
   if (channel === BookingChannel.ONLINE) return { channel, mode: "checkout" };
   if (channel === BookingChannel.WALK_IN) return { channel, mode: "direct" };
 
-  // WHATSAPP / PHONE / OTHER: either a link was sent, or staff logged it as already settled.
   return { channel, mode: faker.helpers.arrayElement(["checkout", "direct"]) };
 }
-
-// checkout: CASH represents a Fawry/kiosk reference, not cash-in-hand.
-// direct: any method is now valid — CARD/WALLET means it was settled externally (POS terminal etc).
 
 function resolvePaymentMethod(mode: "checkout" | "direct"): PaymentMethod {
   return mode === "checkout"
@@ -187,24 +177,22 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
       if (mode === "direct") {
         const ledgerId = await resolveLedgerId(pitch.id);
 
-        if (paymentMethod === PaymentMethod.CASH) {
-          const platformFee = Math.round(totalAmount * PLATFORM_FEE_RATE);
+      if (paymentMethod === PaymentMethod.CASH) {
+        const platformFee = Math.round(totalAmount * PLATFORM_FEE_RATE);
 
-          await prisma.ledgerEntry.create({
-            data: {
-              ledgerId,
-              bookingId: booking.id,
-              type: LedgerAction.CASH_FEE_DEBT,
-              amount: -platformFee,
-              note: "Platform fee owed from cash-settled direct booking.",
-            }
-          });
+        await prisma.ledgerEntry.create({
+          data: { ledgerId, bookingId: booking.id, type: LedgerAction.BOOKING_REVENUE, amount: baseAmount, note: "Owner's share of booking total." }
+        });
 
-          await prisma.pitchLedger.update({
-            where: { id: ledgerId },
-            data: { balance: { decrement: platformFee } }
-          });
-        } else {
+        await prisma.ledgerEntry.create({
+          data: { ledgerId, bookingId: booking.id, type: LedgerAction.CASH_FEE_DEBT, amount: -platformFee, note: "Platform fee owed from cash-settled direct booking." }
+        });
+
+        await prisma.pitchLedger.update({
+          where: { id: ledgerId },
+          data: { balance: { increment: baseAmount - platformFee } }
+        });
+      } else {
           await prisma.ledgerEntry.create({
             data: {
               ledgerId,
