@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { addDays, addHours, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
-import { IconChevronRight, IconClockHour4, IconFocusCentered, IconLayoutDashboard, IconPlus } from "@tabler/icons-react-native";
+import { IconChevronRight, IconFocusCentered, IconLayoutDashboard, IconListDetails, IconPlus } from "@tabler/icons-react-native";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { usePitch } from "@/context/PitchContext";
 import CalendarModal from "@/components/shared/CalendarModal";
 import { sportMap } from "@/lib/types/ground";
 import cn from "@/lib/cn";
-import { useBookings } from "@/lib/hooks/useBookings";
+import { useBookings } from "@/lib/hooks";
 import BookingRow, { BookingCard } from "@/components/tabs/BookingRow";
 import { BookingRowData, PricingSnapshot } from "@/lib/types/bookings";
 import { Link } from "expo-router";
@@ -203,7 +203,7 @@ export default function Bookings() {
               <Animated.View style={toggleIconStyle}>
                 {
                   isBookingGrouped ?
-                  <IconClockHour4 width={16} height={16} strokeWidth={2.5} /> :
+                  <IconListDetails width={16} height={16} strokeWidth={2.5} /> :
                   <IconFocusCentered width={16} height={16} strokeWidth={2.5} />
                 }
               </Animated.View>

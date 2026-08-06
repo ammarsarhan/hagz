@@ -22,8 +22,7 @@ import * as Haptics from "expo-haptics";
 import * as z from "zod";
 import trim from "@/lib/string";
 import { router, useLocalSearchParams } from "expo-router";
-import { DraftGround, useGrounds } from "@/lib/hooks/useGrounds";
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
+import { DraftGround, useGrounds, useDraftQuery } from "@/lib/hooks";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 
 const sportValues = Object.keys(sportMap) as [GroundSport, ...GroundSport[]];

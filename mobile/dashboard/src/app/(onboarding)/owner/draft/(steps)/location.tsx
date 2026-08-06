@@ -7,7 +7,7 @@ import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
 import { client } from "@/lib/client";
 import cn from "@/lib/cn";
 import { ApiError, parseClientError } from "@/lib/error";
-import { useLocations } from "@/lib/hooks/useLocations";
+import { useLocations, useDraftQuery } from "@/lib/hooks";
 import parseGoogleMapsLink from "@/lib/location";
 import trim from "@/lib/string";
 import { IconChevronDown, IconMapPin } from "@tabler/icons-react-native";
@@ -19,7 +19,7 @@ import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from "reac
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation } from "@tanstack/react-query";
 import * as z from 'zod';
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
+
 
 const schema = z.object({
     street: 

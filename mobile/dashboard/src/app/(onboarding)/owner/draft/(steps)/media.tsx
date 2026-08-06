@@ -17,7 +17,7 @@ import * as Haptics from "expo-haptics";
 import { IconPhoto, IconPhotoPlus, IconPlus, IconX } from "@tabler/icons-react-native";
 import Button from "@/components/shared/Button";
 import { useActionSheet } from "@expo/react-native-action-sheet";
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
+import { useDraftQuery } from "@/lib/hooks";
 import { deletePitchMedia, uploadPitchMedia } from "@/lib/image/media";
 import { ApiError } from "@/lib/error";
 import { PitchMediaPresignPayload } from "@/lib/types/pitch";

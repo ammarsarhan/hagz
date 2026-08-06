@@ -6,10 +6,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ScheduleCircle from "@/components/shared/ScheduleCircle";
 import Button from "@/components/shared/Button";
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
-import { useGroundSchedule } from "@/lib/hooks/useGroundSchedule";
+import { useDraftQuery, useGroundSchedule, DraftGround } from "@/lib/hooks";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
-import { DraftGround } from "@/lib/hooks/useGrounds";
 import { DayOfWeek, daysOfWeek, GroundScheduleDraft, buildDefaultScheduleDraft } from "@/lib/types/ground";
 
 const dayCharacters: Record<DayOfWeek, string> = {

@@ -1,6 +1,7 @@
-import { LedgerAction } from "@/generated/prisma/enums.js";
+import { LedgerAction, PayoutMethod, PayoutStatus, PayoutTrigger } from "@/generated/prisma/enums.js";
 import type { TransactionClient } from "@/generated/prisma/internal/prismaNamespace.js";
-import { BadRequestError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
+import prisma from "@/shared/lib/utils/prisma.js";
+import { BadRequestError, ConflictError, ERROR_CODES, NotFoundError } from "@/shared/lib/utils/error.js";
 import config from "@/shared/config.js";
 
 export default class PaymentService {
@@ -149,5 +150,268 @@ export default class PaymentService {
                 note: `Reversal (${reason}) of entry ${entry.id}.`,
             });
         }
+    };
+
+    static readonly fetchPayouts = async (
+        pitchId: string,
+        query?: { status?: PayoutStatus; page?: number; limit?: number }
+    ) => {
+        const ledger = await prisma.pitchLedger.findUnique({ where: { pitchId } });
+        if (!ledger) {
+            return { payouts: [], balance: 0, pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+        }
+
+        const page = Math.max(1, query?.page ?? 1);
+        const limit = Math.min(100, Math.max(1, query?.limit ?? 20));
+        const skip = (page - 1) * limit;
+
+        const where = {
+            ledgerId: ledger.id,
+            ...(query?.status ? { status: query.status } : {})
+        };
+
+        const [payouts, total] = await Promise.all([
+            prisma.payout.findMany({
+                where,
+                orderBy: { requestedAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.payout.count({ where }),
+        ]);
+
+        return {
+            payouts,
+            balance: ledger.balance,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        };
+    };
+
+    static readonly createPayout = async (
+        pitchId: string,
+        payload: {
+            amount: number;
+            method: PayoutMethod;
+            destination: string;
+            trigger?: PayoutTrigger;
+        }
+    ) => {
+        return prisma.$transaction(async (tx) => {
+            const ledger = await PaymentService.ensureLedger(tx, pitchId);
+
+            // Ensure ALWAYS at most ONE payout in PENDING or PROCESSING status
+            const activePayout = await tx.payout.findFirst({
+                where: {
+                    ledgerId: ledger.id,
+                    status: { in: [PayoutStatus.PENDING, PayoutStatus.PROCESSING] }
+                }
+            });
+
+            if (activePayout) {
+                throw new ConflictError(
+                    "An active payout request is already pending or in progress for this pitch.",
+                    ERROR_CODES.PAYOUT_ACTIVE_EXISTS
+                );
+            }
+
+            if (payload.amount <= 0) {
+                throw new BadRequestError(
+                    "Payout amount must be greater than zero.",
+                    ERROR_CODES.PAYOUT_INVALID_AMOUNT
+                );
+            }
+
+            if (payload.amount > ledger.balance) {
+                throw new BadRequestError(
+                    `Insufficient balance (${ledger.balance}) for requested payout of ${payload.amount}.`,
+                    ERROR_CODES.PAYOUT_INVALID_AMOUNT
+                );
+            }
+
+            const payout = await tx.payout.create({
+                data: {
+                    ledgerId: ledger.id,
+                    amount: payload.amount,
+                    method: payload.method,
+                    destination: payload.destination,
+                    trigger: payload.trigger ?? PayoutTrigger.MANUAL,
+                    status: PayoutStatus.PENDING,
+                }
+            });
+
+            await PaymentService.createLedgerEntry(tx, pitchId, {
+                type: LedgerAction.PAYOUT,
+                amount: -payload.amount,
+                payoutId: payout.id,
+                note: `Payout requested via ${payload.method}`,
+            });
+
+            return payout;
+        });
+    };
+
+    static readonly fetchLedgerEntries = async (
+        pitchId: string,
+        query?: {
+            type?: LedgerAction;
+            bookingId?: string;
+            payoutId?: string;
+            page?: number;
+            limit?: number;
+        }
+    ) => {
+        const ledger = await prisma.pitchLedger.findUnique({ where: { pitchId } });
+        if (!ledger) {
+            return { entries: [], balance: 0, pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+        }
+
+        const page = Math.max(1, query?.page ?? 1);
+        const limit = Math.min(100, Math.max(1, query?.limit ?? 20));
+        const skip = (page - 1) * limit;
+
+        const where = {
+            ledgerId: ledger.id,
+            ...(query?.type ? { type: query.type } : {}),
+            ...(query?.bookingId ? { bookingId: query.bookingId } : {}),
+            ...(query?.payoutId ? { payoutId: query.payoutId } : {}),
+        };
+
+        const [entries, total] = await Promise.all([
+            prisma.ledgerEntry.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.ledgerEntry.count({ where }),
+        ]);
+
+        return {
+            entries,
+            balance: ledger.balance,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        };
+    };
+
+    static readonly createManualLedgerEntry = async (
+        pitchId: string,
+        entry: {
+            type: LedgerAction;
+            amount: number;
+            bookingId?: string;
+            note?: string;
+        }
+    ) => {
+        return prisma.$transaction(async (tx) => {
+            return PaymentService.createLedgerEntry(tx, pitchId, entry);
+        });
+    };
+
+    static readonly updateLedgerEntry = async (
+        pitchId: string,
+        payload: {
+            entryId: string;
+            note?: string;
+            amount?: number;
+            type?: LedgerAction;
+            reason?: string;
+        }
+    ) => {
+        return prisma.$transaction(async (tx) => {
+            const ledger = await PaymentService.ensureLedger(tx, pitchId);
+            const original = await tx.ledgerEntry.findUnique({
+                where: { id: payload.entryId }
+            });
+
+            if (!original) {
+                throw new NotFoundError(
+                    "Could not find ledger entry with the specified ID.",
+                    ERROR_CODES.LEDGER_ENTRY_NOT_FOUND
+                );
+            }
+
+            if (original.ledgerId !== ledger.id) {
+                throw new BadRequestError(
+                    "Ledger entry does not belong to the specified pitch.",
+                    ERROR_CODES.LEDGER_ENTRY_MISMATCH
+                );
+            }
+
+            const isFinancialChange =
+                (payload.amount !== undefined && payload.amount !== original.amount) ||
+                (payload.type !== undefined && payload.type !== original.type);
+
+            if (isFinancialChange) {
+                if (original.payoutId) {
+                    const payout = await tx.payout.findUnique({ where: { id: original.payoutId } });
+                    if (payout && (payout.status === PayoutStatus.COMPLETED || payout.status === PayoutStatus.PROCESSING)) {
+                        throw new BadRequestError(
+                            "Cannot update amount or type of a ledger entry linked to a processing or completed payout.",
+                            ERROR_CODES.LEDGER_ENTRY_LINKED_TO_PAYOUT
+                        );
+                    }
+                }
+
+                const reason = payload.reason ?? payload.note ?? "Manual ledger entry adjustment";
+                const { reversal, correction } = await PaymentService.correctLedgerEntry(
+                    tx,
+                    pitchId,
+                    original.id,
+                    payload.amount ?? original.amount,
+                    reason
+                );
+
+                if (payload.note && payload.note !== original.note) {
+                    await tx.ledgerEntry.update({
+                        where: { id: original.id },
+                        data: { note: payload.note },
+                    });
+                }
+
+                return { updated: original, reversal, correction };
+            }
+
+            const updated = await tx.ledgerEntry.update({
+                where: { id: original.id },
+                data: { ...(payload.note !== undefined ? { note: payload.note } : {}) },
+            });
+
+            return { updated };
+        });
+    };
+
+    static readonly fetchLedgerEntry = async (pitchId: string, ledgerEntryId: string) => {
+        const ledger = await prisma.pitchLedger.findUnique({ where: { pitchId } });
+        if (!ledger) {
+            throw new NotFoundError("Ledger entry not found.", ERROR_CODES.LEDGER_ENTRY_NOT_FOUND);
+        }
+
+        const entry = await prisma.ledgerEntry.findUnique({
+            where: { id: ledgerEntryId }
+        });
+
+        if (!entry || entry.ledgerId !== ledger.id) {
+            throw new NotFoundError("Ledger entry not found.", ERROR_CODES.LEDGER_ENTRY_NOT_FOUND);
+        }
+
+        return entry;
+    };
+
+    static readonly fetchPayout = async (pitchId: string, payoutId: string) => {
+        const ledger = await prisma.pitchLedger.findUnique({ where: { pitchId } });
+        if (!ledger) {
+            throw new NotFoundError("Payout not found.", ERROR_CODES.PAYOUT_NOT_FOUND);
+        }
+
+        const payout = await prisma.payout.findUnique({
+            where: { id: payoutId },
+            include: { entries: true },
+        });
+
+        if (!payout || payout.ledgerId !== ledger.id) {
+            throw new NotFoundError("Payout not found.", ERROR_CODES.PAYOUT_NOT_FOUND);
+        }
+
+        return payout;
     };
 };

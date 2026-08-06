@@ -6,8 +6,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import * as Haptics from "expo-haptics";
 import Footer from "@/components/onboarding/Footer";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
-import { DraftGround, useGrounds } from "@/lib/hooks/useGrounds";
+import { useDraftQuery, useGrounds, DraftGround } from "@/lib/hooks";
 import { sizeMap, sportMap, surfaceMap } from "@/lib/types/ground";
 import { IconChevronLeft, IconChevronRight, IconPlus } from "@tabler/icons-react-native";
 

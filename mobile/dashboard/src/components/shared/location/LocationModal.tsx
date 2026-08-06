@@ -6,7 +6,7 @@ import {
     LocationAccordionSkeleton,
 } from "@/components/shared/location/LocationAccordion";
 import { Area } from "@/lib/types/location";
-import { useLocations } from "@/lib/hooks/useLocations";
+import { useLocations } from "@/lib/hooks";
 
 interface LocationModalProps {
     open: boolean;

@@ -3,7 +3,7 @@ import Input from "@/components/shared/Input";
 import { useCreateBooking } from "@/context/forms/CreateBookingContext";
 import { useRequiredPitch } from "@/context/PitchContext";
 import { client } from "@/lib/client";
-import useDebounce from "@/lib/hooks/useDebounce";
+import { useDebounce } from "@/lib/hooks";
 import { IconChevronLeft } from "@tabler/icons-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { Link, router } from "expo-router";

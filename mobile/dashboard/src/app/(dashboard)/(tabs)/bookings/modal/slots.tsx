@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useCreateBooking } from "@/context/forms/CreateBookingContext";
 import { useRequiredPitch } from "@/context/PitchContext";
-import { useGroundConfig } from "@/lib/hooks/useGroundConfig";
+import { useGroundConfig, useGroundSlots } from "@/lib/hooks";
 import cn from "@/lib/cn";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react-native";
 import { router } from "expo-router";
@@ -26,7 +26,7 @@ import Button from "@/components/shared/Button";
 import { Pressable, View, Text, ActivityIndicator } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGroundSlots } from "@/lib/hooks/useGroundSlots";
+
 import { GroundDaySlot } from "@/lib/types/ground";
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 

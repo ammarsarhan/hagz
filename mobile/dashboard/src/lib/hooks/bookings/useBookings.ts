@@ -45,5 +45,4 @@ export function useBookings(date: Date, pitchId: string, target?: string, enable
         enabled,
         staleTime: 1000 * 60 * 2,
     });
-};
-
+}

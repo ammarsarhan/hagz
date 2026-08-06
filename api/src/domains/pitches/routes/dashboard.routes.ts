@@ -6,6 +6,7 @@ import { createPitchAmenityHandler, deletePitchAmenityHandler, getPitchAmenities
 import { confirmPitchMediaUploadHandler, createPitchMediaPresignLinkHandler, deletePitchMediaHandler, fetchPitchMediaHandler } from "@/domains/pitches/handlers/media.handlers.js";
 import { acceptPitchInvitationHandler, createPitchInvitationHandler, deletePitchInvitationHandler, deletePitchStaffMemberHandler, fetchPitchInvitationHandler, fetchPitchStaffHandler, fetchPitchStaffMemberHandler, rejectPitchInvitationHandler, updatePitchStaffMemberHandler } from "@/domains/pitches/handlers/staff.handlers.js";
 import { createStaffCheckoutBookingHandler, createStaffDirectBookingHandler } from "@/domains/bookings/bookings.handlers.js";
+import { fetchPayoutsHandler, createPayoutHandler, fetchLedgerEntriesHandler, createLedgerEntryHandler, updateLedgerEntryHandler, fetchLedgerEntryHandler, fetchPayoutHandler } from "@/domains/payments/payments.handlers.js";
 
 // Chained for RPC type support on the frontend.
 const app = new Hono()
@@ -58,6 +59,13 @@ const app = new Hono()
     .delete('/:pitchId/team/:memberId', ...deletePitchStaffMemberHandler)
     .get('/:pitchId/availability', ...fetchPitchAvailabilityHandler)
     .get('/:pitchId/bookings', ...fetchStaffPitchBookingsHandler)
+    .get('/:pitchId/payouts', ...fetchPayoutsHandler)
+    .post('/:pitchId/payouts', ...createPayoutHandler)
+    .get('/:pitchId/payouts/ledgers', ...fetchLedgerEntriesHandler)
+    .post('/:pitchId/payouts/ledgers', ...createLedgerEntryHandler)
+    .patch('/:pitchId/payouts/ledgers', ...updateLedgerEntryHandler)
+    .get('/:pitchId/payouts/ledgers/:ledgerId', ...fetchLedgerEntryHandler)
+    .get('/:pitchId/payouts/:payoutId', ...fetchPayoutHandler)
 
 export default app;
 export type AppType = typeof app;

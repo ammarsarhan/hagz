@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import { client } from "@/lib/client";
 import { ApiError, parseClientError } from "@/lib/error";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";
-import { DraftGround } from "@/lib/hooks/useGrounds";
+import { DraftGround } from "./useGrounds";
 import { daysOfWeek, GroundScheduleDraft, toUpsertPayload } from "@/lib/types/ground";
 
 export function useGroundSchedule(pitchId: string, groundId: string) {
@@ -59,4 +59,4 @@ export function useGroundSchedule(pitchId: string, groundId: string) {
     });
 
     return { saveMutation };
-};
+}

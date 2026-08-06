@@ -7,7 +7,7 @@ import Button from "@/components/shared/Button";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { IconBallFootball, IconChevronRight, IconLayoutDashboard, IconPhotoAlt, IconTextCaption } from "@tabler/icons-react-native";
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
+import { useDraftQuery } from "@/lib/hooks";
 import cn from "@/lib/cn";
 import { ReactNode } from "react";
 import { usePitchDraftForm } from "@/context/forms/PitchDraftContext";

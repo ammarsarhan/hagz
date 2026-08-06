@@ -5,7 +5,7 @@ import { Link } from "expo-router";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatDate } from "date-fns";
-import { useDashboardHome } from "@/lib/hooks/useDashboardHome";
+import { useDashboardHome } from "@/lib/hooks";
 
 export default function Index() {
   const { pitch, isLoading } = usePitch();

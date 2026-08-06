@@ -10,7 +10,7 @@ import { ReactNode, useEffect } from "react";
 import Animated, { createAnimatedComponent, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from "@tanstack/react-query";
-import { useIsDirty } from "@/lib/hooks/useIsDirty";
+import { useIsDirty } from "@/lib/hooks";
 import { client } from "@/lib/client";
 import { ApiError, parseClientError } from "@/lib/error";
 

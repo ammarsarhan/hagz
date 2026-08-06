@@ -14,7 +14,7 @@ import {
 import { Pressable, View, Text, ActivityIndicator, Modal, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cn from "@/lib/cn";
-import { usePitchAvailability, AvailabilityDay } from "@/lib/hooks/usePitchAvailability";
+import { usePitchAvailability, AvailabilityDay } from "@/lib/hooks";
 
 interface CalendarModalProps {
     visible: boolean;

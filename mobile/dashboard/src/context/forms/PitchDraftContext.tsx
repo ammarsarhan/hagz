@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createFormContext } from "@/context/FormContext";
-import useDraftQuery from "@/lib/hooks/useDraftQuery";
+import { useDraftQuery } from "@/lib/hooks";
 import { PitchDraftContextType, PitchResponse } from "@/lib/types/pitch";
 import { buildScheduleDraft } from "@/lib/types/ground";
 

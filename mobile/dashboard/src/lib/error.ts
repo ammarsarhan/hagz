@@ -84,6 +84,14 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
     // Notifications
     NOTIFICATION_NOT_FOUND: "We couldn't find that notification.",
+
+    // Ledger & Payout
+    PAYOUT_ACTIVE_EXISTS: "You already have a payout request pending or in progress.",
+    PAYOUT_NOT_FOUND: "We couldn't find that payout.",
+    PAYOUT_INVALID_AMOUNT: "The requested payout amount is invalid.",
+    LEDGER_ENTRY_NOT_FOUND: "We couldn't find that ledger entry.",
+    LEDGER_ENTRY_MISMATCH: "This ledger entry doesn't belong to the selected pitch.",
+    LEDGER_ENTRY_LINKED_TO_PAYOUT: "This ledger entry is linked to a completed payout and cannot be modified.",
 };
 
 export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";

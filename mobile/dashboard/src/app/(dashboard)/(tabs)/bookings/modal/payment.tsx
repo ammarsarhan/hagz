@@ -1,7 +1,7 @@
 import Button from "@/components/shared/Button";
 import { useCreateBooking } from "@/context/forms/CreateBookingContext";
 import { useRequiredPitch } from "@/context/PitchContext";
-import { useGroundConfig } from "@/lib/hooks/useGroundConfig";
+import { useGroundConfig } from "@/lib/hooks";
 import { BookingDirectPayload } from "@/lib/types/bookings";
 import {
     IconCash,
