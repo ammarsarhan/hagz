@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { addDays, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
-import { IconChevronRight, IconLayoutDashboard, IconPlus } from "@tabler/icons-react-native";
+import { IconChevronRight, IconFocusCentered, IconLayoutDashboard, IconPlus } from "@tabler/icons-react-native";
 import { usePitch } from "@/context/PitchContext";
 import CalendarModal from "@/components/shared/CalendarModal";
 import { sportMap } from "@/lib/types/ground";
@@ -14,6 +14,7 @@ import { Link } from "expo-router";
 export default function Bookings() {
   const { pitch, isLoading: isPitchLoading } = usePitch();
 
+  const insets = useSafeAreaInsets();
   const [selectedGround, setSelectedGround] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,7 +108,8 @@ export default function Bookings() {
       <SafeAreaView className="flex-1" edges={['top']}>
         <ScrollView
           className="flex-1"
-          contentContainerClassName="py-10 gap-y-6"
+          contentContainerClassName={"gap-y-6 pb-10"}
+          contentContainerStyle={{ paddingTop: insets.top / 1.5 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -118,8 +120,11 @@ export default function Bookings() {
             />
           }
         >
-          <View className="gap-y-1 px-6">
+          <View className="px-6 flex-row items-center justify-between">
             <Text className="text-4xl font-semibold">Bookings</Text>
+            <Pressable className="size-11 bg-gray-100 rounded-full items-center justify-center">
+              <IconFocusCentered width={16} height={16} strokeWidth={2.5}/>
+            </Pressable>
           </View>
           <View>
             <ScrollView
@@ -203,7 +208,7 @@ export default function Bookings() {
               }
             </ScrollView>
           </View>
-          <View className="px-6 gap-y-8">
+          <View className="gap-y-8">
             {renderBookings()}
           </View>
         </ScrollView>
