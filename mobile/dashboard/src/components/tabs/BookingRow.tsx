@@ -10,7 +10,15 @@ type BookingRowProps = BookingRowData;
 
 const formatPriceType = (priceType: string) => `${priceType[0].toUpperCase()}${priceType.slice(1).toLowerCase()}`;
 
-function BookingCard({ item, hour }: { item: BookingRowData["bookings"][number]; hour: Date }) {
+export function BookingCard({
+    item,
+    hour,
+    groupedRange,
+}: {
+    item: BookingRowData["bookings"][number];
+    hour: Date;
+    groupedRange?: { from: Date; to: Date };
+}) {
     const booking = item.booking!;
     const snapshot = booking.pricingSnapshot as unknown as PricingSnapshot;
 
@@ -19,6 +27,20 @@ function BookingCard({ item, hour }: { item: BookingRowData["bookings"][number];
     );
 
     const slotIndex = snapshot.slots.findIndex(s => isEqual(new Date(s.startsAt), hour));
+
+    const statusText = booking.status
+        .toLowerCase()
+        .split("_")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+    const bottomLeft = groupedRange
+        ? `${formatDate(groupedRange.from, "hh:mm a")} to ${formatDate(groupedRange.to, "hh:mm a")}`
+        : statusText;
+
+    const bottomRight = groupedRange
+        ? statusText
+        : (slotIndex >= 0 ? `(Slot ${slotIndex + 1}/${snapshot.slots.length})` : "-");
 
     return (
         <View className={cn("border border-gray-200 p-6 gap-y-6 rounded-lg w-full")}>
@@ -39,24 +61,14 @@ function BookingCard({ item, hour }: { item: BookingRowData["bookings"][number];
                     }
                 </View>
             </View>
-            <View className="gap-y-1 mb-2">
-                <Text className="font-medium text-xl">{booking.customer.firstName} {booking.customer.lastName}</Text>
-                <Text className="text-gray-500 text-[0.925rem]">{formatPhone(booking.customer.phone)}</Text>
-                <Text className="text-gray-500 text-sm">{item.ground.name}</Text>
+            <View className="gap-y-2 mb-2">
+                <Text className="font-medium text-lg">{booking.customer.firstName} {booking.customer.lastName}</Text>
+                <Text className="text-gray-500 -mt-0.5">{formatPhone(booking.customer.phone)}</Text>
+                <Text className="text-gray-500">{item.ground.name}</Text>
             </View>
             <View className="flex-row items-center justify-between">
-                <Text className="text-[0.95rem]">
-                    {
-                        booking.status
-                            .toLowerCase()
-                            .split("_")
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(" ")
-                    }
-                </Text>
-                <Text className="text-[0.95rem] text-gray-500">
-                    {slotIndex >= 0 ? `(Slot ${slotIndex + 1}/${snapshot.slots.length})` : "-"}
-                </Text>
+                <Text className="text-[0.95rem]">{bottomLeft}</Text>
+                <Text className="text-[0.95rem] text-gray-500">{bottomRight}</Text>
             </View>
         </View>
     );

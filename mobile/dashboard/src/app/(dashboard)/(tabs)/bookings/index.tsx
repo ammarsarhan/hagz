@@ -1,23 +1,57 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { addDays, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
-import { IconChevronRight, IconFocusCentered, IconLayoutDashboard, IconPlus } from "@tabler/icons-react-native";
+import { addDays, addHours, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
+import { IconChevronRight, IconClockHour4, IconFocusCentered, IconLayoutDashboard, IconPlus } from "@tabler/icons-react-native";
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { usePitch } from "@/context/PitchContext";
 import CalendarModal from "@/components/shared/CalendarModal";
 import { sportMap } from "@/lib/types/ground";
 import cn from "@/lib/cn";
 import { useBookings } from "@/lib/hooks/useBookings";
-import BookingRow from "@/components/tabs/BookingRow";
+import BookingRow, { BookingCard } from "@/components/tabs/BookingRow";
+import { BookingRowData, PricingSnapshot } from "@/lib/types/bookings";
 import { Link } from "expo-router";
 
 export default function Bookings() {
   const { pitch, isLoading: isPitchLoading } = usePitch();
 
   const insets = useSafeAreaInsets();
+
   const [selectedGround, setSelectedGround] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBookingGrouped, setIsBookingGrouped] = useState(false);
+
+  const toggleIconOpacity = useSharedValue(1);
+  const listOpacity = useSharedValue(1);
+
+  const toggleIconStyle = useAnimatedStyle(() => ({
+    opacity: toggleIconOpacity.value,
+  }));
+  const listStyle = useAnimatedStyle(() => ({
+    opacity: listOpacity.value,
+  }));
+
+  const handleToggleGrouped = () => {
+    const next = !isBookingGrouped;
+
+    toggleIconOpacity.value = withTiming(0, { duration: 150 });
+    listOpacity.value = withTiming(0, { duration: 150 }, (finished) => {
+      if (finished) {
+        runOnJS(setIsBookingGrouped)(next);
+      }
+    });
+  };
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      toggleIconOpacity.value = withTiming(1, { duration: 150 });
+      listOpacity.value = withTiming(1, { duration: 150 });
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [isBookingGrouped, listOpacity, toggleIconOpacity]);
 
   const dateScrollRef = useRef<ScrollView>(null);
   const itemPositions = useRef<{ [key: string]: number }>({});
@@ -41,6 +75,32 @@ export default function Bookings() {
     target,
     !isPitchLoading && !!pitch?.id && selectedGround !== null
   );
+
+  const groupedBookings = useMemo(() => {
+    if (!data) return [];
+
+    const seen = new Set<string>();
+    const result: { key: string; item: BookingRowData["bookings"][number]; from: Date; to: Date }[] = [];
+
+    for (const slot of data.slots) {
+      for (const item of slot.bookings) {
+        const booking = item.booking!;
+        if (seen.has(booking.id)) continue;
+        seen.add(booking.id);
+
+        const snapshot = booking.pricingSnapshot as unknown as PricingSnapshot;
+        const sortedSlots = [...snapshot.slots].sort(
+          (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+        );
+        const from = new Date(sortedSlots[0].startsAt);
+        const to = addHours(new Date(sortedSlots[sortedSlots.length - 1].startsAt), 1);
+
+        result.push({ key: booking.id, item, from, to });
+      }
+    }
+
+    return result.sort((a, b) => a.from.getTime() - b.from.getTime());
+  }, [data]);
 
   if (isPitchLoading || !pitch) return null;
 
@@ -84,6 +144,20 @@ export default function Bookings() {
       );
     }
 
+    if (isBookingGrouped) {
+      return (
+        <>
+          {
+            groupedBookings.map(({ key, item, from, to }) => (
+              <View key={key} className="px-6">
+                <BookingCard item={item} hour={from} groupedRange={{ from, to }} />
+              </View>
+            ))
+          }
+        </>
+      );
+    }
+
     return (
       <>
         {
@@ -122,8 +196,17 @@ export default function Bookings() {
         >
           <View className="px-6 flex-row items-center justify-between">
             <Text className="text-4xl font-semibold">Bookings</Text>
-            <Pressable className="size-11 bg-gray-100 rounded-full items-center justify-center">
-              <IconFocusCentered width={16} height={16} strokeWidth={2.5}/>
+            <Pressable
+              className="size-11 bg-gray-100 rounded-full items-center justify-center"
+              onPress={handleToggleGrouped}
+            >
+              <Animated.View style={toggleIconStyle}>
+                {
+                  isBookingGrouped ?
+                  <IconClockHour4 width={16} height={16} strokeWidth={2.5} /> :
+                  <IconFocusCentered width={16} height={16} strokeWidth={2.5} />
+                }
+              </Animated.View>
             </Pressable>
           </View>
           <View>
@@ -208,9 +291,9 @@ export default function Bookings() {
               }
             </ScrollView>
           </View>
-          <View className="gap-y-8">
+          <Animated.View style={listStyle} className="gap-y-8">
             {renderBookings()}
-          </View>
+          </Animated.View>
         </ScrollView>
         <View className="absolute bottom-6 right-6">
           <Link href="/(dashboard)/(tabs)/bookings/modal" asChild>
