@@ -87,10 +87,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="payouts"
+          name="payments"
           options={{
-            title: "Payouts",
-            tabBarLabel: "Payouts",
+            title: "Payments",
+            tabBarLabel: "Payments",
             tabBarIcon: ({ color, size }) => (
               <IconArrowsTransferUp
                 size={size - 2}

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { addDays, addHours, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
 import { IconChevronRight, IconFocusCentered, IconLayoutDashboard, IconListDetails, IconPlus } from "@tabler/icons-react-native";
@@ -13,7 +13,6 @@ import BookingRow, { BookingCard } from "@/components/tabs/BookingRow";
 import { BookingRowData, PricingSnapshot } from "@/lib/types/bookings";
 import { Link } from "expo-router";
 
-// Day button with smooth animated color transitions via Reanimated interpolateColor.
 const AnimatedDayButton = memo(function AnimatedDayButton({
   date,
   isSelected,
@@ -102,9 +101,7 @@ export default function Bookings() {
     const next = !isBookingGrouped;
 
     toggleIconOpacity.value = withTiming(0, { duration: 150 });
-    listOpacity.value = withTiming(0, { duration: 150 }, () => {
-      // Toggle grouped view state
-    });
+    listOpacity.value = withTiming(0, { duration: 150 });
     setIsBookingGrouped(next);
   };
 
@@ -117,7 +114,6 @@ export default function Bookings() {
     return () => cancelAnimationFrame(raf);
   }, [isBookingGrouped, listOpacity, toggleIconOpacity]);
 
-  // Pure JS thread date selection + smooth list opacity fade in on date change
   const handleDateSelect = useCallback((date: Date) => {
     if (isSameDay(date, selectedDate)) return;
     listOpacity.value = 0;
@@ -270,7 +266,6 @@ export default function Bookings() {
             />
           }
         >
-          {/* Child 0: Main title and grounds filter */}
           <View className="gap-y-6">
             <View className="px-6 flex-row items-center justify-between">
               <Text className="text-4xl font-semibold">Bookings</Text>
@@ -328,8 +323,6 @@ export default function Bookings() {
               </ScrollView>
             </View>
           </View>
-
-          {/* Child 1: Sticky Date Header & Quick Date Strip */}
           <View className="bg-white pt-2 pb-5 gap-y-5">
             <View className="flex-row items-center justify-between px-6">
               <Text className="font-medium text-lg text-black">
@@ -369,8 +362,6 @@ export default function Bookings() {
               </ScrollView>
             </View>
           </View>
-
-          {/* Child 2: Booking slots list with opacity transition on date switch */}
           <Animated.View style={listStyle} className="gap-y-8">
             {renderBookings()}
           </Animated.View>

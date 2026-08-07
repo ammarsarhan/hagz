@@ -23,22 +23,12 @@ export const fetchLedgerEntriesQuerySchema = z.object({
 });
 
 export const createLedgerEntrySchema = z.object({
-    type: z.enum(Object.values(LedgerAction)),
-    amount: z.number().int(),
-    bookingId: z.string().optional(),
-    note: z.string().max(500).optional(),
-});
-
-export const updateLedgerEntrySchema = z.object({
-    entryId: z.cuid("Use a valid ledger entry CUID."),
-    note: z.string().max(500).optional(),
-    amount: z.number().int().optional(),
-    type: z.enum(Object.values(LedgerAction)).optional(),
-    reason: z.string().max(500).optional(),
+    amount: z.number("Amount must be a valid int.").int("Amount must be a valid int.").min(-5000, "Amount may not be smaller than EGP -5000.00").max(0, "Amount may not be larger than EGP 0.00"),
+    bookingId: z.string("Please use a valid booking CUID.").optional(),
+    note: z.string("Note to explain the manual adjustment is required.").max(500),
 });
 
 export type FetchPayoutsQueryType = z.infer<typeof fetchPayoutsQuerySchema>;
 export type CreatePayoutPayloadType = z.infer<typeof createPayoutSchema>;
 export type FetchLedgerEntriesQueryType = z.infer<typeof fetchLedgerEntriesQuerySchema>;
 export type CreateLedgerEntryPayloadType = z.infer<typeof createLedgerEntrySchema>;
-export type UpdateLedgerEntryPayloadType = z.infer<typeof updateLedgerEntrySchema>;

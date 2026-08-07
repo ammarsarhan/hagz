@@ -8,8 +8,7 @@ import {
     createLedgerEntrySchema,
     createPayoutSchema,
     fetchLedgerEntriesQuerySchema,
-    fetchPayoutsQuerySchema,
-    updateLedgerEntrySchema,
+    fetchPayoutsQuerySchema
 } from "@/domains/payments/payments.validator.js";
 
 const factory = createFactory();
@@ -71,21 +70,6 @@ export const createLedgerEntryHandler = factory.createHandlers(
         const entry = await PaymentService.createManualLedgerEntry(pitchId, payload);
 
         return c.json({ success: true, data: { entry } }, 201);
-    }
-);
-
-export const updateLedgerEntryHandler = factory.createHandlers(
-    guard("payments", PermissionLevel.WRITE),
-    validate("json", updateLedgerEntrySchema),
-    async (c) => {
-        const pitchId = c.req.param("pitchId");
-        if (!pitchId)
-            throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
-
-        const payload = c.req.valid("json");
-        const result = await PaymentService.updateLedgerEntry(pitchId, payload);
-
-        return c.json({ success: true, data: { ...result } }, 200);
     }
 );
 

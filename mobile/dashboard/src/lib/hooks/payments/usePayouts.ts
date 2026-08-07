@@ -14,7 +14,7 @@ export function usePayouts(
     enabled = true
 ) {
     return useQuery({
-        queryKey: ["payouts", pitchId, options],
+        queryKey: ["payouts", "list", pitchId, options],
         queryFn: async () => {
             const res = await client.dashboard.pitches[":pitchId"].payouts.$get({
                 param: { pitchId },
@@ -44,7 +44,7 @@ export function useInfinitePayouts(
     enabled = true
 ) {
     return useInfiniteQuery({
-        queryKey: ["payouts-infinite", pitchId, options],
+        queryKey: ["payouts", "infinite", pitchId, options],
         queryFn: async ({ pageParam = 1 }) => {
             const res = await client.dashboard.pitches[":pitchId"].payouts.$get({
                 param: { pitchId },

@@ -4,28 +4,28 @@ import { usePitch } from "@/context/PitchContext";
 import cn from "@/lib/cn";
 import { useInfiniteLedgerEntries, useInfinitePayouts } from "@/lib/hooks/payments";
 import { formatCurrency } from "@/lib/string";
-import { IconAdjustmentsHorizontal, IconArrowsTransferUpDown, IconArrowUp, IconReceipt, IconSettings } from "@tabler/icons-react-native";
+import { IconAdjustmentsHorizontal, IconArrowsTransferUpDown, IconPlus, IconReceipt, IconSettings } from "@tabler/icons-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, LayoutChangeEvent, Pressable, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { Link } from "expo-router";
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
-export default function Payouts() {
-  const [view, setView] = useState<"ENTRIES" | "PAYOUTS">("ENTRIES");
+export default function Index() {
+  const [view, setView] = useState<"entries" | "payouts">("entries");
   const insets = useSafeAreaInsets();
   const { pitch, isLoading: isPitchLoading } = usePitch();
 
   const pitchId = pitch?.id ?? "";
 
-  const isEntriesView = view === "ENTRIES";
-  const isPayoutsView = view === "PAYOUTS";
+  const isEntriesView = view === "entries";
+  const isPayoutsView = view === "payouts";
 
   const listOpacity = useSharedValue(1);
-  const pendingView = useRef<"ENTRIES" | "PAYOUTS" | null>(null);
+  const pendingView = useRef<"entries" | "payouts" | null>(null);
 
-  // Scroll offset tracking for animated border-bottom when tab switcher reaches top
   const scrollY = useSharedValue(0);
   const [mainHeaderHeight, setMainHeaderHeight] = useState(260);
 
@@ -55,7 +55,7 @@ export default function Payouts() {
     };
   });
 
-  const handleViewSwitch = useCallback((nextView: "ENTRIES" | "PAYOUTS") => {
+  const handleViewSwitch = useCallback((nextView: "entries" | "payouts") => {
     if (nextView === view) return;
     pendingView.current = nextView;
 
@@ -110,14 +110,13 @@ export default function Payouts() {
     [payoutsData]
   );
 
-  // Prepend tab switcher item so stickyHeaderIndices={[1]} pins it to the top on scroll
   const entries = useMemo(
-    () => [{ id: "__TAB_SWITCHER__", isHeader: true } as any, ...rawEntries],
+    () => [{ id: "tabSwitcher", isHeader: true } as any, ...rawEntries],
     [rawEntries]
   );
 
   const payouts = useMemo(
-    () => [{ id: "__TAB_SWITCHER__", isHeader: true } as any, ...rawPayouts],
+    () => [{ id: "tabSwitcher", isHeader: true } as any, ...rawPayouts],
     [rawPayouts]
   );
 
@@ -168,30 +167,30 @@ export default function Payouts() {
   const balance = firstEntryPage?.balance ?? firstPayoutPage?.balance ?? 0;
   const formattedBalance = formatCurrency(balance, { signDisplay: "always" });
 
-  const renderMainHeader = () => (
-    <View onLayout={handleMainHeaderLayout} className="gap-y-6 pb-2" style={{ paddingTop: insets.top / 1.5 }}>
+  const renderHeader = () => (
+    <View onLayout={handleMainHeaderLayout} className="gap-y-6 pb-4" style={{ paddingTop: insets.top / 1.5 }}>
       <View className="flex-row items-center justify-between">
         <View className="gap-y-1">
-          <Text className="text-4xl font-semibold">Payouts</Text>
-          <Text className="text-gray-500">Reconciled as of {new Date().toLocaleDateString("en-GB")}</Text>
+          <Text className="text-4xl font-semibold">Payments</Text>
+          <Text className="text-gray-500">As of {new Date().toLocaleDateString("en-GB")}</Text>
         </View>
         <Pressable className="size-11 rounded-full bg-gray-100 items-center justify-center">
           <IconSettings width={18} height={18} color="#000000" strokeWidth={2.25} />
         </Pressable>
       </View>
-
       <View className="py-6 items-center justify-center gap-y-2">
         <Text className="text-4xl font-semibold">{formattedBalance}</Text>
         <Text className="text-gray-500">Current Ledger Balance</Text>
       </View>
-
       <View className="flex-row items-center justify-center gap-x-8">
-        <Pressable className="gap-y-3 items-center">
-          <View className="rounded-lg bg-gray-100 items-center justify-center size-16">
-            <IconArrowUp width={20} height={20} strokeWidth={2.25} />
-          </View>
-          <Text className="font-medium text-[0.925rem]">Record</Text>
-        </Pressable>
+        <Link asChild href="/(dashboard)/(tabs)/payments/record"> 
+          <Pressable className="gap-y-3 items-center">
+            <View className="rounded-lg bg-gray-100 items-center justify-center size-16">
+              <IconPlus width={20} height={20} strokeWidth={2.25} />
+            </View>
+            <Text className="font-medium text-[0.925rem]">Record</Text>
+          </Pressable>
+        </Link>
         <Pressable className="gap-y-3 items-center">
           <View className="rounded-lg bg-primary items-center justify-center size-16">
             <IconArrowsTransferUpDown width={20} height={20} strokeWidth={2.25} color="#FFFFFF" />
@@ -209,15 +208,15 @@ export default function Payouts() {
   );
 
   const renderTabSwitcher = () => (
-    <Animated.View style={tabSwitcherBorderStyle} className="bg-white flex-row items-center justify-between pt-4 pb-4">
+    <Animated.View style={tabSwitcherBorderStyle} className="bg-white flex-row items-center justify-between py-4">
       <View className="flex-row items-center gap-x-6">
-        <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("ENTRIES")}>
+        <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("entries")}>
           <Text className={cn("font-medium text-[1.05rem]", isEntriesView ? "text-black" : "text-gray-500")}>
             Entries
           </Text>
           <View className={cn("h-[3px] rounded-full w-1/2", isEntriesView ? "bg-primary" : "bg-transparent")} />
         </Pressable>
-        <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("PAYOUTS")}>
+        <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("payouts")}>
           <Text className={cn("font-medium text-[1.05rem]", isPayoutsView ? "text-black" : "text-gray-500")}>
             Payouts
           </Text>
@@ -248,21 +247,11 @@ export default function Payouts() {
     if (isLoading) {
       return (
         <Animated.View style={listStyle} className="gap-y-1">
-          {isEntriesView ? (
-            <>
-              <LedgerRowSkeleton />
-              <LedgerRowSkeleton />
-              <LedgerRowSkeleton />
-              <LedgerRowSkeleton />
-            </>
-          ) : (
-            <>
-              <PayoutRowSkeleton />
-              <PayoutRowSkeleton />
-              <PayoutRowSkeleton />
-              <PayoutRowSkeleton />
-            </>
-          )}
+          {
+            isEntriesView ? 
+              Array(4).map((_, index) => <LedgerRowSkeleton key={index}/>) : 
+              Array(4).map((_, index) => <PayoutRowSkeleton key={index}/>)
+          }
         </Animated.View>
       );
     }
@@ -282,17 +271,18 @@ export default function Payouts() {
 
     return (
       <Animated.View style={listStyle} className="py-4">
-        {isEntriesView ? (
-          <>
-            <LedgerRowSkeleton />
-            <LedgerRowSkeleton />
-          </>
-        ) : (
-          <>
-            <PayoutRowSkeleton />
-            <PayoutRowSkeleton />
-          </>
-        )}
+        {
+          isEntriesView ?
+            <>
+              <LedgerRowSkeleton />
+              <LedgerRowSkeleton />
+            </>
+          :
+            <>
+              <PayoutRowSkeleton />
+              <PayoutRowSkeleton />
+            </>
+        }
       </Animated.View>
     );
   };
@@ -305,7 +295,7 @@ export default function Payouts() {
           data={entries}
           keyExtractor={(item: any) => item.id}
           renderItem={renderItem}
-          ListHeaderComponent={renderMainHeader}
+          ListHeaderComponent={renderHeader}
           stickyHeaderIndices={[1]}
           onScroll={handleScroll}
           scrollEventThrottle={16}
@@ -328,7 +318,7 @@ export default function Payouts() {
           data={payouts}
           keyExtractor={(item: any) => item.id}
           renderItem={renderItem}
-          ListHeaderComponent={renderMainHeader}
+          ListHeaderComponent={renderHeader}
           stickyHeaderIndices={[1]}
           onScroll={handleScroll}
           scrollEventThrottle={16}

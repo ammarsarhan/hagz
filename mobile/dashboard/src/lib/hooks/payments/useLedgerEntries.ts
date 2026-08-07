@@ -1,7 +1,7 @@
 import { client } from "@/lib/client";
 import { ApiError, parseClientError } from "@/lib/error";
 import { LedgerAction } from "@/lib/types/payments";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface UseLedgerEntriesOptions {
     type?: LedgerAction;
@@ -17,9 +17,9 @@ export function useLedgerEntries(
     enabled = true
 ) {
     return useQuery({
-        queryKey: ["ledger-entries", pitchId, options],
+        queryKey: ["ledgers", "list", pitchId, options],
         queryFn: async () => {
-            const res = await client.dashboard.pitches[":pitchId"].payouts.ledgers.$get({
+            const res = await client.dashboard.pitches[":pitchId"].ledgers.$get({
                 param: { pitchId },
                 query: {
                     type: options?.type as any,
@@ -49,9 +49,9 @@ export function useInfiniteLedgerEntries(
     enabled = true
 ) {
     return useInfiniteQuery({
-        queryKey: ["ledger-entries-infinite", pitchId, options],
+        queryKey: ["ledgers", "infinite", pitchId, options],
         queryFn: async ({ pageParam = 1 }) => {
-            const res = await client.dashboard.pitches[":pitchId"].payouts.ledgers.$get({
+            const res = await client.dashboard.pitches[":pitchId"].ledgers.$get({
                 param: { pitchId },
                 query: {
                     type: options?.type as any,
@@ -80,3 +80,41 @@ export function useInfiniteLedgerEntries(
         staleTime: 1000 * 60 * 2,
     });
 }
+
+export interface CreateLedgerPayload {
+    amount: number;
+    bookingId?: string;
+    note: string;
+}
+
+interface CreateLedgerParams {
+    pitchId: string;
+    payload: CreateLedgerPayload;
+}
+
+export function useLedgerMutation() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ pitchId, payload }: CreateLedgerParams) => {
+            const res = await client.dashboard.pitches[":pitchId"].ledgers.$post({
+                param: { pitchId },
+                json: payload,
+            });
+
+            if (!res.ok) {
+                const error = await parseClientError(res);
+                throw new ApiError(error);
+            }
+
+            const { data } = await res.json();
+            return data;
+        },
+        onSuccess: (_data, { pitchId }) => {
+            queryClient.invalidateQueries({ queryKey: ["ledgers", "list", pitchId] });
+            queryClient.invalidateQueries({ queryKey: ["ledgers", "infinite", pitchId] });
+            queryClient.invalidateQueries({ queryKey: ["payouts", "list", pitchId] });
+            queryClient.invalidateQueries({ queryKey: ["payouts", "infinite", pitchId] });
+        },
+    });
+};

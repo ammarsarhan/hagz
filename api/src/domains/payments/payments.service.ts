@@ -197,7 +197,7 @@ export default class PaymentService {
         return prisma.$transaction(async (tx) => {
             const ledger = await PaymentService.ensureLedger(tx, pitchId);
 
-            // Ensure ALWAYS at most ONE payout in PENDING or PROCESSING status
+            // Ensure always at most ONE payout in PENDING or PROCESSING status
             const activePayout = await tx.payout.findFirst({
                 where: {
                     ledgerId: ledger.id,
@@ -323,87 +323,14 @@ export default class PaymentService {
     static readonly createManualLedgerEntry = async (
         pitchId: string,
         entry: {
-            type: LedgerAction;
             amount: number;
+            note: string;
             bookingId?: string;
-            note?: string;
         }
     ) => {
         return prisma.$transaction(async (tx) => {
-            return PaymentService.createLedgerEntry(tx, pitchId, entry);
-        });
-    };
-
-    static readonly updateLedgerEntry = async (
-        pitchId: string,
-        payload: {
-            entryId: string;
-            note?: string;
-            amount?: number;
-            type?: LedgerAction;
-            reason?: string;
-        }
-    ) => {
-        return prisma.$transaction(async (tx) => {
-            const ledger = await PaymentService.ensureLedger(tx, pitchId);
-            const original = await tx.ledgerEntry.findUnique({
-                where: { id: payload.entryId }
-            });
-
-            if (!original) {
-                throw new NotFoundError(
-                    "Could not find ledger entry with the specified ID.",
-                    ERROR_CODES.LEDGER_ENTRY_NOT_FOUND
-                );
-            }
-
-            if (original.ledgerId !== ledger.id) {
-                throw new BadRequestError(
-                    "Ledger entry does not belong to the specified pitch.",
-                    ERROR_CODES.LEDGER_ENTRY_MISMATCH
-                );
-            }
-
-            const isFinancialChange =
-                (payload.amount !== undefined && payload.amount !== original.amount) ||
-                (payload.type !== undefined && payload.type !== original.type);
-
-            if (isFinancialChange) {
-                if (original.payoutId) {
-                    const payout = await tx.payout.findUnique({ where: { id: original.payoutId } });
-                    if (payout && (payout.status === PayoutStatus.COMPLETED || payout.status === PayoutStatus.PROCESSING)) {
-                        throw new BadRequestError(
-                            "Cannot update amount or type of a ledger entry linked to a processing or completed payout.",
-                            ERROR_CODES.LEDGER_ENTRY_LINKED_TO_PAYOUT
-                        );
-                    }
-                }
-
-                const reason = payload.reason ?? payload.note ?? "Manual ledger entry adjustment";
-                const { reversal, correction } = await PaymentService.correctLedgerEntry(
-                    tx,
-                    pitchId,
-                    original.id,
-                    payload.amount ?? original.amount,
-                    reason
-                );
-
-                if (payload.note && payload.note !== original.note) {
-                    await tx.ledgerEntry.update({
-                        where: { id: original.id },
-                        data: { note: payload.note },
-                    });
-                }
-
-                return { updated: original, reversal, correction };
-            }
-
-            const updated = await tx.ledgerEntry.update({
-                where: { id: original.id },
-                data: { ...(payload.note !== undefined ? { note: payload.note } : {}) },
-            });
-
-            return { updated };
+            // Creating a ledger can never modify the actual normal system ledger record. Must be recorded as a user adjustment.
+            return PaymentService.createLedgerEntry(tx, pitchId, { ...entry, type: LedgerAction.ADJUSTMENT });
         });
     };
 
