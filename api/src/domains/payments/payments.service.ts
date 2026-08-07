@@ -103,7 +103,7 @@ export default class PaymentService {
         tx: TransactionClient,
         pitchId: string,
         bookingId: string,
-        params: { baseAmount: number; serviceFee?: number; collectedViaPlatform: boolean }
+        params: { baseAmount: number; serviceFee?: number; collectedViaPlatform?: boolean }
     ) => {
         const commission = Math.round(params.baseAmount * config.PLATFORM_FEE_RATE);
 
@@ -115,12 +115,10 @@ export default class PaymentService {
         });
 
         await PaymentService.createLedgerEntry(tx, pitchId, {
-            type: params.collectedViaPlatform ? LedgerAction.PLATFORM_FEE_DEBIT : LedgerAction.CASH_FEE_DEBT,
+            type: LedgerAction.PLATFORM_FEE_DEBIT,
             amount: -commission,
             bookingId,
-            note: params.collectedViaPlatform
-                ? "Platform commission, netted from payout."
-                : "Platform commission owed on a cash booking, not yet settled.",
+            note: "Platform commission, settled at payment time.",
         });
 
         if (params.serviceFee) {
@@ -162,7 +160,7 @@ export default class PaymentService {
         }
 
         const page = Math.max(1, query?.page ?? 1);
-        const limit = Math.min(100, Math.max(1, query?.limit ?? 20));
+        const limit = Math.min(100, Math.max(1, query?.limit ?? 10));
         const skip = (page - 1) * limit;
 
         const where = {
@@ -266,7 +264,7 @@ export default class PaymentService {
         }
 
         const page = Math.max(1, query?.page ?? 1);
-        const limit = Math.min(100, Math.max(1, query?.limit ?? 20));
+        const limit = Math.min(100, Math.max(1, query?.limit ?? 10));
         const skip = (page - 1) * limit;
 
         const where = {
@@ -286,8 +284,37 @@ export default class PaymentService {
             prisma.ledgerEntry.count({ where }),
         ]);
 
+        // Compute balanceAfter for each entry (running balance).
+        // balanceAfter = the ledger balance immediately after this entry was applied.
+        // Newest entry's balanceAfter = current ledger balance (minus any newer entries not on this page).
+        let entriesWithBalance = entries.map(e => ({ ...e, balanceAfter: 0 }));
+
+        if (entries.length > 0) {
+            let newerAmountSum = 0;
+
+            if (skip > 0) {
+                // Sum all entries (unfiltered by type/bookingId/payoutId) newer than the first entry on this page.
+                const agg = await prisma.ledgerEntry.aggregate({
+                    where: {
+                        ledgerId: ledger.id,
+                        createdAt: { gt: entries[0].createdAt },
+                    },
+                    _sum: { amount: true },
+                });
+                newerAmountSum = agg._sum.amount ?? 0;
+            }
+
+            let runningBalance = ledger.balance - newerAmountSum;
+
+            entriesWithBalance = entries.map(entry => {
+                const balanceAfter = runningBalance;
+                runningBalance -= entry.amount;
+                return { ...entry, balanceAfter };
+            });
+        }
+
         return {
-            entries,
+            entries: entriesWithBalance,
             balance: ledger.balance,
             pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
         };

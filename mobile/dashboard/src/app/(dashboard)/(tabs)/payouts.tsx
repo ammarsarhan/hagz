@@ -1,40 +1,351 @@
-import { IconSettings } from "@tabler/icons-react-native";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import LedgerRow, { LedgerRowSkeleton } from "@/components/tabs/LedgerRow";
+import PayoutRow, { PayoutRowSkeleton } from "@/components/tabs/PayoutRow";
+import { usePitch } from "@/context/PitchContext";
+import cn from "@/lib/cn";
+import { useInfiniteLedgerEntries, useInfinitePayouts } from "@/lib/hooks/payments";
+import { formatCurrency } from "@/lib/string";
+import { IconAdjustmentsHorizontal, IconArrowsTransferUpDown, IconArrowUp, IconReceipt, IconSettings } from "@tabler/icons-react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, LayoutChangeEvent, Pressable, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 export default function Payouts() {
+  const [view, setView] = useState<"ENTRIES" | "PAYOUTS">("ENTRIES");
   const insets = useSafeAreaInsets();
+  const { pitch, isLoading: isPitchLoading } = usePitch();
+
+  const pitchId = pitch?.id ?? "";
+
+  const isEntriesView = view === "ENTRIES";
+  const isPayoutsView = view === "PAYOUTS";
+
+  const listOpacity = useSharedValue(1);
+  const pendingView = useRef<"ENTRIES" | "PAYOUTS" | null>(null);
+
+  // Scroll offset tracking for animated border-bottom when tab switcher reaches top
+  const scrollY = useSharedValue(0);
+  const [mainHeaderHeight, setMainHeaderHeight] = useState(260);
+
+  const handleScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+
+  const handleMainHeaderLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (h > 0) setMainHeaderHeight(h);
+  }, []);
+
+  const tabSwitcherBorderStyle = useAnimatedStyle(() => {
+    const progress = interpolate(
+      scrollY.value,
+      [mainHeaderHeight - 15, mainHeaderHeight],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return {
+      borderBottomColor: interpolateColor(
+        progress,
+        [0, 1],
+        ["transparent", "#F3F4F6"]
+      ),
+      borderBottomWidth: 1,
+    };
+  });
+
+  const handleViewSwitch = useCallback((nextView: "ENTRIES" | "PAYOUTS") => {
+    if (nextView === view) return;
+    pendingView.current = nextView;
+
+    listOpacity.value = withTiming(0, { duration: 150 }, (finished) => {
+      if (finished) {
+        runOnJS(setView)(nextView);
+      }
+    });
+  }, [view, listOpacity]);
+
+  useEffect(() => {
+    if (pendingView.current === view) {
+      pendingView.current = null;
+      const raf = requestAnimationFrame(() => {
+        listOpacity.value = withTiming(1, { duration: 150 });
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [view, listOpacity]);
+
+  const listStyle = useAnimatedStyle(() => ({
+    opacity: listOpacity.value,
+  }));
+
+  const {
+    data: entriesData,
+    isLoading: isEntriesLoading,
+    isFetchingNextPage: isFetchingNextEntries,
+    hasNextPage: hasNextEntries,
+    fetchNextPage: fetchNextEntries,
+    isRefetching: isEntriesRefetching,
+    refetch: refetchEntries,
+  } = useInfiniteLedgerEntries(pitchId, { limit: 10 }, isEntriesView && !!pitchId);
+
+  const {
+    data: payoutsData,
+    isLoading: isPayoutsLoading,
+    isFetchingNextPage: isFetchingNextPayouts,
+    hasNextPage: hasNextPayouts,
+    fetchNextPage: fetchNextPayouts,
+    isRefetching: isPayoutsRefetching,
+    refetch: refetchPayouts,
+  } = useInfinitePayouts(pitchId, { limit: 10 }, isPayoutsView && !!pitchId);
+
+  const rawEntries = useMemo(
+    () => entriesData?.pages.flatMap((page) => page.entries) ?? [],
+    [entriesData]
+  );
+
+  const rawPayouts = useMemo(
+    () => payoutsData?.pages.flatMap((page) => page.payouts) ?? [],
+    [payoutsData]
+  );
+
+  // Prepend tab switcher item so stickyHeaderIndices={[1]} pins it to the top on scroll
+  const entries = useMemo(
+    () => [{ id: "__TAB_SWITCHER__", isHeader: true } as any, ...rawEntries],
+    [rawEntries]
+  );
+
+  const payouts = useMemo(
+    () => [{ id: "__TAB_SWITCHER__", isHeader: true } as any, ...rawPayouts],
+    [rawPayouts]
+  );
+
+  const isRefreshing = isEntriesView
+    ? (isEntriesRefetching && !isFetchingNextEntries)
+    : (isPayoutsRefetching && !isFetchingNextPayouts);
+
+  const handleRefresh = useCallback(() => {
+    if (isEntriesView) {
+      refetchEntries();
+    } else {
+      refetchPayouts();
+    }
+  }, [isEntriesView, refetchEntries, refetchPayouts]);
+
+  const handleEndReached = useCallback(() => {
+    if (isEntriesView) {
+      if (hasNextEntries && !isFetchingNextEntries && !isEntriesLoading) {
+        fetchNextEntries();
+      }
+    } else {
+      if (hasNextPayouts && !isFetchingNextPayouts && !isPayoutsLoading) {
+        fetchNextPayouts();
+      }
+    }
+  }, [
+    isEntriesView,
+    hasNextEntries,
+    isFetchingNextEntries,
+    isEntriesLoading,
+    fetchNextEntries,
+    hasNextPayouts,
+    isFetchingNextPayouts,
+    isPayoutsLoading,
+    fetchNextPayouts,
+  ]);
+
+  if (isPitchLoading || !pitch) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-white" edges={["top"]}>
+        <ActivityIndicator size="large" color="#000000" />
+      </SafeAreaView>
+    );
+  }
+
+  const firstEntryPage = entriesData?.pages[0];
+  const firstPayoutPage = payoutsData?.pages[0];
+  const balance = firstEntryPage?.balance ?? firstPayoutPage?.balance ?? 0;
+  const formattedBalance = formatCurrency(balance, { signDisplay: "always" });
+
+  const renderMainHeader = () => (
+    <View onLayout={handleMainHeaderLayout} className="gap-y-6 pb-2" style={{ paddingTop: insets.top / 1.5 }}>
+      <View className="flex-row items-center justify-between">
+        <View className="gap-y-1">
+          <Text className="text-4xl font-semibold">Payouts</Text>
+          <Text className="text-gray-500">Reconciled as of {new Date().toLocaleDateString("en-GB")}</Text>
+        </View>
+        <Pressable className="size-11 rounded-full bg-gray-100 items-center justify-center">
+          <IconSettings width={18} height={18} color="#000000" strokeWidth={2.25} />
+        </Pressable>
+      </View>
+
+      <View className="py-6 items-center justify-center gap-y-2">
+        <Text className="text-4xl font-semibold">{formattedBalance}</Text>
+        <Text className="text-gray-500">Current Ledger Balance</Text>
+      </View>
+
+      <View className="flex-row items-center justify-center gap-x-8">
+        <Pressable className="gap-y-3 items-center">
+          <View className="rounded-lg bg-gray-100 items-center justify-center size-16">
+            <IconArrowUp width={20} height={20} strokeWidth={2.25} />
+          </View>
+          <Text className="font-medium text-[0.925rem]">Record</Text>
+        </Pressable>
+        <Pressable className="gap-y-3 items-center">
+          <View className="rounded-lg bg-primary items-center justify-center size-16">
+            <IconArrowsTransferUpDown width={20} height={20} strokeWidth={2.25} color="#FFFFFF" />
+          </View>
+          <Text className="font-medium text-[0.925rem]">Payout</Text>
+        </Pressable>
+        <Pressable className="gap-y-3 items-center">
+          <View className="rounded-lg bg-gray-100 items-center justify-center size-16">
+            <IconReceipt width={22} height={22} strokeWidth={2.25} />
+          </View>
+          <Text className="font-medium text-[0.925rem]">Export</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  const renderTabSwitcher = () => (
+    <Animated.View style={tabSwitcherBorderStyle} className="bg-white flex-row items-center justify-between pt-4 pb-4">
+      <View className="flex-row items-center gap-x-6">
+        <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("ENTRIES")}>
+          <Text className={cn("font-medium text-[1.05rem]", isEntriesView ? "text-black" : "text-gray-500")}>
+            Entries
+          </Text>
+          <View className={cn("h-[3px] rounded-full w-1/2", isEntriesView ? "bg-primary" : "bg-transparent")} />
+        </Pressable>
+        <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("PAYOUTS")}>
+          <Text className={cn("font-medium text-[1.05rem]", isPayoutsView ? "text-black" : "text-gray-500")}>
+            Payouts
+          </Text>
+          <View className={cn("h-[3px] rounded-full w-1/2", isPayoutsView ? "bg-primary" : "bg-transparent")} />
+        </Pressable>
+      </View>
+      <Pressable className="size-11 rounded-full bg-gray-100 items-center justify-center">
+        <IconAdjustmentsHorizontal width={18} height={18} strokeWidth={2.25} />
+      </Pressable>
+    </Animated.View>
+  );
+
+  const renderItem = ({ item }: { item: any }) => {
+    if (item.isHeader) {
+      return renderTabSwitcher();
+    }
+
+    return (
+      <Animated.View style={listStyle}>
+        {isEntriesView ? <LedgerRow entry={item} /> : <PayoutRow payout={item} />}
+      </Animated.View>
+    );
+  };
+
+  const renderEmpty = () => {
+    const isLoading = isEntriesView ? isEntriesLoading : isPayoutsLoading;
+
+    if (isLoading) {
+      return (
+        <Animated.View style={listStyle} className="gap-y-1">
+          {isEntriesView ? (
+            <>
+              <LedgerRowSkeleton />
+              <LedgerRowSkeleton />
+              <LedgerRowSkeleton />
+              <LedgerRowSkeleton />
+            </>
+          ) : (
+            <>
+              <PayoutRowSkeleton />
+              <PayoutRowSkeleton />
+              <PayoutRowSkeleton />
+              <PayoutRowSkeleton />
+            </>
+          )}
+        </Animated.View>
+      );
+    }
+
+    return (
+      <Animated.View style={listStyle} className="py-8 items-center justify-center">
+        <Text className="text-gray-500">
+          {isEntriesView ? "No ledger entries found." : "No payouts found."}
+        </Text>
+      </Animated.View>
+    );
+  };
+
+  const renderFooter = () => {
+    const isFetchingNext = isEntriesView ? isFetchingNextEntries : isFetchingNextPayouts;
+    if (!isFetchingNext) return null;
+
+    return (
+      <Animated.View style={listStyle} className="py-4">
+        {isEntriesView ? (
+          <>
+            <LedgerRowSkeleton />
+            <LedgerRowSkeleton />
+          </>
+        ) : (
+          <>
+            <PayoutRowSkeleton />
+            <PayoutRowSkeleton />
+          </>
+        )}
+      </Animated.View>
+    );
+  };
 
   return (
-    <SafeAreaView className="flex-1" edges={['top']}>
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName={"gap-y-6 pb-10"}
-        contentContainerStyle={{ paddingTop: insets.top / 1.5 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={false}
-            onRefresh={() => null}
-            tintColor="#6B728055"
-            colors={["#6B728055"]}
-          />
-        }
-      >
-        <View className="px-6 flex-row items-center justify-between">
-          <View className="gap-y-1">
-            <Text className="text-4xl font-semibold">Payouts</Text>
-            <Text className="text-gray-500">Reconciled as of 24/2/2026</Text>
-          </View>
-          <Pressable className="size-11 rounded-full bg-gray-100 items-center justify-center">
-            <IconSettings width={18} height={18} color="#000000" strokeWidth={2.25}/>
-          </Pressable>
-        </View>
-        <View className="py-6 items-center justify-center gap-y-2">
-          <Text className="text-4xl font-semibold">EGP 4124.00</Text>
-          <Text className="text-gray-500">+12.5% (EGP 144.25)</Text>
-        </View>
-      </ScrollView>
+    <SafeAreaView className="flex-1" edges={["top"]}>
+      {isEntriesView ? (
+        <AnimatedFlatList
+          className="flex-1"
+          data={entries}
+          keyExtractor={(item: any) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={renderMainHeader}
+          stickyHeaderIndices={[1]}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.15}
+          contentContainerClassName="px-6 pb-10"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          }
+        />
+      ) : (
+        <AnimatedFlatList
+          className="flex-1"
+          data={payouts}
+          keyExtractor={(item: any) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={renderMainHeader}
+          stickyHeaderIndices={[1]}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.15}
+          contentContainerClassName="px-6 pb-10"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -3,8 +3,8 @@ import { LedgerAction, PayoutMethod, PayoutStatus, PayoutTrigger } from "@/gener
 
 export const fetchPayoutsQuerySchema = z.object({
     status: z.enum(Object.values(PayoutStatus)).optional(),
-    page: z.coerce.number().int().min(1).optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional().default(1),
+    limit: z.coerce.number().int().min(1).max(100).optional().default(10),
 });
 
 export const createPayoutSchema = z.object({
@@ -18,8 +18,8 @@ export const fetchLedgerEntriesQuerySchema = z.object({
     type: z.enum(Object.values(LedgerAction)).optional(),
     bookingId: z.string().optional(),
     payoutId: z.string().optional(),
-    page: z.coerce.number().int().min(1).optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).optional().default(1),
+    limit: z.coerce.number().int().min(1).max(100).optional().default(10),
 });
 
 export const createLedgerEntrySchema = z.object({

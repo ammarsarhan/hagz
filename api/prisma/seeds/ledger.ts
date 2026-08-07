@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import prisma from "@/shared/lib/utils/prisma.js";
-import { LedgerAction, PitchTier, BookingStatus, BookingChannel, PayoutMethod, PayoutStatus, PayoutTrigger } from "@/generated/prisma/enums.js";
+import { LedgerAction, PitchTier, BookingStatus, PayoutMethod, PayoutStatus, PayoutTrigger } from "@/generated/prisma/enums.js";
 
 const platformRates = {
   [PitchTier.ALPHA]: 0.05,
@@ -52,20 +52,6 @@ export async function seedLedger(pitches: any[], bookings: any[]) {
       });
       balance -= platformFee;
 
-      // 3. Cash Fee Debt (if WALK_IN)
-      if (booking.channel === BookingChannel.WALK_IN) {
-        await prisma.ledgerEntry.create({
-          data: {
-            ledgerId: pitchLedger.id,
-            bookingId: booking.id,
-            type: LedgerAction.CASH_FEE_DEBT,
-            amount: -platformFee,
-            note: `Fee debt for cash booking #${booking.id.slice(-6)}`
-          }
-        });
-        // This doesn't double-deduct from balance in real logic usually, 
-        // but it tracks what the owner owes from cash.
-      }
     }
 
     // Update balance

@@ -1,5 +1,5 @@
 import cn from "@/lib/cn";
-import { formatPhone } from "@/lib/string";
+import { formatCurrency, formatPhone, parseEnum } from "@/lib/string";
 import { BookingRowData, PricingSnapshot } from "@/lib/types/bookings";
 import { addHours, formatDate, isEqual } from "date-fns";
 import { Image } from "expo-image";
@@ -7,8 +7,6 @@ import { useState } from "react";
 import { View, Text, ScrollView, LayoutChangeEvent } from "react-native";
 
 type BookingRowProps = BookingRowData;
-
-const formatPriceType = (priceType: string) => `${priceType[0].toUpperCase()}${priceType.slice(1).toLowerCase()}`;
 
 export function BookingCard({
     item,
@@ -28,26 +26,20 @@ export function BookingCard({
 
     const slotIndex = snapshot.slots.findIndex(s => isEqual(new Date(s.startsAt), hour));
 
-    const statusText = booking.status
-        .toLowerCase()
-        .split("_")
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ");
-
     const bottomLeft = groupedRange
         ? `${formatDate(groupedRange.from, "hh:mm a")} to ${formatDate(groupedRange.to, "hh:mm a")}`
-        : statusText;
+        : parseEnum(booking.status);
 
     const bottomRight = groupedRange
-        ? statusText
+        ? parseEnum(booking.status)
         : (slotIndex >= 0 ? `(Slot ${slotIndex + 1}/${snapshot.slots.length})` : "-");
 
     return (
         <View className={cn("border border-gray-200 p-6 gap-y-6 rounded-lg w-full")}>
             <View className="flex-row items-center justify-between">
                 <View className="gap-y-0.5">
-                    <Text className="font-medium">EGP {slot?.price.toFixed(2)}</Text>
-                    <Text className="text-gray-500 text-[0.95rem]">{slot ? formatPriceType(slot.priceType) : "-"}</Text>
+                    <Text className="font-medium">{slot ? formatCurrency(slot.price) : "-"}</Text>
+                    <Text className="text-gray-500 text-[0.95rem]">{slot ? parseEnum(slot.priceType) : "-"}</Text>
                 </View>
                 <View className="size-9 rounded-full bg-primary/10 items-center justify-center overflow-hidden">
                     {

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { addDays, addHours, subDays, formatDate, eachDayOfInterval, isSameDay } from 'date-fns';
 import { IconChevronRight, IconFocusCentered, IconLayoutDashboard, IconListDetails, IconPlus } from "@tabler/icons-react-native";
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { usePitch } from "@/context/PitchContext";
 import CalendarModal from "@/components/shared/CalendarModal";
 import { sportMap } from "@/lib/types/ground";
@@ -12,6 +12,71 @@ import { useBookings } from "@/lib/hooks";
 import BookingRow, { BookingCard } from "@/components/tabs/BookingRow";
 import { BookingRowData, PricingSnapshot } from "@/lib/types/bookings";
 import { Link } from "expo-router";
+
+// Day button with smooth animated color transitions via Reanimated interpolateColor.
+const AnimatedDayButton = memo(function AnimatedDayButton({
+  date,
+  isSelected,
+  isToday,
+  onPress,
+  onLayout,
+}: {
+  date: Date;
+  isSelected: boolean;
+  isToday: boolean;
+  onPress: () => void;
+  onLayout?: (x: number) => void;
+}) {
+  const progress = useSharedValue(isSelected ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withTiming(isSelected ? 1 : 0, { duration: 200 });
+  }, [isSelected, progress]);
+
+  const circleBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [isToday ? "#F3F4F6" : "#FFFFFF", "#1C04EA"]
+    ),
+  }));
+
+  const dayNumberStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      progress.value,
+      [0, 1],
+      ["#000000", "#FFFFFF"]
+    ),
+  }));
+
+  const dayLabelStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      progress.value,
+      [0, 1],
+      ["#6B7280", "#000000"]
+    ),
+  }));
+
+  return (
+    <Pressable
+      className="gap-y-4 items-center"
+      onPress={onPress}
+      onLayout={onLayout ? (e) => onLayout(e.nativeEvent.layout.x) : undefined}
+    >
+      <Animated.Text style={[dayLabelStyle, { fontSize: 13, fontWeight: isSelected ? "500" : "400" }]} className={isSelected ? "font-medium" : undefined}>
+        {formatDate(date, "EEEEE")}
+      </Animated.Text>
+      <Animated.View
+        style={circleBgStyle}
+        className="rounded-full items-center justify-center size-10"
+      >
+        <Animated.Text style={[dayNumberStyle, { fontSize: isSelected ? 13 : 14, fontWeight: "500" }]}>
+          {formatDate(date, "d")}
+        </Animated.Text>
+      </Animated.View>
+    </Pressable>
+  );
+});
 
 export default function Bookings() {
   const { pitch, isLoading: isPitchLoading } = usePitch();
@@ -37,11 +102,10 @@ export default function Bookings() {
     const next = !isBookingGrouped;
 
     toggleIconOpacity.value = withTiming(0, { duration: 150 });
-    listOpacity.value = withTiming(0, { duration: 150 }, (finished) => {
-      if (finished) {
-        runOnJS(setIsBookingGrouped)(next);
-      }
+    listOpacity.value = withTiming(0, { duration: 150 }, () => {
+      // Toggle grouped view state
     });
+    setIsBookingGrouped(next);
   };
 
   useEffect(() => {
@@ -53,8 +117,19 @@ export default function Bookings() {
     return () => cancelAnimationFrame(raf);
   }, [isBookingGrouped, listOpacity, toggleIconOpacity]);
 
+  // Pure JS thread date selection + smooth list opacity fade in on date change
+  const handleDateSelect = useCallback((date: Date) => {
+    if (isSameDay(date, selectedDate)) return;
+    listOpacity.value = 0;
+    setSelectedDate(date);
+  }, [selectedDate, listOpacity]);
+
+  useEffect(() => {
+    listOpacity.value = withTiming(1, { duration: 200 });
+  }, [selectedDate, listOpacity]);
+
   const dateScrollRef = useRef<ScrollView>(null);
-  const itemPositions = useRef<{ [key: string]: number }>({});
+  const itemPositions = useRef<Record<string, number>>({});
   const layoutCount = useRef(0);
 
   useEffect(() => {
@@ -114,7 +189,7 @@ export default function Bookings() {
   });
 
   const handleDateLayout = (key: string, x: number) => {
-    itemPositions.current[key] = x;
+    itemPositions.current = { ...itemPositions.current, [key]: x };
     layoutCount.current += 1;
 
     if (layoutCount.current === dateRange.length) {
@@ -185,6 +260,7 @@ export default function Bookings() {
           contentContainerClassName={"gap-y-6 pb-10"}
           contentContainerStyle={{ paddingTop: insets.top / 1.5 }}
           showsVerticalScrollIndicator={false}
+          stickyHeaderIndices={[1]}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -194,103 +270,107 @@ export default function Bookings() {
             />
           }
         >
-          <View className="px-6 flex-row items-center justify-between">
-            <Text className="text-4xl font-semibold">Bookings</Text>
-            <Pressable
-              className="size-11 bg-gray-100 rounded-full items-center justify-center"
-              onPress={handleToggleGrouped}
-            >
-              <Animated.View style={toggleIconStyle}>
+          {/* Child 0: Main title and grounds filter */}
+          <View className="gap-y-6">
+            <View className="px-6 flex-row items-center justify-between">
+              <Text className="text-4xl font-semibold">Bookings</Text>
+              <Pressable
+                className="size-11 bg-gray-100 rounded-full items-center justify-center"
+                onPress={handleToggleGrouped}
+              >
+                <Animated.View style={toggleIconStyle}>
+                  {
+                    isBookingGrouped ?
+                    <IconListDetails width={16} height={16} strokeWidth={2.5} /> :
+                    <IconFocusCentered width={16} height={16} strokeWidth={2.5} />
+                  }
+                </Animated.View>
+              </Pressable>
+            </View>
+            <View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ flexGrow: 0 }}
+                contentContainerClassName="flex-row items-center gap-x-3 px-6"
+              >
                 {
-                  isBookingGrouped ?
-                  <IconListDetails width={16} height={16} strokeWidth={2.5} /> :
-                  <IconFocusCentered width={16} height={16} strokeWidth={2.5} />
+                  hasAll &&
+                  <Pressable
+                    className={cn(`flex-row items-center gap-x-1.5 border rounded-full px-4 py-2`, selectedGround === "all" ? "border-primary bg-white" : "border-gray-300 bg-white")}
+                    onPress={() => setSelectedGround("all")}
+                  >
+                    <IconLayoutDashboard color={selectedGround === "all" ? "#1C04EA" : "#9CA3AF"} size={16} />
+                    <Text className={cn("text-sm font-medium", selectedGround === "all" ? "text-primary" : "text-gray-400")}>
+                      All
+                    </Text>
+                  </Pressable>
                 }
-              </Animated.View>
-            </Pressable>
-          </View>
-          <View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0 }}
-              contentContainerClassName="flex-row items-center gap-x-3 px-6"
-            >
-              {
-                hasAll &&
-                <Pressable
-                  className={cn(`flex-row items-center gap-x-1.5 border rounded-full px-4 py-2`, selectedGround === "all" ? "border-primary bg-white" : "border-gray-300 bg-white")}
-                  onPress={() => setSelectedGround("all")}
-                >
-                  <IconLayoutDashboard color={selectedGround === "all" ? "#1C04EA" : "#9CA3AF"} size={16} />
-                  <Text className={cn("text-sm font-medium", selectedGround === "all" ? "text-primary" : "text-gray-400")}>
-                    All
-                  </Text>
-                </Pressable>
-              }
-              {
-                pitch.grounds.map((ground) => {
-                  const isActive = ground.id === selectedGround;
-                  const SportIcon = sportMap[ground.sport].icon;
+                {
+                  pitch.grounds.map((ground) => {
+                    const isActive = ground.id === selectedGround;
+                    const SportIcon = sportMap[ground.sport].icon;
 
-                  return (
-                    <Pressable
-                      key={ground.id}
-                      onPress={() => setSelectedGround(ground.id)}
-                      className={cn(`flex-row items-center gap-x-1.5 border rounded-full px-4 py-2`, isActive ? "border-primary bg-white" : "border-gray-300 bg-white")}
-                    >
-                      <SportIcon color={isActive ? "#1C04EA" : "#9CA3AF"} size={16} />
-                      <Text className={cn("text-sm font-medium", isActive ? "text-primary" : "text-gray-400")}>
-                        {ground.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })
-              }
-            </ScrollView>
-          </View>
-          <View className="flex-row items-center justify-between px-6 py-2">
-            <Text className="font-medium">{formatDate(selectedDate, "dd MMM")}</Text>
-            <Pressable className="flex-row items-center gap-x-1" onPress={() => setIsModalOpen(true)}>
-              <Text className="text-primary">Select date</Text>
-              <IconChevronRight size={14} color="#1C04EA"/>
-            </Pressable>
-          </View>
-          <View className="mb-2">
-            <ScrollView
-              ref={dateScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0 }}
-              contentContainerClassName="flex-row items-center gap-x-8 px-6"
-            >
-              {
-                dateRange.map((date) => {
-                  const isSelected = isSameDay(date, selectedDate);
-                  const isToday = isSameDay(date, new Date());
-                  const key = date.toISOString();
-
-                  return (
-                    <Pressable
-                      key={key}
-                      className="gap-y-4 items-center"
-                      onPress={() => setSelectedDate(date)}
-                      onLayout={(e) => handleDateLayout(key, e.nativeEvent.layout.x)}
-                    >
-                      <Text className={cn("text-sm", isSelected ? "text-black font-medium" : "text-gray-500")}>
-                        {formatDate(date, "EEEEE")}
-                      </Text>
-                      <View className={cn("rounded-full items-center justify-center size-10", isSelected ? "bg-primary" : isToday ? "bg-gray-100" : "")}>
-                        <Text className={cn("font-medium", isSelected ? "text-white text-sm" : "text-black")}>
-                          {formatDate(date, "d")}
+                    return (
+                      <Pressable
+                        key={ground.id}
+                        onPress={() => setSelectedGround(ground.id)}
+                        className={cn(`flex-row items-center gap-x-1.5 border rounded-full px-4 py-2`, isActive ? "border-primary bg-white" : "border-gray-300 bg-white")}
+                      >
+                        <SportIcon color={isActive ? "#1C04EA" : "#9CA3AF"} size={16} />
+                        <Text className={cn("text-sm font-medium", isActive ? "text-primary" : "text-gray-400")}>
+                          {ground.name}
                         </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })
-              }
-            </ScrollView>
+                      </Pressable>
+                    );
+                  })
+                }
+              </ScrollView>
+            </View>
           </View>
+
+          {/* Child 1: Sticky Date Header & Quick Date Strip */}
+          <View className="bg-white pt-2 pb-5 gap-y-5">
+            <View className="flex-row items-center justify-between px-6">
+              <Text className="font-medium text-lg text-black">
+                {formatDate(selectedDate, "dd MMM")}
+              </Text>
+              <Pressable className="flex-row items-center gap-x-1" onPress={() => setIsModalOpen(true)}>
+                <Text className="text-primary">Select date</Text>
+                <IconChevronRight size={14} color="#1C04EA"/>
+              </Pressable>
+            </View>
+            <View>
+              <ScrollView
+                ref={dateScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ flexGrow: 0 }}
+                contentContainerClassName="flex-row items-center gap-x-8 px-6"
+              >
+                {
+                  dateRange.map((date) => {
+                    const isSelected = isSameDay(date, selectedDate);
+                    const isToday = isSameDay(date, new Date());
+                    const key = date.toISOString();
+
+                    return (
+                      <AnimatedDayButton
+                        key={key}
+                        date={date}
+                        isSelected={isSelected}
+                        isToday={isToday}
+                        onPress={() => handleDateSelect(date)}
+                        onLayout={(x) => handleDateLayout(key, x)}
+                      />
+                    );
+                  })
+                }
+              </ScrollView>
+            </View>
+          </View>
+
+          {/* Child 2: Booking slots list with opacity transition on date switch */}
           <Animated.View style={listStyle} className="gap-y-8">
             {renderBookings()}
           </Animated.View>

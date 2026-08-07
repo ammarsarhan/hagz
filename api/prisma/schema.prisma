@@ -163,9 +163,8 @@ enum PayoutMethod {
 enum LedgerAction {
   EXTERNAL_PAYMENT_LOG // Direct booking, no amount to/for.
   BOOKING_REVENUE // Owner's share of a booking
-  PLATFORM_FEE_DEBIT // Platform's 5% cut deducted from owner
+  PLATFORM_FEE_DEBIT // Platform's 5% cut deducted from owner (always settled at payment time via Fawry/card)
   SERVICE_FEE_CREDIT // Service fee collected from user (platform's)
-  CASH_FEE_DEBT // Platform fee owed from a cash booking (not yet settled)
   PAYOUT // A payout was issued
   PAYOUT_REVERSAL // A payout was reversed/failed
   ADJUSTMENT // Manual correction
@@ -739,6 +738,19 @@ model Cancellation {
   cancelledAt DateTime @default(now())
 }
 
+model PitchLedger {
+  id      String @id @default(cuid())
+  pitchId String @unique
+  pitch   Pitch  @relation(fields: [pitchId], references: [id])
+
+  balance Int @default(0)
+
+  entries LedgerEntry[]
+  payouts Payout[]
+
+  updatedAt DateTime @updatedAt
+}
+
 model LedgerEntry {
   id       String      @id @default(cuid())
   ledgerId String
@@ -753,19 +765,6 @@ model LedgerEntry {
 
   note      String?
   createdAt DateTime @default(now())
-}
-
-model PitchLedger {
-  id      String @id @default(cuid())
-  pitchId String @unique
-  pitch   Pitch  @relation(fields: [pitchId], references: [id])
-
-  balance Int @default(0)
-
-  entries LedgerEntry[]
-  payouts Payout[]
-
-  updatedAt DateTime @updatedAt
 }
 
 model Payout {

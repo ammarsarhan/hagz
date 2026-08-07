@@ -185,7 +185,7 @@ export async function seedBookings(pitches: any[], grounds: any[], customers: an
         });
 
         await prisma.ledgerEntry.create({
-          data: { ledgerId, bookingId: booking.id, type: LedgerAction.CASH_FEE_DEBT, amount: -platformFee, note: "Platform fee owed from cash-settled direct booking." }
+          data: { ledgerId, bookingId: booking.id, type: LedgerAction.PLATFORM_FEE_DEBIT, amount: -platformFee, note: "Platform commission, settled at payment time." }
         });
 
         await prisma.pitchLedger.update({
