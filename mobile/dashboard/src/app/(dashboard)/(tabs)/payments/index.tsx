@@ -168,7 +168,7 @@ export default function Index() {
   const formattedBalance = formatCurrency(balance, { signDisplay: "always" });
 
   const renderHeader = () => (
-    <View onLayout={handleMainHeaderLayout} className="gap-y-6 pb-4" style={{ paddingTop: insets.top / 1.5 }}>
+    <View onLayout={handleMainHeaderLayout} className="gap-y-6 pb-4 px-6" style={{ paddingTop: insets.top / 1.5 }}>
       <View className="flex-row items-center justify-between">
         <View className="gap-y-1">
           <Text className="text-4xl font-semibold">Payments</Text>
@@ -208,7 +208,7 @@ export default function Index() {
   );
 
   const renderTabSwitcher = () => (
-    <Animated.View style={tabSwitcherBorderStyle} className="bg-white flex-row items-center justify-between py-4">
+    <Animated.View style={tabSwitcherBorderStyle} className="bg-white flex-row items-center justify-between py-4 px-6">
       <View className="flex-row items-center gap-x-6">
         <Pressable className="items-center gap-y-2" onPress={() => handleViewSwitch("entries")}>
           <Text className={cn("font-medium text-[1.05rem]", isEntriesView ? "text-black" : "text-gray-500")}>
@@ -303,7 +303,7 @@ export default function Index() {
           ListFooterComponent={renderFooter}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.15}
-          contentContainerClassName="px-6 pb-10"
+          contentContainerClassName="pb-10"
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -326,7 +326,7 @@ export default function Index() {
           ListFooterComponent={renderFooter}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.15}
-          contentContainerClassName="px-6 pb-10"
+          contentContainerClassName="pb-10"
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

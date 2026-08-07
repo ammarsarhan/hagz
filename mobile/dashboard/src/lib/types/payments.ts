@@ -4,7 +4,7 @@ import { PitchRequest } from "@/lib/types/pitch";
 export type FetchPayoutsResponse = InferResponseType<PitchRequest["payouts"]["$get"]>;
 export type PayoutItem = FetchPayoutsResponse["data"]["payouts"][number];
 
-export type FetchLedgerEntriesResponse = InferResponseType<PitchRequest["payouts"]["ledgers"]["$get"]>;
+export type FetchLedgerEntriesResponse = InferResponseType<PitchRequest["ledgers"]["$get"]>;
 export type LedgerEntryItem = FetchLedgerEntriesResponse["data"]["entries"][number];
 
 export type LedgerAction =

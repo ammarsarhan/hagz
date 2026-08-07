@@ -51,7 +51,7 @@ export default function PayoutRow({ payout }: PayoutRowProps) {
     const colorClass = isFailed ? "text-gray-500" : "text-red-700";
 
     return (
-        <View className="flex-row items-center justify-between gap-x-2 border-b border-gray-100 py-4">
+        <View className="flex-row items-center justify-between gap-x-2 border-b border-gray-100 py-4 px-6">
             <View className="gap-y-1 w-1/2">
                 <Text className="font-semibold">{title}</Text>
                 <Text
