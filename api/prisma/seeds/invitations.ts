@@ -4,6 +4,19 @@ import { InvitationStatus, StaffRole } from "@/generated/prisma/enums.js";
 import { addDays, subDays } from "date-fns";
 import StaffService from "@/domains/pitches/services/staff.service.js";
 
+const phones = new Set<string>();
+
+const generatePhone = () => {
+  let phone: string;
+
+  do {
+    phone = `+201${faker.helpers.arrayElement(["0", "1", "2", "5", "7"])}${faker.string.numeric(8)}`;
+  } while (phones.has(phone));
+
+  phones.add(phone);
+  return phone;
+}
+
 export async function seedInvitations(pitches: any[], staff: any[], managers: any[]) {
   console.log("Seeding invitations...");
 
@@ -22,6 +35,7 @@ export async function seedInvitations(pitches: any[], staff: any[], managers: an
     // 1. Create ACCEPTED invitations for the existing managers
     for (const managerStaff of pitchManagersStaff) {
       const managerUser = managers.find(m => m.id === managerStaff.userId);
+
       if (managerUser) {
         const invitation = await prisma.invitation.upsert({
           where: {
@@ -52,12 +66,11 @@ export async function seedInvitations(pitches: any[], staff: any[], managers: an
 
     // 2. Create some random PENDING invitations
     for (let j = 0; j < 2; j++) {
-      const phone = faker.helpers.fromRegExp(/\+201[0125][0-9]{8}/);
       const invitation = await prisma.invitation.create({
         data: {
           pitchId: pitch.id,
           name: faker.person.fullName(),
-          phone,
+          phone: generatePhone(),
           token: faker.string.alphanumeric(64),
           status: InvitationStatus.PENDING,
           expiresAt: addDays(new Date(), faker.number.int({ min: 1, max: 7 })),
@@ -77,7 +90,7 @@ export async function seedInvitations(pitches: any[], staff: any[], managers: an
         data: {
           pitchId: pitch.id,
           name: faker.person.fullName(),
-          phone,
+          phone: generatePhone(),
           token: faker.string.alphanumeric(64),
           status: InvitationStatus.REJECTED,
           expiresAt: addDays(new Date(), faker.number.int({ min: 1, max: 7 })),
@@ -98,7 +111,7 @@ export async function seedInvitations(pitches: any[], staff: any[], managers: an
         data: {
           pitchId: pitch.id,
           name: faker.person.fullName(),
-          phone,
+          phone: generatePhone(),
           token: faker.string.alphanumeric(64),
           status: InvitationStatus.EXPIRED,
           expiresAt: subDays(new Date(), faker.number.int({ min: 1, max: 5 })),
@@ -118,7 +131,7 @@ export async function seedInvitations(pitches: any[], staff: any[], managers: an
         data: {
           pitchId: pitch.id,
           name: faker.person.fullName(),
-          phone,
+          phone: generatePhone(),
           token: faker.string.alphanumeric(64),
           status: InvitationStatus.DELETED,
           expiresAt: addDays(new Date(), faker.number.int({ min: 1, max: 7 })),
