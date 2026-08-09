@@ -488,7 +488,7 @@ export default class PitchService {
 
         // 4. Ensure that there is at least three verified pitch images.
         if (pitch.media.filter(m => m.status === MediaStatus.UPLOADED).length < 3)
-            throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_BELOW_MINIMUM);
+            throw new BadRequestError("There must be at least 3 images uploaded per pitch.", ERROR_CODES.PITCH_MEDIA_MINIMUM_REQUIRED);
 
         // After the draft passes all the checks, make sure that both the pitch are submitted and this is logged as an event by the system.
         return await prisma.$transaction(async (tx) => {

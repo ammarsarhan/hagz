@@ -368,8 +368,8 @@ export default function Bookings() {
         </ScrollView>
         <View className="absolute bottom-6 right-6">
           <Link href="/(dashboard)/(tabs)/bookings/modal" asChild>
-            <Pressable className="rounded-full size-14 items-center justify-center bg-primary shadow-sm">
-              <IconPlus width={24} height={24} color="#FFFFFF" /> 
+            <Pressable className="rounded-full size-14 items-center justify-center bg-primary">
+              <IconPlus width={22} height={22} color="#FFFFFF" /> 
             </Pressable>
           </Link>
         </View>

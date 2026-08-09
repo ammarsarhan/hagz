@@ -43,7 +43,6 @@ export function useBookings(date: Date, pitchId: string, target?: string, enable
             }
         },
         enabled,
-        staleTime: 1000 * 60 * 2,
-        refetchInterval: 1000 * 60 * 2
+        staleTime: 1000 * 60 * 2
     });
 }

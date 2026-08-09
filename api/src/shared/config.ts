@@ -6,8 +6,11 @@ const config = {
     MAXIMUM_PITCHES_PER_USER: 5,
     MAXIMUM_AMENITIES_PER_PITCH: 10,
     MAXIMUM_MEDIA_PER_PITCH: 10,
+    MAXIMUM_STAFF_PER_PITCH: 10,
+    MAXIMUM_INVITATIONS_PER_PITCH: 3,
     SERVICE_RATE: 0.015,
     EDITABLE_STATES: [PitchStatus.DRAFT, PitchStatus.MAINTENANCE] as PitchStatus[],
+    OPERATIONAL_STATES: [PitchStatus.MAINTENANCE, PitchStatus.LIVE] as PitchStatus[],
     ACTIVE_STATES: [PitchStatus.LIVE] as PitchStatus[],
     GENERATING_STATES: [ScheduleStatus.PENDING, ScheduleStatus.GENERATING] as ScheduleStatus[],
     CANCELLABLE_STATES: [BookingStatus.RESERVED, BookingStatus.CONFIRMED] as BookingStatus[]

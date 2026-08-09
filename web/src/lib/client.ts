@@ -43,7 +43,6 @@ export const ERROR_CODES: Record<string, string> = {
   PITCH_CREATE_LIMIT_EXCEEDED: "You have reached the maximum number of pitches allowed.",
   PITCH_MEDIA_NOT_FOUND: "The selected media could not be found.",
   PITCH_MEDIA_CONFIRMATION_FAILED: "Media confirmation failed. Please try uploading again.",
-  PITCH_MEDIA_BELOW_MINIMUM: "Please upload the minimum required number of photos.",
   PITCH_INVITATION_ALREADY_EXISTS: "An invitation has already been sent to this person.",
   PITCH_INVITATION_NOT_FOUND: "This invitation could not be found.",
   PITCH_INVITATION_NOT_PENDING: "This invitation is no longer pending.",

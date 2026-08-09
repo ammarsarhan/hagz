@@ -1,14 +1,14 @@
+import { randomUUID } from "crypto";
+import { differenceInMilliseconds } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { InvitationStatus, NotificationEvent, PermissionLevel, PitchStatus, StaffRole, UserRole, UserStatus } from "@/generated/prisma/enums.js";
 import { BadRequestError, ERROR_CODES, ForbiddenError, InternalServerError, NotFoundError, UnauthorizedError } from "@/shared/lib/utils/error.js";
 import prisma from "@/shared/lib/utils/prisma.js";
-import type { CreateInvitationPayloadType, UpdatePitchStaffMemberPayloadType } from "@/domains/pitches/pitches.validator.js";
 import config from "@/shared/config.js";
-import { randomUUID } from "crypto";
+import type { CreateInvitationPayloadType, UpdatePitchStaffMemberPayloadType } from "@/domains/pitches/pitches.validator.js";
 import type { Permissions } from "@/shared/types/staff.js";
 import NotificationsService from "@/domains/notifications/notifications.service.js";
-import { differenceInMilliseconds } from "date-fns";
 import { invitationsQueue } from "@/jobs/queues/invitations.queue.js";
-import { formatInTimeZone } from "date-fns-tz";
 
 export default class StaffService {
     // Helper function that returns default permissions per domain.
@@ -44,6 +44,14 @@ export default class StaffService {
             where: {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
+            },
+            include: {
+                staff: true,
+                invitations: {
+                    where: {
+                        status: InvitationStatus.PENDING
+                    }
+                }
             }
         });
 
@@ -78,6 +86,9 @@ export default class StaffService {
         });
 
         if (invitation) throw new BadRequestError("User with the specified phone number already has an invitation for the pitch. Can not create invitation.", ERROR_CODES.PITCH_INVITATION_ALREADY_EXISTS);
+
+        if (pitch.invitations.length >= config.MAXIMUM_INVITATIONS_PER_PITCH) throw new BadRequestError(`Can not have more than ${config.MAXIMUM_STAFF_PER_PITCH} pending invitations per pitch.`, ERROR_CODES.PITCH_INVITATION_LIMIT_EXCEEDED)
+        if (pitch.staff.length >= config.MAXIMUM_STAFF_PER_PITCH) throw new BadRequestError(`Can not have more than ${config.MAXIMUM_STAFF_PER_PITCH} staff members per pitch.`, ERROR_CODES.PITCH_STAFF_LIMIT_EXCEEDED);
 
         // Create the actual invitation record in the database and store the event in the event log.
         const token = randomUUID();
@@ -233,7 +244,7 @@ export default class StaffService {
                 id: pitchId,
                 status: { not: PitchStatus.DELETED }
             },
-            select: { status: true }
+            select: { status: true, staff: true },
         });
         
         if (!pitch) 
@@ -259,6 +270,8 @@ export default class StaffService {
 
         if (!invitation) throw new BadRequestError("No pending invitation with the specified ID has been found. Please request one from the pitch owner or a user with permissions.", ERROR_CODES.PITCH_INVITATION_NOT_PENDING);
         if (invitation.phone !== user.phone) throw new UnauthorizedError("You are not authorized to perform this action. Please sign in as the target user behind the invitation before accepting it.", ERROR_CODES.UNAUTHORIZED);
+
+        if (pitch.staff.length >= config.MAXIMUM_STAFF_PER_PITCH) throw new BadRequestError(`Can not have more than ${config.MAXIMUM_STAFF_PER_PITCH} staff members per pitch.`, ERROR_CODES.PITCH_STAFF_LIMIT_EXCEEDED);
 
         // Add their record as a manager on the Staff table with the default permissions for a manager member on a pitch.
         const permissions = this.createDefaultPermissions();
@@ -386,6 +399,15 @@ export default class StaffService {
             where: { 
                 pitchId,
                 deletedAt: null
+            },
+            include: {
+                user: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        avatarUrl: true
+                    }
+                }
             }
         });
 
@@ -411,6 +433,15 @@ export default class StaffService {
                 userId: memberId,
                 pitchId,
                 deletedAt: null
+            },
+            include: {
+                user: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        avatarUrl: true
+                    }
+                }
             }
         });
 
@@ -433,8 +464,8 @@ export default class StaffService {
         if (!pitch) 
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
-        if (!config.ACTIVE_STATES.includes(pitch.status))
-            throw new BadRequestError("Pitch is not active. Can not update staff on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
+        if (!config.OPERATIONAL_STATES.includes(pitch.status))
+            throw new BadRequestError("Pitch is not operational. Can not update staff on an inactive pitch.", ERROR_CODES.PITCH_NOT_ACTIVE);
 
         // Fetch the staff record, make sure that they are not updating themselves or an owner, and make sure they are in an updatable state.
         const staff = await prisma.staff.findFirst({
@@ -447,7 +478,8 @@ export default class StaffService {
                 user: {
                     select: {
                         firstName: true,
-                        lastName: true
+                        lastName: true,
+                        avatarUrl: true
                     }
                 }
             }
