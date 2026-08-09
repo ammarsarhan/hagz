@@ -1,6 +1,6 @@
 import { memo, useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { IconChevronRight } from "@tabler/icons-react-native";
 import { Invitation } from "@/lib/types/team";
 import { formatPhone } from "@/lib/string";
@@ -9,7 +9,11 @@ export const InvitationCardSkeleton = memo(function InvitationCardSkeleton() {
     const opacity = useSharedValue(0.4);
 
     useEffect(() => {
-        opacity.value = withRepeat(withTiming(1, { duration: 700 }), -1, true);
+        opacity.value = withRepeat(
+            withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+            -1,
+            true
+        );
     }, [opacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));

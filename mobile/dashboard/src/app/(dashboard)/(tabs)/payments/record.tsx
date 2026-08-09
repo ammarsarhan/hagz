@@ -50,11 +50,11 @@ export default function Record() {
         }
     };
 
-    const handleDecrement = async (value: number = 1) => {
+    const handleDecrement = async (value: number = 5) => {
         setAmount(prev => {
             if (prev <= -5000) {
                 stopDecrement();
-                return prev;
+                return -5000;
             }
 
             return Math.max(prev - value, -5000);
@@ -63,11 +63,11 @@ export default function Record() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     };
 
-    const handleIncrement = async (value: number = 1) => {
+    const handleIncrement = async (value: number = 5) => {
         setAmount(prev => {
             if (prev >= 0) {
                 stopIncrement();
-                return prev;
+                return 0;
             }
 
             return Math.min(prev + value, 0);
@@ -123,7 +123,7 @@ export default function Record() {
                     <View className="flex-1 flex-row items-center gap-x-6">
                         <Pressable
                             className="size-11 rounded-full bg-gray-100 items-center justify-center"
-                            onPress={() => handleDecrement()}
+                            onPress={() => handleDecrement(5)}
                             onLongPress={startDecrement}
                             onPressOut={stopDecrement}
                             delayLongPress={500}
@@ -137,7 +137,7 @@ export default function Record() {
                         </View>
                         <Pressable
                             className="size-11 rounded-full bg-gray-100 items-center justify-center"
-                            onPress={() => handleIncrement()}
+                            onPress={() => handleIncrement(5)}
                             onLongPress={startIncrement}
                             onPressOut={stopIncrement}
                             delayLongPress={500}
@@ -150,8 +150,12 @@ export default function Record() {
                         maximumValue={0}
                         step={5}
                         value={amount}
-                        onValueChange={setAmount}
+                        onValueChange={(val) => {
+                            const rounded = Math.min(0, Math.max(-5000, Math.round(val / 5) * 5));
+                            setAmount(rounded);
+                        }}
                         minimumTrackTintColor="#2563eb"
+                        maximumTrackTintColor="#e5e7eb"
                     />
                 </View>
                 <View className="gap-y-4 mb-8">
@@ -172,7 +176,7 @@ export default function Record() {
                 <View className="flex-row justify-end">
                     <Button
                         className="bg-primary border-primary px-6"
-                        disabled={note.length <= 2 || amount === 0}
+                        disabled={note.trim().length <= 2 || amount > 0}
                         loading={mutation.isPending}
                         onPress={handleSubmit}
                     >
@@ -181,5 +185,5 @@ export default function Record() {
                 </View>
             </ScrollView>
         </SafeAreaView>
-    )
-};
+    );
+}

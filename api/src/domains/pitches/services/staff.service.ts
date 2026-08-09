@@ -185,6 +185,9 @@ export default class StaffService {
             where: {
                 pitchId,
                 status: { not: InvitationStatus.DELETED }
+            },
+            orderBy: {
+                createdAt: "asc"
             }
         });
 
@@ -399,6 +402,9 @@ export default class StaffService {
             where: { 
                 pitchId,
                 deletedAt: null
+            },
+            orderBy: {
+                createdAt: "asc"
             },
             include: {
                 user: {
