@@ -35,7 +35,7 @@ export const fetchPitchInvitationHandler = factory.createHandlers(
             throw new NotFoundError("Could not find pitch with the specified ID.", ERROR_CODES.PITCH_NOT_FOUND);
 
         const invitations = await staffService.fetchInvitations(pitchId);
-        return c.json({ success: true, data: { invitations }}, 201);
+        return c.json({ success: true, data: { invitations }}, 200);
     }
 );
 

@@ -403,8 +403,10 @@ export default class StaffService {
             include: {
                 user: {
                     select: {
+                        id: true,
                         firstName: true,
                         lastName: true,
+                        phone: true,
                         avatarUrl: true
                     }
                 }
