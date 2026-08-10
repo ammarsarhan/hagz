@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View, ActivityIndicator } from "react-native";
+import { Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   Easing,
@@ -40,27 +40,16 @@ export default function Index() {
   const {
     data: staff,
     isLoading: isStaffLoading,
-    isRefetching: isStaffRefetching,
-    refetch: refetchStaff,
   } = usePitchStaff(pitchId, !!pitchId);
 
   const {
     data: invitations,
     isLoading: isInvitationsLoading,
-    isRefetching: isInvitationsRefetching,
-    refetch: refetchInvitations,
   } = usePitchInvitations(pitchId, !!pitchId);
 
   const handleScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
   });
-
-  const isRefreshing = (isStaffRefetching || isInvitationsRefetching) && !isStaffLoading && !isInvitationsLoading;
-
-  const handleRefresh = useCallback(() => {
-    refetchStaff();
-    refetchInvitations();
-  }, [refetchStaff, refetchInvitations]);
 
   const handleToggleSort = useCallback(() => {
     const nextSort = sortOrder === "asc" ? "desc" : "asc";
@@ -183,9 +172,6 @@ export default function Index() {
         scrollEventThrottle={16}
         contentContainerClassName="pb-8"
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-        }
       >
         {renderHeader()}
 
