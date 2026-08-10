@@ -1,1 +1,1 @@
-export * from "./useTeam";
+export * from "@/lib/hooks/team/useTeam";

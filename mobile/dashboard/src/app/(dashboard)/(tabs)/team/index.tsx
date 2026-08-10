@@ -3,6 +3,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View, ActivityIndicator } 
 import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   Easing,
+  interpolateColor,
   runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -19,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePitchStaff, usePitchInvitations } from "@/lib/hooks/team";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function Index() {
   const insets = useSafeAreaInsets();
@@ -28,6 +30,7 @@ export default function Index() {
 
   const listOpacity = useSharedValue(1);
   const iconOpacity = useSharedValue(1);
+  const sortPressed = useSharedValue(0);
   const pendingSort = useRef<"asc" | "desc" | null>(null);
 
   const { pitch, isLoading: isPitchLoading } = usePitch();
@@ -82,6 +85,20 @@ export default function Index() {
     );
   }, [sortOrder, listOpacity, iconOpacity]);
 
+  const handleSortPressIn = useCallback(() => {
+    sortPressed.value = withTiming(1, {
+      duration: 100,
+      easing: Easing.inOut(Easing.ease),
+    });
+  }, [sortPressed]);
+
+  const handleSortPressOut = useCallback(() => {
+    sortPressed.value = withTiming(0, {
+      duration: 150,
+      easing: Easing.inOut(Easing.ease),
+    });
+  }, [sortPressed]);
+
   useEffect(() => {
     if (pendingSort.current === sortOrder) {
       pendingSort.current = null;
@@ -105,6 +122,14 @@ export default function Index() {
 
   const animatedIconStyle = useAnimatedStyle(() => ({
     opacity: iconOpacity.value,
+  }));
+
+  const animatedSortButtonStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      sortPressed.value,
+      [0, 1],
+      ["#F3F4F6", "#E5E7EB"]
+    ),
   }));
 
   const sortedAndFilteredInvitations = useMemo(() => {
@@ -178,7 +203,7 @@ export default function Index() {
               <StaffCard
                 key={member.userId}
                 member={member}
-                isCurrentUser={member.userId === user?.id}
+                isCurrent={member.userId === user?.id}
               />
             ))
           ) : (
@@ -201,16 +226,19 @@ export default function Index() {
               />
             </View>
             <View className="flex-row items-center gap-x-3">
-              <Pressable
+              <AnimatedPressable
                 onPress={handleToggleSort}
+                onPressIn={handleSortPressIn}
+                onPressOut={handleSortPressOut}
                 accessibilityRole="button"
                 accessibilityLabel={`Sorted ${sortOrder === "asc" ? "Oldest first" : "Newest first"}`}
-                className="rounded-full bg-gray-100 size-11 items-center justify-center active:bg-gray-200"
+                style={animatedSortButtonStyle}
+                className="rounded-full size-11 items-center justify-center"
               >
                 <Animated.View style={animatedIconStyle}>
                   <SortIcon width={18} height={18} strokeWidth={2.25} color="#111827" />
                 </Animated.View>
-              </Pressable>
+              </AnimatedPressable>
             </View>
           </View>
         </View>
