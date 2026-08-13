@@ -1,6 +1,6 @@
 import z from "zod";
 import { UserRole, type Language, type NotificationChannel, type StaffRole, type UserStatus } from "@/generated/prisma/enums.js";
-import type { GroundSize, GroundSport, PitchStatus, Staff, User, UserPreferences } from "@/generated/prisma/client.js";
+import type { GroundSize, GroundSport, PitchStatus, Staff, User, UserPreferences, Notification } from "@/generated/prisma/client.js";
 import type { Permissions } from "@/shared/types/staff.js";
 
 // Fetch user by either phone or id.
@@ -15,6 +15,7 @@ export type UserResponseType = {
     status: UserStatus,
     isVerified: boolean,
     avatarUrl: string | null,
+    hasNotifications: boolean,
     preferences: {
         role: UserRole,
         language: Language,
@@ -65,7 +66,7 @@ export const signInSchema = z.object({
 
 type StaffPitch = Staff & { pitch: { status: PitchStatus }};
 
-export const createUserResponse = (user: User, preferences: UserPreferences, pitches: Array<StaffPitch>): UserResponseType => {
+export const createUserResponse = (user: User, notifications: Notification[], preferences: UserPreferences, pitches: Array<StaffPitch>): UserResponseType => {
     return {
         id: user.id,
         firstName: user.firstName,
@@ -75,6 +76,7 @@ export const createUserResponse = (user: User, preferences: UserPreferences, pit
         status: user.status,
         isVerified: user.isVerified,
         avatarUrl: user.avatarUrl,
+        hasNotifications: notifications.length > 0,
         preferences: {
             role: preferences.role,
             language: preferences.language,

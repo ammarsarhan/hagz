@@ -13,6 +13,11 @@ export default class ProfileService {
         const user = await prisma.user.findFirst({ 
             where: { id: userId, status: { notIn: [UserStatus.DELETED, UserStatus.BANNED] } }, // Filter deleted and banned accounts.
             include: { 
+                notifications: {
+                    where: {
+                        readAt: null
+                    }
+                },
                 preferences: true, 
                 pitches: {
                     include: {
@@ -32,7 +37,7 @@ export default class ProfileService {
         if (!user.preferences)
             throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
 
-        return createUserResponse(user, user.preferences, user.pitches);
+        return createUserResponse(user, user.notifications, user.preferences, user.pitches);
     }
 
     updateUserProfile = async (userId: string, payload: UpdateUserProfilePayloadType) => {
@@ -64,6 +69,11 @@ export default class ProfileService {
                 ...(isPhoneChanged && { isVerified: false })
             },
             include: { 
+                notifications: {
+                    where: {
+                        readAt: null
+                    }
+                },
                 preferences: true, 
                 pitches: {
                     include: {
@@ -80,7 +90,7 @@ export default class ProfileService {
         if (!updated.preferences)
             throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
 
-        return createUserResponse(updated, updated.preferences, updated.pitches);
+        return createUserResponse(updated, updated.notifications, updated.preferences, updated.pitches);
     };
 
     generateAvatarPresignLink = async (userId: string, payload: CreateAvatarPresignLinkPayloadType) => {
@@ -137,6 +147,11 @@ export default class ProfileService {
                 avatarKey: key
             },
             include: { 
+                notifications: {
+                    where: {
+                        readAt: null
+                    }
+                },
                 preferences: true, 
                 pitches: {
                     include: {
@@ -162,7 +177,7 @@ export default class ProfileService {
             }
         }
 
-        return createUserResponse(updated, updated.preferences, updated.pitches);
+        return createUserResponse(updated, updated.notifications, updated.preferences, updated.pitches);
     };
 
     deleteAvatar = async (userId: string) => {
@@ -189,6 +204,11 @@ export default class ProfileService {
                 avatarKey: null
             },
             include: { 
+                notifications: {
+                    where: {
+                        readAt: null
+                    }
+                },
                 preferences: true, 
                 pitches: {
                     include: {
@@ -205,7 +225,7 @@ export default class ProfileService {
         if (!updated.preferences)
             throw new InternalServerError("Could not find preferences associated with the specified user ID.", ERROR_CODES.USER_PREFERENCES_NOT_FOUND);
 
-        return createUserResponse(updated, updated.preferences, updated.pitches);
+        return createUserResponse(updated, updated.notifications, updated.preferences, updated.pitches);
     };
 
     getUserPreferences = async (userId: string) => {
@@ -251,6 +271,11 @@ export default class ProfileService {
             include: {
                 user: {
                     include: {
+                        notifications: {
+                            where: {
+                                readAt: null
+                            }
+                        },
                         pitches: {
                             include: {
                                 pitch: {
@@ -265,7 +290,7 @@ export default class ProfileService {
             }
         });
         
-        return createUserResponse(updated.user, updated, updated.user.pitches);
+        return createUserResponse(updated.user, updated.user.notifications, updated, updated.user.pitches);
     };
 
     transferAccount = async (userId: string, role: UserRole) => {
@@ -293,6 +318,11 @@ export default class ProfileService {
             include: {
                 user: {
                     include: {
+                        notifications: {
+                            where: {
+                                readAt: null
+                            }
+                        },
                         pitches: {
                             include: {
                                 pitch: {
@@ -307,7 +337,7 @@ export default class ProfileService {
             }
         });
 
-        return createUserResponse(updated.user, updated, updated.user.pitches);
+        return createUserResponse(updated.user, updated.user.notifications, updated, updated.user.pitches);
     };
 
     fetchUserActiveSessions = async (userId: string, currentToken: string) => {

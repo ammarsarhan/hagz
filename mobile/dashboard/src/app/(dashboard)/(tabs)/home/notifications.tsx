@@ -1,9 +1,10 @@
 import Button from "@/components/shared/Button";
 import NotificationItem from "@/components/tabs/NotificationItem";
 import { useRequiredAuth } from "@/context/AuthContext";
-import { useNotificationsQuery } from "@/lib/hooks/notifications/useNotifications";
+import { useNotificationsQuery, useReadNotificationsMutation } from "@/lib/hooks/notifications/useNotifications";
 import { IconBellCheck, IconBellOff, IconX } from "@tabler/icons-react-native";
 import { Link, router } from "expo-router";
+import { useEffect } from "react";
 import { Pressable, ScrollView, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,7 +27,9 @@ const Header = () => (
 
 export default function Notifications() {
     const { user } = useRequiredAuth();
+
     const { data } = useNotificationsQuery(user.id);
+    const mutation = useReadNotificationsMutation(user.id);
 
     const isAllowed = user.preferences.notifications.includes("IN_APP");
     const hasData = isAllowed && data && (data.notifications.length ?? 0) > 0;
@@ -56,6 +59,13 @@ export default function Notifications() {
             <Text className="font-semibold text-2xl text-center">You&apos;re all caught up!</Text>
         </View>
     );
+
+    useEffect(() => {
+        if (hasData && data.notifications.some(item => item.readAt === null)) {
+            console.log("Hit")
+            mutation.mutate();
+        }   
+    }, [data?.notifications, hasData, mutation]);
 
     return (
         <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>

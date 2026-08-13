@@ -25,6 +25,11 @@ export default class AuthService {
                     password: hashed
                 },
                 include: {
+                    notifications: {
+                        where: {
+                            readAt: null
+                        }
+                    },
                     pitches: {
                         include: {
                             pitch: {
@@ -49,9 +54,10 @@ export default class AuthService {
         });
 
         const pitches = user.pitches;
+        const notifications = user.notifications;
 
         // Parse into an object that can be used with the client's AuthContext or Mobile implementations.
-        return createUserResponse(user, preferences, pitches);
+        return createUserResponse(user, notifications, preferences, pitches);
     };
 
     fetchUser = async (params: FetchUserPayloadType): Promise<UserResponseType> => {
@@ -59,6 +65,11 @@ export default class AuthService {
             const user = await prisma.user.findUnique({ 
                 where: { phone: params.phone },
                 include: {
+                    notifications: {
+                        where: {
+                            readAt: null
+                        }
+                    },
                     pitches: {
                         include: {
                             pitch: {
@@ -77,15 +88,21 @@ export default class AuthService {
             // We can assume that preferences always exists because it is created as a transaction with the creation of the user.
             // A user may not exist without their preferences unlike type-inference from the schema suggests.
             const preferences = user.preferences!;
+            const notifications = user.notifications;
             const pitches = user.pitches;
 
-            return createUserResponse(user, preferences, pitches);
+            return createUserResponse(user, notifications, preferences, pitches);
         };
 
         if (params.type === "id") {
             const user = await prisma.user.findUnique({ 
                 where: { id: params.id },
                 include: {
+                    notifications: {
+                        where: {
+                            readAt: null
+                        }
+                    },
                     pitches: {
                         include: {
                             pitch: {
@@ -104,9 +121,10 @@ export default class AuthService {
             // We can assume that preferences always exists because it is created as a transaction with the creation of the user.
             // A user may not exist without their preferences unlike type-inference from the schema suggests.
             const preferences = user.preferences!;
+            const notifications = user.notifications;
             const pitches = user.pitches;
 
-            return createUserResponse(user, preferences, pitches);
+            return createUserResponse(user, notifications, preferences, pitches);
         };
 
         throw new InternalServerError("Either a phone or an id string must be specified to fetch a user.");
@@ -117,6 +135,11 @@ export default class AuthService {
         const user = await prisma.user.findUnique({ 
             where: { phone: payload.phone }, 
             include: { 
+                notifications: {
+                    where: {
+                        readAt: null
+                    }
+                },
                 preferences: true, 
                 pitches: {
                     include: {
@@ -174,9 +197,10 @@ export default class AuthService {
 
         const preferences = user.preferences!;
         const pitches = user.pitches;
+        const notifications = user.notifications;
 
         return { 
-            user: createUserResponse(user, preferences, pitches),
+            user: createUserResponse(user, notifications, preferences, pitches),
             accessToken,
             refreshToken
         };

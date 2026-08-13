@@ -123,6 +123,16 @@ export const readNotificationHandler = factory.createHandlers(
     }
 );
 
+export const readNotificationsHandler = factory.createHandlers(
+    authorize({ required: true }),
+    async (c) => {
+        const userId = c.var.id
+        await notificationsService.readUserInAppNotifications(userId);
+        
+        return c.json({ success: true, data: null }, 200);
+    }
+)
+
 export const fetchSessionsHandler = factory.createHandlers(
     authorize({ required: true }),
     async (c) => {

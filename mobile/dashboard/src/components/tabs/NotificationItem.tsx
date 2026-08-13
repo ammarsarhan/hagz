@@ -20,7 +20,7 @@ export default function NotificationItem({ title, body, event, createdAt, readAt
                 <Text className="mb-2">{body}</Text>
                 <Text className="text-gray-500">{formatDistanceToNow(createdAt, { addSuffix: true })}</Text>
             </View>
-            <View className={cn("size-2 rounded-full", isRead ? "bg-transparent" : "bg-primary")}></View>
+            <View className={cn("size-2 rounded-full", isRead ? "hidden" : "bg-primary")}></View>
         </View>
     )
 }
