@@ -9,13 +9,24 @@ import { ApiError } from "@/lib/error";
 import { BookingCheckoutPayload, BookingDirectPayload } from "@/lib/types/bookings";
 import { useRequiredPitch } from "@/context/PitchContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRequiredAuth } from "@/context/AuthContext";
 
 export default function Notes() {
+    const { user } = useRequiredAuth();
     const { state, setState } = useCreateBooking();
     const { pitch } = useRequiredPitch();
     const queryClient = useQueryClient();
     
     const mutation = useBookingMutation();
+
+    const invalidateQueries = () => {
+        queryClient.invalidateQueries({ queryKey: ["home", pitch.id] });
+        queryClient.invalidateQueries({ queryKey: ["bookings", pitch.id] });
+        queryClient.invalidateQueries({ queryKey: ["availability", pitch.id] });
+
+        if (user.preferences.notifications.includes("IN_APP")) 
+            queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
+    }
 
     const handleSubmit = () => {
         const basePayload = {
@@ -38,9 +49,7 @@ export default function Notes() {
             { pitchId: pitch.id, groundId: state.groundId!, isPaid: state.isPaid, payload },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({ queryKey: ["home", pitch.id] });
-                    queryClient.invalidateQueries({ queryKey: ["bookings", pitch.id] });
-                    queryClient.invalidateQueries({ queryKey: ["availability", pitch.id] });
+                    invalidateQueries();
                     router.dismissTo("/(dashboard)/(tabs)/bookings");
                 },
                 onError: (err) => {

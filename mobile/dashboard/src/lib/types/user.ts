@@ -6,3 +6,6 @@ export type SignUpPayload = SignUpRequest["json"];
 
 type SessionResponse = InferResponseType<typeof client.auth.session.$get, 200>;
 export type User = SessionResponse['data']['user'];
+
+type NotificationResponse = InferResponseType<typeof client.app.profile.notifications.$get, 200>;
+export type InAppNotification = NotificationResponse['data']['notifications'][number];

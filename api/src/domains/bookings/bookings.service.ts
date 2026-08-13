@@ -360,7 +360,7 @@ export default class BookingService {
         };
 
         await NotificationsService.createNotification({
-            phone: assignee.phone,
+            ...(match ? { userId: match.id } : { phone: assignee.phone }),
             ...notificationPayload
         });
 
@@ -379,7 +379,7 @@ export default class BookingService {
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
 
                     await NotificationsService.createNotification({
-                        phone: member.user.phone,
+                        userId: member.user.id,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
                             action: booking.status === BookingStatus.CONFIRMED ? "confirmed" : "reserved. Payment is still required to confirm the spot",
@@ -655,7 +655,7 @@ export default class BookingService {
 
         // Create the notification for the customer and dispatch it.
         await NotificationsService.createNotification({
-            phone: assignee.phone,
+            userId,
             event: NotificationEvent.BOOKING_RESERVED,
             data: {
                 receiverName: user.firstName,
@@ -688,7 +688,7 @@ export default class BookingService {
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
 
                     await NotificationsService.createNotification({
-                        phone: member.user.phone,
+                        userId: member.user.id,
                         event: NotificationEvent.BOOKING_RECEIVED,
                         data: {
                             action: "reserved. Payment is still required to confirm the spot",
@@ -973,7 +973,7 @@ export default class BookingService {
                         throw new InternalServerError("Could not resolve user preferences associated with the user account.")
 
                     await NotificationsService.createNotification({
-                        phone: member.user.phone,
+                        userId: member.user.id,
                         event: NotificationEvent.BOOKING_CANCELLED,
                         data: {
                             receiverName: member.user.firstName,
@@ -1256,7 +1256,7 @@ export default class BookingService {
                 if (!isAllowed || !member.user.preferences) return;
 
                 await NotificationsService.createNotification({
-                    phone: member.user.phone,
+                    userId: member.user.id,
                     event: NotificationEvent.BOOKING_RESCHEDULED,
                     data: {
                         receiverName: member.user.firstName,

@@ -149,4 +149,28 @@ export default class NotificationsService {
 
         return updated;
     };
+
+    readUserInAppNotifications = async (userId: string) => {
+        const user = await prisma.user.findFirst({ where: { id: userId, status: { not: UserStatus.DELETED } }});
+
+        if (!user)
+            throw new UnauthorizedError("Could not fetch user notifications. Can not find user account.", ERROR_CODES.USER_ID_DOES_NOT_EXIST);
+
+        const updated = await prisma.notification.updateMany({
+            where: {
+                userId,
+                readAt: null,
+                deliveries: {
+                    some: {
+                        channel: NotificationChannel.IN_APP
+                    }
+                }
+            },
+            data: {
+                readAt: new Date()
+            }
+        });
+
+        return updated;
+    };
 }

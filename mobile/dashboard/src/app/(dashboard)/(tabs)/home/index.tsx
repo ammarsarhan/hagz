@@ -45,9 +45,11 @@ export default function Index() {
               <Avatar />
             </Link>
             <View className="flex-row items-center gap-x-3">
-              <Pressable className="size-12 items-center justify-center rounded-full bg-gray-100">
-                <IconBell size={20} color="#000"/>
-              </Pressable>
+              <Link asChild href="/(dashboard)/(tabs)/home/notifications">
+                <Pressable className="size-12 items-center justify-center rounded-full bg-gray-100">
+                  <IconBell size={20} color="#000"/>
+                </Pressable>
+              </Link>
               <Pressable className="size-12 items-center justify-center rounded-full bg-gray-100">
                 <IconQrcode size={20} color="#000"/>
               </Pressable>
