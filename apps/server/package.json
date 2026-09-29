@@ -10,20 +10,19 @@
     }
   },
   "scripts": {
-    "dev": "prisma generate && concurrently -n http,worker \"tsx watch src/app.ts\" \"tsx watch src/worker.ts\"",
+    "dev": "concurrently -n http,worker \"tsx watch src/app.ts\" \"tsx watch src/worker.ts\"",
     "dev:http": "tsx watch src/app.ts",
     "dev:worker": "tsx watch src/worker.ts",
-    "build": "prisma generate && tsup",
+    "build": "tsup",
     "start:http": "node dist/app.js",
     "start:worker": "node dist/worker.js",
-    "typecheck": "prisma generate && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@hagz/contracts": "workspace:^",
     "@hono/node-server": "^2.1.3",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",

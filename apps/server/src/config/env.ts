@@ -1,9 +1,8 @@
 import "dotenv/config";
-import { ENVIRONMENTS } from "@hagz/contracts";
 import { z } from "zod";
 
 const schema = z.object({
-  APP_ENV: z.enum(ENVIRONMENTS).default("development"),
+  APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url(),
