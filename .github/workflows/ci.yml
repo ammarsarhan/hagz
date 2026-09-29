@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, staging, main]
+  push:
+    branches: [dev]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Rulesets can't restrict which branch a PR comes from, so enforce dev → staging → main here.
+  promotion:
+    name: Promotion source
+    if: github.event_name == 'pull_request' && (github.base_ref == 'staging' || github.base_ref == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          case "$BASE" in
+            staging) expected=dev ;;
+            main) expected=staging ;;
+          esac
+          if [ "$HEAD" != "$expected" ] || [ "$HEAD_REPO" != "$REPO" ]; then
+            echo "::error::PRs into $BASE must come from $expected (got $HEAD_REPO:$HEAD)."
+            exit 1
+          fi
+          echo "$HEAD → $BASE is allowed."
+
+  checks:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # turbo --affected needs the base branch history to diff against.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate Prisma schema
+        run: pnpm --filter @hagz/server exec prisma validate
+
+      # PRs only check what they change; pushes to dev check everything.
+      - name: Typecheck, test, build
+        run: pnpm turbo run typecheck test build ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+
+  # Single required status check for the rulesets.
+  ci:
+    name: CI
+    if: always()
+    needs: [promotion, checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Result
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) exit 1 ;; esac
+          done
