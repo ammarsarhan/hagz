@@ -1,20 +1,43 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "agentGuidance": false,
-  "globalEnv": ["APP_ENV", "NODE_ENV"],
+  "globalEnv": [
+    "APP_ENV",
+    "NODE_ENV"
+  ],
   "tasks": {
+    "db:generate": {
+      "outputs": [
+        "src/generated/**"
+      ]
+    },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build",
+        "db:generate"
+      ],
       "cache": false,
       "persistent": true
     }
