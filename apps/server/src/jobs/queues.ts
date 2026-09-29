@@ -1,15 +1,5 @@
-import { Queue } from "bullmq";
+import { Queue, type QueueOptions } from "bullmq";
 import { queueConnection } from "@/lib/redis";
 
-export type BookingJobs = {
-  expire: { bookingId: string };
-  complete: { bookingId: string };
-};
-
-export type BookingJobName = keyof BookingJobs;
-
-export const BOOKINGS_QUEUE = "bookings";
-
-export const bookingsQueue = new Queue<BookingJobs[BookingJobName], void, BookingJobName>(BOOKINGS_QUEUE, {
-  connection: queueConnection,
-});
+export const createQueue = <Data>(name: string, options?: Omit<QueueOptions, "connection">) =>
+  new Queue<Data>(name, { ...options, connection: queueConnection });

@@ -1,15 +1,15 @@
-import { Worker } from "bullmq";
+import type { Worker } from "bullmq";
 import { env } from "@/config/env";
-import { processBookingJob } from "@/jobs/bookings";
-import { BOOKINGS_QUEUE } from "@/jobs/queues";
 import { queueConnection } from "@/lib/redis";
 
-const workers = [new Worker(BOOKINGS_QUEUE, processBookingJob, { connection: queueConnection })];
+// Register workers here, e.g. new Worker(name, processor, { connection: queueConnection }).
+const workers: Worker[] = [];
 
 console.log(`[worker] started ${workers.length} worker(s) (${env.APP_ENV})`);
 
 const shutdown = async () => {
   await Promise.all(workers.map((w) => w.close()));
+  await queueConnection.quit();
   process.exit(0);
 };
 
