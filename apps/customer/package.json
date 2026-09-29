@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hagz/contracts": "workspace:^",
     "expo": "^57.0.26",
     "expo-constants": "~57.0.20",
     "expo-linking": "~57.0.11",
