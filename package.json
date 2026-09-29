@@ -1,0 +1,25 @@
+{
+  "name": "hagz",
+  "private": true,
+  "packageManager": "pnpm@10.6.3",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.5",
+    "typescript": "~6.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "~6.0.3"
+    }
+  }
+}

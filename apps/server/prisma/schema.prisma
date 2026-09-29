@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Keep in sync with ROLES in @hagz/contracts (checked at compile time in src/domain/enums.ts).
+enum Role {
+  customer
+  owner
+  staff
+}
+
+// Keep in sync with BOOKING_STATUSES in @hagz/contracts (checked at compile time in src/domain/enums.ts).
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  rejected
+  expired
+  completed
+  no_show
+}
+
+model User {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  phone     String   @unique
+  role      Role     @default(customer)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  pitches       Pitch[]
+  bookings      Booking[]
+  bookingEvents BookingEvent[]
+
+  @@map("users")
+}
+
+model Pitch {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  ownerId   String   @map("owner_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner    User      @relation(fields: [ownerId], references: [id])
+  bookings Booking[]
+
+  @@index([ownerId])
+  @@map("pitches")
+}
+
+// Double-booking is prevented by an exclusion constraint added by hand in the first migration:
+//   EXCLUDE USING gist (pitch_id WITH =, tstzrange(starts_at, ends_at) WITH &&)
+//   WHERE (status IN ('pending', 'confirmed'))
+model Booking {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  pitchId    String        @map("pitch_id") @db.Uuid
+  customerId String        @map("customer_id") @db.Uuid
+  startsAt   DateTime      @map("starts_at") @db.Timestamptz
+  endsAt     DateTime      @map("ends_at") @db.Timestamptz
+  status     BookingStatus @default(pending)
+  shareToken String        @unique @map("share_token")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  pitch    Pitch          @relation(fields: [pitchId], references: [id])
+  customer User           @relation(fields: [customerId], references: [id])
+  events   BookingEvent[]
+
+  @@index([pitchId, startsAt])
+  @@index([customerId])
+  @@map("bookings")
+}
+
+// Append-only history of every status change, written in the same transaction as the change.
+model BookingEvent {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  bookingId  String         @map("booking_id") @db.Uuid
+  fromStatus BookingStatus? @map("from_status")
+  toStatus   BookingStatus  @map("to_status")
+  // null when the change was made by the system (e.g. expiry job).
+  actorId    String?        @map("actor_id") @db.Uuid
+  actorRole  String         @map("actor_role")
+  reason     String?
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  @@index([bookingId, createdAt])
+  @@map("booking_events")
+}

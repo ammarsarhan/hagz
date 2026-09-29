@@ -1,0 +1,33 @@
+name: hagz
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: hagz
+      POSTGRES_PASSWORD: hagz
+      POSTGRES_DB: hagz
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # BullMQ needs keys to never be evicted.
+  redis-queue:
+    image: redis:7
+    command: ["redis-server", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-queue-data:/data
+
+  # Cache only: evicts least-recently-used keys when full.
+  redis-cache:
+    image: redis:7
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6380:6379"
+
+volumes:
+  postgres-data:
+  redis-queue-data:
