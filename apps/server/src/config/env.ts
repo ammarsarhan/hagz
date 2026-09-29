@@ -6,8 +6,8 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url(),
-  REDIS_QUEUE_URL: z.string().url(),
-  REDIS_CACHE_URL: z.string().url(),
+  QUEUE_URL: z.string().url(),
+  CACHE_URL: z.string().url(),
 });
 
 const parsed = schema.safeParse(process.env);
