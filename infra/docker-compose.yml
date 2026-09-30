@@ -1,9 +1,10 @@
 name: hagz
 
 services:
-  # PostGIS, multi-arch (the official postgis/postgis image is amd64 only). Match the tag to the PostGIS version on Neon.
+  # PostGIS, multi-arch (the official postgis/postgis image is amd64 only).
+  # Keep the Postgres and PostGIS versions matched to Neon (currently Postgres 18, PostGIS 3.6).
   postgres:
-    image: imresamu/postgis:17-3.5
+    image: imresamu/postgis:18-3.6
     environment:
       POSTGRES_USER: hagz
       POSTGRES_PASSWORD: hagz
@@ -11,7 +12,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      # Postgres 18+ images keep data under /var/lib/postgresql/<version>, so mount the parent.
+      - postgres-data:/var/lib/postgresql
+    # The image auto-creates postgis, topology and tiger extensions on first start. Neon starts empty,
+    # so skip that and let the first migration enable PostGIS, exactly like production.
+    tmpfs:
+      - /docker-entrypoint-initdb.d
 
   # BullMQ needs keys to never be evicted.
   queue:
