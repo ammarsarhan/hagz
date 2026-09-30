@@ -14,7 +14,8 @@
     "build": {
       "dependsOn": [
         "^build",
-        "db:generate"
+        "db:generate",
+        "typecheck"
       ],
       "outputs": [
         "dist/**",

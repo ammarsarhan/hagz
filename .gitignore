@@ -38,3 +38,6 @@ android/
 
 # next
 next-env.d.ts
+
+# neon (local project/branch link, per developer)
+.neon
