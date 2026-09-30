@@ -2,24 +2,20 @@
 
 `railway.ts` describes the whole Railway project (services, Redis, volumes, regions, variables) for every environment. `staging` deploys the `staging` branch and `production` deploys `main`.
 
+Code deploys are automatic: when a commit lands on `staging` or `main` and CI passes, Railway builds and deploys it. Changes to this file are **not** applied automatically.
+
 ## Changing infrastructure
 
-Edit `railway.ts` in a feature branch and open a PR. CI posts the plan as a PR comment:
-
-| PR into | Plans against |
-|---|---|
-| `dev`, `staging` | `staging` |
-| `main` | `production` |
-
-When the PR merges into `staging` or `main`, CI applies it to that environment. Merges into `dev` only plan.
-
-**Destructive changes are never applied by CI** (deleting a service, variable or volume, or moving a volume). The apply job fails instead. Review the plan, then apply by hand:
+Edit `railway.ts` in a feature branch like any other change. After it merges, apply it from your machine:
 
 ```sh
-railway link    # pick the hagz project and the environment
-railway config plan
-railway config apply --confirm-destructive
+railway login
+railway link          # pick the hagz project and the environment to change
+railway config plan   # safe: shows what would change
+railway config apply  # asks before applying
 ```
+
+Review destructive changes (deleting a service, variable or volume, or moving a volume) carefully before confirming.
 
 ## Secrets
 
@@ -30,7 +26,7 @@ Secrets are never written here. They're Railway **shared variables** on each env
 | `DATABASE_URL` | Neon pooled connection string for that environment's branch |
 | `DIRECT_DATABASE_URL` | Neon direct connection string, used only for migrations |
 
-Set them in the Railway dashboard (Project Settings → Shared Variables) before the first deploy of an environment.
+Set them (Project Settings → Shared Variables) before the first deploy of an environment.
 
 ## Known issue
 

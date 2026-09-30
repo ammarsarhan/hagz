@@ -5,6 +5,3 @@ import { env } from "@/config/env";
 
 // BullMQ only. This instance must run with maxmemory-policy noeviction.
 export const queueConnection = new Redis(env.QUEUE_URL, { family: 0, maxRetriesPerRequest: null });
-
-// Cache only. This instance runs with allkeys-lru, so anything here can disappear.
-export const cache = new Redis(env.CACHE_URL, { family: 0 });
