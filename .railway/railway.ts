@@ -30,7 +30,13 @@ export default defineRailway((ctx) => {
   queue.deploy = { startCommand: redisStart("--maxmemory-policy noeviction --appendonly yes") };
   queue.networking = { privateNetworkEndpoint: "queue" };
 
+  // Cache only: evicts least-recently-used keys when full.
+  const cache = redis("cache", { region: REGION });
+  cache.deploy = { startCommand: redisStart("--maxmemory 256mb --maxmemory-policy allkeys-lru") };
+  cache.networking = { privateNetworkEndpoint: "cache" };
+
   const queueVolume = volume("queue-volume", { region: REGION, sizeMB: 500 });
+  const cacheVolume = volume("cache-volume", { region: REGION, sizeMB: 500 });
 
   // One image, two processes. Neon URLs are shared variables set per environment, never stored here.
   const server = (name: string, deploy: { start: string; preDeploy?: string; healthcheck?: string }) =>
@@ -46,6 +52,7 @@ export default defineRailway((ctx) => {
         DATABASE_URL: ctx.shared.DATABASE_URL,
         ...(deploy.preDeploy ? { DIRECT_DATABASE_URL: ctx.shared.DIRECT_DATABASE_URL } : {}),
         QUEUE_URL: queue.env.REDIS_URL,
+        CACHE_URL: cache.env.REDIS_URL,
       },
     });
 
@@ -58,6 +65,6 @@ export default defineRailway((ctx) => {
   const worker = server("worker", { start: "node dist/worker.js" });
 
   return project("hagz", {
-    resources: [api, worker, queue, queueVolume],
+    resources: [api, worker, queue, cache, queueVolume, cacheVolume],
   });
 });
