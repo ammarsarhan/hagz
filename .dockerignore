@@ -1,0 +1,12 @@
+# Keep secrets, dependencies and build output out of the build context.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/.expo
+**/src/generated
+**/.env
+**/.env.*
+!.env.example
+.git
+**/.DS_Store
