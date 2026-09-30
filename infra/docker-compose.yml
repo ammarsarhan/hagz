@@ -1,8 +1,9 @@
 name: hagz
 
 services:
+  # PostGIS, multi-arch (the official postgis/postgis image is amd64 only). Match the tag to the PostGIS version on Neon.
   postgres:
-    image: postgres:17
+    image: imresamu/postgis:17-3.5
     environment:
       POSTGRES_USER: hagz
       POSTGRES_PASSWORD: hagz
