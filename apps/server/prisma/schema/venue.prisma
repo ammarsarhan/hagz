@@ -94,17 +94,20 @@ model VenueInvitation {
   @@index([phone])
 }
 
-// CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0.
+// CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0; cancellationTiers, an
+// array, set exactly when CUSTOM.
 model VenueSettings {
-  venueId            String      @id @db.Uuid
+  venueId            String             @id @db.Uuid
   defaultPermissions Json // For new invitations.
-  minimumNotice      Int         @default(60) // Minutes before kick-off that booking closes.
-  autoConfirm        Boolean     @default(true) // False: staff approve each booking.
-  paymentMode        PaymentMode @default(MANUAL)
+  minimumNotice      Int                @default(60) // Minutes before kick-off that booking closes.
+  autoConfirm        Boolean            @default(true) // False: staff approve each booking.
+  paymentMode        PaymentMode        @default(MANUAL)
   depositPercent     Int? // Share paid online.
   paymentWindow      Int? // Minutes a HELD booking waits for payment; null = platform default.
-  createdAt          DateTime    @default(now()) @db.Timestamptz
-  updatedAt          DateTime    @updatedAt @db.Timestamptz
+  cancellationPolicy CancellationPolicy @default(MODERATE)
+  cancellationTiers  Json? // CUSTOM only, e.g. [{ "hours": 24, "refundPercent": 100 }].
+  createdAt          DateTime           @default(now()) @db.Timestamptz
+  updatedAt          DateTime           @updatedAt @db.Timestamptz
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 }
