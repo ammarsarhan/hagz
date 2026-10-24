@@ -1,0 +1,55 @@
+// The payment ledger: money that actually moved for a booking, never prices (those are in
+// BookingCharge). A row is created PENDING for online payments and moves once to SUCCEEDED,
+// FAILED or EXPIRED; amounts are never edited. Cash is recorded by staff when received, already
+// SUCCEEDED. Amount paid = SUCCEEDED payments − SUCCEEDED refunds. The provider is kept neutral:
+// its name and transaction reference are plain fields, unique together so repeated webhooks are
+// deduplicated. CHECKs: amount > 0; provider set exactly when not CASH, and CASH has no reference;
+// succeededAt set exactly when SUCCEEDED; CASH is SUCCEEDED and has a recorderId.
+model Payment {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  bookingId         String        @db.Uuid
+  method            PaymentMethod
+  status            PaymentStatus
+  amount            Int // Minor units of the marketplace currency.
+  provider          String? // e.g. paymob, fawry.
+  providerReference String? // The provider's transaction id, or the Fawry reference code.
+  recorderId        String?       @db.Uuid // Staff who recorded cash.
+  succeededAt       DateTime?     @db.Timestamptz
+  createdAt         DateTime      @default(now()) @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @db.Timestamptz
+
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  recorder Staff?   @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+  refunds  Refund[]
+
+  @@unique([provider, providerReference])
+  @@unique([id, bookingId]) // Refund relation target.
+  @@index([bookingId])
+  @@index([status, createdAt])
+}
+
+// Money returned for a payment, on the same booking. It goes back the way it was paid, through
+// the payment's provider, so it has no method or provider of its own. Created PENDING and moves
+// once to SUCCEEDED or FAILED; amounts are never edited. Refunds never exceed their payment, and
+// refunds of cash have no providerReference (API). CHECKs: amount > 0; succeededAt set exactly
+// when SUCCEEDED.
+model Refund {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  paymentId         String       @db.Uuid
+  bookingId         String       @db.Uuid
+  status            RefundStatus
+  amount            Int
+  providerReference String? // The provider's refund id; null for cash.
+  reason            String?
+  recorderId        String?      @db.Uuid // Staff who issued it; null when the system did.
+  succeededAt       DateTime?    @db.Timestamptz
+  createdAt         DateTime     @default(now()) @db.Timestamptz
+  updatedAt         DateTime     @updatedAt @db.Timestamptz
+
+  payment  Payment @relation(fields: [paymentId, bookingId], references: [id, bookingId], onDelete: Restrict)
+  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  recorder Staff?  @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, providerReference]) // Repeated webhooks.
+  @@index([bookingId])
+}

@@ -21,6 +21,8 @@ model Staff {
   events        VenueEvent[]
   bookings      Booking[] // Entered on a customer's behalf.
   bookingEvents BookingEvent[]
+  payments      Payment[] // Cash recorded.
+  refunds       Refund[] // Refunds issued.
 }
 
 // Same as AdminSession.

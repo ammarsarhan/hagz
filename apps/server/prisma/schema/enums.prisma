@@ -134,3 +134,30 @@ enum BookingChargeType {
   AMENITY
   DISCOUNT
 }
+
+// Payments
+enum PaymentMode {
+  MANUAL
+  DEPOSIT // Deposit on platform, the rest is manual.
+  PLATFORM
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  WALLET // Mobile wallets, e.g. Vodafone Cash.
+  FAWRY // Kiosk reference code.
+}
+
+enum PaymentStatus {
+  PENDING // Waiting on the provider, or a Fawry code not yet paid.
+  SUCCEEDED
+  FAILED
+  EXPIRED // A Fawry code or checkout not paid in time.
+}
+
+enum RefundStatus {
+  PENDING // Sent to the provider, not yet confirmed.
+  SUCCEEDED
+  FAILED
+}
