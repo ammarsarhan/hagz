@@ -1,23 +1,24 @@
-// Marketplace matches the location's.
+// Marketplace matches the location's. CHECK: commissionRate 0–10000.
 model Venue {
-  id            String                                 @id @default(uuid(7)) @db.Uuid
-  marketplaceId String                                 @db.Uuid
-  locationId    String                                 @db.Uuid
-  slug          String                                 @unique // /venue/[slug]
-  status        VenueStatus                            @default(DRAFT)
-  placeId       String?
-  phone         String? // E.164, shown to customers.
-  taxNumber     String? // Set: charges the marketplace's VAT.
+  id             String                                 @id @default(uuid(7)) @db.Uuid
+  marketplaceId  String                                 @db.Uuid
+  locationId     String                                 @db.Uuid
+  slug           String                                 @unique // /venue/[slug]
+  status         VenueStatus                            @default(DRAFT)
+  placeId        String?
+  phone          String? // E.164, shown to customers.
+  taxNumber      String? // Set: charges the marketplace's VAT.
+  commissionRate Int? // Admin override, basis points.
   // Map pin, written with raw SQL. Optional for drafts and Prisma creates.
-  coordinates   Unsupported("geography(Point, 4326)")?
+  coordinates    Unsupported("geography(Point, 4326)")?
   // Recalculated from visible reviews with every review change.
-  averageRating Decimal?                               @db.Decimal(3, 2) // Null until the first review.
-  reviewCount   Int                                    @default(0)
-  createdAt     DateTime                               @default(now()) @db.Timestamptz
-  updatedAt     DateTime                               @updatedAt @db.Timestamptz
+  averageRating  Decimal?                               @db.Decimal(3, 2) // Null until the first review.
+  reviewCount    Int                                    @default(0)
+  createdAt      DateTime                               @default(now()) @db.Timestamptz
+  updatedAt      DateTime                               @updatedAt @db.Timestamptz
 
-  marketplace  Marketplace        @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
-  location     Location           @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  marketplace  Marketplace         @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
+  location     Location            @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
   translations VenueTranslation[]
   memberships  VenueMembership[]
   invitations  VenueInvitation[]
@@ -30,6 +31,9 @@ model Venue {
   grounds      Ground[]
   layout       VenueLayout?
   bookings     Booking[]
+  destinations PayoutDestination[]
+  payouts      Payout[]
+  ledger       LedgerEntry[]
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)

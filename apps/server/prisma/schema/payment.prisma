@@ -1,7 +1,7 @@
 // Money that moved, never prices. Online rows start PENDING and settle once; staff record cash as
 // SUCCEEDED. Paid = SUCCEEDED payments − SUCCEEDED refunds.
 // CHECKs: amount > 0; provider set exactly when not CASH; CASH has no reference or brand, is
-// SUCCEEDED and has a recorderId; succeededAt set exactly when SUCCEEDED.
+// SUCCEEDED and has a recorderId; succeededAt set exactly when SUCCEEDED; providerFee >= 0.
 model Payment {
   id                String        @id @default(uuid(7)) @db.Uuid
   bookingId         String        @db.Uuid
@@ -11,14 +11,16 @@ model Payment {
   brand             String? // e.g. visa, mada, fawry.
   provider          String? // e.g. paymob, tap.
   providerReference String? // Transaction id, or the REFERENCE code.
+  providerFee       Int? // Absorbed by Hagz.
   recorderId        String?       @db.Uuid // Staff who recorded cash.
   succeededAt       DateTime?     @db.Timestamptz
   createdAt         DateTime      @default(now()) @db.Timestamptz
   updatedAt         DateTime      @updatedAt @db.Timestamptz
 
-  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  recorder Staff?   @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+  booking  Booking      @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  recorder Staff?       @relation(fields: [recorderId], references: [id], onDelete: Restrict)
   refunds  Refund[]
+  ledger   LedgerEntry?
 
   @@unique([provider, providerReference])
   @@index([bookingId])
@@ -39,8 +41,9 @@ model Refund {
   createdAt         DateTime     @default(now()) @db.Timestamptz
   updatedAt         DateTime     @updatedAt @db.Timestamptz
 
-  payment  Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  recorder Staff?  @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+  payment  Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  recorder Staff?       @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+  ledger   LedgerEntry?
 
   @@unique([paymentId, providerReference]) // Repeated webhooks.
 }

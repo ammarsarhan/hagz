@@ -163,3 +163,24 @@ enum RefundStatus {
   SUCCEEDED
   FAILED
 }
+
+// Payouts
+enum PayoutMethod {
+  BANK_ACCOUNT // IBAN.
+  WALLET // e.g. Vodafone Cash.
+  INSTAPAY
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum LedgerType {
+  COLLECTION // Online payment collected.
+  REFUND // Online refund.
+  COMMISSION
+  PAYOUT
+  ADJUSTMENT // By an admin.
+}

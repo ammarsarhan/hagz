@@ -1,23 +1,25 @@
 // Back-to-back slots on one ground (via GroundSlot.bookingId), for a VenueCustomer. groundId,
 // startsAt and endsAt keep its history after release. Minor units. Never deleted.
-// CHECKs: endsAt > startsAt, total >= 0, depositAmount 1–total, set exactly when DEPOSIT.
+// CHECKs: endsAt > startsAt, total >= 0, depositAmount 1–total, set exactly when DEPOSIT;
+// commissionRate 0–10000, and 0 when creatorId is set.
 model Booking {
-  id            String        @id @default(uuid(7)) @db.Uuid
-  venueId       String        @db.Uuid
-  groundId      String        @db.Uuid
-  customerId    String        @db.Uuid
-  creatorId     String?       @db.Uuid // Staff who entered it.
-  code          String        @unique // Share link, /b/[code].
-  status        BookingStatus
-  startsAt      DateTime      @db.Timestamptz
-  endsAt        DateTime      @db.Timestamptz
-  total         Int // Sum of its charges, VAT included.
-  depositAmount Int? // Due online; the rest is manual.
-  paymentMode   PaymentMode // Copied from VenueSettings.
-  note          String? // From the customer.
-  expiresAt     DateTime?     @db.Timestamptz // PENDING and HELD release their slots after this.
-  createdAt     DateTime      @default(now()) @db.Timestamptz
-  updatedAt     DateTime      @updatedAt @db.Timestamptz
+  id             String        @id @default(uuid(7)) @db.Uuid
+  venueId        String        @db.Uuid
+  groundId       String        @db.Uuid
+  customerId     String        @db.Uuid
+  creatorId      String?       @db.Uuid // Staff who entered it.
+  code           String        @unique // Share link, /b/[code].
+  status         BookingStatus
+  startsAt       DateTime      @db.Timestamptz
+  endsAt         DateTime      @db.Timestamptz
+  total          Int // Sum of its charges, VAT included.
+  depositAmount  Int? // Due online; the rest is manual.
+  paymentMode    PaymentMode // Copied from VenueSettings.
+  commissionRate Int // Basis points, copied.
+  note           String? // From the customer.
+  expiresAt      DateTime?     @db.Timestamptz // PENDING and HELD release their slots after this.
+  createdAt      DateTime      @default(now()) @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @db.Timestamptz
 
   venue    Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
   ground   Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
@@ -27,6 +29,7 @@ model Booking {
   charges  BookingCharge[]
   payments Payment[]
   events   BookingEvent[]
+  ledger   LedgerEntry[]
 
   @@unique([id, venueId]) // GroundSlot relation target.
   @@index([venueId, startsAt])

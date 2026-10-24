@@ -1,0 +1,72 @@
+// Never edited: changes archive and add a row. One active per venue (partial index); not archived
+// while a payout to it is PENDING (API). CHECK: bankName set exactly when BANK_ACCOUNT.
+model PayoutDestination {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  venueId       String       @db.Uuid
+  method        PayoutMethod
+  holderName    String
+  bankName      String?
+  accountNumber String // IBAN, wallet number or InstaPay address.
+  verifiedAt    DateTime?    @db.Timestamptz // Unverified gets no payouts (API).
+  archivedAt    DateTime?    @db.Timestamptz
+  createdAt     DateTime     @default(now()) @db.Timestamptz
+
+  venue   Venue    @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  payouts Payout[]
+
+  @@unique([venueId], map: "PayoutDestination_active_key", where: { archivedAt: null })
+  @@unique([id, venueId]) // Payout relation target.
+}
+
+// Enters the ledger once PAID. CHECKs: amount > 0; paidAt set exactly when PAID.
+model Payout {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  venueId       String       @db.Uuid
+  destinationId String       @db.Uuid
+  status        PayoutStatus @default(PENDING)
+  amount        Int // Minor units.
+  reference     String? // Transfer reference.
+  creatorId     String?      @db.Uuid // Null when scheduled.
+  paidAt        DateTime?    @db.Timestamptz
+  createdAt     DateTime     @default(now()) @db.Timestamptz
+  updatedAt     DateTime     @updatedAt @db.Timestamptz
+
+  venue       Venue             @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  destination PayoutDestination @relation(fields: [destinationId, venueId], references: [id, venueId], onDelete: Restrict)
+  creator     Admin?            @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  ledger      LedgerEntry?
+
+  @@unique([id, venueId]) // Ledger relation target.
+  @@index([venueId, createdAt])
+  @@index([status])
+}
+
+// A venue's balance with Hagz, append-only: sum of amount; negative means the venue owes Hagz.
+// Each payment, refund, payout and commission enters once. CHECKs: only the type's own reference;
+// COLLECTION > 0; REFUND, COMMISSION, PAYOUT < 0; ADJUSTMENT != 0 with a note; taxAmount only on
+// COMMISSION, between amount and 0.
+model LedgerEntry {
+  id        String     @id @default(uuid(7)) @db.Uuid
+  venueId   String     @db.Uuid
+  type      LedgerType
+  amount    Int // Signed, minor units.
+  taxAmount Int        @default(0) // COMMISSION: Hagz's VAT.
+  bookingId String?    @db.Uuid // COMMISSION
+  paymentId String?    @unique @db.Uuid // COLLECTION
+  refundId  String?    @unique @db.Uuid // REFUND
+  payoutId  String?    @db.Uuid // PAYOUT
+  adminId   String?    @db.Uuid // ADJUSTMENT
+  note      String? // ADJUSTMENT: why.
+  createdAt DateTime   @default(now()) @db.Timestamptz
+
+  venue   Venue    @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  booking Booking? @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  refund  Refund?  @relation(fields: [refundId], references: [id], onDelete: Restrict)
+  payout  Payout?  @relation(fields: [payoutId, venueId], references: [id, venueId], onDelete: Restrict)
+  admin   Admin?   @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId], map: "LedgerEntry_commission_key", where: { type: "COMMISSION" })
+  @@unique([payoutId, venueId]) // One per payout.
+  @@index([venueId, createdAt])
+}

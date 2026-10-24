@@ -1,14 +1,15 @@
-// A country Hagz operates in. CHECK: taxRate 0–10000.
+// A country Hagz operates in. CHECKs: taxRate and commissionRate 0–10000.
 model Marketplace {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  code      String   @unique @db.Char(2) // ISO 3166-1 alpha-2
-  currency  String   @db.Char(3) // ISO 4217
-  dialCode  String // E.164 prefix
-  timezone  String // IANA
-  taxRate   Int      @default(0) // VAT in basis points (1400 = 14%).
-  isActive  Boolean  @default(false) // Hidden until launch.
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
+  id             String   @id @default(uuid(7)) @db.Uuid
+  code           String   @unique @db.Char(2) // ISO 3166-1 alpha-2
+  currency       String   @db.Char(3) // ISO 4217
+  dialCode       String // E.164 prefix
+  timezone       String // IANA
+  taxRate        Int      @default(0) // VAT in basis points (1400 = 14%).
+  commissionRate Int      @default(0) // Basis points.
+  isActive       Boolean  @default(false) // Hidden until launch.
+  createdAt      DateTime @default(now()) @db.Timestamptz
+  updatedAt      DateTime @updatedAt @db.Timestamptz
 
   translations MarketplaceTranslation[]
   locations    Location[]
