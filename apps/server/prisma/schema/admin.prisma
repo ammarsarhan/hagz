@@ -17,6 +17,8 @@ model Admin {
   invitation    AdminInvitation?  @relation("AcceptedAs")
   events        VenueEvent[]
   bookingEvents BookingEvent[]
+  payouts       Payout[]
+  adjustments   LedgerEntry[]
 }
 
 // One per device. SHA-256 of the refresh token, rotated on every refresh.
