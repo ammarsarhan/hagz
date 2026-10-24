@@ -1,22 +1,19 @@
-// A customer's booking at one venue: back-to-back slots on one ground, which point at it through
-// GroundSlot.bookingId. Always tied to a VenueCustomer, so walk-in and phone bookings staff enter
-// work the same way. groundId, startsAt and endsAt describe the booking on their own, so it keeps
-// its history after its slots are released. Amounts are in minor units of the marketplace
-// currency; the breakdown, VAT included, is in BookingCharge. Bookings are never deleted.
-// CHECKs: endsAt > startsAt, total >= 0, depositAmount set exactly when DEPOSIT and 1–total.
+// Back-to-back slots on one ground (via GroundSlot.bookingId), for a VenueCustomer. groundId,
+// startsAt and endsAt keep its history after release. Minor units. Never deleted.
+// CHECKs: endsAt > startsAt, total >= 0, depositAmount 1–total, set exactly when DEPOSIT.
 model Booking {
   id            String        @id @default(uuid(7)) @db.Uuid
   venueId       String        @db.Uuid
   groundId      String        @db.Uuid
   customerId    String        @db.Uuid
-  creatorId     String?       @db.Uuid // Staff who entered it; null when the customer booked.
-  code          String        @unique // Random public code for the share link, /b/[code].
+  creatorId     String?       @db.Uuid // Staff who entered it.
+  code          String        @unique // Share link, /b/[code].
   status        BookingStatus
   startsAt      DateTime      @db.Timestamptz
   endsAt        DateTime      @db.Timestamptz
   total         Int // Sum of its charges, VAT included.
-  depositAmount Int? // DEPOSIT: due online, copied at booking time; the rest is paid in cash.
-  paymentMode   PaymentMode // Copied from VenueSettings at booking time.
+  depositAmount Int? // Due online; the rest is manual.
+  paymentMode   PaymentMode // Copied from VenueSettings.
   note          String? // From the customer.
   expiresAt     DateTime?     @db.Timestamptz // PENDING and HELD release their slots after this.
   createdAt     DateTime      @default(now()) @db.Timestamptz
@@ -38,16 +35,10 @@ model Booking {
   @@index([status, expiresAt])
 }
 
-// The price at booking time, VAT included, one row per line: each hour, each amenity, and any
-// discount. Written once with the booking and never changed, so later price edits don't touch it;
-// Booking.total is their sum. Cancellations and refunds are not charges: they're handled by the
-// cancellation policy and the payment ledger, which records only money that actually moved.
-// One SLOT row per hour and one AMENITY row per option. Each line carries its own VAT, so lines
-// can be taxed differently, a discount lowers the VAT, and e-receipts get tax per item; the
-// booking's VAT is the sum of taxAmount.
-// CHECKs: SLOT has startsAt and tier, AMENITY has optionId (and pricing unless free), both with
-// amount >= 0; DISCOUNT has none of them and amount < 0. taxRate 0–10000; taxAmount has amount's
-// sign, is no bigger than it, and is 0 when taxRate is 0.
+// The price at booking time, one line per hour, amenity or discount, VAT included. Written once;
+// sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
+// CHECKs: SLOT has startsAt and tier, AMENITY has optionId (pricing unless free), both amount >= 0;
+// DISCOUNT has neither, amount < 0. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
 model BookingCharge {
   id        String            @id @default(uuid(7)) @db.Uuid
   bookingId String            @db.Uuid
@@ -55,9 +46,9 @@ model BookingCharge {
   startsAt  DateTime?         @db.Timestamptz // SLOT: the hour.
   tier      PriceTier? // SLOT
   optionId  String?           @db.Uuid // AMENITY
-  pricing   AmenityPricing? // AMENITY; null when free.
-  amount    Int // VAT included. Per-hour amenities already multiplied out. Negative for DISCOUNT.
-  taxRate   Int // Basis points: the marketplace's rate if the venue has a taxNumber, else 0.
+  pricing   AmenityPricing? // AMENITY; null if free.
+  amount    Int // Per-hour amenities multiplied out.
+  taxRate   Int // Basis points; the marketplace's if the venue has a taxNumber, else 0.
   taxAmount Int // The VAT inside amount.
   createdAt DateTime          @default(now()) @db.Timestamptz
 
@@ -69,13 +60,11 @@ model BookingCharge {
   @@index([optionId])
 }
 
-// Append-only booking history, written in the same transaction as the change. At most one actor;
-// none means the system (e.g. the expiry job). The migration adds
-// CHECK (num_nonnulls("staffId", "customerId", "adminId") <= 1).
+// Append-only, written with the change. No actor means the system. CHECK: at most one actor.
 model BookingEvent {
   id         String   @id @default(uuid(7)) @db.Uuid
   bookingId  String   @db.Uuid
-  type       String // The allowed list lives in the API.
+  type       String // Allowed list in the API.
   staffId    String?  @db.Uuid
   customerId String?  @db.Uuid
   adminId    String?  @db.Uuid

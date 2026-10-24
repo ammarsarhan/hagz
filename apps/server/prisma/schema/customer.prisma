@@ -1,9 +1,8 @@
-// Players. Phone + password (+ optional 2FA); phone verified over WhatsApp.
-// Guests can browse; booking needs an account.
+// Players. Phone + password (+ optional 2FA).
 model Customer {
   id               String        @id @default(uuid(7)) @db.Uuid
   name             String
-  phone            String?       @unique // E.164, e.g. +201001234567. Null only after deletion (migration CHECK).
+  phone            String?       @unique // E.164. Null only after deletion (CHECK).
   passwordHash     String
   avatarKey        String?
   twoFactorEnabled Boolean       @default(false)
@@ -16,7 +15,7 @@ model Customer {
 
   // Preferences
   language Language @default(AR)
-  timezone String // IANA, set at sign-up from the phone number's marketplace.
+  timezone String // IANA, from the phone's marketplace at sign-up.
 
   sessions      CustomerSession[]
   challenges    CustomerVerification[]

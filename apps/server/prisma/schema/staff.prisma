@@ -1,9 +1,8 @@
-// Dashboard users. Phone + password (+ optional 2FA); phone verified over WhatsApp.
-// Anyone can sign up; joining another venue needs a VenueInvitation.
+// Dashboard users. Phone + password (+ optional 2FA). Joining a venue needs a VenueInvitation.
 model Staff {
   id               String        @id @default(uuid(7)) @db.Uuid
   name             String
-  phone            String?       @unique // E.164, e.g. +201001234567. Null only after deletion (migration CHECK).
+  phone            String?       @unique // E.164. Null only after deletion (CHECK).
   passwordHash     String
   language         Language      @default(AR)
   twoFactorEnabled Boolean       @default(false)
@@ -22,7 +21,7 @@ model Staff {
   bookings      Booking[] // Entered on a customer's behalf.
   bookingEvents BookingEvent[]
   payments      Payment[] // Cash recorded.
-  refunds       Refund[] // Refunds issued.
+  refunds       Refund[] // Issued.
 }
 
 // Same as AdminSession.
@@ -42,8 +41,7 @@ model StaffSession {
   @@index([staffId])
 }
 
-// WhatsApp one-time code (stored hashed). Spent when consumed or out of attempts; recent rows
-// rate-limit resends.
+// WhatsApp one-time code, stored hashed. Recent rows rate-limit resends.
 model StaffVerification {
   id         String              @id @default(uuid(7)) @db.Uuid
   staffId    String              @db.Uuid

@@ -1,4 +1,4 @@
-// Marketplace must match the location's. The team, owner included, is in VenueMembership.
+// Marketplace matches the location's.
 model Venue {
   id            String                                 @id @default(uuid(7)) @db.Uuid
   marketplaceId String                                 @db.Uuid
@@ -6,11 +6,11 @@ model Venue {
   slug          String                                 @unique // /venue/[slug]
   status        VenueStatus                            @default(DRAFT)
   placeId       String?
-  phone         String? // E.164 contact number shown to customers.
-  taxNumber     String? // Tax registration number; set means the venue charges the marketplace's VAT.
-  // Owner's map pin, written with raw SQL. Optional for drafts (and so Prisma can create rows).
+  phone         String? // E.164, shown to customers.
+  taxNumber     String? // Set: charges the marketplace's VAT.
+  // Map pin, written with raw SQL. Optional for drafts and Prisma creates.
   coordinates   Unsupported("geography(Point, 4326)")?
-  // Recalculated from visible reviews in the same transaction as every review change.
+  // Recalculated from visible reviews with every review change.
   averageRating Decimal?                               @db.Decimal(3, 2) // Null until the first review.
   reviewCount   Int                                    @default(0)
   createdAt     DateTime                               @default(now()) @db.Timestamptz
@@ -38,7 +38,7 @@ model Venue {
   @@index([marketplaceId, averageRating])
 }
 
-// At least one language required (API); admins add the rest.
+// At least one language (API).
 model VenueTranslation {
   venueId     String   @db.Uuid
   language    Language
@@ -52,8 +52,7 @@ model VenueTranslation {
   @@index([language, name])
 }
 
-// One OWNER per venue (partial index). Create venues and transfer ownership in a transaction;
-// Restrict on staff keeps a venue from losing its owner.
+// One OWNER per venue (partial index). Restrict keeps a venue from losing its owner.
 model VenueMembership {
   venueId     String    @db.Uuid
   staffId     String    @db.Uuid
@@ -70,12 +69,12 @@ model VenueMembership {
   @@index([staffId])
 }
 
-// Single-use 48h join code for one phone; the acceptor's verified phone must match. One open code
-// per phone per venue (partial index); resending revokes the old one.
+// Single-use 48h join code; the acceptor's verified phone must match. One open code per phone per
+// venue (partial index).
 model VenueInvitation {
   id          String    @id @default(uuid(7)) @db.Uuid
   venueId     String    @db.Uuid
-  phone       String // E.164, matched exactly against Staff.phone.
+  phone       String // E.164, matched against Staff.phone.
   codeHash    String    @unique // HMAC-SHA256, so typed codes can be looked up.
   permissions Json // Defaults from VenueSettings.
   invitorId   String    @db.Uuid
@@ -91,27 +90,27 @@ model VenueInvitation {
   @@index([phone])
 }
 
-// One row per venue. CHECKs: depositPercent set exactly when DEPOSIT, 1–99; paymentWindow > 0.
+// CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0.
 model VenueSettings {
   venueId            String      @id @db.Uuid
   defaultPermissions Json // For new invitations.
   minimumNotice      Int         @default(60) // Minutes before kick-off that booking closes.
   autoConfirm        Boolean     @default(true) // False: staff approve each booking.
   paymentMode        PaymentMode @default(MANUAL)
-  depositPercent     Int? // DEPOSIT: share of the total paid online.
-  paymentWindow      Int? // Minutes a HELD booking waits for payment; null uses the platform default.
+  depositPercent     Int? // Share paid online.
+  paymentWindow      Int? // Minutes a HELD booking waits for payment; null = platform default.
   createdAt          DateTime    @default(now()) @db.Timestamptz
   updatedAt          DateTime    @updatedAt @db.Timestamptz
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 }
 
-// An amenity a venue offers; the option must be from the venue's marketplace. Free unless priced.
+// Option from the venue's marketplace. Free unless priced.
 model VenueAmenity {
   venueId       String          @db.Uuid
   optionId      String          @db.Uuid
   marketplaceId String          @db.Uuid
-  price         Int? // Minor units of the marketplace currency.
+  price         Int? // Minor units.
   pricing       AmenityPricing?
 
   venue  Venue         @relation(fields: [venueId, marketplaceId], references: [id, marketplaceId], onDelete: Cascade)
@@ -121,7 +120,7 @@ model VenueAmenity {
   @@index([optionId])
 }
 
-// Photos and videos in object storage. Lowest position is the cover.
+// Lowest position is the cover.
 model VenueMedia {
   id          String      @id @default(uuid(7)) @db.Uuid
   venueId     String      @db.Uuid
@@ -138,13 +137,11 @@ model VenueMedia {
   @@index([venueId, position])
 }
 
-// Append-only venue history, written in the same transaction as the change. Exactly one actor:
-// the migration adds CHECK (num_nonnulls("staffId", "adminId") = 1), which Prisma can't declare.
-// Actors are Restrict, not SetNull: accounts are soft-deleted, and SetNull would break the check.
+// Append-only, written with the change. CHECK: exactly one actor (so Restrict, not SetNull).
 model VenueEvent {
   id        String   @id @default(uuid(7)) @db.Uuid
   venueId   String   @db.Uuid
-  type      String // The allowed list lives in the API.
+  type      String // Allowed list in the API.
   staffId   String?  @db.Uuid
   adminId   String?  @db.Uuid
   data      Json?
@@ -170,9 +167,8 @@ model VenueFavorite {
   @@index([venueId])
 }
 
-// A customer as a venue sees them: an account holder, or a walk-in/phone customer staff entered
-// (no customerId), linked by phone if they sign up later. Reviews hang off it, loyalty will later.
-// Customers are soft-deleted, so Restrict keeps the venue's history.
+// A customer as a venue sees them: an account, or a walk-in staff entered (no customerId), linked
+// by phone on sign-up. Restrict keeps the venue's history.
 model VenueCustomer {
   id         String   @id @default(uuid(7)) @db.Uuid
   venueId    String   @db.Uuid
@@ -193,8 +189,8 @@ model VenueCustomer {
   @@index([customerId])
 }
 
-// One per VenueCustomer, editable; not translated. Needs an account and, once bookings exist, a
-// completed booking. The migration adds CHECK (rating BETWEEN 1 AND 5).
+// One per VenueCustomer, editable. Needs an account and a completed booking (API).
+// CHECK: rating 1–5.
 model VenueReview {
   customerId String    @db.Uuid
   venueId    String    @db.Uuid
