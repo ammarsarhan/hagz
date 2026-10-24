@@ -27,6 +27,7 @@ model Venue {
   favorites    VenueFavorite[]
   customers    VenueCustomer[]
   grounds      Ground[]
+  layout       VenueLayout?
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)
