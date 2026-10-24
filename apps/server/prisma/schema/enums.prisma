@@ -149,6 +149,15 @@ enum BookingChargeType {
   SLOT
   AMENITY
   DISCOUNT
+  REWARD // Loyalty.
+}
+
+// Loyalty
+enum LoyaltyCardStatus {
+  OPEN
+  EARNED // Free booking available.
+  REDEEMED
+  EXPIRED
 }
 
 // Payments
