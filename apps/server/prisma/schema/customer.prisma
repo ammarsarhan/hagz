@@ -32,6 +32,7 @@ model CustomerSession {
   refreshTokenHash String    @unique
   userAgent        String?
   ipAddress        String?
+  pushToken        String?   @unique // Expo; cleared on revoke.
   lastUsedAt       DateTime  @default(now()) @db.Timestamptz
   expiresAt        DateTime  @db.Timestamptz
   revokedAt        DateTime? @db.Timestamptz

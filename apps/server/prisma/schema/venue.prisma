@@ -35,6 +35,7 @@ model Venue {
   payouts       Payout[]
   ledger        LedgerEntry[]
   notifications Notification[]
+  discounts     VenueDiscount[]
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)
@@ -206,6 +207,7 @@ model VenueCustomer {
 model VenueReview {
   customerId String    @db.Uuid
   venueId    String    @db.Uuid
+  bookingId  String    @unique @db.Uuid // Completed booking that allowed it.
   rating     Int       @db.SmallInt
   comment    String?
   language   Language? // Language of the comment.
@@ -214,7 +216,9 @@ model VenueReview {
   updatedAt  DateTime  @updatedAt @db.Timestamptz
 
   customer VenueCustomer @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Cascade)
+  booking  Booking       @relation(fields: [bookingId, customerId], references: [id, customerId], onDelete: Restrict)
 
   @@id([customerId, venueId])
+  @@unique([bookingId, customerId]) // For Prisma.
   @@index([venueId, createdAt])
 }

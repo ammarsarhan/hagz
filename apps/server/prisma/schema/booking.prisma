@@ -37,9 +37,10 @@ model Booking {
   notifications Notification[]
   stamp         LoyaltyStamp?   @relation("StampBooking")
   card          LoyaltyCard?    @relation("CardBooking") // Free via a card.
+  review        VenueReview?
 
   @@unique([id, venueId]) // GroundSlot relation target.
-  @@unique([id, customerId]) // Loyalty relation target.
+  @@unique([id, customerId]) // Loyalty and review relation target.
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
@@ -63,27 +64,32 @@ model Cancellation {
 // The price at booking time, one line per hour, amenity, discount or reward, VAT included. Written
 // once; sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
 // CHECKs: SLOT has startsAt and tier, AMENITY has optionId (pricing unless free), both amount >= 0;
-// DISCOUNT and REWARD (first two slot hours) have neither, amount < 0. taxRate 0–10000; taxAmount
-// within amount, same sign, 0 at 0%.
+// DISCOUNT (with discountId) and REWARD (first two slot hours) have neither, amount < 0, one each
+// per booking. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
 model BookingCharge {
-  id        String            @id @default(uuid(7)) @db.Uuid
-  bookingId String            @db.Uuid
-  type      BookingChargeType
-  startsAt  DateTime?         @db.Timestamptz // SLOT: the hour.
-  tier      PriceTier? // SLOT
-  optionId  String?           @db.Uuid // AMENITY
-  pricing   AmenityPricing? // AMENITY; null if free.
-  amount    Int // Per-hour amenities multiplied out.
-  taxRate   Int // Basis points; the marketplace's if the venue has a taxNumber, else 0.
-  taxAmount Int // The VAT inside amount.
-  createdAt DateTime          @default(now()) @db.Timestamptz
+  id         String            @id @default(uuid(7)) @db.Uuid
+  bookingId  String            @db.Uuid
+  type       BookingChargeType
+  startsAt   DateTime?         @db.Timestamptz // SLOT: the hour.
+  tier       PriceTier? // SLOT
+  optionId   String?           @db.Uuid // AMENITY
+  discountId String?           @db.Uuid // DISCOUNT
+  pricing    AmenityPricing? // AMENITY; null if free.
+  amount     Int // Per-hour amenities multiplied out.
+  taxRate    Int // Basis points; the marketplace's if the venue has a taxNumber, else 0.
+  taxAmount  Int // The VAT inside amount.
+  createdAt  DateTime          @default(now()) @db.Timestamptz
 
-  booking Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  option  AmenityOption? @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  booking  Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  option   AmenityOption? @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  discount VenueDiscount? @relation(fields: [discountId], references: [id], onDelete: Restrict)
 
   @@unique([bookingId, startsAt])
   @@unique([bookingId, optionId])
+  @@unique([bookingId], map: "BookingCharge_discount_key", where: { type: "DISCOUNT" })
+  @@unique([bookingId], map: "BookingCharge_reward_key", where: { type: "REWARD" })
   @@index([optionId])
+  @@index([discountId])
 }
 
 // Append-only, written with the change. No actor means the system. CHECK: at most one actor.
