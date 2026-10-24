@@ -1,0 +1,49 @@
+// One message for one recipient, rendered from type + data in their language at send time.
+// CHECK: exactly one recipient.
+model Notification {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  customerId String?   @db.Uuid
+  staffId    String?   @db.Uuid
+  adminId    String?   @db.Uuid
+  type       String // Allowed list in the API.
+  data       Json? // Template parameters.
+  bookingId  String?   @db.Uuid
+  venueId    String?   @db.Uuid
+  readAt     DateTime? @db.Timestamptz // In-app.
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+
+  customer   Customer?              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff      Staff?                 @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  admin      Admin?                 @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  booking    Booking?               @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  venue      Venue?                 @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  deliveries NotificationDelivery[]
+
+  @@index([customerId, createdAt])
+  @@index([staffId, createdAt])
+  @@index([adminId, createdAt])
+}
+
+// One per channel per notification, updated by the send worker and provider webhooks.
+// CHECKs: attempts >= 0; sentAt set unless PENDING (optional when FAILED); deliveredAt set
+// exactly when DELIVERED.
+model NotificationDelivery {
+  id                String              @id @default(uuid(7)) @db.Uuid
+  notificationId    String              @db.Uuid
+  channel           NotificationChannel
+  status            DeliveryStatus      @default(PENDING)
+  provider          String?
+  providerReference String? // Provider's message id.
+  attempts          Int                 @default(0)
+  error             String? // Last failure.
+  sentAt            DateTime?           @db.Timestamptz
+  deliveredAt       DateTime?           @db.Timestamptz
+  createdAt         DateTime            @default(now()) @db.Timestamptz
+  updatedAt         DateTime            @updatedAt @db.Timestamptz
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, channel])
+  @@unique([provider, providerReference]) // Webhook dedupe.
+  @@index([status, createdAt])
+}
