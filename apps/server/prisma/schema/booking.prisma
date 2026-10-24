@@ -2,9 +2,8 @@
 // GroundSlot.bookingId. Always tied to a VenueCustomer, so walk-in and phone bookings staff enter
 // work the same way. groundId, startsAt and endsAt describe the booking on their own, so it keeps
 // its history after its slots are released. Amounts are in minor units of the marketplace
-// currency; the breakdown is in BookingCharge. Bookings are never deleted.
-// CHECKs: endsAt > startsAt, total >= 0, depositAmount set exactly when DEPOSIT and 1–total;
-// taxRate 0–10000, taxAmount 0–total and 0 when taxRate is 0.
+// currency; the breakdown, VAT included, is in BookingCharge. Bookings are never deleted.
+// CHECKs: endsAt > startsAt, total >= 0, depositAmount set exactly when DEPOSIT and 1–total.
 model Booking {
   id            String        @id @default(uuid(7)) @db.Uuid
   venueId       String        @db.Uuid
@@ -16,8 +15,6 @@ model Booking {
   startsAt      DateTime      @db.Timestamptz
   endsAt        DateTime      @db.Timestamptz
   total         Int // Sum of its charges, VAT included.
-  taxRate       Int // Basis points, copied at booking time; 0 if the venue has no taxNumber.
-  taxAmount     Int // The VAT inside total.
   depositAmount Int? // DEPOSIT: due online, copied at booking time; the rest is paid in cash.
   paymentMode   PaymentMode // Copied from VenueSettings at booking time.
   note          String? // From the customer.
@@ -45,9 +42,12 @@ model Booking {
 // discount. Written once with the booking and never changed, so later price edits don't touch it;
 // Booking.total is their sum. Cancellations and refunds are not charges: they're handled by the
 // cancellation policy and the payment ledger, which records only money that actually moved.
-// One SLOT row per hour and one AMENITY row per option.
-// CHECK: SLOT has startsAt and tier, AMENITY has optionId (and pricing unless free), both with
-// amount >= 0; DISCOUNT has none of them and amount < 0.
+// One SLOT row per hour and one AMENITY row per option. Each line carries its own VAT, so lines
+// can be taxed differently, a discount lowers the VAT, and e-receipts get tax per item; the
+// booking's VAT is the sum of taxAmount.
+// CHECKs: SLOT has startsAt and tier, AMENITY has optionId (and pricing unless free), both with
+// amount >= 0; DISCOUNT has none of them and amount < 0. taxRate 0–10000; taxAmount has amount's
+// sign, is no bigger than it, and is 0 when taxRate is 0.
 model BookingCharge {
   id        String            @id @default(uuid(7)) @db.Uuid
   bookingId String            @db.Uuid
@@ -56,7 +56,9 @@ model BookingCharge {
   tier      PriceTier? // SLOT
   optionId  String?           @db.Uuid // AMENITY
   pricing   AmenityPricing? // AMENITY; null when free.
-  amount    Int // Per-hour amenities already multiplied out. Negative for DISCOUNT.
+  amount    Int // VAT included. Per-hour amenities already multiplied out. Negative for DISCOUNT.
+  taxRate   Int // Basis points: the marketplace's rate if the venue has a taxNumber, else 0.
+  taxAmount Int // The VAT inside amount.
   createdAt DateTime          @default(now()) @db.Timestamptz
 
   booking Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
