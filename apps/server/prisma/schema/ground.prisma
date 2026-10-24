@@ -20,8 +20,9 @@ model Ground {
   schedules    GroundSchedule[]
   slots        GroundSlot[]
   placement    VenueLayoutItem?
+  bookings     Booking[]
 
-  @@unique([id, venueId]) // GroundSlot relation target.
+  @@unique([id, venueId]) // GroundSlot and Booking relation target.
   @@index([venueId, position])
 }
 
@@ -70,8 +71,8 @@ model GroundSchedule {
 // re-prices or deletes them (AVAILABLE ones only). Staff can block any slot, and bulk-edit or add
 // slots for special occasions, which marks them isManual so regeneration leaves them alone. An
 // AVAILABLE, non-manual slot with an older scheduleVersion than its ground's is stale. venueId is
-// denormalized for venue-wide availability, enforced to match the ground's.
-// CHECKs: endsAt > startsAt, startsAt <= now() + 90 days.
+// denormalized for venue-wide availability, enforced to match the ground's (and the booking's).
+// CHECKs: endsAt > startsAt, startsAt <= now() + 90 days, bookingId is set exactly when HELD or BOOKED.
 model GroundSlot {
   id              String     @id @default(uuid(7)) @db.Uuid
   groundId        String     @db.Uuid
@@ -83,11 +84,14 @@ model GroundSlot {
   status          SlotStatus @default(AVAILABLE)
   isManual        Boolean    @default(false)
   scheduleVersion Int // GroundSettings.scheduleVersion it was generated from.
+  bookingId       String?    @db.Uuid // Set while HELD or BOOKED; cleared when the booking is cancelled or expires.
   createdAt       DateTime   @default(now()) @db.Timestamptz
   updatedAt       DateTime   @updatedAt @db.Timestamptz
 
-  ground Ground @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+  ground  Ground   @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
 
   @@unique([groundId, startsAt])
   @@index([venueId, startsAt])
+  @@index([bookingId])
 }

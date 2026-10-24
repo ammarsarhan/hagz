@@ -18,10 +18,11 @@ model Customer {
   language Language @default(AR)
   timezone String // IANA, set at sign-up from the phone number's marketplace.
 
-  sessions   CustomerSession[]
-  challenges CustomerVerification[]
-  favorites  VenueFavorite[]
-  venues     VenueCustomer[]
+  sessions      CustomerSession[]
+  challenges    CustomerVerification[]
+  favorites     VenueFavorite[]
+  venues        VenueCustomer[]
+  bookingEvents BookingEvent[]
 }
 
 // Same as StaffSession.

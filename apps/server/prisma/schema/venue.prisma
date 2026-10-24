@@ -28,6 +28,7 @@ model Venue {
   customers    VenueCustomer[]
   grounds      Ground[]
   layout       VenueLayout?
+  bookings     Booking[]
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)
@@ -180,10 +181,11 @@ model VenueCustomer {
   venue    Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
   customer Customer?    @relation(fields: [customerId], references: [id], onDelete: Restrict)
   review   VenueReview?
+  bookings Booking[]
 
   @@unique([venueId, customerId])
   @@unique([venueId, phone])
-  @@unique([id, venueId]) // VenueReview relation target.
+  @@unique([id, venueId]) // VenueReview and Booking relation target.
   @@index([customerId])
 }
 

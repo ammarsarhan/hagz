@@ -10,6 +10,7 @@ model AmenityOption {
   marketplace  Marketplace          @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
   translations AmenityTranslation[]
   venues       VenueAmenity[]
+  charges      BookingCharge[]
 
   @@unique([marketplaceId, key])
   @@unique([id, marketplaceId])
