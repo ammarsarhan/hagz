@@ -25,18 +25,6 @@ model MarketplaceTranslation {
   @@id([marketplaceId, language])
 }
 
-enum Locality {
-  REGION // Saudi Arabia
-  EMIRATE // UAE
-  GOVERNORATE // Egypt, Kuwait, Bahrain, Oman; under REGION in Saudi Arabia
-  MUNICIPALITY // Qatar
-  WILAYAT // Oman
-  CITY
-  DISTRICT
-  AREA
-  NEIGHBORHOOD
-}
-
 // Location tree node, e.g. Egypt → Cairo → Nasr City. The parent must share the marketplace.
 model Location {
   id            String   @id @default(uuid(7)) @db.Uuid
