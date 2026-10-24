@@ -117,3 +117,21 @@ enum GroundOrientation {
   HORIZONTAL
   VERTICAL // Footprint width and height swapped.
 }
+
+// Bookings
+enum BookingStatus {
+  PENDING // Waiting for staff approval (VenueSettings.autoConfirm off).
+  HELD // Held until expiresAt.
+  CONFIRMED
+  CANCELLED
+  EXPIRED // Not approved or paid in time.
+  COMPLETED
+  NO_SHOW
+}
+
+enum BookingChargeType {
+  SLOT
+  AMENITY
+  DISCOUNT
+  CANCELLATION // The part of the price a cancellation waives.
+}

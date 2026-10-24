@@ -13,10 +13,11 @@ model Admin {
   createdAt       DateTime      @default(now()) @db.Timestamptz
   updatedAt       DateTime      @updatedAt @db.Timestamptz
 
-  sessions   AdminSession[]
-  invites    AdminInvitation[] @relation("InvitedBy")
-  invitation AdminInvitation?  @relation("AcceptedAs")
-  events     VenueEvent[]
+  sessions      AdminSession[]
+  invites       AdminInvitation[] @relation("InvitedBy")
+  invitation    AdminInvitation?  @relation("AcceptedAs")
+  events        VenueEvent[]
+  bookingEvents BookingEvent[]
 }
 
 // One row per device. Stores a SHA-256 hash of the refresh token, rotated on every refresh.
