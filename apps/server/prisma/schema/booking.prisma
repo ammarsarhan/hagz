@@ -1,0 +1,112 @@
+// Back-to-back slots on one ground (via GroundSlot.bookingId), for a VenueCustomer. groundId,
+// startsAt and endsAt keep its history after release. Minor units. Never deleted.
+// CHECKs: endsAt > startsAt, total >= 0, depositAmount 1–total, set exactly when DEPOSIT;
+// commissionRate 0–10000, and 0 when creatorId is set; cancellationTiers is an array.
+model Booking {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  venueId            String             @db.Uuid
+  groundId           String             @db.Uuid
+  customerId         String             @db.Uuid
+  creatorId          String?            @db.Uuid // Staff who entered it.
+  code               String             @unique // Share link, /b/[code].
+  status             BookingStatus
+  startsAt           DateTime           @db.Timestamptz
+  endsAt             DateTime           @db.Timestamptz
+  note               String? // From the customer.
+  expiresAt          DateTime?          @db.Timestamptz // PENDING and HELD release slots after this.
+  // Terms copied at booking time; never updated.
+  total              Int // Sum of its charges, VAT included.
+  depositAmount      Int? // Due online; the rest is manual.
+  paymentMode        PaymentMode // From VenueSettings.
+  commissionRate     Int // Basis points.
+  cancellationPolicy CancellationPolicy
+  cancellationTiers  Json // Presets resolved: refund % by hours of notice.
+  createdAt          DateTime           @default(now()) @db.Timestamptz
+  updatedAt          DateTime           @updatedAt @db.Timestamptz
+
+  venue         Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  ground        Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
+  customer      VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
+  creator       Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  slots         GroundSlot[]
+  charges       BookingCharge[]
+  payments      Payment[]
+  events        BookingEvent[]
+  cancellation  Cancellation?
+  ledger        LedgerEntry[]
+  notifications Notification[]
+  stamp         LoyaltyStamp?   @relation("StampBooking")
+  card          LoyaltyCard?    @relation("CardBooking") // Free via a card.
+  review        VenueReview?
+
+  @@unique([id, venueId]) // GroundSlot relation target.
+  @@unique([id, customerId]) // Loyalty and review relation target.
+  @@index([venueId, startsAt])
+  @@index([groundId, startsAt])
+  @@index([customerId, startsAt])
+  @@index([status, expiresAt])
+}
+
+// Why and how a CANCELLED booking was cancelled; who did it is its CANCELLED BookingEvent. Players
+// get the booking's tier for their notice; venue cancellations always refund in full. Refunds are
+// Refund rows. CHECKs: refundPercent 0–100, and 100 for VENUE; refundAmount >= 0.
+model Cancellation {
+  bookingId     String            @id @db.Uuid
+  initiator     CancellationActor
+  reason        String?
+  refundPercent Int
+  refundAmount  Int // Minor units.
+  createdAt     DateTime          @default(now()) @db.Timestamptz
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+}
+
+// The price at booking time, one line per hour, amenity, discount or reward, VAT included. Written
+// once; sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
+// CHECKs: SLOT has startsAt and tier, AMENITY has optionId (pricing unless free), both amount >= 0;
+// DISCOUNT (with discountId) and REWARD (first two slot hours) have neither, amount < 0, one each
+// per booking. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
+model BookingCharge {
+  id         String            @id @default(uuid(7)) @db.Uuid
+  bookingId  String            @db.Uuid
+  type       BookingChargeType
+  startsAt   DateTime?         @db.Timestamptz // SLOT: the hour.
+  tier       PriceTier? // SLOT
+  optionId   String?           @db.Uuid // AMENITY
+  discountId String?           @db.Uuid // DISCOUNT
+  pricing    AmenityPricing? // AMENITY; null if free.
+  amount     Int // Per-hour amenities multiplied out.
+  taxRate    Int // Basis points; the marketplace's if the venue has a taxNumber, else 0.
+  taxAmount  Int // The VAT inside amount.
+  createdAt  DateTime          @default(now()) @db.Timestamptz
+
+  booking  Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  option   AmenityOption? @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  discount VenueDiscount? @relation(fields: [discountId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, startsAt])
+  @@unique([bookingId, optionId])
+  @@unique([bookingId], map: "BookingCharge_discount_key", where: { type: "DISCOUNT" })
+  @@unique([bookingId], map: "BookingCharge_reward_key", where: { type: "REWARD" })
+  @@index([optionId])
+  @@index([discountId])
+}
+
+// Append-only, written with the change. No actor means the system. CHECK: at most one actor.
+model BookingEvent {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  bookingId  String   @db.Uuid
+  type       String // Allowed list in the API.
+  staffId    String?  @db.Uuid
+  customerId String?  @db.Uuid
+  adminId    String?  @db.Uuid
+  data       Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  staff    Staff?    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  admin    Admin?    @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, createdAt])
+}

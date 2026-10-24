@@ -1,0 +1,23 @@
+// A venue's discount code, created and revoked by staff. Takes percent or amount off the slot
+// hours, once per booking; uses are its DISCOUNT charges. Stored uppercase, typed case-insensitively.
+// CHECKs: code is uppercase; exactly one of percent 1–100 or amount > 0; maximumUses > 0.
+model VenueDiscount {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  venueId     String    @db.Uuid
+  code        String
+  percent     Int?
+  amount      Int? // Minor units.
+  maximumUses Int? // Null = unlimited.
+  expiresAt   DateTime? @db.Timestamptz
+  revokedAt   DateTime? @db.Timestamptz
+  creatorId   String    @db.Uuid
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @db.Timestamptz
+
+  venue   Venue           @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  creator Staff           @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  charges BookingCharge[]
+
+  @@unique([venueId, code])
+  @@index([creatorId])
+}

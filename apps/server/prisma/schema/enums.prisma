@@ -1,0 +1,225 @@
+// Shared
+enum Language {
+  EN
+  AR
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED // Temporary.
+  BANNED // Permanent.
+}
+
+// WhatsApp code purpose.
+enum VerificationPurpose {
+  PHONE
+  TWO_FACTOR
+  PASSWORD_RESET
+}
+
+// Notifications
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+// Locations
+enum Locality {
+  REGION // Saudi Arabia
+  EMIRATE // UAE
+  GOVERNORATE // Egypt, Kuwait, Bahrain, Oman; under REGION in Saudi Arabia
+  MUNICIPALITY // Qatar
+  WILAYAT // Oman
+  CITY
+  DISTRICT
+  AREA
+  NEIGHBORHOOD
+}
+
+// Venues
+enum VenueStatus {
+  DRAFT // Owner setting up.
+  SUBMITTED // Awaiting review.
+  PROVISIONING // Approved, not yet live.
+  LIVE // Bookable.
+  MAINTENANCE // Temporarily unbookable.
+}
+
+enum VenueRole {
+  OWNER
+  MEMBER
+}
+
+enum AmenityPricing {
+  PER_HOUR
+  PER_BOOKING
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaStatus {
+  PENDING // Presigned upload issued, not yet confirmed.
+  READY
+}
+
+// Grounds
+enum GroundSport {
+  FOOTBALL
+  PADEL
+  TENNIS
+  BASKETBALL
+  VOLLEYBALL
+}
+
+enum GroundSize {
+  FIVE_A_SIDE
+  SEVEN_A_SIDE
+  ELEVEN_A_SIDE
+  STANDARD // Sports without size variants.
+}
+
+enum GroundSurface {
+  NATURAL_GRASS
+  ARTIFICIAL_TURF
+  HARD_WOOD
+  HARD_COURT
+  CLAY
+  OTHER
+}
+
+enum GroundStatus {
+  ACTIVE
+  MAINTENANCE // Temporarily unbookable.
+  DELETED // Kept for booking history.
+}
+
+enum PriceTier {
+  BASE
+  PEAK
+  DISCOUNT
+}
+
+enum SlotStatus {
+  AVAILABLE
+  HELD // Reserved while a booking awaits payment.
+  BOOKED
+  BLOCKED // Closed by staff.
+}
+
+// Layouts
+enum LayoutItemType {
+  GROUND
+  CAFE
+  TOILETS
+  CHANGING_ROOMS
+  PARKING
+  SEATING
+}
+
+enum GroundOrientation {
+  HORIZONTAL
+  VERTICAL // Footprint width and height swapped.
+}
+
+// Bookings
+enum BookingStatus {
+  PENDING // Awaiting staff approval.
+  HELD // Awaiting payment until expiresAt.
+  CONFIRMED
+  CANCELLED
+  EXPIRED // Not approved or paid in time.
+  COMPLETED
+  NO_SHOW
+}
+
+enum BookingChargeType {
+  SLOT
+  AMENITY
+  DISCOUNT
+  REWARD // Loyalty.
+}
+
+// Loyalty
+enum LoyaltyCardStatus {
+  OPEN
+  EARNED // Free booking available.
+  REDEEMED
+  EXPIRED
+}
+
+// Payments
+enum PaymentMode {
+  MANUAL
+  DEPOSIT // Deposit online, the rest manual.
+  PLATFORM
+}
+
+// Categories; the scheme is Payment.brand.
+enum PaymentMethod {
+  CASH
+  CARD // e.g. Visa, mada, KNET, Apple Pay.
+  WALLET // e.g. Vodafone Cash, STC Pay.
+  REFERENCE // Code paid at a kiosk or bank, e.g. Fawry.
+  BNPL // Buy now, pay later, e.g. Tabby.
+}
+
+enum PaymentStatus {
+  PENDING // Waiting on the provider or a reference code.
+  SUCCEEDED
+  FAILED
+  EXPIRED // Not paid in time.
+}
+
+enum RefundStatus {
+  PENDING // Sent, not yet confirmed.
+  SUCCEEDED
+  FAILED
+}
+
+// Payouts
+enum PayoutMethod {
+  BANK_ACCOUNT // IBAN.
+  WALLET // e.g. Vodafone Cash.
+  INSTAPAY
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum LedgerType {
+  COLLECTION // Online payment collected.
+  REFUND // Online refund.
+  COMMISSION
+  PAYOUT
+  ADJUSTMENT // By an admin.
+}
+
+// Cancellations
+enum CancellationPolicy {
+  FLEXIBLE
+  MODERATE
+  STRICT
+  CUSTOM // Tiers set by the owner.
+}
+
+enum CancellationActor {
+  CUSTOMER
+  VENUE
+  ADMIN // Support.
+}
