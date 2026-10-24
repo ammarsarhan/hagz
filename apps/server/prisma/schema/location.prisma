@@ -1,21 +1,18 @@
-// Marketplaces and locations are created from the admin panel only.
-// Names live in the translation tables, one row per language. The database can't require every
-// language, so the admin API writes all of them in the same transaction as the row they name;
-// reads fall back to English when a language is missing.
-
 // A country Hagz operates in.
 model Marketplace {
   id        String   @id @default(uuid(7)) @db.Uuid
-  code      String   @unique @db.Char(2) // ISO 3166-1 alpha-2, e.g. EG, SA, AE.
-  currency  String   @db.Char(3) // ISO 4217, e.g. EGP, SAR, AED.
-  dialCode  String // E.164 prefix, e.g. +20, +966.
-  timezone  String // IANA, e.g. Africa/Cairo.
-  isActive  Boolean  @default(false) // Hidden from customers and staff until launch.
+  code      String   @unique @db.Char(2) // ISO 3166-1 alpha-2
+  currency  String   @db.Char(3) // ISO 4217
+  dialCode  String // E.164 prefix
+  timezone  String // IANA
+  isActive  Boolean  @default(false) // Hidden until launch.
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
 
   translations MarketplaceTranslation[]
   locations    Location[]
+  venues       Venue[]
+  amenities    AmenityOption[]
 }
 
 model MarketplaceTranslation {
@@ -31,7 +28,7 @@ model MarketplaceTranslation {
 enum Locality {
   REGION // Saudi Arabia
   EMIRATE // UAE
-  GOVERNORATE // Egypt, Kuwait, Bahrain, Oman; second level in Saudi Arabia
+  GOVERNORATE // Egypt, Kuwait, Bahrain, Oman; under REGION in Saudi Arabia
   MUNICIPALITY // Qatar
   WILAYAT // Oman
   CITY
@@ -40,15 +37,13 @@ enum Locality {
   NEIGHBORHOOD
 }
 
-// A node in a marketplace's location tree, e.g. Egypt → Cairo → Nasr City.
-// A child always belongs to its parent's marketplace: the parent relation includes marketplaceId,
-// so the database rejects a child pointing at a parent from another marketplace.
+// Location tree node, e.g. Egypt → Cairo → Nasr City. The parent must share the marketplace.
 model Location {
   id            String   @id @default(uuid(7)) @db.Uuid
   marketplaceId String   @db.Uuid
-  parentId      String?  @db.Uuid // Null for top-level locations.
+  parentId      String?  @db.Uuid // Null at the top level.
   locality      Locality
-  slug          String // URL segment from the English name, e.g. al-nahda: /ae/dubai/al-nahda.
+  slug          String // From the English name: /ae/dubai/al-nahda
   createdAt     DateTime @default(now()) @db.Timestamptz
   updatedAt     DateTime @updatedAt @db.Timestamptz
 
@@ -56,12 +51,13 @@ model Location {
   parent       Location?             @relation("Hierarchy", fields: [parentId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
   children     Location[]            @relation("Hierarchy")
   translations LocationTranslation[]
+  venues       Venue[]
 
-  // Target of the parent relation above.
+  // Parent relation target.
   @@unique([id, marketplaceId])
-  // Siblings can't share a slug. Postgres treats NULLs as distinct, so this alone wouldn't stop two
-  // top-level locations sharing a slug: the migration must create this index with NULLS NOT DISTINCT.
-  @@unique([marketplaceId, parentId, slug])
+  // Slugs are unique among siblings; roots get their own index since NULL parents never collide.
+  @@unique([marketplaceId, slug], map: "Location_root_slug_key", where: { parentId: null })
+  @@unique([parentId, slug], map: "Location_child_slug_key", where: { parentId: { not: null } })
   @@index([parentId])
   @@index([marketplaceId, locality])
 }

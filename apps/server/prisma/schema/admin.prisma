@@ -1,14 +1,13 @@
-// Platform operators. Email + password + an authenticator app (TOTP), always; access to every resource.
-// Admins never sign up: every admin comes from an AdminInvitation, except the first, which is seeded.
-// An admin can do nothing until totpConfirmedAt is set. A lost authenticator is reset by another admin.
+// Full access. Email + password + mandatory TOTP; locked until totpConfirmedAt is set.
+// Invite-only (the first admin is seeded). Another admin resets a lost authenticator.
 model Admin {
   id              String        @id @default(uuid(7)) @db.Uuid
   name            String
   email           String        @unique
   passwordHash    String
-  totpSecret      String? // Encrypted at rest. Set when enrolment starts, trusted once totpConfirmedAt is set.
+  totpSecret      String? // Encrypted.
   totpConfirmedAt DateTime?     @db.Timestamptz
-  totpLastStep    Int? // Time step of the last accepted code, so a code can't be replayed.
+  totpLastStep    Int? // Last accepted step; blocks replays.
   status          AccountStatus @default(ACTIVE)
   lastLoginAt     DateTime?     @db.Timestamptz
   createdAt       DateTime      @default(now()) @db.Timestamptz
@@ -17,10 +16,10 @@ model Admin {
   sessions   AdminSession[]
   invites    AdminInvitation[] @relation("InvitedBy")
   invitation AdminInvitation?  @relation("AcceptedAs")
+  events     VenueEvent[]
 }
 
-// One row per signed-in device. The refresh token is rotated in place on every refresh;
-// only its SHA-256 hash is stored. Access tokens are stateless and never stored.
+// One row per device. Stores a SHA-256 hash of the refresh token, rotated on every refresh.
 model AdminSession {
   id               String    @id @default(uuid(7)) @db.Uuid
   adminId          String    @db.Uuid
@@ -37,15 +36,13 @@ model AdminSession {
   @@index([adminId])
 }
 
-// An emailed link that lets someone create an admin account: set a password, then enrol TOTP.
-// Its state comes from the timestamps: pending until acceptedAt, revokedAt or expiresAt.
-// Only the token's hash is stored.
+// Emailed invite link (token stored hashed). Pending until accepted, revoked or expired.
 model AdminInvitation {
   id         String    @id @default(uuid(7)) @db.Uuid
   email      String
   tokenHash  String    @unique
   invitorId  String    @db.Uuid
-  adminId    String?   @unique @db.Uuid // The account created on acceptance.
+  adminId    String?   @unique @db.Uuid // Set on acceptance.
   expiresAt  DateTime  @db.Timestamptz
   acceptedAt DateTime? @db.Timestamptz
   revokedAt  DateTime? @db.Timestamptz
