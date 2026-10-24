@@ -96,7 +96,7 @@ model VenueInvitation {
 }
 
 // CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0; cancellationTiers, an
-// array, set exactly when CUSTOM.
+// array, set exactly when CUSTOM; loyaltyStamps >= 2, loyaltyWindow > 0, both or neither.
 model VenueSettings {
   venueId            String             @id @db.Uuid
   defaultPermissions Json // For new invitations.
@@ -107,6 +107,8 @@ model VenueSettings {
   paymentWindow      Int? // Minutes a HELD booking waits for payment; null = platform default.
   cancellationPolicy CancellationPolicy @default(MODERATE)
   cancellationTiers  Json? // CUSTOM only, e.g. [{ "hours": 24, "refundPercent": 100 }].
+  loyaltyStamps      Int? // Bookings per free one; null = off.
+  loyaltyWindow      Int? // Days.
   createdAt          DateTime           @default(now()) @db.Timestamptz
   updatedAt          DateTime           @updatedAt @db.Timestamptz
 
@@ -186,10 +188,12 @@ model VenueCustomer {
   createdAt  DateTime @default(now()) @db.Timestamptz
   updatedAt  DateTime @updatedAt @db.Timestamptz
 
-  venue    Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  customer Customer?    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  venue    Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  customer Customer?      @relation(fields: [customerId], references: [id], onDelete: Restrict)
   review   VenueReview?
   bookings Booking[]
+  stamps   LoyaltyStamp[]
+  cards    LoyaltyCard[]
 
   @@unique([venueId, customerId])
   @@unique([venueId, phone])

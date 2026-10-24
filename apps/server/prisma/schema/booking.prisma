@@ -35,8 +35,11 @@ model Booking {
   cancellation  Cancellation?
   ledger        LedgerEntry[]
   notifications Notification[]
+  stamp         LoyaltyStamp?   @relation("StampBooking")
+  card          LoyaltyCard?    @relation("CardBooking") // Free via a card.
 
   @@unique([id, venueId]) // GroundSlot relation target.
+  @@unique([id, customerId]) // Loyalty relation target.
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
@@ -57,10 +60,11 @@ model Cancellation {
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 }
 
-// The price at booking time, one line per hour, amenity or discount, VAT included. Written once;
-// sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
+// The price at booking time, one line per hour, amenity, discount or reward, VAT included. Written
+// once; sums to Booking.total, and taxAmount sums to its VAT. Cancellations aren't charges.
 // CHECKs: SLOT has startsAt and tier, AMENITY has optionId (pricing unless free), both amount >= 0;
-// DISCOUNT has neither, amount < 0. taxRate 0–10000; taxAmount within amount, same sign, 0 at 0%.
+// DISCOUNT and REWARD (first two slot hours) have neither, amount < 0. taxRate 0–10000; taxAmount
+// within amount, same sign, 0 at 0%.
 model BookingCharge {
   id        String            @id @default(uuid(7)) @db.Uuid
   bookingId String            @db.Uuid
