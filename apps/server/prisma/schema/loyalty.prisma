@@ -1,0 +1,39 @@
+// A punch-card series; terms copied at the first stamp. All its bookings start by expiresAt.
+// CHECKs: requiredStamps >= 2; bookingId set exactly when REDEEMED.
+model LoyaltyCard {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  customerId     String            @db.Uuid
+  status         LoyaltyCardStatus @default(OPEN)
+  requiredStamps Int // From loyaltyStamps.
+  expiresAt      DateTime          @db.Timestamptz // First booking + loyaltyWindow; at least 7 days after a venue cancel.
+  bookingId      String?           @unique @db.Uuid // Free booking.
+  restoredAt     DateTime?         @db.Timestamptz // One restore per card.
+  createdAt      DateTime          @default(now()) @db.Timestamptz
+  updatedAt      DateTime          @updatedAt @db.Timestamptz
+
+  customer VenueCustomer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  booking  Booking?       @relation("CardBooking", fields: [bookingId, customerId], references: [id, customerId], onDelete: Restrict)
+  stamps   LoyaltyStamp[]
+
+  @@unique([id, customerId]) // Stamp target.
+  @@unique([bookingId, customerId]) // For Prisma.
+  // One OPEN or EARNED card; Postgres's own form, so no drift.
+  @@unique([customerId], map: "LoyaltyCard_open_key", where: raw("status = ANY (ARRAY['OPEN'::\"LoyaltyCardStatus\", 'EARNED'::\"LoyaltyCardStatus\"])"))
+  @@index([status, expiresAt])
+}
+
+// One per completed in-app booking; free bookings earn none.
+model LoyaltyStamp {
+  bookingId  String   @id @db.Uuid
+  cardId     String   @db.Uuid
+  customerId String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  booking  Booking       @relation("StampBooking", fields: [bookingId, customerId], references: [id, customerId], onDelete: Restrict)
+  card     LoyaltyCard   @relation(fields: [cardId, customerId], references: [id, customerId], onDelete: Restrict)
+  customer VenueCustomer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, customerId]) // For Prisma.
+  @@index([cardId])
+  @@index([customerId])
+}

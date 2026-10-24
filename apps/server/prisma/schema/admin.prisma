@@ -1,0 +1,58 @@
+// Email + password + mandatory TOTP (locked until totpConfirmedAt). Invite-only; first is seeded.
+model Admin {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  name            String
+  email           String        @unique
+  passwordHash    String
+  totpSecret      String? // Encrypted.
+  totpConfirmedAt DateTime?     @db.Timestamptz
+  totpLastStep    Int? // Last accepted step; blocks replays.
+  status          AccountStatus @default(ACTIVE)
+  lastLoginAt     DateTime?     @db.Timestamptz
+  createdAt       DateTime      @default(now()) @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @db.Timestamptz
+
+  sessions      AdminSession[]
+  invites       AdminInvitation[] @relation("InvitedBy")
+  invitation    AdminInvitation?  @relation("AcceptedAs")
+  events        VenueEvent[]
+  bookingEvents BookingEvent[]
+  payouts       Payout[]
+  adjustments   LedgerEntry[]
+  notifications Notification[]
+}
+
+// One per device. SHA-256 of the refresh token, rotated on every refresh.
+model AdminSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  adminId          String    @db.Uuid
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  lastUsedAt       DateTime  @default(now()) @db.Timestamptz
+  expiresAt        DateTime  @db.Timestamptz
+  revokedAt        DateTime? @db.Timestamptz
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+}
+
+// Emailed invite link; token stored hashed.
+model AdminInvitation {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  email      String
+  tokenHash  String    @unique
+  invitorId  String    @db.Uuid
+  adminId    String?   @unique @db.Uuid // Set on acceptance.
+  expiresAt  DateTime  @db.Timestamptz
+  acceptedAt DateTime? @db.Timestamptz
+  revokedAt  DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+
+  invitor Admin  @relation("InvitedBy", fields: [invitorId], references: [id])
+  admin   Admin? @relation("AcceptedAs", fields: [adminId], references: [id])
+
+  @@index([email])
+}

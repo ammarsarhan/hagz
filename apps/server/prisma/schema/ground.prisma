@@ -1,0 +1,93 @@
+// A pitch or court. Prices in minor units.
+model Ground {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  venueId       String        @db.Uuid
+  sport         GroundSport
+  size          GroundSize
+  surface       GroundSurface
+  status        GroundStatus  @default(ACTIVE)
+  position      Int // Display order.
+  basePrice     Int
+  peakPrice     Int?
+  discountPrice Int?
+  createdAt     DateTime      @default(now()) @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @db.Timestamptz
+
+  venue        Venue               @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  translations GroundTranslation[]
+  settings     GroundSettings?
+  schedules    GroundSchedule[]
+  slots        GroundSlot[]
+  placement    VenueLayoutItem?
+  bookings     Booking[]
+
+  @@unique([id, venueId]) // GroundSlot and Booking relation target.
+  @@index([venueId, position])
+}
+
+model GroundTranslation {
+  groundId    String   @db.Uuid
+  language    Language
+  name        String
+  description String?
+
+  ground Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  @@id([groundId, language])
+}
+
+// Slot length (60 min) and horizon (90 days) are global constants.
+// CHECKs: minimumSlots >= 1, maximumSlots >= minimumSlots, generatedUntil <= now() + 90 days.
+model GroundSettings {
+  groundId        String    @id @db.Uuid
+  minimumSlots    Int       @default(1) // Shortest booking, in slots.
+  maximumSlots    Int       @default(3) // Longest booking, in slots.
+  generatedUntil  DateTime? @db.Timestamptz // Set by the generation job.
+  scheduleVersion Int       @default(0) // Bumped on every schedule, tier price or settings edit.
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @db.Timestamptz
+
+  ground Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+}
+
+// Weekly template, one row per open day; dayOfWeek is 0–6 from Sunday. hours maps local hours
+// (0–23) to tiers, e.g. { "18": "PEAK" }; past midnight goes in the next day's row.
+// CHECK: dayOfWeek 0–6.
+model GroundSchedule {
+  groundId  String   @db.Uuid
+  dayOfWeek Int      @db.SmallInt
+  hours     Json
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  ground Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  @@id([groundId, dayOfWeek])
+}
+
+// A bookable hour. Only the generation job creates, re-prices or deletes generated slots, and only
+// AVAILABLE ones; it leaves isManual (staff-added) slots alone. Stale: AVAILABLE, not manual, older
+// scheduleVersion than the ground's. venueId matches the ground's and the booking's.
+// CHECKs: endsAt > startsAt, startsAt <= now() + 90 days, bookingId set exactly when HELD/BOOKED.
+model GroundSlot {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  groundId        String     @db.Uuid
+  venueId         String     @db.Uuid
+  startsAt        DateTime   @db.Timestamptz
+  endsAt          DateTime   @db.Timestamptz
+  tier            PriceTier
+  price           Int
+  status          SlotStatus @default(AVAILABLE)
+  isManual        Boolean    @default(false)
+  scheduleVersion Int // Version it was generated from.
+  bookingId       String?    @db.Uuid // Cleared when the booking is cancelled or expires.
+  createdAt       DateTime   @default(now()) @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @db.Timestamptz
+
+  ground  Ground   @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+
+  @@unique([groundId, startsAt])
+  @@index([venueId, startsAt])
+  @@index([bookingId])
+}

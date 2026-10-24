@@ -1,0 +1,36 @@
+// Grid for multi-ground venues, ~10 m cells. Saved in one transaction; the API checks bounds and
+// overlaps. CHECK: columns and rows 1–60.
+model VenueLayout {
+  venueId   String   @id @db.Uuid
+  columns   Int
+  rows      Int
+  entrances Json     @default("[]") // Edge markers, e.g. [{ "side": "BOTTOM", "offset": 3 }]
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  venue Venue             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  items VenueLayoutItem[]
+}
+
+// A tile at its top-left cell. Ground footprints come from sport and size (in code), swapped when
+// VERTICAL; owners size the rest. CHECKs: x, y >= 0; GROUND has groundId and orientation and no
+// size; others have neither and a size of 1–4 × 1–4.
+model VenueLayoutItem {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  venueId     String             @db.Uuid
+  type        LayoutItemType
+  groundId    String?            @db.Uuid
+  x           Int
+  y           Int
+  orientation GroundOrientation?
+  width       Int?
+  height      Int?
+  createdAt   DateTime           @default(now()) @db.Timestamptz
+  updatedAt   DateTime           @updatedAt @db.Timestamptz
+
+  layout VenueLayout @relation(fields: [venueId], references: [venueId], onDelete: Cascade)
+  ground Ground?     @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+
+  @@unique([groundId, venueId]) // Each ground placed at most once.
+  @@index([venueId])
+}

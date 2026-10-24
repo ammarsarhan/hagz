@@ -1,0 +1,61 @@
+// Dashboard users. Phone + password (+ optional 2FA). Joining a venue needs a VenueInvitation.
+model Staff {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  name             String
+  phone            String?       @unique // E.164. Null only after deletion (CHECK).
+  passwordHash     String
+  language         Language      @default(AR)
+  twoFactorEnabled Boolean       @default(false)
+  status           AccountStatus @default(ACTIVE)
+  phoneVerifiedAt  DateTime?     @db.Timestamptz
+  lastLoginAt      DateTime?     @db.Timestamptz
+  deletedAt        DateTime?     @db.Timestamptz
+  createdAt        DateTime      @default(now()) @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @db.Timestamptz
+
+  sessions      StaffSession[]
+  challenges    StaffVerification[]
+  memberships   VenueMembership[]
+  invites       VenueInvitation[]
+  events        VenueEvent[]
+  bookings      Booking[] // Entered on a customer's behalf.
+  bookingEvents BookingEvent[]
+  payments      Payment[] // Cash recorded.
+  refunds       Refund[] // Issued.
+  notifications Notification[]
+  discounts     VenueDiscount[]
+}
+
+// Same as AdminSession, plus the device's push token.
+model StaffSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  staffId          String    @db.Uuid
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  pushToken        String?   @unique // Expo; cleared on revoke.
+  lastUsedAt       DateTime  @default(now()) @db.Timestamptz
+  expiresAt        DateTime  @db.Timestamptz
+  revokedAt        DateTime? @db.Timestamptz
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+}
+
+// WhatsApp one-time code, stored hashed. Recent rows rate-limit resends.
+model StaffVerification {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  staffId    String              @db.Uuid
+  purpose    VerificationPurpose
+  codeHash   String
+  attempts   Int                 @default(0)
+  expiresAt  DateTime            @db.Timestamptz
+  consumedAt DateTime?           @db.Timestamptz
+  createdAt  DateTime            @default(now()) @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, purpose, createdAt])
+}

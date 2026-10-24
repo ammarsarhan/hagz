@@ -1,0 +1,64 @@
+// A country Hagz operates in. CHECKs: taxRate and commissionRate 0–10000.
+model Marketplace {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  code           String   @unique @db.Char(2) // ISO 3166-1 alpha-2
+  currency       String   @db.Char(3) // ISO 4217
+  dialCode       String // E.164 prefix
+  timezone       String // IANA
+  taxRate        Int      @default(0) // VAT in basis points (1400 = 14%).
+  commissionRate Int      @default(0) // Basis points.
+  isActive       Boolean  @default(false) // Hidden until launch.
+  createdAt      DateTime @default(now()) @db.Timestamptz
+  updatedAt      DateTime @updatedAt @db.Timestamptz
+
+  translations MarketplaceTranslation[]
+  locations    Location[]
+  venues       Venue[]
+  amenities    AmenityOption[]
+}
+
+model MarketplaceTranslation {
+  marketplaceId String   @db.Uuid
+  language      Language
+  name          String
+
+  marketplace Marketplace @relation(fields: [marketplaceId], references: [id], onDelete: Cascade)
+
+  @@id([marketplaceId, language])
+}
+
+// Tree node, e.g. Cairo → Nasr City. The parent shares the marketplace.
+model Location {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  marketplaceId String   @db.Uuid
+  parentId      String?  @db.Uuid // Null at the top level.
+  locality      Locality
+  slug          String // From the English name: /ae/dubai/al-nahda
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+
+  marketplace  Marketplace           @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
+  parent       Location?             @relation("Hierarchy", fields: [parentId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  children     Location[]            @relation("Hierarchy")
+  translations LocationTranslation[]
+  venues       Venue[]
+
+  // Parent relation target.
+  @@unique([id, marketplaceId])
+  // Slugs unique among siblings; roots need their own index (NULL parents never collide).
+  @@unique([marketplaceId, slug], map: "Location_root_slug_key", where: { parentId: null })
+  @@unique([parentId, slug], map: "Location_child_slug_key", where: { parentId: { not: null } })
+  @@index([parentId])
+  @@index([marketplaceId, locality])
+}
+
+model LocationTranslation {
+  language Language
+  name     String
+
+  locationId String   @db.Uuid
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([locationId, language])
+  @@index([language, name])
+}

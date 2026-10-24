@@ -1,0 +1,224 @@
+// Marketplace matches the location's. CHECK: commissionRate 0–10000.
+model Venue {
+  id             String                                 @id @default(uuid(7)) @db.Uuid
+  marketplaceId  String                                 @db.Uuid
+  locationId     String                                 @db.Uuid
+  slug           String                                 @unique // /venue/[slug]
+  status         VenueStatus                            @default(DRAFT)
+  placeId        String?
+  phone          String? // E.164, shown to customers.
+  taxNumber      String? // Set: charges the marketplace's VAT.
+  commissionRate Int? // Admin override, basis points.
+  // Map pin, written with raw SQL. Optional for drafts and Prisma creates.
+  coordinates    Unsupported("geography(Point, 4326)")?
+  // Recalculated from visible reviews with every review change.
+  averageRating  Decimal?                               @db.Decimal(3, 2) // Null until the first review.
+  reviewCount    Int                                    @default(0)
+  createdAt      DateTime                               @default(now()) @db.Timestamptz
+  updatedAt      DateTime                               @updatedAt @db.Timestamptz
+
+  marketplace   Marketplace         @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
+  location      Location            @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  translations  VenueTranslation[]
+  memberships   VenueMembership[]
+  invitations   VenueInvitation[]
+  settings      VenueSettings?
+  amenities     VenueAmenity[]
+  media         VenueMedia[]
+  events        VenueEvent[]
+  favorites     VenueFavorite[]
+  customers     VenueCustomer[]
+  grounds       Ground[]
+  layout        VenueLayout?
+  bookings      Booking[]
+  destinations  PayoutDestination[]
+  payouts       Payout[]
+  ledger        LedgerEntry[]
+  notifications Notification[]
+  discounts     VenueDiscount[]
+
+  @@unique([id, marketplaceId])
+  @@index([coordinates], type: Gist)
+  @@index([locationId])
+  @@index([marketplaceId, status])
+  @@index([marketplaceId, averageRating])
+}
+
+// At least one language (API).
+model VenueTranslation {
+  venueId     String   @db.Uuid
+  language    Language
+  name        String
+  description String
+  address     String
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([venueId, language])
+  @@index([language, name])
+}
+
+// One OWNER per venue (partial index). Restrict keeps a venue from losing its owner.
+model VenueMembership {
+  venueId     String    @db.Uuid
+  staffId     String    @db.Uuid
+  role        VenueRole @default(MEMBER)
+  permissions Json
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @db.Timestamptz
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@id([venueId, staffId])
+  @@unique([venueId], map: "VenueMembership_owner_key", where: { role: "OWNER" })
+  @@index([staffId])
+}
+
+// Single-use 48h join code; the acceptor's verified phone must match. One open code per phone per
+// venue (partial index).
+model VenueInvitation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  venueId     String    @db.Uuid
+  phone       String // E.164, matched against Staff.phone.
+  codeHash    String    @unique // HMAC-SHA256, so typed codes can be looked up.
+  permissions Json // Defaults from VenueSettings.
+  invitorId   String    @db.Uuid
+  expiresAt   DateTime  @db.Timestamptz
+  acceptedAt  DateTime? @db.Timestamptz
+  revokedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+
+  venue   Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  invitor Staff @relation(fields: [invitorId], references: [id], onDelete: Restrict)
+
+  @@unique([venueId, phone], map: "VenueInvitation_open_key", where: { acceptedAt: null, revokedAt: null })
+  @@index([phone])
+}
+
+// CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0; cancellationTiers, an
+// array, set exactly when CUSTOM; loyaltyStamps >= 2, loyaltyWindow > 0, both or neither.
+model VenueSettings {
+  venueId            String             @id @db.Uuid
+  defaultPermissions Json // For new invitations.
+  minimumNotice      Int                @default(60) // Minutes before kick-off that booking closes.
+  autoConfirm        Boolean            @default(true) // False: staff approve each booking.
+  paymentMode        PaymentMode        @default(MANUAL)
+  depositPercent     Int? // Share paid online.
+  paymentWindow      Int? // Minutes a HELD booking waits for payment; null = platform default.
+  cancellationPolicy CancellationPolicy @default(MODERATE)
+  cancellationTiers  Json? // CUSTOM only, e.g. [{ "hours": 24, "refundPercent": 100 }].
+  loyaltyStamps      Int? // Bookings per free one; null = off.
+  loyaltyWindow      Int? // Days.
+  createdAt          DateTime           @default(now()) @db.Timestamptz
+  updatedAt          DateTime           @updatedAt @db.Timestamptz
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+}
+
+// Option from the venue's marketplace. Free unless priced.
+model VenueAmenity {
+  venueId       String          @db.Uuid
+  optionId      String          @db.Uuid
+  marketplaceId String          @db.Uuid
+  price         Int? // Minor units.
+  pricing       AmenityPricing?
+
+  venue  Venue         @relation(fields: [venueId, marketplaceId], references: [id, marketplaceId], onDelete: Cascade)
+  option AmenityOption @relation(fields: [optionId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+
+  @@id([venueId, optionId])
+  @@index([optionId])
+}
+
+// Lowest position is the cover.
+model VenueMedia {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  venueId     String      @db.Uuid
+  key         String      @unique // Object storage key.
+  type        MediaType
+  contentType String
+  status      MediaStatus @default(PENDING)
+  position    Int
+  createdAt   DateTime    @default(now()) @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @db.Timestamptz
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, position])
+}
+
+// Append-only, written with the change. CHECK: exactly one actor (so Restrict, not SetNull).
+model VenueEvent {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  venueId   String   @db.Uuid
+  type      String // Allowed list in the API.
+  staffId   String?  @db.Uuid
+  adminId   String?  @db.Uuid
+  data      Json?
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  venue Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  staff Staff? @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([venueId, createdAt])
+  @@index([venueId, type])
+}
+
+model VenueFavorite {
+  customerId String   @db.Uuid
+  venueId    String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, venueId])
+  @@index([venueId])
+}
+
+// A customer as a venue sees them: an account, or a walk-in staff entered (no customerId), linked
+// by phone on sign-up. Restrict keeps the venue's history.
+model VenueCustomer {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  venueId    String   @db.Uuid
+  customerId String?  @db.Uuid
+  name       String
+  phone      String? // E.164. Null after the linked account is deleted.
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+
+  venue    Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  customer Customer?      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  review   VenueReview?
+  bookings Booking[]
+  stamps   LoyaltyStamp[]
+  cards    LoyaltyCard[]
+
+  @@unique([venueId, customerId])
+  @@unique([venueId, phone])
+  @@unique([id, venueId]) // VenueReview and Booking relation target.
+  @@index([customerId])
+}
+
+// One per VenueCustomer, editable. Needs an account and a completed booking (API).
+// CHECK: rating 1–5.
+model VenueReview {
+  customerId String    @db.Uuid
+  venueId    String    @db.Uuid
+  bookingId  String    @unique @db.Uuid // Completed booking that allowed it.
+  rating     Int       @db.SmallInt
+  comment    String?
+  language   Language? // Language of the comment.
+  hiddenAt   DateTime? @db.Timestamptz // Hidden by an admin.
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+
+  customer VenueCustomer @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Cascade)
+  booking  Booking       @relation(fields: [bookingId, customerId], references: [id, customerId], onDelete: Restrict)
+
+  @@id([customerId, venueId])
+  @@unique([bookingId, customerId]) // For Prisma.
+  @@index([venueId, createdAt])
+}
