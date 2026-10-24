@@ -23,12 +23,11 @@ model Payment {
   refunds  Refund[]
 
   @@unique([provider, providerReference])
-  @@unique([id, bookingId]) // Refund relation target.
   @@index([bookingId])
   @@index([status, createdAt])
 }
 
-// Money returned for a payment, on the same booking. It goes back the way it was paid, through
+// Money returned for a payment; its booking is the payment's. It goes back the way it was paid, through
 // the payment's provider, so it has no method or provider of its own. Created PENDING and moves
 // once to SUCCEEDED or FAILED; amounts are never edited. Refunds never exceed their payment, and
 // refunds of cash have no providerReference (API). CHECKs: amount > 0; succeededAt set exactly
@@ -36,7 +35,6 @@ model Payment {
 model Refund {
   id                String       @id @default(uuid(7)) @db.Uuid
   paymentId         String       @db.Uuid
-  bookingId         String       @db.Uuid
   status            RefundStatus
   amount            Int
   providerReference String? // The provider's refund id; null for cash.
@@ -46,10 +44,8 @@ model Refund {
   createdAt         DateTime     @default(now()) @db.Timestamptz
   updatedAt         DateTime     @updatedAt @db.Timestamptz
 
-  payment  Payment @relation(fields: [paymentId, bookingId], references: [id, bookingId], onDelete: Restrict)
-  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  payment  Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
   recorder Staff?  @relation(fields: [recorderId], references: [id], onDelete: Restrict)
 
   @@unique([paymentId, providerReference]) // Repeated webhooks.
-  @@index([bookingId])
 }

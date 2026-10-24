@@ -29,7 +29,6 @@ model Booking {
   slots    GroundSlot[]
   charges  BookingCharge[]
   payments Payment[]
-  refunds  Refund[]
   events   BookingEvent[]
 
   @@unique([id, venueId]) // GroundSlot relation target.
