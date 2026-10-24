@@ -17,23 +17,24 @@ model Venue {
   createdAt      DateTime                               @default(now()) @db.Timestamptz
   updatedAt      DateTime                               @updatedAt @db.Timestamptz
 
-  marketplace  Marketplace         @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
-  location     Location            @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
-  translations VenueTranslation[]
-  memberships  VenueMembership[]
-  invitations  VenueInvitation[]
-  settings     VenueSettings?
-  amenities    VenueAmenity[]
-  media        VenueMedia[]
-  events       VenueEvent[]
-  favorites    VenueFavorite[]
-  customers    VenueCustomer[]
-  grounds      Ground[]
-  layout       VenueLayout?
-  bookings     Booking[]
-  destinations PayoutDestination[]
-  payouts      Payout[]
-  ledger       LedgerEntry[]
+  marketplace   Marketplace         @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
+  location      Location            @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  translations  VenueTranslation[]
+  memberships   VenueMembership[]
+  invitations   VenueInvitation[]
+  settings      VenueSettings?
+  amenities     VenueAmenity[]
+  media         VenueMedia[]
+  events        VenueEvent[]
+  favorites     VenueFavorite[]
+  customers     VenueCustomer[]
+  grounds       Ground[]
+  layout        VenueLayout?
+  bookings      Booking[]
+  destinations  PayoutDestination[]
+  payouts       Payout[]
+  ledger        LedgerEntry[]
+  notifications Notification[]
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)

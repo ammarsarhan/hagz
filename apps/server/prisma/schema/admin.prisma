@@ -19,6 +19,7 @@ model Admin {
   bookingEvents BookingEvent[]
   payouts       Payout[]
   adjustments   LedgerEntry[]
+  notifications Notification[]
 }
 
 // One per device. SHA-256 of the refresh token, rotated on every refresh.

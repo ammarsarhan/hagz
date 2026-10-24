@@ -24,16 +24,17 @@ model Booking {
   createdAt          DateTime           @default(now()) @db.Timestamptz
   updatedAt          DateTime           @updatedAt @db.Timestamptz
 
-  venue        Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
-  ground       Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
-  customer     VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
-  creator      Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
-  slots        GroundSlot[]
-  charges      BookingCharge[]
-  payments     Payment[]
-  events       BookingEvent[]
-  cancellation Cancellation?
-  ledger       LedgerEntry[]
+  venue         Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  ground        Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
+  customer      VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
+  creator       Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  slots         GroundSlot[]
+  charges       BookingCharge[]
+  payments      Payment[]
+  events        BookingEvent[]
+  cancellation  Cancellation?
+  ledger        LedgerEntry[]
+  notifications Notification[]
 
   @@unique([id, venueId]) // GroundSlot relation target.
   @@index([venueId, startsAt])

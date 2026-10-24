@@ -17,6 +17,22 @@ enum VerificationPurpose {
   PASSWORD_RESET
 }
 
+// Notifications
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
 // Locations
 enum Locality {
   REGION // Saudi Arabia
