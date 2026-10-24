@@ -12,14 +12,15 @@ model Booking {
   status             BookingStatus
   startsAt           DateTime           @db.Timestamptz
   endsAt             DateTime           @db.Timestamptz
-  total              Int // Sum of its charges, VAT included.
-  depositAmount      Int? // Due online; the rest is manual.
-  paymentMode        PaymentMode // Copied from VenueSettings.
-  commissionRate     Int // Basis points, copied.
-  cancellationPolicy CancellationPolicy // Copied.
-  cancellationTiers  Json // Copied, presets resolved: refund % by hours of notice.
   note               String? // From the customer.
   expiresAt          DateTime?          @db.Timestamptz // PENDING and HELD release slots after this.
+  // Terms copied at booking time; never updated.
+  total              Int // Sum of its charges, VAT included.
+  depositAmount      Int? // Due online; the rest is manual.
+  paymentMode        PaymentMode // From VenueSettings.
+  commissionRate     Int // Basis points.
+  cancellationPolicy CancellationPolicy
+  cancellationTiers  Json // Presets resolved: refund % by hours of notice.
   createdAt          DateTime           @default(now()) @db.Timestamptz
   updatedAt          DateTime           @updatedAt @db.Timestamptz
 
@@ -45,12 +46,12 @@ model Booking {
 // get the booking's tier for their notice; venue cancellations always refund in full. Refunds are
 // Refund rows. CHECKs: refundPercent 0–100, and 100 for VENUE; refundAmount >= 0.
 model Cancellation {
-  bookingId     String         @id @db.Uuid
+  bookingId     String            @id @db.Uuid
   initiator     CancellationActor
   reason        String?
   refundPercent Int
   refundAmount  Int // Minor units.
-  createdAt     DateTime       @default(now()) @db.Timestamptz
+  createdAt     DateTime          @default(now()) @db.Timestamptz
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 }
