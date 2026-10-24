@@ -184,3 +184,17 @@ enum LedgerType {
   PAYOUT
   ADJUSTMENT // By an admin.
 }
+
+// Cancellations
+enum CancellationPolicy {
+  FLEXIBLE
+  MODERATE
+  STRICT
+  CUSTOM // Tiers set by the owner.
+}
+
+enum CancellationActor {
+  CUSTOMER
+  VENUE
+  ADMIN // Support.
+}

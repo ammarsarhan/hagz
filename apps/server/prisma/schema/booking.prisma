@@ -1,41 +1,58 @@
 // Back-to-back slots on one ground (via GroundSlot.bookingId), for a VenueCustomer. groundId,
 // startsAt and endsAt keep its history after release. Minor units. Never deleted.
 // CHECKs: endsAt > startsAt, total >= 0, depositAmount 1–total, set exactly when DEPOSIT;
-// commissionRate 0–10000, and 0 when creatorId is set.
+// commissionRate 0–10000, and 0 when creatorId is set; cancellationTiers is an array.
 model Booking {
-  id             String        @id @default(uuid(7)) @db.Uuid
-  venueId        String        @db.Uuid
-  groundId       String        @db.Uuid
-  customerId     String        @db.Uuid
-  creatorId      String?       @db.Uuid // Staff who entered it.
-  code           String        @unique // Share link, /b/[code].
-  status         BookingStatus
-  startsAt       DateTime      @db.Timestamptz
-  endsAt         DateTime      @db.Timestamptz
-  total          Int // Sum of its charges, VAT included.
-  depositAmount  Int? // Due online; the rest is manual.
-  paymentMode    PaymentMode // Copied from VenueSettings.
-  commissionRate Int // Basis points, copied.
-  note           String? // From the customer.
-  expiresAt      DateTime?     @db.Timestamptz // PENDING and HELD release their slots after this.
-  createdAt      DateTime      @default(now()) @db.Timestamptz
-  updatedAt      DateTime      @updatedAt @db.Timestamptz
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  venueId            String             @db.Uuid
+  groundId           String             @db.Uuid
+  customerId         String             @db.Uuid
+  creatorId          String?            @db.Uuid // Staff who entered it.
+  code               String             @unique // Share link, /b/[code].
+  status             BookingStatus
+  startsAt           DateTime           @db.Timestamptz
+  endsAt             DateTime           @db.Timestamptz
+  total              Int // Sum of its charges, VAT included.
+  depositAmount      Int? // Due online; the rest is manual.
+  paymentMode        PaymentMode // Copied from VenueSettings.
+  commissionRate     Int // Basis points, copied.
+  cancellationPolicy CancellationPolicy // Copied.
+  cancellationTiers  Json // Copied, presets resolved: refund % by hours of notice.
+  note               String? // From the customer.
+  expiresAt          DateTime?          @db.Timestamptz // PENDING and HELD release slots after this.
+  createdAt          DateTime           @default(now()) @db.Timestamptz
+  updatedAt          DateTime           @updatedAt @db.Timestamptz
 
-  venue    Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
-  ground   Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
-  customer VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
-  creator  Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
-  slots    GroundSlot[]
-  charges  BookingCharge[]
-  payments Payment[]
-  events   BookingEvent[]
-  ledger   LedgerEntry[]
+  venue        Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  ground       Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
+  customer     VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
+  creator      Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  slots        GroundSlot[]
+  charges      BookingCharge[]
+  payments     Payment[]
+  events       BookingEvent[]
+  cancellation Cancellation?
+  ledger       LedgerEntry[]
 
   @@unique([id, venueId]) // GroundSlot relation target.
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
   @@index([status, expiresAt])
+}
+
+// Why and how a CANCELLED booking was cancelled; who did it is its CANCELLED BookingEvent. Players
+// get the booking's tier for their notice; venue cancellations always refund in full. Refunds are
+// Refund rows. CHECKs: refundPercent 0–100, and 100 for VENUE; refundAmount >= 0.
+model Cancellation {
+  bookingId     String         @id @db.Uuid
+  initiator     CancellationActor
+  reason        String?
+  refundPercent Int
+  refundAmount  Int // Minor units.
+  createdAt     DateTime       @default(now()) @db.Timestamptz
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 }
 
 // The price at booking time, one line per hour, amenity or discount, VAT included. Written once;
