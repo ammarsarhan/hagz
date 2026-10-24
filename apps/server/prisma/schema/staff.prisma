@@ -1,12 +1,9 @@
-// Venue owners and their team (dashboard app). Phone + password (+ 2FA if enabled); the phone is
-// verified over WhatsApp. Anyone can sign up. Creating a venue makes you its owner; joining someone
-// else's venue needs an invitation addressed to your phone number, sent by a staff member with
-// permission on that venue. Memberships (with their custom permissions) and those invitations
-// will live on their own tables once venues exist.
+// Dashboard users. Phone + password (+ optional 2FA); phone verified over WhatsApp.
+// Anyone can sign up; joining another venue needs a VenueInvitation.
 model Staff {
   id               String        @id @default(uuid(7)) @db.Uuid
   name             String
-  phone            String?       @unique // Null once the account is deleted (PII scrubbed).
+  phone            String?       @unique // E.164, e.g. +201001234567. Null only after deletion (migration CHECK).
   passwordHash     String
   language         Language      @default(AR)
   twoFactorEnabled Boolean       @default(false)
@@ -17,11 +14,14 @@ model Staff {
   createdAt        DateTime      @default(now()) @db.Timestamptz
   updatedAt        DateTime      @updatedAt @db.Timestamptz
 
-  sessions   StaffSession[]
-  challenges StaffVerification[]
+  sessions    StaffSession[]
+  challenges  StaffVerification[]
+  memberships VenueMembership[]
+  invites     VenueInvitation[]
+  events      VenueEvent[]
 }
 
-// Same shape and rotation rules as AdminSession.
+// Same as AdminSession.
 model StaffSession {
   id               String    @id @default(uuid(7)) @db.Uuid
   staffId          String    @db.Uuid
@@ -38,8 +38,8 @@ model StaffSession {
   @@index([staffId])
 }
 
-// A one-time code sent over WhatsApp. Only the hash is stored; the code is spent once consumedAt
-// is set or attempts runs out. Recent rows per account double as the resend rate limit.
+// WhatsApp one-time code (stored hashed). Spent when consumed or out of attempts; recent rows
+// rate-limit resends.
 model StaffVerification {
   id         String              @id @default(uuid(7)) @db.Uuid
   staffId    String              @db.Uuid

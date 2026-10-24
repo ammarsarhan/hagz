@@ -1,9 +1,9 @@
-// Players (customer app). Phone + password (+ 2FA if enabled); the phone is verified over WhatsApp.
-// Guests browse without an account; signing in is required to book.
+// Players. Phone + password (+ optional 2FA); phone verified over WhatsApp.
+// Guests can browse; booking needs an account.
 model Customer {
   id               String        @id @default(uuid(7)) @db.Uuid
   name             String
-  phone            String?       @unique // Null once the account is deleted (PII scrubbed).
+  phone            String?       @unique // E.164, e.g. +201001234567. Null only after deletion (migration CHECK).
   passwordHash     String
   avatarKey        String?
   twoFactorEnabled Boolean       @default(false)
@@ -16,13 +16,15 @@ model Customer {
 
   // Preferences
   language Language @default(AR)
-  timezone String   @default("Africa/Cairo")
+  timezone String // IANA, set at sign-up from the phone number's marketplace.
 
   sessions   CustomerSession[]
   challenges CustomerVerification[]
+  favorites  VenueFavorite[]
+  venues     VenueCustomer[]
 }
 
-// Same shape and rotation rules as StaffSession.
+// Same as StaffSession.
 model CustomerSession {
   id               String    @id @default(uuid(7)) @db.Uuid
   customerId       String    @db.Uuid
@@ -39,7 +41,7 @@ model CustomerSession {
   @@index([customerId])
 }
 
-// Same shape and rules as StaffVerification.
+// Same as StaffVerification.
 model CustomerVerification {
   id         String              @id @default(uuid(7)) @db.Uuid
   customerId String              @db.Uuid
