@@ -142,11 +142,13 @@ enum PaymentMode {
   PLATFORM
 }
 
+// Broad categories; the specific scheme is Payment.brand, so new brands need no migration.
 enum PaymentMethod {
   CASH
-  CARD
-  WALLET // Mobile wallets, e.g. Vodafone Cash.
-  FAWRY // Kiosk reference code.
+  CARD // e.g. Visa, Mastercard, mada, KNET, Apple Pay.
+  WALLET // Mobile wallets, e.g. Vodafone Cash, STC Pay.
+  REFERENCE // A code paid at a kiosk or bank, e.g. Fawry, SADAD.
+  BNPL // Buy now, pay later, e.g. Tabby, Tamara, valU.
 }
 
 enum PaymentStatus {

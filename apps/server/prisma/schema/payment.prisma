@@ -3,7 +3,7 @@
 // FAILED or EXPIRED; amounts are never edited. Cash is recorded by staff when received, already
 // SUCCEEDED. Amount paid = SUCCEEDED payments − SUCCEEDED refunds. The provider is kept neutral:
 // its name and transaction reference are plain fields, unique together so repeated webhooks are
-// deduplicated. CHECKs: amount > 0; provider set exactly when not CASH, and CASH has no reference;
+// deduplicated. CHECKs: amount > 0; provider set exactly when not CASH, and CASH has no reference or brand;
 // succeededAt set exactly when SUCCEEDED; CASH is SUCCEEDED and has a recorderId.
 model Payment {
   id                String        @id @default(uuid(7)) @db.Uuid
@@ -11,8 +11,9 @@ model Payment {
   method            PaymentMethod
   status            PaymentStatus
   amount            Int // Minor units of the marketplace currency.
-  provider          String? // e.g. paymob, fawry.
-  providerReference String? // The provider's transaction id, or the Fawry reference code.
+  brand             String? // The scheme, e.g. visa, mada, knet, apple_pay, fawry.
+  provider          String? // e.g. paymob, tap.
+  providerReference String? // The provider's transaction id, or the code for a REFERENCE payment.
   recorderId        String?       @db.Uuid // Staff who recorded cash.
   succeededAt       DateTime?     @db.Timestamptz
   createdAt         DateTime      @default(now()) @db.Timestamptz

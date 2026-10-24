@@ -7,6 +7,7 @@ model Venue {
   status        VenueStatus                            @default(DRAFT)
   placeId       String?
   phone         String? // E.164 contact number shown to customers.
+  taxNumber     String? // Tax registration number; set means the venue charges the marketplace's VAT.
   // Owner's map pin, written with raw SQL. Optional for drafts (and so Prisma can create rows).
   coordinates   Unsupported("geography(Point, 4326)")?
   // Recalculated from visible reviews in the same transaction as every review change.

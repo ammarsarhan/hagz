@@ -3,7 +3,8 @@
 // work the same way. groundId, startsAt and endsAt describe the booking on their own, so it keeps
 // its history after its slots are released. Amounts are in minor units of the marketplace
 // currency; the breakdown is in BookingCharge. Bookings are never deleted.
-// CHECKs: endsAt > startsAt, total >= 0, depositAmount set exactly when DEPOSIT and 1–total.
+// CHECKs: endsAt > startsAt, total >= 0, depositAmount set exactly when DEPOSIT and 1–total;
+// taxRate 0–10000, taxAmount 0–total and 0 when taxRate is 0.
 model Booking {
   id            String        @id @default(uuid(7)) @db.Uuid
   venueId       String        @db.Uuid
@@ -14,7 +15,9 @@ model Booking {
   status        BookingStatus
   startsAt      DateTime      @db.Timestamptz
   endsAt        DateTime      @db.Timestamptz
-  total         Int // Sum of its charges.
+  total         Int // Sum of its charges, VAT included.
+  taxRate       Int // Basis points, copied at booking time; 0 if the venue has no taxNumber.
+  taxAmount     Int // The VAT inside total.
   depositAmount Int? // DEPOSIT: due online, copied at booking time; the rest is paid in cash.
   paymentMode   PaymentMode // Copied from VenueSettings at booking time.
   note          String? // From the customer.
@@ -38,8 +41,8 @@ model Booking {
   @@index([status, expiresAt])
 }
 
-// The price at booking time, one row per line: each hour, each amenity, and any discount.
-// Written once with the booking and never changed, so later price edits don't touch it;
+// The price at booking time, VAT included, one row per line: each hour, each amenity, and any
+// discount. Written once with the booking and never changed, so later price edits don't touch it;
 // Booking.total is their sum. Cancellations and refunds are not charges: they're handled by the
 // cancellation policy and the payment ledger, which records only money that actually moved.
 // One SLOT row per hour and one AMENITY row per option.
