@@ -1,7 +1,5 @@
-// A cinema-style grid for multi-ground venues; single-ground venues have none. Each cell is about
-// 10 m, so the grid grows with the venue (up to 60 × 60) and the apps pan and zoom it. The layout
-// is a diagram: grounds snap to horizontal or vertical. Saved in one transaction; the API checks
-// bounds and overlaps. CHECKs: columns and rows 1–60.
+// Grid for multi-ground venues, ~10 m cells. Saved in one transaction; the API checks bounds and
+// overlaps. CHECK: columns and rows 1–60.
 model VenueLayout {
   venueId   String   @id @db.Uuid
   columns   Int
@@ -14,10 +12,9 @@ model VenueLayout {
   items VenueLayoutItem[]
 }
 
-// A tile, placed by its top-left cell. Ground tiles have no width or height: the footprint comes
-// from the ground's sport and size (fixed table in code), swapped when VERTICAL. Other tiles are
-// sized by the owner. CHECKs: x, y >= 0; GROUND tiles have groundId and orientation and no size;
-// other tiles have no groundId or orientation and a size of 1–4 × 1–4.
+// A tile at its top-left cell. Ground footprints come from sport and size (in code), swapped when
+// VERTICAL; owners size the rest. CHECKs: x, y >= 0; GROUND has groundId and orientation and no
+// size; others have neither and a size of 1–4 × 1–4.
 model VenueLayoutItem {
   id          String             @id @default(uuid(7)) @db.Uuid
   venueId     String             @db.Uuid

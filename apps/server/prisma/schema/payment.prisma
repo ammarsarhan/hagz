@@ -1,0 +1,46 @@
+// Money that moved, never prices. Online rows start PENDING and settle once; staff record cash as
+// SUCCEEDED. Paid = SUCCEEDED payments − SUCCEEDED refunds.
+// CHECKs: amount > 0; provider set exactly when not CASH; CASH has no reference or brand, is
+// SUCCEEDED and has a recorderId; succeededAt set exactly when SUCCEEDED.
+model Payment {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  bookingId         String        @db.Uuid
+  method            PaymentMethod
+  status            PaymentStatus
+  amount            Int // Minor units.
+  brand             String? // e.g. visa, mada, fawry.
+  provider          String? // e.g. paymob, tap.
+  providerReference String? // Transaction id, or the REFERENCE code.
+  recorderId        String?       @db.Uuid // Staff who recorded cash.
+  succeededAt       DateTime?     @db.Timestamptz
+  createdAt         DateTime      @default(now()) @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @db.Timestamptz
+
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  recorder Staff?   @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+  refunds  Refund[]
+
+  @@unique([provider, providerReference])
+  @@index([bookingId])
+  @@index([status, createdAt])
+}
+
+// Goes back the way its payment was paid. Never exceeds it; none for cash has a providerReference
+// (API). CHECKs: amount > 0; succeededAt set exactly when SUCCEEDED.
+model Refund {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  paymentId         String       @db.Uuid
+  status            RefundStatus
+  amount            Int
+  providerReference String? // Null for cash.
+  reason            String?
+  recorderId        String?      @db.Uuid // Null when the system issued it.
+  succeededAt       DateTime?    @db.Timestamptz
+  createdAt         DateTime     @default(now()) @db.Timestamptz
+  updatedAt         DateTime     @updatedAt @db.Timestamptz
+
+  payment  Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  recorder Staff?  @relation(fields: [recorderId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, providerReference]) // Repeated webhooks.
+}

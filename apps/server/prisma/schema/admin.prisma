@@ -1,5 +1,4 @@
-// Full access. Email + password + mandatory TOTP; locked until totpConfirmedAt is set.
-// Invite-only (the first admin is seeded). Another admin resets a lost authenticator.
+// Email + password + mandatory TOTP (locked until totpConfirmedAt). Invite-only; first is seeded.
 model Admin {
   id              String        @id @default(uuid(7)) @db.Uuid
   name            String
@@ -20,7 +19,7 @@ model Admin {
   bookingEvents BookingEvent[]
 }
 
-// One row per device. Stores a SHA-256 hash of the refresh token, rotated on every refresh.
+// One per device. SHA-256 of the refresh token, rotated on every refresh.
 model AdminSession {
   id               String    @id @default(uuid(7)) @db.Uuid
   adminId          String    @db.Uuid
@@ -37,7 +36,7 @@ model AdminSession {
   @@index([adminId])
 }
 
-// Emailed invite link (token stored hashed). Pending until accepted, revoked or expired.
+// Emailed invite link; token stored hashed.
 model AdminInvitation {
   id         String    @id @default(uuid(7)) @db.Uuid
   email      String

@@ -10,10 +10,10 @@ enum AccountStatus {
   BANNED // Permanent.
 }
 
-// Purpose of a WhatsApp code (staff and customers).
+// WhatsApp code purpose.
 enum VerificationPurpose {
-  PHONE // Verifies the phone number.
-  TWO_FACTOR // 2FA sign-in step.
+  PHONE
+  TWO_FACTOR
   PASSWORD_RESET
 }
 
@@ -120,8 +120,8 @@ enum GroundOrientation {
 
 // Bookings
 enum BookingStatus {
-  PENDING // Waiting for staff approval (VenueSettings.autoConfirm off).
-  HELD // Held until expiresAt.
+  PENDING // Awaiting staff approval.
+  HELD // Awaiting payment until expiresAt.
   CONFIRMED
   CANCELLED
   EXPIRED // Not approved or paid in time.
@@ -133,4 +133,33 @@ enum BookingChargeType {
   SLOT
   AMENITY
   DISCOUNT
+}
+
+// Payments
+enum PaymentMode {
+  MANUAL
+  DEPOSIT // Deposit online, the rest manual.
+  PLATFORM
+}
+
+// Categories; the scheme is Payment.brand.
+enum PaymentMethod {
+  CASH
+  CARD // e.g. Visa, mada, KNET, Apple Pay.
+  WALLET // e.g. Vodafone Cash, STC Pay.
+  REFERENCE // Code paid at a kiosk or bank, e.g. Fawry.
+  BNPL // Buy now, pay later, e.g. Tabby.
+}
+
+enum PaymentStatus {
+  PENDING // Waiting on the provider or a reference code.
+  SUCCEEDED
+  FAILED
+  EXPIRED // Not paid in time.
+}
+
+enum RefundStatus {
+  PENDING // Sent, not yet confirmed.
+  SUCCEEDED
+  FAILED
 }

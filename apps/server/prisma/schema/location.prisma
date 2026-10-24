@@ -1,10 +1,11 @@
-// A country Hagz operates in.
+// A country Hagz operates in. CHECK: taxRate 0–10000.
 model Marketplace {
   id        String   @id @default(uuid(7)) @db.Uuid
   code      String   @unique @db.Char(2) // ISO 3166-1 alpha-2
   currency  String   @db.Char(3) // ISO 4217
   dialCode  String // E.164 prefix
   timezone  String // IANA
+  taxRate   Int      @default(0) // VAT in basis points (1400 = 14%).
   isActive  Boolean  @default(false) // Hidden until launch.
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
@@ -25,7 +26,7 @@ model MarketplaceTranslation {
   @@id([marketplaceId, language])
 }
 
-// Location tree node, e.g. Egypt → Cairo → Nasr City. The parent must share the marketplace.
+// Tree node, e.g. Cairo → Nasr City. The parent shares the marketplace.
 model Location {
   id            String   @id @default(uuid(7)) @db.Uuid
   marketplaceId String   @db.Uuid
@@ -43,7 +44,7 @@ model Location {
 
   // Parent relation target.
   @@unique([id, marketplaceId])
-  // Slugs are unique among siblings; roots get their own index since NULL parents never collide.
+  // Slugs unique among siblings; roots need their own index (NULL parents never collide).
   @@unique([marketplaceId, slug], map: "Location_root_slug_key", where: { parentId: null })
   @@unique([parentId, slug], map: "Location_child_slug_key", where: { parentId: { not: null } })
   @@index([parentId])
