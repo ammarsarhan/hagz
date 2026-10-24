@@ -14,9 +14,9 @@ model Admin {
   createdAt       DateTime      @default(now()) @db.Timestamptz
   updatedAt       DateTime      @updatedAt @db.Timestamptz
 
-  sessions        AdminSession[]
-  sentInvitations AdminInvitation[] @relation("InvitedBy")
-  invitation      AdminInvitation?  @relation("AcceptedAs")
+  sessions   AdminSession[]
+  invites    AdminInvitation[] @relation("InvitedBy")
+  invitation AdminInvitation?  @relation("AcceptedAs")
 }
 
 // One row per signed-in device. The refresh token is rotated in place on every refresh;
@@ -41,18 +41,18 @@ model AdminSession {
 // Its state comes from the timestamps: pending until acceptedAt, revokedAt or expiresAt.
 // Only the token's hash is stored.
 model AdminInvitation {
-  id          String    @id @default(uuid(7)) @db.Uuid
-  email       String
-  tokenHash   String    @unique
-  invitorId   String    @db.Uuid
-  adminId     String?   @unique @db.Uuid // The account created on acceptance.
-  expiresAt   DateTime  @db.Timestamptz
-  acceptedAt  DateTime? @db.Timestamptz
-  revokedAt   DateTime? @db.Timestamptz
-  createdAt   DateTime  @default(now()) @db.Timestamptz
+  id         String    @id @default(uuid(7)) @db.Uuid
+  email      String
+  tokenHash  String    @unique
+  invitorId  String    @db.Uuid
+  adminId    String?   @unique @db.Uuid // The account created on acceptance.
+  expiresAt  DateTime  @db.Timestamptz
+  acceptedAt DateTime? @db.Timestamptz
+  revokedAt  DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
 
-  invitor   Admin  @relation("InvitedBy", fields: [invitorId], references: [id])
-  admin     Admin? @relation("AcceptedAs", fields: [adminId], references: [id])
+  invitor Admin  @relation("InvitedBy", fields: [invitorId], references: [id])
+  admin   Admin? @relation("AcceptedAs", fields: [adminId], references: [id])
 
   @@index([email])
 }
