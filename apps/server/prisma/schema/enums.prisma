@@ -102,3 +102,18 @@ enum SlotStatus {
   BOOKED
   BLOCKED // Closed by staff.
 }
+
+// Layouts
+enum LayoutItemType {
+  GROUND
+  CAFE
+  TOILETS
+  CHANGING_ROOMS
+  PARKING
+  SEATING
+}
+
+enum GroundOrientation {
+  HORIZONTAL
+  VERTICAL // Footprint width and height swapped.
+}

@@ -19,6 +19,7 @@ model Ground {
   settings     GroundSettings?
   schedules    GroundSchedule[]
   slots        GroundSlot[]
+  placement    VenueLayoutItem?
 
   @@unique([id, venueId]) // GroundSlot relation target.
   @@index([venueId, position])
