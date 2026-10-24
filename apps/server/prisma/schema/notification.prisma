@@ -24,9 +24,9 @@ model Notification {
   @@index([adminId, createdAt])
 }
 
-// One per channel per notification, updated by the send worker and provider webhooks.
-// CHECKs: attempts >= 0; sentAt set unless PENDING (optional when FAILED); deliveredAt set
-// exactly when DELIVERED.
+// One per channel per notification. Retries stay PENDING; FAILED is final. CHECKs: attempts >= 0;
+// sentAt set unless PENDING (optional when FAILED); deliveredAt set exactly when DELIVERED, not
+// before sentAt; nextAttemptAt only when PENDING.
 model NotificationDelivery {
   id                String              @id @default(uuid(7)) @db.Uuid
   notificationId    String              @db.Uuid
@@ -36,6 +36,7 @@ model NotificationDelivery {
   providerReference String? // Provider's message id.
   attempts          Int                 @default(0)
   error             String? // Last failure.
+  nextAttemptAt     DateTime?           @db.Timestamptz // When the worker picks it up.
   sentAt            DateTime?           @db.Timestamptz
   deliveredAt       DateTime?           @db.Timestamptz
   createdAt         DateTime            @default(now()) @db.Timestamptz
@@ -45,5 +46,5 @@ model NotificationDelivery {
 
   @@unique([notificationId, channel])
   @@unique([provider, providerReference]) // Webhook dedupe.
-  @@index([status, createdAt])
+  @@index([status, nextAttemptAt]) // Worker queue.
 }
