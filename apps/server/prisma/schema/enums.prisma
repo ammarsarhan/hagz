@@ -1,0 +1,17 @@
+enum Language {
+  EN
+  AR
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED // Temporarily blocked; can be lifted.
+  BANNED // Permanently blocked.
+}
+
+// What a WhatsApp code sent to a staff member or customer is for.
+enum VerificationPurpose {
+  PHONE // Proves the account owns its phone number.
+  TWO_FACTOR // Second step of sign-in when 2FA is enabled.
+  PASSWORD_RESET
+}

@@ -1,0 +1,58 @@
+// Platform operators. Email + password + an authenticator app (TOTP), always; access to every resource.
+// Admins never sign up: every admin comes from an AdminInvitation, except the first, which is seeded.
+// An admin can do nothing until totpConfirmedAt is set. A lost authenticator is reset by another admin.
+model Admin {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  name            String
+  email           String        @unique
+  passwordHash    String
+  totpSecret      String? // Encrypted at rest. Set when enrolment starts, trusted once totpConfirmedAt is set.
+  totpConfirmedAt DateTime?     @db.Timestamptz
+  totpLastStep    Int? // Time step of the last accepted code, so a code can't be replayed.
+  status          AccountStatus @default(ACTIVE)
+  lastLoginAt     DateTime?     @db.Timestamptz
+  createdAt       DateTime      @default(now()) @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @db.Timestamptz
+
+  sessions        AdminSession[]
+  sentInvitations AdminInvitation[] @relation("InvitedBy")
+  invitation      AdminInvitation?  @relation("AcceptedAs")
+}
+
+// One row per signed-in device. The refresh token is rotated in place on every refresh;
+// only its SHA-256 hash is stored. Access tokens are stateless and never stored.
+model AdminSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  adminId          String    @db.Uuid
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  lastUsedAt       DateTime  @default(now()) @db.Timestamptz
+  expiresAt        DateTime  @db.Timestamptz
+  revokedAt        DateTime? @db.Timestamptz
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+}
+
+// An emailed link that lets someone create an admin account: set a password, then enrol TOTP.
+// Its state comes from the timestamps: pending until acceptedAt, revokedAt or expiresAt.
+// Only the token's hash is stored.
+model AdminInvitation {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  email       String
+  tokenHash   String    @unique
+  invitorId   String    @db.Uuid
+  adminId     String?   @unique @db.Uuid // The account created on acceptance.
+  expiresAt   DateTime  @db.Timestamptz
+  acceptedAt  DateTime? @db.Timestamptz
+  revokedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+
+  invitor   Admin  @relation("InvitedBy", fields: [invitorId], references: [id])
+  admin     Admin? @relation("AcceptedAs", fields: [adminId], references: [id])
+
+  @@index([email])
+}

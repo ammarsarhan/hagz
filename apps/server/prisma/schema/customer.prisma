@@ -1,0 +1,56 @@
+// Players (customer app). Phone + password (+ 2FA if enabled); the phone is verified over WhatsApp.
+// Guests browse without an account; signing in is required to book.
+model Customer {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  name             String
+  phone            String?       @unique // Null once the account is deleted (PII scrubbed).
+  passwordHash     String
+  avatarKey        String?
+  twoFactorEnabled Boolean       @default(false)
+  status           AccountStatus @default(ACTIVE)
+  phoneVerifiedAt  DateTime?     @db.Timestamptz
+  lastLoginAt      DateTime?     @db.Timestamptz
+  deletedAt        DateTime?     @db.Timestamptz
+  createdAt        DateTime      @default(now()) @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @db.Timestamptz
+
+  // Preferences
+  language Language @default(AR)
+  timezone String   @default("Africa/Cairo")
+
+  sessions   CustomerSession[]
+  challenges CustomerVerification[]
+}
+
+// Same shape and rotation rules as StaffSession.
+model CustomerSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  customerId       String    @db.Uuid
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  lastUsedAt       DateTime  @default(now()) @db.Timestamptz
+  expiresAt        DateTime  @db.Timestamptz
+  revokedAt        DateTime? @db.Timestamptz
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+// Same shape and rules as StaffVerification.
+model CustomerVerification {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  customerId String              @db.Uuid
+  purpose    VerificationPurpose
+  codeHash   String
+  attempts   Int                 @default(0)
+  expiresAt  DateTime            @db.Timestamptz
+  consumedAt DateTime?           @db.Timestamptz
+  createdAt  DateTime            @default(now()) @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, purpose, createdAt])
+}

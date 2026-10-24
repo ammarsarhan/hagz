@@ -1,0 +1,56 @@
+// Venue owners and their team (dashboard app). Phone + password (+ 2FA if enabled); the phone is
+// verified over WhatsApp. Anyone can sign up. Creating a venue makes you its owner; joining someone
+// else's venue needs an invitation addressed to your phone number, sent by a staff member with
+// permission on that venue. Memberships (with their custom permissions) and those invitations
+// will live on their own tables once venues exist.
+model Staff {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  name             String
+  phone            String?       @unique // Null once the account is deleted (PII scrubbed).
+  passwordHash     String
+  language         Language      @default(AR)
+  twoFactorEnabled Boolean       @default(false)
+  status           AccountStatus @default(ACTIVE)
+  phoneVerifiedAt  DateTime?     @db.Timestamptz
+  lastLoginAt      DateTime?     @db.Timestamptz
+  deletedAt        DateTime?     @db.Timestamptz
+  createdAt        DateTime      @default(now()) @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @db.Timestamptz
+
+  sessions   StaffSession[]
+  challenges StaffVerification[]
+}
+
+// Same shape and rotation rules as AdminSession.
+model StaffSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  staffId          String    @db.Uuid
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  lastUsedAt       DateTime  @default(now()) @db.Timestamptz
+  expiresAt        DateTime  @db.Timestamptz
+  revokedAt        DateTime? @db.Timestamptz
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+}
+
+// A one-time code sent over WhatsApp. Only the hash is stored; the code is spent once consumedAt
+// is set or attempts runs out. Recent rows per account double as the resend rate limit.
+model StaffVerification {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  staffId    String              @db.Uuid
+  purpose    VerificationPurpose
+  codeHash   String
+  attempts   Int                 @default(0)
+  expiresAt  DateTime            @db.Timestamptz
+  consumedAt DateTime?           @db.Timestamptz
+  createdAt  DateTime            @default(now()) @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, purpose, createdAt])
+}
