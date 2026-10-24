@@ -1,0 +1,92 @@
+// A bookable pitch or court. Independent in v1; combining grounds later works by booking the
+// slots of several grounds together. Prices are in minor units of the marketplace currency.
+model Ground {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  venueId       String        @db.Uuid
+  sport         GroundSport
+  size          GroundSize
+  surface       GroundSurface
+  status        GroundStatus  @default(ACTIVE)
+  position      Int // Display order within the venue.
+  basePrice     Int
+  peakPrice     Int?
+  discountPrice Int?
+  createdAt     DateTime      @default(now()) @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @db.Timestamptz
+
+  venue        Venue               @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  translations GroundTranslation[]
+  settings     GroundSettings?
+  schedules    GroundSchedule[]
+  slots        GroundSlot[]
+
+  @@unique([id, venueId]) // GroundSlot relation target.
+  @@index([venueId, position])
+}
+
+model GroundTranslation {
+  groundId    String   @db.Uuid
+  language    Language
+  name        String
+  description String?
+
+  ground Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  @@id([groundId, language])
+}
+
+// One row per ground. Slot duration (60 min) and the 90-day horizon are global constants.
+// CHECKs: minimumSlots >= 1, maximumSlots >= minimumSlots, generatedUntil <= now() + 90 days.
+model GroundSettings {
+  groundId        String    @id @db.Uuid
+  minimumSlots    Int       @default(1) // Shortest booking, in slots.
+  maximumSlots    Int       @default(3) // Longest booking, in slots.
+  generatedUntil  DateTime? @db.Timestamptz // Slots exist up to here; set by the generation job.
+  scheduleVersion Int       @default(0) // Bumped on every schedule, tier price or settings edit.
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @db.Timestamptz
+
+  ground Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+}
+
+// The weekly template slots are generated from, one row per open day. dayOfWeek is 0–6 from
+// Sunday (JS getDay, Postgres DOW). hours maps each open hour (0–23, local time) to its tier,
+// e.g. { "18": "PEAK", "19": "PEAK" }; closed hours are absent. Past midnight belongs to the next
+// day's row. Copying a schedule to other grounds copies these rows once. CHECK: dayOfWeek 0–6.
+model GroundSchedule {
+  groundId  String   @db.Uuid
+  dayOfWeek Int      @db.SmallInt
+  hours     Json
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  ground Ground @relation(fields: [groundId], references: [id], onDelete: Cascade)
+
+  @@id([groundId, dayOfWeek])
+}
+
+// A bookable hour. Generated slots copy tier and price, and only the generation job creates,
+// re-prices or deletes them (AVAILABLE ones only). Staff can block any slot, and bulk-edit or add
+// slots for special occasions, which marks them isManual so regeneration leaves them alone. An
+// AVAILABLE, non-manual slot with an older scheduleVersion than its ground's is stale. venueId is
+// denormalized for venue-wide availability, enforced to match the ground's.
+// CHECKs: endsAt > startsAt, startsAt <= now() + 90 days.
+model GroundSlot {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  groundId        String     @db.Uuid
+  venueId         String     @db.Uuid
+  startsAt        DateTime   @db.Timestamptz
+  endsAt          DateTime   @db.Timestamptz
+  tier            PriceTier
+  price           Int
+  status          SlotStatus @default(AVAILABLE)
+  isManual        Boolean    @default(false)
+  scheduleVersion Int // GroundSettings.scheduleVersion it was generated from.
+  createdAt       DateTime   @default(now()) @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @db.Timestamptz
+
+  ground Ground @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+
+  @@unique([groundId, startsAt])
+  @@index([venueId, startsAt])
+}

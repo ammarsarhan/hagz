@@ -1,3 +1,4 @@
+// Shared
 enum Language {
   EN
   AR
@@ -14,4 +15,90 @@ enum VerificationPurpose {
   PHONE // Verifies the phone number.
   TWO_FACTOR // 2FA sign-in step.
   PASSWORD_RESET
+}
+
+// Locations
+enum Locality {
+  REGION // Saudi Arabia
+  EMIRATE // UAE
+  GOVERNORATE // Egypt, Kuwait, Bahrain, Oman; under REGION in Saudi Arabia
+  MUNICIPALITY // Qatar
+  WILAYAT // Oman
+  CITY
+  DISTRICT
+  AREA
+  NEIGHBORHOOD
+}
+
+// Venues
+enum VenueStatus {
+  DRAFT // Owner setting up.
+  SUBMITTED // Awaiting review.
+  PROVISIONING // Approved, not yet live.
+  LIVE // Bookable.
+  MAINTENANCE // Temporarily unbookable.
+}
+
+enum VenueRole {
+  OWNER
+  MEMBER
+}
+
+enum AmenityPricing {
+  PER_HOUR
+  PER_BOOKING
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaStatus {
+  PENDING // Presigned upload issued, not yet confirmed.
+  READY
+}
+
+// Grounds
+enum GroundSport {
+  FOOTBALL
+  PADEL
+  TENNIS
+  BASKETBALL
+  VOLLEYBALL
+}
+
+enum GroundSize {
+  FIVE_A_SIDE
+  SEVEN_A_SIDE
+  ELEVEN_A_SIDE
+  STANDARD // Sports without size variants.
+}
+
+enum GroundSurface {
+  NATURAL_GRASS
+  ARTIFICIAL_TURF
+  HARD_WOOD
+  HARD_COURT
+  CLAY
+  OTHER
+}
+
+enum GroundStatus {
+  ACTIVE
+  MAINTENANCE // Temporarily unbookable.
+  DELETED // Kept for booking history.
+}
+
+enum PriceTier {
+  BASE
+  PEAK
+  DISCOUNT
+}
+
+enum SlotStatus {
+  AVAILABLE
+  HELD // Reserved while a booking awaits payment.
+  BOOKED
+  BLOCKED // Closed by staff.
 }

@@ -1,11 +1,3 @@
-enum VenueStatus {
-  DRAFT // Owner setting up.
-  SUBMITTED // Awaiting review.
-  PROVISIONING // Approved, not yet live.
-  LIVE // Bookable.
-  MAINTENANCE // Temporarily unbookable.
-}
-
 // Marketplace must match the location's. The team, owner included, is in VenueMembership.
 model Venue {
   id            String                                 @id @default(uuid(7)) @db.Uuid
@@ -34,6 +26,7 @@ model Venue {
   events       VenueEvent[]
   favorites    VenueFavorite[]
   customers    VenueCustomer[]
+  grounds      Ground[]
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)
@@ -54,11 +47,6 @@ model VenueTranslation {
 
   @@id([venueId, language])
   @@index([language, name])
-}
-
-enum VenueRole {
-  OWNER
-  MEMBER
 }
 
 // One OWNER per venue (partial index). Create venues and transfer ownership in a transaction;
@@ -104,15 +92,12 @@ model VenueInvitation {
 model VenueSettings {
   venueId            String   @id @db.Uuid
   defaultPermissions Json // For new invitations.
+  minimumNotice      Int      @default(60) // Minutes before kick-off that booking closes.
+  autoConfirm        Boolean  @default(true) // False: staff approve each booking.
   createdAt          DateTime @default(now()) @db.Timestamptz
   updatedAt          DateTime @updatedAt @db.Timestamptz
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-}
-
-enum AmenityPricing {
-  PER_HOUR
-  PER_BOOKING
 }
 
 // An amenity a venue offers; the option must be from the venue's marketplace. Free unless priced.
@@ -128,16 +113,6 @@ model VenueAmenity {
 
   @@id([venueId, optionId])
   @@index([optionId])
-}
-
-enum MediaType {
-  IMAGE
-  VIDEO
-}
-
-enum MediaStatus {
-  PENDING // Presigned upload issued, not yet confirmed.
-  READY
 }
 
 // Photos and videos in object storage. Lowest position is the cover.
