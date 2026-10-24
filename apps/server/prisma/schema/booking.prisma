@@ -35,13 +35,13 @@ model Booking {
   @@index([status, expiresAt])
 }
 
-// What the customer owes, one row per line: each hour, each amenity, and later adjustments
-// (a loyalty discount, the part a cancellation waives). Add-only: changes are new rows, never
-// edits, and Booking.total is kept equal to the sum in the same transaction. Money that actually
-// moved lives in the payment ledger, never here. Copied at booking time, so later price changes
-// don't touch it. One SLOT row per hour and one AMENITY row per option.
+// The price at booking time, one row per line: each hour, each amenity, and any discount.
+// Written once with the booking and never changed, so later price edits don't touch it;
+// Booking.total is their sum. Cancellations and refunds are not charges: they're handled by the
+// cancellation policy and the payment ledger, which records only money that actually moved.
+// One SLOT row per hour and one AMENITY row per option.
 // CHECK: SLOT has startsAt and tier, AMENITY has optionId (and pricing unless free), both with
-// amount >= 0; DISCOUNT and CANCELLATION have none of them and amount < 0.
+// amount >= 0; DISCOUNT has none of them and amount < 0.
 model BookingCharge {
   id        String            @id @default(uuid(7)) @db.Uuid
   bookingId String            @db.Uuid
@@ -50,7 +50,7 @@ model BookingCharge {
   tier      PriceTier? // SLOT
   optionId  String?           @db.Uuid // AMENITY
   pricing   AmenityPricing? // AMENITY; null when free.
-  amount    Int // Per-hour amenities already multiplied out. Negative for adjustments.
+  amount    Int // Per-hour amenities already multiplied out. Negative for DISCOUNT.
   createdAt DateTime          @default(now()) @db.Timestamptz
 
   booking Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)

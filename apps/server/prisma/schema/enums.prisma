@@ -133,5 +133,4 @@ enum BookingChargeType {
   SLOT
   AMENITY
   DISCOUNT
-  CANCELLATION // The part of the price a cancellation waives.
 }
