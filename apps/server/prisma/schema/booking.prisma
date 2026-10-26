@@ -14,6 +14,7 @@ model Booking {
   endsAt             DateTime           @db.Timestamptz
   note               String? // From the customer.
   expiresAt          DateTime?          @db.Timestamptz // PENDING and HELD release slots after this.
+  idempotencyKey     String?            @db.Uuid // Idempotency-Key header; a retry gets this booking.
   // Terms copied at booking time; never updated.
   total              Int // Sum of its charges, VAT included.
   depositAmount      Int? // Due online; the rest is manual.
@@ -41,6 +42,7 @@ model Booking {
 
   @@unique([id, venueId]) // GroundSlot relation target.
   @@unique([id, customerId]) // Loyalty and review relation target.
+  @@unique([venueId, idempotencyKey]) // Not customerId: a retry may create a new VenueCustomer.
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
