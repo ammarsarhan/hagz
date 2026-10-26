@@ -81,6 +81,183 @@
         ],
         "additionalProperties": {},
         "description": "An error. Extra members depend on the code."
+      },
+      "VerificationCodeSent": {
+        "type": "object",
+        "properties": {
+          "expiresIn": {
+            "type": "integer",
+            "description": "Seconds the code stays valid.",
+            "example": 600
+          },
+          "resendAfter": {
+            "type": "integer",
+            "description": "Seconds before another code can be sent.",
+            "example": 60
+          }
+        },
+        "required": [
+          "expiresIn",
+          "resendAfter"
+        ],
+        "description": "Returned whether or not the number has an account."
+      },
+      "SendVerificationCode": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "VerificationConfirmed": {
+        "type": "object",
+        "properties": {
+          "verificationToken": {
+            "type": "string",
+            "description": "Single use. Proves the phone belongs to the caller."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 900
+          }
+        },
+        "required": [
+          "verificationToken",
+          "expiresIn"
+        ]
+      },
+      "ConfirmVerificationCode": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "CustomerSignedUp": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Session"
+          }
+        },
+        "required": [
+          "customer",
+          "session"
+        ]
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201001234567"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "AR",
+              "EN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "language"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresIn": {
+            "type": "integer",
+            "description": "Seconds.",
+            "example": 600
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "refreshTokenExpiresIn": {
+            "type": "integer",
+            "description": "Seconds; extended by every refresh.",
+            "example": 5184000
+          }
+        },
+        "required": [
+          "accessToken",
+          "accessTokenExpiresIn",
+          "refreshToken",
+          "refreshTokenExpiresIn"
+        ]
+      },
+      "CustomerSignUp": {
+        "type": "object",
+        "properties": {
+          "verificationToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Ahmed"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The device's IANA time zone.",
+            "example": "Africa/Cairo"
+          }
+        },
+        "required": [
+          "verificationToken",
+          "name",
+          "password",
+          "timezone"
+        ]
       }
     },
     "parameters": {}
@@ -117,6 +294,188 @@
           },
           "503": {
             "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/verifications": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send a sign-up code over WhatsApp",
+        "description": "The same response whether or not the number has an account. Language follows `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendVerificationCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER: not a mobile number in international format.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: too many codes; see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MESSAGING_UNAVAILABLE or SERVICE_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/verifications/confirm": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Confirm a sign-up code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmVerificationCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The phone is verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationConfirmed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sign-up": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Create the account and sign in",
+        "description": "Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerSignUp"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed up and signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerSignedUp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PHONE_ALREADY_REGISTERED: log in instead.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same verificationToken.",
             "content": {
               "application/problem+json": {
                 "schema": {

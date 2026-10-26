@@ -5,7 +5,7 @@ import { createMiddleware } from "hono/factory";
 import { env } from "@/platform/config/env";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
-import { queueConnection } from "@/platform/redis/connections";
+import { guardedRedis, serviceUnavailable } from "@/platform/redis/guarded";
 
 // Fixed-window counters in Redis, the same design as Terhal's limiter. A burst of up to twice the
 // limit is possible across a window boundary; for the auth limits this guards, that's acceptable.
@@ -31,29 +31,13 @@ end
 return { count, ttl }
 `;
 
-// The queue connection, never the cache: the cache evicts keys under memory pressure, which would
-// silently reset counters. That connection queues commands while Redis is down (BullMQ needs that),
-// so check its state and cap the wait instead of hanging until the request times out.
-const REDIS_TIMEOUT_MS = 500;
-
-const count = async (key: string, windowMs: number): Promise<{ count: number; ttl: number }> => {
-  if (queueConnection.status !== "ready") throw new Error(`Redis is ${queueConnection.status}`);
-  let timer: NodeJS.Timeout | undefined;
-  const timedOut = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      reject(new Error("Redis timed out"));
-    }, REDIS_TIMEOUT_MS);
-  });
-  try {
-    const [current, ttl] = (await Promise.race([
-      queueConnection.eval(consumeScript, 1, key, windowMs),
-      timedOut,
-    ])) as [number, number];
+// Counted on the queue Redis, never the cache: the cache evicts keys under memory pressure, which
+// would silently reset counters.
+const count = (key: string, windowMs: number) =>
+  guardedRedis(async (redis) => {
+    const [current, ttl] = (await redis.eval(consumeScript, 1, key, windowMs)) as [number, number];
     return { count: current, ttl };
-  } finally {
-    clearTimeout(timer);
-  }
-};
+  });
 
 // Values are hashed, so Redis never holds raw phone numbers or IPs. Callers pass normalized values
 // (E.164 phones): +20 100 ..., 0100... and +20100... must be one counter, not three.
@@ -71,11 +55,7 @@ export const consume = async (limit: Limit, value: string): Promise<void> => {
       return;
     }
     logger.error({ err: error, limit: limit.name }, "rate limiter unavailable, failing closed");
-    throw new AppError({
-      code: "SERVICE_UNAVAILABLE",
-      status: 503,
-      detail: "This service is temporarily unavailable. Please try again shortly.",
-    });
+    throw serviceUnavailable();
   }
 
   if (result.count > limit.limit) {

@@ -34,3 +34,11 @@ export const createMarketplace = ({
       },
     },
   });
+
+// A published venue with the minimum it needs: a marketplace and a top-level location.
+export const createVenue = async (marketplaceId: string, slug = `venue-${++sequence}`) => {
+  const location = await prisma.location.create({
+    data: { marketplaceId, locality: "GOVERNORATE", slug: `location-${sequence}` },
+  });
+  return prisma.venue.create({ data: { marketplaceId, locationId: location.id, slug } });
+};

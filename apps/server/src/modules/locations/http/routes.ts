@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
-import { accepts } from "hono/accepts";
 import { list, Marketplace } from "@hagz/contracts";
+import { requestLanguage } from "@/platform/http/language";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { listMarketplaces } from "../application/list-marketplaces";
 
@@ -20,7 +20,6 @@ const listMarketplacesRoute = createRoute({
 });
 
 export const locationsRoutes = createRouter().openapi(listMarketplacesRoute, async (c) => {
-  const language = accepts(c, { header: "Accept-Language", supports: ["ar", "en"], default: "ar" });
-  const data = await listMarketplaces(language === "en" ? "EN" : "AR");
+  const data = await listMarketplaces(requestLanguage(c));
   return c.json({ data }, 200);
 });
