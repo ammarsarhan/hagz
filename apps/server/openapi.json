@@ -1,0 +1,136 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hagz API",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "MarketplaceList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Marketplace"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "Marketplace": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "description": "ISO 3166-1 alpha-2.",
+            "example": "EG"
+          },
+          "name": {
+            "type": "string",
+            "description": "In the requested language.",
+            "example": "مصر"
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "ISO 4217.",
+            "example": "EGP"
+          },
+          "dialCode": {
+            "type": "string",
+            "description": "E.164 prefix.",
+            "example": "+20"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA time zone.",
+            "example": "Africa/Cairo"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "currency",
+          "dialCode",
+          "timezone"
+        ],
+        "description": "A country Hagz operates in."
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_FAILED"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Quote it to support."
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "detail"
+        ],
+        "additionalProperties": {},
+        "description": "An error. Extra members depend on the code."
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/v1/marketplaces": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "summary": "List the countries Hagz operates in",
+        "description": "Names follow `Accept-Language` (`ar` or `en`, Arabic by default). Public.",
+        "responses": {
+          "200": {
+            "description": "Active marketplaces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceList"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
