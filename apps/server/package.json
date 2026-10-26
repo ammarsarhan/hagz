@@ -25,6 +25,7 @@
     "@hono/zod-openapi": "^1.6.3",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@scalar/hono-api-reference": "^0.12.14",
     "bullmq": "^6.3.10",
     "dotenv": "^18.0.4",
     "hono": "^4.13.11",

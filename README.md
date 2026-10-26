@@ -37,4 +37,4 @@ pnpm typecheck
 pnpm test          # Needs Docker: starts throwaway Postgres and Redis containers
 ```
 
-`apps/server/openapi.json` is the API contract the apps are built against. The contract test fails when the API changes it; after an intended change, regenerate it with `pnpm --filter @hagz/server test -u` and commit it with the change.
+`apps/server/openapi.json` is the API contract the apps are built against. Browse it at `http://localhost:3000/v1/docs` while `pnpm dev` runs (also on staging, never in production). The contract test fails when the API changes it; after an intended change, regenerate it with `pnpm --filter @hagz/server test -u` and commit it with the change.
