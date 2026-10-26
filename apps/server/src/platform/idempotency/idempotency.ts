@@ -54,3 +54,7 @@ export const createIdempotently = async <T>({
     return replay(winner);
   }
 };
+
+// Response headers for an idempotent create. The status stays the original one (e.g. 201).
+export const replayHeaders = (result: IdempotentResult<unknown>): Record<string, string> =>
+  result.replayed ? { "Idempotent-Replayed": "true" } : {};
