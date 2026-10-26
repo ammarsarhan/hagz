@@ -39,10 +39,17 @@ export default defineRailway((ctx) => {
   const cacheVolume = volume("cache-volume", { region: REGION, sizeMB: 500 });
 
   // One image, two processes. Neon URLs are shared variables set per environment, never stored here.
-  const server = (name: string, deploy: { start: string; preDeploy?: string; healthcheck?: string }) =>
+  const server = (
+    name: string,
+    deploy: { start: string; preDeploy?: string; healthcheck?: string },
+  ) =>
     service(name, {
       source: github(REPO, { branch: production ? "main" : "staging", checkSuites: true }),
-      build: { builder: "DOCKERFILE", dockerfilePath: "apps/server/Dockerfile", watchPatterns: SERVER_WATCH },
+      build: {
+        builder: "DOCKERFILE",
+        dockerfilePath: "apps/server/Dockerfile",
+        watchPatterns: SERVER_WATCH,
+      },
       ...deploy,
       healthcheckTimeout: deploy.healthcheck ? 60 : undefined,
       replicas: { [REGION]: 1 },
