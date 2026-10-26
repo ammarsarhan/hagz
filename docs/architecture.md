@@ -32,14 +32,20 @@ apps/server/src/
     notifications/  deliveries per channel
     loyalty/ reviews/ discounts/
   platform/         db, transactions, idempotency, logging, errors, clock, rate limits
-  http/             routes and middleware
+  http/             composition root: global middleware, mounts each module's routes
+  app.ts worker.ts  process entry points
 ```
 
 - Each module has three layers:
   - `http` parses and validates input (zod) and serializes output.
   - `application` holds the use cases. They own transactions.
   - `domain` holds pure functions: pricing, VAT, cancellation tiers, state transitions, slot maths.
-- Modules talk through each other's public `index.ts`, never through each other's tables or internals. CI enforces this with `dependency-cruiser`.
+- Modules talk through each other's public `index.ts`, never through each other's tables or internals.
+- `eslint-plugin-boundaries` enforces this in `pnpm lint` (`apps/server/eslint.config.js`):
+  - another module is reachable only through its `index.ts`, and a module's own layers never import that `index.ts`;
+  - `http` → `application` → `domain`, never upwards, and module `http` never touches the database;
+  - `domain` imports no Prisma, Redis, BullMQ or Hono, and no platform service except errors;
+  - `platform` never imports modules or `http`.
 - `@hagz/contracts` holds the zod schemas for requests and responses. The OpenAPI spec is generated from them (`@hono/zod-openapi`), and the apps and the web frontend use them as typed clients.
 - Prisma models never leave the server. Every response is an explicit DTO, so new columns (and secrets like `refreshTokenHash`) are never exposed by accident.
 
@@ -154,9 +160,9 @@ The slot constraint closes a real gap (manual slots). The booking constraint is 
 
 | Area | Rule |
 |---|---|
-| Timeouts | Postgres `statement_timeout` (5 s for the API, longer for the worker), `lock_timeout` (2 s), `idle_in_transaction_session_timeout`. Every outbound HTTP call has a timeout. |
+| Timeouts | Set on the database (migration `20261026000001_timeouts`), because Neon's pooler rejects them as connection parameters: `statement_timeout` 5 s, `lock_timeout` 2 s, `idle_in_transaction_session_timeout` 30 s. Worker jobs and migrations that need longer raise them for themselves with `SET LOCAL`. Requests time out after 15 s and transactions after 10 s, but only the database timeouts actually stop work. Every outbound HTTP call has a timeout. |
 | Retries | Only for idempotent operations, with exponential backoff and jitter. A circuit breaker on each provider (payments, WhatsApp, push) fails fast when the provider is down. |
-| Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` checks Postgres and Redis and drives traffic. A database blip must not cause a restart loop. |
+| Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` drives traffic and Railway's deploy healthcheck: it fails while shutting down or when Postgres is unreachable. Redis is reported but doesn't fail it, because the API keeps working without Redis (see "Redis down"). A database blip must not cause a restart loop. |
 | Shutdown | On `SIGTERM`, the API fails readiness, stops accepting connections, finishes in-flight requests within a deadline, then disconnects Prisma and Redis. The worker stops taking jobs, finishes its current ones, then exits. |
 | Jobs | Processors are idempotent (BullMQ runs jobs at least once). Deterministic `jobId`s, `attempts` with backoff, zod-validated versioned payloads, and an alert when the failed set grows. Recurring jobs use job schedulers. |
 | Redis down | The cache fails open (read from Postgres). The queue falls back to the sweepers. Rate limits fail closed on OTP and invite-code endpoints (WhatsApp OTP abuse costs money) and fail open elsewhere. |

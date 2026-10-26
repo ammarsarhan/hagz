@@ -17,7 +17,7 @@
       "dependsOn": ["^build", "db:generate"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "db:generate"]
     },
     "dev": {
       "dependsOn": ["^build", "db:generate"],
