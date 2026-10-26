@@ -12,6 +12,7 @@ Pitch booking platform: two Expo apps, a Hono API + BullMQ worker, and a thin Ne
 | `apps/web` | Next.js: static pages, `/booking/[token]` (public), `/venue/[slug]` (public), `/admin` (admins only) |
 | `packages/contracts` | Shared types and schemas (empty until the data model is finalized) |
 | `tooling/tsconfig` | Shared TypeScript config |
+| `tooling/eslint` | Shared ESLint config (type-aware `typescript-eslint`) |
 | `infra` | Local Postgres, Redis (queue) and Redis (cache) |
 
 ## Branches
@@ -25,4 +26,12 @@ pnpm install
 cp .env.example apps/server/.env
 pnpm infra:up
 pnpm dev
+```
+
+## Checks
+
+```sh
+pnpm lint          # ESLint (type-aware) in every workspace that has a config
+pnpm format        # Prettier, writes changes; CI runs pnpm format:check
+pnpm typecheck
 ```
