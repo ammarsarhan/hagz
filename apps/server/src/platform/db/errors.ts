@@ -50,3 +50,30 @@ export const violatedUniqueIndex = (error: unknown): string | undefined => {
   if (prismaCode(error) !== "P2002" && sqlState(error) !== "23505") return undefined;
   return adapterCause(error)?.constraint?.index;
 };
+
+// Overload or an unreachable database: the request may well succeed if retried, so clients get a
+// 503 instead of a 500.
+const unavailableStates = new Set([
+  "55P03", // lock_timeout
+  "57014", // statement_timeout
+  "57P01", // terminated by the server, e.g. Neon scaling a compute to zero
+  "53300", // too many connections
+]);
+const unavailableCodes = new Set([
+  "P1001", // can't reach the database server
+  "P2024", // timed out waiting for a pooled connection
+  "P2028", // transaction timed out or couldn't start in time
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+]);
+
+export const isDatabaseUnavailable = (error: unknown): boolean => {
+  const code = prismaCode(error);
+  const state = sqlState(error);
+  return (
+    (typeof code === "string" && unavailableCodes.has(code)) ||
+    (state !== undefined && unavailableStates.has(state))
+  );
+};

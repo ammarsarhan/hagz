@@ -1,5 +1,6 @@
 import type { Redis } from "ioredis";
 import { prisma } from "@/platform/db/prisma";
+import { isShuttingDown, markShuttingDown } from "@/platform/lifecycle/state";
 import { logger } from "@/platform/logger/logger";
 import { cache, queueConnection } from "@/platform/redis/connections";
 
@@ -16,11 +17,9 @@ const closeRedis = async (client: Redis) => {
 // Shuts the process down in order: stop taking new work, let in-flight work finish, then close
 // the connections that work was using.
 export const handleShutdown = (stopIntake: () => Promise<void>) => {
-  let stopping = false;
-
   const shutdown = async (signal: NodeJS.Signals) => {
-    if (stopping) return;
-    stopping = true;
+    if (isShuttingDown()) return;
+    markShuttingDown();
     logger.info({ signal }, "shutting down");
 
     setTimeout(() => {

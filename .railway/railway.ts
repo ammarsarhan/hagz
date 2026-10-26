@@ -69,7 +69,7 @@ export default defineRailway((ctx) => {
   const api = server("api", {
     start: "node dist/app.js",
     preDeploy: "/app/node_modules/.bin/prisma migrate deploy",
-    healthcheck: "/health",
+    healthcheck: "/health/ready",
   });
 
   const worker = server("worker", { start: "node dist/worker.js" });

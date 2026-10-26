@@ -17,7 +17,9 @@ export const requestContext = createMiddleware<{ Variables: { requestId: string 
 );
 
 // One line per request. The route pattern, not the path, so ids and booking codes stay out of logs.
+// Health probes are skipped: they run every few seconds and say nothing about traffic.
 export const accessLog = createMiddleware(async (c, next) => {
+  if (c.req.path.startsWith("/health/")) return next();
   const start = performance.now();
   await next();
   const status = c.res.status;

@@ -3,6 +3,7 @@ import type { ErrorHandler, NotFoundHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { currentContext } from "@/platform/context/request-context";
+import { isDatabaseUnavailable } from "@/platform/db/errors";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
 
@@ -66,6 +67,12 @@ export const onError: ErrorHandler = (error) => {
     }
     const code = codeForStatus[error.status] ?? "BAD_REQUEST";
     return problem(error.status, code, error.message || (STATUS_CODES[error.status] ?? "Error"));
+  }
+
+  // Overloaded or unreachable database: worth retrying, so not a 500.
+  if (isDatabaseUnavailable(error)) {
+    logger.warn({ err: error }, "database unavailable");
+    return problem(503, "SERVICE_UNAVAILABLE", genericDetail);
   }
 
   // A bug. Log everything, tell the client nothing about it.
