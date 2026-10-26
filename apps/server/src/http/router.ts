@@ -1,4 +1,5 @@
 import { locationsRoutes } from "@/modules/locations";
+import { appVersion } from "@/http/app-version";
 import { notFound, onError } from "@/http/errors";
 import { health } from "@/http/health";
 import { accessLog, bodyLimit, requestContext, requestId, timeout } from "@/http/middleware";
@@ -15,6 +16,7 @@ router.use(requestContext);
 router.use(accessLog);
 router.use(timeout);
 router.use(bodyLimit);
+router.use("/v1/*", appVersion);
 
 router.route("/health", health);
 router.route("/v1", locationsRoutes);
