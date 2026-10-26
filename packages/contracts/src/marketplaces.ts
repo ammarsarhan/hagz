@@ -11,9 +11,3 @@ export const Marketplace = z
   .meta({ id: "Marketplace", description: "A country Hagz operates in." });
 
 export type Marketplace = z.infer<typeof Marketplace>;
-
-export const MarketplaceList = z
-  .object({ data: z.array(Marketplace) })
-  .meta({ id: "MarketplaceList" });
-
-export type MarketplaceList = z.infer<typeof MarketplaceList>;

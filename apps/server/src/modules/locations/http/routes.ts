@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
 import { accepts } from "hono/accepts";
-import { MarketplaceList } from "@hagz/contracts";
+import { list, Marketplace } from "@hagz/contracts";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { listMarketplaces } from "../application/list-marketplaces";
 
@@ -13,7 +13,7 @@ const listMarketplacesRoute = createRoute({
   responses: {
     200: {
       description: "Active marketplaces",
-      content: { "application/json": { schema: MarketplaceList } },
+      content: { "application/json": { schema: list(Marketplace) } },
     },
     503: problemResponse("The database is unavailable; retry."),
   },

@@ -1,4 +1,5 @@
 import { locationsRoutes } from "@/modules/locations";
+import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
 import { notFound, onError } from "@/http/errors";
 import { health } from "@/http/health";
@@ -21,13 +22,24 @@ router.use("/v1/*", appVersion);
 router.route("/health", health);
 router.route("/v1", locationsRoutes);
 
-// The contract the apps are built against. Not served in production: it lists every route,
-// including admin ones. CI keeps a copy to diff against the base branch.
+// The contract the apps are built against, and a browsable page for it. Not served in production:
+// they list every route, including admin ones. The committed copy is apps/server/openapi.json.
 if (env.APP_ENV !== "production") {
   router.doc31("/v1/openapi.json", {
     openapi: "3.1.0",
     info: { title: "Hagz API", version: "1" },
   });
+  router.get(
+    "/v1/docs",
+    Scalar({
+      url: "/v1/openapi.json",
+      pageTitle: "Hagz API",
+      // Pinned: the default loads whatever version jsDelivr serves as latest, unreviewed. Setting
+      // `cdn` makes the page load a classic <script src>, so this must be the standalone build
+      // (esm.js is an ES module and leaves the page blank).
+      cdn: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.74.0/dist/browser/standalone.js",
+    }),
+  );
 }
 
 router.notFound(notFound);

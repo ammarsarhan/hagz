@@ -1,4 +1,4 @@
-import { MarketplaceList } from "@hagz/contracts";
+import { list as listOf, Marketplace } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { resetDatabase } from "../../support/database";
@@ -8,7 +8,7 @@ const list = async (headers: Record<string, string> = {}) => {
   const res = await router.request("/v1/marketplaces", { headers });
   expect(res.status).toBe(200);
   // The response must satisfy the published contract, not just look right.
-  return MarketplaceList.parse(await res.json()).data;
+  return listOf(Marketplace).parse(await res.json()).data;
 };
 
 beforeEach(async () => {

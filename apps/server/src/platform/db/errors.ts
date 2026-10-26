@@ -52,7 +52,8 @@ export const violatedUniqueIndex = (error: unknown): string | undefined => {
 };
 
 // Overload or an unreachable database: the request may well succeed if retried, so clients get a
-// 503 instead of a 500.
+// 503 instead of a 500. Misconfiguration (bad credentials, TLS) is deliberately not here: a retry
+// won't fix it, so it stays a loud 500. Shapes verified by killing Postgres under load.
 const unavailableStates = new Set([
   "55P03", // lock_timeout
   "57014", // statement_timeout
@@ -61,6 +62,8 @@ const unavailableStates = new Set([
 ]);
 const unavailableCodes = new Set([
   "P1001", // can't reach the database server
+  "P1002", // reached it, but it timed out
+  "P1017", // the server closed the connection mid-query
   "P2024", // timed out waiting for a pooled connection
   "P2028", // transaction timed out or couldn't start in time
   "ECONNREFUSED",
@@ -68,12 +71,24 @@ const unavailableCodes = new Set([
   "ETIMEDOUT",
   "ENOTFOUND",
 ]);
+const unavailableKinds = new Set([
+  "ConnectionClosed",
+  "DatabaseNotReachable",
+  "SocketTimeout",
+  "TooManyConnections",
+]);
+// pg throws these bare, without a code, when a connection dies under a query; Prisma sometimes
+// passes them through unwrapped. The message is the only signal.
+const terminatedConnection = /^Connection terminated( unexpectedly)?$/;
 
 export const isDatabaseUnavailable = (error: unknown): boolean => {
   const code = prismaCode(error);
   const state = sqlState(error);
+  const kind = adapterCause(error)?.kind;
   return (
     (typeof code === "string" && unavailableCodes.has(code)) ||
-    (state !== undefined && unavailableStates.has(state))
+    (state !== undefined && unavailableStates.has(state)) ||
+    (kind !== undefined && unavailableKinds.has(kind)) ||
+    (error instanceof Error && terminatedConnection.test(error.message))
   );
 };

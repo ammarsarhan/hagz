@@ -65,6 +65,39 @@ describe("database error classification", () => {
     await prisma.marketplace.deleteMany({ where: { code: "ZU" } });
   });
 
+  // Shapes logged while killing Postgres under load (pg adapter, Prisma 7). A real outage can't be
+  // produced inside the shared test database, so these copies keep the classification honest.
+  it.each([
+    [
+      "a connection closed mid-query (P1017)",
+      Object.assign(new Error("Server has closed the connection."), {
+        name: "PrismaClientKnownRequestError",
+        code: "P1017",
+        meta: {
+          driverAdapterError: { name: "DriverAdapterError", cause: { kind: "ConnectionClosed" } },
+        },
+      }),
+    ],
+    ["a bare pg termination", new Error("Connection terminated unexpectedly")],
+    [
+      "an unreachable server",
+      Object.assign(new Error(""), { name: "PrismaClientKnownRequestError", code: "ECONNREFUSED" }),
+    ],
+  ])("treats %s as unavailable", (_, error) => {
+    expect(isDatabaseUnavailable(error)).toBe(true);
+  });
+
+  it("keeps misconfiguration a 500: retrying won't fix bad credentials", () => {
+    const error = Object.assign(new Error("Authentication failed"), {
+      name: "PrismaClientKnownRequestError",
+      code: "P1000",
+      meta: {
+        driverAdapterError: { name: "DriverAdapterError", cause: { kind: "AuthenticationFailed" } },
+      },
+    });
+    expect(isDatabaseUnavailable(error)).toBe(false);
+  });
+
   it("ignores errors that didn't come from the database", () => {
     const error = new Error("boom");
     expect(isRetryableConflict(error)).toBe(false);
