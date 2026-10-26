@@ -39,6 +39,13 @@ const schema = z.object({
   // Older app builds get 426 APP_UPDATE_REQUIRED (http/app-version.ts).
   MIN_CUSTOMER_APP_VERSION: version.default("0.0.0"),
   MIN_DASHBOARD_APP_VERSION: version.default("0.0.0"),
+  // The header the edge proxy sets to the caller's address, used for per-IP rate limits. Only set it
+  // once a spoofed value has been shown to be overwritten in that environment; unset, the socket
+  // address is used (behind a proxy that is the proxy, so every client shares one limit).
+  CLIENT_IP_HEADER: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, "Expected a lowercase header name, e.g. x-real-ip")
+    .optional(),
   // No defaults for secrets: a missing or short one stops the process instead of running insecurely.
   JWT_SIGNING_KEYS: signingKeys,
   OTP_PEPPER: secret,
