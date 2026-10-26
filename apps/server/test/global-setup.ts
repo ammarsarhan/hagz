@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import { RedisContainer } from "@testcontainers/redis";
 
@@ -31,6 +32,9 @@ export default async function setup() {
     LOG_LEVEL: "silent",
     MIN_CUSTOMER_APP_VERSION: "1.4.0",
     MIN_DASHBOARD_APP_VERSION: "0.0.0",
+    // Fresh secrets every run; tests that need key rotation set their own.
+    JWT_SIGNING_KEYS: `test:${randomBytes(32).toString("base64url")}`,
+    OTP_PEPPER: randomBytes(32).toString("base64url"),
   });
 
   return async () => {
