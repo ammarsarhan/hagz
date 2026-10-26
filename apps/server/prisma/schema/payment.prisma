@@ -13,6 +13,7 @@ model Payment {
   providerReference String? // Transaction id, or the REFERENCE code.
   providerFee       Int? // Absorbed by Hagz.
   recorderId        String?       @db.Uuid // Staff who recorded cash.
+  idempotencyKey    String?       @db.Uuid // Idempotency-Key header.
   succeededAt       DateTime?     @db.Timestamptz
   createdAt         DateTime      @default(now()) @db.Timestamptz
   updatedAt         DateTime      @updatedAt @db.Timestamptz
@@ -23,7 +24,7 @@ model Payment {
   ledger   LedgerEntry?
 
   @@unique([provider, providerReference])
-  @@index([bookingId])
+  @@unique([bookingId, idempotencyKey]) // Also serves lookups by bookingId.
   @@index([status, createdAt])
 }
 
@@ -37,6 +38,7 @@ model Refund {
   providerReference String? // Null for cash.
   reason            String?
   recorderId        String?      @db.Uuid // Null when the system issued it.
+  idempotencyKey    String?      @db.Uuid // Idempotency-Key header; null when the system issued it.
   succeededAt       DateTime?    @db.Timestamptz
   createdAt         DateTime     @default(now()) @db.Timestamptz
   updatedAt         DateTime     @updatedAt @db.Timestamptz
@@ -46,4 +48,5 @@ model Refund {
   ledger   LedgerEntry?
 
   @@unique([paymentId, providerReference]) // Repeated webhooks.
+  @@unique([paymentId, idempotencyKey])
 }
