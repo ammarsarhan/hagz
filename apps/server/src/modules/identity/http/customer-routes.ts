@@ -1,8 +1,11 @@
 import { createRoute } from "@hono/zod-openapi";
 import {
   ConfirmVerificationCode,
-  CustomerSignedUp,
+  CustomerAuthenticated,
+  CustomerSignIn,
   CustomerSignUp,
+  RefreshSession,
+  Session,
   SendVerificationCode,
   VerificationCodeSent,
   VerificationConfirmed,
@@ -11,7 +14,10 @@ import type { Context } from "hono";
 import { requestLanguage } from "@/platform/http/language";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
+import { revokeCustomerSession, refreshCustomerSession } from "../application/sessions";
+import { signInCustomer } from "../application/sign-in-customer";
 import { signUpCustomer } from "../application/sign-up-customer";
+import { CUSTOMER_BEARER, requireCustomer } from "./authenticate";
 import { confirmSignUpCode, sendSignUpCode } from "../application/verification-codes";
 
 const json = <T>(schema: T) => ({ content: { "application/json": { schema } } });
@@ -57,12 +63,60 @@ const signUp = createRoute({
     "Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.",
   request: body(CustomerSignUp),
   responses: {
-    201: { description: "Signed up and signed in", ...json(CustomerSignedUp) },
+    201: { description: "Signed up and signed in", ...json(CustomerAuthenticated) },
     400: problemResponse(
       "VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED.",
     ),
     409: problemResponse("PHONE_ALREADY_REGISTERED: log in instead."),
     503: problemResponse("SERVICE_UNAVAILABLE: retry with the same verificationToken."),
+  },
+});
+
+const signIn = createRoute({
+  method: "post",
+  path: "/auth/customer/sessions",
+  tags: ["Customer auth"],
+  summary: "Sign in with phone and password",
+  request: body(CustomerSignIn),
+  responses: {
+    201: { description: "Signed in", ...json(CustomerAuthenticated) },
+    401: problemResponse(
+      "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
+    ),
+    403: problemResponse("ACCOUNT_SUSPENDED"),
+    429: problemResponse("RATE_LIMITED"),
+    503: problemResponse("SERVICE_UNAVAILABLE: retry later."),
+  },
+});
+
+const refresh = createRoute({
+  method: "post",
+  path: "/auth/customer/sessions/refresh",
+  tags: ["Customer auth"],
+  summary: "Exchange the refresh token for a new pair",
+  description:
+    "The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous " +
+    "token is still answered with the same new pair, so a lost response can be retried.",
+  request: body(RefreshSession),
+  responses: {
+    200: { description: "A new access and refresh token", ...json(Session) },
+    401: problemResponse("SESSION_ENDED: sign in again."),
+    503: problemResponse("SERVICE_UNAVAILABLE: retry with the same refresh token."),
+  },
+});
+
+const signOut = createRoute({
+  method: "delete",
+  path: "/auth/customer/sessions/current",
+  tags: ["Customer auth"],
+  summary: "Sign out of this device",
+  description:
+    "The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.",
+  middleware: [requireCustomer] as const,
+  security: [{ [CUSTOMER_BEARER]: [] }],
+  responses: {
+    204: { description: "Signed out" },
+    401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED"),
   },
 });
 
@@ -89,4 +143,24 @@ export const customerAuthRoutes = createRouter()
       device: device(c),
     });
     return c.json(signedUp, 201);
+  })
+  .openapi(signIn, async (c) => {
+    const { phone, password } = c.req.valid("json");
+    return c.json(await signInCustomer({ phone, password, device: device(c) }), 201);
+  })
+  .openapi(refresh, async (c) => {
+    const { refreshToken } = c.req.valid("json");
+    return c.json(await refreshCustomerSession(refreshToken), 200);
+  })
+  .openapi(signOut, async (c) => {
+    const { customerId, sessionId } = c.var.customer;
+    await revokeCustomerSession(customerId, sessionId);
+    return c.body(null, 204);
   });
+
+customerAuthRoutes.openAPIRegistry.registerComponent("securitySchemes", CUSTOMER_BEARER, {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+  description: "The access token from sign-up, sign-in or refresh.",
+});

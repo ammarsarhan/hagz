@@ -1,4 +1,4 @@
-import type { CustomerSignedUp } from "@hagz/contracts";
+import type { CustomerAuthenticated } from "@hagz/contracts";
 import type { Language } from "@/generated/prisma/enums";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { hashPassword } from "@/platform/crypto/passwords";
@@ -30,7 +30,7 @@ const isTimeZone = (zone: string) => {
 export const signUpCustomer = async (
   { verificationToken, name, password, timezone, language, device }: CustomerSignUpInput,
   clock: Clock = systemClock,
-): Promise<CustomerSignedUp> => {
+): Promise<CustomerAuthenticated> => {
   if (!isTimeZone(timezone)) {
     throw validationFailed([
       { in: "json", path: "timezone", code: "invalid_timezone", message: "Unknown IANA time zone" },

@@ -1,4 +1,5 @@
 import type { Language } from "@/generated/prisma/enums";
+import { hashPassword } from "@/platform/crypto/passwords";
 import { prisma } from "@/platform/db/prisma";
 
 let sequence = 0;
@@ -42,3 +43,25 @@ export const createVenue = async (marketplaceId: string, slug = `venue-${++seque
   });
   return prisma.venue.create({ data: { marketplaceId, locationId: location.id, slug } });
 };
+
+export const createCustomer = async ({
+  phone = "+201001234567",
+  password = "correct horse battery",
+  status = "ACTIVE",
+  passwordHash,
+}: {
+  phone?: string;
+  password?: string;
+  status?: "ACTIVE" | "SUSPENDED" | "BANNED";
+  passwordHash?: string;
+} = {}) =>
+  prisma.customer.create({
+    data: {
+      name: "Ahmed",
+      phone,
+      passwordHash: passwordHash ?? (await hashPassword(password)),
+      phoneVerifiedAt: new Date(),
+      timezone: "Africa/Cairo",
+      status,
+    },
+  });

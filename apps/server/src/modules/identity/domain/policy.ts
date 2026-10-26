@@ -26,4 +26,7 @@ export const limits = {
   // country is capped without touching Egyptian sign-ups.
   sendCodePerForeignCallingCode: { name: "otp:send:calling-code", limit: 200, windowMs: hours(24) },
   confirmCodePerIp: { name: "otp:confirm:ip", limit: 30, windowMs: minutes(15) },
+  // Password guessing: per number (one account) and per IP (many accounts).
+  signInPerPhone: { name: "sign-in:phone", limit: 10, windowMs: minutes(15) },
+  signInPerIp: { name: "sign-in:ip", limit: 30, windowMs: minutes(15) },
 } as const;

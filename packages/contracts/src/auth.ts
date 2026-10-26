@@ -74,9 +74,18 @@ export const Customer = z
   })
   .meta({ id: "Customer" });
 
-export const CustomerSignedUp = z
+// Returned by sign-up and by sign-in.
+export const CustomerAuthenticated = z
   .object({ customer: Customer, session: Session })
-  .meta({ id: "CustomerSignedUp" });
+  .meta({ id: "CustomerAuthenticated" });
+
+export const CustomerSignIn = z
+  .object({ phone: Phone, password: z.string().min(1).max(128) })
+  .meta({ id: "CustomerSignIn" });
+
+export const RefreshSession = z
+  .object({ refreshToken: z.string().min(1).max(256) })
+  .meta({ id: "RefreshSession" });
 
 export type SendVerificationCode = z.infer<typeof SendVerificationCode>;
 export type VerificationCodeSent = z.infer<typeof VerificationCodeSent>;
@@ -85,4 +94,6 @@ export type VerificationConfirmed = z.infer<typeof VerificationConfirmed>;
 export type CustomerSignUp = z.infer<typeof CustomerSignUp>;
 export type Session = z.infer<typeof Session>;
 export type Customer = z.infer<typeof Customer>;
-export type CustomerSignedUp = z.infer<typeof CustomerSignedUp>;
+export type CustomerAuthenticated = z.infer<typeof CustomerAuthenticated>;
+export type CustomerSignIn = z.infer<typeof CustomerSignIn>;
+export type RefreshSession = z.infer<typeof RefreshSession>;

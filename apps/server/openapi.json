@@ -5,6 +5,14 @@
     "version": "1"
   },
   "components": {
+    "securitySchemes": {
+      "customerBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "The access token from sign-up, sign-in or refresh."
+      }
+    },
     "schemas": {
       "Marketplace": {
         "type": "object",
@@ -155,7 +163,7 @@
           "code"
         ]
       },
-      "CustomerSignedUp": {
+      "CustomerAuthenticated": {
         "type": "object",
         "properties": {
           "customer": {
@@ -257,6 +265,40 @@
           "name",
           "password",
           "timezone"
+        ]
+      },
+      "CustomerSignIn": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "phone",
+          "password"
+        ]
+      },
+      "RefreshSession": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "refreshToken"
         ]
       }
     },
@@ -449,7 +491,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CustomerSignedUp"
+                  "$ref": "#/components/schemas/CustomerAuthenticated"
                 }
               }
             }
@@ -476,6 +518,156 @@
           },
           "503": {
             "description": "SERVICE_UNAVAILABLE: retry with the same verificationToken.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Sign in with phone and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerSignIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerAuthenticated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/refresh": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Exchange the refresh token for a new pair",
+        "description": "The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A new access and refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SESSION_ENDED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same refresh token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/current": {
+      "delete": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Sign out of this device",
+        "description": "The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
             "content": {
               "application/problem+json": {
                 "schema": {

@@ -1,4 +1,4 @@
-import { CustomerSignedUp } from "@hagz/contracts";
+import { CustomerAuthenticated } from "@hagz/contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { router } from "@/http/router";
 import { verifyJwt } from "@/platform/crypto/jwt";
@@ -65,7 +65,7 @@ describe("customer sign-up", () => {
     const res = await signUp(token, { timezone: "Africa/Cairo" }, { "Accept-Language": "en" });
 
     expect(res.status).toBe(201);
-    const { customer, session } = CustomerSignedUp.parse(await res.json());
+    const { customer, session } = CustomerAuthenticated.parse(await res.json());
     expect(customer).toMatchObject({ name: "Ahmed", phone: "+201001234567", language: "EN" });
     expect(await verifyJwt(session.accessToken, "customer")).toMatchObject({ sub: customer.id });
 
@@ -102,7 +102,7 @@ describe("customer sign-up", () => {
       data: { venueId: venue.id, name: "Someone", phone: "+201009999999" },
     });
 
-    const { customer } = CustomerSignedUp.parse(
+    const { customer } = CustomerAuthenticated.parse(
       await (await signUp(await verify("+201001234567"))).json(),
     );
 
