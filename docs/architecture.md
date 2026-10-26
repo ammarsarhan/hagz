@@ -67,7 +67,7 @@ The proof is a test: 100 parallel requests for the same slot produce exactly one
 
 ### Idempotency
 
-Mobile clients retry when a response is lost, and providers resend webhooks. Every retried request must have the same effect as the first one. There is no idempotency table: each operation is made idempotent through the models it writes.
+Mobile clients retry when a response is lost, and providers resend webhooks. Every retried request must have the same effect as the first one. There is no idempotency table: each operation is made idempotent through the models it writes (migration `20261026000000_idempotency`).
 
 **Naturally idempotent**, no key needed:
 
@@ -83,7 +83,7 @@ Mobile clients retry when a response is lost, and providers resend webhooks. Eve
 
 | Model | Column | Unique |
 |---|---|---|
-| `Booking` | `idempotencyKey String?` | `[customerId, idempotencyKey]` |
+| `Booking` | `idempotencyKey String?` | `[venueId, idempotencyKey]` (not `customerId`: a retry may create a new `VenueCustomer`) |
 | `Payment` | `idempotencyKey String?` | `[bookingId, idempotencyKey]` (checkout and staff-recorded cash) |
 | `Refund` | `idempotencyKey String?` | `[paymentId, idempotencyKey]` (staff and admin refunds) |
 | `Payout` | `idempotencyKey String?` | `[venueId, idempotencyKey]` (admin-created payouts) |
@@ -94,7 +94,7 @@ How a retry is handled:
 - **Retry while the first request is still running:** Postgres makes the second insert wait for the first transaction. It then fails as above and returns the committed row, or, if the first one rolled back, goes ahead normally.
 - **Same key with a different request:** the existing row's key fields (ground, time range, amount...) don't match the request. Return `422 IDEMPOTENCY_KEY_REUSED`.
 
-The scope column in each unique index stops one account from using another account's key to read their data.
+Keys are UUIDs (`@db.Uuid`). Before replaying, the API checks that the existing row belongs to the caller (the booking's customer account or its `creatorId`, the payment's booking, and so on). Otherwise it returns 422, so one account can't use another's key to read their data.
 
 The key is passed on to the provider as well: `Payment.id` is the provider's merchant order or idempotency reference, so a retried provider call can't charge twice.
 
