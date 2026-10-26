@@ -160,7 +160,7 @@ The slot constraint closes a real gap (manual slots). The booking constraint is 
 
 | Area | Rule |
 |---|---|
-| Timeouts | Postgres `statement_timeout` (5 s for the API, longer for the worker), `lock_timeout` (2 s), `idle_in_transaction_session_timeout`. Every outbound HTTP call has a timeout. |
+| Timeouts | Set on the database (migration `20261026000001_timeouts`), because Neon's pooler rejects them as connection parameters: `statement_timeout` 5 s, `lock_timeout` 2 s, `idle_in_transaction_session_timeout` 30 s. Worker jobs and migrations that need longer raise them for themselves with `SET LOCAL`. Requests time out after 15 s and transactions after 10 s, but only the database timeouts actually stop work. Every outbound HTTP call has a timeout. |
 | Retries | Only for idempotent operations, with exponential backoff and jitter. A circuit breaker on each provider (payments, WhatsApp, push) fails fast when the provider is down. |
 | Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` checks Postgres and Redis and drives traffic. A database blip must not cause a restart loop. |
 | Shutdown | On `SIGTERM`, the API fails readiness, stops accepting connections, finishes in-flight requests within a deadline, then disconnects Prisma and Redis. The worker stops taking jobs, finishes its current ones, then exits. |
