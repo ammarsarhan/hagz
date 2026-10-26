@@ -34,8 +34,10 @@ if (env.APP_ENV !== "production") {
     Scalar({
       url: "/v1/openapi.json",
       pageTitle: "Hagz API",
-      // Pinned: the default loads whatever version jsDelivr serves as latest, unreviewed.
-      cdn: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.74.0/esm.js",
+      // Pinned: the default loads whatever version jsDelivr serves as latest, unreviewed. Setting
+      // `cdn` makes the page load a classic <script src>, so this must be the standalone build
+      // (esm.js is an ES module and leaves the page blank).
+      cdn: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.74.0/dist/browser/standalone.js",
     }),
   );
 }
