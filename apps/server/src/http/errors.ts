@@ -2,7 +2,9 @@ import { STATUS_CODES } from "node:http";
 import type { ErrorHandler, NotFoundHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { currentContext } from "@/platform/context/request-context";
 import { AppError } from "@/platform/errors/app-error";
+import { logger } from "@/platform/logger/logger";
 
 // RFC 9457 problem details. `type` stays about:blank (so `title` is the status phrase) until we
 // publish a page per problem; clients switch on `code`.
@@ -12,6 +14,8 @@ interface Problem {
   status: ContentfulStatusCode;
   code: string;
   detail: string;
+  // Quoted by users to support, and the key to this request's logs.
+  requestId: string | undefined;
   [extension: string]: unknown;
 }
 
@@ -41,6 +45,7 @@ const problem = (
       status,
       code,
       detail,
+      requestId: currentContext()?.requestId,
     } satisfies Problem,
     { status, headers: { "Content-Type": "application/problem+json" } },
   );
@@ -49,14 +54,14 @@ const genericDetail = "Something went wrong on our side. Please try again.";
 
 export const onError: ErrorHandler = (error) => {
   if (error instanceof AppError) {
-    if (error.status >= 500) console.error("[http] request failed:", error);
+    if (error.status >= 500) logger.error({ err: error }, "request failed");
     return problem(error.status, error.code, error.message, error.extensions);
   }
 
   if (error instanceof HTTPException) {
     if (error.status >= 500) {
       // Keep the status (a timeout's 503 tells clients to retry) but not the message.
-      console.error("[http] request failed:", error);
+      logger.error({ err: error }, "request failed");
       return problem(error.status, codeForStatus[error.status] ?? "INTERNAL_ERROR", genericDetail);
     }
     const code = codeForStatus[error.status] ?? "BAD_REQUEST";
@@ -64,7 +69,7 @@ export const onError: ErrorHandler = (error) => {
   }
 
   // A bug. Log everything, tell the client nothing about it.
-  console.error("[http] unhandled error:", error);
+  logger.error({ err: error }, "unhandled error");
   return problem(500, "INTERNAL_ERROR", genericDetail);
 };
 

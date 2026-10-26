@@ -55,6 +55,9 @@ export default defineRailway((ctx) => {
       replicas: { [REGION]: 1 },
       env: {
         APP_ENV: production ? "production" : "staging",
+        // SIGTERM to SIGKILL. Railway's default is 0, which kills in-flight requests and jobs on every
+        // deploy. The processes give themselves 25 s of this (platform/lifecycle/shutdown.ts).
+        RAILWAY_DEPLOYMENT_DRAINING_SECONDS: "30",
         NODE_ENV: "production",
         DATABASE_URL: ctx.shared.DATABASE_URL,
         ...(deploy.preDeploy ? { DIRECT_DATABASE_URL: ctx.shared.DIRECT_DATABASE_URL } : {}),
