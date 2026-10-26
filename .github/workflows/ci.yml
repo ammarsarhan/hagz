@@ -39,7 +39,7 @@ jobs:
           echo "$HEAD → $BASE is allowed."
 
   checks:
-    name: Typecheck, test, build
+    name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -57,12 +57,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check formatting
+        run: pnpm format:check
+
       - name: Validate Prisma schema
         run: pnpm --filter @hagz/server exec prisma validate
 
       # PRs only check what they change; pushes to dev check everything.
-      - name: Typecheck, test, build
-        run: pnpm turbo run typecheck test build ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+      - name: Lint, typecheck, test, build
+        run: pnpm turbo run lint typecheck test build ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
   # Single required status check for the rulesets.
   ci:

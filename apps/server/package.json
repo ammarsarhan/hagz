@@ -17,6 +17,7 @@
     "start:http": "node dist/app.js",
     "start:worker": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -34,9 +35,11 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@hagz/eslint-config": "workspace:^",
     "@hagz/tsconfig": "workspace:^",
     "@types/node": "^26.6.3",
     "concurrently": "^10.0.5",
+    "eslint": "^10.13.0",
     "tsup": "^8.5.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3"

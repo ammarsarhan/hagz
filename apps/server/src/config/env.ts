@@ -5,9 +5,9 @@ const schema = z.object({
   APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
-  DATABASE_URL: z.string().url(),
-  QUEUE_URL: z.string().url(),
-  CACHE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
+  QUEUE_URL: z.url(),
+  CACHE_URL: z.url(),
 });
 
 const parsed = schema.safeParse(process.env);

@@ -8,10 +8,16 @@ const workers: Worker[] = [];
 console.log(`[worker] started ${workers.length} worker(s) (${env.APP_ENV})`);
 
 const shutdown = async () => {
-  await Promise.all(workers.map((w) => w.close()));
-  await queueConnection.quit();
-  process.exit(0);
+  try {
+    await Promise.all(workers.map((w) => w.close()));
+    await queueConnection.quit();
+    process.exit(0);
+  } catch (error) {
+    // A rejected close would otherwise be an unhandled rejection and leave the process hanging.
+    console.error("[worker] shutdown failed:", error);
+    process.exit(1);
+  }
 };
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+process.on("SIGTERM", () => void shutdown());
+process.on("SIGINT", () => void shutdown());
