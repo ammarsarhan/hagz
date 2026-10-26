@@ -6,20 +6,6 @@
   },
   "components": {
     "schemas": {
-      "MarketplaceList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Marketplace"
-            }
-          }
-        },
-        "required": [
-          "data"
-        ]
-      },
       "Marketplace": {
         "type": "object",
         "properties": {
@@ -113,7 +99,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MarketplaceList"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Marketplace"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
                 }
               }
             }
