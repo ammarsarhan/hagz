@@ -3,12 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "types": "./src/index.ts",
-  "exports": {
-    ".": {
-      "types": "./src/index.ts"
-    }
-  },
   "scripts": {
     "dev": "concurrently -n http,worker \"tsx watch src/app.ts\" \"tsx watch src/worker.ts\"",
     "dev:http": "tsx watch src/app.ts",
@@ -40,6 +34,8 @@
     "@types/node": "^26.6.3",
     "concurrently": "^10.0.5",
     "eslint": "^10.13.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.3.0",
     "tsup": "^8.5.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3"

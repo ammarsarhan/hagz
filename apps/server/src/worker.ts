@@ -1,6 +1,6 @@
 import type { Worker } from "bullmq";
-import { env } from "@/config/env";
-import { queueConnection } from "@/lib/redis";
+import { env } from "@/platform/config/env";
+import { queueConnection } from "@/platform/redis/connections";
 
 // Register workers here, e.g. new Worker(name, processor, { connection: queueConnection }).
 const workers: Worker[] = [];

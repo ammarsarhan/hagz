@@ -32,14 +32,20 @@ apps/server/src/
     notifications/  deliveries per channel
     loyalty/ reviews/ discounts/
   platform/         db, transactions, idempotency, logging, errors, clock, rate limits
-  http/             routes and middleware
+  http/             composition root: global middleware, mounts each module's routes
+  app.ts worker.ts  process entry points
 ```
 
 - Each module has three layers:
   - `http` parses and validates input (zod) and serializes output.
   - `application` holds the use cases. They own transactions.
   - `domain` holds pure functions: pricing, VAT, cancellation tiers, state transitions, slot maths.
-- Modules talk through each other's public `index.ts`, never through each other's tables or internals. CI enforces this with `dependency-cruiser`.
+- Modules talk through each other's public `index.ts`, never through each other's tables or internals.
+- `eslint-plugin-boundaries` enforces this in `pnpm lint` (`apps/server/eslint.config.js`):
+  - another module is reachable only through its `index.ts`, and a module's own layers never import that `index.ts`;
+  - `http` → `application` → `domain`, never upwards, and module `http` never touches the database;
+  - `domain` imports no Prisma, Redis, BullMQ or Hono, and no platform service except errors;
+  - `platform` never imports modules or `http`.
 - `@hagz/contracts` holds the zod schemas for requests and responses. The OpenAPI spec is generated from them (`@hono/zod-openapi`), and the apps and the web frontend use them as typed clients.
 - Prisma models never leave the server. Every response is an explicit DTO, so new columns (and secrets like `refreshTokenHash`) are never exposed by accident.
 

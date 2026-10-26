@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { env } from "@/config/env";
+import { env } from "@/platform/config/env";
 
 // family: 0 resolves both IPv4 and IPv6; Railway's private network can be IPv6 only.
 
