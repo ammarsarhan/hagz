@@ -1,5 +1,5 @@
 import { STATUS_CODES } from "node:http";
-import type { ErrorHandler, NotFoundHandler } from "hono";
+import type { Context, ErrorHandler, NotFoundHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { currentContext } from "@/platform/context/request-context";
@@ -31,14 +31,17 @@ const codeForStatus: Partial<Record<number, string>> = {
   503: "SERVICE_UNAVAILABLE",
 };
 
+// Built through the context (not new Response) so headers set by middleware, such as X-Request-Id,
+// are kept on error responses too.
 const problem = (
+  c: Context,
   status: ContentfulStatusCode,
   code: string,
   detail: string,
   extensions: Record<string, unknown> = {},
 ): Response =>
   // Extensions first, so they can never overwrite the standard members.
-  Response.json(
+  c.json(
     {
       ...extensions,
       type: "about:blank",
@@ -48,37 +51,43 @@ const problem = (
       detail,
       requestId: currentContext()?.requestId,
     } satisfies Problem,
-    { status, headers: { "Content-Type": "application/problem+json" } },
+    status,
+    { "Content-Type": "application/problem+json" },
   );
 
 const genericDetail = "Something went wrong on our side. Please try again.";
 
-export const onError: ErrorHandler = (error) => {
+export const onError: ErrorHandler = (error, c) => {
   if (error instanceof AppError) {
     if (error.status >= 500) logger.error({ err: error }, "request failed");
-    return problem(error.status, error.code, error.message, error.extensions);
+    return problem(c, error.status, error.code, error.message, error.extensions);
   }
 
   if (error instanceof HTTPException) {
     if (error.status >= 500) {
       // Keep the status (a timeout's 503 tells clients to retry) but not the message.
       logger.error({ err: error }, "request failed");
-      return problem(error.status, codeForStatus[error.status] ?? "INTERNAL_ERROR", genericDetail);
+      return problem(
+        c,
+        error.status,
+        codeForStatus[error.status] ?? "INTERNAL_ERROR",
+        genericDetail,
+      );
     }
     const code = codeForStatus[error.status] ?? "BAD_REQUEST";
-    return problem(error.status, code, error.message || (STATUS_CODES[error.status] ?? "Error"));
+    return problem(c, error.status, code, error.message || (STATUS_CODES[error.status] ?? "Error"));
   }
 
   // Overloaded or unreachable database: worth retrying, so not a 500.
   if (isDatabaseUnavailable(error)) {
     logger.warn({ err: error }, "database unavailable");
-    return problem(503, "SERVICE_UNAVAILABLE", genericDetail);
+    return problem(c, 503, "SERVICE_UNAVAILABLE", genericDetail);
   }
 
   // A bug. Log everything, tell the client nothing about it.
   logger.error({ err: error }, "unhandled error");
-  return problem(500, "INTERNAL_ERROR", genericDetail);
+  return problem(c, 500, "INTERNAL_ERROR", genericDetail);
 };
 
 export const notFound: NotFoundHandler = (c) =>
-  problem(404, "NOT_FOUND", `No route for ${c.req.method} ${c.req.path}.`);
+  problem(c, 404, "NOT_FOUND", `No route for ${c.req.method} ${c.req.path}.`);
