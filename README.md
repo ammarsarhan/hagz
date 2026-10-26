@@ -34,4 +34,7 @@ pnpm dev
 pnpm lint          # ESLint (type-aware) in every workspace that has a config
 pnpm format        # Prettier, writes changes; CI runs pnpm format:check
 pnpm typecheck
+pnpm test          # Needs Docker: starts throwaway Postgres and Redis containers
 ```
+
+`apps/server/openapi.json` is the API contract the apps are built against. The contract test fails when the API changes it; after an intended change, regenerate it with `pnpm --filter @hagz/server test -u` and commit it with the change.
