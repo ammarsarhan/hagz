@@ -22,15 +22,22 @@ router.use("/v1/*", appVersion);
 router.route("/health", health);
 router.route("/v1", locationsRoutes);
 
-// The contract the apps are built against, and a browsable page for it (Scalar, which loads its
-// script from a CDN). Not served in production: they list every route, including admin ones. The
-// committed copy is apps/server/openapi.json.
+// The contract the apps are built against, and a browsable page for it. Not served in production:
+// they list every route, including admin ones. The committed copy is apps/server/openapi.json.
 if (env.APP_ENV !== "production") {
   router.doc31("/v1/openapi.json", {
     openapi: "3.1.0",
     info: { title: "Hagz API", version: "1" },
   });
-  router.get("/v1/docs", Scalar({ url: "/v1/openapi.json", pageTitle: "Hagz API" }));
+  router.get(
+    "/v1/docs",
+    Scalar({
+      url: "/v1/openapi.json",
+      pageTitle: "Hagz API",
+      // Pinned: the default loads whatever version jsDelivr serves as latest, unreviewed.
+      cdn: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.74.0/esm.js",
+    }),
+  );
 }
 
 router.notFound(notFound);

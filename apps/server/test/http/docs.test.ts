@@ -7,6 +7,9 @@ describe("API docs", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
-    expect(await res.text()).toContain("/v1/openapi.json");
+    const html = await res.text();
+    expect(html).toContain("/v1/openapi.json");
+    // Third-party script: a pinned version, never "latest".
+    expect(html).toMatch(/@scalar\/api-reference@\d+\.\d+\.\d+\//);
   });
 });
