@@ -20,16 +20,17 @@ model PayoutDestination {
 
 // Enters the ledger once PAID. CHECKs: amount > 0; paidAt set exactly when PAID.
 model Payout {
-  id            String       @id @default(uuid(7)) @db.Uuid
-  venueId       String       @db.Uuid
-  destinationId String       @db.Uuid
-  status        PayoutStatus @default(PENDING)
-  amount        Int // Minor units.
-  reference     String? // Transfer reference.
-  creatorId     String?      @db.Uuid // Null when scheduled.
-  paidAt        DateTime?    @db.Timestamptz
-  createdAt     DateTime     @default(now()) @db.Timestamptz
-  updatedAt     DateTime     @updatedAt @db.Timestamptz
+  id             String       @id @default(uuid(7)) @db.Uuid
+  venueId        String       @db.Uuid
+  destinationId  String       @db.Uuid
+  status         PayoutStatus @default(PENDING)
+  amount         Int // Minor units.
+  reference      String? // Transfer reference.
+  creatorId      String?      @db.Uuid // Null when scheduled.
+  idempotencyKey String?      @db.Uuid // Idempotency-Key header; null when scheduled.
+  paidAt         DateTime?    @db.Timestamptz
+  createdAt      DateTime     @default(now()) @db.Timestamptz
+  updatedAt      DateTime     @updatedAt @db.Timestamptz
 
   venue       Venue             @relation(fields: [venueId], references: [id], onDelete: Restrict)
   destination PayoutDestination @relation(fields: [destinationId, venueId], references: [id, venueId], onDelete: Restrict)
@@ -37,6 +38,7 @@ model Payout {
   ledger      LedgerEntry?
 
   @@unique([id, venueId]) // Ledger relation target.
+  @@unique([venueId, idempotencyKey])
   @@index([venueId, createdAt])
   @@index([status])
 }
