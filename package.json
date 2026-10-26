@@ -9,11 +9,15 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "turbo run test",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down"
   },
   "devDependencies": {
+    "prettier": "3.9.10",
     "railway": "3.12.0",
     "turbo": "^2.11.5",
     "typescript": "~6.0.3"

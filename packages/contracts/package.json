@@ -19,11 +19,14 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@hagz/eslint-config": "workspace:^",
     "@hagz/tsconfig": "workspace:^",
     "@types/node": "^26.6.3",
+    "eslint": "^10.13.0",
     "tsup": "^8.5.1",
     "typescript": "~6.0.3"
   }
