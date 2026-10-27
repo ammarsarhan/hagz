@@ -1,4 +1,4 @@
-import { customerAuthRoutes } from "@/modules/identity";
+import { customerAuthRoutes, staffAuthRoutes } from "@/modules/identity";
 import { locationsRoutes } from "@/modules/locations";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
@@ -23,6 +23,7 @@ router.use("/v1/*", appVersion);
 router.route("/health", health);
 router.route("/v1", locationsRoutes);
 router.route("/v1", customerAuthRoutes);
+router.route("/v1", staffAuthRoutes);
 
 // The contract the apps are built against, and a browsable page for it. Not served in production:
 // they list every route, including admin ones. The committed copy is apps/server/openapi.json.

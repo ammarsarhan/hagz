@@ -71,23 +71,30 @@ export const Session = z
   })
   .meta({ id: "Session" });
 
-export const Customer = z
-  .object({
-    id: z.uuid(),
-    name: z.string(),
-    phone: z.string().meta({ example: "+201001234567" }),
-    language: z.enum(["AR", "EN"]),
-  })
-  .meta({ id: "Customer" });
+const Account = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  phone: z.string().meta({ example: "+201001234567" }),
+  language: z.enum(["AR", "EN"]),
+});
+
+export const Customer = Account.meta({ id: "Customer" });
+export const Staff = Account.meta({ id: "Staff" });
 
 // Returned by sign-up and by sign-in.
 export const CustomerAuthenticated = z
   .object({ customer: Customer, session: Session })
   .meta({ id: "CustomerAuthenticated" });
 
-export const CustomerSignIn = z
+export const StaffSignUp = CustomerSignUp.omit({ timezone: true }).meta({ id: "StaffSignUp" });
+
+export const StaffAuthenticated = z
+  .object({ staff: Staff, session: Session })
+  .meta({ id: "StaffAuthenticated" });
+
+export const SignIn = z
   .object({ phone: Phone, password: z.string().min(1).max(128) })
-  .meta({ id: "CustomerSignIn" });
+  .meta({ id: "SignIn" });
 
 export const RefreshSession = z
   .object({ refreshToken: z.string().min(1).max(256) })
@@ -133,7 +140,10 @@ export type CustomerSignUp = z.infer<typeof CustomerSignUp>;
 export type Session = z.infer<typeof Session>;
 export type Customer = z.infer<typeof Customer>;
 export type CustomerAuthenticated = z.infer<typeof CustomerAuthenticated>;
-export type CustomerSignIn = z.infer<typeof CustomerSignIn>;
+export type StaffSignUp = z.infer<typeof StaffSignUp>;
+export type Staff = z.infer<typeof Staff>;
+export type StaffAuthenticated = z.infer<typeof StaffAuthenticated>;
+export type SignIn = z.infer<typeof SignIn>;
 export type RefreshSession = z.infer<typeof RefreshSession>;
 export type RequestPasswordReset = z.infer<typeof RequestPasswordReset>;
 export type ConfirmPasswordReset = z.infer<typeof ConfirmPasswordReset>;

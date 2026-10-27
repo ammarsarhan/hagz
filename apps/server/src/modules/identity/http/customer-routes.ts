@@ -5,29 +5,26 @@ import {
   ConfirmPasswordReset,
   ConfirmVerificationCode,
   CustomerAuthenticated,
-  CustomerSignIn,
   CustomerSignUp,
   RefreshSession,
   RequestPasswordReset,
   ResendTwoFactor,
   SendVerificationCode,
   Session,
+  SignIn,
   TwoFactorChallenge,
   TwoFactorStatus,
   VerificationCodeSent,
   VerificationConfirmed,
 } from "@hagz/contracts";
-import type { Context } from "hono";
 import { requestLanguage } from "@/platform/http/language";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
-import {
-  confirmCustomerPasswordReset,
-  requestCustomerPasswordReset,
-} from "../application/password-reset";
-import { refreshCustomerSession, revokeCustomerSession } from "../application/sessions";
-import { signInCustomer } from "../application/sign-in-customer";
-import { signUpCustomer } from "../application/sign-up-customer";
+import { customers } from "../application/accounts";
+import { confirmPasswordReset, requestPasswordReset } from "../application/password-reset";
+import { refreshSession, revokeSession, type Authenticated } from "../application/sessions";
+import { signIn } from "../application/sign-in";
+import { signUpCustomer } from "../application/sign-up";
 import {
   changeTwoFactor,
   completeTwoFactorSignIn,
@@ -36,17 +33,14 @@ import {
 } from "../application/two-factor";
 import { confirmSignUpCode, sendSignUpCode } from "../application/verification-codes";
 import { CUSTOMER_BEARER, requireCustomer } from "./authenticate";
+import { body, codeRejected, device, json, unauthenticated, unavailable } from "./route-helpers";
 
-const json = <T>(schema: T) => ({ content: { "application/json": { schema } } });
-const body = <T>(schema: T) => ({ body: { required: true, ...json(schema) } });
-const device = (c: Context) => ({ ip: clientIp(c), userAgent: c.req.header("User-Agent") });
 const tags = ["Customer auth"];
+const authenticated = ({ account, session }: Authenticated) => ({ customer: account, session });
 
 // Routes that need a signed-in customer also declare `middleware: [requireCustomer] as const`
 // inline: spread from a shared object, the route types lose `c.var.customer`.
 const customerSecurity = [{ [CUSTOMER_BEARER]: [] }];
-const unauthenticated = problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED");
-const unavailable = problemResponse("SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.");
 
 const sendCode = createRoute({
   method: "post",
@@ -96,7 +90,7 @@ const signUp = createRoute({
   },
 });
 
-const signIn = createRoute({
+const signInWithPassword = createRoute({
   method: "post",
   path: "/auth/customer/sessions",
   tags,
@@ -104,7 +98,7 @@ const signIn = createRoute({
   description:
     "With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; " +
     "finish with POST sessions/two-factor.",
-  request: body(CustomerSignIn),
+  request: body(SignIn),
   responses: {
     200: { description: "Password right; a two-factor code was sent", ...json(TwoFactorChallenge) },
     201: { description: "Signed in", ...json(CustomerAuthenticated) },
@@ -125,7 +119,7 @@ const completeTwoFactor = createRoute({
   request: body(CompleteTwoFactor),
   responses: {
     201: { description: "Signed in", ...json(CustomerAuthenticated) },
-    400: problemResponse("INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED"),
+    400: codeRejected,
     401: problemResponse("CHALLENGE_EXPIRED: sign in again."),
     403: problemResponse("ACCOUNT_SUSPENDED"),
     429: problemResponse("RATE_LIMITED"),
@@ -178,7 +172,7 @@ const signOut = createRoute({
   },
 });
 
-const requestPasswordReset = createRoute({
+const requestReset = createRoute({
   method: "post",
   path: "/auth/customer/password-resets",
   tags,
@@ -196,7 +190,7 @@ const requestPasswordReset = createRoute({
   },
 });
 
-const confirmPasswordReset = createRoute({
+const confirmReset = createRoute({
   method: "post",
   path: "/auth/customer/password-resets/confirm",
   tags,
@@ -205,7 +199,7 @@ const confirmPasswordReset = createRoute({
   request: body(ConfirmPasswordReset),
   responses: {
     204: { description: "Password changed" },
-    400: problemResponse("INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED"),
+    400: codeRejected,
     429: problemResponse("RATE_LIMITED"),
   },
 });
@@ -235,7 +229,7 @@ const changeTwoFactorSetting = createRoute({
   request: body(ChangeTwoFactor),
   responses: {
     200: { description: "The new setting", ...json(TwoFactorStatus) },
-    400: problemResponse("INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED"),
+    400: codeRejected,
     401: unauthenticated,
   },
 });
@@ -262,51 +256,63 @@ export const customerAuthRoutes = createRouter()
       language: requestLanguage(c),
       device: device(c),
     });
-    return c.json(signedUp, 201);
+    return c.json(authenticated(signedUp), 201);
   })
-  .openapi(signIn, async (c) => {
+  .openapi(signInWithPassword, async (c) => {
     const { phone, password } = c.req.valid("json");
-    const result = await signInCustomer({ phone, password, device: device(c) });
-    return "twoFactorRequired" in result ? c.json(result, 200) : c.json(result, 201);
+    const result = await signIn(customers, { phone, password, device: device(c) });
+    return "twoFactorRequired" in result ? c.json(result, 200) : c.json(authenticated(result), 201);
   })
   .openapi(completeTwoFactor, async (c) => {
     const { challengeToken, code } = c.req.valid("json");
-    return c.json(await completeTwoFactorSignIn({ challengeToken, code, device: device(c) }), 201);
+    const signedIn = await completeTwoFactorSignIn(customers, {
+      challengeToken,
+      code,
+      device: device(c),
+    });
+    return c.json(authenticated(signedIn), 201);
   })
   .openapi(resendTwoFactor, async (c) => {
     const { challengeToken } = c.req.valid("json");
-    return c.json(await resendTwoFactorSignIn(challengeToken, clientIp(c)), 202);
+    return c.json(await resendTwoFactorSignIn(customers, challengeToken, clientIp(c)), 202);
   })
   .openapi(refresh, async (c) => {
     const { refreshToken } = c.req.valid("json");
-    return c.json(await refreshCustomerSession(refreshToken), 200);
+    return c.json(await refreshSession(customers, refreshToken), 200);
   })
   .openapi(signOut, async (c) => {
     const { customerId, sessionId } = c.var.customer;
-    await revokeCustomerSession(customerId, sessionId);
+    await revokeSession(customers, customerId, sessionId);
     return c.body(null, 204);
   })
-  .openapi(requestPasswordReset, async (c) => {
+  .openapi(requestReset, async (c) => {
     const { phone } = c.req.valid("json");
-    const sent = await requestCustomerPasswordReset({
+    const sent = await requestPasswordReset(customers, {
       phone,
       ip: clientIp(c),
       language: requestLanguage(c),
     });
     return c.json(sent, 202);
   })
-  .openapi(confirmPasswordReset, async (c) => {
+  .openapi(confirmReset, async (c) => {
     const { phone, code, newPassword } = c.req.valid("json");
-    await confirmCustomerPasswordReset({ phone, code, newPassword, ip: clientIp(c) });
+    await confirmPasswordReset(customers, { phone, code, newPassword, ip: clientIp(c) });
     return c.body(null, 204);
   })
   .openapi(sendTwoFactorCode, async (c) => {
-    return c.json(await sendTwoFactorSettingCode(c.var.customer.customerId, clientIp(c)), 202);
+    const { customerId } = c.var.customer;
+    return c.json(await sendTwoFactorSettingCode(customers, customerId, clientIp(c)), 202);
   })
   .openapi(changeTwoFactorSetting, async (c) => {
     const { enabled, code } = c.req.valid("json");
     const { customerId } = c.var.customer;
-    return c.json(await changeTwoFactor({ customerId, enabled, code, ip: clientIp(c) }), 200);
+    const changed = await changeTwoFactor(customers, {
+      accountId: customerId,
+      enabled,
+      code,
+      ip: clientIp(c),
+    });
+    return c.json(changed, 200);
   });
 
 customerAuthRoutes.openAPIRegistry.registerComponent("securitySchemes", CUSTOMER_BEARER, {

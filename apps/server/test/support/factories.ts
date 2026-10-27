@@ -71,3 +71,31 @@ export const createCustomer = async ({
       twoFactorEnabled,
     },
   });
+
+export const createStaff = async ({
+  phone = "+201001234567",
+  password = "correct horse battery",
+  language = "AR",
+  twoFactorEnabled = false,
+}: {
+  phone?: string;
+  password?: string;
+  language?: "AR" | "EN";
+  twoFactorEnabled?: boolean;
+} = {}) =>
+  prisma.staff.create({
+    data: {
+      name: "Mona",
+      phone,
+      passwordHash: await hashPassword(password),
+      phoneVerifiedAt: new Date(),
+      language,
+      twoFactorEnabled,
+    },
+  });
+
+export const addMember = (
+  venueId: string,
+  staffId: string,
+  { role = "MEMBER", permissions = {} }: { role?: "OWNER" | "MEMBER"; permissions?: object } = {},
+) => prisma.venueMembership.create({ data: { venueId, staffId, role, permissions } });

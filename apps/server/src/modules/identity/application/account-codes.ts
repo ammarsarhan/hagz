@@ -1,17 +1,16 @@
 import type { Language, VerificationPurpose } from "@/generated/prisma/enums";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { codeMatches, generateCode, hashCode } from "@/platform/crypto/codes";
-import { Prisma } from "@/generated/prisma/client";
-import { prisma } from "@/platform/db/prisma";
 import { transaction } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { messaging } from "@/platform/messaging/messaging";
 import { CODE_TTL_SECONDS, MAX_CODE_ATTEMPTS, RESEND_AFTER_SECONDS } from "../domain/policy";
+import type { AccountStore } from "./accounts";
 
-// Codes for accounts that exist (password reset, two-factor), in CustomerVerification. The same rules
-// as sign-up codes in Redis (verification-codes.ts): hashed, single use, five guesses, ten minutes,
-// a minute between sends; the constants are shared so the two can't drift. Here Postgres is the
-// source of truth, including for the resend cooldown.
+// Codes for accounts that exist (password reset, two-factor), in CustomerVerification or
+// StaffVerification. The same rules as sign-up codes in Redis (verification-codes.ts): hashed, single
+// use, five guesses, ten minutes, a minute between sends; the constants are shared so the two can't
+// drift. Here Postgres is the source of truth, including for the resend cooldown.
 
 export interface IssuedCode {
   verificationId: string;
@@ -19,26 +18,23 @@ export interface IssuedCode {
   resendAfter: number;
 }
 
-export const issueCustomerCode = async (
+export const issueCode = async (
+  store: AccountStore,
   {
-    customerId,
+    accountId,
     phone,
     purpose,
     language,
-  }: { customerId: string; phone: string; purpose: VerificationPurpose; language: Language },
+  }: { accountId: string; phone: string; purpose: VerificationPurpose; language: Language },
   clock: Clock = systemClock,
 ): Promise<IssuedCode> => {
   const now = clock.now();
   const code = generateCode();
+  const query = { accountId, purpose };
 
   const verification = await transaction(async (tx) => {
-    const latest = await tx.customerVerification.findFirst({
-      where: { customerId, purpose },
-      orderBy: { createdAt: "desc" },
-    });
-    const waitMs = latest
-      ? latest.createdAt.getTime() + RESEND_AFTER_SECONDS * 1000 - now.getTime()
-      : 0;
+    const latest = await store.codes.latestCreatedAt(tx, query);
+    const waitMs = latest ? latest.getTime() + RESEND_AFTER_SECONDS * 1000 - now.getTime() : 0;
     if (waitMs > 0) {
       const retryAfter = Math.ceil(waitMs / 1000);
       throw new AppError({
@@ -50,17 +46,11 @@ export const issueCustomerCode = async (
       });
     }
     // A new code replaces any open one for the same purpose.
-    await tx.customerVerification.updateMany({
-      where: { customerId, purpose, consumedAt: null },
-      data: { consumedAt: now },
-    });
-    return tx.customerVerification.create({
-      data: {
-        customerId,
-        purpose,
-        codeHash: hashCode(code),
-        expiresAt: new Date(now.getTime() + CODE_TTL_SECONDS * 1000),
-      },
+    await store.codes.consumeOpen(tx, query, now);
+    return store.codes.create(tx, {
+      ...query,
+      codeHash: hashCode(code),
+      expiresAt: new Date(now.getTime() + CODE_TTL_SECONDS * 1000),
     });
   });
 
@@ -68,9 +58,7 @@ export const issueCustomerCode = async (
     await messaging.sendVerificationCode({ phone, code, language });
   } catch (error) {
     // Nothing was sent: drop the row so the cooldown doesn't make the user wait for it.
-    await prisma.customerVerification
-      .delete({ where: { id: verification.id } })
-      .catch(() => undefined);
+    await store.codes.delete(verification.id).catch(() => undefined);
     throw error;
   }
   return {
@@ -89,35 +77,27 @@ export const codeExpired = () =>
 
 // Checks a code against the open one for `purpose` (or the specific row a challenge was issued for)
 // and consumes it. The row is locked, so concurrent guesses can't go past the attempt limit.
-export const consumeCustomerCode = async (
+export const consumeCode = async (
+  store: AccountStore,
   {
-    customerId,
+    accountId,
     purpose,
     code,
     verificationId,
-  }: { customerId: string; purpose: VerificationPurpose; code: string; verificationId?: string },
+  }: { accountId: string; purpose: VerificationPurpose; code: string; verificationId?: string },
   clock: Clock = systemClock,
 ): Promise<void> => {
   const now = clock.now();
   const outcome = await transaction(async (tx) => {
-    const [open] = await tx.$queryRaw<{ id: string; codeHash: string; attempts: number }[]>`
-      SELECT id, "codeHash", attempts FROM "CustomerVerification"
-      WHERE "customerId" = ${customerId}::uuid AND purpose = ${purpose}::"VerificationPurpose"
-        AND "consumedAt" IS NULL AND "expiresAt" > ${now}
-        ${verificationId ? Prisma.sql`AND id = ${verificationId}::uuid` : Prisma.empty}
-      ORDER BY "createdAt" DESC LIMIT 1
-      FOR UPDATE`;
+    const open = await store.codes.lockOpen(tx, { accountId, purpose, now, verificationId });
     if (!open) return { kind: "expired" as const };
     if (codeMatches(code, open.codeHash)) {
-      await tx.customerVerification.update({ where: { id: open.id }, data: { consumedAt: now } });
+      await store.codes.update(tx, open.id, { consumedAt: now });
       return { kind: "ok" as const };
     }
     const attempts = open.attempts + 1;
     const burned = attempts >= MAX_CODE_ATTEMPTS;
-    await tx.customerVerification.update({
-      where: { id: open.id },
-      data: { attempts, ...(burned && { consumedAt: now }) },
-    });
+    await store.codes.update(tx, open.id, { attempts, ...(burned && { consumedAt: now }) });
     return burned
       ? { kind: "expired" as const }
       : { kind: "wrong" as const, attemptsLeft: MAX_CODE_ATTEMPTS - attempts };

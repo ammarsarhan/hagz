@@ -4,4 +4,5 @@ export * from "./auth";
 export * from "./idempotency";
 export * from "./lists";
 export * from "./marketplaces";
+export * from "./permissions";
 export * from "./problem";
