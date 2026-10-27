@@ -12,6 +12,12 @@ const secret = z
     "Expected 32+ random bytes, base64url",
   );
 
+// An AES-256 key: exactly 32 random bytes, base64url (same command as above).
+const aesKey = z
+  .string()
+  .transform((value) => Buffer.from(value, "base64url"))
+  .refine((key) => key.length === 32, "Expected exactly 32 random bytes, base64url");
+
 // Signing keys as `kid:secret` pairs, comma-separated. The first one signs; all of them verify, so a
 // new key goes first and the old one stays listed until tokens signed with it have expired.
 const signingKeys = z
@@ -49,6 +55,8 @@ const schema = z.object({
   // No defaults for secrets: a missing or short one stops the process instead of running insecurely.
   JWT_SIGNING_KEYS: signingKeys,
   OTP_PEPPER: secret,
+  // Encrypts admins' authenticator secrets (platform/crypto/totp.ts).
+  TOTP_ENCRYPTION_KEY: aesKey,
 });
 
 const parsed = schema.safeParse(process.env);

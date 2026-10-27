@@ -35,6 +35,7 @@ export default async function setup() {
     // Fresh secrets every run; tests that need key rotation set their own.
     JWT_SIGNING_KEYS: `test:${randomBytes(32).toString("base64url")}`,
     OTP_PEPPER: randomBytes(32).toString("base64url"),
+    TOTP_ENCRYPTION_KEY: randomBytes(32).toString("base64url"),
   });
 
   return async () => {

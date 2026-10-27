@@ -64,6 +64,7 @@ export default defineRailway((ctx) => {
         // Secrets, set by hand as shared variables per environment (like the Neon URLs), never here.
         JWT_SIGNING_KEYS: ctx.shared.JWT_SIGNING_KEYS,
         OTP_PEPPER: ctx.shared.OTP_PEPPER,
+        TOTP_ENCRYPTION_KEY: ctx.shared.TOTP_ENCRYPTION_KEY,
         QUEUE_URL: queue.env.REDIS_URL,
         CACHE_URL: cache.env.REDIS_URL,
       },
