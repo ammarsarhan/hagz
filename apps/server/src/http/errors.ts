@@ -60,6 +60,7 @@ const genericDetail = "Something went wrong on our side. Please try again.";
 export const onError: ErrorHandler = (error, c) => {
   if (error instanceof AppError) {
     if (error.status >= 500) logger.error({ err: error }, "request failed");
+    for (const [name, value] of Object.entries(error.headers)) c.header(name, value);
     return problem(c, error.status, error.code, error.message, error.extensions);
   }
 

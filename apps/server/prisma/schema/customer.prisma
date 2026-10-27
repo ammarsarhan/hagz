@@ -15,7 +15,7 @@ model Customer {
 
   // Preferences
   language Language @default(AR)
-  timezone String // IANA, from the phone's marketplace at sign-up.
+  timezone String // IANA, from the device at sign-up (phones can be foreign).
 
   sessions      CustomerSession[]
   challenges    CustomerVerification[]

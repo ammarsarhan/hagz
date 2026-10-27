@@ -185,14 +185,21 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 ## Security
 
 - Passwords are hashed with argon2id. Admins must use TOTP.
+- Admins are invite-only (the first is created with `node dist/create-admin.js`). Their sessions are httpOnly, `SameSite=Strict`, `__Host-` cookies that last 12 hours and aren't extended. The admin web app calls the API through its own origin, so the cookies are first-party. Every cookie-authenticated request must also send `X-Hagz-Admin: 1`, which a cross-site page can't add without a CORS preflight. Authenticator codes work once, and the challenge between password and code is single use.
 - Short-lived access tokens (about 10 minutes) and rotating refresh tokens. A reused refresh token revokes the whole session, because reuse means the token was stolen.
 - Authorization is one policy layer that checks staff permissions per venue, not checks scattered across handlers. Every query on venue data is scoped by `venueId`. Every endpoint has a test that another tenant's id is rejected (broken object-level authorization is OWASP's top API risk).
+  - Venue routes live under `/v1/staff/venues/{venueId}/...` and declare `[requireStaff, requireVenueAccess(area, level)]`. Handlers act only on `c.var.venue.venueId`, never on a venue id from the body.
+  - Permissions are seven areas, each `none`, `view` or `manage` (`StaffPermissions` in `@hagz/contracts`). The owner can do everything whatever is stored, and stored JSON that doesn't parse grants nothing.
+  - Membership is read on every request, not carried in the token, so a demotion, removal or suspension applies to the next request.
+  - A venue the caller doesn't belong to answers `404 VENUE_NOT_FOUND`, exactly like one that doesn't exist.
+  - Only the owner can grant more in an area than they have themselves, and nobody changes their own permissions. Writes re-check the granter under a row lock.
 - Request hygiene at the edge:
   - zod validation and request body size limits;
   - a CORS allowlist and security headers;
   - webhook HMAC verification with a timestamp tolerance;
   - PII redacted from logs.
 - Rate limits per IP, per account and per phone number on login, OTP and invite codes.
+- Invitations are the only way in for admins and for non-owner staff. Staff invitations are matched to the invitee's verified phone (anyone else gets 404 for the code or id), last 48 hours, and are only as good as the inviter is at acceptance time. Every link Hagz sends is built from the route table in `@hagz/contracts` (`links.ts`) on `WEB_URL`, the web app's origin, which serves the universal-link verification files and the fallback pages.
 - Renovate and `pnpm audit` in CI, pinned base images, and secrets only in Railway variables.
 
 ## Observability

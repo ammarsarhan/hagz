@@ -5,6 +5,26 @@
     "version": "1"
   },
   "components": {
+    "securitySchemes": {
+      "customerBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "The access token from sign-up, sign-in or refresh."
+      },
+      "staffBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "The access token from sign-up, sign-in or refresh."
+      },
+      "adminCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "hagz_admin_access",
+        "description": "Set by signing in. Named with a `__Host-` prefix outside local development."
+      }
+    },
     "schemas": {
       "Marketplace": {
         "type": "object",
@@ -81,6 +101,1106 @@
         ],
         "additionalProperties": {},
         "description": "An error. Extra members depend on the code."
+      },
+      "VerificationCodeSent": {
+        "type": "object",
+        "properties": {
+          "expiresIn": {
+            "type": "integer",
+            "description": "Seconds the code stays valid.",
+            "example": 600
+          },
+          "resendAfter": {
+            "type": "integer",
+            "description": "Seconds before another code can be sent.",
+            "example": 60
+          }
+        },
+        "required": [
+          "expiresIn",
+          "resendAfter"
+        ],
+        "description": "Returned whether or not the number has an account."
+      },
+      "SendVerificationCode": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "VerificationConfirmed": {
+        "type": "object",
+        "properties": {
+          "verificationToken": {
+            "type": "string",
+            "description": "Single use. Proves the phone belongs to the caller."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 900
+          }
+        },
+        "required": [
+          "verificationToken",
+          "expiresIn"
+        ]
+      },
+      "ConfirmVerificationCode": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "CustomerAuthenticated": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/Customer"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Session"
+          }
+        },
+        "required": [
+          "customer",
+          "session"
+        ]
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201001234567"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "AR",
+              "EN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "language"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresIn": {
+            "type": "integer",
+            "description": "Seconds.",
+            "example": 600
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "refreshTokenExpiresIn": {
+            "type": "integer",
+            "description": "Seconds; extended by every refresh.",
+            "example": 5184000
+          }
+        },
+        "required": [
+          "accessToken",
+          "accessTokenExpiresIn",
+          "refreshToken",
+          "refreshTokenExpiresIn"
+        ]
+      },
+      "CustomerSignUp": {
+        "type": "object",
+        "properties": {
+          "verificationToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Ahmed"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The device's IANA time zone.",
+            "example": "Africa/Cairo"
+          }
+        },
+        "required": [
+          "verificationToken",
+          "name",
+          "password",
+          "timezone"
+        ]
+      },
+      "TwoFactorChallenge": {
+        "type": "object",
+        "properties": {
+          "twoFactorRequired": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "challengeToken": {
+            "type": "string",
+            "description": "Proves the password was right. Not an access token."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 600
+          },
+          "resendAfter": {
+            "type": "integer",
+            "example": 60
+          }
+        },
+        "required": [
+          "twoFactorRequired",
+          "challengeToken",
+          "expiresIn",
+          "resendAfter"
+        ]
+      },
+      "SignIn": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "phone",
+          "password"
+        ]
+      },
+      "CompleteTwoFactor": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "code"
+        ]
+      },
+      "ResendTwoFactor": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "challengeToken"
+        ]
+      },
+      "RefreshSession": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "RequestPasswordReset": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "ConfirmPasswordReset": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "phone",
+          "code",
+          "newPassword"
+        ]
+      },
+      "TwoFactorStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "ChangeTwoFactor": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "enabled",
+          "code"
+        ],
+        "description": "Needs a code from POST two-factor/codes."
+      },
+      "StaffAuthenticated": {
+        "type": "object",
+        "properties": {
+          "staff": {
+            "$ref": "#/components/schemas/Staff"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Session"
+          }
+        },
+        "required": [
+          "staff",
+          "session"
+        ]
+      },
+      "Staff": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201001234567"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "AR",
+              "EN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "language"
+        ]
+      },
+      "StaffSignUp": {
+        "type": "object",
+        "properties": {
+          "verificationToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Ahmed"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "verificationToken",
+          "name",
+          "password"
+        ]
+      },
+      "AdminChallenge": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "description": "Proves the password was right. Single use. Not an access token."
+          },
+          "next": {
+            "type": "string",
+            "enum": [
+              "TOTP",
+              "TOTP_SETUP"
+            ],
+            "description": "`TOTP`: ask for a code from the authenticator app. `TOTP_SETUP`: the account has no authenticator yet; start the setup, then ask for its first code."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 600
+          }
+        },
+        "required": [
+          "challengeToken",
+          "next",
+          "expiresIn"
+        ]
+      },
+      "AdminSignIn": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "example": "omar@hagz.app"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "TotpSetup": {
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "description": "Base32, for typing in by hand."
+          },
+          "otpauthUri": {
+            "type": "string",
+            "description": "Show as a QR code for the authenticator app."
+          }
+        },
+        "required": [
+          "secret",
+          "otpauthUri"
+        ]
+      },
+      "StartTotpSetup": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "challengeToken"
+        ]
+      },
+      "AdminSignedIn": {
+        "type": "object",
+        "properties": {
+          "admin": {
+            "$ref": "#/components/schemas/Admin"
+          },
+          "sessionExpiresIn": {
+            "type": "integer",
+            "description": "Seconds until the session ends; it isn't extended.",
+            "example": 43200
+          }
+        },
+        "required": [
+          "admin",
+          "sessionExpiresIn"
+        ]
+      },
+      "Admin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ]
+      },
+      "CompleteAdminSignIn": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "code"
+        ]
+      },
+      "AdminInvitation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "invitedBy": {
+            "type": "string",
+            "description": "The inviting admin's name."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "invitedBy",
+          "createdAt",
+          "expiresAt"
+        ],
+        "description": "An invitation that hasn't been used or revoked."
+      },
+      "InviteAdmin": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "example": "omar@hagz.app"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "AcceptAdminInvitation": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "From the invitation link."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "token",
+          "name",
+          "password"
+        ]
+      },
+      "StaffVenue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "In `Accept-Language`, else any language."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "SUBMITTED",
+              "PROVISIONING",
+              "LIVE",
+              "MAINTENANCE"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/VenueRole"
+          },
+          "permissions": {
+            "type": "object",
+            "properties": {
+              "bookings": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The calendar; creating, editing and cancelling bookings."
+              },
+              "customers": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The venue's customers and their history."
+              },
+              "schedule": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Grounds' weekly hours, prices and blocked slots."
+              },
+              "payments": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Recording cash and issuing refunds."
+              },
+              "finance": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The ledger, payouts and earnings reports."
+              },
+              "staff": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Inviting and removing staff, and changing their permissions."
+              },
+              "venue": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Profile, layout, amenities, discounts and policies."
+              }
+            },
+            "required": [
+              "bookings",
+              "customers",
+              "schedule",
+              "payments",
+              "finance",
+              "staff",
+              "venue"
+            ],
+            "description": "What the signed-in member may do here; all `manage` for the owner."
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "status",
+          "role",
+          "permissions"
+        ]
+      },
+      "VenueRole": {
+        "type": "string",
+        "enum": [
+          "OWNER",
+          "MEMBER"
+        ],
+        "description": "Each venue has exactly one `OWNER`, who can do everything."
+      },
+      "VenueMember": {
+        "type": "object",
+        "properties": {
+          "staffId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "+201001234567"
+          },
+          "role": {
+            "$ref": "#/components/schemas/VenueRole"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/StaffPermissions"
+          },
+          "restorable": {
+            "type": "boolean",
+            "description": "True when a password reset made them read-only and nothing changed since: POST permissions/restore brings back what they had."
+          }
+        },
+        "required": [
+          "staffId",
+          "name",
+          "phone",
+          "role",
+          "permissions",
+          "restorable"
+        ]
+      },
+      "StaffPermissions": {
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "The calendar; creating, editing and cancelling bookings."
+          },
+          "customers": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "The venue's customers and their history."
+          },
+          "schedule": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Grounds' weekly hours, prices and blocked slots."
+          },
+          "payments": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Recording cash and issuing refunds."
+          },
+          "finance": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "The ledger, payouts and earnings reports."
+          },
+          "staff": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Inviting and removing staff, and changing their permissions."
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Profile, layout, amenities, discounts and policies."
+          }
+        },
+        "required": [
+          "bookings",
+          "customers",
+          "schedule",
+          "payments",
+          "finance",
+          "staff",
+          "venue"
+        ]
+      },
+      "StaffInvitation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201001234567"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/StaffPermissions"
+          },
+          "invitedBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "phone",
+          "permissions",
+          "invitedBy",
+          "createdAt",
+          "expiresAt"
+        ],
+        "description": "Sent, not yet accepted, declined or revoked."
+      },
+      "InviteStaff": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "+20 100 123 4567"
+          },
+          "permissions": {
+            "type": "object",
+            "properties": {
+              "bookings": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The calendar; creating, editing and cancelling bookings."
+              },
+              "customers": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The venue's customers and their history."
+              },
+              "schedule": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Grounds' weekly hours, prices and blocked slots."
+              },
+              "payments": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Recording cash and issuing refunds."
+              },
+              "finance": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The ledger, payouts and earnings reports."
+              },
+              "staff": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Inviting and removing staff, and changing their permissions."
+              },
+              "venue": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Profile, layout, amenities, discounts and policies."
+              }
+            },
+            "required": [
+              "bookings",
+              "customers",
+              "schedule",
+              "payments",
+              "finance",
+              "staff",
+              "venue"
+            ],
+            "description": "Defaults to the venue's default permissions for new staff."
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "ReceivedStaffInvitation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "invitedBy": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "object",
+            "properties": {
+              "bookings": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The calendar; creating, editing and cancelling bookings."
+              },
+              "customers": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The venue's customers and their history."
+              },
+              "schedule": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Grounds' weekly hours, prices and blocked slots."
+              },
+              "payments": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Recording cash and issuing refunds."
+              },
+              "finance": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The ledger, payouts and earnings reports."
+              },
+              "staff": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Inviting and removing staff, and changing their permissions."
+              },
+              "venue": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Profile, layout, amenities, discounts and policies."
+              }
+            },
+            "required": [
+              "bookings",
+              "customers",
+              "schedule",
+              "payments",
+              "finance",
+              "staff",
+              "venue"
+            ],
+            "description": "What they'll be able to do there."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "venue",
+          "invitedBy",
+          "permissions",
+          "expiresAt"
+        ]
       }
     },
     "parameters": {}
@@ -117,6 +1237,2978 @@
           },
           "503": {
             "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/verifications": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send a sign-up code over WhatsApp",
+        "description": "The same response whether or not the number has an account. Language follows `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendVerificationCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER: not a mobile number in international format.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: too many codes; see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/verifications/confirm": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Confirm a sign-up code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmVerificationCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The phone is verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationConfirmed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sign-up": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Create the account and sign in",
+        "description": "Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerSignUp"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed up and signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerAuthenticated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PHONE_ALREADY_REGISTERED: log in instead.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same verificationToken.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Sign in with phone and password",
+        "description": "With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password right; a two-factor code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorChallenge"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerAuthenticated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/two-factor": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Finish a two-factor sign-in with the code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerAuthenticated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/two-factor/resend": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send another two-factor code",
+        "description": "Returns a new `challengeToken`: the previous one belonged to the previous code.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "A new code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorChallenge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/refresh": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Exchange the refresh token for a new pair",
+        "description": "The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A new access and refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SESSION_ENDED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same refresh token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/current": {
+      "delete": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Sign out of this device",
+        "description": "The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/password-resets": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send a password reset code",
+        "description": "The same response whether or not the number has an account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "If the number has an account, a code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/password-resets/confirm": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Set a new password with the reset code",
+        "description": "Signs out every session; sign in again with the new password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed"
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/two-factor/codes": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send a code to turn two-factor on or off",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/two-factor": {
+      "put": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Turn two-factor on or off",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/verifications": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Send a sign-up code over WhatsApp",
+        "description": "The same response whether or not the number has an account. Language follows `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendVerificationCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER: not a mobile number in international format.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: too many codes; see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/verifications/confirm": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Confirm a sign-up code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmVerificationCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The phone is verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationConfirmed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/sign-up": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Create the account and sign in",
+        "description": "Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffSignUp"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed up and signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAuthenticated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PHONE_ALREADY_REGISTERED: log in instead.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same verificationToken.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/sessions": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Sign in with phone and password",
+        "description": "With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password right; a two-factor code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorChallenge"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAuthenticated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/sessions/two-factor": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Finish a two-factor sign-in with the code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAuthenticated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/sessions/two-factor/resend": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Send another two-factor code",
+        "description": "Returns a new `challengeToken`: the previous one belonged to the previous code.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "A new code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorChallenge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/sessions/refresh": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Exchange the refresh token for a new pair",
+        "description": "The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A new access and refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SESSION_ENDED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same refresh token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/sessions/current": {
+      "delete": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Sign out of this device",
+        "description": "The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/password-resets": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Send a password reset code",
+        "description": "The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and the app should say so on this screen. Warn members before they ask: a reset makes them read-only at every venue until a staff manager restores them.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "If the number has an account, a code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/password-resets/confirm": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Set a new password with the reset code",
+        "description": "Signs out every session, and lowers every permission to at most `view` at each venue the member belongs to. The owner and members who manage staff are notified; the previous permissions are kept so they can be restored.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed"
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/two-factor/codes": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Send a code to turn two-factor on or off",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/staff/two-factor": {
+      "put": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Turn two-factor on or off",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/sessions": {
+      "post": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Check email and password",
+        "description": "Always followed by a code from the authenticator app (set up first if `TOTP_SETUP`).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminSignIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password right; ask for a code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminChallenge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS: the same for an unknown email and a wrong password.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/sessions/totp-setup": {
+      "post": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Get a new authenticator secret",
+        "description": "Only for accounts without a confirmed authenticator. Asking again replaces the secret; the first code accepted from it confirms it.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTotpSetup"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Show the URI as a QR code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpSetup"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TOTP_ALREADY_SET_UP",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/sessions/totp": {
+      "post": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Finish signing in with an authenticator code",
+        "description": "Sets the session cookies. The session lasts 12 hours and isn't extended.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteAdminSignIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed in",
+            "headers": {
+              "Set-Cookie": {
+                "description": "The access and refresh cookies (httpOnly; the web app never reads them).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSignedIn"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE or TOTP_SETUP_REQUIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again (each challenge works once).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry with the same code if it's still current.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/sessions/refresh": {
+      "post": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Renew the access cookie",
+        "description": "Uses the refresh cookie and rotates it. Send one refresh at a time. The session still ends 12 hours after sign-in.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "New cookies set",
+            "headers": {
+              "Set-Cookie": {
+                "description": "The access and refresh cookies (httpOnly; the web app never reads them).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SESSION_ENDED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/sessions/current": {
+      "delete": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Sign out",
+        "description": "Ends the session the refresh cookie belongs to and clears both cookies.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/me": {
+      "get": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "The signed-in admin",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Admin"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/invitations": {
+      "post": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Invite someone to become an admin",
+        "description": "Emails a link that works for 48 hours and replaces any earlier invitation to the same email.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteAdmin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminInvitation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ADMIN_ALREADY_EXISTS",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "EMAIL_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Open admin invitations",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet used, revoked or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminInvitation"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/invitations/{id}": {
+      "delete": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Revoke an invitation",
+        "description": "Its link stops working. Revoking one that's already revoked or expired is fine.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITATION_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "INVITATION_ALREADY_ACCEPTED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/invitations/accept": {
+      "post": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Create an admin account from an invitation",
+        "description": "The token is in the invitation link's fragment (`#token=`). Continue with sessions/totp-setup: the account can't sign in until its authenticator is set up.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptAdminInvitation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created; set up the authenticator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminChallenge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVITATION_INVALID, or VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ADMIN_ALREADY_EXISTS",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues": {
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "The venues I belong to, with my permissions at each",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My venues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StaffVenue"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members": {
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "The venue's staff",
+        "description": "Needs `staff: view`.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members, owner included",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VenueMember"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members/{staffId}/permissions": {
+      "put": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Set a member's permissions",
+        "description": "Needs `staff: manage`. Nobody can change their own permissions or the owner's, and only the owner can give more in an area than they have themselves.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffPermissions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members/{staffId}/permissions/restore": {
+      "post": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Give back what a password reset took away",
+        "description": "Needs `staff: manage`. Works while the member is `restorable`; the same limits as setting permissions apply.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The restored permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOTHING_TO_RESTORE: their permissions changed since the reset.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/invitations": {
+      "post": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Invite someone to the staff",
+        "description": "Needs `staff: manage`. Sends a WhatsApp message with a link that opens the dashboard app; if the number already has a staff account, the invitation also shows in their app. Works for 48 hours; inviting the same number again replaces the earlier invitation. Only the owner can give more in an area than they have themselves.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteStaff"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER or VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_A_MEMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Invitations waiting for an answer",
+        "description": "Needs `staff: view`.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open invitations, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StaffInvitation"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/invitations/{invitationId}": {
+      "delete": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Withdraw an invitation",
+        "description": "Needs `staff: manage`. Its link stops working; withdrawing twice is fine.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "invitationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Withdrawn"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or INVITATION_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "INVITATION_ALREADY_ACCEPTED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/invitations": {
+      "get": {
+        "tags": [
+          "Staff invitations"
+        ],
+        "summary": "Invitations to my number, from any venue",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open invitations, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ReceivedStaffInvitation"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/invitations/code/{code}": {
+      "get": {
+        "tags": [
+          "Staff invitations"
+        ],
+        "summary": "What an invitation link offers",
+        "description": "The screen the link opens. Only for the invited number.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "From the link; any case.",
+              "example": "K7M2QX"
+            },
+            "required": true,
+            "description": "From the link; any case.",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The invitation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivedStaffInvitation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITATION_NOT_FOUND: no invitation to your number with that code or id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "INVITATION_EXPIRED: expired or withdrawn; ask for a new one.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/invitations/code/{code}/accept": {
+      "post": {
+        "tags": [
+          "Staff invitations"
+        ],
+        "summary": "Join the venue from an invitation link",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "From the link; any case.",
+              "example": "K7M2QX"
+            },
+            "required": true,
+            "description": "From the link; any case.",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Joined: the venue, with my permissions there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenue"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITATION_NOT_FOUND: no invitation to your number with that code or id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_A_MEMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "INVITATION_EXPIRED: expired or withdrawn; ask for a new one.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/invitations/{invitationId}/accept": {
+      "post": {
+        "tags": [
+          "Staff invitations"
+        ],
+        "summary": "Join the venue from my invitations",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "invitationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Joined: the venue, with my permissions there",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenue"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITATION_NOT_FOUND: no invitation to your number with that code or id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_A_MEMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "INVITATION_EXPIRED: expired or withdrawn; ask for a new one.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/invitations/{invitationId}/decline": {
+      "post": {
+        "tags": [
+          "Staff invitations"
+        ],
+        "summary": "Turn an invitation down",
+        "description": "Declining one that already expired or was withdrawn is fine.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "invitationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Declined"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITATION_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {

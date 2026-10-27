@@ -41,6 +41,12 @@ try {
 
 process.env.DATABASE_URL = Object.assign(new URL(templateUrl), { pathname: `/${database}` }).href;
 
+// Redis too: one logical database per worker (1-8, see maxWorkers in vitest.config.ts), so a file can
+// wipe its own Redis state without touching a file running in parallel. Queue and cache share it here.
+const redisUrl = `${process.env.TEST_REDIS_URL ?? ""}/${process.env.VITEST_POOL_ID ?? "1"}`;
+process.env.QUEUE_URL = redisUrl;
+process.env.CACHE_URL = redisUrl;
+
 // Each test file gets fresh module instances, so close what this one opened.
 afterAll(async () => {
   const [{ prisma }, { queueConnection, cache }] = await Promise.all([

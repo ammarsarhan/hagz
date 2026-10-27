@@ -10,6 +10,8 @@ export interface AppErrorInit {
   detail: string;
   // Sent to the client as extra problem members, so never put internals or secrets here.
   extensions?: Record<string, unknown>;
+  // Response headers, e.g. Retry-After on a 429.
+  headers?: Record<string, string>;
   cause?: unknown;
 }
 
@@ -19,12 +21,14 @@ export class AppError extends Error {
   readonly code: string;
   readonly status: ErrorStatus;
   readonly extensions: Record<string, unknown>;
+  readonly headers: Record<string, string>;
 
-  constructor({ code, status, detail, extensions = {}, cause }: AppErrorInit) {
+  constructor({ code, status, detail, extensions = {}, headers = {}, cause }: AppErrorInit) {
     super(detail, { cause });
     this.name = "AppError";
     this.code = code;
     this.status = status;
     this.extensions = extensions;
+    this.headers = headers;
   }
 }

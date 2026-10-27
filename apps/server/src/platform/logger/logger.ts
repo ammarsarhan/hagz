@@ -4,7 +4,15 @@ import { currentContext } from "@/platform/context/request-context";
 
 // Values that must never reach the logs, wherever they appear in a logged object (top level or one
 // level down). Request bodies are never logged whole.
-const secrets = ["password", "passwordHash", "refreshToken", "accessToken", "totpSecret", "phone"];
+const secrets = [
+  "password",
+  "passwordHash",
+  "refreshToken",
+  "accessToken",
+  "totpSecret",
+  "phone",
+  "email",
+];
 
 export const logger = pino({
   level: env.LOG_LEVEL,

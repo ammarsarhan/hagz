@@ -1,7 +1,7 @@
 import { OpenAPIHono, type Hook } from "@hono/zod-openapi";
 import type { Env } from "hono";
 import { Problem, type ValidationIssue } from "@hagz/contracts";
-import { AppError } from "@/platform/errors/app-error";
+import { validationFailed } from "@/platform/errors/validation";
 
 // Turns a failed request validation into our problem format instead of a raw ZodError dump.
 const rejectInvalid: Hook<unknown, Env, string, unknown> = (result) => {
@@ -12,12 +12,7 @@ const rejectInvalid: Hook<unknown, Env, string, unknown> = (result) => {
     code: issue.code,
     message: issue.message,
   }));
-  throw new AppError({
-    code: "VALIDATION_FAILED",
-    status: 400,
-    detail: "The request is invalid. See `errors` for each problem.",
-    extensions: { errors },
-  });
+  throw validationFailed(errors);
 };
 
 // Every router (the root and each module's) is created here, so they all validate the same way and
