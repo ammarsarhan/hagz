@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { hashToken } from "@/platform/crypto/tokens";
 import { guardedRedis } from "@/platform/redis/guarded";
-import type { AccountType } from "../domain/policy";
+import type { SessionType } from "../domain/policy";
 
 // After a refresh rotates a session's token, the previous token keeps working for a short while and is
 // answered with the same new token, so concurrent refreshes and lost responses don't look like theft.
@@ -9,13 +9,13 @@ import type { AccountType } from "../domain/policy";
 // it, and a Redis dump reveals nothing usable.
 export const REFRESH_GRACE_SECONDS = 30;
 
-const key = (type: AccountType, previousSecret: string) =>
+const key = (type: SessionType, previousSecret: string) =>
   `refresh-grace:${type}:${hashToken(previousSecret)}`;
 const cipherKey = (previousSecret: string) =>
   createHash("sha256").update(`refresh-grace:${previousSecret}`).digest();
 
 export const rememberRotation = async (
-  type: AccountType,
+  type: SessionType,
   previousSecret: string,
   newRefreshToken: string,
 ) => {
@@ -32,12 +32,12 @@ export const rememberRotation = async (
   );
 };
 
-export const forgetRotation = (type: AccountType, previousSecret: string) =>
+export const forgetRotation = (type: SessionType, previousSecret: string) =>
   guardedRedis((r) => r.del(key(type, previousSecret)));
 
 // The token a rotation of `previousSecret` produced, if it happened within the grace window.
 export const rotatedTo = async (
-  type: AccountType,
+  type: SessionType,
   previousSecret: string,
 ): Promise<string | undefined> => {
   const stored = await guardedRedis((r) => r.get(key(type, previousSecret)));

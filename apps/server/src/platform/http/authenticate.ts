@@ -1,5 +1,7 @@
 import type { Context } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
+import { env } from "@/platform/config/env";
 import { verifyJwt, type Audience } from "@/platform/crypto/jwt";
 import { AppError } from "@/platform/errors/app-error";
 
@@ -53,5 +55,82 @@ export const requireStaff = createMiddleware<{ Variables: { staff: StaffActor } 
     const { sub, sid } = await bearerClaims(c, "staff");
     c.set("staff", { staffId: sub, sessionId: sid });
     await next();
+  },
+);
+
+// Admins use the web app, so their tokens live in httpOnly cookies where page scripts can't read
+// them. The web app calls the API through its own origin, so the cookies are first-party: SameSite
+// Strict, and `__Host-` (Secure, Path=/, no Domain) everywhere but local development over http.
+export interface AdminActor {
+  adminId: string;
+  sessionId: string;
+}
+
+const secureCookies = env.APP_ENV !== "development";
+const cookieName = (name: string) => (secureCookies ? `__Host-${name}` : name);
+export const ADMIN_ACCESS_COOKIE = cookieName("hagz_admin_access");
+export const ADMIN_REFRESH_COOKIE = cookieName("hagz_admin_refresh");
+export const ADMIN_COOKIE_AUTH = "adminCookie";
+
+// Cross-site requests can't set a custom header without a CORS preflight, which the API never
+// approves, so requiring one stops CSRF even where SameSite isn't enforced.
+export const ADMIN_CSRF_HEADER = "X-Hagz-Admin";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: secureCookies,
+  sameSite: "Strict",
+  path: "/",
+} as const;
+
+export const setAdminSession = (
+  c: Context,
+  session: {
+    accessToken: string;
+    accessTokenExpiresIn: number;
+    refreshToken: string;
+    refreshTokenExpiresIn: number;
+  },
+) => {
+  setCookie(c, ADMIN_ACCESS_COOKIE, session.accessToken, {
+    ...cookieOptions,
+    maxAge: session.accessTokenExpiresIn,
+  });
+  setCookie(c, ADMIN_REFRESH_COOKIE, session.refreshToken, {
+    ...cookieOptions,
+    maxAge: session.refreshTokenExpiresIn,
+  });
+};
+
+export const clearAdminSession = (c: Context) => {
+  deleteCookie(c, ADMIN_ACCESS_COOKIE, cookieOptions);
+  deleteCookie(c, ADMIN_REFRESH_COOKIE, cookieOptions);
+};
+
+export const adminRefreshToken = (c: Context) => getCookie(c, ADMIN_REFRESH_COOKIE);
+
+// For every request that a cookie authenticates, including refresh and sign-out.
+export const requireAdminHeader = createMiddleware(async (c, next) => {
+  if (c.req.header(ADMIN_CSRF_HEADER) !== "1") {
+    throw new AppError({
+      code: "ADMIN_HEADER_REQUIRED",
+      status: 403,
+      detail: `Send the ${ADMIN_CSRF_HEADER}: 1 header with admin requests.`,
+    });
+  }
+  await next();
+});
+
+export const requireAdmin = createMiddleware<{ Variables: { admin: AdminActor } }>(
+  async (c, next) => {
+    await requireAdminHeader(c, async () => {
+      const token = getCookie(c, ADMIN_ACCESS_COOKIE);
+      if (!token) {
+        throw new AppError({ code: "UNAUTHENTICATED", status: 401, detail: "Sign in to do this." });
+      }
+      const { sub, sid } = await verifyJwt(token, "admin");
+      c.set("admin", { adminId: sub, sessionId: sid });
+      await next();
+    });
   },
 );

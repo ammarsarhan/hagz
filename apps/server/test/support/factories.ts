@@ -1,5 +1,6 @@
 import type { Language } from "@/generated/prisma/enums";
 import { hashPassword } from "@/platform/crypto/passwords";
+import { encryptTotpSecret, generateTotpSecret } from "@/platform/crypto/totp";
 import { prisma } from "@/platform/db/prisma";
 
 let sequence = 0;
@@ -99,3 +100,21 @@ export const addMember = (
   staffId: string,
   { role = "MEMBER", permissions = {} }: { role?: "OWNER" | "MEMBER"; permissions?: object } = {},
 ) => prisma.venueMembership.create({ data: { venueId, staffId, role, permissions } });
+
+// An admin with a confirmed authenticator unless `totp` is false. Returns the TOTP secret too.
+export const createAdmin = async ({
+  email = "omar@hagz.app",
+  password = "correct horse battery",
+  totp = true,
+}: { email?: string; password?: string; totp?: boolean } = {}) => {
+  const secret = generateTotpSecret();
+  const admin = await prisma.admin.create({
+    data: {
+      name: "Omar",
+      email,
+      passwordHash: await hashPassword(password),
+      ...(totp && { totpSecret: encryptTotpSecret(secret), totpConfirmedAt: new Date() }),
+    },
+  });
+  return { ...admin, secret };
+};

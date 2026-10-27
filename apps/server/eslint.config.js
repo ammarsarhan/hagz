@@ -48,7 +48,12 @@ export default defineConfig(globalIgnores(["src/generated/"]), base, {
         policies: [
           { allow: { to: { module: { origin: ["external", "core"] } } } },
           {
-            from: { element: { type: "entry", fileInternalPath: ["app.ts", "worker.ts"] } },
+            from: {
+              element: {
+                type: "entry",
+                fileInternalPath: ["app.ts", "worker.ts", "create-admin.ts"],
+              },
+            },
             allow: { to: [{ element: { types: ["http", "platform"] } }, publicApi] },
           },
           { from: { element: { type: "http" } }, allow: { to: [platform, publicApi] } },

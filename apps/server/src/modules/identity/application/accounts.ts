@@ -4,7 +4,7 @@ import { ownsAVenue, restrictAfterPasswordReset } from "@/modules/venues";
 import type { Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import type { Tx } from "@/platform/db/transaction";
-import type { AccountType } from "../domain/policy";
+import type { AccountType, SessionType } from "../domain/policy";
 
 // Customers and staff sign in the same way but live in parallel tables (Customer/Staff,
 // CustomerSession/StaffSession, CustomerVerification/StaffVerification). Each store maps the shared
@@ -28,7 +28,7 @@ export const profile = (account: Account) => ({
   language: account.language,
 });
 
-type Db = Tx | typeof prisma;
+export type Db = Tx | typeof prisma;
 
 interface AccountChanges {
   passwordHash?: string;
@@ -63,7 +63,24 @@ export interface CodeQuery {
   purpose: VerificationPurpose;
 }
 
-export interface AccountStore {
+// Sessions, the same for every account type (admins included).
+export interface SessionStore {
+  type: SessionType;
+  sessions: {
+    create(tx: Tx, accountId: string, session: NewSession): Promise<{ id: string }>;
+    // FOR UPDATE, with the account's status, so concurrent refreshes of one session run in turn.
+    lock(tx: Tx, sessionId: string): Promise<LockedSession | undefined>;
+    rotate(
+      tx: Tx,
+      sessionId: string,
+      changes: { refreshTokenHash: string; expiresAt?: Date; lastUsedAt: Date },
+    ): Promise<unknown>;
+    // One session when `sessionId` is given, otherwise all of them. Scoped to the account.
+    revoke(db: Db, accountId: string, at: Date, sessionId?: string): Promise<unknown>;
+  };
+}
+
+export interface AccountStore extends SessionStore {
   type: AccountType;
   // The unique index a second sign-up with the same phone violates.
   phoneIndex: string;
@@ -74,18 +91,6 @@ export interface AccountStore {
   selfServiceReset(account: Account): Promise<boolean>;
   // Runs in the reset's transaction, after the new password and the sign-out of every session.
   afterPasswordReset(tx: Tx, account: Account, clock: Clock): Promise<void>;
-  sessions: {
-    create(tx: Tx, accountId: string, session: NewSession): Promise<{ id: string }>;
-    // FOR UPDATE, with the account's status, so concurrent refreshes of one session run in turn.
-    lock(tx: Tx, sessionId: string): Promise<LockedSession | undefined>;
-    rotate(
-      tx: Tx,
-      sessionId: string,
-      changes: { refreshTokenHash: string; expiresAt: Date; lastUsedAt: Date },
-    ): Promise<unknown>;
-    // One session when `sessionId` is given, otherwise all of them. Scoped to the account.
-    revoke(db: Db, accountId: string, at: Date, sessionId?: string): Promise<unknown>;
-  };
   codes: {
     latestCreatedAt(tx: Tx, query: CodeQuery): Promise<Date | undefined>;
     consumeOpen(tx: Tx, query: CodeQuery, at: Date): Promise<unknown>;
@@ -217,5 +222,29 @@ export const staff: AccountStore = {
       return open;
     },
     update: (tx, id, data) => tx.staffVerification.update({ where: { id }, data }),
+  },
+};
+
+// Admins sign in with an email and an authenticator app (admin-sign-in.ts), but their sessions work
+// like everyone else's.
+export const adminSessions: SessionStore = {
+  type: "admin",
+  sessions: {
+    create: (tx, adminId, data) => tx.adminSession.create({ data: { adminId, ...data } }),
+    lock: async (tx, sessionId) => {
+      const [session] = await tx.$queryRaw<LockedSession[]>`
+        SELECT s.id, s."adminId" AS "accountId", s."refreshTokenHash", s."expiresAt",
+          s."revokedAt", a.status
+        FROM "AdminSession" s JOIN "Admin" a ON a.id = s."adminId"
+        WHERE s.id = ${sessionId}::uuid
+        FOR UPDATE OF s`;
+      return session;
+    },
+    rotate: (tx, id, data) => tx.adminSession.update({ where: { id }, data }),
+    revoke: (db, adminId, at, id) =>
+      db.adminSession.updateMany({
+        where: { adminId, revokedAt: null, ...(id && { id }) },
+        data: { revokedAt: at },
+      }),
   },
 };

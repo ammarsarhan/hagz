@@ -185,6 +185,7 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 ## Security
 
 - Passwords are hashed with argon2id. Admins must use TOTP.
+- Admins are invite-only (the first is created with `node dist/create-admin.js`). Their sessions are httpOnly, `SameSite=Strict`, `__Host-` cookies that last 12 hours and aren't extended. The admin web app calls the API through its own origin, so the cookies are first-party. Every cookie-authenticated request must also send `X-Hagz-Admin: 1`, which a cross-site page can't add without a CORS preflight. Authenticator codes work once, and the challenge between password and code is single use.
 - Short-lived access tokens (about 10 minutes) and rotating refresh tokens. A reused refresh token revokes the whole session, because reuse means the token was stolen.
 - Authorization is one policy layer that checks staff permissions per venue, not checks scattered across handlers. Every query on venue data is scoped by `venueId`. Every endpoint has a test that another tenant's id is rejected (broken object-level authorization is OWASP's top API risk).
   - Venue routes live under `/v1/staff/venues/{venueId}/...` and declare `[requireStaff, requireVenueAccess(area, level)]`. Handlers act only on `c.var.venue.venueId`, never on a venue id from the body.

@@ -6,8 +6,12 @@ import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
 import { RedisUnavailableError, serviceUnavailable } from "@/platform/redis/guarded";
-import { ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_SECONDS } from "../domain/policy";
-import { profile, type Account, type AccountStore } from "./accounts";
+import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_SECONDS,
+  SLIDING_SESSIONS,
+} from "../domain/policy";
+import { profile, type Account, type AccountStore, type SessionStore } from "./accounts";
 import { forgetRotation, rememberRotation, rotatedTo } from "./refresh-grace";
 
 export interface DeviceInfo {
@@ -20,17 +24,18 @@ export interface Authenticated {
   session: Session;
 }
 
-const expiresAt = (store: AccountStore, clock: Clock) =>
+const fullLifetime = (store: SessionStore, clock: Clock) =>
   new Date(clock.now().getTime() + REFRESH_TOKEN_TTL_SECONDS[store.type] * 1000);
 
 // The account type is the token's audience, so a customer's token is rejected by staff routes.
 const issue = async (
-  store: AccountStore,
+  store: SessionStore,
   {
     accountId,
     sessionId,
     refreshToken,
-  }: { accountId: string; sessionId: string; refreshToken: string },
+    expiresAt,
+  }: { accountId: string; sessionId: string; refreshToken: string; expiresAt: Date },
   clock: Clock,
 ): Promise<Session> => ({
   accessToken: await signJwt(
@@ -40,29 +45,30 @@ const issue = async (
   ),
   accessTokenExpiresIn: ACCESS_TOKEN_TTL_SECONDS,
   refreshToken,
-  refreshTokenExpiresIn: REFRESH_TOKEN_TTL_SECONDS[store.type],
+  refreshTokenExpiresIn: Math.ceil((expiresAt.getTime() - clock.now().getTime()) / 1000),
 });
 
 // The refresh token is "<sessionId>.<secret>", and only the secret's hash is stored. The id lets a
 // refresh find its session even when the secret is stale, which is how a reused (stolen) token is told
 // apart from an unknown one.
 export const createSession = async (
-  store: AccountStore,
+  store: SessionStore,
   tx: Tx,
   accountId: string,
   device: DeviceInfo,
   clock: Clock = systemClock,
 ): Promise<Session> => {
   const secret = randomToken();
+  const expiresAt = fullLifetime(store, clock);
   const session = await store.sessions.create(tx, accountId, {
     refreshTokenHash: hashToken(secret),
     ipAddress: device.ip === "unknown" ? null : device.ip,
     userAgent: device.userAgent?.slice(0, 512) ?? null,
-    expiresAt: expiresAt(store, clock),
+    expiresAt,
   });
   return issue(
     store,
-    { accountId, sessionId: session.id, refreshToken: `${session.id}.${secret}` },
+    { accountId, sessionId: session.id, refreshToken: `${session.id}.${secret}`, expiresAt },
     clock,
   );
 };
@@ -89,7 +95,7 @@ const parse = (refreshToken: string) => {
 // extended. A token that is neither current nor within the grace window has been used before, which
 // means it was copied: the whole session is revoked.
 export const refreshSession = async (
-  store: AccountStore,
+  store: SessionStore,
   refreshToken: string,
   clock: Clock = systemClock,
 ): Promise<Session> => {
@@ -105,20 +111,22 @@ export const refreshSession = async (
       return { kind: "ended" as const };
     }
 
+    const { accountId } = session;
     if (session.refreshTokenHash !== hashToken(secret)) {
-      return { kind: "stale" as const, accountId: session.accountId };
+      return { kind: "stale" as const, accountId, expiresAt: session.expiresAt };
     }
 
     const nextSecret = randomToken();
     const next = `${session.id}.${nextSecret}`;
+    const expiresAt = SLIDING_SESSIONS[store.type] ? fullLifetime(store, clock) : session.expiresAt;
     await store.sessions.rotate(tx, session.id, {
       refreshTokenHash: hashToken(nextSecret),
-      expiresAt: expiresAt(store, clock),
+      expiresAt,
       lastUsedAt: now,
     });
     // Before commit, so a refresh waiting on the lock finds it.
     await rememberRotation(store.type, secret, next);
-    return { kind: "rotated" as const, accountId: session.accountId, refreshToken: next };
+    return { kind: "rotated" as const, accountId, refreshToken: next, expiresAt };
   }).catch(async (error: unknown) => {
     await forgetRotation(store.type, secret).catch(() => undefined);
     if (error instanceof RedisUnavailableError) throw serviceUnavailable();
@@ -127,9 +135,13 @@ export const refreshSession = async (
 
   if (outcome.kind === "ended") throw sessionEnded();
 
-  const { accountId } = outcome;
+  const { accountId, expiresAt } = outcome;
   if (outcome.kind === "rotated") {
-    return issue(store, { accountId, sessionId, refreshToken: outcome.refreshToken }, clock);
+    return issue(
+      store,
+      { accountId, sessionId, refreshToken: outcome.refreshToken, expiresAt },
+      clock,
+    );
   }
 
   // Stale: either a concurrent refresh / lost response (within grace), or reuse of an old token.
@@ -141,7 +153,9 @@ export const refreshSession = async (
     if (error instanceof RedisUnavailableError) throw serviceUnavailable();
     throw error;
   }
-  if (rotated) return issue(store, { accountId, sessionId, refreshToken: rotated }, clock);
+  if (rotated) {
+    return issue(store, { accountId, sessionId, refreshToken: rotated, expiresAt }, clock);
+  }
 
   await revokeSession(store, accountId, sessionId, clock);
   logger.warn(
@@ -153,12 +167,32 @@ export const refreshSession = async (
 
 // Idempotent, and scoped to the account so one account can't revoke another's sessions.
 export const revokeSession = async (
-  store: AccountStore,
+  store: SessionStore,
   accountId: string,
   sessionId: string,
   clock: Clock = systemClock,
 ) => {
   await transaction((tx) => store.sessions.revoke(tx, accountId, clock.now(), sessionId));
+};
+
+// Sign-out with only the refresh token, for clients that keep it in a cookie and may hold an expired
+// access token. Revokes only when the token is the session's current one; anything else is a no-op.
+export const revokeByRefreshToken = async (
+  store: SessionStore,
+  refreshToken: string,
+  clock: Clock = systemClock,
+) => {
+  let parsed: { sessionId: string; secret: string };
+  try {
+    parsed = parse(refreshToken);
+  } catch {
+    return;
+  }
+  await transaction(async (tx) => {
+    const session = await store.sessions.lock(tx, parsed.sessionId);
+    if (session?.refreshTokenHash !== hashToken(parsed.secret)) return;
+    await store.sessions.revoke(tx, session.accountId, clock.now(), session.id);
+  });
 };
 
 export const accountSuspended = () =>

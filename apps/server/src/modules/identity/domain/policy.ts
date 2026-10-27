@@ -1,6 +1,8 @@
 // Lifetimes and limits for sign-in, in one place (decided 2026-10-26; see docs/architecture.md).
 
+// Accounts that sign in with a phone; admins sign in with an email. All three have sessions.
 export type AccountType = "customer" | "staff";
+export type SessionType = AccountType | "admin";
 
 export const CODE_TTL_SECONDS = 10 * 60;
 export const RESEND_AFTER_SECONDS = 60;
@@ -11,10 +13,17 @@ export const VERIFICATION_TOKEN_TTL_SECONDS = 15 * 60;
 export const TWO_FACTOR_CHALLENGE_TTL_SECONDS = CODE_TTL_SECONDS;
 
 export const ACCESS_TOKEN_TTL_SECONDS = 10 * 60;
-// Sliding: every refresh extends it.
-export const REFRESH_TOKEN_TTL_SECONDS: Record<AccountType, number> = {
+export const REFRESH_TOKEN_TTL_SECONDS: Record<SessionType, number> = {
   customer: 60 * 24 * 60 * 60,
   staff: 30 * 24 * 60 * 60,
+  admin: 12 * 60 * 60,
+};
+// Sliding sessions are extended by every refresh. An admin session ends 12 hours after sign-in
+// however active it is.
+export const SLIDING_SESSIONS: Record<SessionType, boolean> = {
+  customer: true,
+  staff: true,
+  admin: false,
 };
 
 const minutes = (n: number) => n * 60_000;
@@ -41,4 +50,14 @@ export const limits = {
   // Password guessing: per number (one account) and per IP (many accounts).
   signInPerPhone: { name: "sign-in:phone", limit: 10, windowMs: minutes(15) },
   signInPerIp: { name: "sign-in:ip", limit: 30, windowMs: minutes(15) },
+  // Admins: stricter, since an admin account can do anything.
+  adminSignInPerEmail: { name: "admin:sign-in:email", limit: 5, windowMs: minutes(15) },
+  adminSignInPerIp: { name: "admin:sign-in:ip", limit: 20, windowMs: minutes(15) },
+  adminTotpPerAdmin: { name: "admin:totp:admin", limit: 5, windowMs: minutes(15) },
+  adminTotpPerIp: { name: "admin:totp:ip", limit: 20, windowMs: minutes(15) },
+  adminInvitesPerAdmin: { name: "admin:invite:admin", limit: 20, windowMs: hours(24) },
+  adminAcceptPerIp: { name: "admin:accept:ip", limit: 10, windowMs: minutes(15) },
 } as const;
+
+// How long an emailed admin invitation link works.
+export const ADMIN_INVITATION_TTL_SECONDS = 48 * 60 * 60;

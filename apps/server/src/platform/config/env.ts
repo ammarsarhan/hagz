@@ -52,6 +52,11 @@ const schema = z.object({
     .string()
     .regex(/^[a-z0-9-]+$/, "Expected a lowercase header name, e.g. x-real-ip")
     .optional(),
+  // Where the admin web app is served; invitation links point here. Unset, invitations can't be sent.
+  ADMIN_WEB_URL: z
+    .url()
+    .transform((url) => url.replace(/\/+$/, ""))
+    .optional(),
   // No defaults for secrets: a missing or short one stops the process instead of running insecurely.
   JWT_SIGNING_KEYS: signingKeys,
   OTP_PEPPER: secret,

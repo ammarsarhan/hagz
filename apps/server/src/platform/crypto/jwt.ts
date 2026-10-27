@@ -11,7 +11,8 @@ const ALGORITHM = "HS256";
 
 // "*-challenge" tokens only prove a password was right and a second factor is pending; they are not
 // access tokens. Their `sid` is the code that was sent.
-export type Audience = "customer" | "staff" | "admin" | "customer-challenge" | "staff-challenge";
+export type Audience =
+  "customer" | "staff" | "admin" | "customer-challenge" | "staff-challenge" | "admin-challenge";
 
 export interface SignedClaims {
   sub: string;

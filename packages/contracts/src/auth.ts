@@ -152,3 +152,79 @@ export type CompleteTwoFactor = z.infer<typeof CompleteTwoFactor>;
 export type ResendTwoFactor = z.infer<typeof ResendTwoFactor>;
 export type ChangeTwoFactor = z.infer<typeof ChangeTwoFactor>;
 export type TwoFactorStatus = z.infer<typeof TwoFactorStatus>;
+
+// Admins: email and password, then an authenticator app, which is mandatory. Sessions are httpOnly
+// cookies, never tokens in a response body.
+
+const Email = z.email().max(254).meta({ example: "omar@hagz.app" });
+
+export const AdminSignIn = z
+  .object({ email: Email, password: z.string().min(1).max(128) })
+  .meta({ id: "AdminSignIn" });
+
+export const AdminChallenge = z
+  .object({
+    challengeToken: z
+      .string()
+      .meta({ description: "Proves the password was right. Single use. Not an access token." }),
+    next: z.enum(["TOTP", "TOTP_SETUP"]).meta({
+      description:
+        "`TOTP`: ask for a code from the authenticator app. `TOTP_SETUP`: the account has no " +
+        "authenticator yet; start the setup, then ask for its first code.",
+    }),
+    expiresIn: z.int().meta({ example: 600 }),
+  })
+  .meta({ id: "AdminChallenge" });
+
+export const StartTotpSetup = z
+  .object({ challengeToken: z.string().min(1) })
+  .meta({ id: "StartTotpSetup" });
+
+export const TotpSetup = z
+  .object({
+    secret: z.string().meta({ description: "Base32, for typing in by hand." }),
+    otpauthUri: z.string().meta({ description: "Show as a QR code for the authenticator app." }),
+  })
+  .meta({ id: "TotpSetup" });
+
+export const CompleteAdminSignIn = z
+  .object({ challengeToken: z.string().min(1), code: Code })
+  .meta({ id: "CompleteAdminSignIn" });
+
+export const Admin = z
+  .object({ id: z.uuid(), name: z.string(), email: z.string() })
+  .meta({ id: "Admin" });
+
+export const AdminSignedIn = z
+  .object({
+    admin: Admin,
+    sessionExpiresIn: z
+      .int()
+      .meta({ description: "Seconds until the session ends; it isn't extended.", example: 43200 }),
+  })
+  .meta({ id: "AdminSignedIn" });
+
+export const InviteAdmin = z.object({ email: Email }).meta({ id: "InviteAdmin" });
+
+export const AdminInvitation = z
+  .object({ id: z.uuid(), email: z.string(), expiresAt: z.iso.datetime() })
+  .meta({ id: "AdminInvitation" });
+
+export const AcceptAdminInvitation = z
+  .object({
+    token: z.string().min(1).max(256).meta({ description: "From the invitation link." }),
+    name: z.string().trim().min(1).max(100),
+    password: Password,
+  })
+  .meta({ id: "AcceptAdminInvitation" });
+
+export type AdminSignIn = z.infer<typeof AdminSignIn>;
+export type AdminChallenge = z.infer<typeof AdminChallenge>;
+export type StartTotpSetup = z.infer<typeof StartTotpSetup>;
+export type TotpSetup = z.infer<typeof TotpSetup>;
+export type CompleteAdminSignIn = z.infer<typeof CompleteAdminSignIn>;
+export type Admin = z.infer<typeof Admin>;
+export type AdminSignedIn = z.infer<typeof AdminSignedIn>;
+export type InviteAdmin = z.infer<typeof InviteAdmin>;
+export type AdminInvitation = z.infer<typeof AdminInvitation>;
+export type AcceptAdminInvitation = z.infer<typeof AcceptAdminInvitation>;
