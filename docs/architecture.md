@@ -32,14 +32,20 @@ apps/server/src/
     notifications/  deliveries per channel
     loyalty/ reviews/ discounts/
   platform/         db, transactions, idempotency, logging, errors, clock, rate limits
-  http/             routes and middleware
+  http/             composition root: global middleware, mounts each module's routes
+  app.ts worker.ts  process entry points
 ```
 
 - Each module has three layers:
   - `http` parses and validates input (zod) and serializes output.
   - `application` holds the use cases. They own transactions.
   - `domain` holds pure functions: pricing, VAT, cancellation tiers, state transitions, slot maths.
-- Modules talk through each other's public `index.ts`, never through each other's tables or internals. CI enforces this with `dependency-cruiser`.
+- Modules talk through each other's public `index.ts`, never through each other's tables or internals.
+- `eslint-plugin-boundaries` enforces this in `pnpm lint` (`apps/server/eslint.config.js`):
+  - another module is reachable only through its `index.ts`, and a module's own layers never import that `index.ts`;
+  - `http` → `application` → `domain`, never upwards, and module `http` never touches the database;
+  - `domain` imports no Prisma, Redis, BullMQ or Hono, and no platform service except errors;
+  - `platform` never imports modules or `http`.
 - `@hagz/contracts` holds the zod schemas for requests and responses. The OpenAPI spec is generated from them (`@hono/zod-openapi`), and the apps and the web frontend use them as typed clients.
 - Prisma models never leave the server. Every response is an explicit DTO, so new columns (and secrets like `refreshTokenHash`) are never exposed by accident.
 
@@ -154,9 +160,9 @@ The slot constraint closes a real gap (manual slots). The booking constraint is 
 
 | Area | Rule |
 |---|---|
-| Timeouts | Postgres `statement_timeout` (5 s for the API, longer for the worker), `lock_timeout` (2 s), `idle_in_transaction_session_timeout`. Every outbound HTTP call has a timeout. |
+| Timeouts | Set on the database (migration `20261026000001_timeouts`), because Neon's pooler rejects them as connection parameters: `statement_timeout` 5 s, `lock_timeout` 2 s, `idle_in_transaction_session_timeout` 30 s. Worker jobs and migrations that need longer raise them for themselves with `SET LOCAL`. Requests time out after 15 s and transactions after 10 s, but only the database timeouts actually stop work. Every outbound HTTP call has a timeout. |
 | Retries | Only for idempotent operations, with exponential backoff and jitter. A circuit breaker on each provider (payments, WhatsApp, push) fails fast when the provider is down. |
-| Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` checks Postgres and Redis and drives traffic. A database blip must not cause a restart loop. |
+| Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` drives traffic and Railway's deploy healthcheck: it fails while shutting down or when Postgres is unreachable. Redis is reported but doesn't fail it, because the API keeps working without Redis (see "Redis down"). A database blip must not cause a restart loop. |
 | Shutdown | On `SIGTERM`, the API fails readiness, stops accepting connections, finishes in-flight requests within a deadline, then disconnects Prisma and Redis. The worker stops taking jobs, finishes its current ones, then exits. |
 | Jobs | Processors are idempotent (BullMQ runs jobs at least once). Deterministic `jobId`s, `attempts` with backoff, zod-validated versioned payloads, and an alert when the failed set grows. Recurring jobs use job schedulers. |
 | Redis down | The cache fails open (read from Postgres). The queue falls back to the sweepers. Rate limits fail closed on OTP and invite-code endpoints (WhatsApp OTP abuse costs money) and fail open elsewhere. |
@@ -179,14 +185,21 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 ## Security
 
 - Passwords are hashed with argon2id. Admins must use TOTP.
+- Admins are invite-only (the first is created with `node dist/create-admin.js`). Their sessions are httpOnly, `SameSite=Strict`, `__Host-` cookies that last 12 hours and aren't extended. The admin web app calls the API through its own origin, so the cookies are first-party. Every cookie-authenticated request must also send `X-Hagz-Admin: 1`, which a cross-site page can't add without a CORS preflight. Authenticator codes work once, and the challenge between password and code is single use.
 - Short-lived access tokens (about 10 minutes) and rotating refresh tokens. A reused refresh token revokes the whole session, because reuse means the token was stolen.
 - Authorization is one policy layer that checks staff permissions per venue, not checks scattered across handlers. Every query on venue data is scoped by `venueId`. Every endpoint has a test that another tenant's id is rejected (broken object-level authorization is OWASP's top API risk).
+  - Venue routes live under `/v1/staff/venues/{venueId}/...` and declare `[requireStaff, requireVenueAccess(area, level)]`. Handlers act only on `c.var.venue.venueId`, never on a venue id from the body.
+  - Permissions are seven areas, each `none`, `view` or `manage` (`StaffPermissions` in `@hagz/contracts`). The owner can do everything whatever is stored, and stored JSON that doesn't parse grants nothing.
+  - Membership is read on every request, not carried in the token, so a demotion, removal or suspension applies to the next request.
+  - A venue the caller doesn't belong to answers `404 VENUE_NOT_FOUND`, exactly like one that doesn't exist.
+  - Only the owner can grant more in an area than they have themselves, and nobody changes their own permissions. Writes re-check the granter under a row lock.
 - Request hygiene at the edge:
   - zod validation and request body size limits;
   - a CORS allowlist and security headers;
   - webhook HMAC verification with a timestamp tolerance;
   - PII redacted from logs.
 - Rate limits per IP, per account and per phone number on login, OTP and invite codes.
+- Invitations are the only way in for admins and for non-owner staff. Staff invitations are matched to the invitee's verified phone (anyone else gets 404 for the code or id), last 48 hours, and are only as good as the inviter is at acceptance time. Every link Hagz sends is built from the route table in `@hagz/contracts` (`links.ts`) on `WEB_URL`, the web app's origin, which serves the universal-link verification files and the fallback pages.
 - Renovate and `pnpm audit` in CI, pinned base images, and secrets only in Railway variables.
 
 ## Observability

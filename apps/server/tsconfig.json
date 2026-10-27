@@ -6,5 +6,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "prisma.config.ts", "tsup.config.ts"]
+  "include": ["src", "test", "prisma.config.ts", "tsup.config.ts", "vitest.config.ts"]
 }
