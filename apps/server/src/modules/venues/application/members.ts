@@ -10,6 +10,7 @@ import {
   RESTRICTED_AFTER_PASSWORD_RESET,
   type PermissionEventData,
 } from "../domain/events";
+import { nameIn } from "../domain/names";
 import {
   allows,
   beyondGranter,
@@ -17,7 +18,13 @@ import {
   parsePermissions,
   samePermissions,
 } from "../domain/permissions";
-import { accountSuspended, missingPermission, venueNotFound, type VenueAccess } from "./access";
+import {
+  accountSuspended,
+  missingPermission,
+  permissionAboveYourOwn,
+  venueNotFound,
+  type VenueAccess,
+} from "./access";
 
 // The venues a member belongs to, for the dashboard's venue switcher.
 export const listMyVenues = async (staffId: string, language: Language): Promise<StaffVenue[]> => {
@@ -47,9 +54,7 @@ export const listMyVenues = async (staffId: string, language: Language): Promise
   return staff.memberships.map(({ role, permissions, venue }) => ({
     id: venue.id,
     slug: venue.slug,
-    name:
-      (venue.translations.find((t) => t.language === language) ?? venue.translations[0])?.name ??
-      null,
+    name: nameIn(venue.translations, language),
     status: venue.status,
     role,
     permissions: effectivePermissions(role, permissions),
@@ -154,9 +159,7 @@ const setPermissions = (
     const next = await decide(tx, member);
     const beyond = beyondGranter(granted, next);
     if (beyond.length > 0) {
-      throw forbidden("PERMISSION_ABOVE_YOUR_OWN", "You can't give more than you have yourself.", {
-        areas: beyond,
-      });
+      throw permissionAboveYourOwn(beyond);
     }
 
     await tx.venueMembership.update({

@@ -207,8 +207,14 @@ export const AdminSignedIn = z
 export const InviteAdmin = z.object({ email: Email }).meta({ id: "InviteAdmin" });
 
 export const AdminInvitation = z
-  .object({ id: z.uuid(), email: z.string(), expiresAt: z.iso.datetime() })
-  .meta({ id: "AdminInvitation" });
+  .object({
+    id: z.uuid(),
+    email: z.string(),
+    invitedBy: z.string().meta({ description: "The inviting admin's name." }),
+    createdAt: z.iso.datetime(),
+    expiresAt: z.iso.datetime(),
+  })
+  .meta({ id: "AdminInvitation", description: "An invitation that hasn't been used or revoked." });
 
 export const AcceptAdminInvitation = z
   .object({

@@ -1,7 +1,6 @@
 import type { AdminChallenge, AdminInvitation } from "@hagz/contracts";
 import { z } from "zod";
 import { systemClock, type Clock } from "@/platform/clock/clock";
-import { env } from "@/platform/config/env";
 import { hashPassword } from "@/platform/crypto/passwords";
 import { hashToken, randomToken } from "@/platform/crypto/tokens";
 import { violatedUniqueIndex } from "@/platform/db/errors";
@@ -9,6 +8,7 @@ import { prisma } from "@/platform/db/prisma";
 import { transaction } from "@/platform/db/transaction";
 import { email as mail } from "@/platform/email/email";
 import { AppError } from "@/platform/errors/app-error";
+import { webLinks } from "@/platform/http/links";
 import { consume } from "@/platform/rate-limit/rate-limit";
 import { ADMIN_INVITATION_TTL_SECONDS, limits } from "../domain/policy";
 import { challengeFor, normalizeEmail } from "./admin-sign-in";
@@ -19,17 +19,15 @@ import { challengeFor, normalizeEmail } from "./admin-sign-in";
 const alreadyAdmin = () =>
   new AppError({ code: "ADMIN_ALREADY_EXISTS", status: 409, detail: "That email is an admin." });
 
-// The token goes in the link's fragment, which browsers never send to a server: it stays out of
-// access logs and Referer headers.
 const acceptUrl = (token: string) => {
-  if (!env.ADMIN_WEB_URL) {
+  if (!webLinks) {
     throw new AppError({
       code: "EMAIL_UNAVAILABLE",
       status: 503,
       detail: "Invitations can't be sent from this environment yet.",
     });
   }
-  return `${env.ADMIN_WEB_URL}/admin/invitations/accept#token=${token}`;
+  return webLinks.adminInvitation(token);
 };
 
 export const inviteAdmin = async (
@@ -76,11 +74,55 @@ export const inviteAdmin = async (
     await prisma.adminInvitation.delete({ where: { id: invitation.id } }).catch(() => undefined);
     throw error;
   }
-  return {
-    id: invitation.id,
-    email: invitation.email,
-    expiresAt: invitation.expiresAt.toISOString(),
-  };
+  return present({ ...invitation, invitor });
+};
+
+const present = (invitation: {
+  id: string;
+  email: string;
+  createdAt: Date;
+  expiresAt: Date;
+  invitor: { name: string };
+}): AdminInvitation => ({
+  id: invitation.id,
+  email: invitation.email,
+  invitedBy: invitation.invitor.name,
+  createdAt: invitation.createdAt.toISOString(),
+  expiresAt: invitation.expiresAt.toISOString(),
+});
+
+// Open invitations: not accepted, revoked or expired. Newest first.
+export const listAdminInvitations = async (clock: Clock = systemClock) => {
+  const invitations = await prisma.adminInvitation.findMany({
+    where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: clock.now() } },
+    orderBy: { createdAt: "desc" },
+    include: { invitor: { select: { name: true } } },
+  });
+  return invitations.map(present);
+};
+
+// Idempotent for invitations that are already revoked or expired; an accepted one can't be undone
+// here (that admin exists now).
+export const revokeAdminInvitation = async (id: string, clock: Clock = systemClock) => {
+  const invitation = await prisma.adminInvitation.findUnique({ where: { id } });
+  if (!invitation) {
+    throw new AppError({
+      code: "INVITATION_NOT_FOUND",
+      status: 404,
+      detail: "No such invitation.",
+    });
+  }
+  if (invitation.acceptedAt !== null) {
+    throw new AppError({
+      code: "INVITATION_ALREADY_ACCEPTED",
+      status: 409,
+      detail: "This invitation was already used.",
+    });
+  }
+  await prisma.adminInvitation.updateMany({
+    where: { id, acceptedAt: null, revokedAt: null },
+    data: { revokedAt: clock.now() },
+  });
 };
 
 const invitationInvalid = () =>

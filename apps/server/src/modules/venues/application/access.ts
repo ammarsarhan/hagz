@@ -30,6 +30,14 @@ export const missingPermission = (area: PermissionArea, level: PermissionLevel) 
     extensions: { area, needed: level },
   });
 
+export const permissionAboveYourOwn = (areas: PermissionArea[]) =>
+  new AppError({
+    code: "PERMISSION_ABOVE_YOUR_OWN",
+    status: 403,
+    detail: "You can't give more than you have yourself.",
+    extensions: { areas },
+  });
+
 const Id = z.uuid();
 
 // Read on every request rather than carried in the access token, so a change of permissions, a

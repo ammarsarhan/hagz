@@ -199,6 +199,7 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
   - webhook HMAC verification with a timestamp tolerance;
   - PII redacted from logs.
 - Rate limits per IP, per account and per phone number on login, OTP and invite codes.
+- Invitations are the only way in for admins and for non-owner staff. Staff invitations are matched to the invitee's verified phone (anyone else gets 404 for the code or id), last 48 hours, and are only as good as the inviter is at acceptance time. Every link Hagz sends is built from the route table in `@hagz/contracts` (`links.ts`) on `WEB_URL`, the web app's origin, which serves the universal-link verification files and the fallback pages.
 - Renovate and `pnpm audit` in CI, pinned base images, and secrets only in Railway variables.
 
 ## Observability

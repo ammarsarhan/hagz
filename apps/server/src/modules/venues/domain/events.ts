@@ -10,3 +10,9 @@ export interface PermissionEventData {
   previousPermissions: unknown;
   permissions: unknown;
 }
+
+// Invitations: the inviter, the revoker, or the invitee (accepting or declining) is the actor.
+export const STAFF_INVITED = "STAFF_INVITED";
+export const STAFF_INVITATION_REVOKED = "STAFF_INVITATION_REVOKED";
+export const STAFF_INVITATION_DECLINED = "STAFF_INVITATION_DECLINED";
+export const STAFF_JOINED = "STAFF_JOINED";

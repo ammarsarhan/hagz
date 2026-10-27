@@ -19,3 +19,18 @@ export const codeMatches = (code: string, hash: string): boolean => {
   const actual = Buffer.from(hashCode(code), "base64url");
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 };
+
+// Venue join codes (staff invitations): 6 characters people may read out or type, so no lookalikes
+// (no 0/O, 1/I/L) and case doesn't matter. 31^6 ≈ 887 million; accepting also needs the invitee's
+// verified phone to match, so guessing one is useless. Stored with hashCode, so typed codes can be
+// looked up.
+const JOIN_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+export const generateJoinCode = (): string =>
+  Array.from({ length: 6 }, () =>
+    JOIN_CODE_ALPHABET.charAt(randomInt(JOIN_CODE_ALPHABET.length)),
+  ).join("");
+
+// What people type: any case, with spaces or dashes.
+export const normalizeJoinCode = (input: string): string =>
+  input.replace(/[\s-]/g, "").toUpperCase();

@@ -4,7 +4,8 @@ import type { Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import type { Tx } from "@/platform/db/transaction";
 import { RESTRICTED_AFTER_PASSWORD_RESET } from "../domain/events";
-import { capPermissions, managesStaff, parsePermissions } from "../domain/permissions";
+import { capPermissions, parsePermissions } from "../domain/permissions";
+import { staffManagersOf } from "./staff-managers";
 
 // Phone numbers get recycled: whoever holds a member's old number can pass a password reset. So a reset
 // makes the member read-only at every venue until someone who manages staff restores them (decided
@@ -46,20 +47,15 @@ export const restrictAfterPasswordReset = async (tx: Tx, staffId: string, clock:
       },
     });
 
-    const colleagues = await tx.venueMembership.findMany({
-      where: { venueId, staffId: { not: staffId } },
-      select: { staffId: true, role: true, permissions: true },
-    });
+    const managers = await staffManagersOf(tx, venueId, staffId);
     await notifyStaff(
       tx,
-      colleagues
-        .filter((member) => managesStaff(member.role, member.permissions))
-        .map((member) => ({
-          staffId: member.staffId,
-          venueId,
-          type: "STAFF_PASSWORD_RESET" as const,
-          data: { staffId, eventId: event.id },
-        })),
+      managers.map((managerId) => ({
+        staffId: managerId,
+        venueId,
+        type: "STAFF_PASSWORD_RESET" as const,
+        data: { staffId, eventId: event.id },
+      })),
       clock,
     );
   }

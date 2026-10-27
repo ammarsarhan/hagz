@@ -343,4 +343,35 @@ describe("admin invitations", () => {
     expect((await invite({}, "sara@hagz.app")).status).toBe(401);
     expect(mailbox.sent).toHaveLength(0);
   });
+
+  it("lists open invitations and revokes them", async () => {
+    const { secret } = await createAdmin();
+    const { jar } = await signedIn(secret);
+    await invite(jar, "sara@hagz.app");
+    await invite(jar, "ali@hagz.app");
+    await accept(tokenFrom("ali@hagz.app"));
+
+    const open = await request("GET", "/admin/invitations", { jar });
+    const { data } = (await open.json()) as {
+      data: { id: string; email: string; invitedBy: string }[];
+    };
+    expect(data.map((i) => [i.email, i.invitedBy])).toEqual([["sara@hagz.app", "Omar"]]);
+    const [sara] = data;
+
+    const revoked = await request("DELETE", `/admin/invitations/${sara?.id ?? ""}`, { jar });
+    expect(revoked.status).toBe(204);
+    expect((await request("DELETE", `/admin/invitations/${sara?.id ?? ""}`, { jar })).status).toBe(
+      204,
+    );
+    expect((await json(await accept(tokenFrom("sara@hagz.app")))).code).toBe("INVITATION_INVALID");
+
+    const used = await prisma.adminInvitation.findFirstOrThrow({
+      where: { email: "ali@hagz.app" },
+    });
+    expect((await request("DELETE", `/admin/invitations/${used.id}`, { jar })).status).toBe(409);
+    expect((await request("DELETE", `/admin/invitations/${randomUUID()}`, { jar })).status).toBe(
+      404,
+    );
+    expect((await request("GET", "/admin/invitations", { jar, header: false })).status).toBe(403);
+  });
 });

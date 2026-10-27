@@ -1,4 +1,4 @@
-import { createRoute } from "@hono/zod-openapi";
+import { createRoute, z } from "@hono/zod-openapi";
 import {
   AcceptAdminInvitation,
   Admin,
@@ -8,6 +8,7 @@ import {
   AdminSignIn,
   CompleteAdminSignIn,
   InviteAdmin,
+  list,
   StartTotpSetup,
   TotpSetup,
 } from "@hagz/contracts";
@@ -23,7 +24,12 @@ import {
 import { AppError } from "@/platform/errors/app-error";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
-import { acceptAdminInvitation, inviteAdmin } from "../application/admin-invitations";
+import {
+  acceptAdminInvitation,
+  inviteAdmin,
+  listAdminInvitations,
+  revokeAdminInvitation,
+} from "../application/admin-invitations";
 import {
   completeAdminSignIn,
   currentAdmin,
@@ -164,6 +170,38 @@ const invite = createRoute({
   },
 });
 
+const invitations = createRoute({
+  method: "get",
+  path: "/admin/invitations",
+  tags: ["Admins"],
+  summary: "Open admin invitations",
+  middleware: [requireAdmin] as const,
+  security,
+  responses: {
+    200: { description: "Not yet used, revoked or expired", ...json(list(AdminInvitation)) },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+  },
+});
+
+const revokeInvitation = createRoute({
+  method: "delete",
+  path: "/admin/invitations/{id}",
+  tags: ["Admins"],
+  summary: "Revoke an invitation",
+  description: "Its link stops working. Revoking one that's already revoked or expired is fine.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Revoked" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("INVITATION_NOT_FOUND"),
+    409: problemResponse("INVITATION_ALREADY_ACCEPTED"),
+  },
+});
+
 const accept = createRoute({
   method: "post",
   path: "/auth/admin/invitations/accept",
@@ -221,6 +259,13 @@ export const adminAuthRoutes = createRouter()
   .openapi(invite, async (c) => {
     const { email } = c.req.valid("json");
     return c.json(await inviteAdmin({ invitorId: c.var.admin.adminId, email }), 201);
+  })
+  .openapi(invitations, async (c) => {
+    return c.json({ data: await listAdminInvitations() }, 200);
+  })
+  .openapi(revokeInvitation, async (c) => {
+    await revokeAdminInvitation(c.req.valid("param").id);
+    return c.body(null, 204);
   })
   .openapi(accept, async (c) => {
     const input = c.req.valid("json");
