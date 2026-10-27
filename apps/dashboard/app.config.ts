@@ -1,11 +1,44 @@
+import {
+  APPS,
+  ENVIRONMENTS,
+  appNameFor,
+  bundleIdFor,
+  schemeFor,
+  type Environment,
+} from "@hagz/contracts";
 import type { ExpoConfig } from "expo/config";
 
+// Built once per environment (APP_ENV), so staging and production install side by side. Links Hagz
+// sends (@hagz/contracts links.ts) are https URLs on the web app's domain (WEB_URL): iOS and Android
+// open them in this app once the domain is verified (the web app serves the verification files).
+const env = (process.env.APP_ENV ?? "development") as Environment;
+if (!ENVIRONMENTS.includes(env)) throw new Error(`Unknown APP_ENV: ${env}`);
+const webHost = process.env.WEB_URL ? new URL(process.env.WEB_URL).host : undefined;
+
 const config: ExpoConfig = {
-  name: "Hagz Dashboard",
+  name: appNameFor("dashboard", env),
   slug: "hagz-dashboard",
   version: "0.0.0",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
+  scheme: schemeFor("dashboard", env),
+  ios: {
+    bundleIdentifier: bundleIdFor("dashboard", env),
+    associatedDomains: webHost ? [`applinks:${webHost}`] : [],
+  },
+  android: {
+    package: bundleIdFor("dashboard", env),
+    intentFilters: webHost
+      ? [
+          {
+            action: "VIEW",
+            autoVerify: true,
+            data: [{ scheme: "https", host: webHost, pathPrefix: APPS.dashboard.pathPrefix }],
+            category: ["BROWSABLE", "DEFAULT"],
+          },
+        ]
+      : [],
+  },
   plugins: ["expo-router"],
   experiments: {
     typedRoutes: true,
