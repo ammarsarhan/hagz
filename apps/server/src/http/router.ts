@@ -1,11 +1,13 @@
 import { customerAuthRoutes, staffAuthRoutes } from "@/modules/identity";
 import { locationsRoutes } from "@/modules/locations";
+import { venuesStaffRoutes } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
 import { notFound, onError } from "@/http/errors";
 import { health } from "@/http/health";
 import { accessLog, bodyLimit, requestContext, requestId, timeout } from "@/http/middleware";
 import { env } from "@/platform/config/env";
+import { bearerScheme, CUSTOMER_BEARER, STAFF_BEARER } from "@/platform/http/authenticate";
 import { createRouter } from "@/platform/http/router";
 
 // Composition root: global middleware and every module's routes are mounted here. Order matters:
@@ -24,9 +26,13 @@ router.route("/health", health);
 router.route("/v1", locationsRoutes);
 router.route("/v1", customerAuthRoutes);
 router.route("/v1", staffAuthRoutes);
+router.route("/v1", venuesStaffRoutes);
 
 // The contract the apps are built against, and a browsable page for it. Not served in production:
 // they list every route, including admin ones. The committed copy is apps/server/openapi.json.
+router.openAPIRegistry.registerComponent("securitySchemes", CUSTOMER_BEARER, bearerScheme);
+router.openAPIRegistry.registerComponent("securitySchemes", STAFF_BEARER, bearerScheme);
+
 if (env.APP_ENV !== "production") {
   router.doc31("/v1/openapi.json", {
     openapi: "3.1.0",

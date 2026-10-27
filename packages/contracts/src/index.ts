@@ -5,4 +5,5 @@ export * from "./idempotency";
 export * from "./lists";
 export * from "./marketplaces";
 export * from "./permissions";
+export * from "./venues";
 export * from "./problem";

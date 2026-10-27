@@ -93,6 +93,7 @@ describe("staff password reset, for a member", () => {
       staffId: member.id,
       adminId: null,
       data: {
+        memberId: member.id,
         previousPermissions: before,
         permissions: permissions({ bookings: "view", finance: "view" }),
       },

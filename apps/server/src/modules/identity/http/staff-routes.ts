@@ -32,7 +32,7 @@ import {
   sendTwoFactorSettingCode,
 } from "../application/two-factor";
 import { confirmSignUpCode, sendSignUpCode } from "../application/verification-codes";
-import { STAFF_BEARER, requireStaff } from "./authenticate";
+import { STAFF_BEARER, requireStaff } from "@/platform/http/authenticate";
 import { body, codeRejected, device, json, unauthenticated, unavailable } from "./route-helpers";
 
 const tags = ["Staff auth"];
@@ -320,10 +320,3 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(changed, 200);
   });
-
-staffAuthRoutes.openAPIRegistry.registerComponent("securitySchemes", STAFF_BEARER, {
-  type: "http",
-  scheme: "bearer",
-  bearerFormat: "JWT",
-  description: "The access token from sign-up, sign-in or refresh.",
-});

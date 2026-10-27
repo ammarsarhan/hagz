@@ -3,13 +3,12 @@ import { notifyStaff } from "@/modules/notifications";
 import type { Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import type { Tx } from "@/platform/db/transaction";
+import { RESTRICTED_AFTER_PASSWORD_RESET } from "../domain/events";
 import { capPermissions, managesStaff, parsePermissions } from "../domain/permissions";
 
 // Phone numbers get recycled: whoever holds a member's old number can pass a password reset. So a reset
 // makes the member read-only at every venue until someone who manages staff restores them (decided
 // 2026-10-26). Owners can't reset by themselves at all; they go through support.
-
-export const RESTRICTED_AFTER_PASSWORD_RESET = "STAFF_RESTRICTED_AFTER_PASSWORD_RESET";
 
 export const ownsAVenue = async (staffId: string) =>
   (await prisma.venueMembership.count({ where: { staffId, role: "OWNER" } })) > 0;
@@ -43,7 +42,7 @@ export const restrictAfterPasswordReset = async (tx: Tx, staffId: string, clock:
         venueId,
         type: RESTRICTED_AFTER_PASSWORD_RESET,
         staffId,
-        data: { previousPermissions: permissions, permissions: restricted },
+        data: { memberId: staffId, previousPermissions: permissions, permissions: restricted },
       },
     });
 

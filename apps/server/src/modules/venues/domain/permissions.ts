@@ -38,3 +38,12 @@ export const capPermissions = (
 // Who hears about changes to a venue's staff: the owner and anyone who manages staff.
 export const managesStaff = (role: "OWNER" | "MEMBER", stored: unknown) =>
   allows(effectivePermissions(role, stored).staff, "manage");
+
+export const samePermissions = (a: StaffPermissions, b: StaffPermissions) =>
+  AREAS.every((area) => a[area] === b[area]);
+
+// The areas where `requested` goes beyond what the granting member has. Only the owner can give more
+// than they have, so a staff manager can't hand a colleague (or, through them, themselves) the finance
+// area they were kept out of.
+export const beyondGranter = (granter: StaffPermissions, requested: StaffPermissions) =>
+  AREAS.filter((area) => !allows(granter[area], requested[area]));

@@ -14,8 +14,16 @@ export interface StaffActor {
 }
 
 // The OpenAPI security schemes routes reference with `security: [{ [CUSTOMER_BEARER]: [] }]`.
+// Registered once on the root router (src/http/router.ts).
 export const CUSTOMER_BEARER = "customerBearer";
 export const STAFF_BEARER = "staffBearer";
+
+export const bearerScheme = {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+  description: "The access token from sign-up, sign-in or refresh.",
+} as const;
 
 // Verifies the access token without a database lookup; that's why access tokens live only 10 minutes.
 // A signed-out session's token keeps working until it expires.

@@ -187,6 +187,11 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 - Passwords are hashed with argon2id. Admins must use TOTP.
 - Short-lived access tokens (about 10 minutes) and rotating refresh tokens. A reused refresh token revokes the whole session, because reuse means the token was stolen.
 - Authorization is one policy layer that checks staff permissions per venue, not checks scattered across handlers. Every query on venue data is scoped by `venueId`. Every endpoint has a test that another tenant's id is rejected (broken object-level authorization is OWASP's top API risk).
+  - Venue routes live under `/v1/staff/venues/{venueId}/...` and declare `[requireStaff, requireVenueAccess(area, level)]`. Handlers act only on `c.var.venue.venueId`, never on a venue id from the body.
+  - Permissions are seven areas, each `none`, `view` or `manage` (`StaffPermissions` in `@hagz/contracts`). The owner can do everything whatever is stored, and stored JSON that doesn't parse grants nothing.
+  - Membership is read on every request, not carried in the token, so a demotion, removal or suspension applies to the next request.
+  - A venue the caller doesn't belong to answers `404 VENUE_NOT_FOUND`, exactly like one that doesn't exist.
+  - Only the owner can grant more in an area than they have themselves, and nobody changes their own permissions. Writes re-check the granter under a row lock.
 - Request hygiene at the edge:
   - zod validation and request body size limits;
   - a CORS allowlist and security headers;

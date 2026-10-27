@@ -505,6 +505,246 @@
           "name",
           "password"
         ]
+      },
+      "StaffVenue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "In `Accept-Language`, else any language."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "SUBMITTED",
+              "PROVISIONING",
+              "LIVE",
+              "MAINTENANCE"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/VenueRole"
+          },
+          "permissions": {
+            "type": "object",
+            "properties": {
+              "bookings": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The calendar; creating, editing and cancelling bookings."
+              },
+              "customers": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The venue's customers and their history."
+              },
+              "schedule": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Grounds' weekly hours, prices and blocked slots."
+              },
+              "payments": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Recording cash and issuing refunds."
+              },
+              "finance": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "The ledger, payouts and earnings reports."
+              },
+              "staff": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Inviting and removing staff, and changing their permissions."
+              },
+              "venue": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "view",
+                  "manage"
+                ],
+                "description": "Profile, layout, amenities, discounts and policies."
+              }
+            },
+            "required": [
+              "bookings",
+              "customers",
+              "schedule",
+              "payments",
+              "finance",
+              "staff",
+              "venue"
+            ],
+            "description": "What the signed-in member may do here; all `manage` for the owner."
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "status",
+          "role",
+          "permissions"
+        ]
+      },
+      "VenueRole": {
+        "type": "string",
+        "enum": [
+          "OWNER",
+          "MEMBER"
+        ],
+        "description": "Each venue has exactly one `OWNER`, who can do everything."
+      },
+      "VenueMember": {
+        "type": "object",
+        "properties": {
+          "staffId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "+201001234567"
+          },
+          "role": {
+            "$ref": "#/components/schemas/VenueRole"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/StaffPermissions"
+          },
+          "restorable": {
+            "type": "boolean",
+            "description": "True when a password reset made them read-only and nothing changed since: POST permissions/restore brings back what they had."
+          }
+        },
+        "required": [
+          "staffId",
+          "name",
+          "phone",
+          "role",
+          "permissions",
+          "restorable"
+        ]
+      },
+      "StaffPermissions": {
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "The calendar; creating, editing and cancelling bookings."
+          },
+          "customers": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "The venue's customers and their history."
+          },
+          "schedule": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Grounds' weekly hours, prices and blocked slots."
+          },
+          "payments": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Recording cash and issuing refunds."
+          },
+          "finance": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "The ledger, payouts and earnings reports."
+          },
+          "staff": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Inviting and removing staff, and changing their permissions."
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "none",
+              "view",
+              "manage"
+            ],
+            "description": "Profile, layout, amenities, discounts and policies."
+          }
+        },
+        "required": [
+          "bookings",
+          "customers",
+          "schedule",
+          "payments",
+          "finance",
+          "staff",
+          "venue"
+        ]
       }
     },
     "parameters": {}
@@ -1919,6 +2159,312 @@
           },
           "401": {
             "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues": {
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "The venues I belong to, with my permissions at each",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My venues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StaffVenue"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members": {
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "The venue's staff",
+        "description": "Needs `staff: view`.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members, owner included",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VenueMember"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members/{staffId}/permissions": {
+      "put": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Set a member's permissions",
+        "description": "Needs `staff: manage`. Nobody can change their own permissions or the owner's, and only the owner can give more in an area than they have themselves.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffPermissions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/members/{staffId}/permissions/restore": {
+      "post": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Give back what a password reset took away",
+        "description": "Needs `staff: manage`. Works while the member is `restorable`; the same limits as setting permissions apply.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The restored permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOTHING_TO_RESTORE: their permissions changed since the reset.",
             "content": {
               "application/problem+json": {
                 "schema": {

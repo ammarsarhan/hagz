@@ -32,7 +32,7 @@ import {
   sendTwoFactorSettingCode,
 } from "../application/two-factor";
 import { confirmSignUpCode, sendSignUpCode } from "../application/verification-codes";
-import { CUSTOMER_BEARER, requireCustomer } from "./authenticate";
+import { CUSTOMER_BEARER, requireCustomer } from "@/platform/http/authenticate";
 import { body, codeRejected, device, json, unauthenticated, unavailable } from "./route-helpers";
 
 const tags = ["Customer auth"];
@@ -314,10 +314,3 @@ export const customerAuthRoutes = createRouter()
     });
     return c.json(changed, 200);
   });
-
-customerAuthRoutes.openAPIRegistry.registerComponent("securitySchemes", CUSTOMER_BEARER, {
-  type: "http",
-  scheme: "bearer",
-  bearerFormat: "JWT",
-  description: "The access token from sign-up, sign-in or refresh.",
-});
