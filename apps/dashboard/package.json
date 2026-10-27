@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start",
+    "dev": "expo start --port 8082",
     "ios": "expo run:ios",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit"
