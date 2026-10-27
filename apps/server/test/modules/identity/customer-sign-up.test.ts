@@ -8,7 +8,7 @@ import { queueConnection } from "@/platform/redis/connections";
 import { resetDatabase } from "../../support/database";
 import { createMarketplace, createVenue } from "../../support/factories";
 import { outbox } from "../../support/messaging";
-import { deleteRedisKeys } from "../../support/redis";
+import { deleteRedisKeys, resetRedis } from "../../support/redis";
 
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   router.request(`/v1/auth/customer${path}`, {
@@ -52,7 +52,7 @@ let marketplaceId: string;
 beforeEach(async () => {
   vi.restoreAllMocks();
   await resetDatabase();
-  await deleteRedisKeys("otp:*", "ratelimit:otp:*");
+  await resetRedis();
   outbox.sent.length = 0;
   marketplaceId = (await createMarketplace({ code: "EG" })).id;
   await prisma.marketplace.update({ where: { id: marketplaceId }, data: { dialCode: "+20" } });

@@ -25,8 +25,8 @@ export default async function setup() {
   // never overrides variables that are already set).
   Object.assign(process.env, {
     TEST_POSTGRES_URL: template,
-    QUEUE_URL: redis.getConnectionUrl(),
-    CACHE_URL: `${redis.getConnectionUrl()}/1`,
+    // Each worker picks its own logical database from this (test/setup.ts).
+    TEST_REDIS_URL: redis.getConnectionUrl(),
     APP_ENV: "development",
     NODE_ENV: "test",
     LOG_LEVEL: "silent",

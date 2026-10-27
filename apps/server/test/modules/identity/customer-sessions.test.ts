@@ -7,7 +7,7 @@ import { prisma } from "@/platform/db/prisma";
 import { queueConnection } from "@/platform/redis/connections";
 import { resetDatabase } from "../../support/database";
 import { createCustomer } from "../../support/factories";
-import { deleteRedisKeys } from "../../support/redis";
+import { deleteRedisKeys, resetRedis } from "../../support/redis";
 
 const PHONE = "+201001234567";
 const PASSWORD = "correct horse battery";
@@ -49,7 +49,7 @@ const expectEnded = async (res: Response) => {
 beforeEach(async () => {
   vi.restoreAllMocks();
   await resetDatabase();
-  await deleteRedisKeys("ratelimit:sign-in:*", "refresh-grace:*");
+  await resetRedis();
 });
 
 describe("sign in", () => {

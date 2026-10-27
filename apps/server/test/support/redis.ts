@@ -1,7 +1,11 @@
 import { queueConnection } from "@/platform/redis/connections";
 
-// Deletes keys by pattern (e.g. "otp:*"). Redis is shared by every worker, so only use patterns this
-// file owns.
+// Empties this worker's Redis database (each worker has its own, see test/setup.ts).
+export const resetRedis = async () => {
+  await queueConnection.flushdb();
+};
+
+// Deletes keys by pattern within this worker's database, e.g. to skip a cooldown mid-test.
 export const deleteRedisKeys = async (...patterns: string[]) => {
   for (const pattern of patterns) {
     let cursor = "0";
