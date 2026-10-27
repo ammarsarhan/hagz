@@ -267,6 +267,35 @@
           "timezone"
         ]
       },
+      "TwoFactorChallenge": {
+        "type": "object",
+        "properties": {
+          "twoFactorRequired": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "challengeToken": {
+            "type": "string",
+            "description": "Proves the password was right. Not an access token."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 600
+          },
+          "resendAfter": {
+            "type": "integer",
+            "example": 60
+          }
+        },
+        "required": [
+          "twoFactorRequired",
+          "challengeToken",
+          "expiresIn",
+          "resendAfter"
+        ]
+      },
       "CustomerSignIn": {
         "type": "object",
         "properties": {
@@ -288,6 +317,36 @@
           "password"
         ]
       },
+      "CompleteTwoFactor": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "code"
+        ]
+      },
+      "ResendTwoFactor": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "challengeToken"
+        ]
+      },
       "RefreshSession": {
         "type": "object",
         "properties": {
@@ -300,6 +359,77 @@
         "required": [
           "refreshToken"
         ]
+      },
+      "RequestPasswordReset": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "ConfirmPasswordReset": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Mobile number with its country code.",
+            "example": "+20 100 123 4567"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "phone",
+          "code",
+          "newPassword"
+        ]
+      },
+      "TwoFactorStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "ChangeTwoFactor": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "example": "482913"
+          }
+        },
+        "required": [
+          "enabled",
+          "code"
+        ],
+        "description": "Needs a code from POST two-factor/codes."
       }
     },
     "parameters": {}
@@ -396,7 +526,7 @@
             }
           },
           "503": {
-            "description": "MESSAGING_UNAVAILABLE or SERVICE_UNAVAILABLE: retry later.",
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -535,6 +665,7 @@
           "Customer auth"
         ],
         "summary": "Sign in with phone and password",
+        "description": "With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.",
         "requestBody": {
           "required": true,
           "content": {
@@ -546,6 +677,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Password right; a two-factor code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorChallenge"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Signed in",
             "content": {
@@ -587,7 +728,138 @@
             }
           },
           "503": {
-            "description": "SERVICE_UNAVAILABLE: retry later.",
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/two-factor": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Finish a two-factor sign-in with the code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerAuthenticated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/sessions/two-factor/resend": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send another two-factor code",
+        "description": "Returns a new `challengeToken`: the previous one belonged to the previous code.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "A new code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorChallenge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CHALLENGE_EXPIRED: sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -665,6 +937,221 @@
         "responses": {
           "204": {
             "description": "Signed out"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/password-resets": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send a password reset code",
+        "description": "The same response whether or not the number has an account.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "If the number has an account, a code was sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/password-resets/confirm": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Set a new password with the reset code",
+        "description": "Signs out every session; sign in again with the new password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed"
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/two-factor/codes": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Send a code to turn two-factor on or off",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationCodeSent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/customer/two-factor": {
+      "put": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Turn two-factor on or off",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTwoFactor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "401": {
             "description": "UNAUTHENTICATED or TOKEN_EXPIRED",

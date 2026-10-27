@@ -49,11 +49,15 @@ export const createCustomer = async ({
   password = "correct horse battery",
   status = "ACTIVE",
   passwordHash,
+  language = "AR",
+  twoFactorEnabled = false,
 }: {
   phone?: string;
   password?: string;
   status?: "ACTIVE" | "SUSPENDED" | "BANNED";
   passwordHash?: string;
+  language?: "AR" | "EN";
+  twoFactorEnabled?: boolean;
 } = {}) =>
   prisma.customer.create({
     data: {
@@ -63,5 +67,7 @@ export const createCustomer = async ({
       phoneVerifiedAt: new Date(),
       timezone: "Africa/Cairo",
       status,
+      language,
+      twoFactorEnabled,
     },
   });

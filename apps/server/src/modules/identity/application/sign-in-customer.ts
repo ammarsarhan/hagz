@@ -1,4 +1,4 @@
-import type { CustomerAuthenticated } from "@hagz/contracts";
+import type { CustomerAuthenticated, TwoFactorChallenge } from "@hagz/contracts";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { hashPassword, needsRehash, verifyPassword } from "@/platform/crypto/passwords";
 import { transaction } from "@/platform/db/transaction";
@@ -8,6 +8,7 @@ import { parseMobileNumber } from "@/platform/phone/phone";
 import { consume } from "@/platform/rate-limit/rate-limit";
 import { limits } from "../domain/policy";
 import { createCustomerSession, type DeviceInfo } from "./sessions";
+import { startTwoFactorSignIn } from "./two-factor";
 
 export interface CustomerSignInInput {
   phone: string;
@@ -26,7 +27,7 @@ const invalidCredentials = () =>
 export const signInCustomer = async (
   { phone: input, password, device }: CustomerSignInInput,
   clock: Clock = systemClock,
-): Promise<CustomerAuthenticated> => {
+): Promise<CustomerAuthenticated | TwoFactorChallenge> => {
   await consume(limits.signInPerIp, device.ip);
   const phone = parseMobileNumber(input)?.e164;
   if (phone) await consume(limits.signInPerPhone, phone);
@@ -45,14 +46,18 @@ export const signInCustomer = async (
   }
 
   // A stronger hashing policy takes effect as people sign in.
-  const passwordHash = needsRehash(customer.passwordHash)
-    ? await hashPassword(password)
-    : undefined;
+  if (needsRehash(customer.passwordHash)) {
+    const passwordHash = await hashPassword(password);
+    await prisma.customer.update({ where: { id: customer.id }, data: { passwordHash } });
+  }
+
+  // The password was right; with two-factor on, the session waits for the code.
+  if (customer.twoFactorEnabled) return startTwoFactorSignIn(customer, clock);
 
   return transaction(async (tx) => {
     await tx.customer.update({
       where: { id: customer.id },
-      data: { lastLoginAt: clock.now(), ...(passwordHash && { passwordHash }) },
+      data: { lastLoginAt: clock.now() },
     });
     const session = await createCustomerSession(tx, customer.id, device, clock);
     return {

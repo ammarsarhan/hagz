@@ -7,6 +7,13 @@ const Phone = z
   .max(32)
   .meta({ description: "Mobile number with its country code.", example: "+20 100 123 4567" });
 
+const Code = z
+  .string()
+  .regex(/^\d{6}$/)
+  .meta({ example: "482913" });
+// NIST SP 800-63B: a minimum length, no composition rules, long passphrases allowed.
+const Password = z.string().min(8).max(128);
+
 export const SendVerificationCode = z.object({ phone: Phone }).meta({ id: "SendVerificationCode" });
 
 export const VerificationCodeSent = z
@@ -44,8 +51,7 @@ export const CustomerSignUp = z
   .object({
     verificationToken: z.string().min(1),
     name: z.string().trim().min(1).max(100).meta({ example: "Ahmed" }),
-    // NIST SP 800-63B: a minimum length, no composition rules, long passphrases allowed.
-    password: z.string().min(8).max(128),
+    password: Password,
     timezone: z
       .string()
       .min(1)
@@ -87,6 +93,38 @@ export const RefreshSession = z
   .object({ refreshToken: z.string().min(1).max(256) })
   .meta({ id: "RefreshSession" });
 
+export const RequestPasswordReset = z.object({ phone: Phone }).meta({ id: "RequestPasswordReset" });
+
+export const ConfirmPasswordReset = z
+  .object({ phone: Phone, code: Code, newPassword: Password })
+  .meta({ id: "ConfirmPasswordReset" });
+
+// Sign-in's answer when the account has two-factor on: the password was right, a code is on its way.
+export const TwoFactorChallenge = z
+  .object({
+    twoFactorRequired: z.literal(true),
+    challengeToken: z
+      .string()
+      .meta({ description: "Proves the password was right. Not an access token." }),
+    expiresIn: z.int().meta({ example: 600 }),
+    resendAfter: z.int().meta({ example: 60 }),
+  })
+  .meta({ id: "TwoFactorChallenge" });
+
+export const CompleteTwoFactor = z
+  .object({ challengeToken: z.string().min(1), code: Code })
+  .meta({ id: "CompleteTwoFactor" });
+
+export const ResendTwoFactor = z
+  .object({ challengeToken: z.string().min(1) })
+  .meta({ id: "ResendTwoFactor" });
+
+export const ChangeTwoFactor = z
+  .object({ enabled: z.boolean(), code: Code })
+  .meta({ id: "ChangeTwoFactor", description: "Needs a code from POST two-factor/codes." });
+
+export const TwoFactorStatus = z.object({ enabled: z.boolean() }).meta({ id: "TwoFactorStatus" });
+
 export type SendVerificationCode = z.infer<typeof SendVerificationCode>;
 export type VerificationCodeSent = z.infer<typeof VerificationCodeSent>;
 export type ConfirmVerificationCode = z.infer<typeof ConfirmVerificationCode>;
@@ -97,3 +135,10 @@ export type Customer = z.infer<typeof Customer>;
 export type CustomerAuthenticated = z.infer<typeof CustomerAuthenticated>;
 export type CustomerSignIn = z.infer<typeof CustomerSignIn>;
 export type RefreshSession = z.infer<typeof RefreshSession>;
+export type RequestPasswordReset = z.infer<typeof RequestPasswordReset>;
+export type ConfirmPasswordReset = z.infer<typeof ConfirmPasswordReset>;
+export type TwoFactorChallenge = z.infer<typeof TwoFactorChallenge>;
+export type CompleteTwoFactor = z.infer<typeof CompleteTwoFactor>;
+export type ResendTwoFactor = z.infer<typeof ResendTwoFactor>;
+export type ChangeTwoFactor = z.infer<typeof ChangeTwoFactor>;
+export type TwoFactorStatus = z.infer<typeof TwoFactorStatus>;
