@@ -36,6 +36,10 @@ export const limits = {
   // Numbers outside our marketplaces share a daily budget per calling code, so a fraud spike from one
   // country is capped without touching Egyptian sign-ups.
   sendCodePerForeignCallingCode: { name: "otp:send:calling-code", limit: 200, windowMs: hours(24) },
+  // Every sign-up code, from anywhere: pumping spread over many IPs and numbers stays under each limit
+  // above, so this bounds the bill. A few times normal peak; raise it as traffic grows. Not shared with
+  // reset and two-factor codes, so a sign-up flood can't lock existing accounts out.
+  sendCodeGlobal: { name: "otp:send:global", limit: 1000, windowMs: hours(1) },
   confirmCodePerIp: { name: "otp:confirm:ip", limit: 30, windowMs: minutes(15) },
   // Codes for existing accounts (password reset, two-factor).
   accountCodePerPhone: { name: "account-code:send:phone", limit: 5, windowMs: minutes(15) },

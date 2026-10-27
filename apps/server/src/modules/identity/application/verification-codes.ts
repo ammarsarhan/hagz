@@ -4,6 +4,7 @@ import { isMarketplaceCallingCode } from "@/modules/locations";
 import { generateCode, hashCode } from "@/platform/crypto/codes";
 import { hashToken, randomToken } from "@/platform/crypto/tokens";
 import { AppError } from "@/platform/errors/app-error";
+import { logger } from "@/platform/logger/logger";
 import { requireMobileNumber } from "@/platform/phone/phone";
 import { messaging } from "@/platform/messaging/messaging";
 import { consume } from "@/platform/rate-limit/rate-limit";
@@ -44,6 +45,19 @@ const resendLater = (retryAfter: number) =>
     headers: { "Retry-After": String(retryAfter) },
   });
 
+// Hitting the global cap means an attack or a traffic jump the cap wasn't sized for: either way
+// someone should look, so it's logged as an error (what alerting picks up), not just answered 429.
+const consumeGlobalBudget = async () => {
+  try {
+    await consume(limits.sendCodeGlobal, "all");
+  } catch (error) {
+    if (error instanceof AppError && error.code === "RATE_LIMITED") {
+      logger.error({ limit: limits.sendCodeGlobal.name }, "global sign-up code budget exhausted");
+    }
+    throw error;
+  }
+};
+
 export interface SendCodeInput {
   type: AccountType;
   phone: string;
@@ -72,6 +86,8 @@ export const sendSignUpCode = async ({ type, phone: input, language, ip }: SendC
   const code = generateCode();
   const key = codeKey(type, phone.e164);
   try {
+    // Last, so requests the other limits turn away don't use up everyone's budget.
+    await consumeGlobalBudget();
     // A new code replaces the previous one and resets its attempts.
     await redis((r) =>
       r

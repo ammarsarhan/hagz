@@ -1,8 +1,11 @@
+import { createHash } from "node:crypto";
 import { CustomerAuthenticated } from "@hagz/contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { router } from "@/http/router";
+import { limits } from "@/modules/identity/domain/policy";
 import { verifyJwt } from "@/platform/crypto/jwt";
 import { prisma } from "@/platform/db/prisma";
+import { logger } from "@/platform/logger/logger";
 import { messaging } from "@/platform/messaging/messaging";
 import { queueConnection } from "@/platform/redis/connections";
 import { resetDatabase } from "../../support/database";
@@ -234,6 +237,39 @@ describe("customer sign-up", () => {
     expect((await sendCode("+201001234567")).status).toBe(500);
 
     expect((await sendCode("+201001234567")).status).toBe(202);
+  });
+
+  describe("the global budget", () => {
+    const { name, limit } = limits.sendCodeGlobal;
+    const counter = `ratelimit:${name}:${createHash("sha256").update("all").digest("base64url")}`;
+    const used = async () => Number(await queueConnection.get(counter));
+
+    it("stops sending once every number together has used it up, and says so in the logs", async () => {
+      await queueConnection.set(counter, limit, "EX", 3600);
+      const error = vi.spyOn(logger, "error");
+
+      const res = await sendCode("+201001234567");
+
+      expect(res.status).toBe(429);
+      expect(await json(res)).toMatchObject({ code: "RATE_LIMITED" });
+      expect(outbox.sent).toHaveLength(0);
+      expect(error).toHaveBeenCalledWith({ limit: name }, "global sign-up code budget exhausted");
+    });
+
+    it("doesn't make the user wait out a cooldown for a code it didn't send", async () => {
+      await queueConnection.set(counter, limit, "EX", 3600);
+      expect((await sendCode("+201001234567")).status).toBe(429);
+
+      await queueConnection.del(counter);
+      expect((await sendCode("+201001234567")).status).toBe(202);
+    });
+
+    it("isn't used up by requests the other limits turn away", async () => {
+      await sendCode("+201001234567");
+      expect((await sendCode("+201001234567")).status).toBe(429);
+
+      expect(await used()).toBe(1);
+    });
   });
 
   it("keeps phones and codes out of Redis", async () => {
