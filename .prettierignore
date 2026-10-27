@@ -3,3 +3,6 @@ pnpm-lock.yaml
 
 # Prettier pads every table cell, so editing one cell rewrites the whole table in the diff.
 *.md
+
+# Written by the OpenAPI contract test (apps/server/test/http/openapi.test.ts).
+apps/server/openapi.json
