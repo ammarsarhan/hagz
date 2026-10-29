@@ -8,6 +8,9 @@ CREATE TYPE "GroundSize" AS ENUM ('FIVE_A_SIDE', 'SEVEN_A_SIDE', 'ELEVEN_A_SIDE'
 CREATE TYPE "GroundSurface" AS ENUM ('NATURAL_GRASS', 'ARTIFICIAL_TURF', 'HARD_WOOD', 'HARD_COURT', 'CLAY', 'OTHER');
 
 -- CreateEnum
+CREATE TYPE "GroundEnvironment" AS ENUM ('INDOOR', 'OUTDOOR', 'COVERED');
+
+-- CreateEnum
 CREATE TYPE "GroundStatus" AS ENUM ('ACTIVE', 'MAINTENANCE', 'DELETED');
 
 -- CreateEnum
@@ -23,6 +26,7 @@ CREATE TABLE "Ground" (
     "sport" "GroundSport" NOT NULL,
     "size" "GroundSize" NOT NULL,
     "surface" "GroundSurface" NOT NULL,
+    "environment" "GroundEnvironment" NOT NULL,
     "status" "GroundStatus" NOT NULL DEFAULT 'ACTIVE',
     "position" INTEGER NOT NULL,
     "basePrice" INTEGER NOT NULL,
@@ -87,6 +91,20 @@ CREATE TABLE "GroundSlot" (
     CONSTRAINT "GroundSlot_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "SlotWaitlist" (
+    "id" UUID NOT NULL,
+    "customerId" UUID NOT NULL,
+    "venueId" UUID NOT NULL,
+    "groundId" UUID,
+    "startsAt" TIMESTAMPTZ NOT NULL,
+    "endsAt" TIMESTAMPTZ NOT NULL,
+    "lastNotifiedAt" TIMESTAMPTZ,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SlotWaitlist_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE INDEX "Ground_venueId_position_idx" ON "Ground"("venueId", "position");
 
@@ -102,6 +120,15 @@ CREATE INDEX "GroundSlot_bookingId_idx" ON "GroundSlot"("bookingId");
 -- CreateIndex
 CREATE UNIQUE INDEX "GroundSlot_groundId_startsAt_key" ON "GroundSlot"("groundId", "startsAt");
 
+-- CreateIndex
+CREATE INDEX "SlotWaitlist_venueId_startsAt_idx" ON "SlotWaitlist"("venueId", "startsAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SlotWaitlist_any_ground_key" ON "SlotWaitlist"("customerId", "venueId", "startsAt") WHERE ("groundId" IS NULL);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SlotWaitlist_ground_key" ON "SlotWaitlist"("customerId", "groundId", "startsAt") WHERE ("groundId" IS NOT NULL);
+
 -- AddForeignKey
 ALTER TABLE "Ground" ADD CONSTRAINT "Ground_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -116,6 +143,15 @@ ALTER TABLE "GroundSchedule" ADD CONSTRAINT "GroundSchedule_groundId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_groundId_venueId_fkey" FOREIGN KEY ("groundId", "venueId") REFERENCES "Ground"("id", "venueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SlotWaitlist" ADD CONSTRAINT "SlotWaitlist_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SlotWaitlist" ADD CONSTRAINT "SlotWaitlist_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SlotWaitlist" ADD CONSTRAINT "SlotWaitlist_groundId_venueId_fkey" FOREIGN KEY ("groundId", "venueId") REFERENCES "Ground"("id", "venueId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "GroundSettings" ADD CONSTRAINT "GroundSettings_slots_check"
@@ -140,3 +176,6 @@ ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_horizon_check"
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_booking_check"
   CHECK (("bookingId" IS NOT NULL) = (status IN ('HELD', 'BOOKED')));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "SlotWaitlist" ADD CONSTRAINT "SlotWaitlist_range_check" CHECK ("endsAt" > "startsAt");

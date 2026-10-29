@@ -1,5 +1,8 @@
 -- CreateEnum
-CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'HELD', 'CONFIRMED', 'CANCELLED', 'EXPIRED', 'COMPLETED', 'NO_SHOW');
+CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRMED', 'CANCELLED', 'EXPIRED', 'RELEASED', 'RESCHEDULED', 'COMPLETED', 'NO_SHOW');
+
+-- CreateEnum
+CREATE TYPE "ReschedulingType" AS ENUM ('MOVE', 'SWAP', 'REFILL');
 
 -- CreateEnum
 CREATE TYPE "BookingChargeType" AS ENUM ('SLOT', 'AMENITY', 'DISCOUNT', 'REWARD');
@@ -14,12 +17,14 @@ CREATE TABLE "Booking" (
     "groundId" UUID NOT NULL,
     "customerId" UUID NOT NULL,
     "creatorId" UUID,
+    "regularId" UUID,
     "code" TEXT NOT NULL,
     "status" "BookingStatus" NOT NULL,
     "startsAt" TIMESTAMPTZ NOT NULL,
     "endsAt" TIMESTAMPTZ NOT NULL,
     "note" TEXT,
     "expiresAt" TIMESTAMPTZ,
+    "idempotencyKey" UUID,
     "total" INTEGER NOT NULL,
     "depositAmount" INTEGER,
     "paymentMode" "PaymentMode" NOT NULL,
@@ -76,6 +81,22 @@ CREATE TABLE "BookingEvent" (
     CONSTRAINT "BookingEvent_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Rescheduling" (
+    "id" UUID NOT NULL,
+    "venueId" UUID NOT NULL,
+    "fromBookingId" UUID NOT NULL,
+    "toBookingId" UUID NOT NULL,
+    "type" "ReschedulingType" NOT NULL,
+    "groupId" UUID,
+    "staffId" UUID,
+    "reason" TEXT,
+    "priceDifference" INTEGER,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Rescheduling_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Booking_code_key" ON "Booking"("code");
 
@@ -117,6 +138,27 @@ CREATE UNIQUE INDEX "BookingCharge_reward_key" ON "BookingCharge"("bookingId") W
 
 -- CreateIndex
 CREATE INDEX "BookingEvent_bookingId_createdAt_idx" ON "BookingEvent"("bookingId", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Booking_venueId_idempotencyKey_key" ON "Booking"("venueId", "idempotencyKey");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Booking_regularId_startsAt_key" ON "Booking"("regularId", "startsAt");
+
+-- CreateIndex
+CREATE INDEX "Rescheduling_fromBookingId_idx" ON "Rescheduling"("fromBookingId");
+
+-- CreateIndex
+CREATE INDEX "Rescheduling_groupId_idx" ON "Rescheduling"("groupId");
+
+-- CreateIndex
+CREATE INDEX "Rescheduling_venueId_type_createdAt_idx" ON "Rescheduling"("venueId", "type", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Rescheduling_toBookingId_venueId_key" ON "Rescheduling"("toBookingId", "venueId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Rescheduling_from_move_key" ON "Rescheduling"("fromBookingId") WHERE ("type" != 'REFILL');
 
 -- AddForeignKey
 ALTER TABLE "Booking" ADD CONSTRAINT "Booking_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -160,6 +202,18 @@ ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_bookingId_venueId_fkey" FORE
 -- AddForeignKey
 ALTER TABLE "VenueReview" ADD CONSTRAINT "VenueReview_bookingId_customerId_fkey" FOREIGN KEY ("bookingId", "customerId") REFERENCES "Booking"("id", "customerId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_fromBookingId_venueId_fkey" FOREIGN KEY ("fromBookingId", "venueId") REFERENCES "Booking"("id", "venueId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_toBookingId_venueId_fkey" FOREIGN KEY ("toBookingId", "venueId") REFERENCES "Booking"("id", "venueId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Booking" ADD CONSTRAINT "Booking_range_check"
   CHECK ("endsAt" > "startsAt");
@@ -194,3 +248,11 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_cancellation_check" CHECK (jsonb_t
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Cancellation" ADD CONSTRAINT "Cancellation_refund_check" CHECK ("refundPercent" BETWEEN 0 AND 100 AND "refundAmount" >= 0 AND (initiator <> 'VENUE' OR "refundPercent" = 100));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+-- A regular's reservation is paid at the venue with no commission. UNCONFIRMED and RELEASED belong to
+-- regulars only, and UNCONFIRMED has its confirmation deadline.
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_regular_check" CHECK (("regularId" IS NULL OR ("paymentMode" = 'MANUAL' AND "commissionRate" = 0)) AND (status NOT IN ('UNCONFIRMED', 'RELEASED') OR "regularId" IS NOT NULL) AND (status <> 'UNCONFIRMED' OR "expiresAt" IS NOT NULL));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_values_check" CHECK ("fromBookingId" <> "toBookingId" AND (type = 'SWAP') = ("groupId" IS NOT NULL) AND (type = 'REFILL') = ("priceDifference" IS NULL));

@@ -14,6 +14,8 @@ CREATE TABLE "Customer" (
     "updatedAt" TIMESTAMPTZ NOT NULL,
     "language" "Language" NOT NULL DEFAULT 'AR',
     "timezone" TEXT NOT NULL,
+    "venueOffers" BOOLEAN NOT NULL DEFAULT false,
+    "nearbyGames" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
 );
