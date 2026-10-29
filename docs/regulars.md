@@ -46,7 +46,7 @@ The value to the venue is how fast a released slot sells again:
 1. **Release early.** The reminder goes out well before the deadline (Phase 7), with one-tap confirm and release. A slot released three days ahead sells far more often than one released at the deadline.
 2. **Waitlist.** Customers ask to be told when a venue, ground or time frees up. On release, the waitlist hears first, then people who favorited the venue, then nearby customers who recently searched for that sport and time.
 3. **"Just freed" in search.** Released slots near kick-off are marked in discovery. A venue can opt in to its `DISCOUNT` price tier applying automatically to freed slots within a few hours of kick-off.
-4. **Recovered revenue.** A booking made through the app for a released slot links to the reservation it replaced (`Booking.recoveredFromId`). The dashboard shows what regulars released and what Hagz filled: "This month 9 slots were released and Hagz filled 7: EGP 4,200 you'd have lost."
+4. **Recovered revenue.** A booking made through the app for a released slot links to the reservation it replaced with a `REFILL` [`Rescheduling`](rescheduling.md#refills) row. The dashboard shows what regulars released and what Hagz filled: "This month 9 slots were released and Hagz filled 7: EGP 4,200 you'd have lost."
 5. **Reliability.** Each regular shows how often they confirmed, released early, released late, let the deadline pass, or didn't show up, so the manager knows who keeps blocking slots.
 
 ## Filling a slot from the venue's own customers
@@ -97,9 +97,19 @@ A venue can switch each of the three off.
 
 ## Reminders
 
-Phase 7 sends each regular a reminder before the deadline, in their language:
-- **App users:** push notification and in-app, with confirm and release actions.
-- **Everyone else:** WhatsApp, with a link to a small web page that confirms or releases without signing in. The link carries a single-use token for that one reservation, valid until its deadline, stored only as a hash like other tokens.
+Reminders are sent by the system, never by staff. Agreed on 2026-10-29.
+
+**Automatic, in the regular's language:**
+1. **The reminder**, `reminderLead` hours before the confirmation deadline (a venue setting, default 24). With the default 24-hour confirmation window, that's 48 hours before kick-off.
+2. **One follow-up**, 3 hours before the deadline, if the regular hasn't answered: "your slot will be released at 9pm".
+
+Each goes out as:
+- **App users:** push and in-app, with confirm and release actions.
+- **Everyone else:** WhatsApp, with a link to a small web page that confirms or releases without signing in.
+
+Both are delayed jobs on the queue, keyed by reservation, so each is sent at most once. A job finds the reservation already confirmed or released and sends nothing.
+
+**Staff can copy a link, not send one.** An unconfirmed reservation has a **Copy link** action that creates a fresh `ReminderToken` link. Staff send it from their own WhatsApp; Hagz sends nothing. Tokens are stored only as a hash, so an earlier link can't be shown again, and each copy creates a new one. Every link for a reservation stops working once it's confirmed or released, so several open links can't confirm it twice. Creating links is rate-limited per reservation.
 
 Staff see every reservation's state in the calendar, and who still hasn't answered, so they can call the rest.
 
@@ -109,28 +119,33 @@ Staff see every reservation's state in the calendar, and who still hasn't answer
 |---|---|---|---|
 | `regularHorizon` | `VenueSettings` | 1–12 weeks (inside the 90-day slot horizon) | 4 |
 | `confirmationWindow` | `VenueSettings` | 1–168 hours before kick-off | 24 |
-| Auto-discount on freed slots | `VenueSettings` | Off, or hours before kick-off | Off |
+| `reminderLead` | `VenueSettings` | Hours before the confirmation deadline to send the reminder, 1–168 | 24 |
+| `freedDiscountHours` | `VenueSettings` | Off, or 1–48 hours before kick-off for freed slots to get the `DISCOUNT` tier | Off |
 | `lapsedAfter` | `VenueSettings` | 1–12 weeks without a booking | 3 |
 | `regularBookings` / `regularPeriod` | `VenueSettings` | Bookings within weeks that make a customer a regular | 3 in 8 |
 | `fillAlertHours` | `VenueSettings` | Hours before kick-off to alert about an empty slot | 6 |
-| Fill alerts on release, near kick-off, digest | `VenueSettings` | Each on or off | All on |
+| `fillAlertOnRelease`, `fillAlertNearStart`, `fillAlertDigest` | `VenueSettings` | Each on or off | All on |
 
 ## Schema changes
 
 - **`VenueRegular`:** `venueId`, `customerId` (a `VenueCustomer`), `groundId`, `dayOfWeek` (0–6 from Sunday, like schedules), `startHour`, `slotCount`, `startsOn`, `endsOn?`, `pausedAt?`, `creatorId` (staff), timestamps.
 - **`BookingStatus`:** add `UNCONFIRMED` and `RELEASED`. A released reservation is kept, not deleted:
   - `Notification.booking` is `onDelete: Restrict`, and every reservation has reminder notifications;
-  - `recoveredFromId` and the reliability figures need the released row and its `BookingEvent`s;
+  - the `REFILL` link and the reliability figures need the released row and its `BookingEvent`s;
   - unpaid bookings work the same way (`EXPIRED`, not deleted).
 
   It's a new status rather than `CANCELLED` (which needs a `Cancellation` with a refund policy) or `EXPIRED` ("not approved or paid in time", which doesn't describe an early release).
-- **`Booking`:** `regularId?` and `recoveredFromId?`.
-- **`VenueSettings`:** `regularHorizon`, `confirmationWindow`, the auto-discount setting, the group thresholds and the fill-alert settings.
+- **`Booking`:** `regularId?`. Refills are `Rescheduling` rows of type `REFILL` (see [rescheduling.md](rescheduling.md)).
+- **`VenueSettings`:** `regularHorizon`, `confirmationWindow`, `reminderLead`, `freedDiscountHours`, the group thresholds and the fill-alert settings.
 - **`VenueCustomer`:** `lastBookedAt`, `bookingCount`, `noShowCount`, kept up to date with each booking change.
-- **Phase 7:**
-  - **`SlotWaitlist`:** a customer waiting for a time at a venue to free up. `customerId`, `venueId`, `groundId?` (null: any ground), `startsAt` and `endsAt` (the window they'd play in), `notifiedAt?`, `createdAt`. Unique on `(customerId, venueId, groundId, startsAt)`. Rows whose window has passed are removed by a cleanup job. When a slot frees up, every row whose window covers it is notified once.
-  - **`ReminderToken`:** the single-use link in a regular's WhatsApp reminder. `bookingId`, `tokenHash` (unique, SHA-256 like other tokens), `expiresAt` (the reservation's deadline), `usedAt?`, `createdAt`. Confirming or releasing through it sets `usedAt`; a used or expired token answers "this reminder has expired".
-  - The customer's offers opt-in.
+- **Used from Phase 7** (already in the schema):
+  - **`SlotWaitlist`:** a customer waiting for a time at a venue to free up. `customerId`, `venueId`, `groundId?` (null: any ground), `startsAt` and `endsAt` (the window they'd play in), `lastNotifiedAt?`, `createdAt`. Unique on `(customerId, venueId, groundId, startsAt)`. How it works (agreed on 2026-10-29):
+    - When a slot frees up (a regular releases, a booking is cancelled, a hold expires), **everyone** whose window covers it is notified **at once**, by push and in-app. First to book gets it; the rest see it's taken.
+    - A missed slot is missed, but the request stays: each later slot that frees up in the window notifies it again, at most once every 30 minutes (`lastNotifiedAt`).
+    - The row is removed when the customer books a matching slot, or when the window passes.
+    - These are alerts the customer asked for, so they don't need the `venueOffers` opt-in and don't count against the weekly offer cap.
+  - **`ReminderToken`:** the single-use link in a regular's WhatsApp reminder, or copied by staff. `bookingId`, `tokenHash` (unique, SHA-256 like other tokens), `expiresAt` (the reservation's deadline), `usedAt?`, `createdAt`. Confirming or releasing through it sets `usedAt`; a used or expired token answers "this reminder has expired".
+  - `Customer.venueOffers`, the offers opt-in, off by default.
   - Offers sent need no model: they're `Notification` rows.
 
 ## Open

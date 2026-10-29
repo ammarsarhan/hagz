@@ -1,17 +1,18 @@
 // A pitch or court. Prices in minor units.
 model Ground {
-  id            String        @id @default(uuid(7)) @db.Uuid
-  venueId       String        @db.Uuid
+  id            String            @id @default(uuid(7)) @db.Uuid
+  venueId       String            @db.Uuid
   sport         GroundSport
   size          GroundSize
   surface       GroundSurface
-  status        GroundStatus  @default(ACTIVE)
+  environment   GroundEnvironment
+  status        GroundStatus      @default(ACTIVE)
   position      Int // Display order.
   basePrice     Int
   peakPrice     Int?
   discountPrice Int?
-  createdAt     DateTime      @default(now()) @db.Timestamptz
-  updatedAt     DateTime      @updatedAt @db.Timestamptz
+  createdAt     DateTime          @default(now()) @db.Timestamptz
+  updatedAt     DateTime          @updatedAt @db.Timestamptz
 
   venue        Venue               @relation(fields: [venueId], references: [id], onDelete: Cascade)
   translations GroundTranslation[]
@@ -20,6 +21,8 @@ model Ground {
   slots        GroundSlot[]
   placement    VenueLayoutItem?
   bookings     Booking[]
+  regulars     VenueRegular[]
+  waitlists    SlotWaitlist[]
 
   @@unique([id, venueId]) // GroundSlot and Booking relation target.
   @@index([venueId, position])
@@ -90,4 +93,28 @@ model GroundSlot {
   @@unique([groundId, startsAt])
   @@index([venueId, startsAt])
   @@index([bookingId])
+}
+
+// A customer waiting for a time at a venue to free up; groundId null means any ground. Every slot that
+// frees up in the window notifies everyone waiting at once (at most once per 30 minutes per row, from
+// lastNotifiedAt). Removed when they book a matching slot or the window passes. One row per customer,
+// ground (or any) and start (partial indexes, since a null groundId never collides).
+// CHECK: endsAt > startsAt.
+model SlotWaitlist {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  customerId     String    @db.Uuid
+  venueId        String    @db.Uuid
+  groundId       String?   @db.Uuid
+  startsAt       DateTime  @db.Timestamptz
+  endsAt         DateTime  @db.Timestamptz
+  lastNotifiedAt DateTime? @db.Timestamptz
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  ground   Ground?  @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+
+  @@unique([customerId, venueId, startsAt], map: "SlotWaitlist_any_ground_key", where: { groundId: null })
+  @@unique([customerId, groundId, startsAt], map: "SlotWaitlist_ground_key", where: { groundId: { not: null } })
+  @@index([venueId, startsAt])
 }

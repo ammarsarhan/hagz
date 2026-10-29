@@ -20,6 +20,7 @@ CREATE TABLE "Payment" (
     "providerFee" INTEGER,
     "recorderId" UUID,
     "succeededAt" TIMESTAMPTZ,
+    "idempotencyKey" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -36,6 +37,7 @@ CREATE TABLE "Refund" (
     "reason" TEXT,
     "recorderId" UUID,
     "succeededAt" TIMESTAMPTZ,
+    "idempotencyKey" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -43,7 +45,10 @@ CREATE TABLE "Refund" (
 );
 
 -- CreateIndex
-CREATE INDEX "Payment_bookingId_idx" ON "Payment"("bookingId");
+CREATE UNIQUE INDEX "Payment_bookingId_idempotencyKey_key" ON "Payment"("bookingId", "idempotencyKey");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Refund_paymentId_idempotencyKey_key" ON "Refund"("paymentId", "idempotencyKey");
 
 -- CreateIndex
 CREATE INDEX "Payment_status_createdAt_idx" ON "Payment"("status", "createdAt");

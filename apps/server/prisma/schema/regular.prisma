@@ -1,0 +1,46 @@
+// A customer's standing weekly slot. A daily job keeps one UNCONFIRMED booking per week up to
+// VenueSettings.regularHorizon weeks ahead; each is confirmed or released before its deadline. No
+// payment goes through Hagz and no commission is taken. Never deleted: ended by endsOn.
+// CHECKs: dayOfWeek 0–6, startHour 0–23, slotCount >= 1, endsOn not before startsOn.
+model VenueRegular {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  venueId    String    @db.Uuid
+  groundId   String    @db.Uuid
+  customerId String    @db.Uuid
+  creatorId  String    @db.Uuid // Staff who set it up.
+  dayOfWeek  Int       @db.SmallInt // 0–6 from Sunday, in the venue's time zone.
+  startHour  Int       @db.SmallInt // 0–23 local.
+  slotCount  Int       @db.SmallInt
+  startsOn   DateTime  @db.Date
+  endsOn     DateTime? @db.Date
+  pausedAt   DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  updatedAt  DateTime  @updatedAt @db.Timestamptz
+
+  venue    Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  ground   Ground        @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
+  customer VenueCustomer @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
+  creator  Staff         @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  bookings Booking[]
+
+  @@unique([id, venueId]) // Booking relation target.
+  @@index([venueId])
+  @@index([groundId])
+  @@index([customerId])
+}
+
+// A single-use link that confirms or releases one UNCONFIRMED reservation without signing in, sent in
+// a regular's WhatsApp reminder or copied by staff. Only the hash is stored, so each copy is a new
+// token; all of a reservation's tokens stop working once it's confirmed or released.
+model ReminderToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  bookingId String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz // The reservation's confirmation deadline.
+  usedAt    DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
