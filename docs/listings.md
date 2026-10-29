@@ -12,6 +12,7 @@ This is a deliberate exception to "no social features in v1": names, a note, and
 - **Joining:** any signed-in customer, from the feed or a shared link. Not the booker, not twice, not when it's full, not after kick-off, and not into two games that overlap in time.
 - **Leaving:** a joined player can leave until kick-off, which frees their spot. The booker can remove a player, who is told.
 - **Cancellation:** if the booking is cancelled, every joined player is notified and the listing closes.
+- **Rescheduling:** if staff move the booking, the listing moves with it (new booking and start time) and joined players are told. See [rescheduling.md](rescheduling.md).
 - **Disclaimer,** on the listing and on the join button: *"Hagz doesn't guarantee that the players who join will show up, or that the game will go ahead. Payment is made in person at the venue."*
 
 ## What people see
@@ -44,8 +45,8 @@ A reported player sees the report on their game history. Admins can remove a rep
 A listing is its own model, not columns on `Booking`. A booking's terms are fixed when it's made, while a listing changes all the time. A separate table also keeps the feed's queries on a small table and leaves room for game features later (skill level, positions, join requests, a minimum reliability).
 
 - **`BookingListing`**, one per booking:
-  - `id`, `bookingId` (unique);
-  - `venueId` and `startsAt`, copied from the booking so the feed filters and sorts without joining `Booking`. Safe, because a booking's time and venue never change in v1;
+  - `id`, `bookingId`, unique together with `venueId`, so there's one listing per booking and the copied venue is the booking's own;
+  - `venueId` and `startsAt`, copied from the booking so the feed filters and sorts without joining `Booking`. Safe, because a booking's time and venue never change: a reschedule creates a new booking, and the same transaction re-points the listing and updates its `startsAt`;
   - `status` (`ListingStatus`): `OPEN`, `CLOSED` (the booker turned it off) or `CANCELLED` (the booking was cancelled). Full and started are calculated, not stored;
   - `neededPlayers`;
   - `playerCount`, kept up to date under the same lock as joining, so the feed shows spots left without counting rows;
@@ -53,10 +54,10 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
   - `createdAt`, `closedAt?`.
 
   Indexed on `(status, startsAt)` and `venueId` for the feed.
-- **`ListingPlayer`:** `listingId`, `customerId`, `status` (`ListingPlayerStatus`: `JOINED` / `LEFT` / `REMOVED`), `joinedAt`, `leftAt?`, `noShowReportedAt?`. Unique on `(listingId, customerId)`, indexed on `customerId` for "my games".
+- **`ListingPlayer`:** `listingId`, `customerId`, `status` (`ListingPlayerStatus`: `JOINED` / `LEFT` / `REMOVED`), `joinedAt`, `leftAt?`, `noShowReportedAt?`. Its primary key is `(listingId, customerId)`, so rejoining reuses the row; indexed on `customerId` for "my games".
 - **Joining, leaving and changing `neededPlayers` lock the `BookingListing` row**, then check that `playerCount` stays at or under `neededPlayers`. Two players can't both take the last spot, the booker can't lower the number below what's joined, and the booking itself is never locked by people joining.
 - **If the booking is cancelled,** its transaction also sets the game to `CANCELLED`.
-- **Phase 7:** the "Games near me" opt-in.
+- **`Customer.nearbyGames`:** the "Games near me" opt-in, off by default (used in Phase 7).
 
 ## Open
 
