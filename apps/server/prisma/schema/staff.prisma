@@ -24,6 +24,8 @@ model Staff {
   refunds       Refund[] // Issued.
   notifications Notification[]
   discounts     VenueDiscount[]
+  regulars      VenueRegular[] // Set up.
+  reschedulings Rescheduling[]
 }
 
 // Same as AdminSession, plus the device's push token.

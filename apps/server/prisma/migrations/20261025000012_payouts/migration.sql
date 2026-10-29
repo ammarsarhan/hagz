@@ -32,6 +32,7 @@ CREATE TABLE "Payout" (
     "reference" TEXT,
     "creatorId" UUID,
     "paidAt" TIMESTAMPTZ,
+    "idempotencyKey" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -85,6 +86,9 @@ CREATE UNIQUE INDEX "LedgerEntry_commission_key" ON "LedgerEntry"("bookingId") W
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LedgerEntry_payoutId_venueId_key" ON "LedgerEntry"("payoutId", "venueId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Payout_venueId_idempotencyKey_key" ON "Payout"("venueId", "idempotencyKey");
 
 -- AddForeignKey
 ALTER TABLE "PayoutDestination" ADD CONSTRAINT "PayoutDestination_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

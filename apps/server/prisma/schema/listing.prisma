@@ -1,0 +1,45 @@
+// A customer's app booking listed as needing players. One per booking; venueId and startsAt are copied
+// from it so the feed doesn't join Booking (a booking never changes; a reschedule re-points the listing
+// to the new booking and updates startsAt in the same transaction). playerCount is the number of JOINED
+// players, changed only under a lock on this row, so it never passes neededPlayers. No money moves
+// through Hagz. CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, costShare >= 0, closedAt
+// set exactly when not OPEN.
+model BookingListing {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  bookingId     String        @db.Uuid
+  venueId       String        @db.Uuid
+  startsAt      DateTime      @db.Timestamptz
+  status        ListingStatus @default(OPEN)
+  neededPlayers Int           @db.SmallInt // Capped by the ground's sport and size (API).
+  playerCount   Int           @default(0) @db.SmallInt
+  note          String?
+  costShare     Int? // Per player, minor units, paid at the venue; informational only.
+  closedAt      DateTime?     @db.Timestamptz
+  createdAt     DateTime      @default(now()) @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @db.Timestamptz
+
+  booking Booking         @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  venue   Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  players ListingPlayer[]
+
+  @@unique([bookingId, venueId]) // One per booking, in the booking's venue.
+  @@index([status, startsAt])
+  @@index([venueId, startsAt])
+}
+
+// A customer who joined a listing. Leaving and removal change the status; rows are never deleted, and
+// rejoining reuses the row. CHECKs: leftAt set exactly when not JOINED; a no-show only for JOINED.
+model ListingPlayer {
+  listingId        String              @db.Uuid
+  customerId       String              @db.Uuid
+  status           ListingPlayerStatus @default(JOINED)
+  joinedAt         DateTime            @default(now()) @db.Timestamptz
+  leftAt           DateTime?           @db.Timestamptz
+  noShowReportedAt DateTime?           @db.Timestamptz // By the booker, within 48 hours (API).
+
+  listing  BookingListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@id([listingId, customerId])
+  @@index([customerId])
+}

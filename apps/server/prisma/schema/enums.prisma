@@ -100,6 +100,12 @@ enum GroundSurface {
   OTHER
 }
 
+enum GroundEnvironment {
+  INDOOR
+  OUTDOOR
+  COVERED // Roofed, open sides.
+}
+
 enum GroundStatus {
   ACTIVE
   MAINTENANCE // Temporarily unbookable.
@@ -114,7 +120,7 @@ enum PriceTier {
 
 enum SlotStatus {
   AVAILABLE
-  HELD // Reserved while a booking awaits payment.
+  HELD // Reserved while a booking awaits payment or a regular's confirmation.
   BOOKED
   BLOCKED // Closed by staff.
 }
@@ -138,11 +144,20 @@ enum GroundOrientation {
 enum BookingStatus {
   PENDING // Awaiting staff approval.
   HELD // Awaiting payment until expiresAt.
+  UNCONFIRMED // A regular's weekly reservation, awaiting confirmation until expiresAt.
   CONFIRMED
   CANCELLED
   EXPIRED // Not approved or paid in time.
+  RELEASED // A regular's reservation released, or not confirmed in time. Nothing is owed.
+  RESCHEDULED // Moved or swapped by staff; its Rescheduling points to the new booking.
   COMPLETED
   NO_SHOW
+}
+
+enum ReschedulingType {
+  MOVE
+  SWAP
+  REFILL // A released reservation re-sold.
 }
 
 enum BookingChargeType {
@@ -150,6 +165,19 @@ enum BookingChargeType {
   AMENITY
   DISCOUNT
   REWARD // Loyalty.
+}
+
+// Listings
+enum ListingStatus {
+  OPEN
+  CLOSED // Turned off by the booker.
+  CANCELLED // The booking was cancelled.
+}
+
+enum ListingPlayerStatus {
+  JOINED
+  LEFT
+  REMOVED // By the booker.
 }
 
 // Loyalty

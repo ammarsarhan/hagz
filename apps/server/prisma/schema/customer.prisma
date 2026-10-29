@@ -14,8 +14,10 @@ model Customer {
   updatedAt        DateTime      @updatedAt @db.Timestamptz
 
   // Preferences
-  language Language @default(AR)
-  timezone String // IANA, from the device at sign-up (phones can be foreign).
+  language    Language @default(AR)
+  timezone    String // IANA, from the device at sign-up (phones can be foreign).
+  venueOffers Boolean  @default(false) // Opted in to offer pushes from venues they've played at.
+  nearbyGames Boolean  @default(false) // Opted in to pushes about listings near them.
 
   sessions      CustomerSession[]
   challenges    CustomerVerification[]
@@ -23,6 +25,8 @@ model Customer {
   venues        VenueCustomer[]
   bookingEvents BookingEvent[]
   notifications Notification[]
+  waitlists     SlotWaitlist[]
+  games         ListingPlayer[] // Listings joined.
 }
 
 // Same as StaffSession.
