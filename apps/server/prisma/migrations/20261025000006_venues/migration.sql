@@ -91,6 +91,18 @@ CREATE TABLE "VenueSettings" (
     "cancellationTiers" JSONB,
     "loyaltyStamps" INTEGER,
     "loyaltyWindow" INTEGER,
+    "regularHorizon" INTEGER NOT NULL DEFAULT 4,
+    "confirmationWindow" INTEGER NOT NULL DEFAULT 24,
+    "reminderLead" INTEGER NOT NULL DEFAULT 24,
+    "freedDiscountHours" INTEGER,
+    "lapsedAfter" INTEGER NOT NULL DEFAULT 3,
+    "regularBookings" INTEGER NOT NULL DEFAULT 3,
+    "regularPeriod" INTEGER NOT NULL DEFAULT 8,
+    "fillAlertHours" INTEGER NOT NULL DEFAULT 6,
+    "fillAlertOnRelease" BOOLEAN NOT NULL DEFAULT true,
+    "fillAlertNearStart" BOOLEAN NOT NULL DEFAULT true,
+    "fillAlertDigest" BOOLEAN NOT NULL DEFAULT true,
+    "staffHoldMinutes" INTEGER NOT NULL DEFAULT 15,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -152,6 +164,9 @@ CREATE TABLE "VenueCustomer" (
     "customerId" UUID,
     "name" TEXT NOT NULL,
     "phone" TEXT,
+    "lastBookedAt" TIMESTAMPTZ,
+    "bookingCount" INTEGER NOT NULL DEFAULT 0,
+    "noShowCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -327,3 +342,12 @@ ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_cancellation_check" CH
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_loyalty_check" CHECK ((("loyaltyStamps" IS NULL) = ("loyaltyWindow" IS NULL)) AND ("loyaltyStamps" IS NULL OR ("loyaltyStamps" >= 2 AND "loyaltyWindow" > 0)));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_regulars_check" CHECK ("regularHorizon" BETWEEN 1 AND 12 AND "confirmationWindow" BETWEEN 1 AND 168 AND "reminderLead" BETWEEN 1 AND 168 AND ("freedDiscountHours" IS NULL OR "freedDiscountHours" BETWEEN 1 AND 48));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_fill_check" CHECK ("lapsedAfter" BETWEEN 1 AND 12 AND "regularBookings" >= 1 AND "regularPeriod" BETWEEN 1 AND 26 AND "fillAlertHours" BETWEEN 1 AND 72 AND "staffHoldMinutes" BETWEEN 5 AND 60);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "VenueCustomer" ADD CONSTRAINT "VenueCustomer_counts_check" CHECK ("bookingCount" >= 0 AND "noShowCount" >= 0);

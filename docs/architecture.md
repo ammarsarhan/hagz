@@ -238,12 +238,12 @@ CI also gets a Postgres service, migration linting and the module-boundary check
 
 ## Roadmap
 
-Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships the admin tools it needs.
+Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships its screens and the admin tools it needs, and is done only when its flows work in the real apps.
 
 | Phase | Scope | Done when |
 |---|---|---|
 | 0. Platform ✅ | Errors, logging, request ids, timeouts, health and shutdown, transaction helper, `Clock`, idempotency columns, test harness, OpenAPI, CI | A sample endpoint passes integration, failure and contract tests |
-| 1. Identity ✅ | Phone OTP, sessions, refresh rotation, admin TOTP, rate limits, policy layer | Tenant-isolation and token-reuse tests pass |
+| 1. Identity (API ✅, UI next) | Phone OTP, sessions, refresh rotation, admin TOTP, rate limits, policy layer | Tenant-isolation and token-reuse tests pass |
 | 2. Venues and grounds | Reference data, venue creation and settings, media (R2), grounds and schedules, layout API, slot generation, go-live review, support tools | DST property tests pass; generation is idempotent; a venue reaches `LIVE` through admin review |
 | 3. Discovery | Venue page, guest browsing, search by area, distance or name with every filter and sort, favorites | Every search shape stays within its query-plan budget on launch-scale data |
 | 4. Bookings | Holds, state machine, charges, approval, expiry sweeper, venue customers and walk-ins | The 100-request race leaves exactly one booking |
@@ -252,7 +252,7 @@ Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships
 | 7. Engagement | Notifications, loyalty, reviews, discounts | Notifications survive a Redis outage |
 | 8. Accounts and activity | Profile, sessions, account deletion, venue activity feed | Deletion anonymizes and keeps money records intact |
 | 9. Launch readiness | OTP abuse protections, observability, load tests, security review, restore drill, production on a paid plan, API and database in one region, legal | Runbooks exist and the restore drill succeeds |
-| 10. Apps | Dashboard app, customer app, web (admin, venue and booking pages) | Both apps pass store review |
+| 10. Store launch | Polish, store listings and submissions, the production cut-over (each phase already ships its own screens) | Both apps pass store review |
 
 ## Open decisions
 

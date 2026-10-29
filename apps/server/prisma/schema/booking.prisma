@@ -1,19 +1,22 @@
 // Back-to-back slots on one ground (via GroundSlot.bookingId), for a VenueCustomer. groundId,
 // startsAt and endsAt keep its history after release. Minor units. Never deleted.
 // CHECKs: endsAt > startsAt, total >= 0, depositAmount 1–total, set exactly when DEPOSIT;
-// commissionRate 0–10000, and 0 when creatorId is set; cancellationTiers is an array.
+// commissionRate 0–10000, and 0 when creatorId is set; cancellationTiers is an array. A regular's
+// reservation (regularId) is MANUAL with no commission; UNCONFIRMED and RELEASED only for those, and
+// UNCONFIRMED has expiresAt.
 model Booking {
   id                 String             @id @default(uuid(7)) @db.Uuid
   venueId            String             @db.Uuid
   groundId           String             @db.Uuid
   customerId         String             @db.Uuid
   creatorId          String?            @db.Uuid // Staff who entered it.
+  regularId          String?            @db.Uuid // A regular's weekly reservation.
   code               String             @unique // Share link, /b/[code].
   status             BookingStatus
   startsAt           DateTime           @db.Timestamptz
   endsAt             DateTime           @db.Timestamptz
   note               String? // From the customer.
-  expiresAt          DateTime?          @db.Timestamptz // PENDING and HELD release slots after this.
+  expiresAt          DateTime?          @db.Timestamptz // PENDING, HELD and UNCONFIRMED release slots after this.
   idempotencyKey     String?            @db.Uuid // Idempotency-Key header; a retry gets this booking.
   // Terms copied at booking time; never updated.
   total              Int // Sum of its charges, VAT included.
@@ -25,24 +28,30 @@ model Booking {
   createdAt          DateTime           @default(now()) @db.Timestamptz
   updatedAt          DateTime           @updatedAt @db.Timestamptz
 
-  venue         Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
-  ground        Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
-  customer      VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
-  creator       Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
-  slots         GroundSlot[]
-  charges       BookingCharge[]
-  payments      Payment[]
-  events        BookingEvent[]
-  cancellation  Cancellation?
-  ledger        LedgerEntry[]
-  notifications Notification[]
-  stamp         LoyaltyStamp?   @relation("StampBooking")
-  card          LoyaltyCard?    @relation("CardBooking") // Free via a card.
-  review        VenueReview?
+  venue           Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  ground          Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
+  customer        VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
+  creator         Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  regular         VenueRegular?   @relation(fields: [regularId, venueId], references: [id, venueId], onDelete: Restrict)
+  tokens          ReminderToken[]
+  slots           GroundSlot[]
+  charges         BookingCharge[]
+  payments        Payment[]
+  events          BookingEvent[]
+  cancellation    Cancellation?
+  ledger          LedgerEntry[]
+  notifications   Notification[]
+  stamp           LoyaltyStamp?   @relation("StampBooking")
+  card            LoyaltyCard?    @relation("CardBooking") // Free via a card.
+  review          VenueReview?
+  listing         BookingListing?
+  rescheduledTo   Rescheduling[]  @relation("RescheduledFrom") // What replaced this booking.
+  rescheduledFrom Rescheduling?   @relation("RescheduledTo") // Where this booking came from, if anywhere.
 
   @@unique([id, venueId]) // GroundSlot relation target.
   @@unique([id, customerId]) // Loyalty and review relation target.
   @@unique([venueId, idempotencyKey]) // Not customerId: a retry may create a new VenueCustomer.
+  @@unique([regularId, startsAt]) // One reservation per regular per week.
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
@@ -111,4 +120,35 @@ model BookingEvent {
   admin    Admin?    @relation(fields: [adminId], references: [id], onDelete: Restrict)
 
   @@index([bookingId, createdAt])
+}
+
+// A booking that came from another, in the same venue: a staff MOVE to another time or ground, one half
+// of a SWAP (two rows sharing groupId), or a REFILL of a released reservation. For MOVE and SWAP the
+// old booking ends RESCHEDULED and the new one keeps its terms (commission, payment mode, cancellation
+// policy) at the new slots' prices; priceDifference is new total minus old. A booking has at most one
+// origin, and a moved or swapped booking has one successor (a released one can be refilled by several
+// bookings, e.g. two customers taking an hour each; partial index). Append-only. CHECKs: two different bookings; groupId exactly for SWAP; priceDifference
+// exactly when not REFILL.
+model Rescheduling {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  venueId         String           @db.Uuid
+  fromBookingId   String           @db.Uuid
+  toBookingId     String           @db.Uuid
+  type            ReschedulingType
+  groupId         String?          @db.Uuid // Shared by the two moves of a SWAP.
+  staffId         String?          @db.Uuid // Who moved it, or entered the refill; null when a customer refilled it in the app.
+  reason          String?
+  priceDifference Int? // Minor units.
+  createdAt       DateTime         @default(now()) @db.Timestamptz
+
+  venue Venue   @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  from  Booking @relation("RescheduledFrom", fields: [fromBookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  to    Booking @relation("RescheduledTo", fields: [toBookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  staff Staff?  @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@unique([toBookingId, venueId]) // At most one origin per booking.
+  @@unique([fromBookingId], map: "Rescheduling_from_move_key", where: { type: { not: "REFILL" } }) // A moved or swapped booking has one successor; a refill can split.
+  @@index([fromBookingId])
+  @@index([groupId])
+  @@index([venueId, type, createdAt]) // Recovered revenue per venue and period.
 }

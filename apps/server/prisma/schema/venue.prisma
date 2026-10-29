@@ -36,6 +36,10 @@ model Venue {
   ledger        LedgerEntry[]
   notifications Notification[]
   discounts     VenueDiscount[]
+  regulars      VenueRegular[]
+  waitlists     SlotWaitlist[]
+  listings      BookingListing[]
+  reschedulings Rescheduling[]
 
   @@unique([id, marketplaceId])
   @@index([coordinates], type: Gist)
@@ -97,7 +101,9 @@ model VenueInvitation {
 }
 
 // CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0; cancellationTiers, an
-// array, set exactly when CUSTOM; loyaltyStamps >= 2, loyaltyWindow > 0, both or neither.
+// array, set exactly when CUSTOM; loyaltyStamps >= 2, loyaltyWindow > 0, both or neither;
+// regularHorizon 1–12, confirmationWindow and reminderLead 1–168, freedDiscountHours 1–48;
+// lapsedAfter 1–12, regularBookings >= 1, regularPeriod 1–26, fillAlertHours 1–72; staffHoldMinutes 5–60.
 model VenueSettings {
   venueId            String             @id @db.Uuid
   defaultPermissions Json // For new invitations.
@@ -110,6 +116,20 @@ model VenueSettings {
   cancellationTiers  Json? // CUSTOM only, e.g. [{ "hours": 24, "refundPercent": 100 }].
   loyaltyStamps      Int? // Bookings per free one; null = off.
   loyaltyWindow      Int? // Days.
+  // Regulars
+  regularHorizon     Int                @default(4) // Weeks of reservations kept ahead.
+  confirmationWindow Int                @default(24) // Hours before kick-off a reservation must be confirmed.
+  reminderLead       Int                @default(24) // Hours before that deadline the reminder goes out.
+  freedDiscountHours Int? // Freed slots this close to kick-off get the DISCOUNT tier; null = off.
+  // Filling slots
+  lapsedAfter        Int                @default(3) // Weeks without a booking before a regular is lapsed.
+  regularBookings    Int                @default(3) // Bookings within regularPeriod that make a regular.
+  regularPeriod      Int                @default(8) // Weeks.
+  fillAlertHours     Int                @default(6) // Hours before kick-off to alert about an empty slot.
+  fillAlertOnRelease Boolean            @default(true)
+  fillAlertNearStart Boolean            @default(true)
+  fillAlertDigest    Boolean            @default(true)
+  staffHoldMinutes   Int                @default(15) // How long a staff hold keeps slots before it expires.
   createdAt          DateTime           @default(now()) @db.Timestamptz
   updatedAt          DateTime           @updatedAt @db.Timestamptz
 
@@ -179,15 +199,19 @@ model VenueFavorite {
 }
 
 // A customer as a venue sees them: an account, or a walk-in staff entered (no customerId), linked
-// by phone on sign-up. Restrict keeps the venue's history.
+// by phone on sign-up. Restrict keeps the venue's history. CHECK: counts >= 0.
 model VenueCustomer {
-  id         String   @id @default(uuid(7)) @db.Uuid
-  venueId    String   @db.Uuid
-  customerId String?  @db.Uuid
-  name       String
-  phone      String? // E.164. Null after the linked account is deleted.
-  createdAt  DateTime @default(now()) @db.Timestamptz
-  updatedAt  DateTime @updatedAt @db.Timestamptz
+  id           String    @id @default(uuid(7)) @db.Uuid
+  venueId      String    @db.Uuid
+  customerId   String?   @db.Uuid
+  name         String
+  phone        String? // E.164. Null after the linked account is deleted.
+  // Kept up to date with every booking change, for ranking candidates to fill a slot.
+  lastBookedAt DateTime? @db.Timestamptz
+  bookingCount Int       @default(0) // Completed.
+  noShowCount  Int       @default(0)
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @db.Timestamptz
 
   venue    Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
   customer Customer?      @relation(fields: [customerId], references: [id], onDelete: Restrict)
@@ -195,6 +219,7 @@ model VenueCustomer {
   bookings Booking[]
   stamps   LoyaltyStamp[]
   cards    LoyaltyCard[]
+  regulars VenueRegular[]
 
   @@unique([venueId, customerId])
   @@unique([venueId, phone])
