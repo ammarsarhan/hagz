@@ -60,6 +60,11 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      # Its types are generated from the committed openapi.json; a stale copy would hide API changes
+      # from the apps.
+      - name: Check the API client is generated from openapi.json
+        run: pnpm --filter @hagz/api generate && git diff --exit-code packages/api/src/generated
+
       - name: Validate Prisma schema
         run: pnpm --filter @hagz/server exec prisma validate
 
