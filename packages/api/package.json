@@ -21,7 +21,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "openapi-fetch": "^0.17.0"
@@ -33,6 +34,7 @@
     "eslint": "^10.13.0",
     "openapi-typescript": "^7.13.0",
     "tsup": "^8.5.1",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
   }
 }
