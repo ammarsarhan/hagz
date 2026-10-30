@@ -11,6 +11,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./secure-store": {
+      "types": "./dist/secure-store.d.ts",
+      "import": "./dist/secure-store.js",
+      "require": "./dist/secure-store.cjs"
     }
   },
   "files": [
@@ -27,11 +32,20 @@
   "dependencies": {
     "openapi-fetch": "^0.17.0"
   },
+  "peerDependencies": {
+    "expo-secure-store": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo-secure-store": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@hagz/eslint-config": "workspace:^",
     "@hagz/tsconfig": "workspace:^",
     "@types/node": "^26.6.3",
     "eslint": "^10.13.0",
+    "expo-secure-store": "~57.0.4",
     "openapi-typescript": "^7.13.0",
     "tsup": "^8.5.1",
     "typescript": "~6.0.3",
