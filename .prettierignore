@@ -6,3 +6,6 @@ pnpm-lock.yaml
 
 # Written by the OpenAPI contract test (apps/server/test/http/openapi.test.ts).
 apps/server/openapi.json
+
+# Written by openapi-typescript (pnpm --filter @hagz/api generate).
+packages/api/src/generated/
