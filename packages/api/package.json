@@ -23,6 +23,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
   "devDependencies": {
     "@hagz/eslint-config": "workspace:^",
     "@hagz/tsconfig": "workspace:^",
