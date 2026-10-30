@@ -72,6 +72,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@hagz/api':
+        specifier: workspace:^
+        version: link:../../packages/api
       '@hagz/contracts':
         specifier: workspace:^
         version: link:../../packages/contracts
@@ -87,6 +90,9 @@ importers:
       expo-router:
         specifier: ~57.0.24
         version: 57.0.24(516206974134e13e6ad0026083a3f9d6)
+      expo-secure-store:
+        specifier: ~57.0.4
+        version: 57.0.4(expo@57.0.26)
       expo-status-bar:
         specifier: ~57.0.1
         version: 57.0.1(expo@57.0.26)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)
