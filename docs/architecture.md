@@ -226,7 +226,33 @@ What it showed:
 - **The time maths is the hard part.** Seeding the benchmark hit three bugs: Egypt's skipped DST hour (duplicate slots), the repeated fall-back hour (overlapping bookings, caught by the exclusion constraint), and `timestamptz AT TIME ZONE` converting in the wrong direction (every row 4 hours late). With slots, that code lives only in the generation job. On the fly, every reader (search, venue page, dashboard grid, waitlist, booking checks) needs it.
 - **Rules-sql gets harder with every feature.** A window across midnight needs a second schedule row. Manual slots, schedule overrides and per-hour holds each add another table to subtract, and none were modelled here.
 
-What slots cost: the generation job, the nightly roll-forward and purge (about 64k rows in and out a day at 1,000 venues), and schedule and slot data that can drift apart, kept in step by `scheduleVersion` and the rule that only the job writes generated slots. Revisit if the table passes about 50M rows (partition by month on `startsAt`), owners need to plan beyond 90 days (add schedule overrides, not a longer horizon), or slot lengths vary per ground.
+**Writes.** Same database, creating a 2-hour booking in a Prisma interactive transaction (the `transaction()` path, with the database timeouts on). Three orderings:
+
+- **slots, insert first**: insert the booking, then claim its slots with a guarded `UPDATE … WHERE status = 'AVAILABLE'`.
+- **slots, lock first**: lock the slots (`SELECT … FOR UPDATE`), insert the booking, then mark the slots (the rule in [No double bookings](#no-double-bookings)).
+- **rules**: check the schedule and blocks, insert the booking, and let the `Booking_no_overlap` exclusion constraint reject overlaps.
+
+| Strategy | p50 | p99 | Throughput (10 concurrent) | 100 parallel requests for one slot |
+|---|---|---|---|---|
+| slots, insert first | 6.1 ms | 30 ms | 715/s | 1 booked; 99 errors (lock timeouts, exclusion violations, no free connection); 3–6 s |
+| **slots, lock first** | 4.5 ms | 16 ms | 669/s | **1 booked; 99 clean 409s; 58–73 ms** |
+| rules | **3.7 ms** | **14 ms** | **1,061/s** | 1 booked; 97–99 errors (lock timeouts, deadlocks, no free connection); 2–7 s |
+
+- **A booking costs about 1 ms more with slots.** Marking two slots `HELD` changes `bookingId`, which is indexed, so Postgres can't update the rows in place: it writes new row versions and new entries in all four slot indexes. Even the slowest strategy handles about 700 bookings a second, against a launch load of tens of thousands a day (under one a second on average).
+- **The race is where slots win the write path too.** A slot row is a lock on exactly one hour of one ground, so losers wait on it briefly and leave without writing. Without slots, only the exclusion constraint settles the race: each contender's insert waits on the others' uncommitted rows, which ends in deadlocks and lock timeouts. Inserting the booking before claiming the slots fails the same way.
+- **A contended slot can starve the whole API.** In both failing orderings, stuck transactions held all ten pool connections, and most requests failed with Prisma's "Unable to start a transaction in the given time". In production that would stall every endpoint on that instance, not just the slot being fought over. Nobody was double booked in any strategy, which is why the race test must check the losers' responses (see [No double bookings](#no-double-bookings)).
+
+The writes slots add in the background, timed on the same data:
+
+| Job | Rows | Time |
+|---|---|---|
+| Regenerate one ground's 90 days after an owner edits its schedule | about 1,300 | about 30 ms |
+| Nightly roll-forward: one new day for every ground | about 38k | about 1.5 s |
+| Nightly purge: one past day of `AVAILABLE` slots | about 39k | about 0.4 s |
+
+All of them run in the worker, never in a customer's request. Regenerating a ground is fast enough to run straight after the owner saves.
+
+What slots cost: about 1 ms per booking, the generation job, the nightly roll-forward and purge (about 64k rows in and out a day at 1,000 venues), and schedule and slot data that can drift apart, kept in step by `scheduleVersion` and the rule that only the job writes generated slots. Revisit if the table passes about 50M rows (partition by month on `startsAt`), owners need to plan beyond 90 days (add schedule overrides, not a longer horizon), or slot lengths vary per ground.
 
 ## Security
 
