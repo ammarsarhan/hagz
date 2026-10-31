@@ -182,6 +182,48 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 - Paginate with keysets, never `OFFSET`. UUIDv7 ids are time-ordered, so `WHERE id < $cursor` works out of the box.
 - Later, when metrics call for it: a read replica for search, and monthly partitions for `LedgerEntry`, `BookingEvent` and `NotificationDelivery`.
 
+### Why precomputed slots
+
+The alternative to `GroundSlot` is working availability out on the fly: schedule hours, minus live bookings, minus staff blocks. Bookings would still be safe without slots (the `Booking_no_overlap` exclusion constraint prevents double bookings on its own), so the case for slots is speed under load, keeping the time maths in one place, and per-hour state, not correctness.
+
+**Benchmark (2026-10-31).** The real migrations on Postgres 18 in Docker on a laptop (warm cache, no network round trip), seeded with 1,000 venues × 4 grounds: 5.3M slots (1.4 GB with indexes) and 4.8M bookings including a year of history (2.8 GB). Search for LIVE venues with a ground free for a whole window, priced from the cheapest free ground, best rated first, top 20. Each request goes through the real stack: Hono, zod-openapi validation, request id and context, access log, Prisma `$queryRaw`, DTOs and JSON. Four strategies, all returning identical results:
+
+- **slots-sql**: one query over `GroundSlot`, grouped and ranked in SQL.
+- **slots-app**: the window's `AVAILABLE` slots fetched flat, grouped and ranked in TypeScript.
+- **rules-sql**: on the fly in SQL. Every hour of the window must be in the ground's `GroundSchedule` row (hours past midnight in the next day's row), with no live booking (GiST exclusion index) or block overlapping it, priced from the hours' tiers.
+- **rules-app**: on the fly in TypeScript. Load the candidate grounds' schedule rows and the overlapping bookings and blocks, then expand and subtract in code (DST-aware, formatters cached).
+
+Monday 20:00–22:00:
+
+| Strategy | p50 | p99 | Throughput (10 concurrent) | p99 (50 concurrent) |
+|---|---|---|---|---|
+| slots-sql | **9 ms** | **26 ms** | **511 req/s** | **182 ms** |
+| slots-app | 16 ms | 40 ms | 100 req/s | 1,032 ms |
+| rules-sql | 75 ms | 248 ms | 50 req/s | 1,596 ms |
+| rules-app | 100 ms | 275 ms | 19 req/s | 4,009 ms |
+
+Thursday 23:00–01:00 (crosses midnight, so it needs two schedule rows):
+
+| Strategy | p50 | p99 | Throughput (10 concurrent) | p99 (50 concurrent) |
+|---|---|---|---|---|
+| slots-sql | **8 ms** | **15 ms** | **558 req/s** | **227 ms** |
+| slots-app | 13 ms | 29 ms | 135 req/s | 1,481 ms |
+| rules-sql | 73 ms | 151 ms | 50 req/s | 2,354 ms |
+| rules-app | 106 ms | 195 ms | 20 req/s | 5,774 ms |
+
+p50 and p99 are from 300 sequential requests. Throughput and the concurrent p99 come from 10 seconds of closed-loop load.
+
+What it showed:
+
+- **The framework isn't the cost.** Hono, Zod, JSON and HTTP took about 1–2 ms in every strategy. The data model decides the rest.
+- **Slots-sql is about 10× faster and has 10× the throughput of the best on-the-fly version.** Each venue costs one B-tree lookup of a few rows in a table capped at 90 days. Rules-sql does a GiST probe per ground into a bookings table that keeps every past booking, so it slows down as history grows while the slot table doesn't.
+- **Push the work into SQL.** Slots-app reads the same rows as slots-sql but ships every free slot in the window to Node: about 2× slower per request and 5× lower throughput.
+- **Availability maths in Node collapses under load.** Rules-app spends 20–35 ms of CPU per request on timezone conversion. That blocks the event loop, which caps a process at about 20 req/s; at 50 concurrent users its p99 passes the 5 s statement timeout.
+- **The time maths is the hard part.** Seeding the benchmark hit three bugs: Egypt's skipped DST hour (duplicate slots), the repeated fall-back hour (overlapping bookings, caught by the exclusion constraint), and `timestamptz AT TIME ZONE` converting in the wrong direction (every row 4 hours late). With slots, that code lives only in the generation job. On the fly, every reader (search, venue page, dashboard grid, waitlist, booking checks) needs it.
+- **Rules-sql gets harder with every feature.** A window across midnight needs a second schedule row. Manual slots, schedule overrides and per-hour holds each add another table to subtract, and none were modelled here.
+
+What slots cost: the generation job, the nightly roll-forward and purge (about 64k rows in and out a day at 1,000 venues), and schedule and slot data that can drift apart, kept in step by `scheduleVersion` and the rule that only the job writes generated slots. Revisit if the table passes about 50M rows (partition by month on `startsAt`), owners need to plan beyond 90 days (add schedule overrides, not a longer horizon), or slot lengths vary per ground.
+
 ## Security
 
 - Passwords are hashed with argon2id. Admins must use TOTP.
