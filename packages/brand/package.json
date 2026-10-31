@@ -1,0 +1,20 @@
+{
+  "name": "@hagz/brand",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/generate.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@hagz/eslint-config": "workspace:^",
+    "@hagz/tsconfig": "workspace:^",
+    "@types/node": "^26.6.3",
+    "eslint": "^10.13.0",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3"
+  }
+}
