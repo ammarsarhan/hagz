@@ -53,17 +53,21 @@ apps/server/src/
 
 ### No double bookings
 
-1. A booking claims its slots with one guarded update inside its transaction:
+1. A booking locks its slots **before it writes anything**, inside its transaction:
    ```sql
-   UPDATE "GroundSlot" SET status = 'HELD', "bookingId" = $1
-   WHERE "groundId" = $2 AND "startsAt" = ANY($3) AND status = 'AVAILABLE'
-   RETURNING id
+   SELECT id FROM "GroundSlot"
+   WHERE "groundId" = $1 AND "startsAt" = ANY($2) AND status = 'AVAILABLE'
+   ORDER BY "startsAt"
+   FOR UPDATE
    ```
-   Fewer rows than requested means a slot was taken: roll back and return `409 SLOT_UNAVAILABLE`. Concurrent claims queue on the row lock, so only one wins.
-2. Rows are always locked in a fixed order (`startsAt` ascending) so overlapping requests can't deadlock.
-3. **Proposed:** exclusion constraints as a database backstop (see [Exclusion constraints](#exclusion-constraints-proposed)).
+   Fewer rows than requested means a slot was taken: roll back and return `409 SLOT_UNAVAILABLE`. Concurrent requests queue on the row locks. When the winner commits, Postgres re-checks each waiting row, finds it no longer `AVAILABLE`, and drops it, so every loser gets the 409 without writing anything.
+2. Only then insert the `Booking` and mark the locked slots `HELD` with its id.
+3. Rows are always locked in a fixed order (`startsAt` ascending) so overlapping requests can't deadlock.
+4. **Proposed:** exclusion constraints as a database backstop (see [Exclusion constraints](#exclusion-constraints-proposed)).
 
-The proof is a test: 100 parallel requests for the same slot produce exactly one booking.
+Don't insert the booking first and claim the slots after. Every contender's insert then waits on the others' uncommitted bookings in the `Booking_no_overlap` constraint, so a popular slot turns into lock timeouts and deadlocks, and the stuck transactions hold the whole connection pool (see [Why precomputed slots](#why-precomputed-slots)).
+
+The proof is a test: 100 parallel requests for the same slot produce exactly one booking, and the other 99 get `409 SLOT_UNAVAILABLE` quickly. A version that ends in timeouts or deadlocks also never double books, so the test must check the losers too.
 
 ### State machines
 
