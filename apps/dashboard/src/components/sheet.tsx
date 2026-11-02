@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, KeyboardAvoidingView, Modal, Pressable, View } from "react-native";
+import { Animated, Keyboard, KeyboardAvoidingView, Modal, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isRTL } from "@/lib/language";
 import { CloseButton } from "./nav";
@@ -54,11 +54,14 @@ export function Sheet({ visible, onClose, closeLabel, children }: SheetProps) {
             ],
           }}
         >
-          <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
-          <View className="flex-row justify-end">
-            <CloseButton label={closeLabel} onPress={onClose} />
-          </View>
-          {children}
+          {/* Tapping the panel outside a field or button closes the keyboard. */}
+          <Pressable accessible={false} onPress={Keyboard.dismiss}>
+            <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
+            <View className="flex-row justify-end">
+              <CloseButton label={closeLabel} onPress={onClose} />
+            </View>
+            {children}
+          </Pressable>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
