@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { FlatList, I18nManager, useWindowDimensions, View } from "react-native";
+import { Animated, FlatList, I18nManager, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import { ONBOARDING_ART } from "@/assets/onboarding-art";
@@ -33,6 +33,8 @@ export default function Onboarding() {
   const pager = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
   const [touched, setTouched] = useState(false);
+  // Where the pager is, continuously, so the dots morph with the swipe instead of jumping at the end.
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (touched || index >= SLIDES.length - 1) return;
@@ -47,7 +49,7 @@ export default function Onboarding() {
     <View className="flex-1 bg-primary">
       <StatusBar style="light" />
       <SafeAreaView style={{ flex: 1 }}>
-        <FlatList
+        <Animated.FlatList
           ref={pager}
           data={SLIDES}
           keyExtractor={(slide) => slide.title}
@@ -57,6 +59,10 @@ export default function Onboarding() {
           showsHorizontalScrollIndicator={false}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
           onScrollBeginDrag={() => setTouched(true)}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
           onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
           style={{ direction: "ltr" }}
           renderItem={({ item, index: i }) => (
@@ -74,10 +80,7 @@ export default function Onboarding() {
 
         <View className="mb-8 flex-row justify-center gap-1.5" style={{ direction }}>
           {SLIDES.map((slide, i) => (
-            <View
-              key={slide.title}
-              className={`h-[7px] rounded-full bg-white ${i === index ? "w-[22px]" : "w-[7px] opacity-40"}`}
-            />
+            <Dot key={slide.title} index={i} scrollX={scrollX} width={width} />
           ))}
         </View>
 
@@ -95,5 +98,27 @@ export default function Onboarding() {
         </View>
       </SafeAreaView>
     </View>
+  );
+}
+
+// A page dot that grows into the 22px pill as its slide scrolls into place, and shrinks back to a
+// faint 7px dot as it leaves. Width can't use the native driver, so this runs in JS, which is fine
+// for three small views.
+function Dot({ index, scrollX, width }: { index: number; scrollX: Animated.Value; width: number }) {
+  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+  return (
+    <Animated.View
+      style={{
+        height: 7,
+        borderRadius: 3.5,
+        backgroundColor: "#ffffff",
+        width: scrollX.interpolate({ inputRange, outputRange: [7, 22, 7], extrapolate: "clamp" }),
+        opacity: scrollX.interpolate({
+          inputRange,
+          outputRange: [0.4, 1, 0.4],
+          extrapolate: "clamp",
+        }),
+      }}
+    />
   );
 }
