@@ -61,11 +61,27 @@ export const StaffInvitation = z
   })
   .meta({ id: "StaffInvitation", description: "Sent, not yet accepted, declined or revoked." });
 
-// An invitation as the invitee sees it.
+// An invitation as the invitee sees it. They aren't on the staff yet, so the team is only a size and
+// initials: no names, phones or ids.
 export const ReceivedStaffInvitation = z
   .object({
     id: z.uuid(),
-    venue: z.object({ id: z.uuid(), name: z.string().nullable() }),
+    venue: z.object({
+      id: z.uuid(),
+      name: z.string().nullable(),
+      address: z
+        .string()
+        .nullable()
+        .meta({ description: "Street address in `Accept-Language`, else any language." }),
+      groundCount: z.int().min(0).meta({ description: "Grounds in use or under maintenance." }),
+      team: z.object({
+        size: z.int().min(1),
+        initials: z
+          .array(z.string())
+          .max(2)
+          .meta({ description: "Up to two members, the owner first.", example: ["OS", "MA"] }),
+      }),
+    }),
     invitedBy: z.string(),
     permissions: StaffPermissions.meta({ description: "What they'll be able to do there." }),
     expiresAt: z.iso.datetime(),
