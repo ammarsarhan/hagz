@@ -179,8 +179,9 @@ const requestReset = createRoute({
   summary: "Send a password reset code",
   description:
     "The same response whether or not the number has an account. Venue owners get no code: they " +
-    "reset through Hagz support, and the app should say so on this screen. Warn members before " +
-    "they ask: a reset makes them read-only at every venue until a staff manager restores them.",
+    "reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn " +
+    "members before the new password is set: a reset makes them read-only at every venue until a " +
+    "staff manager restores them.",
   request: body(RequestPasswordReset),
   responses: {
     202: {

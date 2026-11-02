@@ -3,6 +3,7 @@ import { logger } from "@/platform/logger/logger";
 import type {
   MessagingProvider,
   StaffInvitationMessage,
+  SupportResetNoticeMessage,
   VerificationCodeMessage,
 } from "./messaging-provider";
 
@@ -20,21 +21,31 @@ export const consoleProvider: MessagingProvider = {
     );
     return Promise.resolve();
   },
+  sendSupportResetNotice: ({ phone, language }) => {
+    logger.info({ to: phone, language }, "reset-with-support notice (development: not sent)");
+    return Promise.resolve();
+  },
 };
 
 // Tests: keeps what was sent, so a test can read the code back like a user would.
 export const createInMemoryProvider = () => {
   const sent: VerificationCodeMessage[] = [];
   const invitations: StaffInvitationMessage[] = [];
+  const supportNotices: SupportResetNoticeMessage[] = [];
   return {
     sent,
     invitations,
+    supportNotices,
     sendVerificationCode: (message: VerificationCodeMessage) => {
       sent.push(message);
       return Promise.resolve();
     },
     sendStaffInvitation: (message: StaffInvitationMessage) => {
       invitations.push(message);
+      return Promise.resolve();
+    },
+    sendSupportResetNotice: (message: SupportResetNoticeMessage) => {
+      supportNotices.push(message);
       return Promise.resolve();
     },
     lastCodeFor: (phone: string) => sent.findLast((message) => message.phone === phone)?.code,
@@ -55,4 +66,5 @@ const unavailable = () =>
 export const unconfiguredProvider: MessagingProvider = {
   sendVerificationCode: unavailable,
   sendStaffInvitation: unavailable,
+  sendSupportResetNotice: unavailable,
 };

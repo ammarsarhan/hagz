@@ -53,6 +53,7 @@ beforeEach(async () => {
   await resetDatabase();
   await resetRedis();
   outbox.sent.length = 0;
+  outbox.supportNotices.length = 0;
 });
 
 describe("staff password reset, for a member", () => {
@@ -167,10 +168,10 @@ describe("staff password reset, for a member", () => {
 });
 
 describe("staff password reset, for an owner", () => {
-  it("answers like any other number but sends no code", async () => {
+  it("answers like any other number, with no code but a WhatsApp saying to reset with support", async () => {
     const { id: marketplaceId } = await createMarketplace();
     const venue = await createVenue(marketplaceId);
-    const owner = await createStaff();
+    const owner = await createStaff({ language: "EN" });
     await addMember(venue.id, owner.id, { role: "OWNER", permissions: permissions() });
 
     const res = await requestReset();
@@ -178,6 +179,16 @@ describe("staff password reset, for an owner", () => {
     expect(await json(res)).toEqual({ expiresIn: 600, resendAfter: 60 });
     expect(outbox.sent).toHaveLength(0);
     expect(await prisma.staffVerification.count()).toBe(0);
+    // In the owner's language: it's their phone.
+    expect(outbox.supportNotices).toEqual([{ phone: PHONE, language: "EN" }]);
+  });
+
+  it("sends nothing to a number without an account, or to a member", async () => {
+    expect((await requestReset()).status).toBe(202);
+    await resetRedis(); // Past the per-number cooldown.
+    await createStaff();
+    expect((await requestReset()).status).toBe(202);
+    expect(outbox.supportNotices).toHaveLength(0);
   });
 
   it("refuses a code sent before they became an owner", async () => {

@@ -1,6 +1,7 @@
 import type { Language } from "@/generated/prisma/enums";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { hashPassword } from "@/platform/crypto/passwords";
+import { messaging } from "@/platform/messaging/messaging";
 import { transaction } from "@/platform/db/transaction";
 import { parseMobileNumber, requireMobileNumber } from "@/platform/phone/phone";
 import { consume } from "@/platform/rate-limit/rate-limit";
@@ -9,7 +10,9 @@ import { codeExpired, consumeCode, issueCode } from "./account-codes";
 import type { AccountStore } from "./accounts";
 
 // The same answer for every number. A code goes out only to an active account that may reset by
-// itself; limits and the cooldown apply before the lookup so they can't tell numbers apart either.
+// itself; one that resets through support (a venue owner) gets a WhatsApp message saying so
+// instead, so the right path reaches the right person without the app being told. Limits and the
+// cooldown apply before the lookup so they can't tell numbers apart either.
 // (Timing still differs slightly while sending is synchronous; it moves to the queue with
 // notifications.)
 export const requestPasswordReset = async (
@@ -22,14 +25,18 @@ export const requestPasswordReset = async (
   await consume(limits.accountCodeCooldown, `${store.type}:${phone}`);
 
   const account = await store.findByPhone(phone);
-  if (account?.status === "ACTIVE" && (await store.selfServiceReset(account))) {
+  if (account?.status === "ACTIVE") {
     // In the account's language, not the request's: it's their phone.
-    await issueCode(store, {
-      accountId: account.id,
-      phone,
-      purpose: "PASSWORD_RESET",
-      language: account.language,
-    });
+    if (await store.selfServiceReset(account)) {
+      await issueCode(store, {
+        accountId: account.id,
+        phone,
+        purpose: "PASSWORD_RESET",
+        language: account.language,
+      });
+    } else {
+      await messaging.sendSupportResetNotice({ phone, language: account.language });
+    }
   }
   return { expiresIn: CODE_TTL_SECONDS, resendAfter: RESEND_AFTER_SECONDS };
 };
