@@ -6,5 +6,6 @@ export const colors = {
   ink3: "#9aa0a8",
   unit: "#737373",
   primary: "#1f38ed",
+  onPrimary: "#ffffff",
   red: "#d92d20",
 } as const;
