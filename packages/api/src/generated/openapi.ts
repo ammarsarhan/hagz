@@ -672,6 +672,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/customer/password-resets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the reset code, before choosing the new password
+         * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PasswordResetVerified"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/customer/password-resets/confirm": {
         parameters: {
             query?: never;
@@ -682,7 +761,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Set a new password with the reset code
+         * Set the new password
          * @description Signs out every session; sign in again with the new password.
          */
         post: {
@@ -705,7 +784,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                /** @description RESET_TOKEN_INVALID: verify again. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -714,8 +793,8 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED */
-                429: {
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1470,6 +1549,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/staff/password-resets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the reset code, before choosing the new password
+         * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PasswordResetVerified"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/staff/password-resets/confirm": {
         parameters: {
             query?: never;
@@ -1480,7 +1638,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Set a new password with the reset code
+         * Set the new password
          * @description Signs out every session, and lowers every permission to at most `view` at each venue the member belongs to. The owner and members who manage staff are notified; the previous permissions are kept so they can be restored.
          */
         post: {
@@ -1503,7 +1661,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                /** @description RESET_TOKEN_INVALID: verify again. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1512,8 +1670,8 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED */
-                429: {
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3384,7 +3542,13 @@ export interface components {
              */
             phone: string;
         };
-        ConfirmPasswordReset: {
+        PasswordResetVerified: {
+            /** @description Single use. Sets the new password. */
+            resetToken: string;
+            /** @example 900 */
+            expiresIn: number;
+        };
+        VerifyPasswordReset: {
             /**
              * @description Mobile number with its country code.
              * @example +20 100 123 4567
@@ -3392,6 +3556,12 @@ export interface components {
             phone: string;
             /** @example 482913 */
             code: string;
+        } | {
+            /** @description From confirming a sign-up code for the same number: proves it, so no reset code is needed. */
+            verificationToken: string;
+        };
+        ConfirmPasswordReset: {
+            resetToken: string;
             newPassword: string;
         };
         TwoFactorStatus: {

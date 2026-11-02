@@ -3,6 +3,8 @@ import {
   ChangeTwoFactor,
   CompleteTwoFactor,
   ConfirmPasswordReset,
+  PasswordResetVerified,
+  VerifyPasswordReset,
   ConfirmVerificationCode,
   StaffAuthenticated,
   StaffSignUp,
@@ -21,7 +23,11 @@ import { requestLanguage } from "@/platform/http/language";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 import { staff } from "../application/accounts";
-import { confirmPasswordReset, requestPasswordReset } from "../application/password-reset";
+import {
+  confirmPasswordReset,
+  requestPasswordReset,
+  verifyPasswordReset,
+} from "../application/password-reset";
 import { refreshSession, revokeSession, type Authenticated } from "../application/sessions";
 import { signIn } from "../application/sign-in";
 import { signUpStaff } from "../application/sign-up";
@@ -194,11 +200,34 @@ const requestReset = createRoute({
   },
 });
 
+const verifyReset = createRoute({
+  method: "post",
+  path: "/auth/staff/password-resets/verify",
+  tags,
+  summary: "Check the reset code, before choosing the new password",
+  description:
+    "With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code " +
+    "for the same number (no second code needed). Returns a `resetToken` for setting the password.",
+  request: body(VerifyPasswordReset),
+  responses: {
+    200: { description: "Verified", ...json(PasswordResetVerified) },
+    400: problemResponse(
+      "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or " +
+        "RESET_TOKEN_INVALID with a verification token.",
+    ),
+    403: problemResponse(
+      "With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners.",
+    ),
+    429: problemResponse("RATE_LIMITED"),
+    503: unavailable,
+  },
+});
+
 const confirmReset = createRoute({
   method: "post",
   path: "/auth/staff/password-resets/confirm",
   tags,
-  summary: "Set a new password with the reset code",
+  summary: "Set the new password",
   description:
     "Signs out every session, and lowers every permission to at most `view` at each venue the " +
     "member belongs to. The owner and members who manage staff are notified; the previous " +
@@ -206,8 +235,8 @@ const confirmReset = createRoute({
   request: body(ConfirmPasswordReset),
   responses: {
     204: { description: "Password changed" },
-    400: codeRejected,
-    429: problemResponse("RATE_LIMITED"),
+    400: problemResponse("RESET_TOKEN_INVALID: verify again."),
+    503: unavailable,
   },
 });
 
@@ -301,9 +330,12 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(sent, 202);
   })
+  .openapi(verifyReset, async (c) => {
+    const verified = await verifyPasswordReset(staff, c.req.valid("json"), { ip: clientIp(c) });
+    return c.json(verified, 200);
+  })
   .openapi(confirmReset, async (c) => {
-    const { phone, code, newPassword } = c.req.valid("json");
-    await confirmPasswordReset(staff, { phone, code, newPassword, ip: clientIp(c) });
+    await confirmPasswordReset(staff, c.req.valid("json"));
     return c.body(null, 204);
   })
   .openapi(sendTwoFactorCode, async (c) => {

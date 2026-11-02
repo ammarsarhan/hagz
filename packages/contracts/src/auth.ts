@@ -107,8 +107,27 @@ export const RefreshSession = z
 
 export const RequestPasswordReset = z.object({ phone: Phone }).meta({ id: "RequestPasswordReset" });
 
+export const VerifyPasswordReset = z
+  .union([
+    z.object({ phone: Phone, code: Code }),
+    z.object({
+      verificationToken: z.string().min(1).meta({
+        description:
+          "From confirming a sign-up code for the same number: proves it, so no reset code is needed.",
+      }),
+    }),
+  ])
+  .meta({ id: "VerifyPasswordReset" });
+
+export const PasswordResetVerified = z
+  .object({
+    resetToken: z.string().meta({ description: "Single use. Sets the new password." }),
+    expiresIn: z.int().meta({ example: 900 }),
+  })
+  .meta({ id: "PasswordResetVerified" });
+
 export const ConfirmPasswordReset = z
-  .object({ phone: Phone, code: Code, newPassword: Password })
+  .object({ resetToken: z.string().min(1), newPassword: Password })
   .meta({ id: "ConfirmPasswordReset" });
 
 // Sign-in's answer when the account has two-factor on: the password was right, a code is on its way.
@@ -151,6 +170,8 @@ export type StaffAuthenticated = z.infer<typeof StaffAuthenticated>;
 export type SignIn = z.infer<typeof SignIn>;
 export type RefreshSession = z.infer<typeof RefreshSession>;
 export type RequestPasswordReset = z.infer<typeof RequestPasswordReset>;
+export type VerifyPasswordReset = z.infer<typeof VerifyPasswordReset>;
+export type PasswordResetVerified = z.infer<typeof PasswordResetVerified>;
 export type ConfirmPasswordReset = z.infer<typeof ConfirmPasswordReset>;
 export type TwoFactorChallenge = z.infer<typeof TwoFactorChallenge>;
 export type CompleteTwoFactor = z.infer<typeof CompleteTwoFactor>;

@@ -28,7 +28,8 @@ const cooldownKey = (type: AccountType, phone: string) => `${codeKey(type, phone
 const tokenKey = (type: AccountType, token: string) => `otp:${type}:token:${hashToken(token)}`;
 
 // Redis failures are a 503: codes are the way in, so they never fall back to "no check".
-const redis = async <T>(command: Parameters<typeof guardedRedis<T>>[0]): Promise<T> => {
+// Redis, answering 503 when it's down. Shared with password resets.
+export const redis = async <T>(command: Parameters<typeof guardedRedis<T>>[0]): Promise<T> => {
   try {
     return await guardedRedis(command);
   } catch (error) {

@@ -26,8 +26,14 @@ const post = (path: string, body: unknown) =>
 const json = async (res: Response) => (await res.json()) as Record<string, unknown>;
 
 const requestReset = () => post("/password-resets", { phone: PHONE });
-const confirmReset = (code: string) =>
-  post("/password-resets/confirm", { phone: PHONE, code, newPassword: NEW_PASSWORD });
+// Both steps: the code, then the new password with the reset token it returns. Answers with the
+// step that failed, so a wrong code reads like it always has.
+const confirmReset = async (code: string) => {
+  const verified = await post("/password-resets/verify", { phone: PHONE, code });
+  if (verified.status !== 200) return verified;
+  const { resetToken } = (await verified.json()) as { resetToken: string };
+  return post("/password-resets/confirm", { resetToken, newPassword: NEW_PASSWORD });
+};
 const reset = async () => {
   expect((await requestReset()).status).toBe(202);
   const res = await confirmReset(outbox.lastCodeFor(PHONE) ?? "");
@@ -220,5 +226,65 @@ describe("staff password reset, for an owner", () => {
     expect((await membership(joined.id, staff.id)).permissions).toEqual(
       permissions({ bookings: "view" }),
     );
+  });
+});
+
+describe("staff password reset, two steps", () => {
+  // A sign-up verification of the number, as when sign-up finds the account already exists.
+  const signUpVerification = async () => {
+    await post("/verifications", { phone: PHONE });
+    const res = await post("/verifications/confirm", {
+      phone: PHONE,
+      code: outbox.lastCodeFor(PHONE),
+    });
+    return (await json(res)).verificationToken as string;
+  };
+
+  it("checks the code before the new password, and the reset token works once", async () => {
+    await createStaff();
+    expect((await requestReset()).status).toBe(202);
+    const wrong = await post("/password-resets/verify", { phone: PHONE, code: "000000" });
+    expect((await json(wrong)).code).toBe("INVALID_CODE");
+
+    const verified = await post("/password-resets/verify", {
+      phone: PHONE,
+      code: outbox.lastCodeFor(PHONE),
+    });
+    expect(verified.status).toBe(200);
+    const { resetToken } = (await verified.json()) as { resetToken: string };
+    const set = () => post("/password-resets/confirm", { resetToken, newPassword: NEW_PASSWORD });
+    expect((await set()).status).toBe(204);
+    expect((await json(await set())).code).toBe("RESET_TOKEN_INVALID");
+    expect((await signIn(NEW_PASSWORD)).status).toBe(201);
+  });
+
+  it("accepts a sign-up verification of the number instead of a second code, once", async () => {
+    await createStaff();
+    const verificationToken = await signUpVerification();
+
+    const verified = await post("/password-resets/verify", { verificationToken });
+    expect(verified.status).toBe(200);
+    const { resetToken } = (await verified.json()) as { resetToken: string };
+    expect(
+      (await post("/password-resets/confirm", { resetToken, newPassword: NEW_PASSWORD })).status,
+    ).toBe(204);
+    expect((await signIn(NEW_PASSWORD)).status).toBe(201);
+
+    const again = await post("/password-resets/verify", { verificationToken });
+    expect((await json(again)).code).toBe("VERIFICATION_TOKEN_INVALID");
+  });
+
+  it("tells an owner who proved their number to reset with support", async () => {
+    const { id: marketplaceId } = await createMarketplace();
+    const venue = await createVenue(marketplaceId);
+    const owner = await createStaff();
+    await addMember(venue.id, owner.id, { role: "OWNER", permissions: permissions() });
+
+    const res = await post("/password-resets/verify", {
+      verificationToken: await signUpVerification(),
+    });
+    expect(res.status).toBe(403);
+    expect((await json(res)).code).toBe("PASSWORD_RESET_THROUGH_SUPPORT");
+    expect((await signIn(PASSWORD)).status).toBe(201);
   });
 });

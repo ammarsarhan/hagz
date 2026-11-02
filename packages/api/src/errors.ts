@@ -78,6 +78,14 @@ const messages = {
     en: "Your phone verification has expired. Please verify your number again.",
     ar: "انتهت صلاحية التحقق من رقمك. تحقق منه مرة أخرى.",
   },
+  RESET_TOKEN_INVALID: {
+    en: "This reset has expired. Please start again.",
+    ar: "انتهت صلاحية إعادة التعيين. ابدأ من جديد.",
+  },
+  PASSWORD_RESET_THROUGH_SUPPORT: {
+    en: "Venue owners reset their password through Hagz support.",
+    ar: "يعيد ملاك الملاعب تعيين كلمة المرور عبر دعم حجز.",
+  },
   MESSAGING_UNAVAILABLE: {
     en: "We couldn't send the code right now. Please try again in a moment.",
     ar: "تعذّر إرسال الرمز حاليًا. حاول مرة أخرى بعد قليل.",
@@ -173,6 +181,7 @@ const short = {
   MESSAGING_UNAVAILABLE: { en: "Couldn't send the code", ar: "تعذّر إرسال الرمز" },
   VERIFICATION_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 
