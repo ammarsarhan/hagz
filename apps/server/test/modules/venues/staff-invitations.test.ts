@@ -248,6 +248,52 @@ describe("answering an invitation", () => {
     expect(left.data.map((r) => r.id)).toEqual([second.invitationId]);
   });
 
+  it("shows the venue's address, grounds in use, and the team only as initials", async () => {
+    const { venue, owner, manager } = await sendTo();
+    const invitee = await createStaff({ phone: INVITEE });
+    await prisma.staff.update({ where: { id: owner.id }, data: { name: "Omar Saleh" } });
+    await prisma.staff.update({ where: { id: manager.id }, data: { name: "Mona Adel" } });
+    const cashier = await someStaff();
+    await prisma.staff.update({ where: { id: cashier.id }, data: { name: "Youssef Hany" } });
+    await addMember(venue.id, cashier.id);
+    await prisma.venueTranslation.update({
+      where: { venueId_language: { venueId: venue.id, language: "AR" } },
+      data: { address: "14 شارع عباس العقاد، مدينة نصر" },
+    });
+    const ground = {
+      venueId: venue.id,
+      sport: "FOOTBALL",
+      size: "FIVE_A_SIDE",
+      basePrice: 500,
+    } as const;
+    await prisma.ground.createMany({
+      data: (["ACTIVE", "ACTIVE", "MAINTENANCE", "DELETED"] as const).map((status, position) => ({
+        ...ground,
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        status,
+        position,
+      })),
+    });
+
+    const res = await call(invitee.id, "GET", "/invitations");
+    const raw = await res.text();
+    const [received] = list(ReceivedStaffInvitation).parse(JSON.parse(raw)).data;
+    expect(received?.venue).toMatchObject({
+      address: "14 شارع عباس العقاد، مدينة نصر",
+      groundCount: 3,
+      team: { size: 3, initials: ["OS", "MA"] },
+    });
+
+    // Nothing that identifies the team: not their names (beyond the inviter's), phones or ids.
+    for (const member of [owner, manager, cashier]) {
+      expect(raw).not.toContain(member.id);
+      expect(raw).not.toContain(member.phone);
+    }
+    expect(raw).not.toContain("Omar Saleh");
+    expect(raw).not.toContain("Youssef");
+  });
+
   it("is only for the invited number: anyone else gets not found, by code or by id", async () => {
     const { invitationId } = await sendTo();
     const code = codeSentTo(INVITEE);

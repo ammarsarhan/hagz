@@ -23,7 +23,7 @@ import {
   STAFF_INVITED,
   STAFF_JOINED,
 } from "../domain/events";
-import { nameIn } from "../domain/names";
+import { initialsOf, nameIn, translationIn } from "../domain/names";
 import {
   allows,
   beyondGranter,
@@ -331,24 +331,51 @@ const inviteeOf = async (staffId: string) => {
   return { staffId, phone: staff.phone };
 };
 
+// The invitee isn't on the staff yet: they see the team as a size and two sets of initials (the
+// owner's first), never names, phones or ids.
+const TEAM_PREVIEW = 2;
+
 const presentReceived = async (
   invitations: (InvitationRow & { invitor: { name: string } })[],
   language: Language,
 ): Promise<ReceivedStaffInvitation[]> => {
   const venues = await prisma.venue.findMany({
     where: { id: { in: invitations.map((i) => i.venueId) } },
-    select: { id: true, translations: { select: { language: true, name: true } } },
-  });
-  return invitations.map((invitation) => ({
-    id: invitation.id,
-    venue: {
-      id: invitation.venueId,
-      name: nameIn(venues.find((v) => v.id === invitation.venueId)?.translations ?? [], language),
+    select: {
+      id: true,
+      translations: { select: { language: true, name: true, address: true } },
+      memberships: {
+        // OWNER sorts before MEMBER (enum order).
+        orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+        take: TEAM_PREVIEW,
+        select: { staff: { select: { name: true } } },
+      },
+      _count: {
+        select: { memberships: true, grounds: { where: { status: { not: "DELETED" } } } },
+      },
     },
-    invitedBy: invitation.invitor.name,
-    permissions: parsePermissions(invitation.permissions),
-    expiresAt: invitation.expiresAt.toISOString(),
-  }));
+  });
+  return invitations.map((invitation) => {
+    const venue = venues.find((v) => v.id === invitation.venueId);
+    const translation = translationIn(venue?.translations ?? [], language);
+    return {
+      id: invitation.id,
+      venue: {
+        id: invitation.venueId,
+        name: translation?.name ?? null,
+        // Drafts store an empty address until the owner fills it in.
+        address: translation && translation.address !== "" ? translation.address : null,
+        groundCount: venue?._count.grounds ?? 0,
+        team: {
+          size: venue?._count.memberships ?? 0,
+          initials: (venue?.memberships ?? []).map((m) => initialsOf(m.staff.name)),
+        },
+      },
+      invitedBy: invitation.invitor.name,
+      permissions: parsePermissions(invitation.permissions),
+      expiresAt: invitation.expiresAt.toISOString(),
+    };
+  });
 };
 
 // Open invitations to the signed-in member's phone, from every venue.
