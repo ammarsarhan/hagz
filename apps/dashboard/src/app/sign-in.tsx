@@ -94,7 +94,7 @@ export default function SignIn() {
       />
       <Pressable
         accessibilityRole="link"
-        onPress={() => router.push("/forgot-password")}
+        onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
         hitSlop={8}
         className="self-start"
       >

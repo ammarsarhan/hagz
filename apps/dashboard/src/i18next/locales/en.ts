@@ -89,14 +89,17 @@ const en = {
           ownersToldBody: "They'll see that you reset your password and can restore your access.",
           cancel: "Cancel",
         },
-        newPassword: {
-          title: "Choose a new password",
-          subtitle: "Enter the code sent on WhatsApp to {{phone}}.",
-          code: "Code",
-          newPassword: "New password",
-          submit: "Reset password",
+        code: {
+          title: "Enter the 6-digit code",
+          subtitle: "Sent on WhatsApp to {{phone}}.",
           ownerHint: "Own a venue? We've sent you a WhatsApp message instead of a code.",
           ownerLink: "Reset with support",
+        },
+        newPassword: {
+          title: "Choose a new password",
+          subtitle: "You'll use it to sign in. Every device signed in now will be signed out.",
+          newPassword: "New password",
+          submit: "Reset password",
         },
         support: {
           title: "Reset with support",

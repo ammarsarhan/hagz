@@ -10,7 +10,8 @@ import { displayPhone, isolate } from "@/lib/phone";
 // nothing to anyone who doesn't hold the number), instead of after a name and password.
 export default function AlreadyRegistered() {
   const { t } = useTranslation();
-  const { phone = "" } = useLocalSearchParams<{ phone: string }>();
+  // The token from confirming the sign-up code: it proves the number, so a reset needs no new code.
+  const { phone = "", token = "" } = useLocalSearchParams<{ phone: string; token: string }>();
   return (
     <Screen
       footer={
@@ -19,7 +20,12 @@ export default function AlreadyRegistered() {
           <Button
             label={t("common.actions.forgotPassword")}
             variant="ghost"
-            onPress={() => router.push("/forgot-password")}
+            onPress={() =>
+              router.push({
+                pathname: "/forgot-password/warning",
+                params: { phone, verificationToken: token },
+              })
+            }
           />
         </>
       }
