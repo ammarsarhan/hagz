@@ -46,7 +46,13 @@ const config: ExpoConfig = {
         ]
       : [],
   },
-  plugins: ["expo-router", "expo-secure-store", "expo-status-bar", "expo-font"],
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    "expo-status-bar",
+    // Builds lay Arabic out right-to-left natively (I18nManager); Screen sets Yoga's direction too.
+    ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
+  ],
   experiments: {
     typedRoutes: true,
   },
