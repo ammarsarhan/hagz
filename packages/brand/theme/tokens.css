@@ -1,0 +1,47 @@
+/* Hagz design tokens shared by every app (Tailwind 4 @theme). Values come from the approved Figma
+   screens; an app's own theme file (staff.css, later customer.css) imports this and maps the roles
+   (primary, on-primary) onto its palette. Components use roles, never raw palette colours. */
+@theme {
+  /* Palette */
+  --color-blue: #1f38ed;
+  --color-blue-tint: #eef1fe;
+  --color-blue-soft: #a0bcff;
+  --color-blue-mid: #527cf7;
+  --color-lime: #e9fea0;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-red: #d92d20;
+
+  /* Neutrals */
+  --color-ink: #0b0b0c;
+  --color-ink-2: #5e636b;
+  --color-ink-3: #9aa0a8;
+  --color-unit: #737373;
+  --color-border: #ebebeb;
+  --color-hairline: #e7e7ea;
+  --color-field: #f4f5f7;
+  --color-chip: #f2f3f5;
+
+  /* Corners */
+  --radius-card: 12px;
+  --radius-field: 14px;
+  --radius-hud: 16px;
+  --radius-sheet: 28px;
+
+  /* Type scale: size / line height. Line heights are ratios of the size (as in Tailwind's own
+     scale): React Native's CSS runtime multiplies a plain number by the font size, so 34px would
+     become 34 × 28. Weight comes from font-regular, font-medium and font-semibold,
+     because each weight is its own font family on native. */
+  --text-title: 28px;
+  --text-title--line-height: calc(34 / 28);
+  --text-heading: 24px;
+  --text-heading--line-height: calc(30 / 24);
+  --text-button: 17px;
+  --text-button--line-height: calc(22 / 17);
+  --text-subtitle: 16px;
+  --text-subtitle--line-height: calc(23 / 16);
+  --text-body: 15px;
+  --text-body--line-height: calc(21 / 15);
+  --text-caption: 13px;
+  --text-caption--line-height: calc(18 / 13);
+}
