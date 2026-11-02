@@ -1,5 +1,5 @@
 import type { components } from "@hagz/api";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Button } from "@/components/button";
@@ -24,7 +24,9 @@ type Challenge = components["schemas"]["TwoFactorChallenge"];
 // A wrong number and a wrong password get the same message, so neither gives the other away.
 export default function SignIn() {
   const { t } = useTranslation();
-  const [phone, setPhone] = useState("");
+  // Filled in when arriving from a password reset.
+  const params = useLocalSearchParams<{ phone?: string }>();
+  const [phone, setPhone] = useState(params.phone ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
