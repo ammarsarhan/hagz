@@ -1,0 +1,7 @@
+/* The staff app: white with electric blue. */
+@import "./tokens.css";
+
+@theme inline {
+  --color-primary: var(--color-blue);
+  --color-on-primary: var(--color-white);
+}
