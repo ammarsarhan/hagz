@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { TextInput, View } from "react-native";
+import { useFocusAfterTransition } from "@/hooks/use-focus-after-transition";
 import { colors } from "@/lib/colors";
 import { FieldBox, FieldLabel, inputClass } from "./field";
 import { FieldError } from "./field-error";
@@ -22,8 +23,16 @@ interface PhoneFieldProps {
 
 // The country code sits before the number in grey, like a unit. Phone numbers read left to right
 // in Arabic too, so the box keeps that direction.
-export function PhoneField({ value, onChangeText, label, error, autoFocus }: PhoneFieldProps) {
+export function PhoneField({
+  value,
+  onChangeText,
+  label,
+  error,
+  autoFocus = false,
+}: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
+  const ref = useRef<ComponentRef<typeof TextInput>>(null);
+  useFocusAfterTransition(ref, autoFocus);
   return (
     <View className={error ? "" : "mb-4"}>
       {label ? <FieldLabel>{label}</FieldLabel> : null}
@@ -33,6 +42,7 @@ export function PhoneField({ value, onChangeText, label, error, autoFocus }: Pho
           <IconChevronDown size={16} color={colors.unit} strokeWidth={2} />
         </View>
         <TextInput
+          ref={ref}
           className={inputClass}
           value={formatPhone(value)}
           onChangeText={(text) => onChangeText(text.replace(/\D/g, "").slice(0, MAX_DIGITS))}
@@ -42,7 +52,6 @@ export function PhoneField({ value, onChangeText, label, error, autoFocus }: Pho
           keyboardType="number-pad"
           textContentType="telephoneNumber"
           autoComplete="tel"
-          autoFocus={autoFocus}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{ textAlign: "left", writingDirection: "ltr" }}

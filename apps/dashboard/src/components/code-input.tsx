@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { Animated, Pressable, TextInput, View } from "react-native";
+import { useFocusAfterTransition } from "@/hooks/use-focus-after-transition";
 import { colors } from "@/lib/colors";
 import { FieldError } from "./field-error";
 import { Text } from "./text";
@@ -25,9 +26,10 @@ export function CodeInput({
   kind = "digits",
   error,
   disabled = false,
-  autoFocus,
+  autoFocus = false,
 }: CodeInputProps) {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
+  useFocusAfterTransition(input, autoFocus && !disabled);
   const [focused, setFocused] = useState(false);
   const clean = (text: string) =>
     (kind === "digits"
@@ -74,7 +76,6 @@ export function CodeInput({
         value={value}
         onChangeText={(text) => onChangeText(clean(text))}
         editable={!disabled}
-        autoFocus={autoFocus}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         keyboardType={kind === "digits" ? "number-pad" : "default"}
