@@ -34,6 +34,8 @@
   /* Type scale: size / line height. Line heights are ratios of the size (as in Tailwind's own
      scale): React Native's CSS runtime multiplies a plain number by the font size, so 34px would
      become 34 × 28. */
+  --text-display: 34px;
+  --text-display--line-height: calc(40 / 34);
   --text-title: 28px;
   --text-title--line-height: calc(34 / 28);
   --text-heading: 24px;

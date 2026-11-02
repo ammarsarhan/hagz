@@ -7,6 +7,9 @@ const variants = {
   primary: { box: "bg-primary", label: "text-on-primary" },
   secondary: { box: "bg-chip", label: "text-ink" },
   ghost: { box: "bg-transparent", label: "text-ink" },
+  // On the blue onboarding slides.
+  inverse: { box: "bg-white", label: "text-primary" },
+  inverseSecondary: { box: "bg-white/15", label: "text-white" },
 } as const;
 
 interface ButtonProps {
