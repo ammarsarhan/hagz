@@ -1,0 +1,45 @@
+diff --git a/dist/commonjs/components/index.cjs b/dist/commonjs/components/index.cjs
+index 23af26cff9df498d6c7723abba2e5f7a9a219336..6b9af7bcd0afa3d599befac3da9a1c186211d7a0 100644
+--- a/dist/commonjs/components/index.cjs
++++ b/dist/commonjs/components/index.cjs
+@@ -114,6 +114,10 @@ module.exports = {
+   get Appearance() {
+     return require("react-native").Appearance;
+   },
++  // Added in React Native 0.88; expo-asset (fonts, images) imports it from "react-native".
++  get AssetRegistry() {
++    return require("react-native").AssetRegistry;
++  },
+   get AppRegistry() {
+     return require("react-native").AppRegistry;
+   },
+diff --git a/dist/module/components/index.cjs b/dist/module/components/index.cjs
+index 23af26cff9df498d6c7723abba2e5f7a9a219336..6b9af7bcd0afa3d599befac3da9a1c186211d7a0 100644
+--- a/dist/module/components/index.cjs
++++ b/dist/module/components/index.cjs
+@@ -114,6 +114,10 @@ module.exports = {
+   get Appearance() {
+     return require("react-native").Appearance;
+   },
++  // Added in React Native 0.88; expo-asset (fonts, images) imports it from "react-native".
++  get AssetRegistry() {
++    return require("react-native").AssetRegistry;
++  },
+   get AppRegistry() {
+     return require("react-native").AppRegistry;
+   },
+diff --git a/src/components/index.cts b/src/components/index.cts
+index ead6ff4e49a132f375488744647af5baeb9a17a6..dcb6f0f6f40d741005e30483d6ab6fe4337cbec8 100644
+--- a/src/components/index.cts
++++ b/src/components/index.cts
+@@ -113,6 +113,10 @@ module.exports = {
+   get Appearance() {
+     return require("react-native").Appearance;
+   },
++  // Added in React Native 0.88; expo-asset (fonts, images) imports it from "react-native".
++  get AssetRegistry() {
++    return require("react-native").AssetRegistry;
++  },
+   get AppRegistry() {
+     return require("react-native").AppRegistry;
+   },
