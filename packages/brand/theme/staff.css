@@ -1,29 +1,8 @@
-/* The staff app: white with electric blue. */
+/* The staff app: white with electric blue. Text is in the system font (SF Pro, SF Arabic, Roboto),
+   so weight comes from Tailwind's own font-normal, font-medium and font-semibold. */
 @import "./tokens.css";
 
 @theme inline {
   --color-primary: var(--color-blue);
   --color-on-primary: var(--color-white);
-}
-
-/* Fonts. In Expo Go every weight loads as its own family (Inter_600SemiBold), so each weight class
-   names its family directly and sets no fontWeight (iOS would look for that weight inside a
-   one-weight family and fall back to the system font). Tailwind's own weight utilities, which set
-   fontWeight, are switched off. Noto Sans Arabic is loaded too; it gets wired to these classes with
-   the app's language setting (Tailwind's rtl: variant compiles to a selector the native runtime
-   drops, so it can't do it here). */
-@theme {
-  --font-weight-*: initial;
-}
-
-@utility font-regular {
-  font-family: Inter_400Regular;
-}
-
-@utility font-medium {
-  font-family: Inter_500Medium;
-}
-
-@utility font-semibold {
-  font-family: Inter_600SemiBold;
 }
