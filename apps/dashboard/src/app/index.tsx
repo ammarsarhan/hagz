@@ -7,6 +7,7 @@ import { SvgXml } from "react-native-svg";
 import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
+import { auth } from "@/lib/api";
 import { t, type MessageKey } from "@/lib/i18n";
 import { isRTL } from "@/lib/language";
 
@@ -35,6 +36,11 @@ export default function Onboarding() {
   const [touched, setTouched] = useState(false);
   // Where the pager is, continuously, so the dots morph with the swipe instead of jumping at the end.
   const scrollX = useRef(new Animated.Value(0)).current;
+
+  // Signed in already (the session is kept between launches): skip onboarding.
+  useEffect(() => {
+    void auth.isSignedIn().then((signedIn) => signedIn && router.replace("/home"));
+  }, []);
 
   useEffect(() => {
     if (touched || index >= SLIDES.length - 1) return;
