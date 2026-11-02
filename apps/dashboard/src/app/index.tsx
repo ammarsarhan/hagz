@@ -17,9 +17,9 @@ interface Slide {
   body: MessageKey;
 }
 const SLIDES: Slide[] = [
-  { title: "onboarding1Title", body: "onboarding1Body" },
-  { title: "onboarding2Title", body: "onboarding2Body" },
-  { title: "onboarding3Title", body: "onboarding3Body" },
+  { title: "onboardingSchedulesTitle", body: "onboardingSchedulesBody" },
+  { title: "onboardingMoneyTitle", body: "onboardingMoneyBody" },
+  { title: "onboardingPitchesTitle", body: "onboardingPitchesBody" },
 ];
 const AUTO_ADVANCE_MS = 5000;
 

@@ -20,13 +20,14 @@ const en = {
   haveCode: "Have a code?",
   continue: "Continue",
   signIn: "Sign in",
-  onboarding1Title: "Scattered schedules, sorted.",
-  onboarding1Body:
+  onboardingSchedulesTitle: "Scattered schedules, sorted.",
+  onboardingSchedulesBody:
     "Every pitch and every booking on one calendar, from walk-ins to online bookings.",
-  onboarding2Title: "Messy money, managed.",
-  onboarding2Body: "Online payments, deposits and cash, tracked in one place and paid out to you.",
-  onboarding3Title: "Empty pitches, packed.",
-  onboarding3Body:
+  onboardingMoneyTitle: "Messy money, managed.",
+  onboardingMoneyBody:
+    "Online payments, deposits and cash, tracked in one place and paid out to you.",
+  onboardingPitchesTitle: "Empty pitches, packed.",
+  onboardingPitchesBody:
     "Players across your city find your venue, book open slots and come back as regulars.",
   comingNext: "This screen comes next.",
   codeWrong: "That code isn't right.",
@@ -56,12 +57,13 @@ const ar: Record<keyof typeof en, string> = {
   haveCode: "لديك رمز؟",
   continue: "متابعة",
   signIn: "تسجيل الدخول",
-  onboarding1Title: "مواعيدك المبعثرة، منظّمة.",
-  onboarding1Body: "كل ملعب وكل حجز في تقويم واحد، من الحجز في المكان إلى الحجز أونلاين.",
-  onboarding2Title: "فلوسك المتلخبطة، مضبوطة.",
-  onboarding2Body: "المدفوعات أونلاين والعربون والكاش، في مكان واحد وتوصلك مستحقاتك.",
-  onboarding3Title: "ملاعبك الفاضية، مليانة.",
-  onboarding3Body: "اللاعبون في مدينتك يجدون ملعبك ويحجزون المواعيد المتاحة ويعودون كعملاء دائمين.",
+  onboardingSchedulesTitle: "مواعيدك المبعثرة، منظّمة.",
+  onboardingSchedulesBody: "كل ملعب وكل حجز في تقويم واحد، من الحجز في المكان إلى الحجز أونلاين.",
+  onboardingMoneyTitle: "فلوسك المتلخبطة، مضبوطة.",
+  onboardingMoneyBody: "المدفوعات أونلاين والعربون والكاش، في مكان واحد وتوصلك مستحقاتك.",
+  onboardingPitchesTitle: "ملاعبك الفاضية، مليانة.",
+  onboardingPitchesBody:
+    "اللاعبون في مدينتك يجدون ملعبك ويحجزون المواعيد المتاحة ويعودون كعملاء دائمين.",
   comingNext: "هذه الشاشة قادمة.",
   codeWrong: "هذا الرمز غير صحيح.",
   tooManyTries: "محاولات كثيرة جدًا. انتظر قليلًا ثم حاول مرة أخرى.",
