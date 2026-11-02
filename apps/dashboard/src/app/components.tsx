@@ -14,10 +14,10 @@ import { Title } from "@/components/title";
 import { colors } from "@/lib/colors";
 import { t } from "@/lib/i18n";
 
-// Component sheet (temporary home screen): the shared pieces in their states, live, in the
+// Component sheet (/components, for development): the shared pieces in their states, live, in the
 // device's language. Tap the fields to see focus; the second of each pair shows an error. Create
 // account shows the loading spinner for two seconds.
-export default function Home() {
+export default function Components() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
