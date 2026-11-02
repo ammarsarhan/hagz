@@ -30,6 +30,31 @@ const en = {
   onboardingPitchesBody:
     "Players across your city find your venue, book open slots and come back as regulars.",
   comingNext: "This screen comes next.",
+  sendCode: "Send code",
+  phoneTitle: "What's your mobile number?",
+  phoneSubtitle: "We'll send a code on WhatsApp to confirm it's yours.",
+  termsNote: "By continuing you agree to Hagz's Terms and Privacy Policy.",
+  invalidPhone: "Enter a valid mobile number.",
+  codeTitle: "Enter the 6-digit code",
+  codeSentTo: "Sent on WhatsApp to {phone}.",
+  change: "Change",
+  resendIn: "Resend code in {time}",
+  resendCode: "Resend code",
+  detailsTitle: "Set up your account",
+  detailsSubtitle: "This is how your staff and customers will see you.",
+  passwordRule: "At least 8 characters",
+  registeredTitle: "You already have an account",
+  registeredBody:
+    "{phone} is already on Hagz. Sign in instead, or reset your password if you've forgotten it.",
+  forgotPassword: "Forgot password?",
+  signInTitle: "Welcome back",
+  signInSubtitle: "Sign in with your mobile number and password.",
+  twoFactorTitle: "Two-factor code",
+  twoFactorSubtitle: "We sent a code on WhatsApp to {phone}.",
+  verify: "Verify",
+  signedInTitle: "You're signed in",
+  signedInAs: "Signed in as {name}.",
+  signOut: "Sign out",
   codeWrong: "That code isn't right.",
   tooManyTries: "Too many attempts. Please wait a moment and try again.",
   couldntSendCode: "Couldn't send the code",
@@ -65,6 +90,31 @@ const ar: Record<keyof typeof en, string> = {
   onboardingPitchesBody:
     "اللاعبون في مدينتك يجدون ملعبك ويحجزون المواعيد المتاحة ويعودون كعملاء دائمين.",
   comingNext: "هذه الشاشة قادمة.",
+  sendCode: "إرسال الرمز",
+  phoneTitle: "ما رقم موبايلك؟",
+  phoneSubtitle: "سنرسل رمزًا على واتساب للتأكد من أنه رقمك.",
+  termsNote: "بالمتابعة، أنت توافق على شروط حجز وسياسة الخصوصية.",
+  invalidPhone: "أدخل رقم موبايل صحيحًا.",
+  codeTitle: "أدخل الرمز المكوّن من 6 أرقام",
+  codeSentTo: "أُرسل على واتساب إلى {phone}.",
+  change: "تغيير",
+  resendIn: "إعادة إرسال الرمز بعد {time}",
+  resendCode: "إعادة إرسال الرمز",
+  detailsTitle: "أعدّ حسابك",
+  detailsSubtitle: "هكذا سيراك موظفوك وعملاؤك.",
+  passwordRule: "8 أحرف على الأقل",
+  registeredTitle: "لديك حساب بالفعل",
+  registeredBody:
+    "{phone} مسجل بالفعل على حجز. سجّل الدخول بدلًا من ذلك، أو أعد تعيين كلمة المرور إن نسيتها.",
+  forgotPassword: "نسيت كلمة المرور؟",
+  signInTitle: "أهلًا بعودتك",
+  signInSubtitle: "سجّل الدخول برقم موبايلك وكلمة المرور.",
+  twoFactorTitle: "رمز التحقق بخطوتين",
+  twoFactorSubtitle: "أرسلنا رمزًا على واتساب إلى {phone}.",
+  verify: "تحقق",
+  signedInTitle: "تم تسجيل دخولك",
+  signedInAs: "مسجل الدخول باسم {name}.",
+  signOut: "تسجيل الخروج",
   codeWrong: "هذا الرمز غير صحيح.",
   tooManyTries: "محاولات كثيرة جدًا. انتظر قليلًا ثم حاول مرة أخرى.",
   couldntSendCode: "تعذّر إرسال الرمز",
@@ -78,4 +128,8 @@ export type MessageKey = keyof typeof en;
 
 const messages = { en, ar }[language];
 
-export const t = (key: MessageKey): string => messages[key];
+// Placeholders in braces are filled from `params`: t("resendIn", { time: "0:42" }).
+export const t = (key: MessageKey, params?: Record<string, string>): string =>
+  params
+    ? messages[key].replace(/\{(\w+)\}/g, (match, name: string) => params[name] ?? match)
+    : messages[key];
