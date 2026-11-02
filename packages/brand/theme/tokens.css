@@ -28,16 +28,14 @@
   --radius-hud: 16px;
   --radius-sheet: 28px;
 
-  /* Type scale: size / line height / weight */
+  /* Type scale: size / line height. Weight comes from font-regular, font-medium and font-semibold,
+     because each weight is its own font family on native. */
   --text-title: 28px;
   --text-title--line-height: 34px;
-  --text-title--font-weight: 600;
   --text-heading: 24px;
   --text-heading--line-height: 30px;
-  --text-heading--font-weight: 600;
   --text-button: 17px;
   --text-button--line-height: 22px;
-  --text-button--font-weight: 600;
   --text-subtitle: 16px;
   --text-subtitle--line-height: 23px;
   --text-body: 15px;
