@@ -1,13 +1,11 @@
-import { VariableContextProvider } from "nativewind";
 import { View } from "react-native";
 import { Button } from "@/components/button";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
-import { FONT_FAMILIES } from "@/lib/fonts";
 
 // Styling trial (NativeWind 5 on Expo 58, in Expo Go): the pill button in every state, then the
-// same row left-to-right in Inter and right-to-left in Noto Sans Arabic, to check that start/end
-// margins flip and the font families swap.
+// same row left-to-right and right-to-left to check that start/end margins flip. The fonts only
+// switch to Noto Sans Arabic when the whole app is right-to-left (rtl:), not in this one row.
 export default function Home() {
   return (
     <Screen>
@@ -23,11 +21,9 @@ export default function Home() {
 
       <View className="mt-8 gap-3">
         <Row label="Regular, medium and semibold" />
-        <VariableContextProvider value={FONT_FAMILIES.ar}>
-          <View style={{ direction: "rtl" }}>
-            <Row label="عادي، متوسط وعريض" />
-          </View>
-        </VariableContextProvider>
+        <View style={{ direction: "rtl" }}>
+          <Row label="عادي، متوسط وعريض" />
+        </View>
       </View>
     </Screen>
   );
