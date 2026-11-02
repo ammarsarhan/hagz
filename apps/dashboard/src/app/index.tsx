@@ -1,12 +1,12 @@
 import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
+import { Screen } from "@/components/screen";
 
-// Styling trial (NativeWind 5 on Expo 57, in Expo Go): the pill button in every state, then the
+// Styling trial (NativeWind 5 on Expo 58, in Expo Go): the pill button in every state, then the
 // same row left-to-right and right-to-left to check that start/end margins flip.
 export default function Home() {
   return (
-    <SafeAreaView className="flex-1 bg-white px-5">
+    <Screen>
       <Text className="mt-6 text-[28px] font-semibold leading-[34px] text-ink">Styling check</Text>
       <Text className="mt-1.5 text-base text-ink-2">NativeWind 5 · Tailwind 4 · Expo Go</Text>
 
@@ -23,7 +23,7 @@ export default function Home() {
           <Row label="من اليمين إلى اليسار" />
         </View>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
