@@ -21,6 +21,9 @@
   --color-hairline: #e7e7ea;
   --color-field: #f4f5f7;
   --color-chip: #f2f3f5;
+  --color-hud: #f3f3f5;
+  --color-grab: #d5d8dd;
+  --color-scrim: rgb(11 11 12 / 0.42);
 
   /* Corners */
   --radius-card: 12px;
@@ -39,8 +42,12 @@
   --text-button--line-height: calc(22 / 17);
   --text-subtitle: 16px;
   --text-subtitle--line-height: calc(23 / 16);
+  --text-field: 17px;
+  --text-field--line-height: calc(22 / 17);
   --text-body: 15px;
   --text-body--line-height: calc(21 / 15);
+  --text-label: 14px;
+  --text-label--line-height: calc(19 / 14);
   --text-caption: 13px;
   --text-caption--line-height: calc(18 / 13);
 }

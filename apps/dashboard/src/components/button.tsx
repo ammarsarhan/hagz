@@ -1,4 +1,5 @@
-import { Pressable } from "react-native";
+import { ActivityIndicator, Pressable } from "react-native";
+import { colors } from "@/lib/colors";
 import { Text } from "./text";
 
 // The pill button from the Figma screens: 56 high, fully round, 17/600 label.
@@ -13,18 +14,33 @@ interface ButtonProps {
   onPress?: () => void;
   variant?: keyof typeof variants;
   disabled?: boolean;
+  // Waiting on the server: a spinner replaces the label, the button keeps its size and colour and
+  // can't be pressed again.
+  loading?: boolean;
 }
 
-export function Button({ label, onPress, variant = "primary", disabled = false }: ButtonProps) {
+export function Button({
+  label,
+  onPress,
+  variant = "primary",
+  disabled = false,
+  loading = false,
+}: ButtonProps) {
   const style = disabled ? { box: "bg-field", label: "text-ink-3" } : variants[variant];
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled}
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, busy: loading }}
+      disabled={disabled || loading}
       onPress={onPress}
       className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
     >
-      <Text className={`text-center text-button font-semibold ${style.label}`}>{label}</Text>
+      {loading ? (
+        <ActivityIndicator color={variant === "primary" ? colors.onPrimary : colors.ink} />
+      ) : (
+        <Text className={`text-center text-button font-semibold ${style.label}`}>{label}</Text>
+      )}
     </Pressable>
   );
 }
