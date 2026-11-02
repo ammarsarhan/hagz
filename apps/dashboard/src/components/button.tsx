@@ -1,8 +1,9 @@
-import { Pressable, Text } from "react-native";
+import { Pressable } from "react-native";
+import { Text } from "./text";
 
 // The pill button from the Figma screens: 56 high, fully round, 17/600 label.
 const variants = {
-  primary: { box: "bg-blue", label: "text-white" },
+  primary: { box: "bg-primary", label: "text-on-primary" },
   secondary: { box: "bg-chip", label: "text-ink" },
   ghost: { box: "bg-transparent", label: "text-ink" },
 } as const;
@@ -23,7 +24,7 @@ export function Button({ label, onPress, variant = "primary", disabled = false }
       onPress={onPress}
       className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
     >
-      <Text className={`text-[17px] font-semibold ${style.label}`}>{label}</Text>
+      <Text className={`text-button font-semibold ${style.label}`}>{label}</Text>
     </Pressable>
   );
 }

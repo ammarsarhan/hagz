@@ -3,16 +3,5 @@
 @import "tailwindcss/utilities.css";
 @import "nativewind/theme";
 
-/* Staff app palette, from the approved Figma screens (file Yvfn2eA7Z2yGb6IbL8P1ZB). */
-@theme {
-  --color-blue: #1f38ed;
-  --color-blue-tint: #eef1fe;
-  --color-ink: #0b0b0c;
-  --color-ink-2: #5e636b;
-  --color-ink-3: #9aa0a8;
-  --color-unit: #737373;
-  --color-border: #ebebeb;
-  --color-field: #f4f5f7;
-  --color-chip: #f2f3f5;
-  --color-red: #d92d20;
-}
+/* Palette, type scale and corners shared with the other apps; primary = electric blue. */
+@import "@hagz/brand/staff.css";
