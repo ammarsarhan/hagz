@@ -6,9 +6,14 @@
   --color-on-primary: var(--color-white);
 }
 
-/* Fonts. In Expo Go every weight loads as its own family (Inter_600SemiBold), and fontWeight alone
-   doesn't switch to it, so each weight class sets the family too. The families are variables so
-   the app can swap in Noto Sans Arabic (see FONT_FAMILIES in the app). */
+/* Fonts. In Expo Go every weight loads as its own family (Inter_600SemiBold), so weight comes from
+   the family alone: setting fontWeight as well makes iOS look for that weight inside a one-weight
+   family and fall back. Tailwind's own weight utilities are switched off for the same reason. The
+   families are variables so the app can swap in Noto Sans Arabic (see FONT_FAMILIES in the app). */
+@theme {
+  --font-weight-*: initial;
+}
+
 :root {
   --font-family-regular: Inter_400Regular;
   --font-family-medium: Inter_500Medium;
@@ -17,15 +22,12 @@
 
 @utility font-regular {
   font-family: var(--font-family-regular);
-  font-weight: 400;
 }
 
 @utility font-medium {
   font-family: var(--font-family-medium);
-  font-weight: 500;
 }
 
 @utility font-semibold {
   font-family: var(--font-family-semibold);
-  font-weight: 600;
 }
