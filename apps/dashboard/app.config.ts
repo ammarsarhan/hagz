@@ -50,8 +50,7 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-secure-store",
     "expo-status-bar",
-    "expo-font",
-    // Builds follow the device's language and lay Arabic out right-to-left natively.
+    // Builds lay Arabic out right-to-left natively (I18nManager); Screen sets Yoga's direction too.
     ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
   ],
   experiments: {
