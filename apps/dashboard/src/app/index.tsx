@@ -7,8 +7,8 @@ import { Screen } from "@/components/screen";
 export default function Home() {
   return (
     <Screen>
-      <Text className="mt-6 text-[28px] font-semibold leading-[34px] text-ink">Styling check</Text>
-      <Text className="mt-1.5 text-base text-ink-2">NativeWind 5 · Tailwind 4 · Expo Go</Text>
+      <Text className="mt-6 text-title text-ink">Styling check</Text>
+      <Text className="mt-1.5 text-subtitle text-ink-2">NativeWind 5 · Tailwind 4 · Expo Go</Text>
 
       <View className="mt-8 gap-2.5">
         <Button label="Create account" />
@@ -29,9 +29,9 @@ export default function Home() {
 
 function Row({ label }: { label: string }) {
   return (
-    <View className="h-14 flex-row items-center rounded-[14px] border border-border px-4">
-      <View className="size-6 rounded-full bg-blue" />
-      <Text className="ms-3 text-base text-ink">{label}</Text>
+    <View className="h-14 flex-row items-center rounded-field border border-border px-4">
+      <View className="size-6 rounded-full bg-primary" />
+      <Text className="ms-3 text-subtitle text-ink">{label}</Text>
     </View>
   );
 }
