@@ -19,6 +19,13 @@ const en = {
   createVenue: "Create your venue",
   haveCode: "Have a code?",
   continue: "Continue",
+  codeWrong: "That code isn't right.",
+  tooManyTries: "Too many attempts. Please wait a moment and try again.",
+  couldntSendCode: "Couldn't send the code",
+  showHud: "Show an error HUD",
+  openSheet: "Open a sheet",
+  invitationCodeTitle: "Enter your invitation code",
+  invitationCodeSubtitle: "The 6-character code from the invitation the owner sent you.",
 };
 
 const ar: Record<keyof typeof en, string> = {
@@ -38,6 +45,13 @@ const ar: Record<keyof typeof en, string> = {
   createVenue: "أنشئ ملعبك",
   haveCode: "لديك رمز؟",
   continue: "متابعة",
+  codeWrong: "هذا الرمز غير صحيح.",
+  tooManyTries: "محاولات كثيرة جدًا. انتظر قليلًا ثم حاول مرة أخرى.",
+  couldntSendCode: "تعذّر إرسال الرمز",
+  showHud: "عرض رسالة خطأ",
+  openSheet: "فتح نافذة سفلية",
+  invitationCodeTitle: "أدخل رمز الدعوة",
+  invitationCodeSubtitle: "الرمز المكوّن من 6 خانات في الدعوة التي أرسلها المالك.",
 };
 
 export type MessageKey = keyof typeof en;
