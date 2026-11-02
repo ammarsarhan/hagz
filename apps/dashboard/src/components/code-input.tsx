@@ -1,5 +1,6 @@
-import { useRef, useState, type ComponentRef } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { useEffect, useRef, useState, type ComponentRef } from "react";
+import { Animated, Pressable, TextInput, View } from "react-native";
+import { colors } from "@/lib/colors";
 import { FieldError } from "./field-error";
 import { Text } from "./text";
 
@@ -61,7 +62,8 @@ export function CodeInput({
               {char ? (
                 <Text className="text-[26px] font-semibold">{char}</Text>
               ) : active ? (
-                <View className="h-[22px] w-0.5 rounded-full bg-primary" />
+                // Keyed on the length so every keystroke restarts it solid, like a native caret.
+                <Caret key={value.length} />
               ) : null}
             </View>
           );
@@ -87,5 +89,31 @@ export function CodeInput({
       />
       {error ? <FieldError>{error}</FieldError> : null}
     </View>
+  );
+}
+
+// Blinks like iOS's caret: solid for half a second (and again after every keystroke, via the key
+// above), then fades out and back in about once a second.
+function Caret() {
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const blink = Animated.sequence([
+      Animated.delay(500),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacity, { toValue: 0, duration: 100, useNativeDriver: true }),
+          Animated.delay(400),
+          Animated.timing(opacity, { toValue: 1, duration: 100, useNativeDriver: true }),
+          Animated.delay(400),
+        ]),
+      ),
+    ]);
+    blink.start();
+    return () => blink.stop();
+  }, [opacity]);
+  return (
+    <Animated.View
+      style={{ width: 2, height: 22, borderRadius: 1, backgroundColor: colors.primary, opacity }}
+    />
   );
 }
