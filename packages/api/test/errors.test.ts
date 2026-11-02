@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { errorMessage } from "../src";
+import { errorMessage, shortErrorMessage } from "../src";
 
 const problem = (code: string) => ({
   type: "about:blank",
@@ -28,5 +28,19 @@ describe("errorMessage", () => {
     expect(errorMessage(new TypeError("Network request failed"), "en")).toBe(
       "Couldn't reach Hagz. Check your connection and try again.",
     );
+  });
+});
+
+describe("shortErrorMessage", () => {
+  it("has a short line for problems that aren't the person's fault", () => {
+    expect(shortErrorMessage(problem("MESSAGING_UNAVAILABLE"), "en")).toBe(
+      "Couldn't send the code",
+    );
+    expect(shortErrorMessage(problem("CHALLENGE_EXPIRED"), "ar")).toBe("انتهت صلاحية التحقق");
+  });
+
+  it("says something went wrong for anything else, and offline when there was no answer", () => {
+    expect(shortErrorMessage(problem("SOMETHING_NEW"), "en")).toBe("Something went wrong");
+    expect(shortErrorMessage(new TypeError("Network request failed"), "en")).toBe("You're offline");
   });
 });

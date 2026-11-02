@@ -166,3 +166,20 @@ export const errorMessage = (error: unknown, language: Language): string => {
   const code = Object.hasOwn(messages, error.code) ? (error.code as ProblemCode) : "INTERNAL_ERROR";
   return messages[code][language];
 };
+
+// Short versions for the HUD, the floating line used when a problem isn't the person's fault. Only
+// those codes have one; anything else that reaches the HUD reads "Something went wrong".
+const short = {
+  MESSAGING_UNAVAILABLE: { en: "Couldn't send the code", ar: "تعذّر إرسال الرمز" },
+  VERIFICATION_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
+} as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
+
+const offlineShort = { en: "You're offline", ar: "أنت غير متصل" } as const;
+
+export const shortErrorMessage = (error: unknown, language: Language): string => {
+  if (!isProblem(error)) return offlineShort[language];
+  const code = Object.hasOwn(short, error.code) ? (error.code as keyof typeof short) : null;
+  return (code ? short[code] : short.SERVICE_UNAVAILABLE)[language];
+};
