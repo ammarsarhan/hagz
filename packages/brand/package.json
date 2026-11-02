@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "exports": {
+    "./tokens.css": "./theme/tokens.css",
+    "./staff.css": "./theme/staff.css"
+  },
   "scripts": {
     "generate": "tsx src/generate.ts",
     "typecheck": "tsc --noEmit",

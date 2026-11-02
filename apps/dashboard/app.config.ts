@@ -46,7 +46,7 @@ const config: ExpoConfig = {
         ]
       : [],
   },
-  plugins: ["expo-router", "expo-secure-store", "expo-status-bar"],
+  plugins: ["expo-router", "expo-secure-store", "expo-status-bar", "expo-font"],
   experiments: {
     typedRoutes: true,
   },

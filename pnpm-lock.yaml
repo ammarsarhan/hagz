@@ -9,6 +9,11 @@ overrides:
   lightningcss: 1.30.1
   '@tailwindcss/node>lightningcss': 1.32.0
 
+patchedDependencies:
+  react-native-css@3.1.0-rc.0:
+    hash: e667582dcf8b1b89267af7bb88bd6dcab366118106161d02dc82d13a35b20be0
+    path: patches/react-native-css@3.1.0-rc.0.patch
+
 importers:
 
   .:
@@ -74,6 +79,12 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@expo-google-fonts/inter':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/noto-sans-arabic':
+        specifier: ^0.4.3
+        version: 0.4.3
       '@hagz/api':
         specifier: workspace:^
         version: link:../../packages/api
@@ -86,6 +97,9 @@ importers:
       expo-constants:
         specifier: ~58.0.14
         version: 58.0.14(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(typescript@6.0.3)
+      expo-font:
+        specifier: ~58.0.11
+        version: 58.0.11(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       expo-linking:
         specifier: ~58.0.15
         version: 58.0.15(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
@@ -100,7 +114,7 @@ importers:
         version: 58.0.4(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       nativewind:
         specifier: 5.0.0-rc.0
-        version: 5.0.0-rc.0(react-native-css@3.1.0-rc.0(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(tailwindcss@4.3.3)
+        version: 5.0.0-rc.0(react-native-css@3.1.0-rc.0(patch_hash=e667582dcf8b1b89267af7bb88bd6dcab366118106161d02dc82d13a35b20be0)(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(tailwindcss@4.3.3)
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -109,7 +123,7 @@ importers:
         version: 0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)
       react-native-css:
         specifier: 3.1.0-rc.0
-        version: 3.1.0-rc.0(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+        version: 3.1.0-rc.0(patch_hash=e667582dcf8b1b89267af7bb88bd6dcab366118106161d02dc82d13a35b20be0)(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       react-native-safe-area-context:
         specifier: ~5.10.1
         version: 5.10.1(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
@@ -117,6 +131,9 @@ importers:
         specifier: ~4.30.1
         version: 4.30.1(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
     devDependencies:
+      '@hagz/brand':
+        specifier: workspace:^
+        version: link:../../packages/brand
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -237,7 +254,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/web:
     dependencies:
@@ -302,7 +319,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/brand:
     devDependencies:
@@ -1187,6 +1204,12 @@ packages:
   '@eslint/plugin-kit@0.7.3':
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@expo-google-fonts/inter@0.4.2':
+    resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+
+  '@expo-google-fonts/noto-sans-arabic@0.4.3':
+    resolution: {integrity: sha512-YvtxyuegxPegu2g5urXJ+gQxRp8i798nQswTmEjwXOWR/fqy0Gvey6h5IoNRBrc43SxRxPezqCiR9ivpfPAXSg==}
 
   '@expo/cli@58.1.18':
     resolution: {integrity: sha512-voZUcir9mEwvLKBNqQM6Jy2Yp67z8ONmcINXb6ZrLMayb7yxzwvEnN0eeH8ADzUABKL288pv1eJ1WRqtYxXQ/Q==}
@@ -7061,6 +7084,10 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
+  '@expo-google-fonts/inter@0.4.2': {}
+
+  '@expo-google-fonts/noto-sans-arabic@0.4.3': {}
+
   '@expo/cli@58.1.18(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.16)(expo-constants@58.0.14)(expo-font@58.0.11(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo-router@58.0.29)(expo@58.0.22)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)':
     dependencies:
       2g: 1.0.1(typescript@6.0.3)
@@ -11050,9 +11077,9 @@ snapshots:
 
   napi-postinstall@0.3.7: {}
 
-  nativewind@5.0.0-rc.0(react-native-css@3.1.0-rc.0(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(tailwindcss@4.3.3):
+  nativewind@5.0.0-rc.0(react-native-css@3.1.0-rc.0(patch_hash=e667582dcf8b1b89267af7bb88bd6dcab366118106161d02dc82d13a35b20be0)(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(tailwindcss@4.3.3):
     dependencies:
-      react-native-css: 3.1.0-rc.0(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      react-native-css: 3.1.0-rc.0(patch_hash=e667582dcf8b1b89267af7bb88bd6dcab366118106161d02dc82d13a35b20be0)(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       tailwindcss: 4.3.3
       tailwindcss-safe-area: 1.3.0(tailwindcss@4.3.3)
 
@@ -11514,7 +11541,7 @@ snapshots:
 
   react-is@19.3.0: {}
 
-  react-native-css@3.1.0-rc.0(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
+  react-native-css@3.1.0-rc.0(patch_hash=e667582dcf8b1b89267af7bb88bd6dcab366118106161d02dc82d13a35b20be0)(@expo/metro-config@58.0.20(expo@58.0.22)(typescript@6.0.3))(lightningcss@1.30.1)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.87.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
     dependencies:
       '@expo/metro-config': 58.0.20(expo@58.0.22)(typescript@6.0.3)
       '@types/debug': 4.1.13
