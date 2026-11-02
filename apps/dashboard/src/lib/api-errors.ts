@@ -3,16 +3,16 @@ import { language } from "./language";
 
 // openapi-fetch answers { data } or { error }, and throws when there's no answer at all (offline).
 // `send` folds all three into one shape, so screens handle every failure in one place.
-export type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
+export type Result<T> = { ok: true; data: T } | { ok: false; error: unknown };
 
 export const send = async <T>(
   request: Promise<{ data?: T; error?: unknown }>,
 ): Promise<Result<T>> => {
   try {
     const { data, error } = await request;
-    return error === undefined ? { data: data as T } : { error };
+    return error === undefined ? { ok: true, data: data as T } : { ok: false, error };
   } catch (error) {
-    return { error };
+    return { ok: false, error };
   }
 };
 

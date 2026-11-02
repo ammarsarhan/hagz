@@ -9,3 +9,6 @@ export const isCompletePhone = (digits: string) => digits.length === PHONE_DIGIT
 // "+20 100 123 4567", for showing the number back in a sentence.
 export const displayPhone = (digits: string) =>
   `${COUNTRY_CODE} ${[digits.slice(0, 3), digits.slice(3, 6), digits.slice(6)].filter(Boolean).join(" ")}`;
+
+// Keeps a number reading left to right inside a right-to-left sentence (Unicode isolates).
+export const isolate = (text: string) => `⁦${text}⁩`;
