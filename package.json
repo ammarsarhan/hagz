@@ -25,7 +25,9 @@
   },
   "pnpm": {
     "overrides": {
-      "typescript": "~6.0.3"
+      "typescript": "~6.0.3",
+      "lightningcss": "1.30.1",
+      "@tailwindcss/node>lightningcss": "1.32.0"
     }
   }
 }
