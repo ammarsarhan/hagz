@@ -46,7 +46,14 @@ const config: ExpoConfig = {
         ]
       : [],
   },
-  plugins: ["expo-router", "expo-secure-store", "expo-status-bar", "expo-font"],
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    "expo-status-bar",
+    "expo-font",
+    // Builds follow the device's language and lay Arabic out right-to-left natively.
+    ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
+  ],
   experiments: {
     typedRoutes: true,
   },
