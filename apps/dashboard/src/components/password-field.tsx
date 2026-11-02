@@ -29,6 +29,8 @@ export function PasswordField({
       onChangeText={onChangeText}
       error={error}
       secureTextEntry={!shown}
+      // The API's limit, enforced as you type.
+      maxLength={128}
       autoCapitalize="none"
       autoCorrect={false}
       textContentType={isNew ? "newPassword" : "password"}

@@ -76,6 +76,7 @@ export default function SignUpDetails() {
         onChangeText={setName}
         textContentType="name"
         autoComplete="name"
+        maxLength={100}
       />
       <PasswordField
         label={t("common.fields.password")}
