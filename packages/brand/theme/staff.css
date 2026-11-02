@@ -9,9 +9,8 @@
 /* Fonts. In Expo Go every weight loads as its own family (Inter_600SemiBold), so each weight class
    names its family directly and sets no fontWeight (iOS would look for that weight inside a
    one-weight family and fall back to the system font). Tailwind's own weight utilities, which set
-   fontWeight, are switched off. Noto Sans Arabic is loaded too; it gets wired to these classes with
-   the app's language setting (Tailwind's rtl: variant compiles to a selector the native runtime
-   drops, so it can't do it here). */
+   fontWeight, are switched off. (Tailwind's rtl: variant compiles to a selector the native runtime
+   drops, so Arabic gets its own classes below instead.) */
 @theme {
   --font-weight-*: initial;
 }
@@ -26,4 +25,18 @@
 
 @utility font-semibold {
   font-family: Inter_600SemiBold;
+}
+
+/* Arabic. The app's Text component swaps font-regular for font-arabic-regular (and so on) when the
+   app is in Arabic, so screens only ever write font-regular, font-medium and font-semibold. */
+@utility font-arabic-regular {
+  font-family: NotoSansArabic_400Regular;
+}
+
+@utility font-arabic-medium {
+  font-family: NotoSansArabic_500Medium;
+}
+
+@utility font-arabic-semibold {
+  font-family: NotoSansArabic_600SemiBold;
 }
