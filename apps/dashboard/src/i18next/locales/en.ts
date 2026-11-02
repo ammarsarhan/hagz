@@ -73,6 +73,44 @@ const en = {
           body: "{{phone}} is already on Hagz. Sign in instead, or reset your password if you've forgotten it.",
         },
       },
+      forgotPassword: {
+        phone: {
+          title: "Reset your password",
+          subtitle: "Enter your mobile number and we'll send a code on WhatsApp.",
+        },
+        warning: {
+          title: "Resetting makes you view-only",
+          subtitle: "This keeps each venue safe if someone else ends up with your number.",
+          canView: "You can still view",
+          canViewBody: "Everything you had access to before.",
+          cantChange: "You can't make changes",
+          cantChangeBody: "Until an owner restores your access.",
+          ownersTold: "Your venue's owners are told",
+          ownersToldBody: "They'll see that you reset your password and can restore your access.",
+          cancel: "Cancel",
+        },
+        newPassword: {
+          title: "Choose a new password",
+          subtitle: "Enter the code sent on WhatsApp to {{phone}}.",
+          code: "Code",
+          newPassword: "New password",
+          submit: "Reset password",
+          ownerHint: "Own a venue? We've sent you a WhatsApp message instead of a code.",
+          ownerLink: "Reset with support",
+        },
+        support: {
+          title: "Reset with support",
+          subtitle:
+            "Owners can't reset their password with a code. Our team confirms it's you first, then helps you back in.",
+          whyTitle: "Why not a code?",
+          whyBody:
+            "Owners control payouts and who's on the team. A code alone isn't enough proof, especially if a number has been passed to someone new.",
+          whatTitle: "What to do",
+          whatBody: "Reply to the WhatsApp message we just sent you and we'll take it from there.",
+          openWhatsApp: "Open WhatsApp",
+          backToSignIn: "Back to sign in",
+        },
+      },
       signIn: {
         title: "Welcome back",
         subtitle: "Sign in with your mobile number and password.",
