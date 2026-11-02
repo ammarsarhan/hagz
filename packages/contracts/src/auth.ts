@@ -44,6 +44,11 @@ export const VerificationConfirmed = z
       .string()
       .meta({ description: "Single use. Proves the phone belongs to the caller." }),
     expiresIn: z.int().meta({ example: 900 }),
+    accountExists: z.boolean().meta({
+      description:
+        "Whether this number already has an account, so the app can offer sign-in instead of " +
+        "asking for a name and password. Only told to whoever has just proved they hold the number.",
+    }),
   })
   .meta({ id: "VerificationConfirmed" });
 

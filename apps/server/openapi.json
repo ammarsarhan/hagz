@@ -147,11 +147,16 @@
           "expiresIn": {
             "type": "integer",
             "example": 900
+          },
+          "accountExists": {
+            "type": "boolean",
+            "description": "Whether this number already has an account, so the app can offer sign-in instead of asking for a name and password. Only told to whoever has just proved they hold the number."
           }
         },
         "required": [
           "verificationToken",
-          "expiresIn"
+          "expiresIn",
+          "accountExists"
         ]
       },
       "ConfirmVerificationCode": {

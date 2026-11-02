@@ -104,6 +104,27 @@ describe("staff sign-up", () => {
     expect(res.status).toBe(201);
   });
 
+  it("says whether the number has a staff account, but only once its code is confirmed", async () => {
+    const confirmFor = async () => {
+      await resetRedis(); // Each round sends a fresh code, past the resend cooldown.
+      const sent = await staff("POST", "/verifications", { phone: PHONE });
+      // Sending answers the same either way, so it can't be used to look numbers up.
+      expect(Object.keys(await json(sent)).sort()).toEqual(["expiresIn", "resendAfter"]);
+      const res = await staff("POST", "/verifications/confirm", {
+        phone: PHONE,
+        code: outbox.lastCodeFor(PHONE),
+      });
+      return (await json(res)).accountExists;
+    };
+
+    expect(await confirmFor()).toBe(false);
+    // A customer account on the same number is a different account.
+    await createCustomer({ phone: PHONE });
+    expect(await confirmFor()).toBe(false);
+    await createStaff({ phone: PHONE });
+    expect(await confirmFor()).toBe(true);
+  });
+
   it("rejects a second staff account for the same phone", async () => {
     await createStaff({ phone: PHONE });
     const res = await staff("POST", "/sign-up", {

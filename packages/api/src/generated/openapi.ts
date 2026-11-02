@@ -3298,6 +3298,8 @@ export interface components {
             verificationToken: string;
             /** @example 900 */
             expiresIn: number;
+            /** @description Whether this number already has an account, so the app can offer sign-in instead of asking for a name and password. Only told to whoever has just proved they hold the number. */
+            accountExists: boolean;
         };
         ConfirmVerificationCode: {
             /**
