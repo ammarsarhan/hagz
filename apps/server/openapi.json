@@ -1101,11 +1101,51 @@
                   "string",
                   "null"
                 ]
+              },
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Street address in `Accept-Language`, else any language."
+              },
+              "groundCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Grounds in use or under maintenance."
+              },
+              "team": {
+                "type": "object",
+                "properties": {
+                  "size": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "initials": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 2,
+                    "description": "Up to two members, the owner first.",
+                    "example": [
+                      "OS",
+                      "MA"
+                    ]
+                  }
+                },
+                "required": [
+                  "size",
+                  "initials"
+                ]
               }
             },
             "required": [
               "id",
-              "name"
+              "name",
+              "address",
+              "groundCount",
+              "team"
             ]
           },
           "invitedBy": {

@@ -3655,6 +3655,21 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string | null;
+                /** @description Street address in `Accept-Language`, else any language. */
+                address: string | null;
+                /** @description Grounds in use or under maintenance. */
+                groundCount: number;
+                team: {
+                    size: number;
+                    /**
+                     * @description Up to two members, the owner first.
+                     * @example [
+                     *       "OS",
+                     *       "MA"
+                     *     ]
+                     */
+                    initials: string[];
+                };
             };
             invitedBy: string;
             /** @description What they'll be able to do there. */
