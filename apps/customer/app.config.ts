@@ -15,7 +15,7 @@ const config: ExpoConfig = {
       backgroundColor: "#E9FEA0",
     },
   },
-  plugins: ["expo-router"],
+  plugins: ["expo-router", "expo-secure-store", "expo-status-bar"],
   experiments: {
     typedRoutes: true,
   },
