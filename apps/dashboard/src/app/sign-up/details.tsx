@@ -13,7 +13,7 @@ import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 
 const MIN_PASSWORD = 8;
 
@@ -21,6 +21,7 @@ const MIN_PASSWORD = 8;
 // turns out to have an account goes to "already registered"; a verification that expired goes back
 // to the phone step.
 export default function SignUpDetails() {
+  const { t } = useTranslation();
   const { phone = "", token = "" } = useLocalSearchParams<{ phone: string; token: string }>();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -56,24 +57,33 @@ export default function SignUpDetails() {
     <Screen
       footer={
         <Button
-          label={t("createAccount")}
+          label={t("common.actions.createAccount")}
           disabled={!name.trim() || !longEnough}
           loading={loading}
           onPress={() => void createAccount()}
         />
       }
     >
-      <NavBar start={<BackButton label={t("back")} onPress={() => router.back()} />} />
-      <Title subtitle={t("detailsSubtitle")}>{t("detailsTitle")}</Title>
+      <NavBar
+        start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
+      />
+      <Title subtitle={t("screens.signUp.details.subtitle")}>
+        {t("screens.signUp.details.title")}
+      </Title>
       <Field
-        label={t("fullName")}
+        label={t("common.fields.fullName")}
         value={name}
         onChangeText={setName}
         textContentType="name"
         autoComplete="name"
         autoFocus
       />
-      <PasswordField label={t("password")} value={password} onChangeText={setPassword} isNew />
+      <PasswordField
+        label={t("common.fields.password")}
+        value={password}
+        onChangeText={setPassword}
+        isNew
+      />
       <View className="-mt-1.5 flex-row items-center gap-1.5">
         <IconCircleCheck
           size={16}
@@ -81,7 +91,7 @@ export default function SignUpDetails() {
           strokeWidth={2}
         />
         <Text className={`text-label ${longEnough ? "text-green" : "text-ink-2"}`}>
-          {t("passwordRule")}
+          {t("screens.signUp.details.passwordRule")}
         </Text>
       </View>
     </Screen>

@@ -15,7 +15,7 @@ import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { displayPhone, isCompletePhone, isolate, toE164 } from "@/lib/phone";
 
 type Challenge = components["schemas"]["TwoFactorChallenge"];
@@ -23,6 +23,7 @@ type Challenge = components["schemas"]["TwoFactorChallenge"];
 // Phone and password. With two-factor on, a right password opens a sheet for the WhatsApp code.
 // A wrong number and a wrong password get the same message, so neither gives the other away.
 export default function SignIn() {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
@@ -61,17 +62,19 @@ export default function SignIn() {
     <Screen
       footer={
         <Button
-          label={t("signIn")}
+          label={t("common.actions.signIn")}
           disabled={!isCompletePhone(phone) || !password}
           loading={loading}
           onPress={() => void signIn()}
         />
       }
     >
-      <NavBar start={<BackButton label={t("back")} onPress={() => router.back()} />} />
-      <Title subtitle={t("signInSubtitle")}>{t("signInTitle")}</Title>
+      <NavBar
+        start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
+      />
+      <Title subtitle={t("screens.signIn.subtitle")}>{t("screens.signIn.title")}</Title>
       <PhoneField
-        label={t("mobileNumber")}
+        label={t("common.fields.mobileNumber")}
         value={phone}
         onChangeText={(digits) => {
           setPhone(digits);
@@ -80,7 +83,7 @@ export default function SignIn() {
         autoFocus
       />
       <PasswordField
-        label={t("password")}
+        label={t("common.fields.password")}
         value={password}
         onChangeText={(text) => {
           setPassword(text);
@@ -94,7 +97,9 @@ export default function SignIn() {
         hitSlop={8}
         className="self-start"
       >
-        <Text className="text-body font-medium text-primary">{t("forgotPassword")}</Text>
+        <Text className="text-body font-medium text-primary">
+          {t("common.actions.forgotPassword")}
+        </Text>
       </Pressable>
 
       {challenge ? (
@@ -121,6 +126,7 @@ function TwoFactorSheet({
   onChallenge: (next: Challenge) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
   const [locked, setLocked] = useState(false);
@@ -175,10 +181,12 @@ function TwoFactorSheet({
   };
 
   return (
-    <Sheet visible onClose={onClose} closeLabel={t("close")}>
-      <Text className="mb-1.5 text-heading font-semibold">{t("twoFactorTitle")}</Text>
+    <Sheet visible onClose={onClose} closeLabel={t("components.shared.nav.close")}>
+      <Text className="mb-1.5 text-heading font-semibold">
+        {t("screens.signIn.twoFactor.title")}
+      </Text>
       <Text className="mb-[22px] text-subtitle text-ink-2">
-        {t("twoFactorSubtitle", { phone: isolate(masked) })}
+        {t("screens.signIn.twoFactor.subtitle", { phone: isolate(masked) })}
       </Text>
       <CodeInput
         value={code}
@@ -200,7 +208,7 @@ function TwoFactorSheet({
       </View>
       <View className="mt-[22px]">
         <Button
-          label={t("verify")}
+          label={t("common.actions.verify")}
           disabled={code.length < 6 || Boolean(error) || locked}
           loading={verifying}
           onPress={() => void verify()}

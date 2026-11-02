@@ -4,16 +4,17 @@ import { Button } from "@/components/button";
 import { Screen } from "@/components/screen";
 import { Title } from "@/components/title";
 import { auth } from "@/lib/api";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 
 // Placeholder for where signing in lands until the first-run screen (D2) is built.
 export default function Home() {
+  const { t } = useTranslation();
   const [signingOut, setSigningOut] = useState(false);
   return (
     <Screen
       footer={
         <Button
-          label={t("signOut")}
+          label={t("common.actions.signOut")}
           variant="secondary"
           loading={signingOut}
           onPress={async () => {
@@ -24,7 +25,7 @@ export default function Home() {
         />
       }
     >
-      <Title subtitle={t("comingNext")}>{t("signedInTitle")}</Title>
+      <Title subtitle={t("common.comingNext")}>{t("screens.home.title")}</Title>
     </Screen>
   );
 }

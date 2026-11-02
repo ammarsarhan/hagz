@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@/lib/colors";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { IconClock } from "./icons";
 import { Text } from "./text";
 
@@ -19,6 +19,7 @@ export function ResendCode({
   onResend: () => void;
   sending?: boolean;
 }) {
+  const { t } = useTranslation();
   const [left, setLeft] = useState(resendAfter);
   useEffect(() => {
     if (left <= 0) return;
@@ -30,14 +31,16 @@ export function ResendCode({
     return (
       <View className="flex-row items-center gap-1.5">
         <IconClock size={16} color={colors.ink3} strokeWidth={2} />
-        <Text className="text-body text-ink-2">{t("resendIn", { time: clock(left) })}</Text>
+        <Text className="text-body text-ink-2">
+          {t("components.shared.resendCode.countdown", { time: clock(left) })}
+        </Text>
       </View>
     );
   }
   return (
     <Pressable accessibilityRole="button" onPress={onResend} disabled={sending} hitSlop={8}>
       <Text className={`text-body font-medium text-primary ${sending ? "opacity-50" : ""}`}>
-        {t("resendCode")}
+        {t("components.shared.resendCode.resend")}
       </Text>
     </Pressable>
   );

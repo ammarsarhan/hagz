@@ -11,12 +11,13 @@ import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { displayPhone, isolate, toE164 } from "@/lib/phone";
 
 // Sign up, step 2: the 6-digit WhatsApp code. It's checked as soon as all six digits are in. Too
 // many wrong tries lock the boxes; a new code can be asked for once the countdown runs out.
 export default function SignUpCode() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ phone: string; resendAfter: string }>();
   const phone = params.phone ?? "";
   const [code, setCode] = useState("");
@@ -79,25 +80,27 @@ export default function SignUpCode() {
     <Screen
       footer={
         <Button
-          label={t("continue")}
+          label={t("common.actions.continue")}
           disabled={code.length < 6 || Boolean(error) || locked}
           loading={checking}
           onPress={() => void confirm(code)}
         />
       }
     >
-      <NavBar start={<BackButton label={t("back")} onPress={() => router.back()} />} />
+      <NavBar
+        start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
+      />
       <Title
         subtitle={
           <>
-            {t("codeSentTo", { phone: isolate(displayPhone(phone)) })}{" "}
+            {t("screens.signUp.code.sentTo", { phone: isolate(displayPhone(phone)) })}{" "}
             <Text className="font-medium text-primary" onPress={() => router.back()}>
-              {t("change")}
+              {t("common.actions.change")}
             </Text>
           </>
         }
       >
-        {t("codeTitle")}
+        {t("screens.signUp.code.title")}
       </Title>
       <CodeInput
         value={code}

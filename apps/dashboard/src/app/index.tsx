@@ -8,20 +8,14 @@ import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
 import { auth } from "@/lib/api";
-import { t, type MessageKey } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { isRTL } from "@/lib/language";
 
 // Staff onboarding: three blue slides (a problem in two words, the fix in one), swiped or advancing
 // gently on their own until touched, with Create account and Sign in on every slide.
-interface Slide {
-  title: MessageKey;
-  body: MessageKey;
-}
-const SLIDES: Slide[] = [
-  { title: "onboardingSchedulesTitle", body: "onboardingSchedulesBody" },
-  { title: "onboardingMoneyTitle", body: "onboardingMoneyBody" },
-  { title: "onboardingPitchesTitle", body: "onboardingPitchesBody" },
-];
+// Each slide's strings live under screens.onboarding.<slide>.
+const SLIDES = ["schedules", "money", "pitches"] as const;
+type Slide = (typeof SLIDES)[number];
 const AUTO_ADVANCE_MS = 5000;
 
 // The pager runs left to right; in Arabic it's flipped so the next slide comes from the left. Builds
@@ -30,6 +24,7 @@ const flipPager = isRTL && !I18nManager.isRTL;
 const direction = isRTL ? "rtl" : "ltr";
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const pager = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
@@ -58,7 +53,7 @@ export default function Onboarding() {
         <Animated.FlatList
           ref={pager}
           data={SLIDES}
-          keyExtractor={(slide) => slide.title}
+          keyExtractor={(slide) => slide}
           horizontal
           pagingEnabled
           inverted={flipPager}
@@ -77,27 +72,29 @@ export default function Onboarding() {
                 <SvgXml xml={ONBOARDING_ART[i] ?? null} width="100%" height="100%" />
               </View>
               <Text className="mt-8 text-display font-semibold tracking-[-0.8px] text-white">
-                {t(item.title)}
+                {t(`screens.onboarding.${item}.title`)}
               </Text>
-              <Text className="mb-8 mt-3 text-subtitle text-on-primary-muted">{t(item.body)}</Text>
+              <Text className="mb-8 mt-3 text-subtitle text-on-primary-muted">
+                {t(`screens.onboarding.${item}.body`)}
+              </Text>
             </View>
           )}
         />
 
         <View className="mb-8 flex-row justify-center gap-1.5" style={{ direction }}>
           {SLIDES.map((slide, i) => (
-            <Dot key={slide.title} index={i} scrollX={scrollX} width={width} />
+            <Dot key={slide} index={i} scrollX={scrollX} width={width} />
           ))}
         </View>
 
         <View className="gap-2.5 px-5 pb-3">
           <Button
-            label={t("createAccount")}
+            label={t("common.actions.createAccount")}
             variant="inverse"
             onPress={() => router.push("/sign-up")}
           />
           <Button
-            label={t("signIn")}
+            label={t("common.actions.signIn")}
             variant="inverseSecondary"
             onPress={() => router.push("/sign-in")}
           />
