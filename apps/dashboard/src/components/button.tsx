@@ -24,7 +24,7 @@ export function Button({ label, onPress, variant = "primary", disabled = false }
       onPress={onPress}
       className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
     >
-      <Text className={`text-button font-semibold ${style.label}`}>{label}</Text>
+      <Text className={`text-center text-button font-semibold ${style.label}`}>{label}</Text>
     </Pressable>
   );
 }
