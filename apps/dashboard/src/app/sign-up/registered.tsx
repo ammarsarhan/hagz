@@ -6,8 +6,8 @@ import { Title } from "@/components/title";
 import { useTranslation } from "react-i18next";
 import { displayPhone, isolate } from "@/lib/phone";
 
-// The confirmed number already has an account. Shown only after the code is confirmed, so it
-// doesn't reveal which numbers are registered.
+// The number already has an account. Shown straight after its code is confirmed (so it reveals
+// nothing to anyone who doesn't hold the number), instead of after a name and password.
 export default function AlreadyRegistered() {
   const { t } = useTranslation();
   const { phone = "" } = useLocalSearchParams<{ phone: string }>();

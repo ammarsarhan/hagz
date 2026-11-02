@@ -17,9 +17,9 @@ import { useTranslation } from "react-i18next";
 
 const MIN_PASSWORD = 8;
 
-// Sign up, step 3: name and password, then the account is created and signed in. A number that
-// turns out to have an account goes to "already registered"; a verification that expired goes back
-// to the phone step.
+// Sign up, step 3: name and password, then the account is created and signed in. Numbers that
+// already have an account were sent to "already registered" after the code; this still handles one
+// registered in the meantime (on another device). An expired verification goes back to the phone.
 export default function SignUpDetails() {
   const { t } = useTranslation();
   const { phone = "", token = "" } = useLocalSearchParams<{ phone: string; token: string }>();

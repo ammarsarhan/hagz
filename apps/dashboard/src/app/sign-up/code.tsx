@@ -48,6 +48,12 @@ export default function SignUpCode() {
       }
       return;
     }
+    // An existing account is only revealed now, to whoever holds the number: offer sign-in instead
+    // of asking for a name and password.
+    if (result.data.accountExists) {
+      router.replace({ pathname: "/sign-up/registered", params: { phone } });
+      return;
+    }
     router.push({
       pathname: "/sign-up/details",
       params: { phone, token: result.data.verificationToken },
