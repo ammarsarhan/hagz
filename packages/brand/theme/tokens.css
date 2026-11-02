@@ -21,6 +21,9 @@
   --color-hairline: #e7e7ea;
   --color-field: #f4f5f7;
   --color-chip: #f2f3f5;
+  --color-hud: #f3f3f5;
+  --color-grab: #d5d8dd;
+  --color-scrim: rgb(11 11 12 / 0.42);
 
   /* Corners */
   --radius-card: 12px;
