@@ -80,7 +80,6 @@ export default function SignIn() {
           setPhone(digits);
           setError(undefined);
         }}
-        autoFocus
       />
       <PasswordField
         label={t("common.fields.password")}
@@ -196,7 +195,6 @@ function TwoFactorSheet({
         }}
         error={error}
         disabled={locked}
-        autoFocus
       />
       <View className="mt-1">
         <ResendCode

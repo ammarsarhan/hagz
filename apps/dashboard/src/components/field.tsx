@@ -1,6 +1,5 @@
-import { useRef, useState, type ComponentRef, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { TextInput, View, type TextInputProps } from "react-native";
-import { useFocusAfterTransition } from "@/hooks/use-focus-after-transition";
 import { colors } from "@/lib/colors";
 import { FieldError } from "./field-error";
 import { Text } from "./text";
@@ -47,24 +46,13 @@ interface FieldProps extends Omit<TextInputProps, "className" | "style"> {
 }
 
 // A labelled text input. Errors are the person's to fix, so they sit right under the field.
-export function Field({
-  label,
-  error,
-  trailing,
-  onFocus,
-  onBlur,
-  autoFocus = false,
-  ...input
-}: FieldProps) {
+export function Field({ label, error, trailing, onFocus, onBlur, ...input }: FieldProps) {
   const [focused, setFocused] = useState(false);
-  const ref = useRef<ComponentRef<typeof TextInput>>(null);
-  useFocusAfterTransition(ref, autoFocus);
   return (
     <View className={error ? "" : "mb-4"}>
       {label ? <FieldLabel>{label}</FieldLabel> : null}
       <FieldBox focused={focused} error={Boolean(error)}>
         <TextInput
-          ref={ref}
           className={inputClass}
           placeholderTextColor={colors.ink3}
           selectionColor={colors.primary}

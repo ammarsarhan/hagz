@@ -139,7 +139,7 @@ export default function Components() {
         <Text className="mb-[22px] text-subtitle text-ink-2">
           {t("screens.components.invitationCodeSubtitle")}
         </Text>
-        <CodeInput kind="code" value={joinCode} onChangeText={setJoinCode} autoFocus />
+        <CodeInput kind="code" value={joinCode} onChangeText={setJoinCode} />
         <View className="mt-1">
           <Button label={t("common.actions.continue")} disabled={joinCode.length < 6} />
         </View>

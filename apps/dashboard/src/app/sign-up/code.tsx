@@ -110,7 +110,6 @@ export default function SignUpCode() {
         }}
         error={error}
         disabled={locked}
-        autoFocus
       />
       <View className="mt-1">
         <ResendCode

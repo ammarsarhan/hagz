@@ -67,7 +67,6 @@ export default function SignUpPhone() {
           setError(undefined);
         }}
         error={error}
-        autoFocus
       />
     </Screen>
   );

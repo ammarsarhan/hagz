@@ -76,7 +76,6 @@ export default function SignUpDetails() {
         onChangeText={setName}
         textContentType="name"
         autoComplete="name"
-        autoFocus
       />
       <PasswordField
         label={t("common.fields.password")}

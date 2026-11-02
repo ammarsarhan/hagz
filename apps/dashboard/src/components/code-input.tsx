@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { Animated, Pressable, TextInput, View } from "react-native";
-import { useFocusAfterTransition } from "@/hooks/use-focus-after-transition";
 import { colors } from "@/lib/colors";
 import { FieldError } from "./field-error";
 import { Text } from "./text";
@@ -15,7 +14,6 @@ interface CodeInputProps {
   error?: string;
   // Locked after too many attempts: grey boxes, no typing.
   disabled?: boolean;
-  autoFocus?: boolean;
 }
 
 // Six boxes driven by one hidden input, so typing, pasting and iOS's code autofill all work. Codes
@@ -26,10 +24,8 @@ export function CodeInput({
   kind = "digits",
   error,
   disabled = false,
-  autoFocus = false,
 }: CodeInputProps) {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
-  useFocusAfterTransition(input, autoFocus && !disabled);
   const [focused, setFocused] = useState(false);
   const clean = (text: string) =>
     (kind === "digits"
