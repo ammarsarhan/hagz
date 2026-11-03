@@ -26,6 +26,7 @@ export const profile = (account: Account) => ({
   name: account.name,
   phone: account.phone ?? "",
   language: account.language,
+  twoFactorEnabled: account.twoFactorEnabled,
 });
 
 export type Db = Tx | typeof prisma;

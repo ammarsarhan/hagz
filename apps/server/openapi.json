@@ -215,13 +215,18 @@
               "AR",
               "EN"
             ]
+          },
+          "twoFactorEnabled": {
+            "type": "boolean",
+            "description": "Whether sign-in also asks for a code."
           }
         },
         "required": [
           "id",
           "name",
           "phone",
-          "language"
+          "language",
+          "twoFactorEnabled"
         ]
       },
       "Session": {
@@ -529,13 +534,18 @@
               "AR",
               "EN"
             ]
+          },
+          "twoFactorEnabled": {
+            "type": "boolean",
+            "description": "Whether sign-in also asks for a code."
           }
         },
         "required": [
           "id",
           "name",
           "phone",
-          "language"
+          "language",
+          "twoFactorEnabled"
         ]
       },
       "StaffSignUp": {

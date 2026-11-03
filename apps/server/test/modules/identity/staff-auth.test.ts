@@ -241,7 +241,12 @@ describe("the signed-in staff member", () => {
 
     const res = await me(session.accessToken);
     expect(res.status).toBe(200);
-    expect(await json(res)).toMatchObject({ name: "Mona", phone: PHONE, language: "EN" });
+    expect(await json(res)).toMatchObject({
+      name: "Mona",
+      phone: PHONE,
+      language: "EN",
+      twoFactorEnabled: false,
+    });
 
     expect((await me()).status).toBe(401);
     await createCustomer({ phone: PHONE });

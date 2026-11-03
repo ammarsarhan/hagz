@@ -81,6 +81,7 @@ const Account = z.object({
   name: z.string(),
   phone: z.string().meta({ example: "+201001234567" }),
   language: z.enum(["AR", "EN"]),
+  twoFactorEnabled: z.boolean().meta({ description: "Whether sign-in also asks for a code." }),
 });
 
 export const Customer = Account.meta({ id: "Customer" });

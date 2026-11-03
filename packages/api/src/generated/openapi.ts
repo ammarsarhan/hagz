@@ -3528,6 +3528,8 @@ export interface components {
             phone: string;
             /** @enum {string} */
             language: "AR" | "EN";
+            /** @description Whether sign-in also asks for a code. */
+            twoFactorEnabled: boolean;
         };
         Session: {
             accessToken: string;
@@ -3633,6 +3635,8 @@ export interface components {
             phone: string;
             /** @enum {string} */
             language: "AR" | "EN";
+            /** @description Whether sign-in also asks for a code. */
+            twoFactorEnabled: boolean;
         };
         StaffSignUp: {
             verificationToken: string;
