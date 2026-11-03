@@ -1,6 +1,7 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { BackHandler, View } from "react-native";
 import { Button } from "@/components/button";
 import { IconAlertCircle } from "@/components/icons";
 import { Screen } from "@/components/screen";
@@ -14,6 +15,14 @@ export default function Blocked() {
   const { t } = useTranslation();
   const { kind } = useLocalSearchParams<{ kind: "suspended" | "banned" }>();
   const copy = kind === "banned" ? "banned" : "suspended";
+
+  // Only the button leaves: no swipe back on iOS, and Android's back button does nothing here.
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener("hardwareBackPress", () => true);
+      return () => subscription.remove();
+    }, []),
+  );
 
   return (
     <Screen
@@ -30,9 +39,11 @@ export default function Blocked() {
         </>
       }
     >
-      {/* No back button: the nav row's height keeps the title where it sits on other screens. */}
-      <View className="mb-[22px] h-10 justify-end">
-        <IconAlertCircle size={32} color={colors.unit} strokeWidth={1.75} />
+      <Stack.Screen options={{ gestureEnabled: false }} />
+      {/* No back button: the 40px icon takes the nav row's place, so the title sits where it does on
+          other screens. */}
+      <View className="mb-[22px]">
+        <IconAlertCircle size={40} color={colors.unit} strokeWidth={1.75} />
       </View>
       <Title subtitle={t(`screens.blocked.${copy}.body`)}>
         {t(`screens.blocked.${copy}.title`)}
