@@ -248,6 +248,21 @@ describe("answering an invitation", () => {
     expect(left.data.map((r) => r.id)).toEqual([second.invitationId]);
   });
 
+  it("ends the session of an account that's gone, and turns a suspended one away", async () => {
+    await sendTo();
+    const gone = await createStaff({ phone: INVITEE });
+    await prisma.staff.delete({ where: { id: gone.id } });
+    const res = await call(gone.id, "GET", "/invitations");
+    expect(res.status).toBe(401);
+    expect((await problem(res)).code).toBe("SESSION_ENDED");
+
+    const suspended = await createStaff({ phone: INVITEE });
+    await prisma.staff.update({ where: { id: suspended.id }, data: { status: "SUSPENDED" } });
+    expect((await problem(await call(suspended.id, "GET", "/invitations"))).code).toBe(
+      "ACCOUNT_SUSPENDED",
+    );
+  });
+
   it("shows the venue's address and area, grounds in use, and the team only as initials", async () => {
     const { venue, owner, manager } = await sendTo();
     const invitee = await createStaff({ phone: INVITEE });

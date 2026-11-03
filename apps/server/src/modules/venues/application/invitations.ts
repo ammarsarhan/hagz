@@ -35,6 +35,7 @@ import {
   accountSuspended,
   missingPermission,
   permissionAboveYourOwn,
+  sessionEnded,
   venueNotFound,
   type VenueAccess,
 } from "./access";
@@ -325,9 +326,8 @@ const inviteeOf = async (staffId: string) => {
     where: { id: staffId },
     select: { phone: true, status: true, deletedAt: true },
   });
-  if (staff?.status !== "ACTIVE" || staff.deletedAt !== null || !staff.phone) {
-    throw accountSuspended();
-  }
+  if (!staff || staff.deletedAt !== null) throw sessionEnded();
+  if (staff.status !== "ACTIVE" || !staff.phone) throw accountSuspended();
   return { staffId, phone: staff.phone };
 };
 

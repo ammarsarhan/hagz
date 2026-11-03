@@ -193,8 +193,12 @@ const codeParams = z.object({
     .meta({ description: "From the link; any case.", example: "K7M2QX" }),
 });
 const idParams = z.object({ invitationId: z.uuid() });
+// The invitee routes look the account up, so they can tell it's gone while its token still works.
+const inviteeUnauthenticated = problemResponse(
+  "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+);
 const answerErrors = {
-  401: unauthenticated,
+  401: inviteeUnauthenticated,
   403: problemResponse("ACCOUNT_SUSPENDED"),
   404: problemResponse("INVITATION_NOT_FOUND: no invitation to your number with that code or id."),
   410: problemResponse("INVITATION_EXPIRED: expired or withdrawn; ask for a new one."),
@@ -210,7 +214,7 @@ const myInvitations = createRoute({
   security,
   responses: {
     200: { description: "Open invitations, newest first", ...json(list(ReceivedStaffInvitation)) },
-    401: unauthenticated,
+    401: inviteeUnauthenticated,
     403: problemResponse("ACCOUNT_SUSPENDED"),
   },
 });

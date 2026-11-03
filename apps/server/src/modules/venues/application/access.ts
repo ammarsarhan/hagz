@@ -18,6 +18,15 @@ export const accountSuspended = () =>
     detail: "This account can't sign in. Please contact support.",
   });
 
+// The access token outlived its account (deleted, but the token is checked by its signature alone
+// until it expires): the app signs in again. Same answer as identity's ended refresh.
+export const sessionEnded = () =>
+  new AppError({
+    code: "SESSION_ENDED",
+    status: 401,
+    detail: "Your session has ended. Please sign in again.",
+  });
+
 // Venues someone isn't a member of don't exist as far as they can tell, so ids can't be probed.
 export const venueNotFound = () =>
   new AppError({ code: "VENUE_NOT_FOUND", status: 404, detail: "There's no such venue." });
