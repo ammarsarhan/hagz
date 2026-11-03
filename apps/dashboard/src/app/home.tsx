@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   I18nManager,
   LayoutAnimation,
@@ -46,8 +45,8 @@ interface Loaded {
 
 // Where signing in lands. Staff who belong to a venue go to it (its home comes next); staff who
 // don't see first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable
-// row of blue cards, then the other ways to start. The whole page is one scroll view from edge to
-// edge, with nothing pinned but the avatar bar, which gains a hairline once content passes under it.
+// row of blue cards, then the other ways to start. It fits on one screen, so the page doesn't scroll;
+// only the carousel moves, and it runs to the screen edges.
 export default function Home() {
   const { t } = useTranslation();
   const hud = useHud();
@@ -59,7 +58,6 @@ export default function Home() {
   // What to do once the sheet has slid away (reload, or drop a declined invitation).
   const afterSheet = useRef<() => void>(() => undefined);
   const [declining, setDeclining] = useState<string | null>(null);
-  const scrollY = useRef(new Animated.Value(0)).current;
   const openSheet = (start: ReceivedInvitation | "code") => {
     setSheet(start);
     setSheetOpen(true);
@@ -159,71 +157,49 @@ export default function Home() {
 
   return (
     <Screen>
-      {/* Outside the scroll view: it would clip the round buttons, which sit 4px outside the gutter.
-          The bar's 22px gap is split around the hairline, which is where the page goes under. */}
-      <View className="-mb-3">{topBar}</View>
-      <Animated.View
-        className="-mx-5 h-px bg-hairline"
-        style={{
-          opacity: scrollY.interpolate({
-            inputRange: [0, 8],
-            outputRange: [0, 1],
-            extrapolate: "clamp",
-          }),
-        }}
-      />
-      <Animated.ScrollView
-        style={{ marginHorizontal: -GUTTER }}
-        contentContainerStyle={{ paddingHorizontal: GUTTER, paddingTop: 11, paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-          useNativeDriver: true,
-        })}
-        scrollEventThrottle={16}
+      {topBar}
+      <Title
+        subtitle={
+          invited
+            ? t("screens.firstRun.invitedSubtitle", { count: invitations.length })
+            : t("screens.firstRun.emptySubtitle")
+        }
       >
-        <Title
-          subtitle={
-            invited
-              ? t("screens.firstRun.invitedSubtitle", { count: invitations.length })
-              : t("screens.firstRun.emptySubtitle")
-          }
-        >
-          {t("screens.firstRun.welcome", { name: firstName })}
-        </Title>
+        {t("screens.firstRun.welcome", { name: firstName })}
+      </Title>
 
-        {invited ? (
-          <>
-            {invitations.length > 1 ? (
-              <SectionLabel>
-                {t("screens.firstRun.invitations", { count: invitations.length })}
-              </SectionLabel>
-            ) : null}
-            <Invitations
-              invitations={invitations}
-              declining={declining}
-              onOpen={openSheet}
-              onDecline={(invitation) => void decline(invitation)}
-            />
-            <View className="mt-[22px]">
-              <SectionLabel>{t("screens.firstRun.moreWays")}</SectionLabel>
-            </View>
-            <InfoRows rows={[createVenue, haveCode]} />
-          </>
-        ) : (
-          <InfoRows
-            rows={[
-              createVenue,
-              {
-                title: t("screens.firstRun.joiningTitle"),
-                body: t("screens.firstRun.joiningBody", {
-                  phone: isolate(displayPhone(data.me.phone.replace(/^\+20/, ""))),
-                }),
-              },
-              haveCode,
-            ]}
+      {invited ? (
+        <>
+          {invitations.length > 1 ? (
+            <SectionLabel>
+              {t("screens.firstRun.invitations", { count: invitations.length })}
+            </SectionLabel>
+          ) : null}
+          <Invitations
+            invitations={invitations}
+            declining={declining}
+            onOpen={openSheet}
+            onDecline={(invitation) => void decline(invitation)}
           />
-        )}
-      </Animated.ScrollView>
+          <View className="mt-[22px]">
+            <SectionLabel>{t("screens.firstRun.moreWays")}</SectionLabel>
+          </View>
+          <InfoRows rows={[createVenue, haveCode]} />
+        </>
+      ) : (
+        <InfoRows
+          rows={[
+            createVenue,
+            {
+              title: t("screens.firstRun.joiningTitle"),
+              body: t("screens.firstRun.joiningBody", {
+                phone: isolate(displayPhone(data.me.phone.replace(/^\+20/, ""))),
+              }),
+            },
+            haveCode,
+          ]}
+        />
+      )}
 
       {sheet ? (
         <InvitationSheet
@@ -289,7 +265,7 @@ function Invitations({
       style={{ marginHorizontal: -GUTTER, direction: "ltr", flexGrow: 0 }}
       contentContainerStyle={{ paddingHorizontal: GUTTER, gap: CARD_GAP }}
       renderItem={({ item }) => (
-        <View style={{ direction: isRTL ? "rtl" : "ltr" }}>{card(item, cardWidth)}</View>
+        <View style={{ flex: 1, direction: isRTL ? "rtl" : "ltr" }}>{card(item, cardWidth)}</View>
       )}
     />
   );
