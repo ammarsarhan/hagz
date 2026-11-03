@@ -105,8 +105,8 @@ export default function Account() {
       >
         <View className="items-center">
           <Avatar name={me.name} size="large" />
-          <Text className="mt-3.5 text-[24px] font-semibold leading-[1.25]">{me.name}</Text>
-          <Text className="mt-1 text-subtitle text-ink-2">{isolate(displayPhone(phone))}</Text>
+          <Text className="mt-3.5 text-[22px] font-semibold leading-[1.27]">{me.name}</Text>
+          <Text className="mt-1 text-body text-ink-2">{isolate(displayPhone(phone))}</Text>
         </View>
 
         <SettingsHeading first>{t("screens.account.security")}</SettingsHeading>
@@ -162,9 +162,10 @@ export default function Account() {
         <View className="mt-2">
           <SettingsRow
             title={t("common.actions.signOut")}
-            trailing={<IconLogout size={18} color={colors.unit} strokeWidth={2} />}
+            trailing={<IconLogout size={18} color={colors.red} strokeWidth={2} />}
             onPress={() => setSignOutOpen(true)}
             divider={false}
+            destructive
           />
         </View>
 
@@ -327,6 +328,7 @@ function SignOutSheet({ visible, onClose }: { visible: boolean; onClose: () => v
       <View className="gap-2.5">
         <Button
           label={t("common.actions.signOut")}
+          variant="destructive"
           loading={signingOut}
           onPress={() => void signOut()}
         />

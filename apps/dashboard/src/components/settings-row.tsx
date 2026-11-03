@@ -2,14 +2,15 @@ import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "./text";
 
-// The account screen's rows, as approved in Figma ("D4 · Account, round 2"): a medium title, an
-// optional grey line saying what it does, and a trailing switch or icon, over a hairline.
+// The account screen's rows, as approved in Figma ("D4 · Account, round 2"): a medium 15 title, an
+// optional grey 13 line saying what it does, and a trailing switch or icon, over a hairline.
 export function SettingsRow({
   title,
   body,
   trailing,
   onPress,
   divider = true,
+  destructive = false,
 }: {
   title: string;
   body?: string;
@@ -17,6 +18,8 @@ export function SettingsRow({
   // Without it the row isn't a button (a switch row handles its own taps).
   onPress?: () => void;
   divider?: boolean;
+  // Sign out: the title in red.
+  destructive?: boolean;
 }) {
   return (
     <Pressable
@@ -26,15 +29,17 @@ export function SettingsRow({
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${divider ? "border-b border-border" : ""}`}
     >
       <View className="flex-1">
-        <Text className="text-subtitle font-medium">{title}</Text>
-        {body ? <Text className="mt-0.5 text-label text-ink-2">{body}</Text> : null}
+        <Text className={`text-[15px] font-medium leading-[1.33] ${destructive ? "text-red" : ""}`}>
+          {title}
+        </Text>
+        {body ? <Text className="mt-0.5 text-caption text-ink-2">{body}</Text> : null}
       </View>
       {trailing}
     </Pressable>
   );
 }
 
-// The big heading over a group of rows.
+// The heading over a group of rows: smaller than the name above it, larger than the rows.
 export function SettingsHeading({
   children,
   first = false,
@@ -45,7 +50,7 @@ export function SettingsHeading({
   return (
     <Text
       accessibilityRole="header"
-      className={`mb-1 text-[22px] font-semibold leading-[1.27] ${first ? "mt-8" : "mt-[30px]"}`}
+      className={`mb-1 text-[18px] font-semibold leading-[1.33] ${first ? "mt-8" : "mt-7"}`}
     >
       {children}
     </Text>
