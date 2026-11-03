@@ -1,3 +1,4 @@
+import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { Keyboard, Pressable, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,7 +8,8 @@ import { isRTL } from "@/lib/language";
 // Every screen: white, clear of the notch and home indicator, with the Figma screens' 20px gutters,
 // and an optional footer for the buttons pinned to the bottom. The footer sits on the home
 // indicator, or on top of the keyboard when it's open (including one already open when the screen
-// arrives). Tapping anywhere that isn't a field or button closes the keyboard. The gutters sit on inner Views because SafeAreaView is native and sets its own side
+// arrives). Dark status bar text on the white (onboarding sets light text on its blue, and comes
+// back to it when popped). Tapping anywhere that isn't a field or button closes the keyboard. The gutters sit on inner Views because SafeAreaView is native and sets its own side
 // padding from the insets, which would overwrite them (and className doesn't reach it anyway).
 //
 // The direction is set here, on a plain View of its own, rather than through I18nManager: Expo Go
@@ -21,6 +23,7 @@ export function Screen({ children, footer }: { children: ReactNode; footer?: Rea
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <StatusBar style="dark" />
       <Pressable
         accessible={false}
         onPress={Keyboard.dismiss}
