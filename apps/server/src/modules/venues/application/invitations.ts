@@ -326,7 +326,8 @@ const inviteeOf = async (staffId: string) => {
     where: { id: staffId },
     select: { phone: true, status: true, deletedAt: true },
   });
-  if (!staff || staff.deletedAt !== null) throw sessionEnded();
+  // No account, or a deleted one: either way, gone.
+  if (staff?.deletedAt !== null) throw sessionEnded();
   if (staff.status !== "ACTIVE" || !staff.phone) throw accountSuspended();
   return { staffId, phone: staff.phone };
 };
