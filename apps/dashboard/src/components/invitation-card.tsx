@@ -25,7 +25,8 @@ export function InvitationCard({
   onDecline,
 }: {
   invitation: ReceivedInvitation;
-  // Set in the carousel, where cards are narrower than the screen; otherwise it fills the row.
+  // Set in the carousel, where cards are narrower than the screen and grow to the tallest one;
+  // otherwise it fills the row.
   width?: number;
   declining?: boolean;
   onOpen: () => void;
@@ -33,6 +34,7 @@ export function InvitationCard({
 }) {
   const { t } = useTranslation();
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const [countsWrapped, setCountsWrapped] = useState(false);
   const { venue } = invitation;
   const hours = hoursLeft(invitation.expiresAt);
   const counts = [
@@ -45,7 +47,7 @@ export function InvitationCard({
       accessibilityRole="button"
       onPress={onOpen}
       onLayout={(e) => setSize(e.nativeEvent.layout)}
-      style={width ? { width } : undefined}
+      style={width ? { width, flexGrow: 1 } : undefined}
       className="overflow-hidden rounded-[18px] bg-primary"
     >
       {size ? (
@@ -56,23 +58,37 @@ export function InvitationCard({
           style={{ position: "absolute" }}
         />
       ) : null}
-      <View className="px-[18px] pb-4 pt-5">
+      <View className="grow px-[18px] pb-4 pt-5">
         <Text className="mb-[5px] text-caption font-medium text-on-primary-muted">
           {t("components.invitationCard.invitedBy", { name: invitation.invitedBy })}
         </Text>
         <Text className="text-[20px] font-semibold leading-[1.3] text-white" numberOfLines={1}>
           {venue.name ?? ""}
         </Text>
-        {/* The address gives way to the counts when the line is too long. */}
-        <View className="mt-[3px] flex-row">
+        {/* The counts follow the address, or move to their own line when it needs the room. The dot
+            between them stays laid out when they wrap, only hidden, so the wrap can't flip back. */}
+        <View className="mt-[3px] flex-row flex-wrap">
           {venue.address ? (
-            <Text className="shrink text-body text-on-primary-muted" numberOfLines={1}>
-              {`${venue.address} · `}
+            <Text className="text-body text-on-primary-muted">
+              {venue.address}
+              <Text
+                className="text-body text-on-primary-muted"
+                style={countsWrapped ? { color: "transparent" } : undefined}
+              >
+                {" · "}
+              </Text>
             </Text>
           ) : null}
-          <Text className="text-body text-on-primary-muted">{counts}</Text>
+          <Text
+            className="text-body text-on-primary-muted"
+            onLayout={(e) => setCountsWrapped(e.nativeEvent.layout.y > 0)}
+          >
+            {counts}
+          </Text>
         </View>
 
+        {/* In the carousel every card is as tall as the tallest; the buttons sit at the bottom. */}
+        <View className="grow" />
         <View className="mt-4 flex-row gap-2">
           <Pill
             label={t("components.invitationCard.decline")}
