@@ -1,31 +1,190 @@
+import type { components } from "@hagz/api";
 import { router } from "expo-router";
-import { useState } from "react";
-import { Button } from "@/components/button";
-import { Screen } from "@/components/screen";
-import { Title } from "@/components/title";
-import { auth } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ActivityIndicator, ScrollView, View } from "react-native";
+import { Avatar } from "@/components/avatar";
+import { Button } from "@/components/button";
+import { useHud } from "@/components/hud";
+import { IconLogout } from "@/components/icons";
+import { InfoRows } from "@/components/info-rows";
+import { InvitationCard, type ReceivedInvitation } from "@/components/invitation-card";
+import { InvitationSheet } from "@/components/invitation-sheet";
+import { NavBar, RoundButton } from "@/components/nav";
+import { Screen } from "@/components/screen";
+import { Text } from "@/components/text";
+import { Title } from "@/components/title";
+import { api, auth } from "@/lib/api";
+import { hudMessage, send } from "@/lib/api-errors";
+import { colors } from "@/lib/colors";
+import { displayPhone, isolate } from "@/lib/phone";
 
-// Placeholder for where signing in lands until the first-run screen (D2) is built.
+type Staff = components["schemas"]["Staff"];
+type StaffVenue = components["schemas"]["StaffVenue"];
+
+interface Loaded {
+  me: Staff;
+  venues: StaffVenue[];
+  invitations: ReceivedInvitation[];
+}
+
+// Where signing in lands. Staff who belong to a venue go to it (its home comes next); staff who
+// don't see first run: their invitations, or how to create a venue or be invited, and "Have a code?".
 export default function Home() {
   const { t } = useTranslation();
-  const [signingOut, setSigningOut] = useState(false);
+  const hud = useHud();
+  const [data, setData] = useState<Loaded | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [sheet, setSheet] = useState<ReceivedInvitation | "code" | null>(null);
+
+  const load = useCallback(async () => {
+    setFailed(false);
+    const [me, venues, invitations] = await Promise.all([
+      send(api.GET("/v1/staff/me")),
+      send(api.GET("/v1/staff/venues")),
+      send(api.GET("/v1/staff/invitations")),
+    ]);
+    if (!me.ok || !venues.ok || !invitations.ok) {
+      const error = [me, venues, invitations].find((result) => !result.ok);
+      if (error && !error.ok) hud.show(hudMessage(error.error));
+      setFailed(true);
+      return;
+    }
+    setData({ me: me.data, venues: venues.data.data, invitations: invitations.data.data });
+  }, [hud]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const signOut = async () => {
+    await auth.signOut();
+    router.replace("/");
+  };
+
+  const topBar = data ? (
+    <NavBar
+      start={<Avatar name={data.me.name} />}
+      end={
+        <RoundButton
+          icon={IconLogout}
+          label={t("common.actions.signOut")}
+          onPress={() => void signOut()}
+        />
+      }
+    />
+  ) : null;
+
+  if (!data) {
+    return (
+      <Screen
+        footer={
+          failed ? (
+            <Button label={t("screens.firstRun.retry")} onPress={() => void load()} />
+          ) : undefined
+        }
+      >
+        {failed ? null : (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={colors.ink3} />
+          </View>
+        )}
+      </Screen>
+    );
+  }
+
+  const firstName = data.me.name.trim().split(/\s+/)[0] ?? "";
+
+  // Belongs to a venue: its home is the next screen to build.
+  const venue = data.venues[0];
+  if (venue) {
+    return (
+      <Screen>
+        {topBar}
+        <Title subtitle={t("screens.venueHome.subtitle")}>{venue.name ?? ""}</Title>
+      </Screen>
+    );
+  }
+
+  const invited = data.invitations.length > 0;
+
   return (
     <Screen
       footer={
-        <Button
-          label={t("common.actions.signOut")}
-          variant="secondary"
-          loading={signingOut}
-          onPress={async () => {
-            setSigningOut(true);
-            await auth.signOut();
-            router.replace("/");
-          }}
-        />
+        <>
+          <Button
+            label={t("screens.firstRun.createVenueTitle")}
+            variant={invited ? "secondary" : "primary"}
+            onPress={() => router.push("/create-venue")}
+          />
+          <Button
+            label={t("screens.firstRun.haveCode")}
+            variant="ghost"
+            onPress={() => setSheet("code")}
+          />
+        </>
       }
     >
-      <Title subtitle={t("common.comingNext")}>{t("screens.home.title")}</Title>
+      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {topBar}
+        <Title
+          subtitle={
+            invited ? t("screens.firstRun.invitedSubtitle") : t("screens.firstRun.emptySubtitle")
+          }
+        >
+          {t("screens.firstRun.welcome", { name: firstName })}
+        </Title>
+
+        {invited ? (
+          <>
+            <Text className="mb-2 text-label font-medium text-ink-2">
+              {t("screens.firstRun.invitations")}
+            </Text>
+            {data.invitations.map((invitation) => (
+              <InvitationCard
+                key={invitation.id}
+                invitation={invitation}
+                onPress={() => setSheet(invitation)}
+              />
+            ))}
+          </>
+        ) : (
+          <InfoRows
+            rows={[
+              {
+                title: t("screens.firstRun.createVenueTitle"),
+                body: t("screens.firstRun.createVenueBody"),
+              },
+              {
+                title: t("screens.firstRun.joiningTitle"),
+                body: t("screens.firstRun.joiningBody", {
+                  phone: isolate(displayPhone(data.me.phone.replace(/^\+20/, ""))),
+                }),
+              },
+            ]}
+          />
+        )}
+      </ScrollView>
+
+      {sheet ? (
+        <InvitationSheet
+          start={sheet}
+          phone={data.me.phone.replace(/^\+20/, "")}
+          onClose={() => {
+            setSheet(null);
+            // The invitations may have changed (ended, joined elsewhere): show the current ones.
+            void load();
+          }}
+          onJoined={() => {
+            setSheet(null);
+            void load();
+          }}
+          onDeclined={(id) => {
+            setSheet(null);
+            setData({ ...data, invitations: data.invitations.filter((i) => i.id !== id) });
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }
