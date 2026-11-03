@@ -4,12 +4,16 @@ const en = {
   translation: {
     components: {
       invitationCard: {
-        grounds_one: "{{count}} Ground",
-        grounds_other: "{{count}} Grounds",
-        invitedBy: "{{name}} invited you.",
-        expiresIn_one: "Expires in {{count}} hour.",
-        expiresIn_other: "Expires in {{count}} hours.",
-        expiresSoon: "Expires within the hour.",
+        invitedBy: "{{name}} invited you",
+        grounds_one: "{{count}} ground",
+        grounds_other: "{{count}} grounds",
+        staff_one: "{{count}} staff",
+        staff_other: "{{count}} staff",
+        decline: "Decline",
+        join: "Join",
+        expiresIn_one: "Expires in {{count}} hour",
+        expiresIn_other: "Expires in {{count}} hours",
+        expiresSoon: "Expires within the hour",
       },
       shared: {
         nav: {
@@ -50,15 +54,18 @@ const en = {
     screens: {
       firstRun: {
         welcome: "Welcome, {{name}}",
-        invitedSubtitle: "You've been invited to join a venue.",
+        invitedSubtitle_one: "You've been invited to join a venue.",
+        invitedSubtitle_other: "You've been invited to join {{count}} venues.",
         emptySubtitle: "Set up your venue to start taking bookings.",
-        invitations: "Invitations",
+        invitations: "Invitations · {{count}}",
+        moreWays: "More ways to start",
         createVenueTitle: "Create your venue",
         createVenueBody:
           "Add your pitches, schedules and prices. Our team reviews it before it goes live.",
         joiningTitle: "Joining someone's venue?",
         joiningBody: "Ask the owner to invite {{phone}}. The invitation will appear here.",
         haveCode: "Have a code?",
+        haveCodeBody: "Join with the code an owner sent you.",
         profile: "Your profile",
         retry: "Try again",
       },
@@ -214,6 +221,7 @@ const en = {
         invitationCodeSubtitle: "The 6-character code from the invitation the owner sent you.",
         createVenue: "Create your venue",
         haveCode: "Have a code?",
+        haveCodeBody: "Join with the code an owner sent you.",
       },
     },
   },
