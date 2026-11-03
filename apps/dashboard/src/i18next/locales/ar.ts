@@ -66,6 +66,40 @@ const ar: ArabicTranslations = {
       },
     },
     screens: {
+      account: {
+        open: "حسابك",
+        security: "الأمان",
+        app: "التطبيق",
+        twoFactor: {
+          title: "التحقق بخطوتين",
+          off: "رمز على واتساب في كل مرة تسجّل فيها الدخول.",
+          on: "مفعّل: رمز على واتساب عند كل تسجيل دخول.",
+          turnOnTitle: "تفعيل التحقق بخطوتين",
+          turnOffTitle: "إيقاف التحقق بخطوتين",
+          subtitle: "أدخل الرمز الذي أرسلناه على واتساب إلى {{phone}}.",
+          turnOn: "تفعيل",
+          turnOff: "إيقاف",
+        },
+        password: {
+          title: "كلمة المرور",
+          body: "أعد تعيينها برمز على واتساب.",
+        },
+        language: {
+          title: "اللغة",
+          body: "{{language}}، من إعدادات هاتفك.",
+          en: "الإنجليزية",
+          ar: "العربية",
+        },
+        support: {
+          body: "راسل فريق Hagz على واتساب.",
+        },
+        signOut: {
+          title: "تسجيل الخروج؟",
+          body: "ستسجّل الدخول مجددًا برقمك وكلمة المرور. تبقى ملاعبك ودعواتك كما هي.",
+          cancel: "إلغاء",
+        },
+        version: "Hagz للموظفين · {{version}}",
+      },
       firstRun: {
         welcome: "أهلًا، {{name}}",
         invitedSubtitle_zero: "تمت دعوتك للانضمام إلى ملعب.",

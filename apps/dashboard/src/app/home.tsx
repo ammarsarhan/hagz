@@ -7,6 +7,7 @@ import {
   FlatList,
   I18nManager,
   LayoutAnimation,
+  Pressable,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -110,7 +111,21 @@ export default function Home() {
     else hud.show(hudMessage(result.error));
   };
 
-  const topBar = data ? <NavBar start={<Avatar name={data.me.name} />} /> : null;
+  const topBar = data ? (
+    <NavBar
+      start={
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.account.open")}
+          onPress={() => router.push("/account")}
+          hitSlop={8}
+          className="active:opacity-70"
+        >
+          <Avatar name={data.me.name} />
+        </Pressable>
+      }
+    />
+  ) : null;
 
   if (!data) {
     return (

@@ -52,6 +52,40 @@ const en = {
       },
     },
     screens: {
+      account: {
+        open: "Your account",
+        security: "Security",
+        app: "App",
+        twoFactor: {
+          title: "Two-factor sign-in",
+          off: "A WhatsApp code every time you sign in.",
+          on: "On: a WhatsApp code at every sign-in.",
+          turnOnTitle: "Turn on two-factor",
+          turnOffTitle: "Turn off two-factor",
+          subtitle: "Enter the code we sent to WhatsApp at {{phone}}.",
+          turnOn: "Turn on",
+          turnOff: "Turn off",
+        },
+        password: {
+          title: "Password",
+          body: "Reset it with a code to your WhatsApp.",
+        },
+        language: {
+          title: "Language",
+          body: "{{language}}, from your phone's settings.",
+          en: "English",
+          ar: "Arabic",
+        },
+        support: {
+          body: "Message the Hagz team on WhatsApp.",
+        },
+        signOut: {
+          title: "Sign out?",
+          body: "You'll sign back in with your number and password. Your venues and invitations stay as they are.",
+          cancel: "Cancel",
+        },
+        version: "Hagz for staff · {{version}}",
+      },
       firstRun: {
         welcome: "Welcome, {{name}}",
         invitedSubtitle_one: "You've been invited to join a venue.",
