@@ -6,6 +6,7 @@ import { hashToken, randomToken } from "@/platform/crypto/tokens";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
 import { requireMobileNumber } from "@/platform/phone/phone";
+import { customers, staff } from "./accounts";
 import { messaging } from "@/platform/messaging/messaging";
 import { consume } from "@/platform/rate-limit/rate-limit";
 import { guardedRedis, RedisUnavailableError, serviceUnavailable } from "@/platform/redis/guarded";
@@ -27,7 +28,8 @@ const cooldownKey = (type: AccountType, phone: string) => `${codeKey(type, phone
 const tokenKey = (type: AccountType, token: string) => `otp:${type}:token:${hashToken(token)}`;
 
 // Redis failures are a 503: codes are the way in, so they never fall back to "no check".
-const redis = async <T>(command: Parameters<typeof guardedRedis<T>>[0]): Promise<T> => {
+// Redis, answering 503 when it's down. Shared with password resets.
+export const redis = async <T>(command: Parameters<typeof guardedRedis<T>>[0]): Promise<T> => {
   try {
     return await guardedRedis(command);
   } catch (error) {
@@ -159,7 +161,11 @@ export const confirmSignUpCode = async ({ type, phone: input, code, ip }: Confir
   await redis((r) =>
     r.set(tokenKey(type, token), phone.e164, "EX", VERIFICATION_TOKEN_TTL_SECONDS),
   );
-  return { verificationToken: token, expiresIn: VERIFICATION_TOKEN_TTL_SECONDS };
+  // Safe to say now: the caller has just proved they hold this number, so it reveals nothing about
+  // anyone else's. Sending the code answers the same either way (no enumeration).
+  const store = type === "staff" ? staff : customers;
+  const accountExists = (await store.findByPhone(phone.e164)) !== null;
+  return { verificationToken: token, expiresIn: VERIFICATION_TOKEN_TTL_SECONDS, accountExists };
 };
 
 const invalidToken = () =>

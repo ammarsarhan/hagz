@@ -104,6 +104,27 @@ describe("staff sign-up", () => {
     expect(res.status).toBe(201);
   });
 
+  it("says whether the number has a staff account, but only once its code is confirmed", async () => {
+    const confirmFor = async () => {
+      await resetRedis(); // Each round sends a fresh code, past the resend cooldown.
+      const sent = await staff("POST", "/verifications", { phone: PHONE });
+      // Sending answers the same either way, so it can't be used to look numbers up.
+      expect(Object.keys(await json(sent)).sort()).toEqual(["expiresIn", "resendAfter"]);
+      const res = await staff("POST", "/verifications/confirm", {
+        phone: PHONE,
+        code: outbox.lastCodeFor(PHONE),
+      });
+      return (await json(res)).accountExists;
+    };
+
+    expect(await confirmFor()).toBe(false);
+    // A customer account on the same number is a different account.
+    await createCustomer({ phone: PHONE });
+    expect(await confirmFor()).toBe(false);
+    await createStaff({ phone: PHONE });
+    expect(await confirmFor()).toBe(true);
+  });
+
   it("rejects a second staff account for the same phone", async () => {
     await createStaff({ phone: PHONE });
     const res = await staff("POST", "/sign-up", {
@@ -205,5 +226,41 @@ describe("staff two-factor", () => {
     });
     expect(res.status).toBe(401);
     expect((await json(res)).code).toBe("CHALLENGE_EXPIRED");
+  });
+});
+
+describe("the signed-in staff member", () => {
+  const me = (accessToken?: string) =>
+    router.request("/v1/staff/me", {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+
+  it("is returned to themselves, and only with a staff session", async () => {
+    await createStaff({ phone: PHONE, language: "EN" });
+    const { session } = await signInStaff();
+
+    const res = await me(session.accessToken);
+    expect(res.status).toBe(200);
+    expect(await json(res)).toMatchObject({
+      name: "Mona",
+      phone: PHONE,
+      language: "EN",
+      twoFactorEnabled: false,
+    });
+
+    expect((await me()).status).toBe(401);
+    await createCustomer({ phone: PHONE });
+    const customer = await signInCustomer();
+    expect((await me(customer.session.accessToken)).status).toBe(401);
+  });
+
+  it("ends the session when the account is gone but its access token hasn't expired", async () => {
+    await createStaff({ phone: PHONE });
+    const { session } = await signInStaff();
+    await prisma.staff.deleteMany();
+
+    const res = await me(session.accessToken);
+    expect(res.status).toBe(401);
+    expect((await json(res)).code).toBe("SESSION_ENDED");
   });
 });

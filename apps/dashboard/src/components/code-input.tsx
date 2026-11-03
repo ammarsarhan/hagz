@@ -14,7 +14,6 @@ interface CodeInputProps {
   error?: string;
   // Locked after too many attempts: grey boxes, no typing.
   disabled?: boolean;
-  autoFocus?: boolean;
 }
 
 // Six boxes driven by one hidden input, so typing, pasting and iOS's code autofill all work. Codes
@@ -25,7 +24,6 @@ export function CodeInput({
   kind = "digits",
   error,
   disabled = false,
-  autoFocus,
 }: CodeInputProps) {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   const [focused, setFocused] = useState(false);
@@ -74,7 +72,6 @@ export function CodeInput({
         value={value}
         onChangeText={(text) => onChangeText(clean(text))}
         editable={!disabled}
-        autoFocus={autoFocus}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         keyboardType={kind === "digits" ? "number-pad" : "default"}

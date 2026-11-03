@@ -1,111 +1,128 @@
-import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useRef, useState } from "react";
+import { Animated, FlatList, I18nManager, useWindowDimensions, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { SvgXml } from "react-native-svg";
+import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
-import { CodeInput } from "@/components/code-input";
-import { Field } from "@/components/field";
-import { IconEye, IconEyeOff } from "@/components/icons";
-import { useHud } from "@/components/hud";
-import { BackButton, CloseButton, NavBar } from "@/components/nav";
-import { PhoneField } from "@/components/phone-field";
-import { Screen } from "@/components/screen";
-import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
-import { Title } from "@/components/title";
-import { colors } from "@/lib/colors";
-import { t } from "@/lib/i18n";
+import { auth } from "@/lib/api";
+import { resetTo } from "@/lib/navigation";
+import { useTranslation } from "react-i18next";
+import { isRTL } from "@/lib/language";
 
-// Component sheet (temporary home screen): the shared pieces in their states, live, in the
-// device's language. Tap the fields to see focus; the second of each pair shows an error. Create
-// account shows the loading spinner for two seconds.
-export default function Home() {
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [shown, setShown] = useState(false);
-  const [code, setCode] = useState("");
-  const [joinCode, setJoinCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [sheet, setSheet] = useState(false);
-  const hud = useHud();
+// Staff onboarding: three blue slides (a problem in two words, the fix in one), swiped or advancing
+// gently on their own until touched, with Create account and Sign in on every slide.
+// Each slide's strings live under screens.onboarding.<slide>.
+const SLIDES = ["schedules", "money", "pitches"] as const;
+type Slide = (typeof SLIDES)[number];
+const AUTO_ADVANCE_MS = 5000;
+
+// The pager runs left to right; in Arabic it's flipped so the next slide comes from the left. Builds
+// that are natively right-to-left already scroll that way, so they aren't flipped twice.
+const flipPager = isRTL && !I18nManager.isRTL;
+const direction = isRTL ? "rtl" : "ltr";
+
+export default function Onboarding() {
+  const { t } = useTranslation();
+  const { width } = useWindowDimensions();
+  const pager = useRef<FlatList<Slide>>(null);
+  const [index, setIndex] = useState(0);
+  const [touched, setTouched] = useState(false);
+  // Where the pager is, continuously, so the dots morph with the swipe instead of jumping at the end.
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  // Signed in already (the session is kept between launches): skip onboarding.
+  useEffect(() => {
+    void auth.isSignedIn().then((signedIn) => signedIn && resetTo("/home"));
+  }, []);
+
+  useEffect(() => {
+    if (touched || index >= SLIDES.length - 1) return;
+    const timer = setTimeout(
+      () => pager.current?.scrollToIndex({ index: index + 1, animated: true }),
+      AUTO_ADVANCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [index, touched]);
 
   return (
-    <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View className="pt-2">
-          <NavBar
-            start={<BackButton label={t("back")} />}
-            end={<CloseButton label={t("close")} />}
-          />
-          <Title subtitle={t("componentsSubtitle")}>{t("componentsTitle")}</Title>
+    <View className="flex-1 bg-primary">
+      <StatusBar style="light" />
+      <SafeAreaView style={{ flex: 1 }}>
+        <Animated.FlatList
+          ref={pager}
+          data={SLIDES}
+          keyExtractor={(slide) => slide}
+          horizontal
+          pagingEnabled
+          inverted={flipPager}
+          showsHorizontalScrollIndicator={false}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          onScrollBeginDrag={() => setTouched(true)}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+            useNativeDriver: false,
+          })}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
+          style={{ direction: "ltr" }}
+          renderItem={({ item, index: i }) => (
+            <View style={{ width, direction }} className="flex-1 px-6">
+              <View className="mt-6 flex-1 items-center justify-center">
+                <SvgXml xml={ONBOARDING_ART[i] ?? null} width="100%" height="100%" />
+              </View>
+              <Text className="mt-8 text-display font-semibold tracking-[-0.8px] text-white">
+                {t(`screens.onboarding.${item}.title`)}
+              </Text>
+              <Text className="mb-8 mt-3 text-subtitle text-on-primary-muted">
+                {t(`screens.onboarding.${item}.body`)}
+              </Text>
+            </View>
+          )}
+        />
 
-          <PhoneField label={t("mobileNumber")} value={phone} onChangeText={setPhone} />
-          <PhoneField value="1001234567" onChangeText={() => undefined} error={t("phoneTaken")} />
-
-          <Field
-            label={t("fullName")}
-            placeholder={t("fullNamePlaceholder")}
-            value={name}
-            onChangeText={setName}
-            textContentType="name"
-            autoComplete="name"
-          />
-          <Field
-            label={t("password")}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!shown}
-            textContentType="newPassword"
-            error={password.length > 0 && password.length < 8 ? t("passwordTooShort") : undefined}
-            trailing={
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={shown ? t("hidePassword") : t("showPassword")}
-                onPress={() => setShown(!shown)}
-                hitSlop={8}
-              >
-                {shown ? (
-                  <IconEye size={20} color={colors.unit} strokeWidth={2} />
-                ) : (
-                  <IconEyeOff size={20} color={colors.unit} strokeWidth={2} />
-                )}
-              </Pressable>
-            }
-          />
-
-          <CodeInput value={code} onChangeText={setCode} />
-          <CodeInput value="482914" onChangeText={() => undefined} error={t("codeWrong")} />
-          <CodeInput value="" onChangeText={() => undefined} disabled error={t("tooManyTries")} />
-
-          <View className="mt-4 gap-2.5 pb-10">
-            <Button
-              label={t("createAccount")}
-              loading={loading}
-              onPress={() => {
-                setLoading(true);
-                setTimeout(() => setLoading(false), 2000);
-              }}
-            />
-            <Button
-              label={t("showHud")}
-              variant="secondary"
-              onPress={() => hud.show(t("couldntSendCode"))}
-            />
-            <Button label={t("openSheet")} variant="secondary" onPress={() => setSheet(true)} />
-            <Button label={t("createVenue")} variant="secondary" />
-            <Button label={t("haveCode")} variant="ghost" />
-            <Button label={t("continue")} disabled />
-          </View>
+        <View className="mb-8 flex-row justify-center gap-1.5" style={{ direction }}>
+          {SLIDES.map((slide, i) => (
+            <Dot key={slide} index={i} scrollX={scrollX} width={width} />
+          ))}
         </View>
-      </ScrollView>
 
-      <Sheet visible={sheet} onClose={() => setSheet(false)} closeLabel={t("close")}>
-        <Text className="mb-1.5 text-heading font-semibold">{t("invitationCodeTitle")}</Text>
-        <Text className="mb-[22px] text-subtitle text-ink-2">{t("invitationCodeSubtitle")}</Text>
-        <CodeInput kind="code" value={joinCode} onChangeText={setJoinCode} autoFocus />
-        <View className="mt-1">
-          <Button label={t("continue")} disabled={joinCode.length < 6} />
+        <View className="gap-2.5 px-5 pb-3">
+          <Button
+            label={t("common.actions.createAccount")}
+            variant="inverse"
+            onPress={() => router.push("/sign-up")}
+          />
+          <Button
+            label={t("common.actions.signIn")}
+            variant="inverseSecondary"
+            onPress={() => router.push("/sign-in")}
+          />
         </View>
-      </Sheet>
-    </Screen>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+// A page dot that grows into the 22px pill as its slide scrolls into place, and shrinks back to a
+// faint 7px dot as it leaves. Width can't use the native driver, so this runs in JS, which is fine
+// for three small views.
+function Dot({ index, scrollX, width }: { index: number; scrollX: Animated.Value; width: number }) {
+  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+  return (
+    <Animated.View
+      style={{
+        height: 7,
+        borderRadius: 3.5,
+        backgroundColor: "#ffffff",
+        width: scrollX.interpolate({ inputRange, outputRange: [7, 22, 7], extrapolate: "clamp" }),
+        opacity: scrollX.interpolate({
+          inputRange,
+          outputRange: [0.4, 1, 0.4],
+          extrapolate: "clamp",
+        }),
+      }}
+    />
   );
 }

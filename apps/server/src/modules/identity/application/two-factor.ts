@@ -7,7 +7,13 @@ import { consume } from "@/platform/rate-limit/rate-limit";
 import { limits, TWO_FACTOR_CHALLENGE_TTL_SECONDS } from "../domain/policy";
 import { consumeCode, issueCode } from "./account-codes";
 import type { Account, AccountStore } from "./accounts";
-import { accountSuspended, openSession, type Authenticated, type DeviceInfo } from "./sessions";
+import {
+  accountBlocked,
+  accountSuspended,
+  openSession,
+  type Authenticated,
+  type DeviceInfo,
+} from "./sessions";
 
 // Two-factor here is a WhatsApp code to the account's phone after the password.
 
@@ -63,7 +69,8 @@ const readChallenge = async (store: AccountStore, challengeToken: string, clock:
 
 const activeAccount = async (store: AccountStore, accountId: string) => {
   const account = await store.findById(accountId);
-  if (account?.status !== "ACTIVE") throw accountSuspended();
+  if (!account) throw accountSuspended();
+  if (account.status !== "ACTIVE") throw accountBlocked(account.status);
   return account;
 };
 
