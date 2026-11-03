@@ -228,3 +228,24 @@ describe("staff two-factor", () => {
     expect((await json(res)).code).toBe("CHALLENGE_EXPIRED");
   });
 });
+
+describe("the signed-in staff member", () => {
+  const me = (accessToken?: string) =>
+    router.request("/v1/staff/me", {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+
+  it("is returned to themselves, and only with a staff session", async () => {
+    await createStaff({ phone: PHONE, language: "EN" });
+    const { session } = await signInStaff();
+
+    const res = await me(session.accessToken);
+    expect(res.status).toBe(200);
+    expect(await json(res)).toMatchObject({ name: "Mona", phone: PHONE, language: "EN" });
+
+    expect((await me()).status).toBe(401);
+    await createCustomer({ phone: PHONE });
+    const customer = await signInCustomer();
+    expect((await me(customer.session.accessToken)).status).toBe(401);
+  });
+});

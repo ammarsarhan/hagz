@@ -6,6 +6,7 @@ import {
   PasswordResetVerified,
   VerifyPasswordReset,
   ConfirmVerificationCode,
+  Staff,
   StaffAuthenticated,
   StaffSignUp,
   RefreshSession,
@@ -22,7 +23,7 @@ import {
 import { requestLanguage } from "@/platform/http/language";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
-import { staff } from "../application/accounts";
+import { profile, staff } from "../application/accounts";
 import {
   confirmPasswordReset,
   requestPasswordReset,
@@ -240,6 +241,20 @@ const confirmReset = createRoute({
   },
 });
 
+const me = createRoute({
+  method: "get",
+  path: "/staff/me",
+  tags: ["Staff"],
+  summary: "The signed-in staff member",
+  description: "Name, phone and language, for the app to greet and label them after a relaunch.",
+  middleware: [requireStaff] as const,
+  security: staffSecurity,
+  responses: {
+    200: { description: "Their profile", ...json(Staff) },
+    401: unauthenticated,
+  },
+});
+
 const sendTwoFactorCode = createRoute({
   method: "post",
   path: "/auth/staff/two-factor/codes",
@@ -337,6 +352,12 @@ export const staffAuthRoutes = createRouter()
   .openapi(confirmReset, async (c) => {
     await confirmPasswordReset(staff, c.req.valid("json"));
     return c.body(null, 204);
+  })
+  .openapi(me, async (c) => {
+    const account = await staff.findById(c.var.staff.staffId);
+    // A signed-in session belongs to an account that exists; deleted accounts lose their sessions.
+    if (!account) throw new Error("Signed-in staff account not found");
+    return c.json(profile(account), 200);
   })
   .openapi(sendTwoFactorCode, async (c) => {
     const { staffId } = c.var.staff;

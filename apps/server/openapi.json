@@ -2749,6 +2749,42 @@
         }
       }
     },
+    "/v1/staff/me": {
+      "get": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "The signed-in staff member",
+        "description": "Name, phone and language, for the app to greet and label them after a relaunch.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Their profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Staff"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/staff/two-factor/codes": {
       "post": {
         "tags": [
