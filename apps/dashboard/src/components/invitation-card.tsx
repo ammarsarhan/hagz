@@ -14,7 +14,7 @@ export const hoursLeft = (expiresAt: string) =>
   Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 3_600_000));
 
 // An invitation on the first-run screen, as approved in Figma: the blue card with its decoration
-// picked from the venue, who invited you, the venue, where it is and its size, Decline and Join, and
+// picked from the venue, who invited you, the venue, its area and size, Decline and Join, and
 // when it runs out. Join (or the card itself) opens the invitation's sheet, which shows what joining
 // grants before it's confirmed; Decline is final, so it acts straight away.
 export function InvitationCard({
@@ -37,6 +37,7 @@ export function InvitationCard({
   const [countsWrapped, setCountsWrapped] = useState(false);
   const { venue } = invitation;
   const hours = hoursLeft(invitation.expiresAt);
+  const place = venue.location ?? venue.address;
   const counts = [
     t("components.invitationCard.grounds", { count: venue.groundCount }),
     t("components.invitationCard.staff", { count: venue.team.size }),
@@ -65,12 +66,13 @@ export function InvitationCard({
         <Text className="text-[20px] font-semibold leading-[1.3] text-white" numberOfLines={1}>
           {venue.name ?? ""}
         </Text>
-        {/* The counts follow the address, or move to their own line when it needs the room. The dot
-            between them stays laid out when they wrap, only hidden, so the wrap can't flip back. */}
+        {/* Where it is ("Zamalek, Cairo") on one line, cut short if it must; the counts follow it, or
+            move to their own line when it needs the room. The dot between them stays laid out when
+            they wrap, only hidden, so the wrap can't flip back. */}
         <View className="mt-[3px] flex-row flex-wrap">
-          {venue.address ? (
-            <Text className="text-body text-on-primary-muted">
-              {venue.address}
+          {place ? (
+            <Text className="text-body text-on-primary-muted" numberOfLines={1}>
+              {place}
               <Text
                 className="text-body text-on-primary-muted"
                 style={countsWrapped ? { color: "transparent" } : undefined}
