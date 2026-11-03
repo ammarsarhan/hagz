@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -38,8 +39,11 @@ export function HudProvider({ children }: { children: ReactNode }) {
     setShownAt(Date.now());
   }, []);
 
+  // Stable, so screens can list the HUD in their effects' dependencies.
+  const value = useMemo(() => ({ show }), [show]);
+
   return (
-    <HudContext.Provider value={{ show }}>
+    <HudContext.Provider value={value}>
       {children}
       {message ? <Hud key={shownAt} message={message} onHidden={() => setMessage(null)} /> : null}
     </HudContext.Provider>
