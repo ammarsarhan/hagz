@@ -98,13 +98,16 @@ export default function Account() {
 
   return (
     <Screen>
-      {back}
+      {/* The whole page scrolls, back button included. The scroll view reaches the screen edges and
+          puts the gutters back inside, so the round button's 4px overhang isn't clipped. */}
       <ScrollView
         // Scrolls (and bounces) even when everything fits, like the system's settings pages.
         alwaysBounceVertical
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        style={{ marginHorizontal: -20 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
       >
+        {back}
         <View className="items-center">
           <Avatar name={me.name} size="large" />
           <Text className="mt-3.5 text-[22px] font-semibold leading-[1.27]">{me.name}</Text>
