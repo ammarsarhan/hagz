@@ -10,14 +10,16 @@ import { PasswordField } from "@/components/password-field";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { api } from "@/lib/api";
+import { api, auth } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { resetTo } from "@/lib/navigation";
 
 const MIN_PASSWORD = 8;
 
 // Reset, last step: the new password, with the reset token from the code (or from the sign-up
-// verification). Setting it signs out every device; then back to sign in with the number filled in.
+// verification), or from the account screen. Setting it signs out every device; then back to sign
+// in with the number filled in.
 export default function ResetNewPassword() {
   const { t } = useTranslation();
   const { phone = "", resetToken = "" } = useLocalSearchParams<{
@@ -43,6 +45,14 @@ export default function ResetNewPassword() {
       if (problem(result.error)?.code === "RESET_TOKEN_INVALID") {
         router.dismissTo({ pathname: "/forgot-password", params: { phone } });
       }
+      return;
+    }
+    // From the account screen: the reset signed this phone out along with every other, so it starts
+    // over at sign in, with nothing signed-in left to go back to.
+    if (await auth.isSignedIn()) {
+      await auth.signOut();
+      resetTo("/");
+      router.push({ pathname: "/sign-in", params: { phone } });
       return;
     }
     router.dismissTo({ pathname: "/sign-in", params: { phone } });
