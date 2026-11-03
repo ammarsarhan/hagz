@@ -69,11 +69,14 @@ export function InvitationSheet({
 
   // A failure that says why the invitation can't be taken, shown in the sheet; anything else is a HUD.
   const showReason = (error: unknown, invitation?: ReceivedInvitation) => {
-    const failure = problem(error)?.code;
+    const details = problem(error);
+    const failure = details?.code;
     if (failure === "INVITATION_EXPIRED") {
       setStep({ kind: "ended", invitedBy: invitation?.invitedBy });
     } else if (failure === "ALREADY_A_MEMBER") {
-      setStep({ kind: "member", venue: invitation?.venue.name ?? "" });
+      // The API names the venue, which a link doesn't otherwise have.
+      const venue = (details?.venue as { name?: string | null } | undefined)?.name;
+      setStep({ kind: "member", venue: venue ?? invitation?.venue.name ?? "" });
     } else {
       hud.show(hudMessage(error));
     }
