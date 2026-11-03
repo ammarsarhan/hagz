@@ -6,16 +6,14 @@ import { ActivityIndicator, ScrollView, View } from "react-native";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
-import { IconLogout } from "@/components/icons";
 import { InfoRows } from "@/components/info-rows";
 import { InvitationCard, type ReceivedInvitation } from "@/components/invitation-card";
 import { InvitationSheet } from "@/components/invitation-sheet";
-import { NavBar, RoundButton } from "@/components/nav";
+import { NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { api, auth } from "@/lib/api";
-import { resetTo } from "@/lib/navigation";
+import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { displayPhone, isolate } from "@/lib/phone";
@@ -58,23 +56,7 @@ export default function Home() {
     void load();
   }, [load]);
 
-  const signOut = async () => {
-    await auth.signOut();
-    resetTo("/");
-  };
-
-  const topBar = data ? (
-    <NavBar
-      start={<Avatar name={data.me.name} />}
-      end={
-        <RoundButton
-          icon={IconLogout}
-          label={t("common.actions.signOut")}
-          onPress={() => void signOut()}
-        />
-      }
-    />
-  ) : null;
+  const topBar = data ? <NavBar start={<Avatar name={data.me.name} />} /> : null;
 
   if (!data) {
     return (
