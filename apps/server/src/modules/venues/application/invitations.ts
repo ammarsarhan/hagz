@@ -81,6 +81,35 @@ const alreadyMember = () =>
     detail: "That person is already on this venue's staff.",
   });
 
+// The invitee's side of "already a member": they're on the invitation's venue already, so there's
+// nothing to accept, whatever state the invitation is in. Naming the venue is safe, as the invitation
+// was addressed to them, and lets the app offer to open it.
+const alreadyOnTeam = (venue: { id: string; name: string | null }) =>
+  new AppError({
+    code: "ALREADY_A_MEMBER",
+    status: 409,
+    detail: "You're already on this venue's team.",
+    extensions: { venue },
+  });
+
+const refuseIfMember = async (
+  db: Tx | typeof prisma,
+  venueId: string,
+  staffId: string,
+  language: Language,
+) => {
+  const membership = await db.venueMembership.findUnique({
+    where: { venueId_staffId: { venueId, staffId } },
+    select: {
+      venue: { select: { id: true, translations: { select: { language: true, name: true } } } },
+    },
+  });
+  if (membership) {
+    const { venue } = membership;
+    throw alreadyOnTeam({ id: venue.id, name: nameIn(venue.translations, language) });
+  }
+};
+
 interface InvitationRow {
   id: string;
   venueId: string;
@@ -453,6 +482,9 @@ export const previewInvitation = async (
   await consume(limits.acceptPerStaff, staffId);
   const { phone } = await inviteeOf(staffId);
   const invitation = await findFor(prisma, lookup, phone, { lock: false });
+  // Before whether it's still open: once they've joined, the invitation is used, but "you're on the
+  // team" is the answer that helps.
+  await refuseIfMember(prisma, invitation.venueId, staffId, language);
   if (!isOpen(invitation, clock.now())) throw invitationExpired();
   const invitor = await prisma.staff.findUniqueOrThrow({
     where: { id: invitation.invitorId },
@@ -475,6 +507,7 @@ export const acceptInvitation = async (
 
   const venueId = await transaction(async (tx) => {
     const invitation = await findFor(tx, lookup, phone, { lock: true });
+    await refuseIfMember(tx, invitation.venueId, staffId, language);
     if (!isOpen(invitation, now)) throw invitationExpired();
     // An invitation is only as good as its inviter is now: one who was removed or lost the right to
     // manage staff (or the areas it grants) since can't still bring people in.
