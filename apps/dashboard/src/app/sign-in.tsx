@@ -20,6 +20,9 @@ import { displayPhone, isCompletePhone, isolate, toE164 } from "@/lib/phone";
 
 type Challenge = components["schemas"]["TwoFactorChallenge"];
 
+const blockedKind = (code: "ACCOUNT_SUSPENDED" | "ACCOUNT_BANNED") =>
+  code === "ACCOUNT_BANNED" ? "banned" : "suspended";
+
 // Phone and password. With two-factor on, a right password opens a sheet for the WhatsApp code.
 // A wrong number and a wrong password get the same message, so neither gives the other away.
 export default function SignIn() {
@@ -41,11 +44,9 @@ export default function SignIn() {
     setLoading(false);
     if (!result.ok) {
       const failure = problem(result.error)?.code;
-      if (
-        failure === "INVALID_CREDENTIALS" ||
-        failure === "ACCOUNT_SUSPENDED" ||
-        failure === "RATE_LIMITED"
-      ) {
+      if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
+        router.push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
+      } else if (failure === "INVALID_CREDENTIALS" || failure === "RATE_LIMITED") {
         setError(fieldMessage(result.error));
       } else {
         hud.show(hudMessage(result.error));
@@ -152,6 +153,9 @@ function TwoFactorSheet({
       } else if (failure === "RATE_LIMITED") {
         setLocked(true);
         setError(fieldMessage(result.error));
+      } else if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
+        onClose();
+        router.push({ pathname: "/blocked", params: { kind: blockedKind(failure) } });
       } else {
         onClose();
         hud.show(hudMessage(result.error));

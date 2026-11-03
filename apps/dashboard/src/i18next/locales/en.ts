@@ -20,6 +20,8 @@ const en = {
     },
     common: {
       actions: {
+        contactSupport: "Contact support",
+        backToSignIn: "Back to sign in",
         continue: "Continue",
         createAccount: "Create account",
         signIn: "Sign in",
@@ -38,6 +40,16 @@ const en = {
       },
     },
     screens: {
+      blocked: {
+        suspended: {
+          title: "Your account is suspended",
+          body: "You can't sign in for now. If you think this is a mistake, contact our support team.",
+        },
+        banned: {
+          title: "This account can't be used",
+          body: "It was closed for breaking Hagz's terms. If you think this is a mistake, contact our support team.",
+        },
+      },
       onboarding: {
         schedules: {
           title: "Scattered schedules, sorted.",

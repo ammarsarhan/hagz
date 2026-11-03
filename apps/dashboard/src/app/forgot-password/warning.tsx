@@ -39,8 +39,14 @@ export default function ResetWarning() {
     );
     setLoading(false);
     if (!result.ok) {
-      if (problem(result.error)?.code === "PASSWORD_RESET_THROUGH_SUPPORT") {
+      const failure = problem(result.error)?.code;
+      if (failure === "PASSWORD_RESET_THROUGH_SUPPORT") {
         router.replace("/forgot-password/support");
+      } else if (failure === "ACCOUNT_SUSPENDED" || failure === "ACCOUNT_BANNED") {
+        router.replace({
+          pathname: "/blocked",
+          params: { kind: failure === "ACCOUNT_BANNED" ? "banned" : "suspended" },
+        });
       } else {
         hud.show(hudMessage(result.error));
       }

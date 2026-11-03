@@ -22,6 +22,8 @@ const ar: Translations = {
     },
     common: {
       actions: {
+        contactSupport: "تواصل مع الدعم",
+        backToSignIn: "العودة لتسجيل الدخول",
         continue: "متابعة",
         createAccount: "إنشاء حساب",
         signIn: "تسجيل الدخول",
@@ -40,6 +42,16 @@ const ar: Translations = {
       },
     },
     screens: {
+      blocked: {
+        suspended: {
+          title: "حسابك موقوف",
+          body: "لا يمكنك تسجيل الدخول حاليًا. إذا كنت تعتقد أن هذا خطأ، تواصل مع فريق الدعم.",
+        },
+        banned: {
+          title: "لا يمكن استخدام هذا الحساب",
+          body: "تم إغلاقه لمخالفة شروط حجز. إذا كنت تعتقد أن هذا خطأ، تواصل مع فريق الدعم.",
+        },
+      },
       onboarding: {
         schedules: {
           title: "مواعيدك المبعثرة، منظّمة.",
