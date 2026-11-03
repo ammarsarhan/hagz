@@ -29,6 +29,8 @@ const CODE_LENGTH = 6;
 export function InvitationSheet({
   start,
   phone,
+  visible,
+  onHidden,
   onClose,
   onJoined,
   onDeclined,
@@ -37,6 +39,9 @@ export function InvitationSheet({
   start: ReceivedInvitation | "code";
   // The signed-in number, without +20, for "sent to …".
   phone: string;
+  // Closing: set to false, and unmount on onHidden (after the slide down).
+  visible: boolean;
+  onHidden: () => void;
   onClose: () => void;
   onJoined: (venue: StaffVenue) => void;
   onDeclined: (invitationId: string) => void;
@@ -110,7 +115,12 @@ export function InvitationSheet({
   };
 
   return (
-    <Sheet visible onClose={onClose} closeLabel={t("components.shared.nav.close")}>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      onHidden={onHidden}
+      closeLabel={t("components.shared.nav.close")}
+    >
       {step.kind === "code" ? (
         <>
           <Heading

@@ -1,6 +1,6 @@
 import type { components } from "@hagz/api";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import { Avatar } from "@/components/avatar";
@@ -34,7 +34,19 @@ export default function Home() {
   const hud = useHud();
   const [data, setData] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState(false);
+  // The sheet's content, kept while it slides away; `sheetOpen` is what shows or hides it.
   const [sheet, setSheet] = useState<ReceivedInvitation | "code" | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // What to do once the sheet has slid away (reload, or drop a declined invitation).
+  const afterSheet = useRef<() => void>(() => undefined);
+  const openSheet = (start: ReceivedInvitation | "code") => {
+    setSheet(start);
+    setSheetOpen(true);
+  };
+  const closeSheet = (then: () => void) => {
+    afterSheet.current = then;
+    setSheetOpen(false);
+  };
 
   const load = useCallback(async () => {
     setFailed(false);
@@ -103,7 +115,7 @@ export default function Home() {
           <Button
             label={t("screens.firstRun.haveCode")}
             variant="ghost"
-            onPress={() => setSheet("code")}
+            onPress={() => openSheet("code")}
           />
         </>
       }
@@ -128,7 +140,7 @@ export default function Home() {
               <InvitationCard
                 key={invitation.id}
                 invitation={invitation}
-                onPress={() => setSheet(invitation)}
+                onPress={() => openSheet(invitation)}
               />
             ))}
           </>
@@ -154,19 +166,23 @@ export default function Home() {
         <InvitationSheet
           start={sheet}
           phone={data.me.phone.replace(/^\+20/, "")}
-          onClose={() => {
+          visible={sheetOpen}
+          onHidden={() => {
             setSheet(null);
-            // The invitations may have changed (ended, joined elsewhere): show the current ones.
-            void load();
+            afterSheet.current();
           }}
-          onJoined={() => {
-            setSheet(null);
-            void load();
-          }}
-          onDeclined={(id) => {
-            setSheet(null);
-            setData({ ...data, invitations: data.invitations.filter((i) => i.id !== id) });
-          }}
+          // The invitations may have changed (ended, joined elsewhere): show the current ones.
+          onClose={() => closeSheet(() => void load())}
+          onJoined={() => closeSheet(() => void load())}
+          onDeclined={(id) =>
+            closeSheet(() =>
+              setData((current) =>
+                current
+                  ? { ...current, invitations: current.invitations.filter((i) => i.id !== id) }
+                  : current,
+              ),
+            )
+          }
         />
       ) : null}
     </Screen>

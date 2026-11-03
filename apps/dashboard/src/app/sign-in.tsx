@@ -34,7 +34,9 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  // Kept while the code sheet slides away; `codeSheetOpen` shows or hides it.
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [codeSheetOpen, setCodeSheetOpen] = useState(false);
   const hud = useHud();
 
   const signIn = async () => {
@@ -56,6 +58,7 @@ export default function SignIn() {
     }
     if ("twoFactorRequired" in result.data) {
       setChallenge(result.data);
+      setCodeSheetOpen(true);
       return;
     }
     await auth.start(result.data.session);
@@ -110,7 +113,9 @@ export default function SignIn() {
           phone={phone}
           challenge={challenge}
           onChallenge={setChallenge}
-          onClose={() => setChallenge(null)}
+          visible={codeSheetOpen}
+          onClose={() => setCodeSheetOpen(false)}
+          onHidden={() => setChallenge(null)}
         />
       ) : null}
     </Screen>
@@ -122,12 +127,16 @@ function TwoFactorSheet({
   phone,
   challenge,
   onChallenge,
+  visible,
   onClose,
+  onHidden,
 }: {
   phone: string;
   challenge: Challenge;
   onChallenge: (next: Challenge) => void;
+  visible: boolean;
   onClose: () => void;
+  onHidden: () => void;
 }) {
   const { t } = useTranslation();
   const [code, setCode] = useState("");
@@ -187,7 +196,12 @@ function TwoFactorSheet({
   };
 
   return (
-    <Sheet visible onClose={onClose} closeLabel={t("components.shared.nav.close")}>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      onHidden={onHidden}
+      closeLabel={t("components.shared.nav.close")}
+    >
       <Text className="mb-1.5 text-heading font-semibold">
         {t("screens.signIn.twoFactor.title")}
       </Text>
