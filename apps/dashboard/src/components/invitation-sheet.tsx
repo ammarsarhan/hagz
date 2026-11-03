@@ -1,5 +1,5 @@
 import type { components } from "@hagz/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { api } from "@/lib/api";
@@ -17,14 +17,18 @@ type StaffVenue = components["schemas"]["StaffVenue"];
 
 // One sheet for joining a venue, whose content changes in place rather than stacking sheets:
 // typing a code (from "Have a code?"), the invitation itself with what it grants, or why it can't be
-// accepted (it ended, or they're already on the team).
+// accepted (it ended, they're already on the team, or a link sent to another number).
 type Step =
   | { kind: "code" }
+  | { kind: "opening"; code: string }
+  | { kind: "elsewhere"; code: string }
   | { kind: "offer"; invitation: ReceivedInvitation; code?: string }
   | { kind: "ended"; invitedBy?: string }
   | { kind: "member"; venue: string };
 
 const CODE_LENGTH = 6;
+
+export type SheetStart = ReceivedInvitation | "code" | { link: string };
 
 export function InvitationSheet({
   start,
@@ -34,9 +38,10 @@ export function InvitationSheet({
   onClose,
   onJoined,
   onDeclined,
+  onSwitchNumber,
 }: {
-  // An invitation from the list, or "code" to start by typing one.
-  start: ReceivedInvitation | "code";
+  // An invitation from the list, "code" to start by typing one, or the code from a link.
+  start: SheetStart;
   // The signed-in number, without +20, for "sent to …".
   phone: string;
   // Closing: set to false, and unmount on onHidden (after the slide down).
@@ -45,11 +50,17 @@ export function InvitationSheet({
   onClose: () => void;
   onJoined: (venue: StaffVenue) => void;
   onDeclined: (invitationId: string) => void;
+  // "Sign in with another number", for a link sent to a different one.
+  onSwitchNumber: (code: string) => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
-  const [step, setStep] = useState<Step>(
-    start === "code" ? { kind: "code" } : { kind: "offer", invitation: start },
+  const [step, setStep] = useState<Step>(() =>
+    start === "code"
+      ? { kind: "code" }
+      : "link" in start
+        ? { kind: "opening", code: start.link }
+        : { kind: "offer", invitation: start },
   );
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState<string>();
@@ -85,6 +96,32 @@ export function InvitationSheet({
       setCodeError(fieldMessage(result.error));
     } else showReason(result.error);
   };
+
+  // A link's code is exact, so "not found" means it was sent to another number: the API answers
+  // the same for both on purpose, so codes can't be probed. Anything else unexpected closes the sheet
+  // behind a HUD, since there's nothing here to retry with.
+  const openLink = async (value: string) => {
+    const result = await send(
+      api.GET("/v1/staff/invitations/code/{code}", { params: { path: { code: value } } }),
+    );
+    if (result.ok) {
+      setStep({ kind: "offer", invitation: result.data, code: value });
+      return;
+    }
+    const failure = problem(result.error)?.code;
+    if (failure === "INVITATION_NOT_FOUND") setStep({ kind: "elsewhere", code: value });
+    else if (failure === "INVITATION_EXPIRED" || failure === "ALREADY_A_MEMBER") {
+      showReason(result.error);
+    } else {
+      hud.show(hudMessage(result.error));
+      onClose();
+    }
+  };
+
+  // Once, when the sheet opens on a link.
+  useEffect(() => {
+    if (step.kind === "opening") void openLink(step.code);
+  }, []);
 
   const join = async (invitation: ReceivedInvitation, byCode?: string) => {
     setBusy("join");
@@ -144,6 +181,37 @@ export function InvitationSheet({
               disabled={code.length < CODE_LENGTH || Boolean(codeError) || locked}
               loading={busy === "look-up"}
               onPress={() => void lookUp(code)}
+            />
+          </View>
+        </>
+      ) : null}
+
+      {step.kind === "opening" ? (
+        <>
+          <Heading
+            title={t("screens.invitation.opening.title")}
+            subtitle={t("screens.invitation.opening.body", {
+              phone: isolate(displayPhone(phone)),
+            })}
+          />
+          <Button label={t("screens.invitation.opening.title")} loading onPress={() => undefined} />
+        </>
+      ) : null}
+
+      {step.kind === "elsewhere" ? (
+        <>
+          <Heading
+            title={t("screens.invitation.elsewhere.title")}
+            subtitle={t("screens.invitation.elsewhere.body", {
+              phone: isolate(displayPhone(phone)),
+            })}
+          />
+          <View className="gap-2.5">
+            <Button label={t("screens.invitation.elsewhere.gotIt")} onPress={onClose} />
+            <Button
+              label={t("screens.invitation.elsewhere.switch")}
+              variant="ghost"
+              onPress={() => onSwitchNumber(step.code)}
             />
           </View>
         </>

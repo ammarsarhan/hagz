@@ -16,16 +16,18 @@ import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import { InfoRows } from "@/components/info-rows";
 import { InvitationCard, type ReceivedInvitation } from "@/components/invitation-card";
-import { InvitationSheet } from "@/components/invitation-sheet";
+import { InvitationSheet, type SheetStart } from "@/components/invitation-sheet";
 import { NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { StartTiles } from "@/components/start-tiles";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { api } from "@/lib/api";
+import { api, auth } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
+import { resetTo } from "@/lib/navigation";
+import { pendingInvitation } from "@/lib/pending-invitation";
 import { displayPhone, isolate } from "@/lib/phone";
 
 type Staff = components["schemas"]["Staff"];
@@ -48,19 +50,20 @@ interface Loaded {
 // Where signing in lands. Staff who belong to a venue go to it (its home comes next); staff who
 // don't see first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable
 // row of blue cards, then the other ways to start. It fits on one screen, so the page doesn't scroll;
-// only the carousel moves, and it runs to the screen edges.
+// only the carousel moves, and it runs to the screen edges. An invitation link opened on the way
+// here (manage/invite/[code]) opens in the sheet once the page has loaded.
 export default function Home() {
   const { t } = useTranslation();
   const hud = useHud();
   const [data, setData] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState(false);
   // The sheet's content, kept while it slides away; `sheetOpen` is what shows or hides it.
-  const [sheet, setSheet] = useState<ReceivedInvitation | "code" | null>(null);
+  const [sheet, setSheet] = useState<SheetStart | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   // What to do once the sheet has slid away (reload, or drop a declined invitation).
   const afterSheet = useRef<() => void>(() => undefined);
   const [declining, setDeclining] = useState<string | null>(null);
-  const openSheet = (start: ReceivedInvitation | "code") => {
+  const openSheet = (start: SheetStart) => {
     setSheet(start);
     setSheetOpen(true);
   };
@@ -88,6 +91,23 @@ export default function Home() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Opened from a link: once there's a page under it, the sheet looks the code up.
+  const loaded = data !== null;
+  useEffect(() => {
+    if (!loaded) return;
+    const link = pendingInvitation.take();
+    if (link) openSheet({ link });
+  }, [loaded]);
+
+  // Signed in with the wrong number: sign out, keeping the code, so signing in with the invited
+  // number opens it again. Onboarding stays underneath sign-in, as when signing in from the start.
+  const switchNumber = async (code: string) => {
+    await auth.signOut();
+    pendingInvitation.keep(code);
+    resetTo("/");
+    router.push("/sign-in");
+  };
 
   const dropInvitation = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -145,6 +165,23 @@ export default function Home() {
     );
   }
 
+  const sheetView = sheet ? (
+    <InvitationSheet
+      start={sheet}
+      phone={data.me.phone.replace(/^\+20/, "")}
+      visible={sheetOpen}
+      onHidden={() => {
+        setSheet(null);
+        afterSheet.current();
+      }}
+      // The invitations may have changed (ended, joined elsewhere): show the current ones.
+      onClose={() => closeSheet(() => void load())}
+      onJoined={() => closeSheet(() => void load())}
+      onDeclined={(id) => closeSheet(() => dropInvitation(id))}
+      onSwitchNumber={(code) => void switchNumber(code)}
+    />
+  ) : null;
+
   const firstName = data.me.name.trim().split(/\s+/)[0] ?? "";
 
   // Belongs to a venue: its home is the next screen to build.
@@ -154,6 +191,7 @@ export default function Home() {
       <Screen>
         {topBar}
         <Title subtitle={t("screens.venueHome.subtitle")}>{venue.name ?? ""}</Title>
+        {sheetView}
       </Screen>
     );
   }
@@ -216,21 +254,7 @@ export default function Home() {
         </>
       )}
 
-      {sheet ? (
-        <InvitationSheet
-          start={sheet}
-          phone={data.me.phone.replace(/^\+20/, "")}
-          visible={sheetOpen}
-          onHidden={() => {
-            setSheet(null);
-            afterSheet.current();
-          }}
-          // The invitations may have changed (ended, joined elsewhere): show the current ones.
-          onClose={() => closeSheet(() => void load())}
-          onJoined={() => closeSheet(() => void load())}
-          onDeclined={(id) => closeSheet(() => dropInvitation(id))}
-        />
-      ) : null}
+      {sheetView}
     </Screen>
   );
 }
