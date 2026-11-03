@@ -31,12 +31,15 @@ export default function Components() {
 
   return (
     <Screen>
+      {/* Outside the scroll view, which would clip the round buttons (they sit 4px outside the gutter). */}
+      <View className="pt-2">
+        <NavBar
+          start={<BackButton label={t("components.shared.nav.back")} />}
+          end={<CloseButton label={t("components.shared.nav.close")} />}
+        />
+      </View>
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View className="pt-2">
-          <NavBar
-            start={<BackButton label={t("components.shared.nav.back")} />}
-            end={<CloseButton label={t("components.shared.nav.close")} />}
-          />
+        <View>
           <Title subtitle={t("screens.components.subtitle")}>{t("screens.components.title")}</Title>
 
           <PhoneField

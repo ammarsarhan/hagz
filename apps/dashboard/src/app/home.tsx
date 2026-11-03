@@ -125,8 +125,9 @@ export default function Home() {
         </>
       }
     >
+      {/* Outside the scroll view: it would clip the round buttons, which sit 4px outside the gutter. */}
+      {topBar}
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {topBar}
         <Title
           subtitle={
             invited ? t("screens.firstRun.invitedSubtitle") : t("screens.firstRun.emptySubtitle")
