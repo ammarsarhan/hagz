@@ -332,6 +332,7 @@ function SignOutSheet({ visible, onClose }: { visible: boolean; onClose: () => v
       <View className="gap-2.5">
         <Button
           label={t("common.actions.signOut")}
+          variant="ink"
           loading={signingOut}
           onPress={() => void signOut()}
         />
