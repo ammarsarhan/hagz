@@ -40,9 +40,9 @@ export default function Blocked() {
       }
     >
       <Stack.Screen options={{ gestureEnabled: false }} />
-      {/* No back button: the 40px icon takes the nav row's place, so the title sits where it does on
-          other screens. */}
-      <View className="mb-[22px]">
+      {/* No back button: the 40px icon takes the nav row's place, set 8px lower and 8px closer to the
+          title, so the title still sits where it does on other screens. */}
+      <View className="mb-3.5 mt-2">
         <IconAlertCircle size={40} color={colors.unit} strokeWidth={1.75} />
       </View>
       <Title subtitle={t(`screens.blocked.${copy}.body`)}>
