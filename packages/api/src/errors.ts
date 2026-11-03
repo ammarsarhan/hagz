@@ -51,6 +51,10 @@ const messages = {
     en: "That phone number and password don't match.",
     ar: "رقم الهاتف وكلمة المرور غير متطابقين.",
   },
+  ACCOUNT_BANNED: {
+    en: "This account was closed for breaking Hagz's terms. Contact support for help.",
+    ar: "تم إغلاق هذا الحساب لمخالفة شروط حجز. تواصل مع الدعم للمساعدة.",
+  },
   ACCOUNT_SUSPENDED: {
     en: "This account has been suspended. Contact support for help.",
     ar: "تم إيقاف هذا الحساب. تواصل مع الدعم للمساعدة.",

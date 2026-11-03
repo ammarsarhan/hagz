@@ -2330,7 +2330,7 @@
             }
           },
           "403": {
-            "description": "ACCOUNT_SUSPENDED",
+            "description": "ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent",
             "content": {
               "application/problem+json": {
                 "schema": {

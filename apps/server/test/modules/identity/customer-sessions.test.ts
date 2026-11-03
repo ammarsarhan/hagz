@@ -92,6 +92,15 @@ describe("sign in", () => {
     expect(await json(res)).toMatchObject({ code: "ACCOUNT_SUSPENDED" });
   });
 
+  it("says an account is banned (not just suspended) only after the right password", async () => {
+    await createCustomer({ status: "BANNED" });
+
+    expect((await signIn(PHONE, "wrong")).status).toBe(401);
+    const res = await signIn();
+    expect(res.status).toBe(403);
+    expect(await json(res)).toMatchObject({ code: "ACCOUNT_BANNED" });
+  });
+
   it("upgrades a password hashed under an older policy", async () => {
     const { id } = await createCustomer({
       passwordHash: await hash(PASSWORD, { memoryCost: 4096, timeCost: 2, parallelism: 1 }),

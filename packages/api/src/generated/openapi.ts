@@ -1191,7 +1191,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ACCOUNT_SUSPENDED */
+                /** @description ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent */
                 403: {
                     headers: {
                         [name: string]: unknown;

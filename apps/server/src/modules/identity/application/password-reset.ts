@@ -15,7 +15,7 @@ import {
 } from "../domain/policy";
 import { codeExpired, consumeCode, issueCode } from "./account-codes";
 import type { Account, AccountStore } from "./accounts";
-import { accountSuspended } from "./sessions";
+import { accountBlocked } from "./sessions";
 import { discardVerificationToken, redis, verifiedPhone } from "./verification-codes";
 
 // The same answer for every number. A code goes out only to an active account that may reset by
@@ -96,7 +96,7 @@ export const verifyPasswordReset = async (
     const phone = await verifiedPhone(store.type, proof.verificationToken);
     const account = await store.findByPhone(phone);
     if (!account) throw resetExpired();
-    if (account.status !== "ACTIVE") throw accountSuspended();
+    if (account.status !== "ACTIVE") throw accountBlocked(account.status);
     if (!(await store.selfServiceReset(account))) throw throughSupport();
     await discardVerificationToken(store.type, proof.verificationToken);
     return issueResetToken(store, account);

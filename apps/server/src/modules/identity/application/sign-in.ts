@@ -7,7 +7,7 @@ import { parseMobileNumber } from "@/platform/phone/phone";
 import { consume } from "@/platform/rate-limit/rate-limit";
 import { limits } from "../domain/policy";
 import type { AccountStore } from "./accounts";
-import { accountSuspended, openSession, type Authenticated, type DeviceInfo } from "./sessions";
+import { accountBlocked, openSession, type Authenticated, type DeviceInfo } from "./sessions";
 import { startTwoFactorSignIn } from "./two-factor";
 
 export interface SignInInput {
@@ -38,7 +38,7 @@ export const signIn = async (
     throw invalidCredentials();
 
   // Only told after the right password, so it can't be used to probe which numbers exist.
-  if (account.status !== "ACTIVE") throw accountSuspended();
+  if (account.status !== "ACTIVE") throw accountBlocked(account.status);
 
   // A stronger hashing policy takes effect as people sign in.
   if (needsRehash(account.passwordHash)) {

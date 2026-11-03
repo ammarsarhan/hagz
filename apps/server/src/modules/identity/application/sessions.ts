@@ -1,3 +1,4 @@
+import type { AccountStatus } from "@/generated/prisma/enums";
 import type { Session } from "@hagz/contracts";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { signJwt } from "@/platform/crypto/jwt";
@@ -201,6 +202,17 @@ export const accountSuspended = () =>
     status: 403,
     detail: "This account can't sign in. Please contact support.",
   });
+
+// For someone who has just proved they hold the account (right password, two-factor code, or a
+// verified number): which kind of block, so the app can say whether it's temporary or permanent.
+export const accountBlocked = (status: AccountStatus) =>
+  status === "BANNED"
+    ? new AppError({
+        code: "ACCOUNT_BANNED",
+        status: 403,
+        detail: "This account was closed for breaking Hagz's terms. Please contact support.",
+      })
+    : accountSuspended();
 
 // The last step of every sign-in: record it and open a session.
 export const openSession = (

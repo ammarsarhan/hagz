@@ -111,7 +111,7 @@ const signInWithPassword = createRoute({
     401: problemResponse(
       "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
     ),
-    403: problemResponse("ACCOUNT_SUSPENDED"),
+    403: problemResponse("ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent"),
     429: problemResponse("RATE_LIMITED"),
     503: unavailable,
   },
