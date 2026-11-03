@@ -18,6 +18,7 @@ import { InvitationCard, type ReceivedInvitation } from "@/components/invitation
 import { InvitationSheet } from "@/components/invitation-sheet";
 import { NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
+import { StartTiles } from "@/components/start-tiles";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
@@ -144,16 +145,12 @@ export default function Home() {
 
   const { invitations } = data;
   const invited = invitations.length > 0;
-  const createVenue = {
-    title: t("screens.firstRun.createVenueTitle"),
-    body: t("screens.firstRun.createVenueBody"),
-    onPress: () => router.push("/create-venue"),
-  };
-  const haveCode = {
-    title: t("screens.firstRun.haveCode"),
-    body: t("screens.firstRun.haveCodeBody"),
-    onPress: () => openSheet("code"),
-  };
+  const startTiles = (
+    <StartTiles
+      onCreateVenue={() => router.push("/create-venue")}
+      onHaveCode={() => openSheet("code")}
+    />
+  );
 
   return (
     <Screen>
@@ -184,21 +181,24 @@ export default function Home() {
           <View className="mt-[22px]">
             <SectionLabel>{t("screens.firstRun.moreWays")}</SectionLabel>
           </View>
-          <InfoRows rows={[createVenue, haveCode]} />
+          {startTiles}
         </>
       ) : (
-        <InfoRows
-          rows={[
-            createVenue,
-            {
-              title: t("screens.firstRun.joiningTitle"),
-              body: t("screens.firstRun.joiningBody", {
-                phone: isolate(displayPhone(data.me.phone.replace(/^\+20/, ""))),
-              }),
-            },
-            haveCode,
-          ]}
-        />
+        <>
+          {startTiles}
+          <View className="mt-[22px]">
+            <InfoRows
+              rows={[
+                {
+                  title: t("screens.firstRun.joiningTitle"),
+                  body: t("screens.firstRun.joiningBody", {
+                    phone: isolate(displayPhone(data.me.phone.replace(/^\+20/, ""))),
+                  }),
+                },
+              ]}
+            />
+          </View>
+        </>
       )}
 
       {sheet ? (

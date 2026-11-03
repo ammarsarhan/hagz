@@ -60,6 +60,7 @@ const en = {
         invitations: "Invitations · {{count}}",
         moreWays: "More ways to start",
         createVenueTitle: "Create your venue",
+        createVenueTileBody: "Pitches, schedules and prices.",
         createVenueBody:
           "Add your pitches, schedules and prices. Our team reviews it before it goes live.",
         joiningTitle: "Joining someone's venue?",

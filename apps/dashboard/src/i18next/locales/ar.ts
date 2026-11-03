@@ -78,6 +78,7 @@ const ar: ArabicTranslations = {
         invitations: "الدعوات · {{count}}",
         moreWays: "طرق أخرى للبدء",
         createVenueTitle: "أنشئ ملعبك",
+        createVenueTileBody: "ملاعبك ومواعيدك وأسعارك.",
         createVenueBody: "أضف ملاعبك ومواعيدك وأسعارك. يراجعه فريقنا قبل نشره.",
         joiningTitle: "تنضم إلى ملعب شخص آخر؟",
         joiningBody: "اطلب من المالك دعوة {{phone}}. ستظهر الدعوة هنا.",
