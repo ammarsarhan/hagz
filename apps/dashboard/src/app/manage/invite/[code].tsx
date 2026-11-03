@@ -1,14 +1,15 @@
 import { useLocalSearchParams } from "expo-router";
-import { Text, View } from "react-native";
+import { Screen } from "@/components/screen";
+import { Text } from "@/components/text";
 
 // Where a staff invitation link lands (ROUTES.staffInvitation). The screen itself comes with the
-// dashboard's sign-in: show GET /v1/staff/invitations/code/{code}, then accept or decline.
+// first-run work: show GET /v1/staff/invitations/code/{code}, then accept or decline.
 export default function StaffInvitation() {
   const { code } = useLocalSearchParams<{ code: string }>();
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>Invitation {code}</Text>
-    </View>
+    <Screen>
+      <Text className="mt-6 text-subtitle">Invitation {code}</Text>
+    </Screen>
   );
 }

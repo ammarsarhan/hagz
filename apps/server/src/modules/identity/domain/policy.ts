@@ -9,6 +9,8 @@ export const RESEND_AFTER_SECONDS = 60;
 // A code is burned after this many wrong guesses; a new one must be requested.
 export const MAX_CODE_ATTEMPTS = 5;
 export const VERIFICATION_TOKEN_TTL_SECONDS = 15 * 60;
+// How long a verified reset (code or sign-up verification) stays good for setting the password.
+export const RESET_TOKEN_TTL_SECONDS = 15 * 60;
 // How long a sign-in may wait for its second factor.
 export const TWO_FACTOR_CHALLENGE_TTL_SECONDS = CODE_TTL_SECONDS;
 

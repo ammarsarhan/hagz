@@ -672,6 +672,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/customer/password-resets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the reset code, before choosing the new password
+         * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PasswordResetVerified"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/customer/password-resets/confirm": {
         parameters: {
             query?: never;
@@ -682,7 +761,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Set a new password with the reset code
+         * Set the new password
          * @description Signs out every session; sign in again with the new password.
          */
         post: {
@@ -705,7 +784,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                /** @description RESET_TOKEN_INVALID: verify again. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -714,8 +793,8 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED */
-                429: {
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1112,7 +1191,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ACCOUNT_SUSPENDED */
+                /** @description ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1411,7 +1490,7 @@ export interface paths {
         put?: never;
         /**
          * Send a password reset code
-         * @description The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and the app should say so on this screen. Warn members before they ask: a reset makes them read-only at every venue until a staff manager restores them.
+         * @description The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn members before the new password is set: a reset makes them read-only at every venue until a staff manager restores them.
          */
         post: {
             parameters: {
@@ -1470,6 +1549,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/staff/password-resets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the reset code, before choosing the new password
+         * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PasswordResetVerified"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/staff/password-resets/confirm": {
         parameters: {
             query?: never;
@@ -1480,7 +1638,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Set a new password with the reset code
+         * Set the new password
          * @description Signs out every session, and lowers every permission to at most `view` at each venue the member belongs to. The owner and members who manage staff are notified; the previous permissions are kept so they can be restored.
          */
         post: {
@@ -1503,7 +1661,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                /** @description RESET_TOKEN_INVALID: verify again. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1512,8 +1670,8 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED */
-                429: {
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1523,6 +1681,54 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in staff member
+         * @description Name, phone and language, for the app to greet and label them after a relaunch.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Staff"];
+                    };
+                };
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2862,7 +3068,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -2922,7 +3128,7 @@ export interface paths {
                         "application/json": components["schemas"]["ReceivedStaffInvitation"];
                     };
                 };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -3008,7 +3214,7 @@ export interface paths {
                         "application/json": components["schemas"]["StaffVenue"];
                     };
                 };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -3100,7 +3306,7 @@ export interface paths {
                         "application/json": components["schemas"]["StaffVenue"];
                     };
                 };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -3298,6 +3504,8 @@ export interface components {
             verificationToken: string;
             /** @example 900 */
             expiresIn: number;
+            /** @description Whether this number already has an account, so the app can offer sign-in instead of asking for a name and password. Only told to whoever has just proved they hold the number. */
+            accountExists: boolean;
         };
         ConfirmVerificationCode: {
             /**
@@ -3320,6 +3528,8 @@ export interface components {
             phone: string;
             /** @enum {string} */
             language: "AR" | "EN";
+            /** @description Whether sign-in also asks for a code. */
+            twoFactorEnabled: boolean;
         };
         Session: {
             accessToken: string;
@@ -3382,7 +3592,13 @@ export interface components {
              */
             phone: string;
         };
-        ConfirmPasswordReset: {
+        PasswordResetVerified: {
+            /** @description Single use. Sets the new password. */
+            resetToken: string;
+            /** @example 900 */
+            expiresIn: number;
+        };
+        VerifyPasswordReset: {
             /**
              * @description Mobile number with its country code.
              * @example +20 100 123 4567
@@ -3390,6 +3606,12 @@ export interface components {
             phone: string;
             /** @example 482913 */
             code: string;
+        } | {
+            /** @description From confirming a sign-up code for the same number: proves it, so no reset code is needed. */
+            verificationToken: string;
+        };
+        ConfirmPasswordReset: {
+            resetToken: string;
             newPassword: string;
         };
         TwoFactorStatus: {
@@ -3413,6 +3635,8 @@ export interface components {
             phone: string;
             /** @enum {string} */
             language: "AR" | "EN";
+            /** @description Whether sign-in also asks for a code. */
+            twoFactorEnabled: boolean;
         };
         StaffSignUp: {
             verificationToken: string;
@@ -3657,6 +3881,11 @@ export interface components {
                 name: string | null;
                 /** @description Street address in `Accept-Language`, else any language. */
                 address: string | null;
+                /**
+                 * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
+                 * @example Zamalek, Cairo
+                 */
+                location: string | null;
                 /** @description Grounds in use or under maintenance. */
                 groundCount: number;
                 team: {

@@ -7,6 +7,11 @@ const variants = {
   primary: { box: "bg-primary", label: "text-on-primary" },
   secondary: { box: "bg-chip", label: "text-ink" },
   ghost: { box: "bg-transparent", label: "text-ink" },
+  // Black: confirming something that isn't the screen's main action (sign out).
+  ink: { box: "bg-ink", label: "text-white" },
+  // On the blue onboarding slides.
+  inverse: { box: "bg-white", label: "text-primary" },
+  inverseSecondary: { box: "bg-white/15", label: "text-white" },
 } as const;
 
 interface ButtonProps {
@@ -37,7 +42,9 @@ export function Button({
       className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.onPrimary : colors.ink} />
+        <ActivityIndicator
+          color={variant === "primary" || variant === "ink" ? colors.onPrimary : colors.ink}
+        />
       ) : (
         <Text className={`text-center text-button font-semibold ${style.label}`}>{label}</Text>
       )}

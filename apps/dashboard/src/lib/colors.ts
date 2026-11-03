@@ -8,4 +8,5 @@ export const colors = {
   primary: "#1f38ed",
   onPrimary: "#ffffff",
   red: "#d92d20",
+  green: "#067647",
 } as const;

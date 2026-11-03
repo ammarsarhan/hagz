@@ -51,6 +51,10 @@ const messages = {
     en: "That phone number and password don't match.",
     ar: "رقم الهاتف وكلمة المرور غير متطابقين.",
   },
+  ACCOUNT_BANNED: {
+    en: "This account was closed for breaking Hagz's terms. Contact support for help.",
+    ar: "تم إغلاق هذا الحساب لمخالفة شروط حجز. تواصل مع الدعم للمساعدة.",
+  },
   ACCOUNT_SUSPENDED: {
     en: "This account has been suspended. Contact support for help.",
     ar: "تم إيقاف هذا الحساب. تواصل مع الدعم للمساعدة.",
@@ -77,6 +81,14 @@ const messages = {
   VERIFICATION_TOKEN_INVALID: {
     en: "Your phone verification has expired. Please verify your number again.",
     ar: "انتهت صلاحية التحقق من رقمك. تحقق منه مرة أخرى.",
+  },
+  RESET_TOKEN_INVALID: {
+    en: "This reset has expired. Please start again.",
+    ar: "انتهت صلاحية إعادة التعيين. ابدأ من جديد.",
+  },
+  PASSWORD_RESET_THROUGH_SUPPORT: {
+    en: "Venue owners reset their password through Hagz support.",
+    ar: "يعيد ملاك الملاعب تعيين كلمة المرور عبر دعم حجز.",
   },
   MESSAGING_UNAVAILABLE: {
     en: "We couldn't send the code right now. Please try again in a moment.",
@@ -165,4 +177,22 @@ export const errorMessage = (error: unknown, language: Language): string => {
   if (!isProblem(error)) return offline[language];
   const code = Object.hasOwn(messages, error.code) ? (error.code as ProblemCode) : "INTERNAL_ERROR";
   return messages[code][language];
+};
+
+// Short versions for the HUD, the floating line used when a problem isn't the person's fault. Only
+// those codes have one; anything else that reaches the HUD reads "Something went wrong".
+const short = {
+  MESSAGING_UNAVAILABLE: { en: "Couldn't send the code", ar: "تعذّر إرسال الرمز" },
+  VERIFICATION_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
+} as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
+
+const offlineShort = { en: "You're offline", ar: "أنت غير متصل" } as const;
+
+export const shortErrorMessage = (error: unknown, language: Language): string => {
+  if (!isProblem(error)) return offlineShort[language];
+  const code = Object.hasOwn(short, error.code) ? (error.code as keyof typeof short) : null;
+  return (code ? short[code] : short.SERVICE_UNAVAILABLE)[language];
 };

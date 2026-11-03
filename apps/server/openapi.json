@@ -147,11 +147,16 @@
           "expiresIn": {
             "type": "integer",
             "example": 900
+          },
+          "accountExists": {
+            "type": "boolean",
+            "description": "Whether this number already has an account, so the app can offer sign-in instead of asking for a name and password. Only told to whoever has just proved they hold the number."
           }
         },
         "required": [
           "verificationToken",
-          "expiresIn"
+          "expiresIn",
+          "accountExists"
         ]
       },
       "ConfirmVerificationCode": {
@@ -210,13 +215,18 @@
               "AR",
               "EN"
             ]
+          },
+          "twoFactorEnabled": {
+            "type": "boolean",
+            "description": "Whether sign-in also asks for a code."
           }
         },
         "required": [
           "id",
           "name",
           "phone",
-          "language"
+          "language",
+          "twoFactorEnabled"
         ]
       },
       "Session": {
@@ -387,20 +397,67 @@
           "phone"
         ]
       },
+      "PasswordResetVerified": {
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": "string",
+            "description": "Single use. Sets the new password."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 900
+          }
+        },
+        "required": [
+          "resetToken",
+          "expiresIn"
+        ]
+      },
+      "VerifyPasswordReset": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "phone": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32,
+                "description": "Mobile number with its country code.",
+                "example": "+20 100 123 4567"
+              },
+              "code": {
+                "type": "string",
+                "pattern": "^\\d{6}$",
+                "example": "482913"
+              }
+            },
+            "required": [
+              "phone",
+              "code"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "verificationToken": {
+                "type": "string",
+                "minLength": 1,
+                "description": "From confirming a sign-up code for the same number: proves it, so no reset code is needed."
+              }
+            },
+            "required": [
+              "verificationToken"
+            ]
+          }
+        ]
+      },
       "ConfirmPasswordReset": {
         "type": "object",
         "properties": {
-          "phone": {
+          "resetToken": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 32,
-            "description": "Mobile number with its country code.",
-            "example": "+20 100 123 4567"
-          },
-          "code": {
-            "type": "string",
-            "pattern": "^\\d{6}$",
-            "example": "482913"
+            "minLength": 1
           },
           "newPassword": {
             "type": "string",
@@ -409,8 +466,7 @@
           }
         },
         "required": [
-          "phone",
-          "code",
+          "resetToken",
           "newPassword"
         ]
       },
@@ -478,13 +534,18 @@
               "AR",
               "EN"
             ]
+          },
+          "twoFactorEnabled": {
+            "type": "boolean",
+            "description": "Whether sign-in also asks for a code."
           }
         },
         "required": [
           "id",
           "name",
           "phone",
-          "language"
+          "language",
+          "twoFactorEnabled"
         ]
       },
       "StaffSignUp": {
@@ -1109,6 +1170,14 @@
                 ],
                 "description": "Street address in `Accept-Language`, else any language."
               },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Where the venue is: its area and the place above it, in `Accept-Language`, else any language.",
+                "example": "Zamalek, Cairo"
+              },
               "groundCount": {
                 "type": "integer",
                 "minimum": 0,
@@ -1144,6 +1213,7 @@
               "id",
               "name",
               "address",
+              "location",
               "groundCount",
               "team"
             ]
@@ -1823,12 +1893,83 @@
         }
       }
     },
+    "/v1/auth/customer/password-resets/verify": {
+      "post": {
+        "tags": [
+          "Customer auth"
+        ],
+        "summary": "Check the reset code, before choosing the new password",
+        "description": "With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetVerified"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/customer/password-resets/confirm": {
       "post": {
         "tags": [
           "Customer auth"
         ],
-        "summary": "Set a new password with the reset code",
+        "summary": "Set the new password",
         "description": "Signs out every session; sign in again with the new password.",
         "requestBody": {
           "required": true,
@@ -1845,7 +1986,7 @@
             "description": "Password changed"
           },
           "400": {
-            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "description": "RESET_TOKEN_INVALID: verify again.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1854,8 +1995,8 @@
               }
             }
           },
-          "429": {
-            "description": "RATE_LIMITED",
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2208,7 +2349,7 @@
             }
           },
           "403": {
-            "description": "ACCOUNT_SUSPENDED",
+            "description": "ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2457,7 +2598,7 @@
           "Staff auth"
         ],
         "summary": "Send a password reset code",
-        "description": "The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and the app should say so on this screen. Warn members before they ask: a reset makes them read-only at every venue until a staff manager restores them.",
+        "description": "The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn members before the new password is set: a reset makes them read-only at every venue until a staff manager restores them.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2512,12 +2653,83 @@
         }
       }
     },
+    "/v1/auth/staff/password-resets/verify": {
+      "post": {
+        "tags": [
+          "Staff auth"
+        ],
+        "summary": "Check the reset code, before choosing the new password",
+        "description": "With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetVerified"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/staff/password-resets/confirm": {
       "post": {
         "tags": [
           "Staff auth"
         ],
-        "summary": "Set a new password with the reset code",
+        "summary": "Set the new password",
         "description": "Signs out every session, and lowers every permission to at most `view` at each venue the member belongs to. The owner and members who manage staff are notified; the previous permissions are kept so they can be restored.",
         "requestBody": {
           "required": true,
@@ -2534,7 +2746,7 @@
             "description": "Password changed"
           },
           "400": {
-            "description": "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED",
+            "description": "RESET_TOKEN_INVALID: verify again.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2543,8 +2755,44 @@
               }
             }
           },
-          "429": {
-            "description": "RATE_LIMITED",
+          "503": {
+            "description": "SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/me": {
+      "get": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "The signed-in staff member",
+        "description": "Name, phone and language, for the app to greet and label them after a relaunch.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Their profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Staff"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3891,7 +4139,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3952,7 +4200,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4042,7 +4290,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4138,7 +4386,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
             "content": {
               "application/problem+json": {
                 "schema": {

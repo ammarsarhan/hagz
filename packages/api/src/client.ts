@@ -170,9 +170,11 @@ export const createApiClient = (options: ApiClientOptions) => {
     const retry = input.clone();
     const sentAt = generation;
     const response = await baseFetch(await withHeaders(input));
-    if (response.status !== 401 || (await problemCode(response)) !== "TOKEN_EXPIRED") {
-      return response;
-    }
+    if (response.status !== 401) return response;
+    const code = await problemCode(response);
+    // The token is still good but the session isn't (the account is gone): sign in again.
+    if (code === "SESSION_ENDED") await endSession();
+    if (code !== "TOKEN_EXPIRED") return response;
 
     const refreshed = await refresh(sentAt);
     // The refresh's error says more than TOKEN_EXPIRED (SESSION_ENDED, SERVICE_UNAVAILABLE). Each

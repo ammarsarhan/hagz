@@ -248,7 +248,22 @@ describe("answering an invitation", () => {
     expect(left.data.map((r) => r.id)).toEqual([second.invitationId]);
   });
 
-  it("shows the venue's address, grounds in use, and the team only as initials", async () => {
+  it("ends the session of an account that's gone, and turns a suspended one away", async () => {
+    await sendTo();
+    const gone = await createStaff({ phone: INVITEE });
+    await prisma.staff.delete({ where: { id: gone.id } });
+    const res = await call(gone.id, "GET", "/invitations");
+    expect(res.status).toBe(401);
+    expect((await problem(res)).code).toBe("SESSION_ENDED");
+
+    const suspended = await createStaff({ phone: INVITEE });
+    await prisma.staff.update({ where: { id: suspended.id }, data: { status: "SUSPENDED" } });
+    expect((await problem(await call(suspended.id, "GET", "/invitations"))).code).toBe(
+      "ACCOUNT_SUSPENDED",
+    );
+  });
+
+  it("shows the venue's address and area, grounds in use, and the team only as initials", async () => {
     const { venue, owner, manager } = await sendTo();
     const invitee = await createStaff({ phone: INVITEE });
     await prisma.staff.update({ where: { id: owner.id }, data: { name: "Omar Saleh" } });
@@ -260,6 +275,25 @@ describe("answering an invitation", () => {
       where: { venueId_language: { venueId: venue.id, language: "AR" } },
       data: { address: "14 شارع عباس العقاد، مدينة نصر" },
     });
+    // The venue sits in a district of a governorate: the card names both.
+    const place = (slug: string, en: string, ar: string, parentId?: string) =>
+      prisma.location.create({
+        data: {
+          marketplaceId: venue.marketplaceId,
+          parentId,
+          locality: parentId ? "DISTRICT" : "GOVERNORATE",
+          slug,
+          translations: {
+            create: [
+              { language: "EN", name: en },
+              { language: "AR", name: ar },
+            ],
+          },
+        },
+      });
+    const cairo = await place("cairo", "Cairo", "القاهرة");
+    const nasrCity = await place("nasr-city", "Nasr City", "مدينة نصر", cairo.id);
+    await prisma.venue.update({ where: { id: venue.id }, data: { locationId: nasrCity.id } });
     const ground = {
       venueId: venue.id,
       sport: "FOOTBALL",
@@ -281,6 +315,7 @@ describe("answering an invitation", () => {
     const [received] = list(ReceivedStaffInvitation).parse(JSON.parse(raw)).data;
     expect(received?.venue).toMatchObject({
       address: "14 شارع عباس العقاد، مدينة نصر",
+      location: "مدينة نصر، القاهرة",
       groundCount: 3,
       team: { size: 3, initials: ["OS", "MA"] },
     });
