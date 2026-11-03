@@ -11,6 +11,7 @@ import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
+import { resetTo } from "@/lib/navigation";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useTranslation } from "react-i18next";
@@ -50,7 +51,7 @@ export default function SignUpDetails() {
       return;
     }
     await auth.start(result.data.session);
-    router.replace("/home");
+    resetTo("/home");
   };
 
   return (

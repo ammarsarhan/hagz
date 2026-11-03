@@ -8,6 +8,7 @@ import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
 import { auth } from "@/lib/api";
+import { resetTo } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { isRTL } from "@/lib/language";
 
@@ -34,7 +35,7 @@ export default function Onboarding() {
 
   // Signed in already (the session is kept between launches): skip onboarding.
   useEffect(() => {
-    void auth.isSignedIn().then((signedIn) => signedIn && router.replace("/home"));
+    void auth.isSignedIn().then((signedIn) => signedIn && resetTo("/home"));
   }, []);
 
   useEffect(() => {

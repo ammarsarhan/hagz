@@ -15,6 +15,7 @@ import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
+import { resetTo } from "@/lib/navigation";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { displayPhone, isolate } from "@/lib/phone";
@@ -59,7 +60,7 @@ export default function Home() {
 
   const signOut = async () => {
     await auth.signOut();
-    router.replace("/");
+    resetTo("/");
   };
 
   const topBar = data ? (
