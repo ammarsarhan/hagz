@@ -124,6 +124,16 @@ const en = {
         },
         join: "Join venue",
         decline: "Decline",
+        opening: {
+          title: "Opening your invitation",
+          body: "Checking it was sent to {{phone}}.",
+        },
+        elsewhere: {
+          title: "Sent to a different number",
+          body: "You're signed in with {{phone}}. Sign in with the number the invitation was sent to, or ask for one to this number.",
+          gotIt: "Got it",
+          switch: "Sign in with another number",
+        },
         ended: {
           title: "This invitation has ended",
           body: "It expired, was cancelled, or has already been used. Ask {{name}} to send you a new one.",
