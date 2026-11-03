@@ -1,5 +1,5 @@
 import type { components } from "@hagz/api";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -60,11 +60,14 @@ export default function Home() {
   // The sheet's content, kept while it slides away; `sheetOpen` is what shows or hides it.
   const [sheet, setSheet] = useState<SheetStart | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Each opening is a fresh sheet, even over one still showing (a second link while the first is up).
+  const [sheetKey, setSheetKey] = useState(0);
   // What to do once the sheet has slid away (reload, or drop a declined invitation).
   const afterSheet = useRef<() => void>(() => undefined);
   const [declining, setDeclining] = useState<string | null>(null);
   const openSheet = (start: SheetStart) => {
     setSheet(start);
+    setSheetKey((key) => key + 1);
     setSheetOpen(true);
   };
   const closeSheet = (then: () => void) => {
@@ -92,13 +95,17 @@ export default function Home() {
     void load();
   }, [load]);
 
-  // Opened from a link: once there's a page under it, the sheet looks the code up.
+  // Opened from a link: once there's a page under it, the sheet looks the code up. On focus, not
+  // only on mount: a link opened while first run is already up lands back on this same screen,
+  // which doesn't mount again.
   const loaded = data !== null;
-  useEffect(() => {
-    if (!loaded) return;
-    const link = pendingInvitation.take();
-    if (link) openSheet({ link });
-  }, [loaded]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!loaded) return;
+      const link = pendingInvitation.take();
+      if (link) openSheet({ link });
+    }, [loaded]),
+  );
 
   // Signed in with the wrong number: sign out, keeping the code, so signing in with the invited
   // number opens it again. Onboarding stays underneath sign-in, as when signing in from the start.
@@ -167,6 +174,7 @@ export default function Home() {
 
   const sheetView = sheet ? (
     <InvitationSheet
+      key={sheetKey}
       start={sheet}
       phone={data.me.phone.replace(/^\+20/, "")}
       visible={sheetOpen}
