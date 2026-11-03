@@ -5,4 +5,6 @@
 @theme inline {
   --color-primary: var(--color-blue);
   --color-on-primary: var(--color-white);
+  /* Body text on the blue onboarding slides: 5.2:1 on blue, where the soft blue would fail. */
+  --color-on-primary-muted: #d2d7fb;
 }

@@ -30,7 +30,13 @@ const memoryStore = (initial: StoredSession | null = null) => {
 };
 
 // A fake API: access tokens listed in `valid` are accepted; refreshing swaps old for new.
-const fakeApi = (handlers: { refresh?: (request: Request) => Promise<Response> } = {}) => {
+const fakeApi = (
+  handlers: {
+    refresh?: (request: Request) => Promise<Response>;
+    // Answers a signed-in request in place of the usual 200.
+    signedIn?: (request: Request) => Promise<Response>;
+  } = {},
+) => {
   let valid = new Set(["access-1"]);
   let refreshes = 0;
   const requests: Request[] = [];
@@ -53,6 +59,7 @@ const fakeApi = (handlers: { refresh?: (request: Request) => Promise<Response> }
     const token = request.headers.get("Authorization")?.replace("Bearer ", "");
     if (!token) return problem(401, "UNAUTHENTICATED");
     if (!valid.has(token)) return problem(401, "TOKEN_EXPIRED");
+    if (handlers.signedIn) return handlers.signedIn(request);
     if (request.method === "PUT") return json(200, await request.json());
     return json(200, { ok: true });
   });
@@ -164,6 +171,26 @@ describe("createApiClient", () => {
     expect(onSessionEnded).toHaveBeenCalledOnce();
     expect(current()).toBeNull();
     expect(await auth.isSignedIn()).toBe(false);
+  });
+
+  it("ends the session when a request says it has ended, though its token is still good", async () => {
+    const server = fakeApi({ signedIn: () => Promise.resolve(problem(401, "SESSION_ENDED")) });
+    const { store, current } = memoryStore(signedIn);
+    const onSessionEnded = vi.fn();
+    const { api } = createApiClient({
+      baseUrl: BASE,
+      audience: "staff",
+      store,
+      onSessionEnded,
+      fetch: server.fetch,
+    });
+
+    const { error } = await api.GET("/v1/staff/me");
+
+    expect(error).toMatchObject({ code: "SESSION_ENDED" });
+    expect(server.refreshes()).toBe(0);
+    expect(onSessionEnded).toHaveBeenCalledOnce();
+    expect(current()).toBeNull();
   });
 
   it("keeps the session when the refresh fails for another reason", async () => {

@@ -8,6 +8,9 @@ import { Text } from "./text";
 
 // Egyptian mobile numbers: 10 digits after +20, shown grouped as typed (100 123 4567).
 const MAX_DIGITS = 10;
+// The grouped text holds two spaces, so the input stops at 12 characters: a native limit, so an
+// 11th digit never appears instead of appearing and being cut.
+const MAX_LENGTH = MAX_DIGITS + 2;
 export const formatPhone = (digits: string) =>
   [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, MAX_DIGITS)].filter(Boolean).join(" ");
 
@@ -17,12 +20,11 @@ interface PhoneFieldProps {
   onChangeText: (digits: string) => void;
   label?: string;
   error?: string;
-  autoFocus?: boolean;
 }
 
 // The country code sits before the number in grey, like a unit. Phone numbers read left to right
 // in Arabic too, so the box keeps that direction.
-export function PhoneField({ value, onChangeText, label, error, autoFocus }: PhoneFieldProps) {
+export function PhoneField({ value, onChangeText, label, error }: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className={error ? "" : "mb-4"}>
@@ -39,10 +41,10 @@ export function PhoneField({ value, onChangeText, label, error, autoFocus }: Pho
           placeholder="100 000 0000"
           placeholderTextColor={colors.ink3}
           selectionColor={colors.primary}
+          maxLength={MAX_LENGTH}
           keyboardType="number-pad"
           textContentType="telephoneNumber"
           autoComplete="tel"
-          autoFocus={autoFocus}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{ textAlign: "left", writingDirection: "ltr" }}

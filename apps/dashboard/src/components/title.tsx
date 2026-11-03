@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import { Text } from "./text";
 
-// The big start-aligned title (28/34, 600) and its one-line grey subtitle.
-export function Title({ children, subtitle }: { children: string; subtitle?: string }) {
+// The big start-aligned title (28/34, 600) and its grey subtitle, which can hold inline links.
+export function Title({ children, subtitle }: { children: string; subtitle?: ReactNode }) {
   return (
     <>
       <Text accessibilityRole="header" className="mb-2 text-title font-semibold tracking-[-0.4px]">

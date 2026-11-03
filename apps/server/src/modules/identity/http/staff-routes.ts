@@ -3,7 +3,10 @@ import {
   ChangeTwoFactor,
   CompleteTwoFactor,
   ConfirmPasswordReset,
+  PasswordResetVerified,
+  VerifyPasswordReset,
   ConfirmVerificationCode,
+  Staff,
   StaffAuthenticated,
   StaffSignUp,
   RefreshSession,
@@ -20,9 +23,18 @@ import {
 import { requestLanguage } from "@/platform/http/language";
 import { createRouter, problemResponse } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
-import { staff } from "../application/accounts";
-import { confirmPasswordReset, requestPasswordReset } from "../application/password-reset";
-import { refreshSession, revokeSession, type Authenticated } from "../application/sessions";
+import { profile, staff } from "../application/accounts";
+import {
+  confirmPasswordReset,
+  requestPasswordReset,
+  verifyPasswordReset,
+} from "../application/password-reset";
+import {
+  refreshSession,
+  revokeSession,
+  sessionEnded,
+  type Authenticated,
+} from "../application/sessions";
 import { signIn } from "../application/sign-in";
 import { signUpStaff } from "../application/sign-up";
 import {
@@ -105,7 +117,7 @@ const signInWithPassword = createRoute({
     401: problemResponse(
       "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
     ),
-    403: problemResponse("ACCOUNT_SUSPENDED"),
+    403: problemResponse("ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent"),
     429: problemResponse("RATE_LIMITED"),
     503: unavailable,
   },
@@ -179,8 +191,9 @@ const requestReset = createRoute({
   summary: "Send a password reset code",
   description:
     "The same response whether or not the number has an account. Venue owners get no code: they " +
-    "reset through Hagz support, and the app should say so on this screen. Warn members before " +
-    "they ask: a reset makes them read-only at every venue until a staff manager restores them.",
+    "reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn " +
+    "members before the new password is set: a reset makes them read-only at every venue until a " +
+    "staff manager restores them.",
   request: body(RequestPasswordReset),
   responses: {
     202: {
@@ -193,11 +206,34 @@ const requestReset = createRoute({
   },
 });
 
+const verifyReset = createRoute({
+  method: "post",
+  path: "/auth/staff/password-resets/verify",
+  tags,
+  summary: "Check the reset code, before choosing the new password",
+  description:
+    "With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code " +
+    "for the same number (no second code needed). Returns a `resetToken` for setting the password.",
+  request: body(VerifyPasswordReset),
+  responses: {
+    200: { description: "Verified", ...json(PasswordResetVerified) },
+    400: problemResponse(
+      "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or " +
+        "RESET_TOKEN_INVALID with a verification token.",
+    ),
+    403: problemResponse(
+      "With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners.",
+    ),
+    429: problemResponse("RATE_LIMITED"),
+    503: unavailable,
+  },
+});
+
 const confirmReset = createRoute({
   method: "post",
   path: "/auth/staff/password-resets/confirm",
   tags,
-  summary: "Set a new password with the reset code",
+  summary: "Set the new password",
   description:
     "Signs out every session, and lowers every permission to at most `view` at each venue the " +
     "member belongs to. The owner and members who manage staff are notified; the previous " +
@@ -205,8 +241,24 @@ const confirmReset = createRoute({
   request: body(ConfirmPasswordReset),
   responses: {
     204: { description: "Password changed" },
-    400: codeRejected,
-    429: problemResponse("RATE_LIMITED"),
+    400: problemResponse("RESET_TOKEN_INVALID: verify again."),
+    503: unavailable,
+  },
+});
+
+const me = createRoute({
+  method: "get",
+  path: "/staff/me",
+  tags: ["Staff"],
+  summary: "The signed-in staff member",
+  description: "Name, phone and language, for the app to greet and label them after a relaunch.",
+  middleware: [requireStaff] as const,
+  security: staffSecurity,
+  responses: {
+    200: { description: "Their profile", ...json(Staff) },
+    401: problemResponse(
+      "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+    ),
   },
 });
 
@@ -300,10 +352,20 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(sent, 202);
   })
+  .openapi(verifyReset, async (c) => {
+    const verified = await verifyPasswordReset(staff, c.req.valid("json"), { ip: clientIp(c) });
+    return c.json(verified, 200);
+  })
   .openapi(confirmReset, async (c) => {
-    const { phone, code, newPassword } = c.req.valid("json");
-    await confirmPasswordReset(staff, { phone, code, newPassword, ip: clientIp(c) });
+    await confirmPasswordReset(staff, c.req.valid("json"));
     return c.body(null, 204);
+  })
+  .openapi(me, async (c) => {
+    const account = await staff.findById(c.var.staff.staffId);
+    // Deleting an account ends its sessions, but an access token is checked by its signature alone
+    // and works until it expires: that client has to sign in again.
+    if (!account) throw sessionEnded();
+    return c.json(profile(account), 200);
   })
   .openapi(sendTwoFactorCode, async (c) => {
     const { staffId } = c.var.staff;

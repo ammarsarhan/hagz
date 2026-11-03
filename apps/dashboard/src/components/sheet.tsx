@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, KeyboardAvoidingView, Modal, Pressable, View } from "react-native";
+import { Animated, Keyboard, KeyboardAvoidingView, Modal, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isRTL } from "@/lib/language";
 import { CloseButton } from "./nav";
@@ -7,20 +7,28 @@ import { CloseButton } from "./nav";
 // A bottom sheet: dimmed screen behind, white panel with 28px top corners, a grab handle, and only
 // the close button (end side) above the content. Tapping outside closes it. The Modal renders
 // outside the screen, so it sets the direction itself, and it rises with the keyboard.
+//
+// To close, set `visible` to false and keep it mounted: it slides down, then calls `onHidden`, which
+// is when to unmount it. Unmounting straight away skips the slide.
 const DURATION = 220;
 
 interface SheetProps {
   visible: boolean;
+  // Asks to close (the close button, the backdrop, Android's back button).
   onClose: () => void;
+  // Called once it has slid away.
+  onHidden?: () => void;
   closeLabel: string;
   children: ReactNode;
 }
 
-export function Sheet({ visible, onClose, closeLabel, children }: SheetProps) {
+export function Sheet({ visible, onClose, onHidden, closeLabel, children }: SheetProps) {
   const insets = useSafeAreaInsets();
   const progress = useRef(new Animated.Value(0)).current;
   // Stay mounted while sliding out.
   const [mounted, setMounted] = useState(visible);
+  const hidden = useRef(onHidden);
+  hidden.current = onHidden;
 
   useEffect(() => {
     if (visible) setMounted(true);
@@ -28,7 +36,11 @@ export function Sheet({ visible, onClose, closeLabel, children }: SheetProps) {
       toValue: visible ? 1 : 0,
       duration: DURATION,
       useNativeDriver: true,
-    }).start(({ finished }) => finished && !visible && setMounted(false));
+    }).start(({ finished }) => {
+      if (!finished || visible) return;
+      setMounted(false);
+      hidden.current?.();
+    });
   }, [visible, progress]);
 
   return (
@@ -54,11 +66,14 @@ export function Sheet({ visible, onClose, closeLabel, children }: SheetProps) {
             ],
           }}
         >
-          <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
-          <View className="flex-row justify-end">
-            <CloseButton label={closeLabel} onPress={onClose} />
-          </View>
-          {children}
+          {/* Tapping the panel outside a field or button closes the keyboard. */}
+          <Pressable accessible={false} onPress={Keyboard.dismiss}>
+            <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
+            <View className="flex-row justify-end">
+              <CloseButton label={closeLabel} onPress={onClose} />
+            </View>
+            {children}
+          </Pressable>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>

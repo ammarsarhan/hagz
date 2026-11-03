@@ -47,8 +47,14 @@ beforeEach(async () => {
 
 describe("password reset", () => {
   const requestReset = (phone = PHONE) => request("POST", "/password-resets", { phone });
-  const confirmReset = (code: string, phone = PHONE) =>
-    request("POST", "/password-resets/confirm", { phone, code, newPassword: NEW_PASSWORD });
+  // Both steps: the code, then the new password with the reset token it returns. Answers with the
+  // step that failed, so a wrong code reads like it always has.
+  const confirmReset = async (code: string, phone = PHONE) => {
+    const verified = await request("POST", "/password-resets/verify", { phone, code });
+    if (verified.status !== 200) return verified;
+    const { resetToken } = (await verified.json()) as { resetToken: string };
+    return request("POST", "/password-resets/confirm", { resetToken, newPassword: NEW_PASSWORD });
+  };
 
   it("sets the new password and signs out every session", async () => {
     await createCustomer({ language: "EN" });
@@ -254,10 +260,9 @@ describe("two-factor", () => {
     await request("POST", "/two-factor/codes", undefined, session.accessToken);
     const twoFactorCode = lastCode();
 
-    const res = await request("POST", "/password-resets/confirm", {
+    const res = await request("POST", "/password-resets/verify", {
       phone: PHONE,
       code: twoFactorCode,
-      newPassword: NEW_PASSWORD,
     });
 
     expect(await json(res)).toMatchObject({ code: "CODE_EXPIRED" });
