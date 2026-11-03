@@ -100,6 +100,8 @@ export default function Account() {
     <Screen>
       {back}
       <ScrollView
+        // Scrolls (and bounces) even when everything fits, like the system's settings pages.
+        alwaysBounceVertical
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
@@ -162,10 +164,9 @@ export default function Account() {
         <View className="mt-2">
           <SettingsRow
             title={t("common.actions.signOut")}
-            trailing={<IconLogout size={18} color={colors.red} strokeWidth={2} />}
+            trailing={<IconLogout size={18} color={colors.unit} strokeWidth={2} />}
             onPress={() => setSignOutOpen(true)}
             divider={false}
-            destructive
           />
         </View>
 
@@ -328,7 +329,6 @@ function SignOutSheet({ visible, onClose }: { visible: boolean; onClose: () => v
       <View className="gap-2.5">
         <Button
           label={t("common.actions.signOut")}
-          variant="destructive"
           loading={signingOut}
           onPress={() => void signOut()}
         />

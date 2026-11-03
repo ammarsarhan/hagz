@@ -10,7 +10,6 @@ export function SettingsRow({
   trailing,
   onPress,
   divider = true,
-  destructive = false,
 }: {
   title: string;
   body?: string;
@@ -18,8 +17,6 @@ export function SettingsRow({
   // Without it the row isn't a button (a switch row handles its own taps).
   onPress?: () => void;
   divider?: boolean;
-  // Sign out: the title in red.
-  destructive?: boolean;
 }) {
   return (
     <Pressable
@@ -29,9 +26,7 @@ export function SettingsRow({
       className={`flex-row items-center gap-4 py-3.5 active:opacity-60 ${divider ? "border-b border-border" : ""}`}
     >
       <View className="flex-1">
-        <Text className={`text-[15px] font-medium leading-[1.33] ${destructive ? "text-red" : ""}`}>
-          {title}
-        </Text>
+        <Text className="text-[15px] font-medium leading-[1.33]">{title}</Text>
         {body ? <Text className="mt-0.5 text-caption text-ink-2">{body}</Text> : null}
       </View>
       {trailing}

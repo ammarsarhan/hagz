@@ -7,8 +7,6 @@ const variants = {
   primary: { box: "bg-primary", label: "text-on-primary" },
   secondary: { box: "bg-chip", label: "text-ink" },
   ghost: { box: "bg-transparent", label: "text-ink" },
-  // Confirms something that ends a session or removes something (sign out).
-  destructive: { box: "bg-red", label: "text-white" },
   // On the blue onboarding slides.
   inverse: { box: "bg-white", label: "text-primary" },
   inverseSecondary: { box: "bg-white/15", label: "text-white" },
@@ -42,9 +40,7 @@ export function Button({
       className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === "primary" || variant === "destructive" ? colors.onPrimary : colors.ink}
-        />
+        <ActivityIndicator color={variant === "primary" ? colors.onPrimary : colors.ink} />
       ) : (
         <Text className={`text-center text-button font-semibold ${style.label}`}>{label}</Text>
       )}
