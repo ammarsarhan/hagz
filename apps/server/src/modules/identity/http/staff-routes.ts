@@ -29,7 +29,12 @@ import {
   requestPasswordReset,
   verifyPasswordReset,
 } from "../application/password-reset";
-import { refreshSession, revokeSession, type Authenticated } from "../application/sessions";
+import {
+  refreshSession,
+  revokeSession,
+  sessionEnded,
+  type Authenticated,
+} from "../application/sessions";
 import { signIn } from "../application/sign-in";
 import { signUpStaff } from "../application/sign-up";
 import {
@@ -251,7 +256,9 @@ const me = createRoute({
   security: staffSecurity,
   responses: {
     200: { description: "Their profile", ...json(Staff) },
-    401: unauthenticated,
+    401: problemResponse(
+      "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+    ),
   },
 });
 
@@ -355,8 +362,9 @@ export const staffAuthRoutes = createRouter()
   })
   .openapi(me, async (c) => {
     const account = await staff.findById(c.var.staff.staffId);
-    // A signed-in session belongs to an account that exists; deleted accounts lose their sessions.
-    if (!account) throw new Error("Signed-in staff account not found");
+    // Deleting an account ends its sessions, but an access token is checked by its signature alone
+    // and works until it expires: that client has to sign in again.
+    if (!account) throw sessionEnded();
     return c.json(profile(account), 200);
   })
   .openapi(sendTwoFactorCode, async (c) => {

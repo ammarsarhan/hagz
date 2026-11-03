@@ -75,8 +75,9 @@ export const createSession = async (
 };
 
 // One answer for every refresh that can't go ahead (unknown, expired, revoked, reused): the app signs
-// in again. Saying which would tell a thief whether reuse was noticed.
-const sessionEnded = () =>
+// in again. Saying which would tell a thief whether reuse was noticed. Also for an access token that
+// outlived its account, which stays valid until it expires.
+export const sessionEnded = () =>
   new AppError({
     code: "SESSION_ENDED",
     status: 401,

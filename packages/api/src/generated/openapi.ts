@@ -1716,7 +1716,7 @@ export interface paths {
                         "application/json": components["schemas"]["Staff"];
                     };
                 };
-                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
                 401: {
                     headers: {
                         [name: string]: unknown;

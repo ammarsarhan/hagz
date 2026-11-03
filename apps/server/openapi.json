@@ -2782,7 +2782,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
             "content": {
               "application/problem+json": {
                 "schema": {

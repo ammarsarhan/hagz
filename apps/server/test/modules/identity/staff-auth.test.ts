@@ -248,4 +248,14 @@ describe("the signed-in staff member", () => {
     const customer = await signInCustomer();
     expect((await me(customer.session.accessToken)).status).toBe(401);
   });
+
+  it("ends the session when the account is gone but its access token hasn't expired", async () => {
+    await createStaff({ phone: PHONE });
+    const { session } = await signInStaff();
+    await prisma.staff.deleteMany();
+
+    const res = await me(session.accessToken);
+    expect(res.status).toBe(401);
+    expect((await json(res)).code).toBe("SESSION_ENDED");
+  });
 });
