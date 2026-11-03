@@ -3,6 +3,14 @@
 const en = {
   translation: {
     components: {
+      invitationCard: {
+        grounds_one: "{{count}} Ground",
+        grounds_other: "{{count}} Grounds",
+        invitedBy: "{{name}} invited you.",
+        expiresIn_one: "Expires in {{count}} hour.",
+        expiresIn_other: "Expires in {{count}} hours.",
+        expiresSoon: "Expires within the hour.",
+      },
       shared: {
         nav: {
           back: "Back",
@@ -40,6 +48,61 @@ const en = {
       },
     },
     screens: {
+      firstRun: {
+        welcome: "Welcome, {{name}}",
+        invitedSubtitle: "You've been invited to join a venue.",
+        emptySubtitle: "Set up your venue to start taking bookings.",
+        invitations: "Invitations",
+        createVenueTitle: "Create your venue",
+        createVenueBody:
+          "Add your pitches, schedules and prices. Our team reviews it before it goes live.",
+        joiningTitle: "Joining someone's venue?",
+        joiningBody: "Ask the owner to invite {{phone}}. The invitation will appear here.",
+        haveCode: "Have a code?",
+        profile: "Your profile",
+        retry: "Try again",
+      },
+      invitation: {
+        title: "Join {{venue}}",
+        subtitle:
+          "{{name}} invited you to the team. Here's what you'll be able to do; the owner can change it later.",
+        areas: {
+          bookings: "Bookings",
+          customers: "Customers",
+          schedule: "Schedule and prices",
+          payments: "Payments",
+          finance: "Finance",
+          staff: "Team",
+          venue: "Venue profile",
+        },
+        levels: {
+          manage: "Manage",
+          view: "View only",
+          none: "No access",
+        },
+        join: "Join venue",
+        decline: "Decline",
+        ended: {
+          title: "This invitation has ended",
+          body: "It expired, was cancelled, or has already been used. Ask {{name}} to send you a new one.",
+          bodyNoName:
+            "It expired, was cancelled, or has already been used. Ask the owner to send you a new one.",
+          gotIt: "Got it",
+        },
+        member: {
+          title: "You're already on the team",
+          body: "You're a member of {{venue}}, so there's nothing to accept.",
+          open: "Open {{venue}}",
+        },
+      },
+      haveCode: {
+        wrong: "No invitation to your number has that code.",
+        title: "Enter your invitation code",
+        subtitle: "The 6-character code from the invitation the owner sent to {{phone}}.",
+      },
+      venueHome: {
+        subtitle: "Your venue's home comes next.",
+      },
       blocked: {
         suspended: {
           title: "Your account is suspended",
@@ -158,3 +221,16 @@ const en = {
 
 export default en;
 export type Translations = typeof en;
+
+// Arabic has six plural forms where English has two: next to each counted string (one with an
+// _other form) it may add _zero, _two, _few and _many.
+type WithArabicPlurals<T> = {
+  [K in keyof T]: T[K] extends object ? WithArabicPlurals<T[K]> : T[K];
+} & {
+  [
+    K in keyof T as K extends `${infer Base}_other`
+      ? `${Base}_zero` | `${Base}_two` | `${Base}_few` | `${Base}_many`
+      : never
+  ]?: string;
+};
+export type ArabicTranslations = WithArabicPlurals<Translations>;

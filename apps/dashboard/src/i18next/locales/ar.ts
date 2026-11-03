@@ -1,10 +1,26 @@
-import type { Translations } from "./en";
+import type { ArabicTranslations } from "./en";
 
-// Arabic strings, with the same keys as en.ts (a missing translation is a type error). The
-// onboarding lines are placeholders until the Arabic wordplay is decided.
-const ar: Translations = {
+// Arabic strings, with the same keys as en.ts (a missing translation is a type error) plus Arabic's
+// extra plural forms. The onboarding lines are placeholders until the Arabic wordplay is decided.
+const ar: ArabicTranslations = {
   translation: {
     components: {
+      invitationCard: {
+        grounds_zero: "لا ملاعب",
+        grounds_one: "ملعب واحد",
+        grounds_two: "ملعبان",
+        grounds_few: "{{count}} ملاعب",
+        grounds_many: "{{count}} ملعبًا",
+        grounds_other: "{{count}} ملعب",
+        invitedBy: "دعاك {{name}}.",
+        expiresIn_zero: "تنتهي خلال أقل من ساعة.",
+        expiresIn_one: "تنتهي خلال ساعة.",
+        expiresIn_two: "تنتهي خلال ساعتين.",
+        expiresIn_few: "تنتهي خلال {{count}} ساعات.",
+        expiresIn_many: "تنتهي خلال {{count}} ساعة.",
+        expiresIn_other: "تنتهي خلال {{count}} ساعة.",
+        expiresSoon: "تنتهي خلال الساعة.",
+      },
       shared: {
         nav: {
           back: "رجوع",
@@ -42,6 +58,59 @@ const ar: Translations = {
       },
     },
     screens: {
+      firstRun: {
+        welcome: "أهلًا، {{name}}",
+        invitedSubtitle: "تمت دعوتك للانضمام إلى ملعب.",
+        emptySubtitle: "أعدّ ملعبك لتبدأ في استقبال الحجوزات.",
+        invitations: "الدعوات",
+        createVenueTitle: "أنشئ ملعبك",
+        createVenueBody: "أضف ملاعبك ومواعيدك وأسعارك. يراجعه فريقنا قبل نشره.",
+        joiningTitle: "تنضم إلى ملعب شخص آخر؟",
+        joiningBody: "اطلب من المالك دعوة {{phone}}. ستظهر الدعوة هنا.",
+        haveCode: "لديك رمز؟",
+        profile: "ملفك الشخصي",
+        retry: "حاول مرة أخرى",
+      },
+      invitation: {
+        title: "انضم إلى {{venue}}",
+        subtitle: "دعاك {{name}} للانضمام إلى الفريق. هذه صلاحياتك، ويمكن للمالك تغييرها لاحقًا.",
+        areas: {
+          bookings: "الحجوزات",
+          customers: "العملاء",
+          schedule: "المواعيد والأسعار",
+          payments: "المدفوعات",
+          finance: "المالية",
+          staff: "الفريق",
+          venue: "ملف الملعب",
+        },
+        levels: {
+          manage: "إدارة",
+          view: "عرض فقط",
+          none: "بدون صلاحية",
+        },
+        join: "انضم إلى الملعب",
+        decline: "رفض",
+        ended: {
+          title: "انتهت هذه الدعوة",
+          body: "انتهت صلاحيتها أو أُلغيت أو استُخدمت بالفعل. اطلب من {{name}} إرسال دعوة جديدة.",
+          bodyNoName:
+            "انتهت صلاحيتها أو أُلغيت أو استُخدمت بالفعل. اطلب من المالك إرسال دعوة جديدة.",
+          gotIt: "حسنًا",
+        },
+        member: {
+          title: "أنت في الفريق بالفعل",
+          body: "أنت عضو في {{venue}}، فلا يوجد ما تقبله.",
+          open: "افتح {{venue}}",
+        },
+      },
+      haveCode: {
+        wrong: "لا توجد دعوة لرقمك بهذا الرمز.",
+        title: "أدخل رمز الدعوة",
+        subtitle: "الرمز المكوّن من 6 خانات في الدعوة التي أرسلها المالك إلى {{phone}}.",
+      },
+      venueHome: {
+        subtitle: "الصفحة الرئيسية لملعبك قادمة.",
+      },
       blocked: {
         suspended: {
           title: "حسابك موقوف",
