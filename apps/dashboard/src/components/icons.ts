@@ -9,4 +9,5 @@ export { default as IconChevronDown } from "@tabler/icons-react-native/IconChevr
 export { default as IconChevronLeft } from "@tabler/icons-react-native/IconChevronLeft";
 export { default as IconEye } from "@tabler/icons-react-native/IconEye";
 export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
+export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
