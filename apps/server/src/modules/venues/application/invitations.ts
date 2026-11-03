@@ -335,6 +335,21 @@ const inviteeOf = async (staffId: string) => {
 // owner's first), never names, phones or ids.
 const TEAM_PREVIEW = 2;
 
+// "Zamalek, Cairo": the venue's own place, then the one it sits in (if any), which is how people
+// say where a pitch is; the street address is longer and less telling.
+const placeOf = (
+  location: {
+    translations: { language: Language; name: string }[];
+    parent: { translations: { language: Language; name: string }[] } | null;
+  },
+  language: Language,
+) => {
+  const names = [location, location.parent]
+    .map((place) => (place ? nameIn(place.translations, language) : null))
+    .filter((name): name is string => Boolean(name));
+  return names.length > 0 ? names.join(language === "AR" ? "، " : ", ") : null;
+};
+
 const presentReceived = async (
   invitations: (InvitationRow & { invitor: { name: string } })[],
   language: Language,
@@ -344,6 +359,12 @@ const presentReceived = async (
     select: {
       id: true,
       translations: { select: { language: true, name: true, address: true } },
+      location: {
+        select: {
+          translations: { select: { language: true, name: true } },
+          parent: { select: { translations: { select: { language: true, name: true } } } },
+        },
+      },
       memberships: {
         // OWNER sorts before MEMBER (enum order).
         orderBy: [{ role: "asc" }, { createdAt: "asc" }],
@@ -365,6 +386,7 @@ const presentReceived = async (
         name: translation?.name ?? null,
         // Drafts store an empty address until the owner fills it in.
         address: translation && translation.address !== "" ? translation.address : null,
+        location: venue ? placeOf(venue.location, language) : null,
         groundCount: venue?._count.grounds ?? 0,
         team: {
           size: venue?._count.memberships ?? 0,

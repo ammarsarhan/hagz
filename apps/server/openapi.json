@@ -1160,6 +1160,14 @@
                 ],
                 "description": "Street address in `Accept-Language`, else any language."
               },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Where the venue is: its area and the place above it, in `Accept-Language`, else any language.",
+                "example": "Zamalek, Cairo"
+              },
               "groundCount": {
                 "type": "integer",
                 "minimum": 0,
@@ -1195,6 +1203,7 @@
               "id",
               "name",
               "address",
+              "location",
               "groundCount",
               "team"
             ]

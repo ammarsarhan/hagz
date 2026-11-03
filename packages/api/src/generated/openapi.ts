@@ -3877,6 +3877,11 @@ export interface components {
                 name: string | null;
                 /** @description Street address in `Accept-Language`, else any language. */
                 address: string | null;
+                /**
+                 * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
+                 * @example Zamalek, Cairo
+                 */
+                location: string | null;
                 /** @description Grounds in use or under maintenance. */
                 groundCount: number;
                 team: {
