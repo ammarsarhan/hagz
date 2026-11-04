@@ -19,7 +19,6 @@ import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL, language } from "@/lib/language";
-import { resetTo } from "@/lib/navigation";
 import { displayPhone, isolate } from "@/lib/phone";
 import { queries } from "@/lib/queries";
 import { signOut } from "@/lib/session";
@@ -336,7 +335,6 @@ function SignOutSheet({ visible, onClose }: { visible: boolean; onClose: () => v
   const confirm = async () => {
     setSigningOut(true);
     await signOut();
-    resetTo("/");
   };
 
   return (

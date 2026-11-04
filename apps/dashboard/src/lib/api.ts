@@ -2,8 +2,7 @@ import { createApiClient } from "@hagz/api";
 import { secureSessionStore } from "@hagz/api/secure-store";
 import Constants from "expo-constants";
 import { language } from "./language";
-import { resetTo } from "./navigation";
-import { queryClient } from "./query";
+import { leaveToOnboarding } from "./navigation";
 
 // EXPO_PUBLIC_API_URL in builds. In development, the machine Metro serves from, so simulators,
 // emulators and phones on the same network all reach the local API without configuration.
@@ -24,8 +23,5 @@ export const { api, auth } = createApiClient({
   app: { name: "dashboard", version: Constants.expoConfig?.version ?? "0.0.0" },
   // Signed out by the server (the session was revoked, expired or its account is gone): back to
   // onboarding, with nothing signed-in left underneath, and nothing of theirs left in the cache.
-  onSessionEnded: () => {
-    queryClient.clear();
-    resetTo("/");
-  },
+  onSessionEnded: leaveToOnboarding,
 });

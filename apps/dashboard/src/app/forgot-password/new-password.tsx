@@ -13,7 +13,6 @@ import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { resetTo } from "@/lib/navigation";
 import { signOut } from "@/lib/session";
 
 const MIN_PASSWORD = 8;
@@ -52,7 +51,6 @@ export default function ResetNewPassword() {
     // over at sign in, with nothing signed-in left to go back to.
     if (await auth.isSignedIn()) {
       await signOut();
-      resetTo("/");
       router.push({ pathname: "/sign-in", params: { phone } });
       return;
     }

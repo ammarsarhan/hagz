@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { LayoutAnimation } from "react-native";
-import { resetTo } from "@/lib/navigation";
 import { pendingInvitation } from "@/lib/pending-invitation";
 import { queries } from "@/lib/queries";
 import { signOut } from "@/lib/session";
@@ -72,7 +71,6 @@ export function useInvitationSheet({
   const switchNumber = async (code: string) => {
     await signOut();
     pendingInvitation.keep(code);
-    resetTo("/");
     router.push("/sign-in");
   };
 

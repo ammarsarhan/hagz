@@ -1,6 +1,6 @@
 import * as SplashScreen from "expo-splash-screen";
 import { auth } from "./api";
-import { navigationReady } from "./navigation";
+import { holdNavigation } from "./navigation";
 import { landing } from "./session";
 
 // The splash screen stays up until the app knows where to open: onboarding, or (signed in from an
@@ -13,6 +13,7 @@ SplashScreen.setOptions({ fade: true, duration: 250 });
 let signedInTarget: "/venue" | "/home" | null = null;
 
 export const boot = async () => {
+  holdNavigation(true);
   try {
     if (!(await auth.isSignedIn())) return;
     const target = await landing();
@@ -21,7 +22,7 @@ export const boot = async () => {
   } finally {
     // Before the navigator draws, not after: screens (an invitation link opened from cold) navigate
     // from their first effects, which run before the root layout's.
-    navigationReady();
+    holdNavigation(false);
   }
 };
 

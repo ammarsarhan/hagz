@@ -1,5 +1,5 @@
 import { auth } from "./api";
-import { resetTo } from "./navigation";
+import { leaveToOnboarding, resetTo } from "./navigation";
 import { queries } from "./queries";
 import { queryClient } from "./query";
 
@@ -25,9 +25,9 @@ export const landing = async (): Promise<"/venue" | "/home"> => {
 // Just signed in or up, or opened a link while signed in: straight to where they belong.
 export const enterApp = async () => resetTo(await landing());
 
-// Signing out also forgets everything fetched for that account, so the next one to sign in on this
-// phone never sees it, not even for a moment while their own loads.
+// Signing out ends the session, goes to onboarding with nothing signed-in underneath, and forgets
+// everything fetched for that account (see leaveToOnboarding).
 export const signOut = async () => {
   await auth.signOut();
-  queryClient.clear();
+  leaveToOnboarding();
 };
