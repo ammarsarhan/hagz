@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 
-// The pill from the apps: 56 high, fully round, 17/600 label. Black here, where the staff app is blue.
+// The pill from the apps, a step smaller for desktop: 48 high (the apps use 56), fully round, 16/600
+// label, matching the fields. Black here, where the staff app is blue.
 const variants = {
   primary: "bg-primary text-on-primary",
   secondary: "bg-chip text-ink",
@@ -27,7 +28,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading}
-      className={`flex h-14 w-full cursor-pointer items-center justify-center rounded-full px-6 text-button font-semibold transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
+      className={`flex h-12 w-full cursor-pointer items-center justify-center rounded-full px-6 text-[16px] leading-[21px] font-semibold transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
       {...rest}
     >
       {loading ? (
