@@ -14,3 +14,8 @@ export { default as IconEyeOff } from "@tabler/icons-react-native/IconEyeOff";
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 export { default as IconPlus } from "@tabler/icons-react-native/IconPlus";
 export { default as IconX } from "@tabler/icons-react-native/IconX";
+export { default as IconBuildingStadium } from "@tabler/icons-react-native/IconBuildingStadium";
+export { default as IconCalendar } from "@tabler/icons-react-native/IconCalendar";
+export { default as IconHome } from "@tabler/icons-react-native/IconHome";
+export { default as IconUserCircle } from "@tabler/icons-react-native/IconUserCircle";
+export { default as IconWallet } from "@tabler/icons-react-native/IconWallet";

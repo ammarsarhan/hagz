@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { Animated, FlatList, I18nManager, useWindowDimensions, View } from "react-native";
@@ -7,9 +7,8 @@ import { SvgXml } from "react-native-svg";
 import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
-import { auth } from "@/lib/api";
-import { resetTo } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
+import { takeSignedInTarget } from "@/lib/boot";
 import { isRTL } from "@/lib/language";
 
 // Staff onboarding: three blue slides (a problem in two words, the fix in one), swiped or advancing
@@ -24,7 +23,15 @@ const AUTO_ADVANCE_MS = 5000;
 const flipPager = isRTL && !I18nManager.isRTL;
 const direction = isRTL ? "rtl" : "ltr";
 
-export default function Onboarding() {
+// Signed in from an earlier launch: straight to their venue or first run, on the first frame, so
+// onboarding is never seen on the way (lib/boot.ts decided where while the splash was up).
+export default function Index() {
+  const [signedIn] = useState(takeSignedInTarget);
+  if (signedIn) return <Redirect href={signedIn} />;
+  return <Onboarding />;
+}
+
+function Onboarding() {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const pager = useRef<FlatList<Slide>>(null);
@@ -32,11 +39,6 @@ export default function Onboarding() {
   const [touched, setTouched] = useState(false);
   // Where the pager is, continuously, so the dots morph with the swipe instead of jumping at the end.
   const scrollX = useRef(new Animated.Value(0)).current;
-
-  // Signed in already (the session is kept between launches): skip onboarding.
-  useEffect(() => {
-    void auth.isSignedIn().then((signedIn) => signedIn && resetTo("/home"));
-  }, []);
 
   useEffect(() => {
     if (touched || index >= SLIDES.length - 1) return;

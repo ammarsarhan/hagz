@@ -50,6 +50,11 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-secure-store",
     "expo-status-bar",
+    // Held while the app decides where it opens (src/lib/boot.ts): the staff logo on white.
+    [
+      "expo-splash-screen",
+      { image: "./assets/adaptive-icon.png", imageWidth: 160, backgroundColor: "#FFFFFF" },
+    ],
     // Builds lay Arabic out right-to-left natively (I18nManager); Screen sets Yoga's direction too.
     ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
   ],

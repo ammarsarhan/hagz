@@ -5,6 +5,13 @@ import type { ArabicTranslations } from "./en";
 const ar: ArabicTranslations = {
   translation: {
     components: {
+      tabs: {
+        home: "الرئيسية",
+        calendar: "التقويم",
+        venue: "الملعب",
+        payments: "المدفوعات",
+        account: "الحساب",
+      },
       invitationCard: {
         invitedBy: "دعاك {{name}}",
         grounds_zero: "لا ملاعب",
@@ -70,6 +77,17 @@ const ar: ArabicTranslations = {
         open: "حسابك",
         security: "الأمان",
         app: "التطبيق",
+        venues: "الملاعب",
+        join: {
+          title: "انضم إلى ملعب أو أنشئ ملعبًا",
+          body: "اقبل دعوة، أو أنشئ ملعبًا آخر.",
+          waiting_zero: "لا توجد دعوات",
+          waiting_one: "دعوة واحدة بانتظارك",
+          waiting_two: "دعوتان بانتظارك",
+          waiting_few: "{{count}} دعوات بانتظارك",
+          waiting_many: "{{count}} دعوة بانتظارك",
+          waiting_other: "{{count}} دعوة بانتظارك",
+        },
         twoFactor: {
           title: "التحقق بخطوتين",
           off: "رمز على واتساب في كل مرة تسجّل فيها الدخول.",
@@ -99,6 +117,16 @@ const ar: ArabicTranslations = {
           cancel: "إلغاء",
         },
         version: "Hagz للموظفين · {{version}}",
+      },
+      join: {
+        title: "انضم إلى ملعب أو أنشئ ملعبًا",
+        invitedSubtitle_zero: "تمت دعوتك للانضمام إلى ملعب آخر.",
+        invitedSubtitle_one: "تمت دعوتك للانضمام إلى ملعب آخر.",
+        invitedSubtitle_two: "تمت دعوتك للانضمام إلى ملعبين آخرين.",
+        invitedSubtitle_few: "تمت دعوتك للانضمام إلى {{count}} ملاعب أخرى.",
+        invitedSubtitle_many: "تمت دعوتك للانضمام إلى {{count}} ملعبًا آخر.",
+        invitedSubtitle_other: "تمت دعوتك للانضمام إلى {{count}} ملعب آخر.",
+        emptySubtitle: "انضم إلى فريق بدعوة، أو أنشئ ملعبك الخاص.",
       },
       firstRun: {
         welcome: "أهلًا، {{name}}",
@@ -140,6 +168,16 @@ const ar: ArabicTranslations = {
         },
         join: "انضم إلى الملعب",
         decline: "رفض",
+        opening: {
+          title: "جارٍ فتح دعوتك",
+          body: "نتأكد أنها أُرسلت إلى {{phone}}.",
+        },
+        elsewhere: {
+          title: "أُرسلت إلى رقم آخر",
+          body: "أنت مسجّل الدخول بالرقم {{phone}}. سجّل الدخول بالرقم الذي أُرسلت إليه الدعوة، أو اطلب دعوة إلى هذا الرقم.",
+          gotIt: "حسنًا",
+          switch: "سجّل الدخول برقم آخر",
+        },
         ended: {
           title: "انتهت هذه الدعوة",
           body: "انتهت صلاحيتها أو أُلغيت أو استُخدمت بالفعل. اطلب من {{name}} إرسال دعوة جديدة.",
@@ -157,9 +195,6 @@ const ar: ArabicTranslations = {
         wrong: "لا توجد دعوة لرقمك بهذا الرمز.",
         title: "أدخل رمز الدعوة",
         subtitle: "الرمز المكوّن من 6 خانات في الدعوة التي أرسلها المالك إلى {{phone}}.",
-      },
-      venueHome: {
-        subtitle: "الصفحة الرئيسية لملعبك قادمة.",
       },
       blocked: {
         suspended: {
