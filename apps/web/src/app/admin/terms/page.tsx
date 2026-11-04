@@ -25,8 +25,8 @@ export default function AdminTerms() {
       </ul>
       <h2>Using customer and venue data</h2>
       <p>
-        Hagz Admin shows information about customers, venue staff and venues. Use it only to run
-        and support Hagz, never for anything personal, and never copy it out of Hagz without a work
+        Hagz Admin shows information about customers, venue staff and venues. Use it only to run and
+        support Hagz, never for anything personal, and never copy it out of Hagz without a work
         reason.
       </p>
       <h2>What is recorded</h2>

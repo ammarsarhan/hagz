@@ -108,7 +108,9 @@ export function Authenticator({
     return (
       <PageShell
         title="Enter your code"
-        subtitle={email ? `From your authenticator app, for ${email}.` : "From your authenticator app."}
+        subtitle={
+          email ? `From your authenticator app, for ${email}.` : "From your authenticator app."
+        }
       >
         {codeInput}
         <div className="mt-6 flex flex-col gap-2">
@@ -137,7 +139,9 @@ export function Authenticator({
             <span className="size-6 animate-spin rounded-full border-2 border-ink-3 border-t-transparent" />
           )}
         </div>
-        <p className="mt-5 text-label text-ink-2">Can’t scan it? Enter this key in the app instead.</p>
+        <p className="mt-5 text-label text-ink-2">
+          Can’t scan it? Enter this key in the app instead.
+        </p>
         <div className="mt-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-field bg-field pr-2.5 pl-4">
           <span className="text-caption font-medium whitespace-nowrap text-ink tabular-nums">
             {groups}
@@ -153,7 +157,17 @@ export function Authenticator({
             }}
             className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-ink"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
               {copied ? (
                 <path d="M5 12l5 5l10 -10" />
               ) : (
