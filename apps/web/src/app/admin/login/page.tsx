@@ -1,5 +1,6 @@
 "use client";
 
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/admin/api";
 import { Authenticator, type Challenge } from "@/admin/authenticator";
@@ -87,10 +88,12 @@ export default function AdminLogin() {
             trailing={
               <button
                 type="button"
+                aria-label={shown ? "Hide password" : "Show password"}
                 onClick={() => setShown(!shown)}
-                className="cursor-pointer text-label font-medium text-ink-2 hover:text-ink"
+                className="flex cursor-pointer text-unit hover:text-ink"
               >
-                {shown ? "Hide" : "Show"}
+                {/* As in the staff app: the open eye while the password shows. */}
+                {shown ? <IconEye size={20} stroke={2} /> : <IconEyeOff size={20} stroke={2} />}
               </button>
             }
           />
