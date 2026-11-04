@@ -110,6 +110,16 @@ function Figure({ value, note }: { value: string; note: string }) {
   );
 }
 
+// One row of widgets: equal columns with a real gap between them, and the full-width hairline above
+// the row (Stripe's separators run across the gaps, so the row draws them, not each widget).
+function Row({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-12 gap-y-8 border-t border-border py-8 lg:grid-cols-3">
+      {children}
+    </div>
+  );
+}
+
 // Home: every part of the platform and whether it's running, refreshed every 30 seconds.
 export default function AdminHome() {
   const [status, setStatus] = useState<SystemStatus>();
@@ -214,103 +224,109 @@ export default function AdminHome() {
       {error ? (
         <p className="mt-8 rounded-field bg-red/10 px-4 py-3 text-label text-red">{error}</p>
       ) : null}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 [&>*]:border-t [&>*]:border-border [&>*]:py-8 lg:[&>*]:pr-12 lg:[&>*:nth-child(3n)]:pr-0">
-        <Widget
-          title="Services"
-          info="Every part of the platform, green while it answers."
-          updated={updated}
-        >
-          <div className="flex h-3 gap-0.5 overflow-hidden rounded-full">
-            {services.map((service) => (
-              <span
-                key={service.name}
-                className={`flex-1 ${service.status === "UP" ? "bg-green" : "bg-red"}`}
-              />
-            ))}
-          </div>
-          <div className="mt-2">
-            <Rows
-              rows={services.map((service) => ({
-                label: (
-                  <>
-                    <Dot up={service.status === "UP"} />
-                    {service.name}
-                  </>
-                ),
-                value: service.status === "UP" ? "Operational" : "Down",
-              }))}
-            />
-          </div>
-        </Widget>
-        <Widget
-          title="Server"
-          info="The API answering this page. A grey block is half an hour with no samples: no server was running to take one, so it counts as down."
-          badge={<Badge status={status.server.status} />}
-          updated={updated}
-        >
-          <Figure
-            value={status.server.startedAt ? uptime(status.server.startedAt, now) : "—"}
-            note={`${availability(serverSamples, now) ?? "—"} available in 24 h`}
-          />
-          <div className="mt-8">
-            <AvailabilityStrip samples={serverSamples} now={now} />
-          </div>
-        </Widget>
-        <Widget
-          title="Worker"
-          info="Runs background jobs. Up while its heartbeat, every 10 seconds, keeps arriving."
-          badge={<Badge status={status.worker.status} />}
-          updated={updated}
-        >
-          <Figure
-            value={status.worker.startedAt ? uptime(status.worker.startedAt, now) : "—"}
-            note={`${availability(workerSamples, now) ?? "—"} available in 24 h`}
-          />
-          <div className="mt-8">
-            <AvailabilityStrip samples={workerSamples} now={now} />
-          </div>
-        </Widget>
-        {latencyCharts.map((chart) => (
+      <div className="mt-8">
+        <Row>
           <Widget
-            key={chart.title}
-            title={chart.title}
-            info={chart.info}
-            badge={<Badge status={chart.now.status} />}
+            title="Services"
+            info="Every part of the platform, green while it answers."
             updated={updated}
           >
-            <Figure value={ms(chart.now.latencyMs)} note={peak(chart.pick)} />
-            <div className="mt-7">
-              <LineChart points={series(chart.pick)} unit="ms" />
+            <div className="flex h-3 gap-0.5 overflow-hidden rounded-full">
+              {services.map((service) => (
+                <span
+                  key={service.name}
+                  className={`flex-1 ${service.status === "UP" ? "bg-green" : "bg-red"}`}
+                />
+              ))}
+            </div>
+            <div className="mt-2">
+              <Rows
+                rows={services.map((service) => ({
+                  label: (
+                    <>
+                      <Dot up={service.status === "UP"} />
+                      {service.name}
+                    </>
+                  ),
+                  value: service.status === "UP" ? "Operational" : "Down",
+                }))}
+              />
             </div>
           </Widget>
-        ))}
-        <Widget
-          title="Web"
-          info="This admin web and the public site."
-          badge={<Badge status={webStatus} />}
-          updated={updated}
-        >
-          <Figure
-            value={web ? uptime(web.startedAt, now) : "—"}
-            note={web ? `up since ${clock.format(new Date(web.startedAt))}` : "not answering"}
-          />
-        </Widget>
-        <Widget
-          title="Versions"
-          info="The commit each process was deployed from. Local when nothing deployed it."
-          updated={updated}
-        >
-          <Rows
-            rows={[
-              { label: "Server", value: version(status.server.commit) },
-              {
-                label: "Worker",
-                value: status.worker.status === "UP" ? version(status.worker.commit) : "—",
-              },
-              { label: "Web", value: web ? version(web.commit) : "—" },
-            ]}
-          />
-        </Widget>
+          <Widget
+            title="Server"
+            info="The API answering this page. A grey block is half an hour with no samples: no server was running to take one, so it counts as down."
+            badge={<Badge status={status.server.status} />}
+            updated={updated}
+          >
+            <Figure
+              value={status.server.startedAt ? uptime(status.server.startedAt, now) : "—"}
+              note={`${availability(serverSamples, now) ?? "—"} available in 24 h`}
+            />
+            <div className="mt-8">
+              <AvailabilityStrip samples={serverSamples} now={now} />
+            </div>
+          </Widget>
+          <Widget
+            title="Worker"
+            info="Runs background jobs. Up while its heartbeat, every 10 seconds, keeps arriving."
+            badge={<Badge status={status.worker.status} />}
+            updated={updated}
+          >
+            <Figure
+              value={status.worker.startedAt ? uptime(status.worker.startedAt, now) : "—"}
+              note={`${availability(workerSamples, now) ?? "—"} available in 24 h`}
+            />
+            <div className="mt-8">
+              <AvailabilityStrip samples={workerSamples} now={now} />
+            </div>
+          </Widget>
+        </Row>
+        <Row>
+          {latencyCharts.map((chart) => (
+            <Widget
+              key={chart.title}
+              title={chart.title}
+              info={chart.info}
+              badge={<Badge status={chart.now.status} />}
+              updated={updated}
+            >
+              <Figure value={ms(chart.now.latencyMs)} note={peak(chart.pick)} />
+              <div className="mt-7">
+                <LineChart points={series(chart.pick)} unit="ms" />
+              </div>
+            </Widget>
+          ))}
+        </Row>
+        <Row>
+          <Widget
+            title="Web"
+            info="This admin web and the public site."
+            badge={<Badge status={webStatus} />}
+            updated={updated}
+          >
+            <Figure
+              value={web ? uptime(web.startedAt, now) : "—"}
+              note={web ? `up since ${clock.format(new Date(web.startedAt))}` : "not answering"}
+            />
+          </Widget>
+          <Widget
+            title="Versions"
+            info="The commit each process was deployed from. Local when nothing deployed it."
+            updated={updated}
+          >
+            <Rows
+              rows={[
+                { label: "Server", value: version(status.server.commit) },
+                {
+                  label: "Worker",
+                  value: status.worker.status === "UP" ? version(status.worker.commit) : "—",
+                },
+                { label: "Web", value: web ? version(web.commit) : "—" },
+              ]}
+            />
+          </Widget>
+        </Row>
       </div>
     </>
   );
