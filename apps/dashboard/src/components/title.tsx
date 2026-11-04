@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { Keyboard, Pressable, View } from "react-native";
 import { Text } from "./text";
 
 // The big start-aligned title (28/34, 600) and its grey subtitle, which can hold inline links. An
@@ -26,7 +26,10 @@ export function Title({
         <View className="mt-2 mb-7 items-start">
           <Pressable
             accessibilityRole="button"
-            onPress={action.onPress}
+            onPress={() => {
+              Keyboard.dismiss();
+              action.onPress();
+            }}
             hitSlop={8}
             className="active:opacity-70"
           >

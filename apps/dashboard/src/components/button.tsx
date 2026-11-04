@@ -1,8 +1,9 @@
-import { ActivityIndicator, Pressable } from "react-native";
+import { ActivityIndicator, Keyboard, Pressable } from "react-native";
 import { colors } from "@/lib/colors";
 import { Text } from "./text";
 
-// The pill button from the Figma screens: 56 high, fully round, 17/600 label.
+// The pill button from the Figma screens: 56 high, fully round, 17/600 label. Pressing it closes
+// the keyboard first, so what the action shows next (an error, a HUD, the next step) isn't behind it.
 const variants = {
   primary: { box: "bg-primary", label: "text-on-primary" },
   secondary: { box: "bg-chip", label: "text-ink" },
@@ -38,7 +39,10 @@ export function Button({
       accessibilityLabel={label}
       accessibilityState={{ disabled, busy: loading }}
       disabled={disabled || loading}
-      onPress={onPress}
+      onPress={() => {
+        Keyboard.dismiss();
+        onPress?.();
+      }}
       className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
     >
       {loading ? (
