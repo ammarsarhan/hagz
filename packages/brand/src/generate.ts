@@ -94,13 +94,14 @@ await write(
   await png({ framing: FRAMINGS.tile, color: COLORS.black, background: COLORS.lime }, 180),
 );
 
-// Admin web: the mono mark, black in light browser tabs and white in dark ones.
+// Admin web: the mono mark, black in light browser tabs and white in dark ones. Full detail, like
+// the mark on its pages (user, 2026-11-04): the small detail's solid pentagon read as a filled ball.
 await write(
   "apps/web/src/app/admin/icon.svg",
   markSvg({
     framing: FRAMINGS.bare,
     color: COLORS.black,
-    detail: "small",
+    detail: "full",
     style: "@media (prefers-color-scheme: dark) { .mark { color: #FFFFFF } }",
   }),
 );
@@ -113,7 +114,7 @@ await write(
       color: COLORS.black,
       background: COLORS.white,
       radius: 0.22,
-      detail: "small",
+      detail: "full",
     },
     32,
   ),

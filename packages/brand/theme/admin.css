@@ -1,0 +1,9 @@
+/* The admin web: neutral ink only, no brand colour, so it reads as separate from both apps
+   (decided 2026-11-04). The primary role is black where the staff app has blue. Text is in the
+   system font (SF Pro, Segoe UI, Roboto), like the apps. */
+@import "./tokens.css";
+
+@theme inline {
+  --color-primary: var(--color-ink);
+  --color-on-primary: var(--color-white);
+}
