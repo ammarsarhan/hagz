@@ -4,6 +4,7 @@ import {
   Admin,
   AdminChallenge,
   AdminInvitation,
+  AdminListEntry,
   AdminSignedIn,
   AdminSignIn,
   CompleteAdminSignIn,
@@ -37,6 +38,7 @@ import {
   startTotpSetup,
 } from "../application/admin-sign-in";
 import { adminSessions } from "../application/accounts";
+import { listAdmins } from "../application/admins";
 import { refreshSession, revokeByRefreshToken } from "../application/sessions";
 import { body, device, json } from "./route-helpers";
 
@@ -150,6 +152,21 @@ const me = createRoute({
   },
 });
 
+const admins = createRoute({
+  method: "get",
+  path: "/admin/list",
+  tags: ["Admins"],
+  summary: "Every admin",
+  description: "Oldest first. Suspended and banned admins are included.",
+  middleware: [requireAdmin] as const,
+  security,
+  responses: {
+    200: { description: "The admins", ...json(list(AdminListEntry)) },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+  },
+});
+
 const invite = createRoute({
   method: "post",
   path: "/admin/invitations",
@@ -259,6 +276,9 @@ export const adminAuthRoutes = createRouter()
   .openapi(invite, async (c) => {
     const { email } = c.req.valid("json");
     return c.json(await inviteAdmin({ invitorId: c.var.admin.adminId, email }), 201);
+  })
+  .openapi(admins, async (c) => {
+    return c.json({ data: await listAdmins() }, 200);
   })
   .openapi(invitations, async (c) => {
     return c.json({ data: await listAdminInvitations() }, 200);

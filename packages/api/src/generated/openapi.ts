@@ -2380,6 +2380,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every admin
+         * @description Oldest first. Suspended and banned admins are included.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The admins */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminListEntry"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/invitations/{id}": {
         parameters: {
             query?: never;
@@ -3718,6 +3777,20 @@ export interface components {
              * @example omar@hagz.app
              */
             email: string;
+        };
+        AdminListEntry: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "BANNED";
+            /** @description False until the first sign-in finishes setting up the authenticator. */
+            authenticatorSetUp: boolean;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
         };
         AcceptAdminInvitation: {
             /** @description From the invitation link. */
