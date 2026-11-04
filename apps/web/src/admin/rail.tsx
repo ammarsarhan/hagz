@@ -130,7 +130,7 @@ export function Rail() {
           </div>
         ))}
       </div>
-      <div className="flex shrink-0 flex-col gap-1 border-t border-border pt-3">
+      <div className="flex shrink-0 flex-col gap-1">
         <button
           type="button"
           disabled
@@ -140,6 +140,7 @@ export function Rail() {
           <IconBell size={20} className="size-5 shrink-0" stroke={1.75} />
           <span className="text-label font-medium">Notifications</span>
         </button>
+        <div className="mx-2.5 my-1 h-px bg-border" />
         <div ref={menuRef} className="relative">
           <button
             type="button"
@@ -149,7 +150,7 @@ export function Rail() {
             aria-label={`Account: ${admin.name}`}
             className="flex w-full cursor-pointer items-center gap-2.5 rounded-[0.625rem] p-1.5 hover:bg-chip"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-chip text-[0.75rem] font-semibold text-ink">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-hairline text-[0.75rem] font-semibold text-ink">
               {initials(admin.name)}
             </span>
             <span className="min-w-0 text-left">
