@@ -1,8 +1,10 @@
 import { StatusBar } from "expo-status-bar";
-import type { ReactNode } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState, type ReactNode } from "react";
 import { Keyboard, Pressable, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardHeight } from "@/hooks/use-keyboard-height";
+import { useScreenHudAnchor } from "./hud";
 import { isRTL } from "@/lib/language";
 
 // Every screen: white, clear of the notch and home indicator, with the Figma screens' 20px gutters,
@@ -16,10 +18,20 @@ import { isRTL } from "@/lib/language";
 // resets I18nManager on every load, while Yoga's `direction` lays the screen out right-to-left
 // everywhere. Builds are right-to-left natively too (expo-localization), and since `direction` is
 // absolute the two agree rather than flipping twice.
+// The footer's top padding (pt-3).
+const FOOTER_TOP = 12;
+
 export function Screen({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
   const insets = useSafeAreaInsets();
   const keyboard = useKeyboardHeight();
   const bottom = keyboard > 0 ? keyboard : insets.bottom;
+
+  // Where the HUD sits on: the top of the pinned buttons (the footer less its 12px top padding),
+  // or the keyboard or home indicator when there are none. Only the screen in view says.
+  const [footerHeight, setFooterHeight] = useState(0);
+  const lowestEdge = footer ? Math.max(footerHeight - FOOTER_TOP, bottom) : bottom;
+  const setHudAnchor = useScreenHudAnchor();
+  useFocusEffect(useCallback(() => setHudAnchor(lowestEdge), [lowestEdge, setHudAnchor]));
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -31,7 +43,11 @@ export function Screen({ children, footer }: { children: ReactNode; footer?: Rea
       >
         <View className="flex-1 px-5">{children}</View>
         {footer ? (
-          <View className="gap-2.5 px-5 pt-3" style={{ paddingBottom: bottom + 12 }}>
+          <View
+            className="gap-2.5 px-5 pt-3"
+            style={{ paddingBottom: bottom + 12 }}
+            onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          >
             {footer}
           </View>
         ) : (
