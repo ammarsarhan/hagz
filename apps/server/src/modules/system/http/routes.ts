@@ -1,7 +1,8 @@
 import { createRoute } from "@hono/zod-openapi";
-import { SystemStatus } from "@hagz/contracts";
+import { SystemHistory, SystemStatus } from "@hagz/contracts";
 import { ADMIN_COOKIE_AUTH, ADMIN_CSRF_HEADER, requireAdmin } from "@/platform/http/authenticate";
 import { createRouter, problemResponse } from "@/platform/http/router";
+import { readHistory } from "../application/history";
 import { systemStatus } from "../application/status";
 
 const statusRoute = createRoute({
@@ -25,6 +26,28 @@ const statusRoute = createRoute({
   },
 });
 
-export const systemRoutes = createRouter().openapi(statusRoute, async (c) => {
-  return c.json(await systemStatus(), 200);
+const historyRoute = createRoute({
+  method: "get",
+  path: "/admin/status/history",
+  tags: ["System"],
+  summary: "The last 24 hours, minute by minute",
+  description:
+    "One sample a minute, taken by the server: the three response times and whether the worker's " +
+    "heartbeat was there. A missing minute means no server was running. Oldest first.",
+  middleware: [requireAdmin] as const,
+  security: [{ [ADMIN_COOKIE_AUTH]: [] }],
+  responses: {
+    200: { description: "The samples", content: { "application/json": { schema: SystemHistory } } },
+    401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in."),
+    403: problemResponse(`ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`),
+    503: problemResponse("SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down."),
+  },
 });
+
+export const systemRoutes = createRouter()
+  .openapi(statusRoute, async (c) => {
+    return c.json(await systemStatus(), 200);
+  })
+  .openapi(historyRoute, async (c) => {
+    return c.json({ samples: await readHistory() }, 200);
+  });
