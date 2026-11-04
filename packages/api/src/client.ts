@@ -174,7 +174,10 @@ export const createApiClient = (options: ApiClientOptions) => {
     const code = await problemCode(response);
     // The token is still good but the session isn't (the account is gone): sign in again.
     if (code === "SESSION_ENDED") await endSession();
-    if (code !== "TOKEN_EXPIRED") return response;
+    // Admins: the browser deletes the access cookie when it expires, so the API sees no token at all
+    // (UNAUTHENTICATED) rather than an expired one. The refresh cookie may still be good: try it.
+    const expired = code === "TOKEN_EXPIRED" || (!bearer && code === "UNAUTHENTICATED");
+    if (!expired) return response;
 
     const refreshed = await refresh(sentAt);
     // The refresh's error says more than TOKEN_EXPIRED (SESSION_ENDED, SERVICE_UNAVAILABLE). Each

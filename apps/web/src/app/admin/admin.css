@@ -3,7 +3,27 @@
 
 /* SF Pro, like the apps: Apple's system font, named first so Safari and Chrome on a Mac both pick
    it. Elsewhere it falls back to the system's own (Segoe UI on Windows, Roboto on Android). */
+/* The admin web is drawn at 89.25%: 85% (user, 2026-11-04), then 5% back up (2026-11-05). Everything is sized from the root: Tailwind's
+   spacing is in rem, and the shared text and corner tokens are redefined in rem below, so one number
+   scales the whole app. The staff app keeps the tokens in pixels. */
+html {
+  font-size: 89.25%;
+}
+
 @theme {
+  --text-display: 2.125rem;
+  --text-title: 1.75rem;
+  --text-heading: 1.5rem;
+  --text-button: 1.0625rem;
+  --text-subtitle: 1rem;
+  --text-field: 1.0625rem;
+  --text-body: 0.9375rem;
+  --text-label: 0.875rem;
+  --text-caption: 0.8125rem;
+  --radius-card: 0.75rem;
+  --radius-field: 0.875rem;
+  --radius-hud: 1rem;
+  --radius-sheet: 1.75rem;
   --font-sans:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;

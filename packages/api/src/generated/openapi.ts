@@ -3502,6 +3502,129 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether each part of the platform is running
+         * @description The server and worker (commit, start time, last seen; the worker from its heartbeat), and the round trip to Postgres and both Redis instances. Every check is capped, so a dead dependency shows as `DOWN` instead of holding the request.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The status right now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SystemStatus"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/status/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The last 24 hours, minute by minute
+         * @description One sample a minute, taken by the server: the three response times and whether the worker's heartbeat was there. A missing minute means no server was running. Oldest first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The samples */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SystemHistory"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4023,6 +4146,87 @@ export interface components {
             };
             /** Format: date-time */
             expiresAt: string;
+        };
+        SystemStatus: {
+            /** Format: date-time */
+            checkedAt: string;
+            server: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description The deployed git commit; null when running locally (no deploy sets it). */
+                commit: string | null;
+                /**
+                 * Format: date-time
+                 * @description Null when the process is down.
+                 */
+                startedAt: string | null;
+                /** Format: date-time */
+                lastSeenAt: string | null;
+            };
+            worker: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description The deployed git commit; null when running locally (no deploy sets it). */
+                commit: string | null;
+                /**
+                 * Format: date-time
+                 * @description Null when the process is down.
+                 */
+                startedAt: string | null;
+                /** Format: date-time */
+                lastSeenAt: string | null;
+            };
+            database: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            /** @description The Redis that holds jobs and rate limits. */
+            queue: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            /** @description The Redis used as a cache (can evict keys). */
+            cache: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+        };
+        SystemHistory: {
+            /** @description Oldest first, up to the last 24 hours. */
+            samples: components["schemas"]["SystemSample"][];
+        };
+        SystemSample: {
+            /**
+             * Format: date-time
+             * @description The start of the minute it was taken in.
+             */
+            at: string;
+            /** @enum {string} */
+            worker: "UP" | "DOWN";
+            database: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            queue: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            cache: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
         };
     };
     responses: never;
