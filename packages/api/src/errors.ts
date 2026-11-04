@@ -179,10 +179,18 @@ export const errorMessage = (error: unknown, language: Language): string => {
   return messages[code][language];
 };
 
+// Seconds until a RATE_LIMITED request can be tried again, from the problem's `retryAfter`.
+export const retryAfter = (error: unknown): number | undefined => {
+  if (!isProblem(error) || error.code !== "RATE_LIMITED") return undefined;
+  const seconds = error.retryAfter;
+  return typeof seconds === "number" && seconds > 0 ? Math.ceil(seconds) : undefined;
+};
+
 // Short versions for the HUD, the floating line used when a problem isn't the person's fault. Only
 // those codes have one; anything else that reaches the HUD reads "Something went wrong".
 const short = {
   MESSAGING_UNAVAILABLE: { en: "Couldn't send the code", ar: "تعذّر إرسال الرمز" },
+  RATE_LIMITED: { en: "Wait a moment", ar: "انتظر قليلًا" },
   VERIFICATION_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },

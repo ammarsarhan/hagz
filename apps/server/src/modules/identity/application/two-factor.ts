@@ -19,12 +19,11 @@ import {
 
 const challengeAudience = (store: AccountStore) => `${store.type}-challenge` as const;
 
-const challengeFor = async (
-  store: AccountStore,
-  account: Account,
-  clock: Clock,
-): Promise<TwoFactorChallenge> => {
-  const issued = await issueCode(
+// Every two-factor code goes through here: sign-in, its resend, and turning the setting on or off.
+// The per-phone cap, shared with password resets, bounds what one number is sent however the
+// requests are spread over IPs and routes; the resend cooldown only spaces out codes that go unused.
+const sendCode = (store: AccountStore, account: Account, clock: Clock) =>
+  issueCode(
     store,
     {
       accountId: account.id,
@@ -33,7 +32,15 @@ const challengeFor = async (
       language: account.language,
     },
     clock,
+    { perPhone: limits.accountCodePerPhone, sayIfCodeSent: true },
   );
+
+const challengeFor = async (
+  store: AccountStore,
+  account: Account,
+  clock: Clock,
+): Promise<TwoFactorChallenge> => {
+  const issued = await sendCode(store, account, clock);
   // Bound to the exact code that was sent, so a code completes only the sign-in it was issued for.
   const challengeToken = await signJwt(
     { sub: account.id, sid: issued.verificationId },
@@ -106,11 +113,7 @@ export const sendTwoFactorSettingCode = async (
 ) => {
   await consume(limits.accountCodePerIp, ip);
   const account = await activeAccount(store, accountId);
-  const { expiresIn, resendAfter } = await issueCode(
-    store,
-    { accountId, phone: account.phone ?? "", purpose: "TWO_FACTOR", language: account.language },
-    clock,
-  );
+  const { expiresIn, resendAfter } = await sendCode(store, account, clock);
   return { expiresIn, resendAfter };
 };
 
