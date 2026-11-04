@@ -9,6 +9,7 @@ export default function AdminHome() {
   return (
     <EmptySection
       title="Home"
+      subtitle="How every part of Hagz is running right now."
       icon={IconActivityHeartbeat}
       phase="the next PR"
       description="Uptime and versions for the server, worker and web app, and whether the database and both Redis instances are answering."

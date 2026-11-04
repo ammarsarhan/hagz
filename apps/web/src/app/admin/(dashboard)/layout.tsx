@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AdminSession>
       <div className="flex min-h-screen">
         <Rail />
-        <main className="min-w-0 flex-1 px-10 pt-8 pb-16">{children}</main>
+        <main className="min-w-0 flex-1 px-10 pt-12 pb-16">{children}</main>
       </div>
     </AdminSession>
   );

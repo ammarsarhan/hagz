@@ -7,6 +7,7 @@ export default function AdminVenues() {
   return (
     <EmptySection
       title="Venues"
+      subtitle="Every venue on Hagz, from drafts to live."
       icon={IconBuildingStadium}
       phase="Phase 2"
       description="Every venue in any status, with filters (Submitted is the review queue). Opening one leads to its own dashboard."
