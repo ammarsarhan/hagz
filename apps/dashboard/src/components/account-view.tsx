@@ -132,6 +132,10 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
           }
           trailing={
             <Switch
+              // Remounted when the setting changes. A tap flips the native switch, which RN puts back
+              // because the value waits for the code; it then remembers the tap and skips the update
+              // when the code is accepted, leaving the switch off over a setting that's on.
+              key={String(me.twoFactorEnabled)}
               accessibilityLabel={t("screens.account.twoFactor.title")}
               value={me.twoFactorEnabled}
               disabled={requesting}
