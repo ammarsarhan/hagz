@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@import "@hagz/brand/admin.css";
+
+/* SF Pro, like the apps: Apple's system font, named first so Safari and Chrome on a Mac both pick
+   it. Elsewhere it falls back to the system's own (Segoe UI on Windows, Roboto on Android). */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Browsers paint autofilled inputs light blue (or yellow) and ignore background-color there, so the
+   field's own white is drawn back over it with an inset shadow, and the text stays ink. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-white) inset;
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  transition: background-color 9999s ease-out 0s;
+}
