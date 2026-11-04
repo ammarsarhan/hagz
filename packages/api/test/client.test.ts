@@ -254,6 +254,26 @@ describe("createApiClient", () => {
     expect(current()).toBeNull();
   });
 
+  it("forgets a session the server already ended, without asking it or signalling the end", async () => {
+    const { store, current } = memoryStore(signedIn);
+    const fetch = vi.fn(() => Promise.resolve(problem(401, "SESSION_ENDED")));
+    const onSessionEnded = vi.fn();
+    const { auth } = createApiClient({
+      baseUrl: BASE,
+      audience: "customer",
+      store,
+      fetch,
+      onSessionEnded,
+    });
+
+    await auth.forget();
+
+    expect(current()).toBeNull();
+    expect(await auth.isSignedIn()).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(onSessionEnded).not.toHaveBeenCalled();
+  });
+
   it("signs out locally even when offline", async () => {
     const { store, current } = memoryStore(signedIn);
     const { auth } = createApiClient({
