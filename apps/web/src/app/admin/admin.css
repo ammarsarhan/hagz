@@ -1,9 +1,12 @@
 @import "tailwindcss";
 @import "@hagz/brand/admin.css";
 
-/* The system font, like the apps: SF Pro on Apple devices, Segoe UI on Windows, Roboto elsewhere. */
+/* SF Pro, like the apps: Apple's system font, named first so Safari and Chrome on a Mac both pick
+   it. Elsewhere it falls back to the system's own (Segoe UI on Windows, Roboto on Android). */
 @theme {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {

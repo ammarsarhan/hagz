@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 
-// The mark from @hagz/brand (the "small" detail used at 32 px and under), in ink.
+// The mark from @hagz/brand at full detail (ring, pentagon and the five seams), in ink. The "small"
+// detail, with a solid pentagon, is only for favicons at 32 px and under.
 function Logo() {
   return (
     <svg
       aria-label="Hagz"
       role="img"
-      width="28"
-      height="28"
+      width="32"
+      height="32"
       viewBox="-0.0725 -2.3325 32.595 32.595"
       fill="none"
       stroke="currentColor"
@@ -20,8 +21,12 @@ function Logo() {
         fill="currentColor"
         stroke="none"
       />
-      <path d="M2 17 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0" strokeWidth="3.1" />
-      <path d="M11 12 l4.76 3.45 l-1.76 5.55 h-6 l-1.76 -5.55 z" fill="currentColor" strokeWidth="1.8" />
+      <path d="M2 17 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0" strokeWidth="2.3" />
+      <path d="M11 12 l4.76 3.45 l-1.76 5.55 h-6 l-1.76 -5.55 z" strokeWidth="1.8" />
+      <path
+        d="M11 12 v-3 M14 21 l2 2.4 M15.76 15.45 l2.9 -1.1 M7.24 21 l-2 2.3 M6.24 15.45 l-2.9 -1.1"
+        strokeWidth="1.8"
+      />
     </svg>
   );
 }
