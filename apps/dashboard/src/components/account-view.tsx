@@ -26,6 +26,9 @@ import { contactSupport, hasSupport } from "@/lib/support";
 
 const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 
+// The API's resendAfter for account codes: the longest wait that still means a code is out.
+const RESEND_COOLDOWN_SECONDS = 60;
+
 // The signed-in staff member's account (Figma "D4 · Account, round 2"): who they are, centred; then
 // Security (two-factor, password) and App (language, support) as big headings over hairline rows;
 // then sign out, confirmed in a sheet. Opened from first run's avatar, with a way back, and as a
@@ -53,10 +56,11 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
     setRequesting(true);
     const result = await send(api.POST("/v1/auth/staff/two-factor/codes"));
     setRequesting(false);
-    // Rate limited usually means a code was just sent (opened, then closed, the sheet), and that
-    // code still works: open the sheet on it, counting down to when another can be sent.
+    // A wait no longer than the resend cooldown means a code was just sent (the sheet was opened,
+    // then closed) and still works: open the sheet on it, counting down to the next. A longer one is
+    // the per-phone cap, with maybe no code waiting, so it's only reported.
     const wait = result.ok ? result.data.resendAfter : retryAfter(result.error);
-    if (wait === undefined) {
+    if (wait === undefined || wait > RESEND_COOLDOWN_SECONDS) {
       if (!result.ok) hud.show(hudMessage(result.error));
       return;
     }
