@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 // The mark from @hagz/brand at full detail (ring, pentagon and the five seams), in ink. The "small"
 // detail, with a solid pentagon, is only for favicons at 32 px and under.
-function Logo() {
+export function Logo() {
   return (
     <svg
       aria-label="Hagz"
@@ -39,10 +39,10 @@ function Footer() {
   return (
     <footer className="flex items-center gap-5 text-caption text-ink-3">
       <span>© {new Date().getFullYear()} Hagz</span>
-      <a className={link} href="/privacy">
+      <a className={link} href="/admin/privacy">
         Privacy Policy
       </a>
-      <a className={link} href="/terms">
+      <a className={link} href="/admin/terms">
         Terms
       </a>
       {support ? (
