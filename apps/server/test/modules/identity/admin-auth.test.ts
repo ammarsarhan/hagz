@@ -344,6 +344,41 @@ describe("admin invitations", () => {
     expect(mailbox.sent).toHaveLength(0);
   });
 
+  it("lists every admin, oldest first, with their access", async () => {
+    const { secret } = await createAdmin();
+    const { jar } = await signedIn(secret);
+    await invite(jar, "sara@hagz.app");
+    await accept(tokenFrom("sara@hagz.app"));
+    await createAdmin({ email: "ali@hagz.app" });
+    await prisma.admin.updateMany({
+      where: { email: "ali@hagz.app" },
+      data: { status: "SUSPENDED" },
+    });
+
+    const res = await request("GET", "/admin/list", { jar });
+    expect(res.status).toBe(200);
+    const { data } = (await res.json()) as { data: Record<string, unknown>[] };
+    expect(data.map((a) => [a.email, a.status, a.authenticatorSetUp])).toEqual([
+      ["omar@hagz.app", "ACTIVE", true],
+      ["sara@hagz.app", "ACTIVE", false],
+      ["ali@hagz.app", "SUSPENDED", true],
+    ]);
+    expect(data[0]?.lastSignedInAt).toEqual(expect.any(String));
+    expect(data[1]?.lastSignedInAt).toBeNull();
+    expect(Object.keys(data[0] ?? {}).sort()).toEqual([
+      "authenticatorSetUp",
+      "createdAt",
+      "email",
+      "id",
+      "lastSignedInAt",
+      "name",
+      "status",
+    ]);
+
+    expect((await request("GET", "/admin/list", { jar: {} })).status).toBe(401);
+    expect((await request("GET", "/admin/list", { jar, header: false })).status).toBe(403);
+  });
+
   it("lists open invitations and revokes them", async () => {
     const { secret } = await createAdmin();
     const { jar } = await signedIn(secret);
