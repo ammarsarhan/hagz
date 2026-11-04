@@ -1,5 +1,6 @@
 import type { SystemSample } from "@hagz/contracts";
 import { logger } from "@/platform/logger/logger";
+import { queueConnection } from "@/platform/redis/connections";
 import { guardedRedis } from "@/platform/redis/guarded";
 import { runChecks } from "./status";
 
@@ -44,7 +45,9 @@ export const startStatusSampler = () => {
       // Redis down: this minute has no sample, and the chart shows the gap.
       logger.warn({ err }, "status sample not taken");
     });
-  void sample();
+  // At boot the queue connection is still opening; wait for it, or the first minute is lost.
+  if (queueConnection.status === "ready") void sample();
+  else queueConnection.once("ready", () => void sample());
   const timer = setInterval(() => void sample(), EVERY_MS);
   timer.unref();
   return () => {
