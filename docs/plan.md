@@ -60,7 +60,7 @@ The API is done; the screens come first, because every later screen sits behind 
 | 3.3 Search | One endpoint. **Where:** area (location tree), near me (distance from a point, with a radius), or name. **Ground filters:** sport, size, surface, indoor/outdoor/covered, number of grounds. **Venue filters:** price range at the chosen time, amenities (floodlights included), minimum rating, instant confirmation, cash or online payment, flexible cancellation, has loyalty, has discounts. **Time:** exact start and duration, a window with a duration range, or any time on a date. **Sort:** distance, price, rating (with a minimum number of reviews), soonest available, best match. **Results:** venue cards with their matching grounds and the next few free start times, cursor-paginated. Slots freed by a regular near kick-off are marked "just freed" |
 | 3.4 Favorites | Save and remove venues, list favorites |
 
-**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` and area pages, server-rendered for search engines.
+**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` and area pages, server-rendered for search engines. These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges.
 **Admin slice:** search venues in any status. Hide a live venue (`MAINTENANCE`).
 **Done when:** every search shape stays inside its query-plan and latency budget on the seeded launch-scale data, and a guest can find a venue and see its free times in the app.
 

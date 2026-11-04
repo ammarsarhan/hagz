@@ -223,8 +223,19 @@ describe("answering an invitation", () => {
       staffId: invitee.id,
     });
 
-    const again = await call(invitee.id, "POST", `/invitations/code/${code}/accept`);
-    expect(again.status).toBe(410);
+    // Used now, but the link still says where they stand: on the team, and which venue to open.
+    for (const [method, path] of [
+      ["GET", `/invitations/code/${code}`],
+      ["POST", `/invitations/code/${code}/accept`],
+    ] as const) {
+      const again = await call(invitee.id, method, path);
+      expect(again.status).toBe(409);
+      expect(await problem(again)).toMatchObject({
+        code: "ALREADY_A_MEMBER",
+        // In the request's language; these send none, so the default, Arabic.
+        venue: { id: venue.id, name: "ملعب الهدف" },
+      });
+    }
   });
 
   it("lists invitations from every venue for an existing account, and joins by id", async () => {
