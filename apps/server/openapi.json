@@ -1526,6 +1526,114 @@
           "queue",
           "cache"
         ]
+      },
+      "SystemHistory": {
+        "type": "object",
+        "properties": {
+          "samples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SystemSample"
+            },
+            "description": "Oldest first, up to the last 24 hours."
+          }
+        },
+        "required": [
+          "samples"
+        ]
+      },
+      "SystemSample": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The start of the minute it was taken in."
+          },
+          "worker": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN"
+            ]
+          },
+          "database": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UP",
+                  "DOWN"
+                ]
+              },
+              "latencyMs": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Round trip of a trivial command; null when it didn't answer in time."
+              }
+            },
+            "required": [
+              "status",
+              "latencyMs"
+            ]
+          },
+          "queue": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UP",
+                  "DOWN"
+                ]
+              },
+              "latencyMs": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Round trip of a trivial command; null when it didn't answer in time."
+              }
+            },
+            "required": [
+              "status",
+              "latencyMs"
+            ]
+          },
+          "cache": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "UP",
+                  "DOWN"
+                ]
+              },
+              "latencyMs": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Round trip of a trivial command; null when it didn't answer in time."
+              }
+            },
+            "required": [
+              "status",
+              "latencyMs"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "worker",
+          "database",
+          "queue",
+          "cache"
+        ]
       }
     },
     "parameters": {}
@@ -4825,6 +4933,62 @@
           },
           "403": {
             "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/status/history": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The last 24 hours, minute by minute",
+        "description": "One sample a minute, taken by the server: the three response times and whether the worker's heartbeat was there. A missing minute means no server was running. Oldest first.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The samples",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down.",
             "content": {
               "application/problem+json": {
                 "schema": {
