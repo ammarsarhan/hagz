@@ -64,8 +64,8 @@ function Mark() {
   );
 }
 
-// Snowflake's collapsed rail (the user's reference), always narrow: the mark, the sections, then
-// notifications and the account at the bottom. Labels show as tooltips.
+// Snowflake's sidebar (the user's reference), always open: the mark and name, the sections with their
+// labels, then notifications and the account at the bottom.
 export function Rail() {
   const admin = useAdmin();
   const pathname = usePathname();
@@ -83,17 +83,18 @@ export function Rail() {
 
   const active = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
-  const square = "flex size-10 items-center justify-center rounded-[10px]";
+  const row = "flex h-10 w-full items-center gap-3 rounded-[10px] px-2.5";
 
   return (
     <nav
       aria-label="Sections"
-      className="sticky top-0 flex h-screen w-16 shrink-0 flex-col items-center border-r border-border bg-white py-[18px]"
+      className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-border bg-white px-3 py-[18px]"
     >
-      <span className="text-ink">
+      <div className="flex items-center gap-2.5 px-2.5 text-ink">
         <Mark />
-      </span>
-      <div className="mt-4 mb-1 h-px w-6 bg-border" />
+        <span className="text-body font-semibold">Hagz Admin</span>
+      </div>
+      <div className="mx-2.5 mt-4 mb-1 h-px bg-border" />
       <ul className="mt-1 flex flex-col gap-1">
         {sections.map(({ href, label, icon: Item }) => {
           const on = active(href);
@@ -101,26 +102,27 @@ export function Rail() {
             <li key={href}>
               <Link
                 href={href}
-                aria-label={label}
                 aria-current={on ? "page" : undefined}
-                title={label}
-                className={`${square} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
+                className={`${row} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
               >
-                <Item size={20} stroke={on ? 2 : 1.75} />
+                <Item size={20} stroke={on ? 2 : 1.75} className="shrink-0" />
+                <span className={`text-label ${on ? "font-semibold" : "font-medium"}`}>
+                  {label}
+                </span>
               </Link>
             </li>
           );
         })}
       </ul>
-      <div className="mt-auto flex flex-col items-center gap-2">
+      <div className="mt-auto flex flex-col gap-1">
         <button
           type="button"
           disabled
-          aria-label="Notifications (coming with alerts)"
           title="Notifications come with alerts"
-          className={`${square} text-ink-3`}
+          className={`${row} text-ink-3`}
         >
           <IconBell size={20} stroke={1.75} />
+          <span className="text-label font-medium">Notifications</span>
         </button>
         <div ref={menuRef} className="relative">
           <button
@@ -129,22 +131,21 @@ export function Rail() {
             aria-haspopup="menu"
             aria-expanded={menu}
             aria-label={`Account: ${admin.name}`}
-            className="flex cursor-pointer rounded-full p-1 hover:bg-chip"
+            className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] p-1.5 hover:bg-chip"
           >
-            <span className="flex size-8 items-center justify-center rounded-full bg-chip text-[12px] font-semibold text-ink">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-chip text-[12px] font-semibold text-ink">
               {initials(admin.name)}
+            </span>
+            <span className="min-w-0 text-left">
+              <span className="block truncate text-label font-medium text-ink">{admin.name}</span>
+              <span className="block truncate text-caption text-ink-2">{admin.email}</span>
             </span>
           </button>
           {menu ? (
             <div
               role="menu"
-              className="absolute bottom-0 left-full z-20 ml-2 w-64 rounded-hud border border-border bg-white p-1.5 shadow-[0_12px_32px_rgb(0_0_0/0.12)]"
+              className="absolute bottom-full left-0 z-20 mb-2 w-full rounded-hud border border-border bg-white p-1.5 shadow-[0_12px_32px_rgb(0_0_0/0.12)]"
             >
-              <div className="px-3 py-2">
-                <p className="truncate text-label font-semibold text-ink">{admin.name}</p>
-                <p className="truncate text-caption text-ink-2">{admin.email}</p>
-              </div>
-              <div className="my-1 h-px bg-border" />
               <button
                 type="button"
                 role="menuitem"
