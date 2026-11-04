@@ -175,14 +175,6 @@ const ar: ArabicTranslations = {
         title: "أدخل رمز الدعوة",
         subtitle: "الرمز المكوّن من 6 خانات في الدعوة التي أرسلها المالك إلى {{phone}}.",
       },
-      venueTabs: {
-        calendar: { title: "التقويم", subtitle: "حجوزات كل ملعب يومًا بيوم قريبًا." },
-        manage: { title: "الملعب", subtitle: "العملاء والفريق والتسويق والإعداد هنا قريبًا." },
-        payments: { title: "المدفوعات", subtitle: "المدفوع والمستحق والتحويلات قريبًا." },
-      },
-      venueHome: {
-        subtitle: "الصفحة الرئيسية لملعبك قادمة.",
-      },
       blocked: {
         suspended: {
           title: "حسابك موقوف",
