@@ -27,10 +27,11 @@ import { contactSupport, hasSupport } from "@/lib/support";
 
 const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 
-// The signed-in staff member's account, from the avatar (Figma "D4 · Account, round 2"): who they
-// are, centred; then Security (two-factor, password) and App (language, support) as big headings over
-// hairline rows; then sign out, confirmed in a sheet.
-export default function Account() {
+// The signed-in staff member's account (Figma "D4 · Account, round 2"): who they are, centred; then
+// Security (two-factor, password) and App (language, support) as big headings over hairline rows;
+// then sign out, confirmed in a sheet. Opened from first run's avatar, with a way back, and as a
+// venue's Account tab, without one.
+export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
@@ -59,7 +60,10 @@ export default function Account() {
     setCodeSheetOpen(true);
   };
 
-  const back = (
+  const back = tabbed ? (
+    // In place of the back button's row, so the page starts at the same height.
+    <View className="mb-[22px] h-10" />
+  ) : (
     <NavBar
       start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
     />
@@ -68,6 +72,7 @@ export default function Account() {
   if (!me) {
     return (
       <Screen
+        tabbed={tabbed}
         footer={
           isError ? (
             <Button label={t("screens.firstRun.retry")} onPress={() => void refetch()} />
@@ -88,7 +93,7 @@ export default function Account() {
   const external = <IconExternalLink size={18} color={colors.unit} strokeWidth={2} />;
 
   return (
-    <Screen>
+    <Screen tabbed={tabbed}>
       {/* The whole page scrolls, back button included. The scroll view reaches the screen edges and
           puts the gutters back inside, so the round button's 4px overhang isn't clipped. */}
       <ScrollView
