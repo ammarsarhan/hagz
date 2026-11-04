@@ -32,7 +32,8 @@ const timed = async (probe: () => Promise<unknown>) => {
   }
 };
 
-export const systemStatus = async (now = new Date()): Promise<SystemStatus> => {
+// The checks behind both the live status and the history samples.
+export const runChecks = async () => {
   const [database, queue, cacheCheck, heartbeat] = await Promise.all([
     timed(() => prisma.$queryRaw`SELECT 1`),
     timed(() => guardedRedis((redis) => redis.ping())),
@@ -40,6 +41,11 @@ export const systemStatus = async (now = new Date()): Promise<SystemStatus> => {
     timed(() => cache.ping()),
     withTimeout(readWorkerHeartbeat()).catch(() => null),
   ]);
+  return { database, queue, cache: cacheCheck, heartbeat };
+};
+
+export const systemStatus = async (now = new Date()): Promise<SystemStatus> => {
+  const { database, queue, cache: cacheCheck, heartbeat } = await runChecks();
   return {
     checkedAt: now.toISOString(),
     // Answering this request is proof enough that the server is up.

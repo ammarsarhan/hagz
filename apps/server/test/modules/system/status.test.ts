@@ -1,7 +1,8 @@
-import { SystemStatus } from "@hagz/contracts";
+import { SystemHistory, SystemStatus } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { startWorkerHeartbeat } from "@/modules/system";
+import { takeSample } from "@/modules/system/application/history";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
 import { resetDatabase } from "../../support/database";
 import { createAdmin } from "../../support/factories";
@@ -84,5 +85,40 @@ describe("admin system status", () => {
   it("is only for signed-in admins sending the admin header", async () => {
     expect((await request("/admin/status")).status).toBe(401);
     expect((await request("/admin/status", await adminCookie(), false)).status).toBe(403);
+  });
+});
+
+describe("admin status history", () => {
+  it("keeps one sample a minute, oldest first, with the checks and the worker's state", async () => {
+    const cookie = await adminCookie();
+    expect(await takeSample(new Date("2026-11-05T10:00:10Z"))).toBe(true);
+    // A second server instance (or a second call) in the same minute skips it.
+    expect(await takeSample(new Date("2026-11-05T10:00:50Z"))).toBe(false);
+    const stop = startWorkerHeartbeat();
+    await expect
+      .poll(async () => {
+        const status = await (await request("/admin/status", cookie)).json();
+        return SystemStatus.parse(status).worker.status;
+      })
+      .toBe("UP");
+    expect(await takeSample(new Date("2026-11-05T10:01:05Z"))).toBe(true);
+    await stop();
+
+    const res = await request("/admin/status/history", cookie);
+    expect(res.status).toBe(200);
+    const { samples } = SystemHistory.parse(await res.json());
+    expect(samples.map((s) => [s.at, s.worker])).toEqual([
+      ["2026-11-05T10:00:00.000Z", "DOWN"],
+      ["2026-11-05T10:01:00.000Z", "UP"],
+    ]);
+    for (const sample of samples) {
+      for (const dependency of [sample.database, sample.queue, sample.cache]) {
+        expect(dependency.status).toBe("UP");
+      }
+    }
+  });
+
+  it("is only for signed-in admins", async () => {
+    expect((await request("/admin/status/history")).status).toBe(401);
   });
 });
