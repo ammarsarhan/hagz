@@ -80,8 +80,8 @@ function Widget({
         </span>
         {badge ? <span className="ml-1">{badge}</span> : null}
       </header>
-      <div className="mt-3 flex-1">{children}</div>
-      <p className="mt-3 text-right text-label text-ink-3">Updated {updated}</p>
+      <div className="mt-5 flex-1">{children}</div>
+      <p className="mt-5 text-right text-label text-ink-3">Updated {updated}</p>
     </section>
   );
 }
@@ -279,7 +279,7 @@ export default function AdminHome() {
             updated={updated}
           >
             <Figure value={ms(chart.now.latencyMs)} note={peak(chart.pick)} />
-            <div className="mt-4">
+            <div className="mt-6">
               <LineChart points={series(chart.pick)} unit="ms" />
             </div>
           </Widget>
