@@ -103,7 +103,7 @@ export default function AdminLogin() {
             Continue
           </Button>
         </div>
-        <p className="mt-5 text-center text-label text-ink-2">
+        <p className="mt-5 text-center text-caption text-ink-2">
           Forgot your password? Ask another admin to reset it.
         </p>
       </form>

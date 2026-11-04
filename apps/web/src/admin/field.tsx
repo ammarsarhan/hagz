@@ -30,7 +30,7 @@ export function Field({ label, error, hint, trailing, ...input }: FieldProps) {
           id={id}
           aria-invalid={Boolean(error)}
           aria-describedby={note ? `${id}-note` : undefined}
-          className="h-full min-w-0 flex-1 bg-transparent text-field text-ink outline-none placeholder:text-ink-3 disabled:text-ink-2"
+          className="h-full min-w-0 flex-1 bg-transparent text-label text-ink outline-none placeholder:text-ink-3 disabled:text-ink-2"
           {...input}
         />
         {trailing}

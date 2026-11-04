@@ -113,7 +113,7 @@ export default function AcceptAdminInvitation() {
             Create account
           </Button>
         </div>
-        <p className="mt-5 text-center text-label text-ink-2">
+        <p className="mt-5 text-center text-caption text-ink-2">
           Next, you’ll set up an authenticator app.
         </p>
       </form>
