@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@hagz/brand/admin.css";
+
+/* The system font, like the apps: SF Pro on Apple devices, Segoe UI on Windows, Roboto elsewhere. */
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
