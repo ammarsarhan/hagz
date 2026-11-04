@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/admin/api";
 import { Authenticator, type Challenge } from "@/admin/authenticator";
 import { Button } from "@/admin/button";
@@ -23,7 +23,12 @@ export default function AcceptAdminInvitation() {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
+  // Read once: the fragment is cleared below, so a second run (React runs effects twice in
+  // development) would find no token and show the link as ended.
+  const read = useRef(false);
   useEffect(() => {
+    if (read.current) return;
+    read.current = true;
     const value = new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
     setToken(value);
     // Out of the address bar, so it isn't left in history or shared by accident.
