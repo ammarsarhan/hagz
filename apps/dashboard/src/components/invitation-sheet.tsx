@@ -39,6 +39,7 @@ export function InvitationSheet({
   onJoined,
   onDeclined,
   onSwitchNumber,
+  onOutdated,
 }: {
   // An invitation from the list, "code" to start by typing one, or the code from a link.
   start: SheetStart;
@@ -52,6 +53,8 @@ export function InvitationSheet({
   onDeclined: (invitationId: string) => void;
   // "Sign in with another number", for a link sent to a different one.
   onSwitchNumber: (code: string) => void;
+  // It turned out the list is out of date: the invitation ended, or they're already on the team.
+  onOutdated: () => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -72,10 +75,12 @@ export function InvitationSheet({
     const details = problem(error);
     const failure = details?.code;
     if (failure === "INVITATION_EXPIRED") {
+      onOutdated();
       setStep({ kind: "ended", invitedBy: invitation?.invitedBy });
     } else if (failure === "ALREADY_A_MEMBER") {
       // The API names the venue, which a link doesn't otherwise have.
       const venue = (details?.venue as { name?: string | null } | undefined)?.name;
+      onOutdated();
       setStep({ kind: "member", venue: venue ?? invitation?.venue.name ?? "" });
     } else {
       hud.show(hudMessage(error));

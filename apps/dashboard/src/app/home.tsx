@@ -1,4 +1,4 @@
-import type { components } from "@hagz/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,16 +22,15 @@ import { Screen } from "@/components/screen";
 import { StartTiles } from "@/components/start-tiles";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { api, auth } from "@/lib/api";
+import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { resetTo } from "@/lib/navigation";
 import { pendingInvitation } from "@/lib/pending-invitation";
+import { queries } from "@/lib/queries";
+import { signOut } from "@/lib/session";
 import { displayPhone, isolate } from "@/lib/phone";
-
-type Staff = components["schemas"]["Staff"];
-type StaffVenue = components["schemas"]["StaffVenue"];
 
 // The carousel runs left to right; in Arabic it's flipped so the next card comes from the left, as
 // onboarding's pager does. Builds that are natively right-to-left already scroll that way.
@@ -41,12 +40,6 @@ const CARD_GAP = 10;
 // How much of the next card shows at the edge, so the row reads as more to swipe.
 const PEEK = 32;
 
-interface Loaded {
-  me: Staff;
-  venues: StaffVenue[];
-  invitations: ReceivedInvitation[];
-}
-
 // Where signing in lands. Staff who belong to a venue go to it (its home comes next); staff who
 // don't see first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable
 // row of blue cards, then the other ways to start. It fits on one screen, so the page doesn't scroll;
@@ -55,8 +48,19 @@ interface Loaded {
 export default function Home() {
   const { t } = useTranslation();
   const hud = useHud();
-  const [data, setData] = useState<Loaded | null>(null);
-  const [failed, setFailed] = useState(false);
+  const queryClient = useQueryClient();
+  // Cached: coming back to this screen, or opening the account page, doesn't fetch them again. They
+  // change when an invitation is answered, which updates or invalidates them below.
+  const me = useQuery(queries.me);
+  const venues = useQuery(queries.venues);
+  const received = useQuery(queries.invitations);
+  const reads = [me, venues, received];
+  const failure = reads.find((read) => read.isError)?.error;
+  const failed = failure !== undefined && failure !== null;
+  const data =
+    me.data && venues.data && received.data
+      ? { me: me.data, venues: venues.data, invitations: received.data }
+      : null;
   // The sheet's content, kept while it slides away; `sheetOpen` is what shows or hides it.
   const [sheet, setSheet] = useState<SheetStart | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -75,25 +79,20 @@ export default function Home() {
     setSheetOpen(false);
   };
 
-  const load = useCallback(async () => {
-    setFailed(false);
-    const [me, venues, invitations] = await Promise.all([
-      send(api.GET("/v1/staff/me")),
-      send(api.GET("/v1/staff/venues")),
-      send(api.GET("/v1/staff/invitations")),
-    ]);
-    if (!me.ok || !venues.ok || !invitations.ok) {
-      const error = [me, venues, invitations].find((result) => !result.ok);
-      if (error && !error.ok) hud.show(hudMessage(error.error));
-      setFailed(true);
-      return;
-    }
-    setData({ me: me.data, venues: venues.data.data, invitations: invitations.data.data });
-  }, [hud]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (failed) hud.show(hudMessage(failure));
+  }, [failed, failure, hud]);
+
+  const retry = () => {
+    for (const read of reads) if (read.isError) void read.refetch();
+  };
+
+  // Joined a venue, or found an invitation had ended: which venues they're on and what's still open
+  // may both have changed.
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+    void queryClient.invalidateQueries({ queryKey: queries.invitations.queryKey });
+  };
 
   // Opened from a link: once there's a page under it, the sheet looks the code up. On focus, not
   // only on mount: a link opened while first run is already up lands back on this same screen,
@@ -110,7 +109,7 @@ export default function Home() {
   // Signed in with the wrong number: sign out, keeping the code, so signing in with the invited
   // number opens it again. Onboarding stays underneath sign-in, as when signing in from the start.
   const switchNumber = async (code: string) => {
-    await auth.signOut();
+    await signOut();
     pendingInvitation.keep(code);
     resetTo("/");
     router.push("/sign-in");
@@ -118,10 +117,8 @@ export default function Home() {
 
   const dropInvitation = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setData((current) =>
-      current
-        ? { ...current, invitations: current.invitations.filter((i) => i.id !== id) }
-        : current,
+    queryClient.setQueryData(queries.invitations.queryKey, (current) =>
+      current?.filter((invitation) => invitation.id !== id),
     );
   };
 
@@ -157,11 +154,7 @@ export default function Home() {
   if (!data) {
     return (
       <Screen
-        footer={
-          failed ? (
-            <Button label={t("screens.firstRun.retry")} onPress={() => void load()} />
-          ) : undefined
-        }
+        footer={failed ? <Button label={t("screens.firstRun.retry")} onPress={retry} /> : undefined}
       >
         {failed ? null : (
           <View className="flex-1 items-center justify-center">
@@ -182,11 +175,11 @@ export default function Home() {
         setSheet(null);
         afterSheet.current();
       }}
-      // The invitations may have changed (ended, joined elsewhere): show the current ones.
-      onClose={() => closeSheet(() => void load())}
-      onJoined={() => closeSheet(() => void load())}
+      onClose={() => closeSheet(() => undefined)}
+      onJoined={() => closeSheet(refresh)}
       onDeclined={(id) => closeSheet(() => dropInvitation(id))}
       onSwitchNumber={(code) => void switchNumber(code)}
+      onOutdated={refresh}
     />
   ) : null;
 
