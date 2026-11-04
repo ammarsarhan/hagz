@@ -222,6 +222,16 @@ export const Admin = z
   .object({ id: z.uuid(), name: z.string(), email: z.string() })
   .meta({ id: "Admin" });
 
+// One row of the admins list: the admin, and what an admin needs to see about their access.
+export const AdminListEntry = Admin.extend({
+  status: z.enum(["ACTIVE", "SUSPENDED", "BANNED"]),
+  authenticatorSetUp: z
+    .boolean()
+    .meta({ description: "False until the first sign-in finishes setting up the authenticator." }),
+  lastSignedInAt: z.iso.datetime().nullable(),
+  createdAt: z.iso.datetime(),
+}).meta({ id: "AdminListEntry" });
+
 export const AdminSignedIn = z
   .object({
     admin: Admin,
@@ -258,6 +268,7 @@ export type TotpSetup = z.infer<typeof TotpSetup>;
 export type CompleteAdminSignIn = z.infer<typeof CompleteAdminSignIn>;
 export type Admin = z.infer<typeof Admin>;
 export type AdminSignedIn = z.infer<typeof AdminSignedIn>;
+export type AdminListEntry = z.infer<typeof AdminListEntry>;
 export type InviteAdmin = z.infer<typeof InviteAdmin>;
 export type AdminInvitation = z.infer<typeof AdminInvitation>;
 export type AcceptAdminInvitation = z.infer<typeof AcceptAdminInvitation>;
