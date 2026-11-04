@@ -13,6 +13,7 @@
     "@hagz/api": "workspace:^",
     "@hagz/contracts": "workspace:^",
     "@tabler/icons-react-native": "^3.50.0",
+    "@tanstack/react-query": "^5.105.3",
     "expo": "^58.0.22",
     "expo-constants": "~58.0.14",
     "expo-linking": "~58.0.15",

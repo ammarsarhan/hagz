@@ -14,6 +14,7 @@ import { api, auth } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { resetTo } from "@/lib/navigation";
+import { signOut } from "@/lib/session";
 
 const MIN_PASSWORD = 8;
 
@@ -50,7 +51,7 @@ export default function ResetNewPassword() {
     // From the account screen: the reset signed this phone out along with every other, so it starts
     // over at sign in, with nothing signed-in left to go back to.
     if (await auth.isSignedIn()) {
-      await auth.signOut();
+      await signOut();
       resetTo("/");
       router.push({ pathname: "/sign-in", params: { phone } });
       return;
