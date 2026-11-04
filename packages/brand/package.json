@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./tokens.css": "./theme/tokens.css",
-    "./staff.css": "./theme/staff.css"
+    "./staff.css": "./theme/staff.css",
+    "./admin.css": "./theme/admin.css"
   },
   "scripts": {
     "generate": "tsx src/generate.ts",
