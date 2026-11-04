@@ -469,7 +469,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED: see `retryAfter`. */
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -847,7 +847,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED: see `retryAfter`. */
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -1346,7 +1346,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED: see `retryAfter`. */
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -1772,7 +1772,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description RATE_LIMITED: see `retryAfter`. */
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
                 429: {
                     headers: {
                         [name: string]: unknown;

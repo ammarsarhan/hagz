@@ -193,6 +193,11 @@ export const createApiClient = (options: ApiClientOptions) => {
 
     isSignedIn: async () => (await load()) !== null,
 
+    // Forgets the session on this device only, for when the server has already ended it (a password
+    // reset signs out every device): asking it to end it again would only answer SESSION_ENDED, and
+    // signal onSessionEnded on top of whatever the app is doing.
+    forget: () => save(null),
+
     // Ends the session on the server too, so its refresh token stops working at once. Signed out
     // locally even when that call fails: the user asked to leave this device.
     signOut: async () => {
