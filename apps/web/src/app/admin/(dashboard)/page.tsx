@@ -81,7 +81,7 @@ function Widget({
         {badge ? <span className="ml-1">{badge}</span> : null}
       </header>
       <div className="mt-3 flex-1">{children}</div>
-      <p className="mt-3 text-right text-label text-ink-3">Updated {updated}</p>
+      <p className="mt-6 text-right text-label text-ink-3">Updated {updated}</p>
     </section>
   );
 }
@@ -252,7 +252,7 @@ export default function AdminHome() {
             value={status.server.startedAt ? uptime(status.server.startedAt, now) : "—"}
             note={`${availability(serverSamples, now) ?? "—"} available in 24 h`}
           />
-          <div className="mt-5">
+          <div className="mt-8">
             <AvailabilityStrip samples={serverSamples} now={now} />
           </div>
         </Widget>
@@ -266,7 +266,7 @@ export default function AdminHome() {
             value={status.worker.startedAt ? uptime(status.worker.startedAt, now) : "—"}
             note={`${availability(workerSamples, now) ?? "—"} available in 24 h`}
           />
-          <div className="mt-5">
+          <div className="mt-8">
             <AvailabilityStrip samples={workerSamples} now={now} />
           </div>
         </Widget>
@@ -279,7 +279,7 @@ export default function AdminHome() {
             updated={updated}
           >
             <Figure value={ms(chart.now.latencyMs)} note={peak(chart.pick)} />
-            <div className="mt-4">
+            <div className="mt-7">
               <LineChart points={series(chart.pick)} unit="ms" />
             </div>
           </Widget>
