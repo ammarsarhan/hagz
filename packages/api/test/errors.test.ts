@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { errorMessage, shortErrorMessage } from "../src";
+import { errorMessage, retryAfter, shortErrorMessage } from "../src";
 
 const problem = (code: string) => ({
   type: "about:blank",
@@ -39,8 +39,24 @@ describe("shortErrorMessage", () => {
     expect(shortErrorMessage(problem("CHALLENGE_EXPIRED"), "ar")).toBe("انتهت صلاحية التحقق");
   });
 
+  it("asks to wait when rate limited, rather than saying something went wrong", () => {
+    expect(shortErrorMessage(problem("RATE_LIMITED"), "en")).toBe("Wait a moment");
+  });
+
   it("says something went wrong for anything else, and offline when there was no answer", () => {
     expect(shortErrorMessage(problem("SOMETHING_NEW"), "en")).toBe("Something went wrong");
     expect(shortErrorMessage(new TypeError("Network request failed"), "en")).toBe("You're offline");
+  });
+});
+
+describe("retryAfter", () => {
+  it("reads the seconds a rate-limited request has to wait", () => {
+    expect(retryAfter({ ...problem("RATE_LIMITED"), retryAfter: 48 })).toBe(48);
+  });
+
+  it("is undefined for other problems, a missing value, or no answer at all", () => {
+    expect(retryAfter({ ...problem("INVALID_CODE"), retryAfter: 48 })).toBeUndefined();
+    expect(retryAfter(problem("RATE_LIMITED"))).toBeUndefined();
+    expect(retryAfter(new TypeError("Network request failed"))).toBeUndefined();
   });
 });
