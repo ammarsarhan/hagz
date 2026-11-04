@@ -312,4 +312,50 @@ describe("createApiClient", () => {
     expect(requests.every((request) => request.headers.get("X-Hagz-Admin") === "1")).toBe(true);
     expect(requests.some((request) => request.headers.has("Authorization"))).toBe(false);
   });
+
+  it("refreshes an admin whose access cookie the browser already dropped", async () => {
+    let signedIn = false;
+    const paths: string[] = [];
+    const fetch = vi.fn((request: Request) => {
+      const path = new URL(request.url).pathname;
+      paths.push(path);
+      if (path === "/v1/auth/admin/sessions/refresh") {
+        signedIn = true;
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      // No access cookie at all, as after it expires: UNAUTHENTICATED, not TOKEN_EXPIRED.
+      return Promise.resolve(signedIn ? json(200, []) : problem(401, "UNAUTHENTICATED"));
+    });
+    const { api } = createApiClient({ baseUrl: BASE, audience: "admin", fetch });
+
+    const { response } = await api.GET("/v1/admin/invitations");
+
+    expect(response.ok).toBe(true);
+    expect(paths).toEqual([
+      "/v1/admin/invitations",
+      "/v1/auth/admin/sessions/refresh",
+      "/v1/admin/invitations",
+    ]);
+  });
+
+  it("ends the admin session when the refresh cookie is gone too", async () => {
+    const onSessionEnded = vi.fn();
+    const fetch = vi.fn(() => Promise.resolve(problem(401, "UNAUTHENTICATED")));
+    const { api } = createApiClient({ baseUrl: BASE, audience: "admin", fetch, onSessionEnded });
+
+    const { response } = await api.GET("/v1/admin/invitations");
+
+    expect(response.status).toBe(401);
+    expect(onSessionEnded).toHaveBeenCalledOnce();
+  });
+
+  it("doesn't refresh a customer on UNAUTHENTICATED: they send their token, so it means signed out", async () => {
+    const { store } = memoryStore(null);
+    const fetch = vi.fn(() => Promise.resolve(problem(401, "UNAUTHENTICATED")));
+    const { api } = createApiClient({ baseUrl: BASE, audience: "customer", store, fetch });
+
+    await api.GET("/v1/admin/invitations");
+
+    expect(fetch).toHaveBeenCalledOnce();
+  });
 });
