@@ -52,7 +52,7 @@ function Mark() {
   return (
     <svg
       aria-hidden
-      className="size-7"
+      className="size-[2.0125rem]"
       viewBox="-0.0725 -2.3325 32.595 32.595"
       fill="none"
       stroke="currentColor"
