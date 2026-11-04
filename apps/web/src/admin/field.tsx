@@ -1,9 +1,10 @@
 import { useId, type InputHTMLAttributes, type ReactNode } from "react";
 
-// The box every input sits in, as in the apps: white, 56 high, 1px light border, 14 corners; 1.5px
-// black when focused, red with an error. Padding shrinks by the extra half pixel so text doesn't move.
+// The box every input sits in: white, 48 high (the apps use 56; desktop forms are denser), 1px light
+// border, 14 corners; 1.5px black when focused, red with an error. Padding shrinks by the extra half
+// pixel so text doesn't move.
 export const boxClass = (error: boolean) =>
-  `flex h-14 items-center gap-2.5 rounded-field border bg-white px-4 transition-colors ${
+  `flex h-12 items-center gap-2.5 rounded-field border bg-white px-4 transition-colors ${
     error
       ? "border-[1.5px] border-red px-[15.5px]"
       : "border-border focus-within:border-[1.5px] focus-within:border-primary focus-within:px-[15.5px]"
@@ -30,7 +31,7 @@ export function Field({ label, error, hint, trailing, ...input }: FieldProps) {
           id={id}
           aria-invalid={Boolean(error)}
           aria-describedby={note ? `${id}-note` : undefined}
-          className="h-full min-w-0 flex-1 bg-transparent text-[17px] leading-[22px] text-ink outline-none placeholder:text-ink-3 disabled:text-ink-2"
+          className="h-full min-w-0 flex-1 bg-transparent text-[16px] leading-[21px] text-ink outline-none placeholder:text-ink-3 disabled:text-ink-2"
           {...input}
         />
         {trailing}
