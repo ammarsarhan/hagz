@@ -131,10 +131,16 @@ export function Authenticator({
       subtitle="Scan this code with an authenticator app, like Google Authenticator or 1Password. You’ll use it every time you sign in."
     >
       <div className="flex flex-col items-center">
-        <div className="flex size-[184px] items-center justify-center rounded-hud border border-border bg-white">
+        <div className="flex size-[11.5rem] items-center justify-center rounded-hud border border-border bg-white">
           {setup ? (
             // A data URL made in the browser from the otpauth URI; next/image has nothing to optimise.
-            <img src={setup.qr} alt="QR code for your authenticator app" width={150} height={150} />
+            <img
+              src={setup.qr}
+              alt="QR code for your authenticator app"
+              width={150}
+              height={150}
+              className="size-[9.375rem]"
+            />
           ) : (
             <span className="size-6 animate-spin rounded-full border-2 border-ink-3 border-t-transparent" />
           )}
@@ -142,7 +148,7 @@ export function Authenticator({
         <p className="mt-5 text-label text-ink-2">
           Can’t scan it? Enter this key in the app instead.
         </p>
-        <div className="mt-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-field bg-field pr-2.5 pl-4">
+        <div className="mt-2 flex h-[3.25rem] w-full items-center justify-between gap-3 rounded-field bg-field pr-2.5 pl-4">
           <span className="text-caption font-medium whitespace-nowrap text-ink tabular-nums">
             {groups}
           </span>
@@ -158,8 +164,7 @@ export function Authenticator({
             className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-ink"
           >
             <svg
-              width="16"
-              height="16"
+              className="size-4"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
