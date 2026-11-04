@@ -10,7 +10,8 @@ import type { AccountStore } from "./accounts";
 // Codes for accounts that exist (password reset, two-factor), in CustomerVerification or
 // StaffVerification. The same rules as sign-up codes in Redis (verification-codes.ts): hashed, single
 // use, five guesses, ten minutes, a minute between sends; the constants are shared so the two can't
-// drift. Here Postgres is the source of truth, including for the resend cooldown.
+// drift. Here Postgres is the source of truth, including for the resend cooldown, which a code
+// entered right ends early.
 
 export interface IssuedCode {
   verificationId: string;
@@ -33,8 +34,17 @@ export const issueCode = async (
   const query = { accountId, purpose };
 
   const verification = await transaction(async (tx) => {
-    const latest = await store.codes.latestCreatedAt(tx, query);
-    const waitMs = latest ? latest.getTime() + RESEND_AFTER_SECONDS * 1000 - now.getTime() : 0;
+    const latest = await store.codes.latest(tx, query);
+    // A code that was entered right has done its job, so the next one needn't wait: turning
+    // two-factor off just after turning it on, or signing in just after. An open code, or one
+    // burned by wrong guesses, holds the cooldown. (Codes replaced by a newer one are consumed with
+    // attempts to spare too, but one is only ever the newest when that newer send failed, and by
+    // then it's past the cooldown anyway.)
+    const enteredRight = latest?.consumedAt && latest.attempts < MAX_CODE_ATTEMPTS;
+    const waitMs =
+      latest && !enteredRight
+        ? latest.createdAt.getTime() + RESEND_AFTER_SECONDS * 1000 - now.getTime()
+        : 0;
     if (waitMs > 0) {
       const retryAfter = Math.ceil(waitMs / 1000);
       throw new AppError({

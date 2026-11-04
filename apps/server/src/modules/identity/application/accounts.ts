@@ -59,6 +59,12 @@ export interface OpenCode {
   attempts: number;
 }
 
+export interface LatestCode {
+  createdAt: Date;
+  consumedAt: Date | null;
+  attempts: number;
+}
+
 export interface CodeQuery {
   accountId: string;
   purpose: VerificationPurpose;
@@ -93,7 +99,8 @@ export interface AccountStore extends SessionStore {
   // Runs in the reset's transaction, after the new password and the sign-out of every session.
   afterPasswordReset(tx: Tx, account: Account, clock: Clock): Promise<void>;
   codes: {
-    latestCreatedAt(tx: Tx, query: CodeQuery): Promise<Date | undefined>;
+    // The newest code for the purpose, open or not: the resend cooldown runs from it.
+    latest(tx: Tx, query: CodeQuery): Promise<LatestCode | undefined>;
     consumeOpen(tx: Tx, query: CodeQuery, at: Date): Promise<unknown>;
     create(
       tx: Tx,
@@ -140,14 +147,12 @@ export const customers: AccountStore = {
       }),
   },
   codes: {
-    latestCreatedAt: async (tx, { accountId, purpose }) =>
-      (
-        await tx.customerVerification.findFirst({
-          where: { customerId: accountId, purpose },
-          orderBy: { createdAt: "desc" },
-          select: { createdAt: true },
-        })
-      )?.createdAt,
+    latest: async (tx, { accountId, purpose }) =>
+      (await tx.customerVerification.findFirst({
+        where: { customerId: accountId, purpose },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true, consumedAt: true, attempts: true },
+      })) ?? undefined,
     consumeOpen: (tx, { accountId, purpose }, at) =>
       tx.customerVerification.updateMany({
         where: { customerId: accountId, purpose, consumedAt: null },
@@ -197,14 +202,12 @@ export const staff: AccountStore = {
       }),
   },
   codes: {
-    latestCreatedAt: async (tx, { accountId, purpose }) =>
-      (
-        await tx.staffVerification.findFirst({
-          where: { staffId: accountId, purpose },
-          orderBy: { createdAt: "desc" },
-          select: { createdAt: true },
-        })
-      )?.createdAt,
+    latest: async (tx, { accountId, purpose }) =>
+      (await tx.staffVerification.findFirst({
+        where: { staffId: accountId, purpose },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true, consumedAt: true, attempts: true },
+      })) ?? undefined,
     consumeOpen: (tx, { accountId, purpose }, at) =>
       tx.staffVerification.updateMany({
         where: { staffId: accountId, purpose, consumedAt: null },

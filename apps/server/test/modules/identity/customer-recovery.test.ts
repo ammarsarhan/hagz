@@ -188,6 +188,32 @@ describe("two-factor", () => {
     expect(await verifyJwt(second.accessToken, "customer")).toMatchObject({ sub: id });
   });
 
+  it("sends the next code at once when the last was entered right", async () => {
+    await createCustomer();
+    const { session } = await signedInAs();
+
+    expect((await setTwoFactor(session.accessToken, true)).status).toBe(200);
+    expect((await setTwoFactor(session.accessToken, false)).status).toBe(200);
+    expect((await prisma.customer.findFirstOrThrow()).twoFactorEnabled).toBe(false);
+  });
+
+  it("keeps the cooldown while the last code is open, or after it was guessed out", async () => {
+    await createCustomer();
+    const { session } = await signedInAs();
+    const sendCode = () => request("POST", "/two-factor/codes", undefined, session.accessToken);
+    expect((await sendCode()).status).toBe(202);
+
+    const tooSoon = await sendCode();
+    expect(tooSoon.status).toBe(429);
+    expect(await json(tooSoon)).toMatchObject({ code: "RATE_LIMITED" });
+
+    const wrong = lastCode() === "000000" ? "111111" : "000000";
+    for (let guess = 0; guess < 5; guess++) {
+      await request("PUT", "/two-factor", { enabled: true, code: wrong }, session.accessToken);
+    }
+    expect((await sendCode()).status).toBe(429);
+  });
+
   it("needs a right code to change the setting", async () => {
     await createCustomer();
     const { session } = await signedInAs();
