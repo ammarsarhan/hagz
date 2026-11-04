@@ -16,7 +16,7 @@ import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
-import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
+import { fieldMessage, hudMessage, problem, retryAfter, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL, language } from "@/lib/language";
 import { displayPhone, isolate } from "@/lib/phone";
@@ -53,11 +53,14 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
     setRequesting(true);
     const result = await send(api.POST("/v1/auth/staff/two-factor/codes"));
     setRequesting(false);
-    if (!result.ok) {
-      hud.show(hudMessage(result.error));
+    // Rate limited usually means a code was just sent (opened, then closed, the sheet), and that
+    // code still works: open the sheet on it, counting down to when another can be sent.
+    const wait = result.ok ? result.data.resendAfter : retryAfter(result.error);
+    if (wait === undefined) {
+      if (!result.ok) hud.show(hudMessage(result.error));
       return;
     }
-    setCodeSheet({ enable, resendAfter: result.data.resendAfter });
+    setCodeSheet({ enable, resendAfter: wait });
     setCodeSheetOpen(true);
   };
 
@@ -272,7 +275,10 @@ function TwoFactorSheet({
     const result = await send(api.POST("/v1/auth/staff/two-factor/codes"));
     setResending(false);
     if (!result.ok) {
-      hud.show(hudMessage(result.error));
+      // Too soon (or too many for now): count down again instead of reporting a problem.
+      const wait = retryAfter(result.error);
+      if (wait !== undefined) setSent({ count: sent.count + 1, resendAfter: wait });
+      else hud.show(hudMessage(result.error));
       return;
     }
     setCode("");
