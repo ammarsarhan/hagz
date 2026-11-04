@@ -58,6 +58,8 @@ const schema = z.object({
     .url()
     .transform((url) => url.replace(/\/+$/, ""))
     .optional(),
+  // Set by Railway on every deploy; shown on the admin home as the running version. Unset locally.
+  RAILWAY_GIT_COMMIT_SHA: z.string().min(7).optional(),
   // No defaults for secrets: a missing or short one stops the process instead of running insecurely.
   JWT_SIGNING_KEYS: signingKeys,
   OTP_PEPPER: secret,
