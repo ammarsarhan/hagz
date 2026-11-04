@@ -142,7 +142,9 @@ const resendTwoFactor = createRoute({
   responses: {
     202: { description: "A new code was sent", ...json(TwoFactorChallenge) },
     401: problemResponse("CHALLENGE_EXPIRED: sign in again."),
-    429: problemResponse("RATE_LIMITED: see `retryAfter`."),
+    429: problemResponse(
+      "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
+    ),
     503: unavailable,
   },
 });
@@ -243,7 +245,9 @@ const sendTwoFactorCode = createRoute({
   responses: {
     202: { description: "Code sent", ...json(VerificationCodeSent) },
     401: unauthenticated,
-    429: problemResponse("RATE_LIMITED: see `retryAfter`."),
+    429: problemResponse(
+      "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
+    ),
     503: unavailable,
   },
 });

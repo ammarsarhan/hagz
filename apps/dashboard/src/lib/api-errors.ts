@@ -1,4 +1,6 @@
 import { errorMessage, isProblem, shortErrorMessage, type Problem } from "@hagz/api";
+
+export { retryAfter } from "@hagz/api";
 import { language } from "./language";
 
 // openapi-fetch answers { data } or { error }, and throws when there's no answer at all (offline).

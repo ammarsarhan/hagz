@@ -13,7 +13,7 @@ import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { signOut } from "@/lib/session";
+import { leaveToOnboarding } from "@/lib/navigation";
 
 const MIN_PASSWORD = 8;
 
@@ -48,9 +48,12 @@ export default function ResetNewPassword() {
       return;
     }
     // From the account screen: the reset signed this phone out along with every other, so it starts
-    // over at sign in, with nothing signed-in left to go back to.
+    // over at sign in, over onboarding, with nothing signed-in left to go back to. The session is
+    // only forgotten here, not signed out: the server already ended it, and asking again would answer
+    // SESSION_ENDED and send the app to onboarding a second time, racing this navigation.
     if (await auth.isSignedIn()) {
-      await signOut();
+      await auth.forget();
+      leaveToOnboarding();
       router.push({ pathname: "/sign-in", params: { phone } });
       return;
     }

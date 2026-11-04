@@ -16,7 +16,7 @@ import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
-import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
+import { fieldMessage, hudMessage, problem, retryAfter, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL, language } from "@/lib/language";
 import { displayPhone, isolate } from "@/lib/phone";
@@ -38,9 +38,10 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   const { data: me, error, isError, refetch } = useQuery(queries.me);
   // For "Join or create a venue" on the tab: how many invitations are waiting (cached with first run's).
   const waiting = useQuery({ ...queries.invitations, enabled: tabbed }).data?.length ?? 0;
-  // Turning two-factor on or off: a code is sent first, then the sheet takes it. The switch only
-  // moves once the code is accepted.
-  const [requesting, setRequesting] = useState(false);
+  // Turning two-factor on or off: a code is sent first, then the sheet takes it. The switch shows
+  // the tap (`pending`) while that's under way, and goes back if the code isn't sent or the sheet
+  // closes without one accepted; the line under the title keeps saying what's saved.
+  const [pending, setPending] = useState<boolean | null>(null);
   const [codeSheet, setCodeSheet] = useState<{ enable: boolean; resendAfter: number } | null>(null);
   const [codeSheetOpen, setCodeSheetOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
@@ -50,14 +51,20 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   }, [isError, error, hud]);
 
   const requestCode = async (enable: boolean) => {
-    setRequesting(true);
+    setPending(enable);
     const result = await send(api.POST("/v1/auth/staff/two-factor/codes"));
-    setRequesting(false);
-    if (!result.ok) {
-      hud.show(hudMessage(result.error));
+    // Rate limited with `codeSent`: the last code (the sheet was opened, then closed) still works, so
+    // open the sheet on it, counting down to the next. Without one there's nothing to enter, so the
+    // wait is only reported.
+    let wait: number | undefined;
+    if (result.ok) wait = result.data.resendAfter;
+    else if (problem(result.error)?.codeSent === true) wait = retryAfter(result.error);
+    if (wait === undefined) {
+      setPending(null);
+      if (!result.ok) hud.show(hudMessage(result.error));
       return;
     }
-    setCodeSheet({ enable, resendAfter: result.data.resendAfter });
+    setCodeSheet({ enable, resendAfter: wait });
     setCodeSheetOpen(true);
   };
 
@@ -130,8 +137,8 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
           trailing={
             <Switch
               accessibilityLabel={t("screens.account.twoFactor.title")}
-              value={me.twoFactorEnabled}
-              disabled={requesting}
+              value={pending ?? me.twoFactorEnabled}
+              disabled={pending !== null}
               onValueChange={(enable) => void requestCode(enable)}
               trackColor={{ true: colors.primary }}
             />
@@ -199,7 +206,11 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
           resendAfter={codeSheet.resendAfter}
           visible={codeSheetOpen}
           onClose={() => setCodeSheetOpen(false)}
-          onHidden={() => setCodeSheet(null)}
+          onHidden={() => {
+            // Accepted or not, the saved setting is what to show now.
+            setCodeSheet(null);
+            setPending(null);
+          }}
           onChanged={(enabled) => {
             // The answer says what it is now, so the cached account is updated rather than fetched.
             queryClient.setQueryData(queries.me.queryKey, (current) =>
@@ -272,7 +283,10 @@ function TwoFactorSheet({
     const result = await send(api.POST("/v1/auth/staff/two-factor/codes"));
     setResending(false);
     if (!result.ok) {
-      hud.show(hudMessage(result.error));
+      // Too soon (or too many for now): count down again instead of reporting a problem.
+      const wait = retryAfter(result.error);
+      if (wait !== undefined) setSent({ count: sent.count + 1, resendAfter: wait });
+      else hud.show(hudMessage(result.error));
       return;
     }
     setCode("");
