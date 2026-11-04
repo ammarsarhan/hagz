@@ -41,8 +41,7 @@ function Mark() {
   return (
     <svg
       aria-hidden
-      width="28"
-      height="28"
+      className="size-7"
       viewBox="-0.0725 -2.3325 32.595 32.595"
       fill="none"
       stroke="currentColor"
@@ -83,12 +82,12 @@ export function Rail() {
 
   const active = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
-  const row = "flex h-10 w-full items-center gap-3 rounded-[10px] px-2.5";
+  const row = "flex h-10 w-full items-center gap-3 rounded-[0.625rem] px-2.5";
 
   return (
     <nav
       aria-label="Sections"
-      className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-border bg-white px-3 py-[18px]"
+      className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-border bg-white px-3 py-[1.125rem]"
     >
       <div className="flex items-center gap-2.5 px-2.5 text-ink">
         <Mark />
@@ -105,7 +104,7 @@ export function Rail() {
                 aria-current={on ? "page" : undefined}
                 className={`${row} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
               >
-                <Item size={20} stroke={on ? 2 : 1.75} className="shrink-0" />
+                <Item size={20} className="size-5 shrink-0" stroke={on ? 2 : 1.75} />
                 <span className={`text-label ${on ? "font-semibold" : "font-medium"}`}>
                   {label}
                 </span>
@@ -121,7 +120,7 @@ export function Rail() {
           title="Notifications come with alerts"
           className={`${row} text-ink-3`}
         >
-          <IconBell size={20} stroke={1.75} />
+          <IconBell size={20} className="size-5 shrink-0" stroke={1.75} />
           <span className="text-label font-medium">Notifications</span>
         </button>
         <div ref={menuRef} className="relative">
@@ -131,9 +130,9 @@ export function Rail() {
             aria-haspopup="menu"
             aria-expanded={menu}
             aria-label={`Account: ${admin.name}`}
-            className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] p-1.5 hover:bg-chip"
+            className="flex w-full cursor-pointer items-center gap-2.5 rounded-[0.625rem] p-1.5 hover:bg-chip"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-chip text-[12px] font-semibold text-ink">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-chip text-[0.75rem] font-semibold text-ink">
               {initials(admin.name)}
             </span>
             <span className="min-w-0 text-left">
@@ -150,9 +149,9 @@ export function Rail() {
                 type="button"
                 role="menuitem"
                 onClick={() => void signOut()}
-                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-label font-medium text-ink hover:bg-chip"
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[0.625rem] px-3 py-2 text-label font-medium text-ink hover:bg-chip"
               >
-                <IconLogout size={18} stroke={1.75} />
+                <IconLogout size={18} className="size-[1.125rem]" stroke={1.75} />
                 Sign out
               </button>
             </div>

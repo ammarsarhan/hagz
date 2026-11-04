@@ -28,7 +28,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading}
-      className={`flex h-12 w-full cursor-pointer items-center justify-center rounded-full px-6 text-[16px] leading-[21px] font-semibold transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
+      className={`flex h-12 w-full cursor-pointer items-center justify-center rounded-full px-6 text-[1rem] leading-[1.3125rem] font-semibold transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
       {...rest}
     >
       {loading ? (
