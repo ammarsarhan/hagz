@@ -35,4 +35,24 @@ export const SystemStatus = z
   })
   .meta({ id: "SystemStatus" });
 
+// One minute of history, recorded by the server: what it measured, and whether the worker's
+// heartbeat was there. A minute with no sample means no server was running to take it.
+export const SystemSample = z
+  .object({
+    at: z.iso.datetime().meta({ description: "The start of the minute it was taken in." }),
+    worker: Up,
+    database: DependencyStatus,
+    queue: DependencyStatus,
+    cache: DependencyStatus,
+  })
+  .meta({ id: "SystemSample" });
+
+export const SystemHistory = z
+  .object({
+    samples: z.array(SystemSample).meta({ description: "Oldest first, up to the last 24 hours." }),
+  })
+  .meta({ id: "SystemHistory" });
+
 export type SystemStatus = z.infer<typeof SystemStatus>;
+export type SystemSample = z.infer<typeof SystemSample>;
+export type SystemHistory = z.infer<typeof SystemHistory>;
