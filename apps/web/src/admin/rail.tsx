@@ -6,7 +6,6 @@ import {
   IconCash,
   IconHome,
   IconLifebuoy,
-  IconLogout,
   IconShieldCheck,
   IconUserShield,
   IconWorldCog,
@@ -14,8 +13,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { signOut, useAdmin } from "./session";
+import { useAdmin } from "./session";
 
 // The sections, in the order the user set (2026-11-04), grouped (2026-11-05): an overview, the
 // day-to-day work, and who has access and how the platform is set up. Unbuilt ones open an empty state.
@@ -75,22 +73,10 @@ function Mark() {
 }
 
 // Snowflake's sidebar (the user's reference), always open: the mark, the grouped sections with their
-// labels, then notifications and the account at the bottom.
+// labels, then notifications and the account, which opens /admin/account (and signing out).
 export function Rail() {
   const admin = useAdmin();
   const pathname = usePathname();
-  const [menu, setMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menu) return;
-    const close = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenu(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menu]);
-
   const active = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
   const row = "flex h-10 w-full items-center gap-3 rounded-[0.625rem] px-2.5";
@@ -141,40 +127,20 @@ export function Rail() {
           <span className="text-label font-medium">Notifications</span>
         </button>
         <div className="mx-2.5 my-1 h-px bg-border" />
-        <div ref={menuRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setMenu(!menu)}
-            aria-haspopup="menu"
-            aria-expanded={menu}
-            aria-label={`Account: ${admin.name}`}
-            className="flex w-full cursor-pointer items-center gap-2.5 rounded-[0.625rem] p-1.5 hover:bg-chip"
-          >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-hairline text-[0.75rem] font-semibold text-ink">
-              {initials(admin.name)}
-            </span>
-            <span className="min-w-0 text-left">
-              <span className="block truncate text-label font-medium text-ink">{admin.name}</span>
-              <span className="block truncate text-caption text-ink-2">{admin.email}</span>
-            </span>
-          </button>
-          {menu ? (
-            <div
-              role="menu"
-              className="absolute bottom-full left-0 z-20 mb-2 w-full rounded-hud border border-border bg-white p-1.5 shadow-[0_12px_32px_rgb(0_0_0/0.12)]"
-            >
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => void signOut()}
-                className="flex w-full cursor-pointer items-center gap-2.5 rounded-[0.625rem] px-3 py-2 text-label font-medium text-ink hover:bg-chip"
-              >
-                <IconLogout size={18} className="size-[1.125rem]" stroke={1.75} />
-                Sign out
-              </button>
-            </div>
-          ) : null}
-        </div>
+        <Link
+          href="/admin/account"
+          aria-label={`Account: ${admin.name}`}
+          aria-current={pathname.startsWith("/admin/account") ? "page" : undefined}
+          className={`flex w-full items-center gap-2.5 rounded-[0.625rem] p-1.5 hover:bg-chip ${pathname.startsWith("/admin/account") ? "bg-chip" : ""}`}
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-hairline text-[0.75rem] font-semibold text-ink">
+            {initials(admin.name)}
+          </span>
+          <span className="min-w-0 text-left">
+            <span className="block truncate text-label font-medium text-ink">{admin.name}</span>
+            <span className="block truncate text-caption text-ink-2">{admin.email}</span>
+          </span>
+        </Link>
       </div>
     </nav>
   );
