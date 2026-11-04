@@ -65,8 +65,8 @@ await expoApp("customer", COLORS.black, COLORS.lime);
 await expoApp("dashboard", COLORS.blue, COLORS.white);
 
 // Public web (customer facing): the lime tile. Browsers show favicons as-is, so the tile is rounded
-// here. Browsers draw favicons at tab size, so 16 and 32 px use the small optical size; 48 px keeps
-// full detail. Next.js links app/favicon.ico on every page, including admin's, so the .ico lives in
+// here. Full detail at every size (user, 2026-11-04): the small optical size's solid pentagon read as
+// a filled ball. Next.js links app/favicon.ico on every page, including admin's, so the .ico lives in
 // public/ (still served at /favicon.ico for tools that ask for it) and each section links its own
 // icon.svg with an icon.png fallback for browsers without SVG favicons.
 const webTile = {
@@ -81,13 +81,13 @@ await write(
     await Promise.all(
       [16, 32, 48].map(async (px) => ({
         px,
-        data: await png({ ...webTile, detail: px <= 32 ? "small" : "full" }, px),
+        data: await png({ ...webTile, detail: "full" }, px),
       })),
     ),
   ),
 );
-await write("apps/web/src/app/icon.svg", markSvg({ ...webTile, detail: "small" }));
-await write("apps/web/src/app/icon.png", await png({ ...webTile, detail: "small" }, 32));
+await write("apps/web/src/app/icon.svg", markSvg({ ...webTile, detail: "full" }));
+await write("apps/web/src/app/icon.png", await png({ ...webTile, detail: "full" }, 32));
 // Apple touch icon: full bleed, because iOS rounds it.
 await write(
   "apps/web/src/app/apple-icon.png",

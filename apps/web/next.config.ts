@@ -6,6 +6,8 @@ import type { NextConfig } from "next";
 const apiUrl = (process.env.API_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
 const config: NextConfig = {
+  // The development badge sits bottom left by default, on top of the admin rail's account button.
+  devIndicators: { position: "bottom-right" },
   async rewrites() {
     return [
       { source: "/v1/:path*", destination: `${apiUrl}/v1/:path*` },

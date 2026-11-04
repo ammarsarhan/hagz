@@ -58,7 +58,7 @@ export function CodeInput({
             return (
               <div
                 key={i}
-                className={`flex h-[60px] flex-1 items-center justify-center rounded-field bg-white text-2xl font-semibold text-ink ${look}`}
+                className={`flex h-[3.75rem] flex-1 items-center justify-center rounded-field bg-white text-2xl font-semibold text-ink ${look}`}
               >
                 {value[i] ?? ""}
               </div>

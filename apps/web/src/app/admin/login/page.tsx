@@ -93,7 +93,11 @@ export default function AdminLogin() {
                 className="flex cursor-pointer text-unit hover:text-ink"
               >
                 {/* As in the staff app: the open eye while the password shows. */}
-                {shown ? <IconEye size={20} stroke={2} /> : <IconEyeOff size={20} stroke={2} />}
+                {shown ? (
+                  <IconEye size={20} className="size-5 shrink-0" stroke={2} />
+                ) : (
+                  <IconEyeOff size={20} className="size-5 shrink-0" stroke={2} />
+                )}
               </button>
             }
           />
