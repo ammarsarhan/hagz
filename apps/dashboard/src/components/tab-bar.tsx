@@ -67,7 +67,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
             <Icon
               size={24}
               color={focused ? colors.primary : colors.ink3}
-              strokeWidth={focused ? 2.1 : 1.75}
+              strokeWidth={focused ? 1.85 : 1.6}
             />
             <Text
               className={`text-[11px] leading-[13px] ${focused ? "font-semibold text-primary" : "font-medium text-ink-3"}`}
