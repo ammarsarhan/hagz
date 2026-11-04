@@ -37,6 +37,8 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   const queryClient = useQueryClient();
   // From the cache when first run already fetched it: opening the page again doesn't ask the server.
   const { data: me, error, isError, refetch } = useQuery(queries.me);
+  // For "Join or create a venue" on the tab: how many invitations are waiting (cached with first run's).
+  const waiting = useQuery({ ...queries.invitations, enabled: tabbed }).data?.length ?? 0;
   // Turning two-factor on or off: a code is sent first, then the sheet takes it. The switch only
   // moves once the code is accepted.
   const [requesting, setRequesting] = useState(false);
@@ -90,6 +92,14 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   }
 
   const phone = localDigits(me.phone);
+  const chevron = (
+    <IconChevronRight
+      size={18}
+      color={colors.unit}
+      strokeWidth={2}
+      style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+    />
+  );
   const external = <IconExternalLink size={18} color={colors.unit} strokeWidth={2} />;
 
   return (
@@ -131,14 +141,7 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
         <SettingsRow
           title={t("screens.account.password.title")}
           body={t("screens.account.password.body")}
-          trailing={
-            <IconChevronRight
-              size={18}
-              color={colors.unit}
-              strokeWidth={2}
-              style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
-            />
-          }
+          trailing={chevron}
           onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
         />
 
@@ -159,6 +162,22 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
             trailing={external}
             onPress={contactSupport}
           />
+        ) : null}
+        {tabbed ? (
+          <>
+            {/* Already on a venue's team: the way onto another, as first run offers it. */}
+            <SettingsHeading>{t("screens.account.venues")}</SettingsHeading>
+            <SettingsRow
+              title={t("screens.account.join.title")}
+              body={
+                waiting > 0
+                  ? t("screens.account.join.waiting", { count: waiting })
+                  : t("screens.account.join.body")
+              }
+              trailing={chevron}
+              onPress={() => router.push("/join")}
+            />
+          </>
         ) : null}
         <View className="mt-2">
           <SettingsRow
