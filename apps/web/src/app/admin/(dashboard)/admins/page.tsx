@@ -9,7 +9,7 @@ export default function Admins() {
   return (
     <EmptySection
       title="Admins"
-      subtitle="The people who can sign in to Hagz Admin."
+      subtitle="The people who can sign in here."
       icon={IconUserShield}
       phase="the next design"
       description="Everyone with access to Hagz Admin, open invitations, and inviting someone new."
