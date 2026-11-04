@@ -11,7 +11,16 @@ import { InvitationSheet, type SheetStart } from "./invitation-sheet";
 // The invitation sheet as a screen uses it: opened from a card, from "Have a code?", or by an
 // invitation link (manage/invite/[code]), which can arrive on first run or on a venue's home. Answers
 // update the cached venues and invitations, so screens showing them follow.
-export function useInvitationSheet({ phone, takeLinks }: { phone?: string; takeLinks: boolean }) {
+export function useInvitationSheet({
+  phone,
+  takeLinks,
+  onJoined,
+}: {
+  phone?: string;
+  takeLinks: boolean;
+  // After joining, once the sheet has slid away (the venues are refreshed either way).
+  onJoined?: () => void;
+}) {
   const queryClient = useQueryClient();
   // The sheet's content, kept while it slides away; `open` is what shows or hides it.
   const [start, setStart] = useState<SheetStart | null>(null);
@@ -79,7 +88,12 @@ export function useInvitationSheet({ phone, takeLinks }: { phone?: string; takeL
           afterSheet.current();
         }}
         onClose={() => close(() => undefined)}
-        onJoined={() => close(refresh)}
+        onJoined={() =>
+          close(() => {
+            refresh();
+            onJoined?.();
+          })
+        }
         onDeclined={(id) => close(() => drop(id))}
         onSwitchNumber={(code) => void switchNumber(code)}
         onOutdated={refresh}

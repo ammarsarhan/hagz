@@ -63,6 +63,13 @@ const en = {
         open: "Your account",
         security: "Security",
         app: "App",
+        venues: "Venues",
+        join: {
+          title: "Join or create a venue",
+          body: "Accept an invitation, or set up another venue.",
+          waiting_one: "{{count}} invitation waiting",
+          waiting_other: "{{count}} invitations waiting",
+        },
         twoFactor: {
           title: "Two-factor sign-in",
           off: "A WhatsApp code every time you sign in.",
@@ -92,6 +99,12 @@ const en = {
           cancel: "Cancel",
         },
         version: "Hagz for staff · {{version}}",
+      },
+      join: {
+        title: "Join or create a venue",
+        invitedSubtitle_one: "You've been invited to join another venue.",
+        invitedSubtitle_other: "You've been invited to join {{count}} more venues.",
+        emptySubtitle: "Join a team with an invitation, or set up a venue of your own.",
       },
       firstRun: {
         welcome: "Welcome, {{name}}",
