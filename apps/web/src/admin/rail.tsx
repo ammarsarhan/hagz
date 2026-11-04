@@ -17,15 +17,26 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut, useAdmin } from "./session";
 
-// The sections, in the order the user set (2026-11-04). Unbuilt ones open an empty state.
-export const sections: { href: string; label: string; icon: Icon }[] = [
-  { href: "/admin", label: "Home", icon: IconHome },
-  { href: "/admin/venues", label: "Venues", icon: IconBuildingStadium },
-  { href: "/admin/support", label: "Support", icon: IconLifebuoy },
-  { href: "/admin/finance", label: "Finance", icon: IconCash },
-  { href: "/admin/moderation", label: "Moderation", icon: IconShieldCheck },
-  { href: "/admin/admins", label: "Admins", icon: IconUserShield },
-  { href: "/admin/platform", label: "Platform", icon: IconWorldCog },
+// The sections, in the order the user set (2026-11-04), grouped (2026-11-05): an overview, the
+// day-to-day work, and who has access and how the platform is set up. Unbuilt ones open an empty state.
+export const groups: { label: string; items: { href: string; label: string; icon: Icon }[] }[] = [
+  { label: "Overview", items: [{ href: "/admin", label: "Home", icon: IconHome }] },
+  {
+    label: "Operations",
+    items: [
+      { href: "/admin/venues", label: "Venues", icon: IconBuildingStadium },
+      { href: "/admin/support", label: "Support", icon: IconLifebuoy },
+      { href: "/admin/finance", label: "Finance", icon: IconCash },
+      { href: "/admin/moderation", label: "Moderation", icon: IconShieldCheck },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { href: "/admin/admins", label: "Admins", icon: IconUserShield },
+      { href: "/admin/platform", label: "Platform", icon: IconWorldCog },
+    ],
+  },
 ];
 
 const initials = (name: string) =>
@@ -63,7 +74,7 @@ function Mark() {
   );
 }
 
-// Snowflake's sidebar (the user's reference), always open: the mark and name, the sections with their
+// Snowflake's sidebar (the user's reference), always open: the mark, the grouped sections with their
 // labels, then notifications and the account at the bottom.
 export function Rail() {
   const admin = useAdmin();
@@ -89,31 +100,37 @@ export function Rail() {
       aria-label="Sections"
       className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-border bg-white px-3 py-[1.125rem]"
     >
-      <div className="flex items-center gap-2.5 px-2.5 text-ink">
+      <div className="flex px-2.5 text-ink">
         <Mark />
-        <span className="text-body font-semibold">Hagz Admin</span>
       </div>
-      <div className="mx-2.5 mt-4 mb-1 h-px bg-border" />
-      <ul className="mt-1 flex flex-col gap-1">
-        {sections.map(({ href, label, icon: Item }) => {
-          const on = active(href);
-          return (
-            <li key={href}>
-              <Link
-                href={href}
-                aria-current={on ? "page" : undefined}
-                className={`${row} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
-              >
-                <Item size={20} className="size-5 shrink-0" stroke={on ? 2 : 1.75} />
-                <span className={`text-label ${on ? "font-semibold" : "font-medium"}`}>
-                  {label}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="mt-auto flex flex-col gap-1">
+      {/* The sections scroll on their own when they don't fit; the mark and the account stay put. */}
+      <div className="-mx-3 mt-4 min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+        {groups.map((group) => (
+          <div key={group.label} className="mt-5 first:mt-0">
+            <p className="px-2.5 pb-1.5 text-caption font-medium text-ink-3">{group.label}</p>
+            <ul className="flex flex-col gap-1">
+              {group.items.map(({ href, label, icon: Item }) => {
+                const on = active(href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      aria-current={on ? "page" : undefined}
+                      className={`${row} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
+                    >
+                      <Item size={20} className="size-5 shrink-0" stroke={on ? 2 : 1.75} />
+                      <span className={`text-label ${on ? "font-semibold" : "font-medium"}`}>
+                        {label}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="flex shrink-0 flex-col gap-1 border-t border-border pt-3">
         <button
           type="button"
           disabled
