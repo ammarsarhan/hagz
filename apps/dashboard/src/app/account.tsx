@@ -1,7 +1,7 @@
-import type { components } from "@hagz/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Linking, ScrollView, Switch, View } from "react-native";
 import { Avatar } from "@/components/avatar";
@@ -15,15 +15,15 @@ import { Screen } from "@/components/screen";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
-import { api, auth } from "@/lib/api";
+import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL, language } from "@/lib/language";
 import { resetTo } from "@/lib/navigation";
 import { displayPhone, isolate } from "@/lib/phone";
+import { queries } from "@/lib/queries";
+import { signOut } from "@/lib/session";
 import { contactSupport, hasSupport } from "@/lib/support";
-
-type Staff = components["schemas"]["Staff"];
 
 const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 
@@ -33,8 +33,9 @@ const localDigits = (phone: string) => phone.replace(/^\+20/, "");
 export default function Account() {
   const { t } = useTranslation();
   const hud = useHud();
-  const [me, setMe] = useState<Staff | null>(null);
-  const [failed, setFailed] = useState(false);
+  const queryClient = useQueryClient();
+  // From the cache when first run already fetched it: opening the page again doesn't ask the server.
+  const { data: me, error, isError, refetch } = useQuery(queries.me);
   // Turning two-factor on or off: a code is sent first, then the sheet takes it. The switch only
   // moves once the code is accepted.
   const [requesting, setRequesting] = useState(false);
@@ -42,19 +43,9 @@ export default function Account() {
   const [codeSheetOpen, setCodeSheetOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    setFailed(false);
-    const result = await send(api.GET("/v1/staff/me"));
-    if (result.ok) setMe(result.data);
-    else {
-      hud.show(hudMessage(result.error));
-      setFailed(true);
-    }
-  }, [hud]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (isError) hud.show(hudMessage(error));
+  }, [isError, error, hud]);
 
   const requestCode = async (enable: boolean) => {
     setRequesting(true);
@@ -78,13 +69,13 @@ export default function Account() {
     return (
       <Screen
         footer={
-          failed ? (
-            <Button label={t("screens.firstRun.retry")} onPress={() => void load()} />
+          isError ? (
+            <Button label={t("screens.firstRun.retry")} onPress={() => void refetch()} />
           ) : undefined
         }
       >
         {back}
-        {failed ? null : (
+        {isError ? null : (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color={colors.ink3} />
           </View>
@@ -187,7 +178,10 @@ export default function Account() {
           onClose={() => setCodeSheetOpen(false)}
           onHidden={() => setCodeSheet(null)}
           onChanged={(enabled) => {
-            setMe({ ...me, twoFactorEnabled: enabled });
+            // The answer says what it is now, so the cached account is updated rather than fetched.
+            queryClient.setQueryData(queries.me.queryKey, (current) =>
+              current ? { ...current, twoFactorEnabled: enabled } : current,
+            );
             setCodeSheetOpen(false);
           }}
         />
@@ -315,9 +309,9 @@ function SignOutSheet({ visible, onClose }: { visible: boolean; onClose: () => v
   const { t } = useTranslation();
   const [signingOut, setSigningOut] = useState(false);
 
-  const signOut = async () => {
+  const confirm = async () => {
     setSigningOut(true);
-    await auth.signOut();
+    await signOut();
     resetTo("/");
   };
 
@@ -334,7 +328,7 @@ function SignOutSheet({ visible, onClose }: { visible: boolean; onClose: () => v
           label={t("common.actions.signOut")}
           variant="ink"
           loading={signingOut}
-          onPress={() => void signOut()}
+          onPress={() => void confirm()}
         />
         <Button label={t("screens.account.signOut.cancel")} variant="ghost" onPress={onClose} />
       </View>
