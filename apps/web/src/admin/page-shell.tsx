@@ -12,7 +12,7 @@ export function Logo() {
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="size-8 text-ink"
+      className="size-[2.3rem] text-ink"
     >
       <path
         d="M7.34 8.78 L6.87 7.73 C12.35 5.29, 22 0.4, 31.6 0.8 C27.2 1.9, 23.6 3.4, 21.6 5.2 C24.2 4.3, 26.9 4.8, 29.1 6.3 C26.4 7.7, 23.7 8.9, 21.9 9.7 C23.7 9.5, 25 10.3, 25.7 11.4 C24 13.2, 21.9 13.64, 21 18.76 L19.86 18.56 A9 9 0 0 0 7.34 8.78 Z"
