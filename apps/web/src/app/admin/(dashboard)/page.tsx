@@ -231,7 +231,7 @@ export default function AdminHome() {
             info="Every part of the platform, green while it answers."
             updated={updated}
           >
-            <div className="flex h-3 gap-0.5 overflow-hidden rounded-full">
+            <div className="mt-0.5 flex h-3 gap-0.5 overflow-hidden rounded-full">
               {services.map((service) => (
                 <span
                   key={service.name}
@@ -239,7 +239,7 @@ export default function AdminHome() {
                 />
               ))}
             </div>
-            <div className="mt-2">
+            <div className="mt-3">
               <Rows
                 rows={services.map((service) => ({
                   label: (
