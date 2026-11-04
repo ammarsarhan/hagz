@@ -14,10 +14,10 @@ import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api, auth } from "@/lib/api";
-import { resetTo } from "@/lib/navigation";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { useTranslation } from "react-i18next";
 import { displayPhone, isCompletePhone, isolate, toE164 } from "@/lib/phone";
+import { enterApp } from "@/lib/session";
 
 type Challenge = components["schemas"]["TwoFactorChallenge"];
 
@@ -61,8 +61,10 @@ export default function SignIn() {
       setCodeSheetOpen(true);
       return;
     }
+    // Busy until the next screen is ready, so the button doesn't flick back first.
+    setLoading(true);
     await auth.start(result.data.session);
-    resetTo("/home");
+    await enterApp();
   };
 
   return (
@@ -172,8 +174,9 @@ function TwoFactorSheet({
       }
       return;
     }
+    setVerifying(true);
     await auth.start(result.data.session);
-    resetTo("/home");
+    await enterApp();
   };
 
   const resend = async () => {

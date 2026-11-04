@@ -6,6 +6,7 @@ import { auth } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { resetTo } from "@/lib/navigation";
 import { pendingInvitation } from "@/lib/pending-invitation";
+import { enterApp } from "@/lib/session";
 
 // Where a staff invitation link lands (ROUTES.staffInvitation). Nothing is shown here: the code is
 // kept and first run opens it in the invitation sheet (Figma "D2 · Invitation link"). Signed out, the
@@ -15,7 +16,7 @@ export default function StaffInvitation() {
 
   useEffect(() => {
     if (code) pendingInvitation.keep(code);
-    void auth.isSignedIn().then((signedIn) => resetTo(signedIn ? "/home" : "/"));
+    void auth.isSignedIn().then((signedIn) => (signedIn ? enterApp() : resetTo("/")));
   }, [code]);
 
   return (
