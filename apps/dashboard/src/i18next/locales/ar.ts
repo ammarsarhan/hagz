@@ -5,6 +5,13 @@ import type { ArabicTranslations } from "./en";
 const ar: ArabicTranslations = {
   translation: {
     components: {
+      tabs: {
+        home: "الرئيسية",
+        calendar: "التقويم",
+        venue: "الملعب",
+        payments: "المدفوعات",
+        account: "الحساب",
+      },
       invitationCard: {
         invitedBy: "دعاك {{name}}",
         grounds_zero: "لا ملاعب",
@@ -167,6 +174,11 @@ const ar: ArabicTranslations = {
         wrong: "لا توجد دعوة لرقمك بهذا الرمز.",
         title: "أدخل رمز الدعوة",
         subtitle: "الرمز المكوّن من 6 خانات في الدعوة التي أرسلها المالك إلى {{phone}}.",
+      },
+      venueTabs: {
+        calendar: { title: "التقويم", subtitle: "حجوزات كل ملعب يومًا بيوم قريبًا." },
+        manage: { title: "الملعب", subtitle: "العملاء والفريق والتسويق والإعداد هنا قريبًا." },
+        payments: { title: "المدفوعات", subtitle: "المدفوع والمستحق والتحويلات قريبًا." },
       },
       venueHome: {
         subtitle: "الصفحة الرئيسية لملعبك قادمة.",

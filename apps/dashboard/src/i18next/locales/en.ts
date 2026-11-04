@@ -3,6 +3,13 @@
 const en = {
   translation: {
     components: {
+      tabs: {
+        home: "Home",
+        calendar: "Calendar",
+        venue: "Venue",
+        payments: "Payments",
+        account: "Account",
+      },
       invitationCard: {
         invitedBy: "{{name}} invited you",
         grounds_one: "{{count}} ground",
@@ -151,6 +158,20 @@ const en = {
         wrong: "No invitation to your number has that code.",
         title: "Enter your invitation code",
         subtitle: "The 6-character code from the invitation the owner sent to {{phone}}.",
+      },
+      venueTabs: {
+        calendar: {
+          title: "Calendar",
+          subtitle: "Every ground's bookings, day by day, come next.",
+        },
+        manage: {
+          title: "Venue",
+          subtitle: "Customers, team, marketing and setup will live here.",
+        },
+        payments: {
+          title: "Payments",
+          subtitle: "What's paid, what's owed and payouts come next.",
+        },
       },
       venueHome: {
         subtitle: "Your venue's home comes next.",
