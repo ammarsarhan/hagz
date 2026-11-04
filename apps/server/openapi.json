@@ -1730,7 +1730,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED: see `retryAfter`.",
+            "description": "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2041,7 +2041,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED: see `retryAfter`.",
+            "description": "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2490,7 +2490,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED: see `retryAfter`.",
+            "description": "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2837,7 +2837,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED: see `retryAfter`.",
+            "description": "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
             "content": {
               "application/problem+json": {
                 "schema": {

@@ -22,15 +22,18 @@ const challengeAudience = (store: AccountStore) => `${store.type}-challenge` as 
 // Every two-factor code goes through here: sign-in, its resend, and turning the setting on or off.
 // The per-phone cap, shared with password resets, bounds what one number is sent however the
 // requests are spread over IPs and routes; the resend cooldown only spaces out codes that go unused.
-const sendCode = async (store: AccountStore, account: Account, clock: Clock) => {
-  const phone = account.phone ?? "";
-  await consume(limits.accountCodePerPhone, phone);
-  return issueCode(
+const sendCode = (store: AccountStore, account: Account, clock: Clock) =>
+  issueCode(
     store,
-    { accountId: account.id, phone, purpose: "TWO_FACTOR", language: account.language },
+    {
+      accountId: account.id,
+      phone: account.phone ?? "",
+      purpose: "TWO_FACTOR",
+      language: account.language,
+    },
     clock,
+    { perPhone: limits.accountCodePerPhone, sayIfCodeSent: true },
   );
-};
 
 const challengeFor = async (
   store: AccountStore,

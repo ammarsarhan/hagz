@@ -206,10 +206,67 @@ describe("two-factor", () => {
 
     const sixth = await request("POST", "/two-factor/codes", undefined, session.accessToken);
     expect(sixth.status).toBe(429);
-    expect((await json(sixth)).retryAfter).toBeGreaterThan(60);
+    const body = await json(sixth);
+    expect(body.retryAfter).toBeGreaterThan(60);
+    // Each code was entered, so there's none to take instead.
+    expect(body.codeSent).toBe(false);
     expect(outbox.sent).toHaveLength(5);
     // The sign-in code counts against the same five.
     expect((await signIn()).status).toBe(429);
+  });
+
+  it("says a code is still out when asked again too soon, or past the cap with it unentered", async () => {
+    await createCustomer();
+    const { session } = await signedInAs();
+    const sendCode = () => request("POST", "/two-factor/codes", undefined, session.accessToken);
+    for (let turn = 0; turn < 4; turn++) {
+      expect((await setTwoFactor(session.accessToken, turn % 2 === 0)).status).toBe(200);
+    }
+    expect((await sendCode()).status).toBe(202);
+    const fifth = lastCode();
+
+    const tooSoon = await json(await sendCode());
+    expect(tooSoon).toMatchObject({ code: "RATE_LIMITED", codeSent: true });
+    expect(tooSoon.retryAfter).toBeLessThanOrEqual(60);
+
+    // Past the cooldown, the cap answers, and the fifth code still works.
+    await prisma.customerVerification.updateMany({
+      data: { createdAt: new Date(Date.now() - 120_000) },
+    });
+    const capped = await json(await sendCode());
+    expect(capped).toMatchObject({ code: "RATE_LIMITED", codeSent: true });
+    expect(capped.retryAfter).toBeGreaterThan(60);
+    const res = await request(
+      "PUT",
+      "/two-factor",
+      { enabled: true, code: fifth },
+      session.accessToken,
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("doesn't count asks the cooldown turns away against the phone's five", async () => {
+    await createCustomer();
+    const { session } = await signedInAs();
+    const sendCode = () => request("POST", "/two-factor/codes", undefined, session.accessToken);
+    expect((await sendCode()).status).toBe(202);
+    for (let tap = 0; tap < 4; tap++) expect((await sendCode()).status).toBe(429);
+
+    await request("PUT", "/two-factor", { enabled: true, code: lastCode() }, session.accessToken);
+    for (let turn = 0; turn < 4; turn++) {
+      expect((await setTwoFactor(session.accessToken, turn % 2 === 1)).status).toBe(200);
+    }
+    expect(outbox.sent).toHaveLength(5);
+  });
+
+  it("doesn't say whether a code is out for a password reset", async () => {
+    await createCustomer();
+    await request("POST", "/password-resets", { phone: PHONE });
+    await deleteRedisKeys("ratelimit:account-code:cooldown:*");
+
+    const res = await request("POST", "/password-resets", { phone: PHONE });
+    expect(res.status).toBe(429);
+    expect(await json(res)).not.toHaveProperty("codeSent");
   });
 
   it("keeps the cooldown while the last code is open, or after it was guessed out", async () => {

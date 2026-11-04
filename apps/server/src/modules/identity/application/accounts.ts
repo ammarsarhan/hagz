@@ -61,6 +61,7 @@ export interface OpenCode {
 
 export interface LatestCode {
   createdAt: Date;
+  expiresAt: Date;
   consumedAt: Date | null;
   attempts: number;
 }
@@ -151,7 +152,7 @@ export const customers: AccountStore = {
       (await tx.customerVerification.findFirst({
         where: { customerId: accountId, purpose },
         orderBy: { createdAt: "desc" },
-        select: { createdAt: true, consumedAt: true, attempts: true },
+        select: { createdAt: true, expiresAt: true, consumedAt: true, attempts: true },
       })) ?? undefined,
     consumeOpen: (tx, { accountId, purpose }, at) =>
       tx.customerVerification.updateMany({
@@ -206,7 +207,7 @@ export const staff: AccountStore = {
       (await tx.staffVerification.findFirst({
         where: { staffId: accountId, purpose },
         orderBy: { createdAt: "desc" },
-        select: { createdAt: true, consumedAt: true, attempts: true },
+        select: { createdAt: true, expiresAt: true, consumedAt: true, attempts: true },
       })) ?? undefined,
     consumeOpen: (tx, { accountId, purpose }, at) =>
       tx.staffVerification.updateMany({

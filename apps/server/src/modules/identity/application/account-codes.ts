@@ -4,6 +4,7 @@ import { codeMatches, generateCode, hashCode } from "@/platform/crypto/codes";
 import { transaction } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { messaging } from "@/platform/messaging/messaging";
+import { consume, type Limit } from "@/platform/rate-limit/rate-limit";
 import { CODE_TTL_SECONDS, MAX_CODE_ATTEMPTS, RESEND_AFTER_SECONDS } from "../domain/policy";
 import type { AccountStore } from "./accounts";
 
@@ -19,6 +20,16 @@ export interface IssuedCode {
   resendAfter: number;
 }
 
+export interface IssueOptions {
+  // Counted only when a code is about to go out, after the cooldown, so a tap the cooldown turns
+  // away doesn't use up the phone's allowance.
+  perPhone?: Limit;
+  // Adds `codeSent` to a 429: whether the last code can still be entered, so the app can take it
+  // instead of only saying to wait. Only once the person is known (signed in, or past the password):
+  // before that it would tell anyone whether a number has an account.
+  sayIfCodeSent?: boolean;
+}
+
 export const issueCode = async (
   store: AccountStore,
   {
@@ -28,6 +39,7 @@ export const issueCode = async (
     language,
   }: { accountId: string; phone: string; purpose: VerificationPurpose; language: Language },
   clock: Clock = systemClock,
+  options: IssueOptions = {},
 ): Promise<IssuedCode> => {
   const now = clock.now();
   const code = generateCode();
@@ -45,15 +57,31 @@ export const issueCode = async (
       latest && !enteredRight
         ? latest.createdAt.getTime() + RESEND_AFTER_SECONDS * 1000 - now.getTime()
         : 0;
+    const codeOpen = Boolean(latest && !latest.consumedAt && latest.expiresAt > now);
+    const told = options.sayIfCodeSent ? { codeSent: codeOpen } : {};
     if (waitMs > 0) {
       const retryAfter = Math.ceil(waitMs / 1000);
       throw new AppError({
         code: "RATE_LIMITED",
         status: 429,
         detail: "A code was just sent. Please wait before asking for another.",
-        extensions: { retryAfter },
+        extensions: { retryAfter, ...told },
         headers: { "Retry-After": String(retryAfter) },
       });
+    }
+    if (options.perPhone) {
+      try {
+        await consume(options.perPhone, phone);
+      } catch (error) {
+        if (!(error instanceof AppError) || error.code !== "RATE_LIMITED") throw error;
+        throw new AppError({
+          code: error.code,
+          status: error.status,
+          detail: error.message,
+          extensions: { ...error.extensions, ...told },
+          headers: error.headers,
+        });
+      }
     }
     // A new code replaces any open one for the same purpose.
     await store.codes.consumeOpen(tx, query, now);
