@@ -5,8 +5,6 @@ import {
   IconBuildingStadium,
   IconCash,
   IconHome,
-  IconLayoutSidebarLeftCollapse,
-  IconLayoutSidebarLeftExpand,
   IconLifebuoy,
   IconLogout,
   IconShieldCheck,
@@ -29,8 +27,6 @@ export const sections: { href: string; label: string; icon: Icon }[] = [
   { href: "/admin/admins", label: "Admins", icon: IconUserShield },
   { href: "/admin/platform", label: "Platform", icon: IconWorldCog },
 ];
-
-const EXPANDED_KEY = "hagz-admin-rail-expanded";
 
 const initials = (name: string) =>
   name
@@ -68,31 +64,13 @@ function Mark() {
   );
 }
 
-// Snowflake's collapsed rail (the user's reference): the mark, a toggle that shows the labels, the
-// sections, then notifications and the account at the bottom.
+// Snowflake's collapsed rail (the user's reference), always narrow: the mark, the sections, then
+// notifications and the account at the bottom. Labels show as tooltips.
 export function Rail() {
   const admin = useAdmin();
   const pathname = usePathname();
-  const [expanded, setExpanded] = useState(false);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // A per-viewer convenience, so it lives in localStorage; any failure just means collapsed.
-  useEffect(() => {
-    try {
-      setExpanded(localStorage.getItem(EXPANDED_KEY) === "1");
-    } catch {
-      // Private window or blocked storage: stay collapsed.
-    }
-  }, []);
-  const toggle = () => {
-    setExpanded(!expanded);
-    try {
-      localStorage.setItem(EXPANDED_KEY, expanded ? "0" : "1");
-    } catch {
-      // Not saved; it still toggles for this visit.
-    }
-  };
 
   useEffect(() => {
     if (!menu) return;
@@ -105,29 +83,17 @@ export function Rail() {
 
   const active = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
-  const row = `flex h-10 items-center gap-3 rounded-[10px] ${expanded ? "w-full px-2.5" : "w-10 justify-center"}`;
-  const Toggle = expanded ? IconLayoutSidebarLeftCollapse : IconLayoutSidebarLeftExpand;
+  const square = "flex size-10 items-center justify-center rounded-[10px]";
 
   return (
     <nav
       aria-label="Sections"
-      className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-border bg-white py-[18px] transition-[width] ${expanded ? "w-60 items-stretch px-3" : "w-16 items-center"}`}
+      className="sticky top-0 flex h-screen w-16 shrink-0 flex-col items-center border-r border-border bg-white py-[18px]"
     >
-      <div className={`flex items-center text-ink ${expanded ? "px-2.5" : ""}`}>
+      <span className="text-ink">
         <Mark />
-        {expanded ? <span className="ml-2.5 text-body font-semibold">Hagz Admin</span> : null}
-      </div>
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-        title={expanded ? "Collapse" : "Expand"}
-        className={`mt-3.5 cursor-pointer text-ink-2 hover:bg-chip hover:text-ink ${row}`}
-      >
-        <Toggle size={20} stroke={1.75} />
-        {expanded ? <span className="text-label font-medium">Collapse</span> : null}
-      </button>
-      <div className={`my-1 h-px bg-border ${expanded ? "mx-2.5" : "w-6"}`} />
+      </span>
+      <div className="mt-4 mb-1 h-px w-6 bg-border" />
       <ul className="mt-1 flex flex-col gap-1">
         {sections.map(({ href, label, icon: Item }) => {
           const on = active(href);
@@ -135,16 +101,12 @@ export function Rail() {
             <li key={href}>
               <Link
                 href={href}
+                aria-label={label}
                 aria-current={on ? "page" : undefined}
-                title={expanded ? undefined : label}
-                className={`${row} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
+                title={label}
+                className={`${square} ${on ? "bg-chip text-ink" : "text-ink-2 hover:bg-chip hover:text-ink"}`}
               >
-                <Item size={20} stroke={on ? 2 : 1.75} className="shrink-0" />
-                {expanded ? (
-                  <span className={`text-label ${on ? "font-semibold" : "font-medium"}`}>
-                    {label}
-                  </span>
-                ) : null}
+                <Item size={20} stroke={on ? 2 : 1.75} />
               </Link>
             </li>
           );
@@ -156,29 +118,22 @@ export function Rail() {
           disabled
           aria-label="Notifications (coming with alerts)"
           title="Notifications come with alerts"
-          className={`text-ink-3 ${row}`}
+          className={`${square} text-ink-3`}
         >
           <IconBell size={20} stroke={1.75} />
-          {expanded ? <span className="text-label font-medium">Notifications</span> : null}
         </button>
-        <div ref={menuRef} className={`relative ${expanded ? "w-full" : ""}`}>
+        <div ref={menuRef} className="relative">
           <button
             type="button"
             onClick={() => setMenu(!menu)}
             aria-haspopup="menu"
             aria-expanded={menu}
             aria-label={`Account: ${admin.name}`}
-            className={`flex cursor-pointer items-center gap-2.5 rounded-[10px] hover:bg-chip ${expanded ? "w-full p-1.5" : "p-1"}`}
+            className="flex cursor-pointer rounded-full p-1 hover:bg-chip"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-chip text-[12px] font-semibold text-ink">
+            <span className="flex size-8 items-center justify-center rounded-full bg-chip text-[12px] font-semibold text-ink">
               {initials(admin.name)}
             </span>
-            {expanded ? (
-              <span className="min-w-0 text-left">
-                <span className="block truncate text-label font-medium text-ink">{admin.name}</span>
-                <span className="block truncate text-caption text-ink-2">{admin.email}</span>
-              </span>
-            ) : null}
           </button>
           {menu ? (
             <div
