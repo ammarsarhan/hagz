@@ -197,6 +197,21 @@ describe("two-factor", () => {
     expect((await prisma.customer.findFirstOrThrow()).twoFactorEnabled).toBe(false);
   });
 
+  it("sends a phone at most five codes in fifteen minutes, however fast it's switched", async () => {
+    await createCustomer();
+    const { session } = await signedInAs();
+    for (let turn = 0; turn < 5; turn++) {
+      expect((await setTwoFactor(session.accessToken, turn % 2 === 0)).status).toBe(200);
+    }
+
+    const sixth = await request("POST", "/two-factor/codes", undefined, session.accessToken);
+    expect(sixth.status).toBe(429);
+    expect((await json(sixth)).retryAfter).toBeGreaterThan(60);
+    expect(outbox.sent).toHaveLength(5);
+    // The sign-in code counts against the same five.
+    expect((await signIn()).status).toBe(429);
+  });
+
   it("keeps the cooldown while the last code is open, or after it was guessed out", async () => {
     await createCustomer();
     const { session } = await signedInAs();
