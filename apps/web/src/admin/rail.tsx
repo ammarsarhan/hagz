@@ -133,7 +133,7 @@ export function Rail() {
           aria-current={pathname.startsWith("/admin/account") ? "page" : undefined}
           className={`flex w-full items-center gap-2.5 rounded-[0.625rem] p-1.5 hover:bg-chip ${pathname.startsWith("/admin/account") ? "bg-chip" : ""}`}
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-hairline text-[0.75rem] font-semibold text-ink">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-grab text-[0.75rem] font-semibold text-ink">
             {initials(admin.name)}
           </span>
           <span className="min-w-0 text-left">
