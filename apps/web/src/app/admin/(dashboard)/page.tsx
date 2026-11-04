@@ -1,13 +1,16 @@
 "use client";
 
-import type { SystemStatus } from "@hagz/contracts";
+import type { SystemSample, SystemStatus } from "@hagz/contracts";
 import { IconInfoSquareRounded } from "@tabler/icons-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api } from "@/admin/api";
+import { AvailabilityStrip, LineChart, availability } from "@/admin/charts";
 import { message, send } from "@/admin/errors";
 import { PageHeader } from "@/admin/page-header";
 
 const REFRESH_MS = 30_000;
+// The history gains a sample a minute; asking more often than that finds nothing new.
+const HISTORY_MS = 60_000;
 
 type Up = SystemStatus["server"]["status"];
 interface Web {
@@ -111,6 +114,7 @@ function Figure({ value, note }: { value: string; note: string }) {
 export default function AdminHome() {
   const [status, setStatus] = useState<SystemStatus>();
   const [web, setWeb] = useState<Web | null>();
+  const [samples, setSamples] = useState<SystemSample[]>([]);
   const [error, setError] = useState<string>();
   const [now, setNow] = useState(() => Date.now());
 
@@ -129,16 +133,24 @@ export default function AdminHome() {
     setNow(Date.now());
   }, []);
 
+  const loadHistory = useCallback(async () => {
+    const result = await send(api.GET("/v1/admin/status/history"));
+    if (result.ok) setSamples(result.data.samples);
+  }, []);
+
   useEffect(() => {
     void load();
+    void loadHistory();
     const refresh = setInterval(() => void load(), REFRESH_MS);
+    const history = setInterval(() => void loadHistory(), HISTORY_MS);
     // Uptimes and "ago" times tick between refreshes.
     const tick = setInterval(() => setNow(Date.now()), 1_000);
     return () => {
       clearInterval(refresh);
+      clearInterval(history);
       clearInterval(tick);
     };
-  }, [load]);
+  }, [load, loadHistory]);
 
   const header = (
     <PageHeader title="Home" subtitle="How every part of the platform is running right now." />
@@ -165,6 +177,36 @@ export default function AdminHome() {
     { name: "Cache", status: status.cache.status },
   ];
   const ms = (latency: number | null) => (latency === null ? "Not answering" : `${latency} ms`);
+  const at = (sample: SystemSample) => new Date(sample.at).getTime();
+  // A sample exists only when a server took it, so every sample says the server was up.
+  const serverSamples = samples.map((sample) => ({ at: at(sample), up: true }));
+  const workerSamples = samples.map((sample) => ({ at: at(sample), up: sample.worker === "UP" }));
+  const series = (pick: (sample: SystemSample) => SystemSample["database"]) =>
+    samples.map((sample) => ({ at: at(sample), value: pick(sample).latencyMs }));
+  const peak = (pick: (sample: SystemSample) => SystemSample["database"]) => {
+    const values = samples.flatMap((sample) => pick(sample).latencyMs ?? []);
+    return values.length ? `peak ${Math.max(...values)} ms in 24 h` : "no history yet";
+  };
+  const latencyCharts = [
+    {
+      title: "Postgres",
+      info: "How long a trivial query takes, measured by the server every minute.",
+      now: status.database,
+      pick: (sample: SystemSample) => sample.database,
+    },
+    {
+      title: "Redis · jobs",
+      info: "The Redis that holds jobs and rate limits. A PING, every minute.",
+      now: status.queue,
+      pick: (sample: SystemSample) => sample.queue,
+    },
+    {
+      title: "Redis · cache",
+      info: "The Redis used as a cache. A PING, every minute.",
+      now: status.cache,
+      pick: (sample: SystemSample) => sample.cache,
+    },
+  ];
 
   return (
     <>
@@ -201,16 +243,56 @@ export default function AdminHome() {
           </div>
         </Widget>
         <Widget
-          title="Response times"
-          info="The round trip of a trivial command, from the server, on each check."
+          title="Server"
+          info="The API answering this page. A grey block is half an hour with no samples: no server was running to take one, so it counts as down."
+          badge={<Badge status={status.server.status} />}
           updated={updated}
         >
-          <Rows
-            rows={[
-              { label: "Postgres", value: ms(status.database.latencyMs) },
-              { label: "Redis · jobs", value: ms(status.queue.latencyMs) },
-              { label: "Redis · cache", value: ms(status.cache.latencyMs) },
-            ]}
+          <Figure
+            value={status.server.startedAt ? uptime(status.server.startedAt, now) : "—"}
+            note={`${availability(serverSamples, now) ?? "—"} available in 24 h`}
+          />
+          <div className="mt-5">
+            <AvailabilityStrip samples={serverSamples} now={now} />
+          </div>
+        </Widget>
+        <Widget
+          title="Worker"
+          info="Runs background jobs. Up while its heartbeat, every 10 seconds, keeps arriving."
+          badge={<Badge status={status.worker.status} />}
+          updated={updated}
+        >
+          <Figure
+            value={status.worker.startedAt ? uptime(status.worker.startedAt, now) : "—"}
+            note={`${availability(workerSamples, now) ?? "—"} available in 24 h`}
+          />
+          <div className="mt-5">
+            <AvailabilityStrip samples={workerSamples} now={now} />
+          </div>
+        </Widget>
+        {latencyCharts.map((chart) => (
+          <Widget
+            key={chart.title}
+            title={chart.title}
+            info={chart.info}
+            badge={<Badge status={chart.now.status} />}
+            updated={updated}
+          >
+            <Figure value={ms(chart.now.latencyMs)} note={peak(chart.pick)} />
+            <div className="mt-4">
+              <LineChart points={series(chart.pick)} unit="ms" />
+            </div>
+          </Widget>
+        ))}
+        <Widget
+          title="Web"
+          info="This admin web and the public site."
+          badge={<Badge status={webStatus} />}
+          updated={updated}
+        >
+          <Figure
+            value={web ? uptime(web.startedAt, now) : "—"}
+            note={web ? `up since ${clock.format(new Date(web.startedAt))}` : "not answering"}
           />
         </Widget>
         <Widget
@@ -227,47 +309,6 @@ export default function AdminHome() {
               },
               { label: "Web", value: web ? version(web.commit) : "—" },
             ]}
-          />
-        </Widget>
-        <Widget
-          title="Server"
-          info="The API answering this page."
-          badge={<Badge status={status.server.status} />}
-          updated={updated}
-        >
-          <Figure
-            value={status.server.startedAt ? uptime(status.server.startedAt, now) : "—"}
-            note={
-              status.server.startedAt
-                ? `up since ${clock.format(new Date(status.server.startedAt))}`
-                : ""
-            }
-          />
-        </Widget>
-        <Widget
-          title="Worker"
-          info="Runs background jobs. Known to be up while its heartbeat, every 10 seconds, keeps arriving."
-          badge={<Badge status={status.worker.status} />}
-          updated={updated}
-        >
-          <Figure
-            value={status.worker.startedAt ? uptime(status.worker.startedAt, now) : "—"}
-            note={
-              status.worker.lastSeenAt
-                ? `last heartbeat ${ago(status.worker.lastSeenAt, now)}`
-                : "no heartbeat"
-            }
-          />
-        </Widget>
-        <Widget
-          title="Web"
-          info="This admin web and the public site."
-          badge={<Badge status={webStatus} />}
-          updated={updated}
-        >
-          <Figure
-            value={web ? uptime(web.startedAt, now) : "—"}
-            note={web ? `up since ${clock.format(new Date(web.startedAt))}` : "not answering"}
           />
         </Widget>
       </div>
