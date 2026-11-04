@@ -3155,6 +3155,15 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
+                /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
                 /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
                 410: {
                     headers: {
@@ -3241,7 +3250,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ALREADY_A_MEMBER */
+                /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3333,7 +3342,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ALREADY_A_MEMBER */
+                /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
                 409: {
                     headers: {
                         [name: string]: unknown;

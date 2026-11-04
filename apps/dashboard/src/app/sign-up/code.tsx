@@ -7,7 +7,6 @@ import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
 import { ResendCode } from "@/components/resend-code";
 import { Screen } from "@/components/screen";
-import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
@@ -100,14 +99,8 @@ export default function SignUpCode() {
         start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
       />
       <Title
-        subtitle={
-          <>
-            {t("screens.signUp.code.sentTo", { phone: isolate(displayPhone(phone)) })}{" "}
-            <Text className="font-medium text-primary" onPress={() => router.back()}>
-              {t("common.actions.change")}
-            </Text>
-          </>
-        }
+        subtitle={t("screens.signUp.code.sentTo", { phone: isolate(displayPhone(phone)) })}
+        action={{ label: t("common.actions.change"), onPress: () => router.back() }}
       >
         {t("screens.signUp.code.title")}
       </Title>

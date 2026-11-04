@@ -197,6 +197,11 @@ const idParams = z.object({ invitationId: z.uuid() });
 const inviteeUnauthenticated = problemResponse(
   "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
 );
+// Checked before whether the invitation is still open, so it's the answer even after it was used.
+const alreadyOnTeam = problemResponse(
+  "ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`.",
+);
+
 const answerErrors = {
   401: inviteeUnauthenticated,
   403: problemResponse("ACCOUNT_SUSPENDED"),
@@ -231,13 +236,14 @@ const previewByCode = createRoute({
   responses: {
     200: { description: "The invitation", ...json(ReceivedStaffInvitation) },
     ...answerErrors,
+    409: alreadyOnTeam,
   },
 });
 
 const acceptResponses = {
   201: { description: "Joined: the venue, with my permissions there", ...json(StaffVenue) },
   ...answerErrors,
-  409: problemResponse("ALREADY_A_MEMBER"),
+  409: alreadyOnTeam,
 };
 
 const acceptByCode = createRoute({

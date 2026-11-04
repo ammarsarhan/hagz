@@ -3,6 +3,13 @@
 const en = {
   translation: {
     components: {
+      tabs: {
+        home: "Home",
+        calendar: "Calendar",
+        venue: "Venue",
+        payments: "Payments",
+        account: "Account",
+      },
       invitationCard: {
         invitedBy: "{{name}} invited you",
         grounds_one: "{{count}} ground",
@@ -56,6 +63,13 @@ const en = {
         open: "Your account",
         security: "Security",
         app: "App",
+        venues: "Venues",
+        join: {
+          title: "Join or create a venue",
+          body: "Accept an invitation, or set up another venue.",
+          waiting_one: "{{count}} invitation waiting",
+          waiting_other: "{{count}} invitations waiting",
+        },
         twoFactor: {
           title: "Two-factor sign-in",
           off: "A WhatsApp code every time you sign in.",
@@ -85,6 +99,12 @@ const en = {
           cancel: "Cancel",
         },
         version: "Hagz for staff · {{version}}",
+      },
+      join: {
+        title: "Join or create a venue",
+        invitedSubtitle_one: "You've been invited to join another venue.",
+        invitedSubtitle_other: "You've been invited to join {{count}} more venues.",
+        emptySubtitle: "Join a team with an invitation, or set up a venue of your own.",
       },
       firstRun: {
         welcome: "Welcome, {{name}}",
@@ -124,6 +144,16 @@ const en = {
         },
         join: "Join venue",
         decline: "Decline",
+        opening: {
+          title: "Opening your invitation",
+          body: "Checking it was sent to {{phone}}.",
+        },
+        elsewhere: {
+          title: "Sent to a different number",
+          body: "You're signed in with {{phone}}. Sign in with the number the invitation was sent to, or ask for one to this number.",
+          gotIt: "Got it",
+          switch: "Sign in with another number",
+        },
         ended: {
           title: "This invitation has ended",
           body: "It expired, was cancelled, or has already been used. Ask {{name}} to send you a new one.",
@@ -141,9 +171,6 @@ const en = {
         wrong: "No invitation to your number has that code.",
         title: "Enter your invitation code",
         subtitle: "The 6-character code from the invitation the owner sent to {{phone}}.",
-      },
-      venueHome: {
-        subtitle: "Your venue's home comes next.",
       },
       blocked: {
         suspended: {

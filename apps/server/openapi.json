@@ -4229,6 +4229,16 @@
               }
             }
           },
+          "409": {
+            "description": "ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "410": {
             "description": "INVITATION_EXPIRED: expired or withdrawn; ask for a new one.",
             "content": {
@@ -4320,7 +4330,7 @@
             }
           },
           "409": {
-            "description": "ALREADY_A_MEMBER",
+            "description": "ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4416,7 +4426,7 @@
             }
           },
           "409": {
-            "description": "ALREADY_A_MEMBER",
+            "description": "ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`.",
             "content": {
               "application/problem+json": {
                 "schema": {
