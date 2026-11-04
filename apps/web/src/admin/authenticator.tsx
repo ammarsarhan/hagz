@@ -124,6 +124,7 @@ export function Authenticator({
   const groups = setup?.secret.match(/.{1,4}/g)?.join(" ") ?? "";
   return (
     <PageShell
+      compact
       title="Set up your authenticator"
       subtitle="Scan this code with an authenticator app, like Google Authenticator or 1Password. You’ll use it every time you sign in."
     >
@@ -137,18 +138,31 @@ export function Authenticator({
           )}
         </div>
         <p className="mt-5 text-label text-ink-2">Can’t scan it? Enter this key in the app instead.</p>
-        <div className="mt-2 flex h-[52px] w-full items-center justify-between rounded-field bg-field pr-3 pl-4">
-          <span className="font-medium tracking-wide text-ink">{groups}</span>
+        <div className="mt-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-field bg-field pr-2.5 pl-4">
+          <span className="text-caption font-medium whitespace-nowrap text-ink tabular-nums">
+            {groups}
+          </span>
           <button
             type="button"
             disabled={!setup}
+            aria-label={copied ? "Key copied" : "Copy key"}
+            title={copied ? "Copied" : "Copy"}
             onClick={() => {
               if (!setup) return;
               void navigator.clipboard.writeText(setup.secret).then(() => setCopied(true));
             }}
-            className="cursor-pointer rounded-full bg-white px-3.5 py-1.5 text-label font-medium text-ink"
+            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-ink"
           >
-            {copied ? "Copied" : "Copy"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              {copied ? (
+                <path d="M5 12l5 5l10 -10" />
+              ) : (
+                <>
+                  <path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" />
+                  <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" />
+                </>
+              )}
+            </svg>
           </button>
         </div>
       </div>

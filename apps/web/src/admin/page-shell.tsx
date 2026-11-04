@@ -53,16 +53,19 @@ function Footer() {
 export function PageShell({
   title,
   subtitle,
+  compact = false,
   children,
 }: {
   title: string;
   subtitle?: ReactNode;
+  // Starts higher, for the tall setup page (Figma: 64 under the mark instead of 168).
+  compact?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center px-4 pt-10 pb-8">
       <Logo />
-      <main className="mt-[18vh] mb-16 w-full max-w-[400px]">
+      <main className={`${compact ? "mt-16" : "mt-[18vh]"} mb-16 w-full max-w-[400px]`}>
         <h1 className="text-center text-title font-semibold text-ink">{title}</h1>
         {subtitle ? <p className="mt-2 text-center text-body text-ink-2">{subtitle}</p> : null}
         <div className="mt-8">{children}</div>
