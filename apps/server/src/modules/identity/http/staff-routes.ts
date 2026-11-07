@@ -1,27 +1,4 @@
-import { createRoute } from "@hono/zod-openapi";
-import {
-  ChangeTwoFactor,
-  CompleteTwoFactor,
-  ConfirmPasswordReset,
-  PasswordResetVerified,
-  VerifyPasswordReset,
-  ConfirmVerificationCode,
-  Staff,
-  StaffAuthenticated,
-  StaffSignUp,
-  RefreshSession,
-  RequestPasswordReset,
-  ResendTwoFactor,
-  SendVerificationCode,
-  Session,
-  SignIn,
-  TwoFactorChallenge,
-  TwoFactorStatus,
-  VerificationCodeSent,
-  VerificationConfirmed,
-} from "@hagz/contracts";
 import { requestLanguage } from "@/platform/http/language";
-import { body, json, problemResponse } from "@/platform/http/definitions";
 import { createRouter } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 import { profile, staff } from "../application/accounts";
@@ -45,260 +22,13 @@ import {
   sendTwoFactorSettingCode,
 } from "../application/two-factor";
 import { confirmSignUpCode, sendSignUpCode } from "../application/verification-codes";
-import { STAFF_BEARER, requireStaff } from "@/platform/http/authenticate";
-import { codeRejected, device, unauthenticated, unavailable } from "./route-helpers";
+import { device } from "./route-helpers";
+import * as route from "./definitions/staff";
 
-const tags = ["Staff auth"];
 const authenticated = ({ account, session }: Authenticated) => ({ staff: account, session });
 
-// Routes that need signed-in staff also declare `middleware: [requireStaff] as const`
-// inline: spread from a shared object, the route types lose `c.var.staff`.
-const staffSecurity = [{ [STAFF_BEARER]: [] }];
-
-const sendCode = createRoute({
-  method: "post",
-  path: "/auth/staff/verifications",
-  tags,
-  summary: "Send a sign-up code over WhatsApp",
-  description:
-    "The same response whether or not the number has an account. Language follows `Accept-Language`.",
-  request: body(SendVerificationCode),
-  responses: {
-    202: { description: "Code sent", ...json(VerificationCodeSent) },
-    400: problemResponse("INVALID_PHONE_NUMBER: not a mobile number in international format."),
-    429: problemResponse("RATE_LIMITED: too many codes; see `retryAfter`."),
-    503: unavailable,
-  },
-});
-
-const confirmCode = createRoute({
-  method: "post",
-  path: "/auth/staff/verifications/confirm",
-  tags,
-  summary: "Confirm a sign-up code",
-  request: body(ConfirmVerificationCode),
-  responses: {
-    200: { description: "The phone is verified", ...json(VerificationConfirmed) },
-    400: problemResponse("INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code."),
-    429: problemResponse("RATE_LIMITED"),
-    503: problemResponse("SERVICE_UNAVAILABLE: retry later."),
-  },
-});
-
-const signUp = createRoute({
-  method: "post",
-  path: "/auth/staff/sign-up",
-  tags,
-  summary: "Create the account and sign in",
-  description:
-    "Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.",
-  request: body(StaffSignUp),
-  responses: {
-    201: { description: "Signed up and signed in", ...json(StaffAuthenticated) },
-    400: problemResponse(
-      "VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED.",
-    ),
-    409: problemResponse("PHONE_ALREADY_REGISTERED: log in instead."),
-    503: problemResponse("SERVICE_UNAVAILABLE: retry with the same verificationToken."),
-  },
-});
-
-const signInWithPassword = createRoute({
-  method: "post",
-  path: "/auth/staff/sessions",
-  tags,
-  summary: "Sign in with phone and password",
-  description:
-    "With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; " +
-    "finish with POST sessions/two-factor.",
-  request: body(SignIn),
-  responses: {
-    200: { description: "Password right; a two-factor code was sent", ...json(TwoFactorChallenge) },
-    201: { description: "Signed in", ...json(StaffAuthenticated) },
-    401: problemResponse(
-      "INVALID_CREDENTIALS: the same for an unknown number and a wrong password.",
-    ),
-    403: problemResponse("ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent"),
-    429: problemResponse("RATE_LIMITED"),
-    503: unavailable,
-  },
-});
-
-const completeTwoFactor = createRoute({
-  method: "post",
-  path: "/auth/staff/sessions/two-factor",
-  tags,
-  summary: "Finish a two-factor sign-in with the code",
-  request: body(CompleteTwoFactor),
-  responses: {
-    201: { description: "Signed in", ...json(StaffAuthenticated) },
-    400: codeRejected,
-    401: problemResponse("CHALLENGE_EXPIRED: sign in again."),
-    403: problemResponse("ACCOUNT_SUSPENDED"),
-    429: problemResponse("RATE_LIMITED"),
-  },
-});
-
-const resendTwoFactor = createRoute({
-  method: "post",
-  path: "/auth/staff/sessions/two-factor/resend",
-  tags,
-  summary: "Send another two-factor code",
-  description: "Returns a new `challengeToken`: the previous one belonged to the previous code.",
-  request: body(ResendTwoFactor),
-  responses: {
-    202: { description: "A new code was sent", ...json(TwoFactorChallenge) },
-    401: problemResponse("CHALLENGE_EXPIRED: sign in again."),
-    429: problemResponse(
-      "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
-    ),
-    503: unavailable,
-  },
-});
-
-const refresh = createRoute({
-  method: "post",
-  path: "/auth/staff/sessions/refresh",
-  tags,
-  summary: "Exchange the refresh token for a new pair",
-  description:
-    "The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous " +
-    "token is still answered with the same new pair, so a lost response can be retried.",
-  request: body(RefreshSession),
-  responses: {
-    200: { description: "A new access and refresh token", ...json(Session) },
-    401: problemResponse("SESSION_ENDED: sign in again."),
-    503: problemResponse("SERVICE_UNAVAILABLE: retry with the same refresh token."),
-  },
-});
-
-const signOut = createRoute({
-  method: "delete",
-  path: "/auth/staff/sessions/current",
-  tags,
-  summary: "Sign out of this device",
-  description:
-    "The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.",
-  middleware: [requireStaff] as const,
-  security: staffSecurity,
-  responses: {
-    204: { description: "Signed out" },
-    401: unauthenticated,
-  },
-});
-
-const requestReset = createRoute({
-  method: "post",
-  path: "/auth/staff/password-resets",
-  tags,
-  summary: "Send a password reset code",
-  description:
-    "The same response whether or not the number has an account. Venue owners get no code: they " +
-    "reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn " +
-    "members before the new password is set: a reset makes them read-only at every venue until a " +
-    "staff manager restores them.",
-  request: body(RequestPasswordReset),
-  responses: {
-    202: {
-      description: "If the number has an account, a code was sent",
-      ...json(VerificationCodeSent),
-    },
-    400: problemResponse("INVALID_PHONE_NUMBER"),
-    429: problemResponse("RATE_LIMITED: see `retryAfter`."),
-    503: unavailable,
-  },
-});
-
-const verifyReset = createRoute({
-  method: "post",
-  path: "/auth/staff/password-resets/verify",
-  tags,
-  summary: "Check the reset code, before choosing the new password",
-  description:
-    "With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code " +
-    "for the same number (no second code needed). Returns a `resetToken` for setting the password.",
-  request: body(VerifyPasswordReset),
-  responses: {
-    200: { description: "Verified", ...json(PasswordResetVerified) },
-    400: problemResponse(
-      "INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or " +
-        "RESET_TOKEN_INVALID with a verification token.",
-    ),
-    403: problemResponse(
-      "With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners.",
-    ),
-    429: problemResponse("RATE_LIMITED"),
-    503: unavailable,
-  },
-});
-
-const confirmReset = createRoute({
-  method: "post",
-  path: "/auth/staff/password-resets/confirm",
-  tags,
-  summary: "Set the new password",
-  description:
-    "Signs out every session, and lowers every permission to at most `view` at each venue the " +
-    "member belongs to. The owner and members who manage staff are notified; the previous " +
-    "permissions are kept so they can be restored.",
-  request: body(ConfirmPasswordReset),
-  responses: {
-    204: { description: "Password changed" },
-    400: problemResponse("RESET_TOKEN_INVALID: verify again."),
-    503: unavailable,
-  },
-});
-
-const me = createRoute({
-  method: "get",
-  path: "/staff/me",
-  tags: ["Staff"],
-  summary: "The signed-in staff member",
-  description: "Name, phone and language, for the app to greet and label them after a relaunch.",
-  middleware: [requireStaff] as const,
-  security: staffSecurity,
-  responses: {
-    200: { description: "Their profile", ...json(Staff) },
-    401: problemResponse(
-      "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
-    ),
-  },
-});
-
-const sendTwoFactorCode = createRoute({
-  method: "post",
-  path: "/auth/staff/two-factor/codes",
-  tags,
-  summary: "Send a code to turn two-factor on or off",
-  middleware: [requireStaff] as const,
-  security: staffSecurity,
-  responses: {
-    202: { description: "Code sent", ...json(VerificationCodeSent) },
-    401: unauthenticated,
-    429: problemResponse(
-      "RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered.",
-    ),
-    503: unavailable,
-  },
-});
-
-const changeTwoFactorSetting = createRoute({
-  method: "put",
-  path: "/auth/staff/two-factor",
-  tags,
-  summary: "Turn two-factor on or off",
-  middleware: [requireStaff] as const,
-  security: staffSecurity,
-  request: body(ChangeTwoFactor),
-  responses: {
-    200: { description: "The new setting", ...json(TwoFactorStatus) },
-    400: codeRejected,
-    401: unauthenticated,
-  },
-});
-
 export const staffAuthRoutes = createRouter()
-  .openapi(sendCode, async (c) => {
+  .openapi(route.sendCode, async (c) => {
     const { phone } = c.req.valid("json");
     const sent = await sendSignUpCode({
       type: "staff",
@@ -308,11 +38,11 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(sent, 202);
   })
-  .openapi(confirmCode, async (c) => {
+  .openapi(route.confirmCode, async (c) => {
     const { phone, code } = c.req.valid("json");
     return c.json(await confirmSignUpCode({ type: "staff", phone, code, ip: clientIp(c) }), 200);
   })
-  .openapi(signUp, async (c) => {
+  .openapi(route.signUp, async (c) => {
     const input = c.req.valid("json");
     const signedUp = await signUpStaff({
       ...input,
@@ -321,12 +51,12 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(authenticated(signedUp), 201);
   })
-  .openapi(signInWithPassword, async (c) => {
+  .openapi(route.signInWithPassword, async (c) => {
     const { phone, password } = c.req.valid("json");
     const result = await signIn(staff, { phone, password, device: device(c) });
     return "twoFactorRequired" in result ? c.json(result, 200) : c.json(authenticated(result), 201);
   })
-  .openapi(completeTwoFactor, async (c) => {
+  .openapi(route.completeTwoFactor, async (c) => {
     const { challengeToken, code } = c.req.valid("json");
     const signedIn = await completeTwoFactorSignIn(staff, {
       challengeToken,
@@ -335,20 +65,20 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(authenticated(signedIn), 201);
   })
-  .openapi(resendTwoFactor, async (c) => {
+  .openapi(route.resendTwoFactor, async (c) => {
     const { challengeToken } = c.req.valid("json");
     return c.json(await resendTwoFactorSignIn(staff, challengeToken, clientIp(c)), 202);
   })
-  .openapi(refresh, async (c) => {
+  .openapi(route.refresh, async (c) => {
     const { refreshToken } = c.req.valid("json");
     return c.json(await refreshSession(staff, refreshToken), 200);
   })
-  .openapi(signOut, async (c) => {
+  .openapi(route.signOut, async (c) => {
     const { staffId, sessionId } = c.var.staff;
     await revokeSession(staff, staffId, sessionId);
     return c.body(null, 204);
   })
-  .openapi(requestReset, async (c) => {
+  .openapi(route.requestReset, async (c) => {
     const { phone } = c.req.valid("json");
     const sent = await requestPasswordReset(staff, {
       phone,
@@ -357,26 +87,26 @@ export const staffAuthRoutes = createRouter()
     });
     return c.json(sent, 202);
   })
-  .openapi(verifyReset, async (c) => {
+  .openapi(route.verifyReset, async (c) => {
     const verified = await verifyPasswordReset(staff, c.req.valid("json"), { ip: clientIp(c) });
     return c.json(verified, 200);
   })
-  .openapi(confirmReset, async (c) => {
+  .openapi(route.confirmReset, async (c) => {
     await confirmPasswordReset(staff, c.req.valid("json"));
     return c.body(null, 204);
   })
-  .openapi(me, async (c) => {
+  .openapi(route.me, async (c) => {
     const account = await staff.findById(c.var.staff.staffId);
     // Deleting an account ends its sessions, but an access token is checked by its signature alone
     // and works until it expires: that client has to sign in again.
     if (!account) throw sessionEnded();
     return c.json(profile(account), 200);
   })
-  .openapi(sendTwoFactorCode, async (c) => {
+  .openapi(route.sendTwoFactorCode, async (c) => {
     const { staffId } = c.var.staff;
     return c.json(await sendTwoFactorSettingCode(staff, staffId, clientIp(c)), 202);
   })
-  .openapi(changeTwoFactorSetting, async (c) => {
+  .openapi(route.changeTwoFactorSetting, async (c) => {
     const { enabled, code } = c.req.valid("json");
     const { staffId } = c.var.staff;
     const changed = await changeTwoFactor(staff, {
