@@ -2,3 +2,6 @@
 export { ownsAVenue, restrictAfterPasswordReset } from "./application/staff-password-reset";
 export { linkWalkIns } from "./application/venue-customers";
 export { venuesStaffRoutes } from "./http/staff-routes";
+// For the development seed script.
+export { createInvitation } from "./application/invitations";
+export { ALL_PERMISSIONS } from "./domain/permissions";
