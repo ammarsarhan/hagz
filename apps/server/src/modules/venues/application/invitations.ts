@@ -205,7 +205,9 @@ const unavailableHere = () =>
     detail: "Invitations can't be sent from this environment yet.",
   });
 
-const createInvitation = async (
+// Everything an invitation is except the WhatsApp message: also used by the dev seed script, which
+// prints the code instead of sending it.
+export const createInvitation = async (
   actor: VenueAccess,
   phone: string,
   requested: StaffPermissions | undefined,

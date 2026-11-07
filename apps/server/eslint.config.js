@@ -51,7 +51,7 @@ export default defineConfig(globalIgnores(["src/generated/"]), base, {
             from: {
               element: {
                 type: "entry",
-                fileInternalPath: ["app.ts", "worker.ts", "create-admin.ts"],
+                fileInternalPath: ["app.ts", "worker.ts", "create-admin.ts", "seed-invitations.ts"],
               },
             },
             allow: { to: [{ element: { types: ["http", "platform"] } }, publicApi] },
