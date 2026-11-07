@@ -10,7 +10,8 @@ import {
 } from "@hagz/contracts";
 import { requireStaff, STAFF_BEARER } from "@/platform/http/authenticate";
 import { requestLanguage } from "@/platform/http/language";
-import { createRouter, problemResponse } from "@/platform/http/router";
+import { json, problemResponse } from "@/platform/http/definitions";
+import { createRouter } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 import {
   acceptInvitation,
@@ -29,7 +30,6 @@ import {
 } from "../application/members";
 import { requireVenueAccess } from "./require-venue-access";
 
-const json = <T>(schema: T) => ({ content: { "application/json": { schema } } });
 const tags = ["Venue staff"];
 const security = [{ [STAFF_BEARER]: [] }];
 const unauthenticated = problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED");

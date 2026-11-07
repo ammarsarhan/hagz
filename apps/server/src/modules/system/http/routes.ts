@@ -1,7 +1,8 @@
 import { createRoute } from "@hono/zod-openapi";
 import { SystemHistory, SystemStatus } from "@hagz/contracts";
 import { ADMIN_COOKIE_AUTH, ADMIN_CSRF_HEADER, requireAdmin } from "@/platform/http/authenticate";
-import { createRouter, problemResponse } from "@/platform/http/router";
+import { problemResponse } from "@/platform/http/definitions";
+import { createRouter } from "@/platform/http/router";
 import { readHistory } from "../application/history";
 import { systemStatus } from "../application/status";
 

@@ -1,7 +1,8 @@
 import { createRoute } from "@hono/zod-openapi";
 import { list, Marketplace } from "@hagz/contracts";
 import { requestLanguage } from "@/platform/http/language";
-import { createRouter, problemResponse } from "@/platform/http/router";
+import { problemResponse } from "@/platform/http/definitions";
+import { createRouter } from "@/platform/http/router";
 import { listMarketplaces } from "../application/list-marketplaces";
 
 const listMarketplacesRoute = createRoute({

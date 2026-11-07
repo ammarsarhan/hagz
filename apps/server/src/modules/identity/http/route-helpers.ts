@@ -1,10 +1,8 @@
 import type { Context } from "hono";
-import { problemResponse } from "@/platform/http/router";
+import { problemResponse } from "@/platform/http/definitions";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 
 // Pieces the customer and staff auth routes share.
-export const json = <T>(schema: T) => ({ content: { "application/json": { schema } } });
-export const body = <T>(schema: T) => ({ body: { required: true, ...json(schema) } });
 export const device = (c: Context) => ({
   ip: clientIp(c),
   userAgent: c.req.header("User-Agent"),

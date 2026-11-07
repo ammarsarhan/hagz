@@ -20,7 +20,8 @@ import {
   VerificationConfirmed,
 } from "@hagz/contracts";
 import { requestLanguage } from "@/platform/http/language";
-import { createRouter, problemResponse } from "@/platform/http/router";
+import { body, json, problemResponse } from "@/platform/http/definitions";
+import { createRouter } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 import { customers } from "../application/accounts";
 import {
@@ -39,7 +40,7 @@ import {
 } from "../application/two-factor";
 import { confirmSignUpCode, sendSignUpCode } from "../application/verification-codes";
 import { CUSTOMER_BEARER, requireCustomer } from "@/platform/http/authenticate";
-import { body, codeRejected, device, json, unauthenticated, unavailable } from "./route-helpers";
+import { codeRejected, device, unauthenticated, unavailable } from "./route-helpers";
 
 const tags = ["Customer auth"];
 const authenticated = ({ account, session }: Authenticated) => ({ customer: account, session });

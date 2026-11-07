@@ -23,7 +23,8 @@ import {
   setAdminSession,
 } from "@/platform/http/authenticate";
 import { AppError } from "@/platform/errors/app-error";
-import { createRouter, problemResponse } from "@/platform/http/router";
+import { body, json, problemResponse } from "@/platform/http/definitions";
+import { createRouter } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 import {
   acceptAdminInvitation,
@@ -40,7 +41,7 @@ import {
 import { adminSessions } from "../application/accounts";
 import { listAdmins } from "../application/admins";
 import { refreshSession, revokeByRefreshToken } from "../application/sessions";
-import { body, device, json } from "./route-helpers";
+import { device } from "./route-helpers";
 
 const tags = ["Admin auth"];
 const security = [{ [ADMIN_COOKIE_AUTH]: [] }];
