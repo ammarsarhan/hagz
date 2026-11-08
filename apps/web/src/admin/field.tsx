@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode } from "react";
+import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 
 // The box every input sits in: white, 48 high (the apps use 56; desktop forms are denser), 1px light
 // border, 14 corners; 1.5px black when focused, red with an error. Padding shrinks by the extra half
@@ -42,6 +42,43 @@ export function Field({ label, error, hint, trailing, ...input }: FieldProps) {
           className={`text-caption ${error ? "font-medium text-red" : "text-ink-2"}`}
         >
           {note}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label: string;
+  hint?: string;
+  options: { value: string; label: string }[];
+}
+
+// A labelled native select in the same box as Field.
+export function SelectField({ label, hint, options, ...select }: SelectFieldProps) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-label font-medium text-ink-2">
+        {label}
+      </label>
+      <div className={boxClass(false)}>
+        <select
+          id={id}
+          aria-describedby={hint ? `${id}-note` : undefined}
+          className="h-full min-w-0 flex-1 cursor-pointer bg-transparent text-[1rem] leading-[1.3125rem] text-ink outline-none"
+          {...select}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {hint ? (
+        <p id={`${id}-note`} className="text-caption text-ink-2">
+          {hint}
         </p>
       ) : null}
     </div>
