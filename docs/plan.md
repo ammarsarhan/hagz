@@ -12,6 +12,7 @@ Agreed on 2026-10-27, on top of the product and schema decisions already made:
 - **Media goes to Cloudflare R2** through a `StorageProvider` (like `MessagingProvider`), with presigned uploads.
 - **Discovery is Postgres only:** PostGIS for distance, `pg_trgm` and full-text search for names, indexed `GroundSlot` for availability. No separate search engine, so availability is always exact.
 - **Every v1 feature ships before launch**, loyalty, reviews and discounts included.
+- **Hosting stays platform-agnostic until Phase 9** (added on 2026-11-08). Staging is on Railway and a VPS is being considered for production. The app is written against the host contract in [deployment.md](deployment.md), and nothing new depends on Railway.
 - **Payments: Paymob, through its styled embedded card fields** (Pixel or a native SDK). The card number goes from the device to Paymob and never reaches Hagz, so PCI scope stays at SAQ A. Hagz designs the checkout; Paymob owns the card inputs.
 
 ## Phase 0: Platform ✅
@@ -139,7 +140,7 @@ The API is done; the screens come first, because every later screen sits behind 
 - The pre-launch list for the code routes: Cloudflare in front with the origin locked, `CLIENT_IP_HEADER`, alerting on the global code cap, device attestation (Play Integrity, App Attest), a Meta spending alert.
 - Observability: Sentry, OpenTelemetry traces, metrics and SLO dashboards.
 - Load tests with k6, a security review, a restore drill, runbooks.
-- Production on a paid plan, with the API and database in one region.
+- Choose the host (Railway or a VPS) using the criteria in [deployment.md](deployment.md#what-would-decide-it), including a week of staging data on Railway. Remove the remaining Railway coupling in the code. Production on that host, with the API and database in one region.
 - Legal: terms reflecting the agent model, holding venues' money (payment licensing), ETA e-receipts.
 
 ## Phase 10: Store launch
