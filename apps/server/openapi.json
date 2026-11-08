@@ -102,6 +102,76 @@
         "additionalProperties": {},
         "description": "An error. Extra members depend on the code."
       },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "locality": {
+            "$ref": "#/components/schemas/Locality"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "In the requested language."
+          }
+        },
+        "required": [
+          "id",
+          "parentId",
+          "locality",
+          "slug",
+          "name"
+        ],
+        "description": "A place in a marketplace's tree; build the tree from `parentId`."
+      },
+      "Locality": {
+        "type": "string",
+        "enum": [
+          "REGION",
+          "EMIRATE",
+          "GOVERNORATE",
+          "MUNICIPALITY",
+          "WILAYAT",
+          "CITY",
+          "DISTRICT",
+          "AREA",
+          "NEIGHBORHOOD"
+        ]
+      },
+      "Amenity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "example": "parking"
+          },
+          "name": {
+            "type": "string",
+            "description": "In the requested language."
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name"
+        ]
+      },
       "VerificationCodeSent": {
         "type": "object",
         "properties": {
@@ -1634,6 +1704,346 @@
           "queue",
           "cache"
         ]
+      },
+      "AdminMarketplace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2.",
+            "example": "EG"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217.",
+            "example": "EGP"
+          },
+          "dialCode": {
+            "type": "string",
+            "description": "E.164 prefix.",
+            "example": "+20"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA time zone.",
+            "example": "Africa/Cairo"
+          },
+          "taxRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "VAT in basis points (1400 is 14%).",
+            "example": 1400
+          },
+          "commissionRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Hagz's commission in basis points.",
+            "example": 1400
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Shown in the apps. New marketplaces start hidden."
+          },
+          "inUse": {
+            "type": "boolean",
+            "description": "Has a location, venue or amenity option. Its code and currency can no longer change."
+          },
+          "locationCount": {
+            "type": "integer"
+          },
+          "venueCount": {
+            "type": "integer"
+          },
+          "amenityCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "names",
+          "currency",
+          "dialCode",
+          "timezone",
+          "taxRate",
+          "commissionRate",
+          "isActive",
+          "inUse",
+          "locationCount",
+          "venueCount",
+          "amenityCount",
+          "createdAt"
+        ]
+      },
+      "Names": {
+        "type": "object",
+        "properties": {
+          "en": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "ar": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "en",
+          "ar"
+        ],
+        "example": {
+          "en": "Nasr City",
+          "ar": "مدينة نصر"
+        }
+      },
+      "CreateMarketplace": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "example": "EG"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "example": "EGP"
+          },
+          "dialCode": {
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{0,3}$",
+            "example": "+20"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Cairo"
+          },
+          "taxRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Basis points: 1400 is 14%.",
+            "example": 1400
+          },
+          "commissionRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Basis points: 1400 is 14%.",
+            "example": 1400
+          }
+        },
+        "required": [
+          "code",
+          "names",
+          "currency",
+          "dialCode",
+          "timezone",
+          "taxRate",
+          "commissionRate"
+        ],
+        "description": "Created hidden; turn it on when it's ready."
+      },
+      "UpdateMarketplace": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "example": "EG"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "example": "EGP"
+          },
+          "dialCode": {
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{0,3}$",
+            "example": "+20"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Cairo"
+          },
+          "taxRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Basis points: 1400 is 14%.",
+            "example": 1400
+          },
+          "commissionRate": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Basis points: 1400 is 14%.",
+            "example": 1400
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "description": "Only the fields sent change. `code` and `currency` are refused once it's in use."
+      },
+      "AdminLocation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Null at the top of the tree."
+          },
+          "locality": {
+            "$ref": "#/components/schemas/Locality"
+          },
+          "slug": {
+            "type": "string",
+            "description": "From the English name when created, then fixed: it's part of public URLs.",
+            "example": "nasr-city"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          },
+          "childCount": {
+            "type": "integer"
+          },
+          "venueCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "parentId",
+          "locality",
+          "slug",
+          "names",
+          "childCount",
+          "venueCount"
+        ]
+      },
+      "CreateLocation": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Null for the top of the tree."
+          },
+          "locality": {
+            "$ref": "#/components/schemas/Locality"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          }
+        },
+        "required": [
+          "parentId",
+          "locality",
+          "names"
+        ]
+      },
+      "UpdateLocation": {
+        "type": "object",
+        "properties": {
+          "locality": {
+            "$ref": "#/components/schemas/Locality"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          }
+        },
+        "description": "The slug stays as it was."
+      },
+      "AdminAmenity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string",
+            "description": "Stable code, fixed once created.",
+            "example": "parking"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Inactive options can't be newly picked."
+          },
+          "venueCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "names",
+          "isActive",
+          "venueCount"
+        ]
+      },
+      "CreateAmenity": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,39}$",
+            "example": "parking"
+          },
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          }
+        },
+        "required": [
+          "key",
+          "names"
+        ]
+      },
+      "UpdateAmenity": {
+        "type": "object",
+        "properties": {
+          "names": {
+            "$ref": "#/components/schemas/Names"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "parameters": {}
@@ -1664,6 +2074,138 @@
                   "required": [
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplaces/{code}/locations": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "summary": "A marketplace's location tree",
+        "description": "Every location, flat: build the tree from `parentId`. Names follow `Accept-Language`. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$",
+              "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+              "example": "EG"
+            },
+            "required": true,
+            "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplaces/{code}/amenities": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "summary": "A marketplace's amenity options",
+        "description": "The options venues can offer. Names follow `Accept-Language`. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$",
+              "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+              "example": "EG"
+            },
+            "required": true,
+            "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active amenity options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Amenity"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -4989,6 +5531,897 @@
           },
           "503": {
             "description": "SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/marketplaces": {
+      "get": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Every marketplace, hidden ones included",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "By code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminMarketplace"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Add a marketplace",
+        "description": "It starts hidden from the apps; turn it on with `isActive` when it's ready.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMarketplace"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMarketplace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKETPLACE_EXISTS: that code is taken.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/marketplaces/{id}": {
+      "patch": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Edit a marketplace, or show or hide it",
+        "description": "Only the fields sent change. VAT and commission apply to bookings made afterwards. Marketplaces are never deleted; hide one with `isActive: false`.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMarketplace"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMarketplace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/marketplaces/{id}/locations": {
+      "get": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "A marketplace's locations",
+        "description": "Every location, flat: build the tree from `parentId`.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Locations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminLocation"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Add a location",
+        "description": "At the top of the tree, or under `parentId`. The slug is made from the English name and never changes.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLocation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLocation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "LOCATION_EXISTS: a sibling already has this slug (`slug`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "PARENT_NOT_FOUND: `parentId` isn't in this marketplace.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/locations/{id}": {
+      "patch": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Rename a location or change its kind",
+        "description": "The slug stays as it was.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLocation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLocation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LOCATION_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Remove a location",
+        "description": "Only while it has no locations under it and no venues in it.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LOCATION_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "LOCATION_IN_USE: it has locations under it or venues in it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/marketplaces/{id}/amenities": {
+      "get": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "A marketplace's amenity options, inactive ones included",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "By key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminAmenity"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Add an amenity option",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAmenity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAmenity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "AMENITY_EXISTS: this marketplace already has that key.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/amenities/{id}": {
+      "patch": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Rename an amenity option, or turn it on or off",
+        "description": "Turned off, venues can't newly pick it; venues that offer it keep it.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAmenity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAmenity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "AMENITY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Remove an amenity option",
+        "description": "Only while no venue offers it and no booking was charged for it; else turn it off.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "AMENITY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "AMENITY_IN_USE: venues offer it or bookings were charged for it.",
             "content": {
               "application/problem+json": {
                 "schema": {
