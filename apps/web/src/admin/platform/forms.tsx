@@ -12,7 +12,7 @@ import { api } from "@/admin/api";
 import { FormDialog } from "@/admin/dialog";
 import { message, send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
-import { localityLabel } from "./table";
+import { localityLabel } from "./model";
 
 // The Platform page's forms. Each one sends its request, shows the API's message if it's refused,
 // and on success tells the page to reload.
