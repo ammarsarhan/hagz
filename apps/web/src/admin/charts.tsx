@@ -1,5 +1,24 @@
-// Small SVG charts in Stripe's style (the user's reference), with no chart library: a line with the
-// peak labelled top left and 0 bottom left, and an availability strip of half-hour blocks.
+"use client";
+
+// The admin home's charts, drawn with Recharts in Stripe's style (the user's reference): a line with
+// the peak labelled top left and 0 bottom left, and an availability strip of half-hour blocks. Both
+// answer hover and keyboard focus with a tooltip.
+//
+// Recharts writes colors as SVG attributes, where CSS variables don't resolve, so marks stroke and
+// fill with currentColor under a text-* class, or take a fill-*/stroke-* class on the element itself.
+
+import type { ReactNode } from "react";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Line,
+  LineChart as Lines,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const time = new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", hour12: false });
 
@@ -8,8 +27,6 @@ export interface Point {
   value: number | null;
 }
 
-const WIDTH = 320;
-const HEIGHT = 120;
 // Minute samples are averaged into at most this many points: 15 minutes each over a full day, smooth
 // like Stripe's charts instead of a jagged block. A point is never shorter than a minute, so a short
 // history draws one point a minute instead of scattering into dots. A point with no samples breaks
@@ -29,13 +46,49 @@ const smooth = (points: Point[], from: number, to: number) => {
     bucket.count += 1;
   }
   return sums.map((bucket, i) => ({
-    x: count === 1 ? WIDTH : (i / (count - 1)) * WIDTH,
+    at: count === 1 ? to : from + (i / (count - 1)) * span,
     value: bucket.count ? bucket.total / bucket.count : null,
   }));
 };
 
-// One line through the points, broken wherever there were no samples. The peak label is the true
-// highest minute, not the averaged one.
+// The tooltip card: the value leads, what it's about follows in grey.
+function Readout({ value, note }: { value: ReactNode; note: ReactNode }) {
+  return (
+    <div className="rounded-[0.375rem] border border-border bg-white px-2.5 py-1.5 shadow-sm">
+      <p className="text-label font-semibold text-ink">{value}</p>
+      <p className="text-[0.6875rem] text-ink-2">{note}</p>
+    </div>
+  );
+}
+
+// An axis label pinned to the start or end of its axis, so the outer labels sit inside the chart
+// instead of centring on its edge and clipping.
+const edgeTick =
+  (format: (value: number) => string, anchor: (index: number) => "start" | "end" | "middle") =>
+  ({
+    x,
+    y,
+    payload,
+    index,
+  }: {
+    x: number | string;
+    y: number | string;
+    payload: { value: number };
+    index: number;
+  }) => (
+    <text
+      x={x}
+      y={y}
+      dy="0.35em"
+      textAnchor={anchor(index)}
+      className="fill-ink-2 text-[0.6875rem]"
+    >
+      {format(payload.value)}
+    </text>
+  );
+
+// One line through the points, broken wherever there were no samples. The peak in the label is the
+// true highest minute, not the averaged one.
 export function LineChart({ points, unit }: { points: Point[]; unit: string }) {
   const values = points.flatMap((p) => (p.value === null ? [] : [p.value]));
   const peak = Math.max(1, ...values);
@@ -43,74 +96,87 @@ export function LineChart({ points, unit }: { points: Point[]; unit: string }) {
   const to = points.at(-1)?.at ?? 1;
   const line = smooth(points, from, to);
   const top = Math.max(1, ...line.flatMap((p) => (p.value === null ? [] : [p.value])));
-  const y = (value: number) => HEIGHT - (value / top) * (HEIGHT - 6) - 1;
-
-  const runs: string[] = [];
-  let run: string[] = [];
-  for (const point of line) {
-    if (point.value === null) {
-      if (run.length) runs.push(run.join(" "));
-      run = [];
-      continue;
-    }
-    run.push(`${point.x.toFixed(1)},${y(point.value).toFixed(1)}`);
-  }
-  if (run.length) runs.push(run.join(" "));
+  const ms = (value: number) => `${Math.round(value)} ${unit}`;
 
   return (
-    <figure>
-      <div className="flex gap-2">
-        <div className="flex w-10 shrink-0 flex-col justify-between py-0.5 text-right text-[0.6875rem] text-ink-2">
-          <span>
-            {Math.round(top)} {unit}
-          </span>
-          <span>0 {unit}</span>
-        </div>
-        <svg
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          preserveAspectRatio="none"
-          className="h-[8.5rem] min-w-0 flex-1"
-          role="img"
-          aria-label={`Peak ${peak} ${unit} over the period`}
-        >
-          <line x1="0" y1={HEIGHT - 0.5} x2={WIDTH} y2={HEIGHT - 0.5} className="stroke-border" />
-          {runs.map((pts, i) =>
-            pts.includes(" ") ? (
-              <polyline
-                key={i}
-                points={pts}
-                fill="none"
-                className="stroke-ink"
-                strokeWidth="1.75"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            ) : (
-              <line
-                key={i}
-                x1={Number(pts.split(",")[0]) - 1}
-                x2={Number(pts.split(",")[0]) + 1}
-                y1={pts.split(",")[1]}
-                y2={pts.split(",")[1]}
-                className="stroke-ink"
-                strokeWidth="1.75"
-                vectorEffect="non-scaling-stroke"
-              />
-            ),
-          )}
-        </svg>
-      </div>
-      <figcaption className="mt-1 ml-12 flex justify-between text-[0.6875rem] text-ink-2">
-        <span>{points.length ? time.format(from) : ""}</span>
-        <span>Now</span>
-      </figcaption>
+    <figure aria-label={`Peak ${peak} ${unit} over the period`} className="h-[9.5rem] text-ink">
+      <ResponsiveContainer width="100%" height="100%">
+        <Lines data={line} margin={{ top: 8, right: 2, bottom: 0, left: 0 }}>
+          <YAxis
+            domain={[0, top]}
+            ticks={[0, top]}
+            width={48}
+            axisLine={false}
+            tickLine={false}
+            tick={edgeTick(ms, () => "end")}
+          />
+          <XAxis
+            dataKey="at"
+            type="number"
+            domain={[from, to]}
+            ticks={points.length ? [from, to] : []}
+            interval={0}
+            tickLine={false}
+            axisLine={{ className: "stroke-border" }}
+            tick={edgeTick(
+              (at) => (at === to ? "Now" : time.format(at)),
+              (index) => (index === 0 ? "start" : "end"),
+            )}
+          />
+          <Tooltip
+            isAnimationActive={false}
+            cursor={{ stroke: "currentColor", strokeOpacity: 0.2, strokeWidth: 1 }}
+            content={({ active, payload }) => {
+              const point = payload[0]?.payload as { at: number; value: number | null } | undefined;
+              if (!active || !point) return null;
+              return (
+                <Readout
+                  value={point.value === null ? "No samples" : ms(point.value)}
+                  note={time.format(point.at)}
+                />
+              );
+            }}
+          />
+          <Line
+            dataKey="value"
+            type="monotone"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            dot={false}
+            activeDot={{ r: 4, fill: "currentColor", stroke: "white", strokeWidth: 2 }}
+            connectNulls={false}
+            isAnimationActive={false}
+          />
+        </Lines>
+      </ResponsiveContainer>
     </figure>
   );
 }
 
 const BLOCKS = 48;
 const BLOCK_MS = 30 * 60_000;
+
+interface Block {
+  at: number;
+  seen: number;
+  down: number;
+  // Every block is drawn full height; its color carries the state.
+  full: 1;
+}
+
+const blockState = (block: Block) =>
+  block.seen === 0 ? "none" : block.down ? "down" : ("up" as const);
+
+const blockFill = { none: "fill-field", down: "fill-red", up: "fill-green" } as const;
+
+const blockNote = (block: Block) =>
+  block.seen === 0
+    ? "No samples"
+    : block.down
+      ? `${block.down} of ${block.seen} minutes down`
+      : "Up";
 
 // The last 24 hours in half-hour blocks: green when every sample was up, red when any was down,
 // grey with no samples (nothing was running to take one).
@@ -122,34 +188,56 @@ export function AvailabilityStrip({
   now: number;
 }) {
   const start = now - BLOCKS * BLOCK_MS;
-  const blocks = Array.from({ length: BLOCKS }, () => ({ seen: 0, down: 0 }));
+  const blocks: Block[] = Array.from({ length: BLOCKS }, (_, i) => ({
+    at: start + i * BLOCK_MS,
+    seen: 0,
+    down: 0,
+    full: 1,
+  }));
   for (const sample of samples) {
-    const i = Math.floor((sample.at - start) / BLOCK_MS);
-    const block = blocks[i];
+    const block = blocks[Math.floor((sample.at - start) / BLOCK_MS)];
     if (!block) continue;
     block.seen += 1;
     if (!sample.up) block.down += 1;
   }
+
   return (
     <figure>
-      <div
-        className="flex h-8 gap-[0.125rem]"
-        role="img"
-        aria-label="Availability over the last 24 hours"
-      >
-        {blocks.map((block, i) => (
-          <span
-            key={i}
-            title={
-              block.seen === 0
-                ? "No samples"
-                : block.down
-                  ? `${block.down} of ${block.seen} minutes down`
-                  : "Up"
-            }
-            className={`flex-1 rounded-[0.125rem] ${block.seen === 0 ? "bg-field" : block.down ? "bg-red" : "bg-green"}`}
-          />
-        ))}
+      <div className="h-8" aria-label="Availability over the last 24 hours">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={blocks}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            barCategoryGap={1}
+          >
+            <XAxis dataKey="at" hide />
+            <YAxis domain={[0, 1]} hide />
+            <Tooltip
+              isAnimationActive={false}
+              cursor={false}
+              content={({ active, payload }) => {
+                const block = payload[0]?.payload as Block | undefined;
+                if (!active || !block) return null;
+                return (
+                  <Readout
+                    value={blockNote(block)}
+                    note={`${time.format(block.at)}–${time.format(block.at + BLOCK_MS)}`}
+                  />
+                );
+              }}
+            />
+            <Bar
+              dataKey="full"
+              radius={2}
+              isAnimationActive={false}
+              activeBar={{ fillOpacity: 0.7 }}
+            >
+              {blocks.map((block) => (
+                <Cell key={block.at} className={blockFill[blockState(block)]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
       <figcaption className="mt-1 flex justify-between text-[0.6875rem] text-ink-2">
         <span>24 h ago</span>
