@@ -6,6 +6,8 @@ const variants = {
   primary: "bg-primary text-on-primary",
   secondary: "bg-chip text-ink",
   ghost: "bg-transparent text-ink",
+  // Deleting something.
+  danger: "bg-red text-white",
 } as const;
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
