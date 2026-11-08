@@ -1,7 +1,6 @@
 "use client";
 
 import { api } from "@/admin/api";
-import { Button } from "@/admin/button";
 import { send } from "@/admin/errors";
 import { PageHeader } from "@/admin/page-header";
 import {
@@ -15,18 +14,13 @@ import { usePlatform } from "@/admin/platform/model";
 // Platform: marketplaces, with each one's location tree and amenity catalog.
 // The locations and amenities view is waiting on its design; the data is in usePlatform().
 export default function AdminPlatform() {
-  const { error, open, actions, close, reload } = usePlatform();
+  const { error, open, close, reload } = usePlatform();
 
   return (
     <>
       <PageHeader
         title="Platform"
         subtitle="Marketplaces, their locations and the amenities venues can offer."
-        actions={
-          <div className="w-48">
-            <Button onClick={actions.addMarketplace}>Add marketplace</Button>
-          </div>
-        }
       />
 
       {error ? (
