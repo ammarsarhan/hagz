@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { buildInfo } from "@/platform/deploy/info";
 import { logger } from "@/platform/logger/logger";
+import { queueConnection } from "@/platform/redis/connections";
 import { guardedRedis } from "@/platform/redis/guarded";
 
 // Each worker proves it's alive by writing its own entry in this sorted set every few seconds: the
@@ -54,13 +55,19 @@ const beat = () =>
     logger.warn({ err }, "worker heartbeat not written");
   });
 
-// Starts beating now and every BEAT_MS; the returned function stops and removes this process's
-// entry (and only it), so a clean shutdown shows at once instead of after the expiry.
+// Starts beating as soon as Redis is ready and every BEAT_MS; the returned function stops and
+// removes this process's entry (and only it), so a clean shutdown shows at once instead of after
+// the expiry.
 export const startWorkerHeartbeat = () => {
-  void beat();
+  // At boot the queue connection is still opening, and a beat then is refused: wait for it, or the
+  // worker stays invisible until the second beat.
+  const first = () => void beat();
+  if (queueConnection.status === "ready") first();
+  else queueConnection.once("ready", first);
   const timer = setInterval(() => void beat(), BEAT_MS);
   timer.unref();
   return async () => {
+    queueConnection.off("ready", first);
     clearInterval(timer);
     await guardedRedis((redis) => redis.zrem(KEY, self)).catch(() => undefined);
   };
