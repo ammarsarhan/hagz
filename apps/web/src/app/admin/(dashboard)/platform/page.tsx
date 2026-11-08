@@ -35,7 +35,8 @@ export default function AdminPlatform() {
         </p>
       ) : null}
 
-      {open?.form === "marketplace" ? (
+      {/* Adding a marketplace moves to a side panel, waiting on its design; editing stays a dialog. */}
+      {open?.form === "marketplace" && open.marketplace ? (
         <MarketplaceDialog marketplace={open.marketplace} onClose={close} onDone={reload} />
       ) : null}
       {open?.form === "location" ? (
