@@ -51,6 +51,14 @@ export const violatedUniqueIndex = (error: unknown): string | undefined => {
   return adapterCause(error)?.constraint?.index;
 };
 
+// A delete or update refused because other rows still point at the row: P2003 from the model API,
+// with SQLSTATE 23001 for an ON DELETE RESTRICT key (verified against Postgres 18) or 23503 for a
+// NO ACTION one.
+export const isForeignKeyViolation = (error: unknown): boolean => {
+  const state = sqlState(error);
+  return prismaCode(error) === "P2003" || state === "23001" || state === "23503";
+};
+
 // Overload or an unreachable database: the request may well succeed if retried, so clients get a
 // 503 instead of a 500. Misconfiguration (bad credentials, TLS) is deliberately not here: a retry
 // won't fix it, so it stays a loud 500. Shapes verified by killing Postgres under load.
