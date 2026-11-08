@@ -117,6 +117,42 @@ const messages = {
     ar: "تطبيق المصادقة مُعدّ بالفعل.",
   },
 
+  // Platform (marketplaces, locations, amenities)
+  MARKETPLACE_NOT_FOUND: {
+    en: "We couldn't find this marketplace.",
+    ar: "لم نعثر على هذا السوق.",
+  },
+  MARKETPLACE_EXISTS: {
+    en: "A marketplace with this country code already exists.",
+    ar: "يوجد سوق بهذا الرمز بالفعل.",
+  },
+  MARKETPLACE_IN_USE: {
+    en: "The country code and currency can't change once the marketplace has locations, venues or amenities.",
+    ar: "لا يمكن تغيير رمز الدولة والعملة بعد إضافة مواقع أو ملاعب أو مرافق.",
+  },
+  LOCATION_NOT_FOUND: { en: "We couldn't find this location.", ar: "لم نعثر على هذا الموقع." },
+  LOCATION_EXISTS: {
+    en: "There's already a location with this English name here.",
+    ar: "يوجد موقع بهذا الاسم الإنجليزي هنا بالفعل.",
+  },
+  LOCATION_IN_USE: {
+    en: "This location has locations under it or venues in it. Remove those first.",
+    ar: "هذا الموقع يحتوي على مواقع أو ملاعب. احذفها أولًا.",
+  },
+  PARENT_NOT_FOUND: {
+    en: "The parent location isn't in this marketplace.",
+    ar: "الموقع الأعلى ليس في هذا السوق.",
+  },
+  AMENITY_NOT_FOUND: { en: "We couldn't find this amenity.", ar: "لم نعثر على هذا المرفق." },
+  AMENITY_EXISTS: {
+    en: "This marketplace already has an amenity with this key.",
+    ar: "يوجد مرفق بهذا المفتاح في هذا السوق بالفعل.",
+  },
+  AMENITY_IN_USE: {
+    en: "Venues offer this amenity or bookings were charged for it. Turn it off instead.",
+    ar: "تقدم ملاعب هذا المرفق أو تم احتسابه في حجوزات. أوقفه بدلًا من حذفه.",
+  },
+
   // Invitations and venues
   INVITATION_NOT_FOUND: {
     en: "We couldn't find this invitation.",
