@@ -1,7 +1,7 @@
 "use client";
 
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { api } from "@/admin/api";
 import { Authenticator, type Challenge } from "@/admin/authenticator";
 import { Button } from "@/admin/button";
@@ -18,15 +18,6 @@ export default function AdminLogin() {
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [busy, setBusy] = useState(false);
-
-  // Already signed in (another tab, or back from the dashboard): the form stays, to sign in again
-  // or as another admin, with a way back to the dashboard. Signing in replaces that session.
-  const [current, setCurrent] = useState<{ email: string }>();
-  useEffect(() => {
-    void send(api.GET("/v1/auth/admin/me")).then((result) => {
-      if (result.ok) setCurrent(result.data);
-    });
-  }, []);
 
   const restart = useCallback((why: string) => {
     setChallenge(undefined);
@@ -63,18 +54,6 @@ export default function AdminLogin() {
           void submit();
         }}
       >
-        {current && !notice ? (
-          <p className="mb-6 rounded-field bg-field px-4 py-3 text-label text-ink">
-            You’re signed in as {current.email}.{" "}
-            <a
-              href="/admin"
-              className="font-semibold underline underline-offset-2 hover:text-ink-2"
-            >
-              Go to the dashboard
-            </a>
-            , or sign in again to switch accounts.
-          </p>
-        ) : null}
         {notice ? (
           <p className="mb-6 rounded-field bg-field px-4 py-3 text-label text-ink">{notice}</p>
         ) : null}
