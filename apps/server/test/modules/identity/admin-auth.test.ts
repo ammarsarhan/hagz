@@ -277,6 +277,34 @@ describe("admin sessions", () => {
     expect(await prisma.adminSession.count({ where: { adminId: id, revokedAt: null } })).toBe(1);
   });
 
+  it("end the browser's previous session when it signs in again, but only once that succeeds", async () => {
+    const { id, secret } = await createAdmin();
+    const { jar: first } = await signedIn(secret, -1);
+
+    // A failed second sign-in leaves the first session alone.
+    const { challengeToken: wrong } = await signIn();
+    const failed = await request("POST", "/auth/admin/sessions/totp", {
+      body: { challengeToken: wrong, code: "000000" },
+      jar: first,
+    });
+    expect(failed.status).not.toBe(201);
+    expect(await prisma.adminSession.count({ where: { adminId: id, revokedAt: null } })).toBe(1);
+
+    const { challengeToken } = await signIn();
+    const again = await request("POST", "/auth/admin/sessions/totp", {
+      body: { challengeToken, code: currentCode(secret) },
+      jar: first,
+    });
+    expect(again.status).toBe(201);
+    expect(await prisma.adminSession.count({ where: { adminId: id, revokedAt: null } })).toBe(1);
+    expect((await request("POST", "/auth/admin/sessions/refresh", { jar: first })).status).toBe(
+      401,
+    );
+    expect(
+      (await request("POST", "/auth/admin/sessions/refresh", { jar: jarFrom(again) })).status,
+    ).toBe(204);
+  });
+
   it("sign out with the refresh cookie alone", async () => {
     const { id, secret } = await createAdmin();
     const { jar } = await signedIn(secret);

@@ -39,6 +39,12 @@ export const adminAuthRoutes = createRouter()
       code,
       device: device(c),
     });
+    // Signing in again from a browser that already has a session (the sign-in page stays open to
+    // signed-in admins): the new cookies replace the old ones, so end the old session rather than
+    // leave it valid and unreachable until it expires. Only after the new sign-in has succeeded, so
+    // a failed attempt never signs anyone out.
+    const previous = adminRefreshToken(c);
+    if (previous) await revokeByRefreshToken(adminSessions, previous);
     setAdminSession(c, session);
     return c.json({ admin, sessionExpiresIn: session.refreshTokenExpiresIn }, 201);
   })
