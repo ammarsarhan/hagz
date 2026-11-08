@@ -14,6 +14,7 @@
     "@hagz/brand": "workspace:^",
     "@hagz/contracts": "workspace:^",
     "@tabler/icons-react": "^3.50.0",
+    "@tanstack/react-table": "^9.3.1",
     "next": "^16.3.7",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
