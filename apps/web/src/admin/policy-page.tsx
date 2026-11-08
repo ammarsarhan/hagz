@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Logo } from "./page-shell";
 
-// The admin privacy policy and terms: the mark centred at the top, then small text in one column.
+// The admin privacy policy and terms: the mark centred at the top, then body text in one column.
 export function PolicyPage({
   title,
   updated,
@@ -16,8 +16,8 @@ export function PolicyPage({
       <a href="/admin/login" aria-label="Hagz Admin sign in">
         <Logo />
       </a>
-      <main className="mt-14 w-full max-w-[37.5rem] text-caption text-ink-2 [&_h2]:mt-7 [&_h2]:mb-2 [&_h2]:text-label [&_h2]:font-semibold [&_h2]:text-ink [&_li]:mt-1 [&_p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
-        <h1 className="text-heading font-semibold text-ink">{title}</h1>
+      <main className="mt-14 w-full max-w-[37.5rem] text-body text-ink-2 [&_h2]:mt-7 [&_h2]:mb-2 [&_h2]:text-subtitle [&_h2]:font-semibold [&_h2]:text-ink [&_li]:mt-1 [&_p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
+        <h1 className="text-title font-semibold text-ink">{title}</h1>
         <p className="mt-2 text-ink-3">{updated}</p>
         {children}
       </main>
