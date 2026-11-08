@@ -94,31 +94,20 @@ await write(
   await png({ framing: FRAMINGS.tile, color: COLORS.black, background: COLORS.lime }, 180),
 );
 
-// Admin web: the mono mark, black in light browser tabs and white in dark ones. Full detail, like
-// the mark on its pages (user, 2026-11-04): the small detail's solid pentagon read as a filled ball.
-await write(
-  "apps/web/src/app/admin/icon.svg",
-  markSvg({
-    framing: FRAMINGS.bare,
-    color: COLORS.black,
-    detail: "full",
-    style: "@media (prefers-color-scheme: dark) { .mark { color: #FFFFFF } }",
-  }),
-);
-// PNG fallback can't follow the colour scheme, so it's the black mark on a white tile.
-await write(
-  "apps/web/src/app/admin/icon.png",
-  await png(
-    {
-      framing: FRAMINGS.favicon,
-      color: COLORS.black,
-      background: COLORS.white,
-      radius: 0.22,
-      detail: "full",
-    },
-    32,
-  ),
-);
+// Admin web: mono, like an app icon (user, 2026-11-08): the black mark on a white tile with rounded
+// corners, the staff app's icon without its blue. A tile reads the same in light and dark browser
+// tabs, so the SVG and its PNG fallback are the same drawing. Full detail, like the mark on its pages
+// (user, 2026-11-04): the small detail's solid pentagon read as a filled ball.
+const adminTile = {
+  framing: FRAMINGS.favicon,
+  color: COLORS.black,
+  background: COLORS.white,
+  radius: 0.22,
+  detail: "full",
+} as const;
+await write("apps/web/src/app/admin/icon.svg", markSvg(adminTile));
+await write("apps/web/src/app/admin/icon.png", await png(adminTile, 32));
+// Apple touch icon: full bleed, because iOS rounds it.
 await write(
   "apps/web/src/app/admin/apple-icon.png",
   await png({ framing: FRAMINGS.tile, color: COLORS.black, background: COLORS.white }, 180),
