@@ -72,13 +72,16 @@ export const readWorkerHeartbeat = async (): Promise<WorkerHeartbeat | null> => 
     redis.zrangebyscore(KEY, Date.now() - EXPIRES_MS, "+inf", "WITHSCORES"),
   );
   let newest: WorkerHeartbeat | null = null;
-  for (let i = 0; i + 1 < raw.length; i += 2) {
-    const member = JSON.parse(raw[i] as string) as Member;
+  // WITHSCORES answers member, score, member, score, …
+  for (let i = 0; i < raw.length; i += 2) {
+    const [value, score] = raw.slice(i, i + 2);
+    if (value === undefined || score === undefined) break;
+    const member = JSON.parse(value) as Member;
     if (newest && member.startedAt <= newest.startedAt) continue;
     newest = {
       commit: member.commit,
       startedAt: member.startedAt,
-      at: new Date(Number(raw[i + 1])).toISOString(),
+      at: new Date(Number(score)).toISOString(),
     };
   }
   return newest;
