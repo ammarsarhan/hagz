@@ -19,7 +19,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "admin:create": "tsx src/create-admin.ts",
-    "seed:invitations": "tsx src/seed-invitations.ts"
+    "seed:invitations": "tsx src/seed-invitations.ts",
+    "seed:reference": "tsx src/seed-reference.ts"
   },
   "dependencies": {
     "@hagz/contracts": "workspace:^",

@@ -15,7 +15,7 @@ How the Hagz API is built to stay correct, survive failures and scale. Read this
 |---|---|
 | Microservices | One team, one database. They would turn function calls into network failures and take away transactions. |
 | A transactional outbox, Kafka, event sourcing | The models already record intent (see [Side effects](#side-effects)), so jobs can be rebuilt from Postgres. |
-| Kubernetes | Railway runs stateless containers well enough. |
+| Kubernetes | One image and two processes run well on a single container host (see [deployment.md](deployment.md)). |
 | GraphQL | Mobile apps stay on old versions; a versioned REST contract is easier to keep compatible. |
 
 ## Layout: a modular monolith
@@ -166,7 +166,7 @@ The slot constraint closes a real gap (manual slots). The booking constraint is 
 |---|---|
 | Timeouts | Set on the database (migration `20261026000001_timeouts`), because Neon's pooler rejects them as connection parameters: `statement_timeout` 5 s, `lock_timeout` 2 s, `idle_in_transaction_session_timeout` 30 s. Worker jobs and migrations that need longer raise them for themselves with `SET LOCAL`. Requests time out after 15 s and transactions after 10 s, but only the database timeouts actually stop work. Every outbound HTTP call has a timeout. |
 | Retries | Only for idempotent operations, with exponential backoff and jitter. A circuit breaker on each provider (payments, WhatsApp, push) fails fast when the provider is down. |
-| Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` drives traffic and Railway's deploy healthcheck: it fails while shutting down or when Postgres is unreachable. Redis is reported but doesn't fail it, because the API keeps working without Redis (see "Redis down"). A database blip must not cause a restart loop. |
+| Health | `/health/live` checks only that the process is up and drives restarts. `/health/ready` drives traffic and the host's deploy healthcheck: it fails while shutting down or when Postgres is unreachable. Redis is reported but doesn't fail it, because the API keeps working without Redis (see "Redis down"). A database blip must not cause a restart loop. |
 | Shutdown | On `SIGTERM`, the API fails readiness, stops accepting connections, finishes in-flight requests within a deadline, then disconnects Prisma and Redis. The worker stops taking jobs, finishes its current ones, then exits. |
 | Jobs | Processors are idempotent (BullMQ runs jobs at least once). Deterministic `jobId`s, `attempts` with backoff, zod-validated versioned payloads, and an alert when the failed set grows. Recurring jobs use job schedulers. |
 | Redis down | The cache fails open (read from Postgres). The queue falls back to the sweepers. Rate limits fail closed on OTP and invite-code endpoints (WhatsApp OTP abuse costs money) and fail open elsewhere. |
@@ -272,7 +272,7 @@ What slots cost: about 1 ms per booking, the generation job, the nightly roll-fo
   - PII redacted from logs.
 - Rate limits per IP, per account and per phone number on login, OTP and invite codes.
 - Invitations are the only way in for admins and for non-owner staff. Staff invitations are matched to the invitee's verified phone (anyone else gets 404 for the code or id), last 48 hours, and are only as good as the inviter is at acceptance time. Every link Hagz sends is built from the route table in `@hagz/contracts` (`links.ts`) on `WEB_URL`, the web app's origin, which serves the universal-link verification files and the fallback pages.
-- Renovate and `pnpm audit` in CI, pinned base images, and secrets only in Railway variables.
+- Renovate and `pnpm audit` in CI, pinned base images, and secrets only in the host's environment (never in the repo; see [deployment.md](deployment.md)).
 
 ## Observability
 
@@ -323,10 +323,11 @@ Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships
 | 6. Money out | Cancellations, refunds, ledger, commission, payouts, nightly audit | The audit shows no drift across randomized simulations |
 | 7. Engagement | Notifications, loyalty, reviews, discounts | Notifications survive a Redis outage |
 | 8. Accounts and activity | Profile, sessions, account deletion, venue activity feed | Deletion anonymizes and keeps money records intact |
-| 9. Launch readiness | OTP abuse protections, observability, load tests, security review, restore drill, production on a paid plan, API and database in one region, legal | Runbooks exist and the restore drill succeeds |
+| 9. Launch readiness | OTP abuse protections, observability, load tests, security review, restore drill, production on the chosen host, API and database in one region, legal | Runbooks exist and the restore drill succeeds |
 | 10. Store launch | Polish, store listings and submissions, the production cut-over (each phase already ships its own screens) | Both apps pass store review |
 
 ## Open decisions
 
 - Whether to add the [exclusion constraints](#exclusion-constraints-proposed).
-- Moving the API and the database into one region. Railway runs in `europe-west4` (Netherlands) and Neon in Frankfurt. To be done when the services are running again.
+- Where the API and worker run: Railway or a VPS. The trade-offs, and the contract any host must meet, are in [deployment.md](deployment.md). Decided before Phase 9; until then nothing new depends on Railway.
+- Moving the API and the database into one region. Staging on Railway runs in `europe-west4` (Netherlands) and Neon in Frankfurt. Settled by the hosting decision above.

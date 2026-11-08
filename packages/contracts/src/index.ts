@@ -6,6 +6,7 @@ export * from "./lists";
 export * from "./links";
 export * from "./marketplaces";
 export * from "./permissions";
+export * from "./platform";
 export * from "./venues";
 export * from "./problem";
 export * from "./system";

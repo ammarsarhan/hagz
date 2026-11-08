@@ -1,7 +1,7 @@
 "use client";
 
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { api } from "@/admin/api";
 import { Authenticator, type Challenge } from "@/admin/authenticator";
 import { Button } from "@/admin/button";
@@ -18,13 +18,6 @@ export default function AdminLogin() {
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [busy, setBusy] = useState(false);
-
-  // Already signed in (another tab, or back from the dashboard): straight in.
-  useEffect(() => {
-    void send(api.GET("/v1/auth/admin/me")).then((result) => {
-      if (result.ok) window.location.replace("/admin");
-    });
-  }, []);
 
   const restart = useCallback((why: string) => {
     setChallenge(undefined);
