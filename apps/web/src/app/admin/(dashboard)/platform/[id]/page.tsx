@@ -53,6 +53,9 @@ const helper = createColumnHelper<typeof features, LocationNode>();
 const RowContext = createContext<{ actions: Actions; marketplace: AdminMarketplace } | null>(null);
 
 const percent = (basisPoints: number) => `${basisPoints / 100}%`;
+// "8 Nov 2026", in the admin's own time zone.
+const added = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 function LocationName({ row }: { row: LocationRow }) {
   const { location } = row.original;
@@ -77,9 +80,6 @@ function LocationName({ row }: { row: LocationRow }) {
         <span className="size-6 shrink-0" />
       )}
       <span className="truncate font-medium">{location.names.en}</span>
-      {location.childCount ? (
-        <span className="text-caption text-ink-3">{location.childCount}</span>
-      ) : null}
     </div>
   );
 }
@@ -135,14 +135,31 @@ const columns = helper.columns([
     cell: ({ row }) => <Tag>{localityLabel[row.original.location.locality]}</Tag>,
   }),
   helper.display({
+    id: "children",
+    header: "Sub-locations",
+    cell: ({ row }) => <Count value={row.original.location.childCount} />,
+  }),
+  helper.display({
     id: "venues",
     header: "Venues",
     cell: ({ row }) => <Count value={row.original.location.venueCount} />,
   }),
+  helper.display({
+    id: "added",
+    header: "Added",
+    cell: ({ row }) => <span className="text-ink-2">{added(row.original.location.createdAt)}</span>,
+  }),
   helper.display({ id: "menu", header: "", cell: ({ row }) => <LocationMenu row={row} /> }),
 ]);
 
-const widths = { arabic: "22%", kind: "16%", venues: "10%", menu: "3.5rem" };
+const widths = {
+  arabic: "17%",
+  kind: "13%",
+  children: "11%",
+  venues: "9%",
+  added: "11%",
+  menu: "3.5rem",
+};
 
 // The tree cut down to what matches the English or Arabic name, with the parents of
 // every match kept so it shows where it sits. A match keeps everything under it.
