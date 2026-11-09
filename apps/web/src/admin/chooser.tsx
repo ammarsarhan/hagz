@@ -28,10 +28,11 @@ export function ChooserDialog({
   return (
     <Dialog open wide onClose={onClose}>
       <div className="flex max-h-[85vh] flex-col">
-        <header className="shrink-0 px-7 pt-5 pb-2">
-          {/* ← and × on their own row above the title, at opposite edges. */}
-          <div className="-mx-1.5 flex items-center justify-between">
-            {onBack ? (
+        <header className={`shrink-0 px-7 pb-2 ${onBack ? "pt-5" : "pt-7"}`}>
+          {/* A later step: ← and × on their own row above the title, at opposite ends. The first
+              step: × on the title's row at the far end, well clear of a long title. */}
+          {onBack ? (
+            <div className="-mx-1.5 mb-3 flex items-center justify-between">
               <button
                 type="button"
                 onClick={onBack}
@@ -40,25 +41,22 @@ export function ChooserDialog({
               >
                 <IconArrowLeft size={20} className="size-5" stroke={1.75} />
               </button>
-            ) : (
-              <span />
+              <CloseButton onClose={onClose} />
+            </div>
+          ) : null}
+          <div className="flex items-start justify-between gap-10">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
+                {title}
+              </h2>
+              {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
+            </div>
+            {onBack ? null : (
+              <div className="-mt-0.5 -mr-1.5 shrink-0">
+                <CloseButton onClose={onClose} />
+              </div>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
-            >
-              <IconX size={20} className="size-5" stroke={1.75} />
-            </button>
           </div>
-          <h2
-            // Under ← the title needs room to read as its own line; under × alone it sits closer.
-            className={`${onBack ? "mt-3" : "mt-0.5"} flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink`}
-          >
-            {title}
-          </h2>
-          {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-7 pt-6 pb-8">{children}</div>
         {footer ? (
@@ -66,6 +64,19 @@ export function ChooserDialog({
         ) : null}
       </div>
     </Dialog>
+  );
+}
+
+function CloseButton({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClose}
+      aria-label="Close"
+      className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
+    >
+      <IconX size={20} className="size-5" stroke={1.75} />
+    </button>
   );
 }
 
@@ -126,7 +137,7 @@ export function ChoiceCard({
       ) : null}
       <span className="flex items-center gap-2 text-body font-semibold text-ink">{title}</span>
       {description ? (
-        <span className="mt-1 text-label leading-snug text-ink-2">{description}</span>
+        <span className="mt-1 w-full text-label leading-snug text-ink-2">{description}</span>
       ) : null}
     </button>
   );
