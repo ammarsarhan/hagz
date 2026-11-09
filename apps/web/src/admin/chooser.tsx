@@ -49,7 +49,7 @@ export function ChooserDialog({
               <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
                 {title}
               </h2>
-              {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
+              {description ? <p className="mt-0.5 text-body text-ink-2">{description}</p> : null}
             </div>
             {onBack ? null : (
               <div className="-mt-0.5 -mr-1.5 shrink-0">
