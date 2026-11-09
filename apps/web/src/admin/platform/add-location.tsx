@@ -10,24 +10,29 @@ import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
 import { KindIcon } from "./kind-icon";
 import { useSubmit } from "./forms";
-import { byName, localityLabel } from "./model";
+import { localityLabel } from "./model";
 
 // Add location, in two steps: pick what kind of place it is from cards (one per kind this
-// marketplace is divided into, each with real examples from its locations), then say where it
-// sits and name it. Opened from a row's menu, the parent is fixed and only finer kinds are offered.
+// marketplace is divided into, each saying what that kind is), then say where it sits and name
+// it. Opened from a row's menu, the parent is fixed and only finer kinds are offered.
 
 const rank = (kind: Locality) => kindOrder.indexOf(kind);
 // The "Inside" value for the top of the tree ("" means nothing picked yet).
 const TOP = "top";
 const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
 
-// "Like Alexandria, Aswan, Asyut", the first few by name; cut to one line on the card.
-const examples = (of: AdminLocation[]) =>
-  `Like ${[...of]
-    .sort(byName)
-    .slice(0, 4)
-    .map((location) => location.names.en)
-    .join(", ")}`;
+// What each kind of place is, on its card. The same wherever the modal was opened from.
+const kindDescription: Record<Locality, string> = {
+  REGION: "One of the country's main divisions, at the top of the tree.",
+  EMIRATE: "One of the emirates, at the top of the tree.",
+  GOVERNORATE: "One of the country's main divisions, with its cities and districts inside.",
+  MUNICIPALITY: "One of the country's municipalities, at the top of the tree.",
+  WILAYAT: "A province inside a governorate, with its own towns and areas.",
+  CITY: "A city or new town, usually inside a governorate.",
+  DISTRICT: "A part of a city or governorate that people search by.",
+  AREA: "A smaller part of a district, for more precise searches.",
+  NEIGHBORHOOD: "The smallest level: a block, compound or street area.",
+};
 
 export function AddLocationDialog({
   marketplace,
@@ -59,31 +64,6 @@ export function AddLocationDialog({
     );
   }, [marketplace.code, locations, parent]);
 
-  // Where this kind sits, from where the existing ones actually are ("Inside a governorate or
-  // city"); with none yet, inside the kind above it in the country's list.
-  const roleOf = (option: Locality, index: number) => {
-    const byId = new Map(locations.map((location) => [location.id, location]));
-    const containers = new Set<Locality | "TOP">();
-    for (const location of locations) {
-      if (location.locality !== option) continue;
-      const above = location.parentId ? byId.get(location.parentId) : undefined;
-      containers.add(above ? above.locality : "TOP");
-    }
-    if (containers.size === 0) {
-      const above = kinds[index - 1];
-      if (!above) return "Top level";
-      const word = localityLabel[above].toLowerCase();
-      return `Inside ${article(word)} ${word}`;
-    }
-    if (containers.has("TOP") && containers.size === 1) return "Top level";
-    const words = kindOrder
-      .filter((kind) => containers.has(kind))
-      .map((kind) => localityLabel[kind].toLowerCase());
-    const list =
-      words.length === 1 ? words[0]! : `${words.slice(0, -1).join(", ")} or ${words.at(-1)}`;
-    return `${containers.has("TOP") ? "Top level, or inside" : "Inside"} ${article(list)} ${list}`;
-  };
-
   const frame = { onClose, onBack: () => setKind(undefined) };
 
   if (!kind) {
@@ -98,29 +78,16 @@ export function AddLocationDialog({
         }
       >
         <ChooserSection columns={2}>
-          {kinds.map((option, index) => {
-            const existing = locations.filter((location) => location.locality === option);
-            return (
-              <ChoiceCard
-                key={option}
-                // The icon in its own circle above the name, like the reference's top cards.
-                icon={<KindIcon kind={option} />}
-                title={localityLabel[option]}
-                description={
-                  <>
-                    {/* Under a fixed parent every card would say the same "Inside Cairo". */}
-                    {parent ? null : (
-                      <span className="block truncate">{roleOf(option, index)}</span>
-                    )}
-                    {existing.length ? (
-                      <span className="block truncate text-ink-3">{examples(existing)}</span>
-                    ) : null}
-                  </>
-                }
-                onSelect={() => setKind(option)}
-              />
-            );
-          })}
+          {kinds.map((option) => (
+            <ChoiceCard
+              key={option}
+              // The icon in its own circle above the name, like the reference's top cards.
+              icon={<KindIcon kind={option} />}
+              title={localityLabel[option]}
+              description={kindDescription[option]}
+              onSelect={() => setKind(option)}
+            />
+          ))}
         </ChooserSection>
       </ChooserDialog>
     );
