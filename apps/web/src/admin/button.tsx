@@ -20,6 +20,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const sizes = {
   regular: "h-12 w-full px-6 text-[1rem] leading-[1.3125rem]",
+  // The regular pill a step down for a modal's footer: 44 high, the same 16/600 label.
+  medium: "h-11 gap-1.5 px-6 text-[1rem] leading-[1.3125rem]",
   small: "h-9 gap-1.5 px-3.5 text-label",
 } as const;
 
