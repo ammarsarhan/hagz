@@ -21,9 +21,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "@/admin/api";
+import { Button } from "@/admin/button";
 import { Count, DataTable, RowMenu, Skeleton, TableSearch, Tag } from "@/admin/data-table";
 import { Flag } from "@/admin/flag";
 import { send } from "@/admin/errors";
+import { AddLocationDialog } from "@/admin/platform/add-location";
 import {
   AmenityDialog,
   DeleteDialog,
@@ -250,8 +252,16 @@ export default function AdminMarketplacePage() {
         </header>
       </div>
 
-      <div className="mt-6 flex items-center gap-2">
+      <div className="mt-6 flex items-center justify-between gap-2">
         <TableSearch value={query} onChange={setQuery} placeholder="Search locations…" />
+        <Button
+          size="small"
+          disabled={!marketplace}
+          onClick={() => marketplace && actions.addLocation(marketplace, null)}
+        >
+          <IconPlus size={16} className="size-4" stroke={2} />
+          Add location
+        </Button>
       </div>
 
       {error ? (
@@ -274,7 +284,16 @@ export default function AdminMarketplacePage() {
       {open?.form === "marketplace" && open.marketplace ? (
         <MarketplaceDialog marketplace={open.marketplace} onClose={close} onDone={reload} />
       ) : null}
-      {open?.form === "location" ? (
+      {open?.form === "location" && !open.location && data ? (
+        <AddLocationDialog
+          marketplace={open.marketplace}
+          locations={data.locations}
+          parent={open.parent}
+          onClose={close}
+          onDone={reload}
+        />
+      ) : null}
+      {open?.form === "location" && open.location ? (
         <LocationDialog
           marketplace={open.marketplace}
           parent={open.parent}
