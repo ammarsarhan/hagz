@@ -45,3 +45,47 @@ input:-webkit-autofill:focus {
   caret-color: var(--color-ink);
   transition: background-color 9999s ease-out 0s;
 }
+
+/* The side panel (admin/side-panel.tsx): slides in from the right over a fading scrim, and back
+   out before it's removed. With reduced motion it still runs, in a millisecond, so the "it's out"
+   event that removes it still fires. */
+@keyframes panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes panel-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes scrim-out {
+  to {
+    opacity: 0;
+  }
+}
+.side-panel {
+  animation: panel-in 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.side-panel::backdrop {
+  animation: scrim-in 320ms ease-out;
+}
+.side-panel[data-closing] {
+  animation: panel-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.side-panel[data-closing]::backdrop {
+  animation: scrim-out 220ms ease-in forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-panel,
+  .side-panel::backdrop,
+  .side-panel[data-closing],
+  .side-panel[data-closing]::backdrop {
+    animation-duration: 1ms;
+  }
+}
