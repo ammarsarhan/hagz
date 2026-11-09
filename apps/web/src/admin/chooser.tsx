@@ -52,7 +52,10 @@ export function ChooserDialog({
               <IconX size={20} className="size-5" stroke={1.75} />
             </button>
           </div>
-          <h2 className="mt-3 flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
+          <h2
+            // Under ← the title needs room to read as its own line; under × alone it sits closer.
+            className={`${onBack ? "mt-3" : "mt-0.5"} flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink`}
+          >
             {title}
           </h2>
           {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
