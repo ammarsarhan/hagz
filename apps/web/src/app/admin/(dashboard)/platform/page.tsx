@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Count, DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { Flag } from "@/admin/flag";
 import { PageHeader } from "@/admin/page-header";
 import { useMarketplaces } from "@/admin/platform/model";
 
@@ -35,10 +36,7 @@ const columns = helper.columns([
     header: "Name",
     cell: ({ row: { original: m } }) => (
       <div className="flex items-center gap-3">
-        {/* The country code stands in for an icon: a grey tile, like the reference's. */}
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-[0.5rem] bg-chip text-caption font-semibold text-ink">
-          {m.code}
-        </span>
+        <Flag code={m.code} />
         <span className="truncate font-medium">{m.names.en}</span>
         <span dir="rtl" lang="ar" className="truncate text-ink-3">
           {m.names.ar}
@@ -143,13 +141,8 @@ export default function AdminPlatform() {
           table={table}
           widths={widths}
           onRowClick={(row) => router.push(`/admin/platform/${row.original.id}`)}
-          empty={
-            !marketplaces
-              ? "Loading…"
-              : query
-                ? `No marketplace matches “${query}”.`
-                : "No marketplaces yet."
-          }
+          loading={!marketplaces && !error}
+          empty={query ? `No marketplace matches “${query}”.` : "No marketplaces yet."}
         />
       </div>
     </>

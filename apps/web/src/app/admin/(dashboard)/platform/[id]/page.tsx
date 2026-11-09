@@ -21,7 +21,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "@/admin/api";
-import { Count, DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
+import { Count, DataTable, RowMenu, Skeleton, TableSearch, Tag } from "@/admin/data-table";
+import { Flag } from "@/admin/flag";
 import { send } from "@/admin/errors";
 import {
   AmenityDialog,
@@ -210,30 +211,41 @@ export default function AdminMarketplacePage() {
 
   return (
     <>
-      <Breadcrumb current={marketplace?.names.en ?? "…"} />
+      <Breadcrumb current={marketplace?.names.en} />
 
       <div className="mt-4 border-b border-border pb-6">
         <header>
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-title font-semibold text-ink">
-                {marketplace?.names.en ?? "Loading…"}
-              </h1>
-              {marketplace ? (
-                marketplace.isActive ? (
-                  <Tag tone="on">Live</Tag>
-                ) : (
-                  <Tag>Hidden</Tag>
-                )
-              ) : null}
-            </div>
             {marketplace ? (
-              <p className="mt-1 text-body text-ink-2">
-                {marketplace.code} · {marketplace.currency} · {marketplace.dialCode} ·{" "}
-                {marketplace.timezone} · VAT {percent(marketplace.taxRate)} · Commission{" "}
-                {percent(marketplace.commissionRate)}
-              </p>
-            ) : null}
+              <>
+                <div className="flex items-center gap-2.5">
+                  <Flag code={marketplace.code} size="1.75rem" />
+                  <h1 className="text-title font-semibold text-ink">{marketplace.names.en}</h1>
+                  {marketplace.isActive ? <Tag tone="on">Live</Tag> : <Tag>Hidden</Tag>}
+                </div>
+                <p className="mt-1 text-body text-ink-2">
+                  {marketplace.code} · {marketplace.currency} · {marketplace.dialCode} ·{" "}
+                  {marketplace.timezone} · VAT {percent(marketplace.taxRate)} · Commission{" "}
+                  {percent(marketplace.commissionRate)}
+                </p>
+              </>
+            ) : (
+              // Each line holds an invisible character in the real text style, so it's exactly as
+              // tall as what replaces it and nothing jumps when the marketplace lands.
+              <div aria-busy>
+                <div className="flex items-center gap-2.5">
+                  <Skeleton className="size-7 rounded-full" />
+                  <Skeleton className="h-6 w-40" />
+                  <span aria-hidden className="text-title font-semibold">
+                    {"\u200b"}
+                  </span>
+                </div>
+                <p aria-hidden className="mt-1 flex items-center text-body">
+                  <Skeleton className="h-3.5 w-96" />
+                  {"\u200b"}
+                </p>
+              </div>
+            )}
           </div>
         </header>
       </div>
@@ -253,13 +265,8 @@ export default function AdminMarketplacePage() {
           <DataTable
             table={table}
             widths={widths}
-            empty={
-              !data
-                ? "Loading…"
-                : searching
-                  ? `No location matches “${query}”.`
-                  : "No locations yet."
-            }
+            loading={!data && !error}
+            empty={searching ? `No location matches “${query}”.` : "No locations yet."}
           />
         </RowContext.Provider>
       </div>
@@ -318,16 +325,21 @@ export default function AdminMarketplacePage() {
   );
 }
 
-function Breadcrumb({ current }: { current: string }) {
+// While the marketplace loads, a bar stands in for its name.
+function Breadcrumb({ current }: { current?: string }) {
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-label">
       <Link href="/admin/platform" className="text-ink-2 hover:text-ink">
         Platform
       </Link>
       <span className="text-ink-3">/</span>
-      <span aria-current="page" className="font-medium text-ink">
-        {current}
-      </span>
+      {current ? (
+        <span aria-current="page" className="font-medium text-ink">
+          {current}
+        </span>
+      ) : (
+        <Skeleton className="h-3 w-16" />
+      )}
     </nav>
   );
 }
