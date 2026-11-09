@@ -159,6 +159,30 @@ describe("admin marketplaces", () => {
     });
   });
 
+  it("refuse to hide the last live marketplace, but hide one while another is live", async () => {
+    const egypt = await createMarketplace();
+    await request("PATCH", `/admin/marketplaces/${egypt.id}`, { isActive: true });
+
+    const last = await request("PATCH", `/admin/marketplaces/${egypt.id}`, { isActive: false });
+    expect(last.status).toBe(409);
+    expect(last.body).toMatchObject({ code: "LAST_LIVE_MARKETPLACE" });
+
+    const oman = await createMarketplace({
+      ...egypt,
+      code: "OM",
+      names: { en: "Oman", ar: "عمان" },
+      currency: "OMR",
+    });
+    // Hidden already: saying so again is fine.
+    expect(
+      (await request("PATCH", `/admin/marketplaces/${oman.id}`, { isActive: false })).status,
+    ).toBe(200);
+    await request("PATCH", `/admin/marketplaces/${oman.id}`, { isActive: true });
+    const hidden = await request("PATCH", `/admin/marketplaces/${egypt.id}`, { isActive: false });
+    expect(hidden.status).toBe(200);
+    expect(hidden.body).toMatchObject({ isActive: false });
+  });
+
   it("keep their code and currency once a location, venue or amenity uses them", async () => {
     const { id } = await createMarketplace();
     await addLocation(id, "Cairo");

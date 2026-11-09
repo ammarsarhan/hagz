@@ -7,9 +7,10 @@ import { logger } from "@/platform/logger/logger";
 import { lockMarketplace, namesOf, translationRows, upsertNames } from "./names";
 
 // Admin management of marketplaces (agreed 2026-11-08): created hidden, never deleted (turned off
-// instead). Code and currency are fixed once anything uses the marketplace: a location, a venue or an
-// amenity option. URLs carry the code, and prices and payouts the currency. VAT and commission can
-// change; they apply to bookings made after the change.
+// instead), and the last live one can't be turned off (2026-11-09). Code and currency are fixed
+// once anything uses the marketplace: a location, a venue or an amenity option. URLs carry the
+// code, and prices and payouts the currency. VAT and commission can change; they apply to bookings
+// made after the change.
 
 export const marketplaceNotFound = () =>
   new AppError({ code: "MARKETPLACE_NOT_FOUND", status: 404, detail: "No such marketplace." });
@@ -92,6 +93,21 @@ export const updateMarketplace = async (
           detail: "Its code and currency can't change once it has locations, venues or amenities.",
           extensions: { fields: fixed },
         });
+      }
+      // The apps need a marketplace to show, so the last live one can't be hidden. Hides take one
+      // lock in turn, so two admins hiding the last two at once can't each see the other as live.
+      if (fields.isActive === false && current.isActive) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('marketplace-visibility'))`;
+        const othersLive = await tx.marketplace.count({
+          where: { isActive: true, id: { not: id } },
+        });
+        if (othersLive === 0) {
+          throw new AppError({
+            code: "LAST_LIVE_MARKETPLACE",
+            status: 409,
+            detail: "It's the only marketplace live in the apps. Make another one live first.",
+          });
+        }
       }
       await tx.marketplace.update({ where: { id }, data: fields });
       if (names) {

@@ -3945,7 +3945,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken. */
+                /** @description MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace. */
                 409: {
                     headers: {
                         [name: string]: unknown;
