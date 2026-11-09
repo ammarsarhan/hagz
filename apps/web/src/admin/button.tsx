@@ -14,15 +14,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variants;
   // Waiting on the server: a spinner replaces the label and the button can't be pressed again.
   loading?: boolean;
-  // Small sits in a table's toolbar beside the search: 36 high, as wide as its label.
+  // Small sits in a page header or a table's toolbar: 40 high, as wide as its label.
   size?: keyof typeof sizes;
 }
 
 const sizes = {
   regular: "h-12 w-full px-6 text-[1rem] leading-[1.3125rem]",
   // The regular pill a step down for a modal's footer: 44 high, the same 16/600 label.
-  medium: "h-11 gap-1.5 px-6 text-[1rem] leading-[1.3125rem]",
-  small: "h-9 gap-1.5 px-3.5 text-label",
+  medium: "h-11 gap-1.5 px-7 text-[1rem] leading-[1.3125rem]",
+  small: "h-10 gap-1.5 px-5 text-label",
 } as const;
 
 export function Button({
