@@ -41,7 +41,7 @@ export function Dialog({
         if (pressedOutside.current && event.target === event.currentTarget) onClose();
         pressedOutside.current = false;
       }}
-      className={`m-auto ${wide ? "w-[40rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-hud bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
+      className={`m-auto ${wide ? "w-[40rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-card bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
     >
       {open ? children : null}
     </dialog>
