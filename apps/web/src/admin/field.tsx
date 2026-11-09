@@ -52,10 +52,12 @@ interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   hint?: string;
   options: { value: string; label: string }[];
+  // Shown, greyed out, until something is picked (the value is "" until then).
+  placeholder?: string;
 }
 
 // A labelled native select in the same box as Field.
-export function SelectField({ label, hint, options, ...select }: SelectFieldProps) {
+export function SelectField({ label, hint, options, placeholder, ...select }: SelectFieldProps) {
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
@@ -66,9 +68,16 @@ export function SelectField({ label, hint, options, ...select }: SelectFieldProp
         <select
           id={id}
           aria-describedby={hint ? `${id}-note` : undefined}
-          className="h-full min-w-0 flex-1 cursor-pointer bg-transparent text-[1rem] leading-[1.3125rem] text-ink outline-none"
+          className={`h-full min-w-0 flex-1 cursor-pointer bg-transparent text-[1rem] leading-[1.3125rem] outline-none ${
+            placeholder && !select.value ? "text-ink-3" : "text-ink"
+          }`}
           {...select}
         >
+          {placeholder ? (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          ) : null}
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

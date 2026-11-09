@@ -29,6 +29,7 @@ const present = (l: Row): AdminLocation => ({
   names: namesOf(l.translations),
   childCount: l._count.children,
   venueCount: l._count.venues,
+  createdAt: l.createdAt.toISOString(),
 });
 
 // Every location in the marketplace, flat; the tree is built from parentId.
