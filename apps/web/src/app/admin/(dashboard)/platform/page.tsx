@@ -1,7 +1,7 @@
 "use client";
 
 import type { AdminMarketplace } from "@hagz/contracts";
-import { IconChevronRight, IconPlus } from "@tabler/icons-react";
+import { IconArrowRight, IconPencil, IconPlus } from "@tabler/icons-react";
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -11,12 +11,13 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { Button } from "@/admin/button";
-import { Count, DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { Count, DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
 import { Flag } from "@/admin/flag";
 import { PageHeader } from "@/admin/page-header";
 import { AddMarketplaceDialog } from "@/admin/platform/add-marketplace";
+import { MarketplaceDialog } from "@/admin/platform/forms";
 import { useMarketplaces } from "@/admin/platform/model";
 
 // Platform: the marketplaces, after the user's reference (Mobbin's Skills list). Each row opens the
@@ -82,11 +83,32 @@ const columns = helper.columns([
       m.isActive ? <Tag tone="on">Live</Tag> : <Tag>Hidden</Tag>,
   }),
   helper.display({
-    id: "open",
+    id: "menu",
     header: "",
-    cell: () => <IconChevronRight size={16} className="ml-auto size-4 text-ink-3" stroke={1.75} />,
+    cell: ({ row }) => <MarketplaceMenu marketplace={row.original} />,
   }),
 ]);
+
+// Columns are module-level (TanStack needs them stable), so the row menu reaches the page through
+// context instead of a closure.
+const RowContext = createContext<{
+  open: (marketplace: AdminMarketplace) => void;
+  edit: (marketplace: AdminMarketplace) => void;
+} | null>(null);
+
+function MarketplaceMenu({ marketplace }: { marketplace: AdminMarketplace }) {
+  const context = useContext(RowContext);
+  if (!context) return null;
+  return (
+    <RowMenu
+      label={`Actions for ${marketplace.names.en}`}
+      items={[
+        { label: "Open", icon: IconArrowRight, onSelect: () => context.open(marketplace) },
+        { label: "Edit", icon: IconPencil, onSelect: () => context.edit(marketplace) },
+      ]}
+    />
+  );
+}
 
 const widths = {
   money: "9%",
@@ -95,7 +117,7 @@ const widths = {
   locations: "9%",
   venues: "8%",
   status: "9%",
-  open: "2.75rem",
+  menu: "3.5rem",
 };
 
 // Matches the English or Arabic name, or the country code.
@@ -109,6 +131,9 @@ export default function AdminPlatform() {
   const { marketplaces, error, reload } = useMarketplaces();
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<AdminMarketplace>();
+  const openMarketplace = (marketplace: AdminMarketplace) =>
+    router.push(`/admin/platform/${marketplace.id}`);
 
   const table = useTable({
     features,
@@ -146,19 +171,28 @@ export default function AdminPlatform() {
       ) : null}
 
       <div className="mt-4">
-        <DataTable
-          table={table}
-          widths={widths}
-          onRowClick={(row) => router.push(`/admin/platform/${row.original.id}`)}
-          loading={!marketplaces && !error}
-          empty={query ? `No marketplace matches “${query}”.` : "No marketplaces yet."}
-        />
+        <RowContext.Provider value={{ open: openMarketplace, edit: setEditing }}>
+          <DataTable
+            table={table}
+            widths={widths}
+            onRowClick={(row) => openMarketplace(row.original)}
+            loading={!marketplaces && !error}
+            empty={query ? `No marketplace matches “${query}”.` : "No marketplaces yet."}
+          />
+        </RowContext.Provider>
       </div>
 
       {adding && marketplaces ? (
         <AddMarketplaceDialog
           taken={marketplaces.map((marketplace) => marketplace.code)}
           onClose={() => setAdding(false)}
+          onDone={reload}
+        />
+      ) : null}
+      {editing ? (
+        <MarketplaceDialog
+          marketplace={editing}
+          onClose={() => setEditing(undefined)}
           onDone={reload}
         />
       ) : null}

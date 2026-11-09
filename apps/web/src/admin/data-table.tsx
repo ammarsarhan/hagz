@@ -118,8 +118,8 @@ function SkeletonRows({ columns }: { columns: string[] }) {
         <tr key={rowIndex} aria-hidden className="border-b border-border">
           {columns.map((column, columnIndex) => (
             <td key={column} className="h-12 px-3">
-              {/* Columns with no heading (the menu, the row's ›) stay empty. */}
-              {column === "menu" || column === "open" ? null : (
+              {/* The menu column has no heading and stays empty. */}
+              {column === "menu" ? null : (
                 <Skeleton className={`h-3 ${lengths[(rowIndex + columnIndex) % lengths.length]}`} />
               )}
             </td>
