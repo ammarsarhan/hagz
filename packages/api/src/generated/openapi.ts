@@ -5269,6 +5269,8 @@ export interface components {
             names: components["schemas"]["Names"];
             childCount: number;
             venueCount: number;
+            /** Format: date-time */
+            createdAt: string;
         };
         CreateLocation: {
             /**

@@ -1938,6 +1938,10 @@
           },
           "venueCount": {
             "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -1947,7 +1951,8 @@
           "slug",
           "names",
           "childCount",
-          "venueCount"
+          "venueCount",
+          "createdAt"
         ]
       },
       "CreateLocation": {

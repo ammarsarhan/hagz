@@ -116,6 +116,7 @@ export const AdminLocation = z
     names: Names,
     childCount: z.int(),
     venueCount: z.int(),
+    createdAt: z.iso.datetime(),
   })
   .meta({ id: "AdminLocation" });
 
