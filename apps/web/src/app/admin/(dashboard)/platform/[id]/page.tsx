@@ -22,7 +22,7 @@ import { useParams } from "next/navigation";
 import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
+import { Count, DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
 import { send } from "@/admin/errors";
 import {
   AmenityDialog,
@@ -143,9 +143,7 @@ const columns = helper.columns([
   helper.display({
     id: "venues",
     header: "Venues",
-    cell: ({ row }) => (
-      <span className="text-ink-2">{row.original.location.venueCount.toLocaleString("en")}</span>
-    ),
+    cell: ({ row }) => <Count value={row.original.location.venueCount} />,
   }),
   helper.display({ id: "menu", header: "", cell: ({ row }) => <LocationMenu row={row} /> }),
 ]);

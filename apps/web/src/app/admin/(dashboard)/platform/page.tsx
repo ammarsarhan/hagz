@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { Count, DataTable, TableSearch, Tag } from "@/admin/data-table";
 import { PageHeader } from "@/admin/page-header";
 import { useMarketplaces } from "@/admin/platform/model";
 
@@ -73,7 +73,7 @@ const columns = helper.columns([
   helper.display({
     id: "venues",
     header: "Venues",
-    cell: ({ row: { original: m } }) => <span className="text-ink-2">{count(m.venueCount)}</span>,
+    cell: ({ row: { original: m } }) => <Count value={m.venueCount} />,
   }),
   helper.display({
     id: "status",

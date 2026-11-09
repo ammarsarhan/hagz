@@ -142,6 +142,15 @@ export function Tag({
   );
 }
 
+// A count in a cell, or "None" when there's nothing to count.
+export function Count({ value }: { value: number }) {
+  return value > 0 ? (
+    <span className="text-ink-2">{value.toLocaleString("en")}</span>
+  ) : (
+    <span className="text-ink-3">None</span>
+  );
+}
+
 export interface MenuItem {
   label: string;
   icon: Icon;
