@@ -25,14 +25,32 @@ export function AddMarketplaceDialog({
   onDone: () => void;
 }) {
   const [country, setCountry] = useState<Country>();
+  const steps = [
+    {
+      label: "Country",
+      value: country ? (
+        <>
+          <Flag code={country.code} size="0.875rem" />
+          {countryNames(country.code).en}
+        </>
+      ) : undefined,
+    },
+    { label: "Details" },
+  ];
+  const frame = {
+    onClose,
+    title: "Add marketplace",
+    steps,
+    onStep: () => setCountry(undefined),
+  };
 
   if (!country) {
     return (
-      <ChooserDialog onClose={onClose} title="Add marketplace">
-        <ChooserSection
-          title="Choose a country"
-          description="Its currency, dial code and time zone come with it. It starts hidden from the apps."
-        >
+      <ChooserDialog {...frame} step={0} heading="Choose a country">
+        <p className="text-label text-ink-2">
+          Its currency, dial code and time zone come with it. It starts hidden from the apps.
+        </p>
+        <ChooserSection columns={2}>
           {countries.map((option) => {
             const added = taken.includes(option.code);
             return (
@@ -55,25 +73,16 @@ export function AddMarketplaceDialog({
     );
   }
 
-  return (
-    <Details
-      country={country}
-      onBack={() => setCountry(undefined)}
-      onClose={onClose}
-      onDone={onDone}
-    />
-  );
+  return <Details frame={frame} country={country} onDone={onDone} />;
 }
 
 function Details({
+  frame,
   country,
-  onBack,
-  onClose,
   onDone,
 }: {
+  frame: Omit<Parameters<typeof ChooserDialog>[0], "children">;
   country: Country;
-  onBack: () => void;
-  onClose: () => void;
   onDone: () => void;
 }) {
   const names = countryNames(country.code);
@@ -83,17 +92,18 @@ function Details({
     tax: String(country.vat),
     commission: "",
   });
-  const { busy, error, setError, run } = useSubmit(onDone, onClose);
+  const { busy, error, run } = useSubmit(onDone, frame.onClose);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm({ ...form, [field]: event.target.value });
 
+  const taxRate = basisPoints(form.tax);
+  const commissionRate = basisPoints(form.commission);
+  // Like the sign-in page: the button stays grey until everything it needs is there.
+  const ready =
+    form.en.trim() !== "" && form.ar.trim() !== "" && taxRate !== null && commissionRate !== null;
+
   const submit = () => {
-    const taxRate = basisPoints(form.tax);
-    const commissionRate = basisPoints(form.commission);
-    if (taxRate === null || commissionRate === null) {
-      setError("VAT and commission are percentages between 0 and 100.");
-      return;
-    }
+    if (!ready) return;
     void run(
       send(
         api.POST("/v1/admin/marketplaces", {
@@ -113,20 +123,26 @@ function Details({
 
   return (
     <ChooserDialog
-      onClose={onClose}
-      onBack={onBack}
-      title={
+      {...frame}
+      step={1}
+      heading={
         <>
           <Flag code={country.code} size="1.25rem" />
-          Add {names.en}
+          {names.en}
         </>
       }
       footer={
         <>
-          <Button variant="secondary" size="small" onClick={onClose} disabled={busy}>
+          <Button variant="secondary" size="medium" onClick={frame.onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" form="add-marketplace" size="small" loading={busy}>
+          <Button
+            type="submit"
+            form="add-marketplace"
+            size="medium"
+            loading={busy}
+            disabled={!ready}
+          >
             Add marketplace
           </Button>
         </>
@@ -143,7 +159,7 @@ function Details({
         <p className="text-label text-ink-2">
           {country.code} · {country.currency} · {country.dialCode} · {country.timezone}
         </p>
-        <div className="grid grid-cols-2 gap-4 rounded-card border border-border bg-white p-4">
+        <div className="grid grid-cols-2 gap-4">
           <Field label="English name" value={form.en} onChange={set("en")} required />
           <Field label="Arabic name" dir="rtl" value={form.ar} onChange={set("ar")} required />
           <Field

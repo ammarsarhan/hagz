@@ -39,6 +39,11 @@ const kindIcon: Record<Locality, Icon> = {
   NEIGHBORHOOD: IconHome,
 };
 
+function KindIcon({ kind, size = "1rem" }: { kind: Locality; size?: string }) {
+  const Item = kindIcon[kind];
+  return <Item style={{ width: size, height: size }} stroke={1.75} />;
+}
+
 const rank = (kind: Locality) => kindOrder.indexOf(kind);
 const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
 
@@ -105,26 +110,39 @@ export function AddLocationDialog({
     return `${containers.has("TOP") ? "Top level, or inside" : "Inside"} ${article(list)} ${list}`;
   };
 
-  const where = parent ? `in ${parent.names.en}` : `in ${marketplace.names.en}`;
+  const frame = {
+    onClose,
+    title: "Add location",
+    steps: [
+      {
+        label: "Kind",
+        value: kind ? (
+          <>
+            <KindIcon kind={kind} size="0.875rem" />
+            {localityLabel[kind]}
+          </>
+        ) : undefined,
+      },
+      { label: "Details" },
+    ],
+    onStep: () => setKind(undefined),
+  };
 
   if (!kind) {
     return (
-      <ChooserDialog onClose={onClose} title={`Add location ${where}`}>
-        <ChooserSection
-          title="What are you adding?"
-          description={
-            parent
-              ? `It goes inside ${parent.names.en}.`
-              : "Top-level places first, then the ones inside them."
-          }
-        >
+      <ChooserDialog {...frame} step={0} heading="What are you adding?">
+        <p className="text-label text-ink-2">
+          {parent
+            ? `It goes inside ${parent.names.en}.`
+            : `In ${marketplace.names.en}: top-level places first, then the ones inside them.`}
+        </p>
+        <ChooserSection columns={2}>
           {kinds.map((option, index) => {
-            const Item = kindIcon[option];
             const role = parent ? `Inside ${parent.names.en}` : roleOf(option, index);
             return (
               <ChoiceCard
                 key={option}
-                icon={<Item size={16} className="size-4" stroke={1.75} />}
+                icon={<KindIcon kind={option} />}
                 title={localityLabel[option]}
                 description={
                   <>
@@ -146,36 +164,33 @@ export function AddLocationDialog({
 
   return (
     <Details
+      frame={frame}
       marketplace={marketplace}
       locations={locations}
       parent={parent}
       kind={kind}
       topLevel={!parent && kind === kinds[0]}
-      onBack={() => setKind(undefined)}
-      onClose={onClose}
       onDone={onDone}
     />
   );
 }
 
 function Details({
+  frame,
   marketplace,
   locations,
   parent,
   kind,
   topLevel,
-  onBack,
-  onClose,
   onDone,
 }: {
+  frame: Omit<Parameters<typeof ChooserDialog>[0], "children">;
   marketplace: AdminMarketplace;
   locations: AdminLocation[];
   parent?: AdminLocation | null;
   kind: Locality;
   // The coarsest kind: starts at the top of the tree rather than inside something.
   topLevel: boolean;
-  onBack: () => void;
-  onClose: () => void;
   onDone: () => void;
 }) {
   // Where it can go: the top, or inside anything coarser than it, labelled by its full path.
@@ -197,10 +212,13 @@ function Details({
     en: "",
     ar: "",
   });
-  const { busy, error, run } = useSubmit(onDone, onClose);
+  const { busy, error, run } = useSubmit(onDone, frame.onClose);
   const label = localityLabel[kind].toLowerCase();
+  // Like the sign-in page: the button stays grey until both names are there.
+  const ready = form.en.trim() !== "" && form.ar.trim() !== "";
 
   const submit = () =>
+    ready &&
     void run(
       send(
         api.POST("/v1/admin/marketplaces/{id}/locations", {
@@ -214,26 +232,22 @@ function Details({
       ),
     );
 
-  const Item = kindIcon[kind];
   return (
     <ChooserDialog
-      onClose={onClose}
-      onBack={onBack}
-      title={
+      {...frame}
+      step={1}
+      heading={
         <>
-          <span className="flex size-7 items-center justify-center rounded-full bg-chip">
-            <Item size={15} className="size-[0.9375rem]" stroke={1.75} />
-          </span>
-          Add {article(label)} {label}
+          New {label}
           {parent ? ` in ${parent.names.en}` : ""}
         </>
       }
       footer={
         <>
-          <Button variant="secondary" size="small" onClick={onClose} disabled={busy}>
+          <Button variant="secondary" size="medium" onClick={frame.onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" form="add-location" size="small" loading={busy}>
+          <Button type="submit" form="add-location" size="medium" loading={busy} disabled={!ready}>
             Add {label}
           </Button>
         </>
@@ -247,7 +261,7 @@ function Details({
           submit();
         }}
       >
-        <div className="flex flex-col gap-4 rounded-card border border-border bg-white p-4">
+        <div className="flex flex-col gap-4">
           {parent ? null : (
             <SelectField
               label="Inside"
