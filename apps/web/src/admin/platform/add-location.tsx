@@ -1,18 +1,6 @@
 "use client";
 
 import type { AdminLocation, AdminMarketplace, Locality } from "@hagz/contracts";
-import {
-  IconBuildingCastle,
-  IconBuildingCommunity,
-  IconBuildingSkyscraper,
-  IconHome,
-  IconLayoutGrid,
-  IconMap,
-  IconMap2,
-  IconMapPin,
-  IconMapPins,
-  type Icon,
-} from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
@@ -20,29 +8,13 @@ import { ChoiceCard, ChooserDialog, ChooserSection } from "@/admin/chooser";
 import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
+import { KindIcon } from "./kind-icon";
 import { useSubmit } from "./forms";
 import { byName, localityLabel } from "./model";
 
 // Add location, in two steps: pick what kind of place it is from cards (one per kind this
 // marketplace is divided into, each with real examples from its locations), then say where it
 // sits and name it. Opened from a row's menu, the parent is fixed and only finer kinds are offered.
-
-const kindIcon: Record<Locality, Icon> = {
-  REGION: IconMap,
-  EMIRATE: IconBuildingCastle,
-  GOVERNORATE: IconMap2,
-  MUNICIPALITY: IconBuildingCommunity,
-  WILAYAT: IconMapPins,
-  CITY: IconBuildingSkyscraper,
-  DISTRICT: IconLayoutGrid,
-  AREA: IconMapPin,
-  NEIGHBORHOOD: IconHome,
-};
-
-function KindIcon({ kind, size = "1rem" }: { kind: Locality; size?: string }) {
-  const Item = kindIcon[kind];
-  return <Item style={{ width: size, height: size }} stroke={1.75} />;
-}
 
 const rank = (kind: Locality) => kindOrder.indexOf(kind);
 // The "Inside" value for the top of the tree ("" means nothing picked yet).
