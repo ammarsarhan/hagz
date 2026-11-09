@@ -192,6 +192,10 @@ export default function AdminPlatform() {
       {editing ? (
         <EditMarketplacePanel
           marketplace={editing}
+          lastLive={
+            editing.isActive &&
+            !(marketplaces ?? []).some((other) => other.isActive && other.id !== editing.id)
+          }
           onClose={() => setEditing(undefined)}
           onDone={reload}
         />

@@ -50,10 +50,13 @@ export const basisPoints = (text: string) => {
 // Edit marketplace, in a side panel over the list.
 export function EditMarketplacePanel({
   marketplace,
+  lastLive,
   onClose,
   onDone,
 }: {
   marketplace: AdminMarketplace;
+  // The only live marketplace: the API won't hide it (LAST_LIVE_MARKETPLACE), so the switch is locked.
+  lastLive: boolean;
   onClose: Close;
   onDone: Done;
 }) {
@@ -157,8 +160,13 @@ export function EditMarketplacePanel({
         </div>
         <Toggle
           label="Live in the apps"
-          hint="Hidden marketplaces don't show to customers or staff."
+          hint={
+            lastLive
+              ? "It's the only live marketplace. Make another one live before hiding it."
+              : "Hidden marketplaces don't show to customers or staff."
+          }
           checked={form.isActive}
+          disabled={lastLive}
           onChange={(isActive) => setForm({ ...form, isActive })}
         />
         <ErrorNote error={error} />
@@ -292,16 +300,21 @@ function Toggle({
   label,
   hint,
   checked,
+  disabled = false,
   onChange,
 }: {
   label: string;
   hint: string;
   checked: boolean;
+  // Locked in place, with the hint saying why.
+  disabled?: boolean;
   onChange: (checked: boolean) => void;
 }) {
   return (
     // Set a little apart from the fields above: it's a setting, not part of the data.
-    <label className="mt-2 flex cursor-pointer items-center justify-between gap-6">
+    <label
+      className={`mt-2 flex items-center justify-between gap-6 ${disabled ? "cursor-default" : "cursor-pointer"}`}
+    >
       <span className="flex flex-col">
         <span className="text-label font-medium text-ink">{label}</span>
         <span className="text-caption text-ink-2">{hint}</span>
@@ -310,12 +323,13 @@ function Toggle({
         type="checkbox"
         role="switch"
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
         className="peer sr-only"
       />
       <span
         aria-hidden
-        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ink peer-focus-visible:ring-offset-2 ${
+        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors peer-disabled:opacity-40 peer-focus-visible:ring-2 peer-focus-visible:ring-ink peer-focus-visible:ring-offset-2 ${
           checked ? "bg-ink" : "bg-[#d5d8dd]"
         }`}
       >
