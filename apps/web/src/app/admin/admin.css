@@ -89,3 +89,19 @@ input:-webkit-autofill:focus {
     animation-duration: 1ms;
   }
 }
+
+/* The error HUD (admin/hud.tsx) rises a little as it fades in. */
+@keyframes hud-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+.hud {
+  animation: hud-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud {
+    animation: none;
+  }
+}
