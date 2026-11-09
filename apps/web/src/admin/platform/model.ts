@@ -5,8 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { message, send } from "@/admin/errors";
 
-// The Platform page's data, with no design: what's loaded, how it nests, and what the page can do
-// with it. The view renders `data` and calls `actions`; the dialogs read `open`.
+// The Platform pages' data, with no design: what's loaded, how it nests, and what the pages can do
+// with it. The list page shows the marketplaces; a marketplace's page shows its locations and
+// amenities. The views render the data and call `actions`; the dialogs read `open`.
 
 export interface Loaded {
   marketplace: AdminMarketplace;
@@ -62,9 +63,8 @@ export type Open =
   | { form: "deleteLocation"; location: AdminLocation }
   | { form: "deleteAmenity"; amenity: AdminAmenity };
 
-// Everything the view can ask for.
+// Everything a marketplace's page can ask for.
 export interface Actions {
-  addMarketplace: () => void;
   editMarketplace: (marketplace: AdminMarketplace) => void;
   addLocation: (marketplace: AdminMarketplace, parent: AdminLocation | null) => void;
   editLocation: (marketplace: AdminMarketplace, location: AdminLocation) => void;
@@ -75,36 +75,46 @@ export interface Actions {
   deleteAmenity: (amenity: AdminAmenity) => void;
 }
 
-export function usePlatform() {
-  const [data, setData] = useState<Loaded[]>();
+// The list page: every marketplace with its counts. Nothing under them is fetched here.
+export function useMarketplaces() {
+  const [marketplaces, setMarketplaces] = useState<AdminMarketplace[]>();
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    void send(api.GET("/v1/admin/marketplaces")).then((result) => {
+      if (!result.ok) return setError(message(result.error));
+      setError(undefined);
+      setMarketplaces([...result.data.data].sort(byName));
+    });
+  }, []);
+
+  return { marketplaces, error };
+}
+
+// One marketplace's page. The API has no single-marketplace read, so it's found in the list, then
+// its locations and amenities are fetched. `missing` is a link to a marketplace that isn't there.
+export function useMarketplace(id: string) {
+  const [data, setData] = useState<Loaded>();
+  const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string>();
   const [open, setOpen] = useState<Open>();
 
   const load = useCallback(async () => {
-    const result = await send(api.GET("/v1/admin/marketplaces"));
-    if (!result.ok) {
-      setError(message(result.error));
-      return;
-    }
-    const loaded = await Promise.all(
-      result.data.data.map(async (marketplace) => {
-        const path = { params: { path: { id: marketplace.id } } };
-        const [locations, amenities] = await Promise.all([
-          send(api.GET("/v1/admin/marketplaces/{id}/locations", path)),
-          send(api.GET("/v1/admin/marketplaces/{id}/amenities", path)),
-        ]);
-        if (!locations.ok) throw locations.error;
-        if (!amenities.ok) throw amenities.error;
-        return { marketplace, locations: locations.data.data, amenities: amenities.data.data };
-      }),
-    ).catch((failure: unknown) => {
-      setError(message(failure));
-      return undefined;
-    });
-    if (!loaded) return;
+    const list = await send(api.GET("/v1/admin/marketplaces"));
+    if (!list.ok) return setError(message(list.error));
+    const marketplace = list.data.data.find((item) => item.id === id);
+    if (!marketplace) return setMissing(true);
+
+    const path = { params: { path: { id } } };
+    const [locations, amenities] = await Promise.all([
+      send(api.GET("/v1/admin/marketplaces/{id}/locations", path)),
+      send(api.GET("/v1/admin/marketplaces/{id}/amenities", path)),
+    ]);
+    if (!locations.ok) return setError(message(locations.error));
+    if (!amenities.ok) return setError(message(amenities.error));
     setError(undefined);
-    setData(loaded);
-  }, []);
+    setData({ marketplace, locations: locations.data.data, amenities: amenities.data.data });
+  }, [id]);
 
   useEffect(() => {
     void load();
@@ -112,7 +122,6 @@ export function usePlatform() {
 
   const actions = useMemo<Actions>(
     () => ({
-      addMarketplace: () => setOpen({ form: "marketplace" }),
       editMarketplace: (marketplace) => setOpen({ form: "marketplace", marketplace }),
       addLocation: (marketplace, parent) => setOpen({ form: "location", marketplace, parent }),
       editLocation: (marketplace, location) => setOpen({ form: "location", marketplace, location }),
@@ -134,6 +143,7 @@ export function usePlatform() {
 
   return {
     data,
+    missing,
     error,
     open,
     actions,
