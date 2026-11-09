@@ -136,11 +136,6 @@ const columns = helper.columns([
     cell: ({ row }) => <Tag>{localityLabel[row.original.location.locality]}</Tag>,
   }),
   helper.display({
-    id: "slug",
-    header: "Slug",
-    cell: ({ row }) => <span className="text-ink-2">{row.original.location.slug}</span>,
-  }),
-  helper.display({
     id: "venues",
     header: "Venues",
     cell: ({ row }) => <Count value={row.original.location.venueCount} />,
@@ -148,16 +143,16 @@ const columns = helper.columns([
   helper.display({ id: "menu", header: "", cell: ({ row }) => <LocationMenu row={row} /> }),
 ]);
 
-const widths = { arabic: "18%", kind: "14%", slug: "18%", venues: "9%", menu: "3.5rem" };
+const widths = { arabic: "22%", kind: "16%", venues: "10%", menu: "3.5rem" };
 
-// The tree cut down to what matches the English or Arabic name or the slug, with the parents of
+// The tree cut down to what matches the English or Arabic name, with the parents of
 // every match kept so it shows where it sits. A match keeps everything under it.
 const search = (nodes: LocationNode[], query: string): LocationNode[] => {
   const q = query.trim().toLowerCase();
   if (!q) return nodes;
   return nodes.flatMap((node) => {
-    const { names, slug } = node.location;
-    if ([names.en, names.ar, slug].some((text) => text.toLowerCase().includes(q))) return [node];
+    const { names } = node.location;
+    if ([names.en, names.ar].some((text) => text.toLowerCase().includes(q))) return [node];
     const children = search(node.children, query);
     return children.length > 0 ? [{ ...node, children }] : [];
   });
