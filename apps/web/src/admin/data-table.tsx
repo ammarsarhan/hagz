@@ -11,7 +11,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 // The admin's one table, after the user's references (Mobbin's Skills list, Attio's Members):
-// small uppercase headers over a hairline, quiet rows split by hairlines, a grey wash on hover.
+// small grey headers over a hairline, quiet rows split by hairlines, a grey wash on hover.
 // Pages build the TanStack table (columns, features, state); this only draws it.
 
 export function DataTable<TFeatures extends TableFeatures, TData extends RowData>({
@@ -45,7 +45,7 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
             <th
               key={header.id}
               scope="col"
-              className="px-3 py-2.5 text-left text-[0.75rem] font-medium tracking-[0.04em] text-ink-2 uppercase"
+              className="px-3 py-2.5 text-left text-caption font-medium text-ink-2"
             >
               <FlexRender header={header} />
             </th>
