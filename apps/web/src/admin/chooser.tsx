@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Dialog } from "./dialog";
 
 // The add flows' modal, after the user's reference (Intercom's "Add content"), all white: a title
-// bar with the step's title and a line under it, × on the right (and ← back on a later step),
+// bar with ← back (on a later step) and × at opposite ends above the step's title and a line under it,
 // bordered cards, and buttons pinned under the body.
 
 export function ChooserDialog({
@@ -28,31 +28,34 @@ export function ChooserDialog({
   return (
     <Dialog open wide onClose={onClose}>
       <div className="flex max-h-[85vh] flex-col">
-        <header className="flex shrink-0 items-start gap-3 px-7 pt-7 pb-2">
-          {onBack ? (
+        <header className="shrink-0 px-7 pt-5 pb-2">
+          {/* ← and × on their own row above the title, at opposite edges. */}
+          <div className="-mx-1.5 flex items-center justify-between">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Back"
+                className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
+              >
+                <IconArrowLeft size={20} className="size-5" stroke={1.75} />
+              </button>
+            ) : (
+              <span />
+            )}
             <button
               type="button"
-              onClick={onBack}
-              aria-label="Back"
-              className="-ml-1.5 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
             >
-              <IconArrowLeft size={20} className="size-5" stroke={1.75} />
+              <IconX size={20} className="size-5" stroke={1.75} />
             </button>
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
-              {title}
-            </h2>
-            {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="-mr-1.5 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
-          >
-            <IconX size={20} className="size-5" stroke={1.75} />
-          </button>
+          <h2 className="mt-3 flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
+            {title}
+          </h2>
+          {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-7 pt-6 pb-8">{children}</div>
         {footer ? (
