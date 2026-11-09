@@ -21,7 +21,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "@/admin/api";
-import { Button } from "@/admin/button";
 import { Count, DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
 import { send } from "@/admin/errors";
 import {
@@ -197,7 +196,7 @@ export default function AdminMarketplacePage() {
       <Breadcrumb current={marketplace?.names.en ?? "…"} />
 
       <div className="mt-4 border-b border-border pb-6">
-        <header className="flex items-start justify-between gap-6">
+        <header>
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-title font-semibold text-ink">
@@ -219,27 +218,11 @@ export default function AdminMarketplacePage() {
               </p>
             ) : null}
           </div>
-          {marketplace ? (
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => actions.editMarketplace(marketplace)}
-            >
-              <IconPencil size={16} className="size-4" stroke={1.75} />
-              Edit marketplace
-            </Button>
-          ) : null}
         </header>
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-2">
+      <div className="mt-6 flex items-center gap-2">
         <TableSearch value={query} onChange={setQuery} placeholder="Search locations…" />
-        {marketplace ? (
-          <Button size="small" onClick={() => actions.addLocation(marketplace, null)}>
-            <IconPlus size={16} className="size-4" stroke={2} />
-            Add location
-          </Button>
-        ) : null}
       </div>
 
       {error ? (
@@ -258,7 +241,7 @@ export default function AdminMarketplacePage() {
                 ? "Loading…"
                 : searching
                   ? `No location matches “${query}”.`
-                  : "No locations yet. Add the first one."
+                  : "No locations yet."
             }
           />
         </RowContext.Provider>
