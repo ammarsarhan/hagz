@@ -3,7 +3,8 @@
 import type { AdminAmenity, AdminLocation, AdminMarketplace } from "@hagz/contracts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/admin/api";
-import { message, send } from "@/admin/errors";
+import { message, notTheirFault, send } from "@/admin/errors";
+import { useHud } from "@/admin/hud";
 
 // The Platform pages' data, with no design: what's loaded, how it nests, and what the pages can do
 // with it. The list page shows the marketplaces; a marketplace's page shows its locations and
@@ -73,17 +74,31 @@ export interface Actions {
   deleteAmenity: (amenity: AdminAmenity) => void;
 }
 
+// A load that failed: the page shows the message where the data would be, and when it isn't the
+// admin's fault (no answer, a server error) the HUD says so too, with Try again.
+const failed = (
+  error: unknown,
+  setError: (message: string) => void,
+  hud: ReturnType<typeof useHud>,
+  retry?: () => void,
+) => {
+  const text = message(error);
+  setError(text);
+  if (notTheirFault(error)) hud(text, retry ? { label: "Try again", run: retry } : undefined);
+};
+
 // The list page: every marketplace with its counts. Nothing under them is fetched here.
 export function useMarketplaces() {
   const [marketplaces, setMarketplaces] = useState<AdminMarketplace[]>();
   const [error, setError] = useState<string>();
+  const hud = useHud();
 
   const load = useCallback(async () => {
     const result = await send(api.GET("/v1/admin/marketplaces"));
-    if (!result.ok) return setError(message(result.error));
+    if (!result.ok) return failed(result.error, setError, hud, () => void load());
     setError(undefined);
     setMarketplaces([...result.data.data].sort(byName));
-  }, []);
+  }, [hud]);
 
   useEffect(() => {
     void load();
@@ -99,10 +114,12 @@ export function useMarketplace(id: string) {
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string>();
   const [open, setOpen] = useState<Open>();
+  const hud = useHud();
 
   const load = useCallback(async () => {
+    const retry = () => void load();
     const list = await send(api.GET("/v1/admin/marketplaces"));
-    if (!list.ok) return setError(message(list.error));
+    if (!list.ok) return failed(list.error, setError, hud, retry);
     const marketplace = list.data.data.find((item) => item.id === id);
     if (!marketplace) return setMissing(true);
 
@@ -111,11 +128,11 @@ export function useMarketplace(id: string) {
       send(api.GET("/v1/admin/marketplaces/{id}/locations", path)),
       send(api.GET("/v1/admin/marketplaces/{id}/amenities", path)),
     ]);
-    if (!locations.ok) return setError(message(locations.error));
-    if (!amenities.ok) return setError(message(amenities.error));
+    if (!locations.ok) return failed(locations.error, setError, hud, retry);
+    if (!amenities.ok) return failed(amenities.error, setError, hud, retry);
     setError(undefined);
     setData({ marketplace, locations: locations.data.data, amenities: amenities.data.data });
-  }, [id]);
+  }, [id, hud]);
 
   useEffect(() => {
     void load();
@@ -134,11 +151,11 @@ export function useMarketplace(id: string) {
             params: { path: { id: amenity.id } },
             body: { isActive: !amenity.isActive },
           }),
-        ).then((result) => (result.ok ? load() : setError(message(result.error))));
+        ).then((result) => (result.ok ? load() : failed(result.error, setError, hud)));
       },
       deleteAmenity: (amenity) => setOpen({ form: "deleteAmenity", amenity }),
     }),
-    [load],
+    [load, hud],
   );
 
   return {

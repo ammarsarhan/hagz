@@ -164,12 +164,6 @@ export default function AdminPlatform() {
         <TableSearch value={query} onChange={setQuery} placeholder="Search marketplaces…" />
       </div>
 
-      {error ? (
-        <p role="alert" className="mt-4 rounded-field bg-red/10 px-4 py-3 text-label text-red">
-          {error}
-        </p>
-      ) : null}
-
       <div className="mt-4">
         <RowContext.Provider value={{ open: openMarketplace, edit: setEditing }}>
           <DataTable
@@ -177,7 +171,7 @@ export default function AdminPlatform() {
             widths={widths}
             onRowClick={(row) => openMarketplace(row.original)}
             loading={!marketplaces && !error}
-            empty={query ? `No marketplace matches “${query}”.` : "No marketplaces yet."}
+            empty={error ?? (query ? `No marketplace matches “${query}”.` : "No marketplaces yet.")}
           />
         </RowContext.Provider>
       </div>

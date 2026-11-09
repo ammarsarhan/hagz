@@ -259,19 +259,13 @@ export default function AdminMarketplacePage() {
         </Button>
       </div>
 
-      {error ? (
-        <p role="alert" className="mt-4 rounded-field bg-red/10 px-4 py-3 text-label text-red">
-          {error}
-        </p>
-      ) : null}
-
       <div className="mt-4">
         <RowContext.Provider value={marketplace ? { actions, marketplace } : null}>
           <DataTable
             table={table}
             widths={widths}
             loading={!data && !error}
-            empty={searching ? `No location matches “${query}”.` : "No locations yet."}
+            empty={error ?? (searching ? `No location matches “${query}”.` : "No locations yet.")}
           />
         </RowContext.Provider>
       </div>
