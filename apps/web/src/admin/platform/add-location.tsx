@@ -130,12 +130,16 @@ export function AddLocationDialog({
 
   if (!kind) {
     return (
-      <ChooserDialog {...frame} step={0} heading="What are you adding?">
-        <p className="text-label text-ink-2">
-          {parent
+      <ChooserDialog
+        {...frame}
+        step={0}
+        heading="What are you adding?"
+        description={
+          parent
             ? `It goes inside ${parent.names.en}.`
-            : `In ${marketplace.names.en}: top-level places first, then the ones inside them.`}
-        </p>
+            : `In ${marketplace.names.en}: top-level places first, then the ones inside them.`
+        }
+      >
         <ChooserSection columns={2}>
           {kinds.map((option, index) => {
             const role = parent ? `Inside ${parent.names.en}` : roleOf(option, index);

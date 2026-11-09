@@ -46,10 +46,12 @@ export function AddMarketplaceDialog({
 
   if (!country) {
     return (
-      <ChooserDialog {...frame} step={0} heading="Choose a country">
-        <p className="text-label text-ink-2">
-          Its currency, dial code and time zone come with it. It starts hidden from the apps.
-        </p>
+      <ChooserDialog
+        {...frame}
+        step={0}
+        heading="Choose a country"
+        description="Its currency, dial code and time zone come with it. It starts hidden from the apps."
+      >
         <ChooserSection columns={2}>
           {countries.map((option) => {
             const added = taken.includes(option.code);
@@ -125,6 +127,7 @@ function Details({
     <ChooserDialog
       {...frame}
       step={1}
+      description={`${country.code} · ${country.currency} · ${country.dialCode} · ${country.timezone}`}
       heading={
         <>
           <Flag code={country.code} size="1.25rem" />
@@ -156,9 +159,6 @@ function Details({
           submit();
         }}
       >
-        <p className="text-label text-ink-2">
-          {country.code} · {country.currency} · {country.dialCode} · {country.timezone}
-        </p>
         <div className="grid grid-cols-2 gap-4">
           <Field label="English name" value={form.en} onChange={set("en")} required />
           <Field label="Arabic name" dir="rtl" value={form.ar} onChange={set("ar")} required />
