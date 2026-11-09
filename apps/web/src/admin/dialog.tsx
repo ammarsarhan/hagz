@@ -8,10 +8,13 @@ import { Button } from "./button";
 export function Dialog({
   open,
   onClose,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  // The chooser size (48rem), for a grid of cards; forms are 30rem.
+  wide?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -26,7 +29,7 @@ export function Dialog({
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-[30rem] max-w-[calc(100vw-2rem)] rounded-hud bg-white p-0 text-ink shadow-xl backdrop:bg-scrim"
+      className={`m-auto ${wide ? "w-[48rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-hud bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
     >
       {open ? children : null}
     </dialog>
