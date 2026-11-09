@@ -138,9 +138,7 @@ const columns = helper.columns([
   helper.display({
     id: "slug",
     header: "Slug",
-    cell: ({ row }) => (
-      <code className="text-caption text-ink-2">{row.original.location.slug}</code>
-    ),
+    cell: ({ row }) => <span className="text-ink-2">{row.original.location.slug}</span>,
   }),
   helper.display({
     id: "venues",
