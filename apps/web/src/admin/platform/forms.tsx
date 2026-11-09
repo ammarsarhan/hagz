@@ -21,7 +21,7 @@ type Close = () => void;
 type Done = () => void;
 
 // Shared submit plumbing: busy while waiting, the error if refused, close and reload if not.
-const useSubmit = (onDone: Done, onClose: Close) => {
+export const useSubmit = (onDone: Done, onClose: Close) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const run = async (request: Promise<{ ok: boolean; error?: unknown }>) => {
@@ -40,7 +40,7 @@ const useSubmit = (onDone: Done, onClose: Close) => {
 };
 
 // Percent typed by a person ("14", "2.5") to basis points; null when it isn't a valid rate.
-const basisPoints = (text: string) => {
+export const basisPoints = (text: string) => {
   const value = Number(text.trim());
   if (text.trim() === "" || !Number.isFinite(value) || value < 0 || value > 100) return null;
   return Math.round(value * 100);

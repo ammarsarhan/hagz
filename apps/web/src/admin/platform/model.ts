@@ -80,15 +80,18 @@ export function useMarketplaces() {
   const [marketplaces, setMarketplaces] = useState<AdminMarketplace[]>();
   const [error, setError] = useState<string>();
 
-  useEffect(() => {
-    void send(api.GET("/v1/admin/marketplaces")).then((result) => {
-      if (!result.ok) return setError(message(result.error));
-      setError(undefined);
-      setMarketplaces([...result.data.data].sort(byName));
-    });
+  const load = useCallback(async () => {
+    const result = await send(api.GET("/v1/admin/marketplaces"));
+    if (!result.ok) return setError(message(result.error));
+    setError(undefined);
+    setMarketplaces([...result.data.data].sort(byName));
   }, []);
 
-  return { marketplaces, error };
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { marketplaces, error, reload: () => void load() };
 }
 
 // One marketplace's page. The API has no single-marketplace read, so it's found in the list, then

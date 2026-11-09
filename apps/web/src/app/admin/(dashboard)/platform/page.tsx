@@ -1,7 +1,7 @@
 "use client";
 
 import type { AdminMarketplace } from "@hagz/contracts";
-import { IconChevronRight } from "@tabler/icons-react";
+import { IconChevronRight, IconPlus } from "@tabler/icons-react";
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -12,9 +12,11 @@ import {
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/admin/button";
 import { Count, DataTable, TableSearch, Tag } from "@/admin/data-table";
 import { Flag } from "@/admin/flag";
 import { PageHeader } from "@/admin/page-header";
+import { AddMarketplaceDialog } from "@/admin/platform/add-marketplace";
 import { useMarketplaces } from "@/admin/platform/model";
 
 // Platform: the marketplaces, after the user's reference (Mobbin's Skills list). Each row opens the
@@ -104,8 +106,9 @@ const matches = (m: AdminMarketplace, query: string) => {
 
 export default function AdminPlatform() {
   const router = useRouter();
-  const { marketplaces, error } = useMarketplaces();
+  const { marketplaces, error, reload } = useMarketplaces();
   const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const table = useTable({
     features,
@@ -124,6 +127,12 @@ export default function AdminPlatform() {
       <PageHeader
         title="Platform"
         subtitle="Marketplaces, their locations and the amenities venues can offer."
+        actions={
+          <Button size="small" onClick={() => setAdding(true)} disabled={!marketplaces}>
+            <IconPlus size={16} className="size-4" stroke={2} />
+            Add marketplace
+          </Button>
+        }
       />
 
       <div className="mt-8 flex items-center gap-2">
@@ -145,6 +154,14 @@ export default function AdminPlatform() {
           empty={query ? `No marketplace matches “${query}”.` : "No marketplaces yet."}
         />
       </div>
+
+      {adding && marketplaces ? (
+        <AddMarketplaceDialog
+          taken={marketplaces.map((marketplace) => marketplace.code)}
+          onClose={() => setAdding(false)}
+          onDone={reload}
+        />
+      ) : null}
     </>
   );
 }
