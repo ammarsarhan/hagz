@@ -1,17 +1,16 @@
 "use client";
 
-import type {
-  AdminAmenity,
-  AdminLocation,
-  AdminMarketplace,
-  CreateMarketplace,
-  Locality,
-} from "@hagz/contracts";
+import type { AdminAmenity, AdminLocation, AdminMarketplace, Locality } from "@hagz/contracts";
 import { useState } from "react";
 import { api } from "@/admin/api";
+import { Button } from "@/admin/button";
+import { ChooserDialog } from "@/admin/chooser";
 import { FormDialog } from "@/admin/dialog";
 import { message, send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
+import { Flag } from "@/admin/flag";
+import { kindOrder } from "./countries";
+import { KindIcon } from "./kind-icon";
 import { localityLabel } from "./model";
 
 // The Platform page's forms. Each one sends its request, shows the API's message if it's refused,
@@ -53,228 +52,268 @@ export function MarketplaceDialog({
   onClose,
   onDone,
 }: {
-  // Undefined to add one.
-  marketplace?: AdminMarketplace;
+  marketplace: AdminMarketplace;
   onClose: Close;
   onDone: Done;
 }) {
-  const editing = Boolean(marketplace);
-  const [form, setForm] = useState({
-    code: marketplace?.code ?? "",
-    en: marketplace?.names.en ?? "",
-    ar: marketplace?.names.ar ?? "",
-    currency: marketplace?.currency ?? "",
-    dialCode: marketplace?.dialCode ?? "+",
-    timezone: marketplace?.timezone ?? "",
-    tax: marketplace ? String(marketplace.taxRate / 100) : "",
-    commission: marketplace ? String(marketplace.commissionRate / 100) : "",
-    isActive: marketplace?.isActive ?? false,
-  });
-  const { busy, error, setError, run } = useSubmit(onDone, onClose);
+  const initial = {
+    en: marketplace.names.en,
+    ar: marketplace.names.ar,
+    tax: String(marketplace.taxRate / 100),
+    commission: String(marketplace.commissionRate / 100),
+    dialCode: marketplace.dialCode,
+    timezone: marketplace.timezone,
+    isActive: marketplace.isActive,
+  };
+  const [form, setForm] = useState(initial);
+  const { busy, error, run } = useSubmit(onDone, onClose);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm({ ...form, [field]: event.target.value });
-  const locked = marketplace?.inUse ?? false;
+
+  const taxRate = basisPoints(form.tax);
+  const commissionRate = basisPoints(form.commission);
+  const changed = (Object.keys(initial) as (keyof typeof initial)[]).some(
+    (field) => form[field] !== initial[field],
+  );
+  // Save stays grey until something changed and everything is valid.
+  const ready =
+    changed &&
+    form.en.trim() !== "" &&
+    form.ar.trim() !== "" &&
+    form.dialCode.trim() !== "" &&
+    form.timezone.trim() !== "" &&
+    taxRate !== null &&
+    commissionRate !== null;
 
   const submit = () => {
-    const taxRate = basisPoints(form.tax);
-    const commissionRate = basisPoints(form.commission);
-    if (taxRate === null || commissionRate === null) {
-      setError("VAT and commission are percentages between 0 and 100.");
-      return;
-    }
-    const body: CreateMarketplace = {
-      code: form.code.trim().toUpperCase(),
-      names: { en: form.en.trim(), ar: form.ar.trim() },
-      currency: form.currency.trim().toUpperCase(),
-      dialCode: form.dialCode.trim(),
-      timezone: form.timezone.trim(),
-      taxRate,
-      commissionRate,
-    };
+    if (!ready) return;
     void run(
-      marketplace
-        ? send(
-            api.PATCH("/v1/admin/marketplaces/{id}", {
-              params: { path: { id: marketplace.id } },
-              body: { ...body, isActive: form.isActive },
-            }),
-          )
-        : send(api.POST("/v1/admin/marketplaces", { body })),
+      send(
+        api.PATCH("/v1/admin/marketplaces/{id}", {
+          params: { path: { id: marketplace.id } },
+          body: {
+            names: { en: form.en.trim(), ar: form.ar.trim() },
+            dialCode: form.dialCode.trim(),
+            timezone: form.timezone.trim(),
+            taxRate,
+            commissionRate,
+            isActive: form.isActive,
+          },
+        }),
+      ),
     );
   };
 
   return (
-    <FormDialog
-      open
+    <ChooserDialog
       onClose={onClose}
-      title={editing ? `Edit ${marketplace?.names.en}` : "Add a marketplace"}
-      subtitle={editing ? undefined : "A country Hagz operates in. It starts hidden from the apps."}
-      submitLabel={editing ? "Save" : "Add marketplace"}
-      busy={busy}
-      error={error}
-      onSubmit={submit}
+      title={
+        <>
+          <Flag code={marketplace.code} size="1.25rem" />
+          Edit {marketplace.names.en}
+        </>
+      }
+      // The code and currency are fixed (the country picks them); say so where they're shown.
+      description={`${marketplace.code} · ${marketplace.currency}, fixed for this marketplace`}
+      footer={<EditButtons formId="edit-marketplace" onClose={onClose} busy={busy} ready={ready} />}
     >
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="English name" value={form.en} onChange={set("en")} required autoFocus />
-        <Field label="Arabic name" dir="rtl" value={form.ar} onChange={set("ar")} required />
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <Field
-          label="Country code"
-          placeholder="EG"
-          maxLength={2}
-          value={form.code}
-          onChange={set("code")}
-          disabled={locked}
-          required
-        />
-        <Field
-          label="Currency"
-          placeholder="EGP"
-          maxLength={3}
-          value={form.currency}
-          onChange={set("currency")}
-          disabled={locked}
-          required
-        />
-        <Field
-          label="Dial code"
-          placeholder="+20"
-          value={form.dialCode}
-          onChange={set("dialCode")}
-          required
-        />
-      </div>
-      {locked ? (
-        <p className="-mt-2 text-caption text-ink-2">
-          The country code and currency are fixed: it has locations, venues or amenities.
-        </p>
-      ) : null}
-      <Field
-        label="Time zone"
-        placeholder="Africa/Cairo"
-        value={form.timezone}
-        onChange={set("timezone")}
-        required
-      />
-      <div className="grid grid-cols-2 gap-4">
-        <Field
-          label="VAT (%)"
-          inputMode="decimal"
-          placeholder="14"
-          value={form.tax}
-          onChange={set("tax")}
-          required
-        />
-        <Field
-          label="Commission (%)"
-          inputMode="decimal"
-          placeholder="10"
-          value={form.commission}
-          onChange={set("commission")}
-          required
-        />
-      </div>
-      {editing ? (
-        <label className="flex cursor-pointer items-center gap-2.5 text-label text-ink">
-          <input
-            type="checkbox"
-            className="size-4 cursor-pointer accent-ink"
-            checked={form.isActive}
-            onChange={(event) => setForm({ ...form, isActive: event.target.checked })}
+      <form
+        id="edit-marketplace"
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="English name" value={form.en} onChange={set("en")} required />
+          <Field label="Arabic name" dir="rtl" value={form.ar} onChange={set("ar")} required />
+          <Field
+            label="VAT (%)"
+            inputMode="decimal"
+            value={form.tax}
+            onChange={set("tax")}
+            required
           />
-          Live in the apps
-        </label>
-      ) : null}
-      {editing ? (
+          <Field
+            label="Commission (%)"
+            inputMode="decimal"
+            value={form.commission}
+            onChange={set("commission")}
+            required
+          />
+        </div>
         <p className="-mt-2 text-caption text-ink-2">
           New VAT and commission apply to bookings made from now on.
         </p>
-      ) : null}
-    </FormDialog>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Dial code" value={form.dialCode} onChange={set("dialCode")} required />
+          <Field label="Time zone" value={form.timezone} onChange={set("timezone")} required />
+        </div>
+        <Toggle
+          label="Live in the apps"
+          hint="Hidden marketplaces don't show to customers or staff."
+          checked={form.isActive}
+          onChange={(isActive) => setForm({ ...form, isActive })}
+        />
+        <ErrorNote error={error} />
+      </form>
+    </ChooserDialog>
   );
 }
 
 // --- Location ---
 
-const localities = Object.entries(localityLabel).map(([value, label]) => ({ value, label }));
-
 export function LocationDialog({
   marketplace,
-  parent,
   location,
   onClose,
   onDone,
 }: {
   marketplace: AdminMarketplace;
-  // Adding: where it goes (null for the top). Editing: the location.
-  parent?: AdminLocation | null;
-  location?: AdminLocation;
+  location: AdminLocation;
   onClose: Close;
   onDone: Done;
 }) {
-  const [form, setForm] = useState({
-    en: location?.names.en ?? "",
-    ar: location?.names.ar ?? "",
-    // A child is usually one step finer than its parent; a sensible starting point only.
-    locality: (location?.locality ?? (parent ? "DISTRICT" : "GOVERNORATE")) as Locality,
-  });
+  const initial = { en: location.names.en, ar: location.names.ar, locality: location.locality };
+  const [form, setForm] = useState(initial);
   const { busy, error, run } = useSubmit(onDone, onClose);
-  const names = { en: form.en.trim(), ar: form.ar.trim() };
+  const changed =
+    form.en !== initial.en || form.ar !== initial.ar || form.locality !== initial.locality;
+  const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
 
-  const submit = () =>
+  const submit = () => {
+    if (!ready) return;
     void run(
-      location
-        ? send(
-            api.PATCH("/v1/admin/locations/{id}", {
-              params: { path: { id: location.id } },
-              body: { names, locality: form.locality },
-            }),
-          )
-        : send(
-            api.POST("/v1/admin/marketplaces/{id}/locations", {
-              params: { path: { id: marketplace.id } },
-              body: { parentId: parent?.id ?? null, locality: form.locality, names },
-            }),
-          ),
+      send(
+        api.PATCH("/v1/admin/locations/{id}", {
+          params: { path: { id: location.id } },
+          body: { names: { en: form.en.trim(), ar: form.ar.trim() }, locality: form.locality },
+        }),
+      ),
     );
+  };
 
-  const where = parent ? `Under ${parent.names.en}, ${marketplace.names.en}` : marketplace.names.en;
   return (
-    <FormDialog
-      open
+    <ChooserDialog
       onClose={onClose}
-      title={location ? `Edit ${location.names.en}` : "Add a location"}
-      subtitle={location ? `Slug: ${location.slug} (it doesn't change)` : where}
-      submitLabel={location ? "Save" : "Add location"}
-      busy={busy}
-      error={error}
-      onSubmit={submit}
+      title={
+        <>
+          <KindIcon kind={form.locality} size="1.25rem" />
+          Edit {location.names.en}
+        </>
+      }
+      // The slug is part of public URLs, so renaming doesn't change it; say so up front.
+      description={`${localityLabel[location.locality]} in ${marketplace.names.en} · /${location.slug}, which stays as it is`}
+      footer={<EditButtons formId="edit-location" onClose={onClose} busy={busy} ready={ready} />}
     >
-      <div className="grid grid-cols-2 gap-4">
-        <Field
-          label="English name"
-          hint={location ? undefined : "Also makes the slug in URLs."}
-          value={form.en}
-          onChange={(event) => setForm({ ...form, en: event.target.value })}
-          required
-          autoFocus
+      <form
+        id="edit-location"
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Field
+            label="English name"
+            value={form.en}
+            onChange={(event) => setForm({ ...form, en: event.target.value })}
+            required
+            autoFocus
+          />
+          <Field
+            label="Arabic name"
+            dir="rtl"
+            value={form.ar}
+            onChange={(event) => setForm({ ...form, ar: event.target.value })}
+            required
+          />
+        </div>
+        <SelectField
+          label="Kind"
+          options={kindOrder.map((kind) => ({ value: kind, label: localityLabel[kind] }))}
+          value={form.locality}
+          onChange={(event) => setForm({ ...form, locality: event.target.value as Locality })}
         />
-        <Field
-          label="Arabic name"
-          dir="rtl"
-          value={form.ar}
-          onChange={(event) => setForm({ ...form, ar: event.target.value })}
-          required
-        />
-      </div>
-      <SelectField
-        label="Kind"
-        options={localities}
-        value={form.locality}
-        onChange={(event) => setForm({ ...form, locality: event.target.value as Locality })}
+        <ErrorNote error={error} />
+      </form>
+    </ChooserDialog>
+  );
+}
+
+// --- Shared pieces of the edit modals ---
+
+function EditButtons({
+  formId,
+  onClose,
+  busy,
+  ready,
+}: {
+  formId: string;
+  onClose: Close;
+  busy: boolean;
+  ready: boolean;
+}) {
+  return (
+    <>
+      <Button variant="secondary" size="small" onClick={onClose} disabled={busy}>
+        Cancel
+      </Button>
+      <Button type="submit" form={formId} size="small" loading={busy} disabled={!ready}>
+        Save changes
+      </Button>
+    </>
+  );
+}
+
+function ErrorNote({ error }: { error?: string }) {
+  return error ? (
+    <p role="alert" className="rounded-field bg-red/10 px-4 py-3 text-label text-red">
+      {error}
+    </p>
+  ) : null;
+}
+
+// An on/off switch with its label and a line under it.
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-6 rounded-field border border-border px-4 py-3">
+      <span className="flex flex-col">
+        <span className="text-label font-medium text-ink">{label}</span>
+        <span className="text-caption text-ink-2">{hint}</span>
+      </span>
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
       />
-    </FormDialog>
+      <span
+        aria-hidden
+        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ink peer-focus-visible:ring-offset-2 ${
+          checked ? "bg-ink" : "bg-[#d5d8dd]"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-4" : ""
+          }`}
+        />
+      </span>
+    </label>
   );
 }
 

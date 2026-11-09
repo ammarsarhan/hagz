@@ -296,7 +296,6 @@ export default function AdminMarketplacePage() {
       {open?.form === "location" && open.location ? (
         <LocationDialog
           marketplace={open.marketplace}
-          parent={open.parent}
           location={open.location}
           onClose={close}
           onDone={reload}
