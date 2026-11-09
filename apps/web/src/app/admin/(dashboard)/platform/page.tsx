@@ -17,7 +17,7 @@ import { Count, DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table"
 import { Flag } from "@/admin/flag";
 import { PageHeader } from "@/admin/page-header";
 import { AddMarketplaceDialog } from "@/admin/platform/add-marketplace";
-import { MarketplaceDialog } from "@/admin/platform/forms";
+import { EditMarketplacePanel } from "@/admin/platform/forms";
 import { useMarketplaces } from "@/admin/platform/model";
 
 // Platform: the marketplaces, after the user's reference (Mobbin's Skills list). Each row opens the
@@ -190,7 +190,7 @@ export default function AdminPlatform() {
         />
       ) : null}
       {editing ? (
-        <MarketplaceDialog
+        <EditMarketplacePanel
           marketplace={editing}
           onClose={() => setEditing(undefined)}
           onDone={reload}

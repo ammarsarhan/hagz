@@ -52,7 +52,6 @@ export const locationTree = (locations: AdminLocation[]): LocationNode[] => {
 
 // Which form is open, with what it needs.
 export type Open =
-  | { form: "marketplace"; marketplace?: AdminMarketplace }
   | {
       form: "location";
       marketplace: AdminMarketplace;
@@ -65,7 +64,6 @@ export type Open =
 
 // Everything a marketplace's page can ask for.
 export interface Actions {
-  editMarketplace: (marketplace: AdminMarketplace) => void;
   addLocation: (marketplace: AdminMarketplace, parent: AdminLocation | null) => void;
   editLocation: (marketplace: AdminMarketplace, location: AdminLocation) => void;
   deleteLocation: (location: AdminLocation) => void;
@@ -125,7 +123,6 @@ export function useMarketplace(id: string) {
 
   const actions = useMemo<Actions>(
     () => ({
-      editMarketplace: (marketplace) => setOpen({ form: "marketplace", marketplace }),
       addLocation: (marketplace, parent) => setOpen({ form: "location", marketplace, parent }),
       editLocation: (marketplace, location) => setOpen({ form: "location", marketplace, location }),
       deleteLocation: (location) => setOpen({ form: "deleteLocation", location }),

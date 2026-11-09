@@ -26,12 +26,7 @@ import { Count, DataTable, RowMenu, Skeleton, TableSearch, Tag } from "@/admin/d
 import { Flag } from "@/admin/flag";
 import { send } from "@/admin/errors";
 import { AddLocationDialog } from "@/admin/platform/add-location";
-import {
-  AmenityDialog,
-  DeleteDialog,
-  LocationDialog,
-  MarketplaceDialog,
-} from "@/admin/platform/forms";
+import { AmenityDialog, DeleteDialog, EditLocationPanel } from "@/admin/platform/forms";
 import {
   localityLabel,
   locationTree,
@@ -281,9 +276,6 @@ export default function AdminMarketplacePage() {
         </RowContext.Provider>
       </div>
 
-      {open?.form === "marketplace" && open.marketplace ? (
-        <MarketplaceDialog marketplace={open.marketplace} onClose={close} onDone={reload} />
-      ) : null}
       {open?.form === "location" && !open.location && data ? (
         <AddLocationDialog
           marketplace={open.marketplace}
@@ -294,7 +286,7 @@ export default function AdminMarketplacePage() {
         />
       ) : null}
       {open?.form === "location" && open.location ? (
-        <LocationDialog
+        <EditLocationPanel
           marketplace={open.marketplace}
           location={open.location}
           onClose={close}

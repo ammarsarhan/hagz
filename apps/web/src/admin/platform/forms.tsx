@@ -4,7 +4,7 @@ import type { AdminAmenity, AdminLocation, AdminMarketplace, Locality } from "@h
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChooserDialog } from "@/admin/chooser";
+import { SidePanel } from "@/admin/side-panel";
 import { FormDialog } from "@/admin/dialog";
 import { message, send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
@@ -47,7 +47,8 @@ export const basisPoints = (text: string) => {
 
 // --- Marketplace ---
 
-export function MarketplaceDialog({
+// Edit marketplace, in a side panel over the list.
+export function EditMarketplacePanel({
   marketplace,
   onClose,
   onDone,
@@ -66,7 +67,10 @@ export function MarketplaceDialog({
     isActive: marketplace.isActive,
   };
   const [form, setForm] = useState(initial);
-  const { busy, error, run } = useSubmit(onDone, onClose);
+  // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
+  const [open, setOpen] = useState(true);
+  const hide = () => setOpen(false);
+  const { busy, error, run } = useSubmit(onDone, hide);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm({ ...form, [field]: event.target.value });
 
@@ -105,8 +109,10 @@ export function MarketplaceDialog({
   };
 
   return (
-    <ChooserDialog
-      onClose={onClose}
+    <SidePanel
+      open={open}
+      onRequestClose={hide}
+      onExited={onClose}
       title={
         <>
           <Flag code={marketplace.code} size="1.25rem" />
@@ -114,7 +120,7 @@ export function MarketplaceDialog({
         </>
       }
       description="Changes apply to bookings made from now on."
-      footer={<EditButtons formId="edit-marketplace" onClose={onClose} busy={busy} ready={ready} />}
+      footer={<EditButtons formId="edit-marketplace" onClose={hide} busy={busy} ready={ready} />}
     >
       <form
         id="edit-marketplace"
@@ -157,13 +163,14 @@ export function MarketplaceDialog({
         />
         <ErrorNote error={error} />
       </form>
-    </ChooserDialog>
+    </SidePanel>
   );
 }
 
 // --- Location ---
 
-export function LocationDialog({
+// Edit location, in a side panel over the table.
+export function EditLocationPanel({
   marketplace,
   location,
   onClose,
@@ -176,7 +183,10 @@ export function LocationDialog({
 }) {
   const initial = { en: location.names.en, ar: location.names.ar, locality: location.locality };
   const [form, setForm] = useState(initial);
-  const { busy, error, run } = useSubmit(onDone, onClose);
+  // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
+  const [open, setOpen] = useState(true);
+  const hide = () => setOpen(false);
+  const { busy, error, run } = useSubmit(onDone, hide);
   const changed =
     form.en !== initial.en || form.ar !== initial.ar || form.locality !== initial.locality;
   const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
@@ -194,8 +204,10 @@ export function LocationDialog({
   };
 
   return (
-    <ChooserDialog
-      onClose={onClose}
+    <SidePanel
+      open={open}
+      onRequestClose={hide}
+      onExited={onClose}
       title={
         <>
           <KindIcon kind={form.locality} size="1.25rem" />
@@ -204,7 +216,7 @@ export function LocationDialog({
       }
       // The slug is part of public URLs, so renaming doesn't change it; say so up front.
       description={`${localityLabel[location.locality]} in ${marketplace.names.en} · /${location.slug}, which stays as it is`}
-      footer={<EditButtons formId="edit-location" onClose={onClose} busy={busy} ready={ready} />}
+      footer={<EditButtons formId="edit-location" onClose={hide} busy={busy} ready={ready} />}
     >
       <form
         id="edit-location"
@@ -238,7 +250,7 @@ export function LocationDialog({
         />
         <ErrorNote error={error} />
       </form>
-    </ChooserDialog>
+    </SidePanel>
   );
 }
 
