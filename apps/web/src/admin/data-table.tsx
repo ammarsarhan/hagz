@@ -233,7 +233,9 @@ export function RowMenu({ label, items }: { label: string; items: MenuItem[] }) 
       {open ? (
         <ul
           role="menu"
-          className="absolute top-full right-0 z-10 mt-1 w-max min-w-[11rem] rounded-card border border-border bg-white p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+          // One inset everywhere: 6 around the items, 8 on every side inside each, and item corners
+          // that follow the menu's (12 outside less the 6 between = 6).
+          className="absolute top-full right-0 z-10 mt-1 w-max min-w-[11rem] rounded-card border border-border bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
         >
           {items.map(({ label: name, icon: Item, onSelect, tone }) => (
             <li key={name} role="none">
@@ -244,7 +246,7 @@ export function RowMenu({ label, items }: { label: string; items: MenuItem[] }) 
                   setOpen(false);
                   onSelect();
                 }}
-                className={`flex w-full cursor-pointer items-center gap-2 rounded-[0.5rem] px-2.5 py-1.5 text-left text-label whitespace-nowrap ${
+                className={`flex w-full cursor-pointer items-center gap-2 rounded-[0.375rem] p-2 text-left text-label whitespace-nowrap ${
                   tone === "danger" ? "text-red hover:bg-red/10" : "text-ink hover:bg-chip"
                 }`}
               >
