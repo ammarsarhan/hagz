@@ -91,7 +91,7 @@ export function SidePanel({
 // the first), as in the agreed design (Figma A3).
 export function PanelSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3.5 border-t border-border pt-6 first:border-t-0 first:pt-0">
+    <section className="flex flex-col gap-3.5 border-t border-border/75 pt-6 first:border-t-0 first:pt-0">
       <h3 className="text-body font-semibold text-ink">{title}</h3>
       {children}
     </section>
