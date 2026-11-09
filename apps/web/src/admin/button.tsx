@@ -14,11 +14,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variants;
   // Waiting on the server: a spinner replaces the label and the button can't be pressed again.
   loading?: boolean;
+  // Small sits in a table's toolbar beside the search: 36 high, as wide as its label.
+  size?: keyof typeof sizes;
 }
+
+const sizes = {
+  regular: "h-12 w-full px-6 text-[1rem] leading-[1.3125rem]",
+  small: "h-9 gap-1.5 px-3.5 text-label",
+} as const;
 
 export function Button({
   variant = "primary",
   loading = false,
+  size = "regular",
   disabled,
   children,
   type = "button",
@@ -30,7 +38,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading}
-      className={`flex h-12 w-full cursor-pointer items-center justify-center rounded-full px-6 text-[1rem] leading-[1.3125rem] font-semibold transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
+      className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full font-semibold ${sizes[size]} transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
       {...rest}
     >
       {loading ? (
