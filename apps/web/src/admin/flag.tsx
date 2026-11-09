@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 
+// How many times a flag that failed to load is asked for again before the code is shown instead.
+// One failed request (the dev server compiling the route, a dropped connection) shouldn't leave the
+// code on screen for good.
+const RETRIES = 2;
+
 // A country's round flag (circle-flags, served by /admin/flags/[code]). Falls back to the code on
-// a grey disc if there's no flag for it. Decorative: the country's name is always beside it.
+// a grey disc only if the flag still won't load after the retries, e.g. a code with no flag.
+// Decorative: the country's name is always beside it.
 export function Flag({ code, size = "1.5rem" }: { code: string; size?: string }) {
-  const [missing, setMissing] = useState(false);
-  if (missing) {
+  const [failures, setFailures] = useState(0);
+
+  if (failures > RETRIES) {
     return (
       <span
         aria-hidden
@@ -17,15 +24,19 @@ export function Flag({ code, size = "1.5rem" }: { code: string; size?: string })
       </span>
     );
   }
+
+  const src = `/admin/flags/${code.toLowerCase()}`;
   return (
     // A tiny static SVG: next/image would add nothing but a wrapper.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/admin/flags/${code.toLowerCase()}`}
+      // A new key and URL per attempt, so the browser asks again instead of reusing the failure.
+      key={failures}
+      src={failures ? `${src}?retry=${failures}` : src}
       alt=""
       style={{ width: size, height: size }}
       className="shrink-0 rounded-full shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
-      onError={() => setMissing(true)}
+      onError={() => setTimeout(() => setFailures((count) => count + 1), 500 * (failures + 1))}
     />
   );
 }
