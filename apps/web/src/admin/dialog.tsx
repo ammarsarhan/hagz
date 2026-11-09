@@ -14,7 +14,7 @@ export function Dialog({
 }: {
   open: boolean;
   onClose: () => void;
-  // The chooser size (52rem), for a step list beside a grid of cards; forms are 30rem.
+  // The chooser size (40rem), for a grid of cards; forms are 30rem.
   wide?: boolean;
   children: ReactNode;
 }) {
@@ -41,7 +41,7 @@ export function Dialog({
         if (pressedOutside.current && event.target === event.currentTarget) onClose();
         pressedOutside.current = false;
       }}
-      className={`m-auto ${wide ? "w-[52rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-hud bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
+      className={`m-auto ${wide ? "w-[40rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-hud bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
     >
       {open ? children : null}
     </dialog>

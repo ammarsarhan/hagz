@@ -110,30 +110,13 @@ export function AddLocationDialog({
     return `${containers.has("TOP") ? "Top level, or inside" : "Inside"} ${article(list)} ${list}`;
   };
 
-  const frame = {
-    onClose,
-    title: "Add location",
-    steps: [
-      {
-        label: "Kind",
-        value: kind ? (
-          <>
-            <KindIcon kind={kind} size="0.875rem" />
-            {localityLabel[kind]}
-          </>
-        ) : undefined,
-      },
-      { label: "Details" },
-    ],
-    onStep: () => setKind(undefined),
-  };
+  const frame = { onClose, onBack: () => setKind(undefined) };
 
   if (!kind) {
     return (
       <ChooserDialog
-        {...frame}
-        step={0}
-        heading="What are you adding?"
+        onClose={onClose}
+        title="Add location"
         description={
           parent
             ? `It goes inside ${parent.names.en}.`
@@ -188,7 +171,7 @@ function Details({
   topLevel,
   onDone,
 }: {
-  frame: Omit<Parameters<typeof ChooserDialog>[0], "children">;
+  frame: { onClose: () => void; onBack: () => void };
   marketplace: AdminMarketplace;
   locations: AdminLocation[];
   parent?: AdminLocation | null;
@@ -239,10 +222,9 @@ function Details({
   return (
     <ChooserDialog
       {...frame}
-      step={1}
-      heading={
+      title={
         <>
-          New {label}
+          Add {article(label)} {label}
           {parent ? ` in ${parent.names.en}` : ""}
         </>
       }

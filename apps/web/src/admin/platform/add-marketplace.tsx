@@ -25,31 +25,13 @@ export function AddMarketplaceDialog({
   onDone: () => void;
 }) {
   const [country, setCountry] = useState<Country>();
-  const steps = [
-    {
-      label: "Country",
-      value: country ? (
-        <>
-          <Flag code={country.code} size="0.875rem" />
-          {countryNames(country.code).en}
-        </>
-      ) : undefined,
-    },
-    { label: "Details" },
-  ];
-  const frame = {
-    onClose,
-    title: "Add marketplace",
-    steps,
-    onStep: () => setCountry(undefined),
-  };
+  const frame = { onClose, onBack: () => setCountry(undefined) };
 
   if (!country) {
     return (
       <ChooserDialog
-        {...frame}
-        step={0}
-        heading="Choose a country"
+        onClose={onClose}
+        title="Add marketplace"
         description="Its currency, dial code and time zone come with it. It starts hidden from the apps."
       >
         <ChooserSection columns={2}>
@@ -83,7 +65,7 @@ function Details({
   country,
   onDone,
 }: {
-  frame: Omit<Parameters<typeof ChooserDialog>[0], "children">;
+  frame: { onClose: () => void; onBack: () => void };
   country: Country;
   onDone: () => void;
 }) {
@@ -126,12 +108,11 @@ function Details({
   return (
     <ChooserDialog
       {...frame}
-      step={1}
       description={`${country.code} · ${country.currency} · ${country.dialCode} · ${country.timezone}`}
-      heading={
+      title={
         <>
-          <Flag code={country.code} size="1.25rem" />
-          {names.en}
+          <Flag code={country.code} size="1.5rem" />
+          Add {names.en}
         </>
       }
       footer={
