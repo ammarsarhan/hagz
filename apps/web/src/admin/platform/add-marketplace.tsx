@@ -111,19 +111,19 @@ function Details({
       description={`${country.code} · ${country.currency} · ${country.dialCode} · ${country.timezone}`}
       title={
         <>
-          <Flag code={country.code} size="1.5rem" />
+          <Flag code={country.code} size="1.25rem" />
           Add {names.en}
         </>
       }
       footer={
         <>
-          <Button variant="secondary" size="medium" onClick={frame.onClose} disabled={busy}>
+          <Button variant="secondary" size="small" onClick={frame.onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
             type="submit"
             form="add-marketplace"
-            size="medium"
+            size="small"
             loading={busy}
             disabled={!ready}
           >

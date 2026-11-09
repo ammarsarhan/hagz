@@ -40,7 +40,7 @@ export function ChooserDialog({
             </button>
           ) : null}
           <div className="min-w-0 flex-1">
-            <h2 className="flex items-center gap-2.5 text-heading font-semibold text-ink">
+            <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
               {title}
             </h2>
             {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
@@ -56,9 +56,7 @@ export function ChooserDialog({
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-7 pt-6 pb-8">{children}</div>
         {footer ? (
-          <footer className="flex shrink-0 justify-end gap-2 border-t border-border px-7 py-5">
-            {footer}
-          </footer>
+          <footer className="flex shrink-0 justify-end gap-2 px-7 py-5">{footer}</footer>
         ) : null}
       </div>
     </Dialog>

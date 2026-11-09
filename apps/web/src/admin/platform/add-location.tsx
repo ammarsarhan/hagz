@@ -230,10 +230,10 @@ function Details({
       }
       footer={
         <>
-          <Button variant="secondary" size="medium" onClick={frame.onClose} disabled={busy}>
+          <Button variant="secondary" size="small" onClick={frame.onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" form="add-location" size="medium" loading={busy} disabled={!ready}>
+          <Button type="submit" form="add-location" size="small" loading={busy} disabled={!ready}>
             Add {label}
           </Button>
         </>
