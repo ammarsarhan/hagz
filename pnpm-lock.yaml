@@ -285,6 +285,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^9.3.1
         version: 9.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      circle-flags:
+        specifier: 2.8.3
+        version: 2.8.3
       next:
         specifier: ^16.3.7
         version: 16.3.7(@types/node@26.6.3)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3545,6 +3548,9 @@ packages:
   ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
     engines: {node: '>=8'}
+
+  circle-flags@2.8.3:
+    resolution: {integrity: sha512-62gm4tY7evXzNdLP+nFOzxEtCagbY4nSnrPNn/yOWFAvApvOWCAvyqL+NeLN+nfhGOGc4L+oSgEheqM3XE5w7g==}
 
   classnames@2.5.1:
     resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
@@ -9811,6 +9817,8 @@ snapshots:
   chownr@1.1.4: {}
 
   ci-info@3.9.0: {}
+
+  circle-flags@2.8.3: {}
 
   classnames@2.5.1: {}
 

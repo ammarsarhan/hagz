@@ -1938,6 +1938,10 @@
           },
           "venueCount": {
             "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -1947,7 +1951,8 @@
           "slug",
           "names",
           "childCount",
-          "venueCount"
+          "venueCount",
+          "createdAt"
         ]
       },
       "CreateLocation": {
@@ -5757,7 +5762,7 @@
             }
           },
           "409": {
-            "description": "MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken.",
+            "description": "MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace.",
             "content": {
               "application/problem+json": {
                 "schema": {

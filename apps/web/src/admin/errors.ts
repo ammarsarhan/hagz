@@ -21,3 +21,7 @@ export const message = (error: unknown) =>
   problemCode(error) === "INVALID_CREDENTIALS"
     ? "That email and password don’t match."
     : errorMessage(error, "en");
+
+// Whether a failure is the admin's to fix (a refused request: shown by the form) or not (no answer,
+// or the server broke: shown by the HUD, with a way to try again).
+export const notTheirFault = (error: unknown) => !isProblem(error) || error.status >= 500;

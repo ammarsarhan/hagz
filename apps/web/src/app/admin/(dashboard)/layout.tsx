@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { HudProvider } from "@/admin/hud";
 import { Rail } from "@/admin/rail";
 import { AdminSession } from "@/admin/session";
 
@@ -7,10 +8,12 @@ import { AdminSession } from "@/admin/session";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AdminSession>
-      <div className="flex min-h-screen">
-        <Rail />
-        <main className="min-w-0 flex-1 px-10 pt-10 pb-16">{children}</main>
-      </div>
+      <HudProvider>
+        <div className="flex min-h-screen">
+          <Rail />
+          <main className="min-w-0 flex-1 px-10 pt-10 pb-16">{children}</main>
+        </div>
+      </HudProvider>
     </AdminSession>
   );
 }
