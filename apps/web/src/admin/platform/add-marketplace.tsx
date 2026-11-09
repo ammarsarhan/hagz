@@ -88,7 +88,7 @@ function Details({
 
   const submit = () => {
     if (!ready) return;
-    void run(
+    void run(() =>
       send(
         api.POST("/v1/admin/marketplaces", {
           body: {

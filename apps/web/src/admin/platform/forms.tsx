@@ -4,11 +4,13 @@ import type { AdminAmenity, AdminLocation, AdminMarketplace, Locality } from "@h
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { SidePanel } from "@/admin/side-panel";
+import { Tag } from "@/admin/data-table";
+import { PanelSection, ReadOnlyRow, SidePanel } from "@/admin/side-panel";
 import { FormDialog } from "@/admin/dialog";
-import { message, send } from "@/admin/errors";
+import { message, notTheirFault, send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { Flag } from "@/admin/flag";
+import { useHud } from "@/admin/hud";
 import { kindOrder } from "./countries";
 import { KindIcon } from "./kind-icon";
 import { localityLabel } from "./model";
@@ -19,17 +21,22 @@ import { localityLabel } from "./model";
 type Close = () => void;
 type Done = () => void;
 
-// Shared submit plumbing: busy while waiting, the error if refused, close and reload if not.
+// Shared submit plumbing: busy while waiting, close and reload on success. A refused request is the
+// admin's to fix, so its message sits in the form; anything else (no answer, a server error) goes
+// to the HUD with Try again, which sends the same request again.
 export const useSubmit = (onDone: Done, onClose: Close) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const run = async (request: Promise<{ ok: boolean; error?: unknown }>) => {
+  const hud = useHud();
+  const run = async (request: () => Promise<{ ok: boolean; error?: unknown }>) => {
     setBusy(true);
     setError(undefined);
-    const result = await request;
+    const result = await request();
     setBusy(false);
     if (!result.ok) {
-      setError(message(result.error));
+      if (notTheirFault(result.error)) {
+        hud(message(result.error), { label: "Try again", run: () => void run(request) });
+      } else setError(message(result.error));
       return;
     }
     onClose();
@@ -94,7 +101,7 @@ export function EditMarketplacePanel({
 
   const submit = () => {
     if (!ready) return;
-    void run(
+    void run(() =>
       send(
         api.PATCH("/v1/admin/marketplaces/{id}", {
           params: { path: { id: marketplace.id } },
@@ -118,8 +125,9 @@ export function EditMarketplacePanel({
       onExited={onClose}
       title={
         <>
-          <Flag code={marketplace.code} size="1.25rem" />
-          Edit {marketplace.names.en}
+          <Flag code={marketplace.code} size="1.5rem" />
+          {marketplace.names.en}
+          {marketplace.isActive ? <Tag tone="on">Live</Tag> : <Tag>Hidden</Tag>}
         </>
       }
       description="Changes apply to bookings made from now on."
@@ -127,48 +135,60 @@ export function EditMarketplacePanel({
     >
       <form
         id="edit-marketplace"
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-6"
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="English name" value={form.en} onChange={set("en")} required />
-          <Field label="Arabic name" dir="rtl" value={form.ar} onChange={set("ar")} required />
-          <Field
-            label="VAT (%)"
-            inputMode="decimal"
-            value={form.tax}
-            onChange={set("tax")}
-            required
+        <PanelSection title="Names">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="English" value={form.en} onChange={set("en")} required />
+            <Field label="Arabic" dir="rtl" value={form.ar} onChange={set("ar")} required />
+          </div>
+        </PanelSection>
+        <PanelSection title="Rates">
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="VAT (%)"
+              inputMode="decimal"
+              value={form.tax}
+              onChange={set("tax")}
+              required
+            />
+            <Field
+              label="Commission (%)"
+              inputMode="decimal"
+              value={form.commission}
+              onChange={set("commission")}
+              required
+            />
+          </div>
+        </PanelSection>
+        <PanelSection title="Country">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Dial code" value={form.dialCode} onChange={set("dialCode")} required />
+            <Field label="Time zone" value={form.timezone} onChange={set("timezone")} required />
+          </div>
+          {/* Set by the country, and fixed once anything uses the marketplace. */}
+          <div>
+            <ReadOnlyRow label="Country code" value={marketplace.code} />
+            <ReadOnlyRow label="Currency" value={marketplace.currency} />
+          </div>
+        </PanelSection>
+        <PanelSection title="Visibility">
+          <Toggle
+            label="Live in the apps"
+            hint={
+              lastLive
+                ? "It's the only live marketplace. Make another one live before hiding it."
+                : "Hidden marketplaces don't show to customers or staff."
+            }
+            checked={form.isActive}
+            disabled={lastLive}
+            onChange={(isActive) => setForm({ ...form, isActive })}
           />
-          <Field
-            label="Commission (%)"
-            inputMode="decimal"
-            value={form.commission}
-            onChange={set("commission")}
-            required
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Shown for reference: the country set them, and nothing can change them now. */}
-          <Field label="Country code" value={marketplace.code} disabled readOnly />
-          <Field label="Currency" value={marketplace.currency} disabled readOnly />
-          <Field label="Dial code" value={form.dialCode} onChange={set("dialCode")} required />
-          <Field label="Time zone" value={form.timezone} onChange={set("timezone")} required />
-        </div>
-        <Toggle
-          label="Live in the apps"
-          hint={
-            lastLive
-              ? "It's the only live marketplace. Make another one live before hiding it."
-              : "Hidden marketplaces don't show to customers or staff."
-          }
-          checked={form.isActive}
-          disabled={lastLive}
-          onChange={(isActive) => setForm({ ...form, isActive })}
-        />
+        </PanelSection>
         <ErrorNote error={error} />
       </form>
     </SidePanel>
@@ -201,7 +221,7 @@ export function EditLocationPanel({
 
   const submit = () => {
     if (!ready) return;
-    void run(
+    void run(() =>
       send(
         api.PATCH("/v1/admin/locations/{id}", {
           params: { path: { id: location.id } },
@@ -219,43 +239,51 @@ export function EditLocationPanel({
       title={
         <>
           <KindIcon kind={form.locality} size="1.25rem" />
-          Edit {location.names.en}
+          {location.names.en}
         </>
       }
-      // The slug is part of public URLs, so renaming doesn't change it; say so up front.
-      description={`${localityLabel[location.locality]} in ${marketplace.names.en} · /${location.slug}, which stays as it is`}
+      description={`${localityLabel[location.locality]} in ${marketplace.names.en}`}
       footer={<EditButtons formId="edit-location" onClose={hide} busy={busy} ready={ready} />}
     >
       <form
         id="edit-location"
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-6"
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <Field
-            label="English name"
-            value={form.en}
-            onChange={(event) => setForm({ ...form, en: event.target.value })}
-            required
-            autoFocus
+        <PanelSection title="Names">
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="English"
+              value={form.en}
+              onChange={(event) => setForm({ ...form, en: event.target.value })}
+              required
+              autoFocus
+            />
+            <Field
+              label="Arabic"
+              dir="rtl"
+              value={form.ar}
+              onChange={(event) => setForm({ ...form, ar: event.target.value })}
+              required
+            />
+          </div>
+        </PanelSection>
+        <PanelSection title="Kind">
+          <SelectField
+            label="What kind of place it is"
+            options={kindOrder.map((kind) => ({ value: kind, label: localityLabel[kind] }))}
+            value={form.locality}
+            onChange={(event) => setForm({ ...form, locality: event.target.value as Locality })}
           />
-          <Field
-            label="Arabic name"
-            dir="rtl"
-            value={form.ar}
-            onChange={(event) => setForm({ ...form, ar: event.target.value })}
-            required
-          />
-        </div>
-        <SelectField
-          label="Kind"
-          options={kindOrder.map((kind) => ({ value: kind, label: localityLabel[kind] }))}
-          value={form.locality}
-          onChange={(event) => setForm({ ...form, locality: event.target.value as Locality })}
-        />
+        </PanelSection>
+        <PanelSection title="Link">
+          {/* Made from the English name when it was added, and part of public URLs: renaming
+              doesn't change it. */}
+          <ReadOnlyRow label="URL" value={`/${location.slug}`} />
+        </PanelSection>
         <ErrorNote error={error} />
       </form>
     </SidePanel>
@@ -311,9 +339,8 @@ function Toggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    // Set a little apart from the fields above: it's a setting, not part of the data.
     <label
-      className={`mt-2 flex items-center justify-between gap-6 ${disabled ? "cursor-default" : "cursor-pointer"}`}
+      className={`flex items-center justify-between gap-6 ${disabled ? "cursor-default" : "cursor-pointer"}`}
     >
       <span className="flex flex-col">
         <span className="text-label font-medium text-ink">{label}</span>
@@ -365,7 +392,7 @@ export function AmenityDialog({
   const names = { en: form.en.trim(), ar: form.ar.trim() };
 
   const submit = () =>
-    void run(
+    void run(() =>
       amenity
         ? send(
             api.PATCH("/v1/admin/amenities/{id}", {
@@ -452,7 +479,7 @@ export function DeleteDialog({
       danger
       busy={busy}
       error={error}
-      onSubmit={() => void run(request())}
+      onSubmit={() => void run(request)}
     />
   );
 }

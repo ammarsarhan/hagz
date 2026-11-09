@@ -1,6 +1,6 @@
 "use client";
 
-import { IconX } from "@tabler/icons-react";
+import { IconLock, IconX } from "@tabler/icons-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
 // A panel that slides in from the right over a dimmed page, for editing something without leaving
@@ -84,5 +84,35 @@ export function SidePanel({
         ) : null}
       </div>
     </dialog>
+  );
+}
+
+// A group of fields under a small grey heading. Groups are split by a hairline (border-t on all but
+// the first), as in the agreed design (Figma A3).
+export function PanelSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3.5 border-t border-border pt-6 first:border-t-0 first:pt-0">
+      <h3 className="text-caption font-semibold text-ink-3">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+// Something shown for reference that can't change here: label on the left, value and a lock on the
+// right, instead of a greyed-out input.
+export function ReadOnlyRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-6 py-2.5 text-label">
+      <span className="text-ink-2">{label}</span>
+      <span className="flex items-center gap-1.5 font-medium text-ink">
+        {value}
+        <IconLock
+          size={14}
+          className="size-3.5 text-ink-3"
+          stroke={2}
+          aria-label="Can't be changed"
+        />
+      </span>
+    </div>
   );
 }

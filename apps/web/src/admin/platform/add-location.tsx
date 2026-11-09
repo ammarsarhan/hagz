@@ -184,7 +184,7 @@ function Details({
 
   const submit = () =>
     ready &&
-    void run(
+    void run(() =>
       send(
         api.POST("/v1/admin/marketplaces/{id}/locations", {
           params: { path: { id: marketplace.id } },
