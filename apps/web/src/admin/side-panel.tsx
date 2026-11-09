@@ -67,7 +67,7 @@ export function SidePanel({
             <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
               {title}
             </h2>
-            {description ? <p className="mt-0.5 text-body text-ink-2">{description}</p> : null}
+            {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
           </div>
           <button
             type="button"
@@ -87,12 +87,12 @@ export function SidePanel({
   );
 }
 
-// A group of fields under a small grey heading. Groups are split by a hairline (border-t on all but
+// A group of fields under a heading one step larger than the field labels. Groups are split by a hairline (border-t on all but
 // the first), as in the agreed design (Figma A3).
 export function PanelSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3.5 border-t border-border pt-6 first:border-t-0 first:pt-0">
-      <h3 className="text-caption font-semibold text-ink-3">{title}</h3>
+      <h3 className="text-body font-semibold text-ink">{title}</h3>
       {children}
     </section>
   );
