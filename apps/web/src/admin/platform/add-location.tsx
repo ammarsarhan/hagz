@@ -16,7 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChoiceCard, ChoiceTag, ChooserDialog, ChooserSection } from "@/admin/chooser";
+import { ChoiceCard, ChooserDialog, ChooserSection } from "@/admin/chooser";
 import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
@@ -131,18 +131,9 @@ export function AddLocationDialog({
             return (
               <ChoiceCard
                 key={option}
-                // Laid out like the country cards: a count on top, then the icon and the name.
-                tag={
-                  <ChoiceTag>
-                    {existing.length ? `${existing.length.toLocaleString("en")} added` : "None yet"}
-                  </ChoiceTag>
-                }
-                title={
-                  <>
-                    <KindIcon kind={option} size="1.125rem" />
-                    {localityLabel[option]}
-                  </>
-                }
+                // The icon in its own circle above the name, like the reference's top cards.
+                icon={<KindIcon kind={option} />}
+                title={localityLabel[option]}
                 description={
                   <>
                     {/* Under a fixed parent every card would say the same "Inside Cairo". */}
