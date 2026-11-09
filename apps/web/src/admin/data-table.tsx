@@ -18,6 +18,7 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
   table,
   widths = {},
   onRowClick,
+  loading = false,
   empty,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- any selected state draws the same
@@ -26,6 +27,8 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
   widths?: Record<string, string>;
   // Rows that open something: the whole row is the target, and Enter works from the keyboard.
   onRowClick?: (row: Row<TFeatures, TData>) => void;
+  // Still fetching: grey bars stand in for the rows, under the real headers.
+  loading?: boolean;
   // Shown under the headers when there are no rows.
   empty: ReactNode;
 }) {
@@ -53,7 +56,9 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
         </tr>
       </thead>
       <tbody>
-        {rows.length === 0 ? (
+        {loading ? (
+          <SkeletonRows columns={headers.map((header) => header.column.id)} />
+        ) : rows.length === 0 ? (
           <tr>
             <td colSpan={headers.length} className="px-3 py-12 text-center text-label text-ink-2">
               {empty}
@@ -93,6 +98,35 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
         )}
       </tbody>
     </table>
+  );
+}
+
+// A grey bar that pulses while what it stands for loads.
+export function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <span aria-hidden className={`block animate-pulse rounded-[0.375rem] bg-chip ${className}`} />
+  );
+}
+
+// Bar widths per row, so the stand-in rows look like text of different lengths, not a grid.
+const lengths = ["w-3/5", "w-2/5", "w-1/2", "w-1/3", "w-3/4", "w-2/5"];
+
+function SkeletonRows({ columns }: { columns: string[] }) {
+  return (
+    <>
+      {lengths.map((_, rowIndex) => (
+        <tr key={rowIndex} aria-hidden className="border-b border-border">
+          {columns.map((column, columnIndex) => (
+            <td key={column} className="h-12 px-3">
+              {/* Columns with no heading (the menu, the row's ›) stay empty. */}
+              {column === "menu" || column === "open" ? null : (
+                <Skeleton className={`h-3 ${lengths[(rowIndex + columnIndex) % lengths.length]}`} />
+              )}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
   );
 }
 
