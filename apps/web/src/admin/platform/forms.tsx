@@ -113,8 +113,7 @@ export function MarketplaceDialog({
           Edit {marketplace.names.en}
         </>
       }
-      // The code and currency are fixed (the country picks them); say so where they're shown.
-      description={`${marketplace.code} · ${marketplace.currency}, fixed for this marketplace`}
+      description="Changes apply to bookings made from now on."
       footer={<EditButtons formId="edit-marketplace" onClose={onClose} busy={busy} ready={ready} />}
     >
       <form
@@ -143,10 +142,10 @@ export function MarketplaceDialog({
             required
           />
         </div>
-        <p className="-mt-2 text-caption text-ink-2">
-          New VAT and commission apply to bookings made from now on.
-        </p>
         <div className="grid grid-cols-2 gap-4">
+          {/* Shown for reference: the country set them, and nothing can change them now. */}
+          <Field label="Country code" value={marketplace.code} disabled readOnly />
+          <Field label="Currency" value={marketplace.currency} disabled readOnly />
           <Field label="Dial code" value={form.dialCode} onChange={set("dialCode")} required />
           <Field label="Time zone" value={form.timezone} onChange={set("timezone")} required />
         </div>
@@ -289,7 +288,8 @@ function Toggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-6 rounded-field border border-border px-4 py-3">
+    // Set a little apart from the fields above: it's a setting, not part of the data.
+    <label className="mt-2 flex cursor-pointer items-center justify-between gap-6">
       <span className="flex flex-col">
         <span className="text-label font-medium text-ink">{label}</span>
         <span className="text-caption text-ink-2">{hint}</span>
