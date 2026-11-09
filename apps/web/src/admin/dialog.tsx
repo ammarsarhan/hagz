@@ -4,17 +4,24 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "./button";
 
 // A modal on the native <dialog>: the browser traps focus, closes it on Escape and draws the
-// backdrop. Its content mounts only while open, so every opening starts from a fresh form.
+// backdrop; a click on the backdrop closes it too. Its content mounts only while open, so every
+// opening starts from a fresh form.
 export function Dialog({
   open,
   onClose,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
+  // The chooser size (40rem), for a grid of cards; forms are 30rem.
+  wide?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // The press has to start on the backdrop as well as end there, so selecting text in a field and
+  // letting go outside the modal doesn't close it.
+  const pressedOutside = useRef(false);
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -26,7 +33,15 @@ export function Dialog({
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-[30rem] max-w-[calc(100vw-2rem)] rounded-hud bg-white p-0 text-ink shadow-xl backdrop:bg-scrim"
+      // The content fills the <dialog> edge to edge, so the dialog itself is only hit on the backdrop.
+      onMouseDown={(event) => {
+        pressedOutside.current = event.target === event.currentTarget;
+      }}
+      onClick={(event) => {
+        if (pressedOutside.current && event.target === event.currentTarget) onClose();
+        pressedOutside.current = false;
+      }}
+      className={`m-auto ${wide ? "w-[40rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-card bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
     >
       {open ? children : null}
     </dialog>
