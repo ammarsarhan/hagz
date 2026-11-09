@@ -16,7 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChoiceCard, ChooserDialog, ChooserSection } from "@/admin/chooser";
+import { ChoiceCard, ChoiceTag, ChooserDialog, ChooserSection } from "@/admin/chooser";
 import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
@@ -45,15 +45,17 @@ function KindIcon({ kind, size = "1rem" }: { kind: Locality; size?: string }) {
 }
 
 const rank = (kind: Locality) => kindOrder.indexOf(kind);
+// The "Inside" value for the top of the tree ("" means nothing picked yet).
+const TOP = "top";
 const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
 
-// "27 so far, like Alexandria and Aswan", or "None yet".
-const examples = (of: AdminLocation[]) => {
-  if (of.length === 0) return "None yet";
-  const names = [...of].sort(byName).map((location) => location.names.en);
-  const like = names.length === 1 ? names[0] : `${names[0]} and ${names[1]}`;
-  return `${of.length.toLocaleString("en")} so far, like ${like}`;
-};
+// "Like Alexandria, Aswan, Asyut", the first few by name; cut to one line on the card.
+const examples = (of: AdminLocation[]) =>
+  `Like ${[...of]
+    .sort(byName)
+    .slice(0, 4)
+    .map((location) => location.names.en)
+    .join(", ")}`;
 
 export function AddLocationDialog({
   marketplace,
@@ -125,19 +127,31 @@ export function AddLocationDialog({
       >
         <ChooserSection columns={2}>
           {kinds.map((option, index) => {
-            const role = parent ? `Inside ${parent.names.en}` : roleOf(option, index);
+            const existing = locations.filter((location) => location.locality === option);
             return (
               <ChoiceCard
                 key={option}
-                icon={<KindIcon kind={option} />}
-                title={localityLabel[option]}
+                // Laid out like the country cards: a count on top, then the icon and the name.
+                tag={
+                  <ChoiceTag>
+                    {existing.length ? `${existing.length.toLocaleString("en")} added` : "None yet"}
+                  </ChoiceTag>
+                }
+                title={
+                  <>
+                    <KindIcon kind={option} size="1.125rem" />
+                    {localityLabel[option]}
+                  </>
+                }
                 description={
                   <>
-                    {role}
-                    <br />
-                    <span className="text-ink-3">
-                      {examples(locations.filter((location) => location.locality === option))}
-                    </span>
+                    {/* Under a fixed parent every card would say the same "Inside Cairo". */}
+                    {parent ? null : (
+                      <span className="block truncate">{roleOf(option, index)}</span>
+                    )}
+                    {existing.length ? (
+                      <span className="block truncate text-ink-3">{examples(existing)}</span>
+                    ) : null}
                   </>
                 }
                 onSelect={() => setKind(option)}
@@ -191,18 +205,19 @@ function Details({
       .filter((location) => rank(location.locality) < rank(kind))
       .map((location) => ({ value: location.id, label: path(location) }))
       .sort((a, b) => a.label.localeCompare(b.label, "en"));
-    return [{ value: "", label: `Top level of ${marketplace.names.en}` }, ...inside];
+    return [{ value: TOP, label: `Top level of ${marketplace.names.en}` }, ...inside];
   }, [locations, kind, marketplace.names.en]);
 
   const [form, setForm] = useState({
-    parentId: parent?.id ?? (topLevel ? "" : (options[1]?.value ?? "")),
+    // Nothing picked until the admin picks it: a default would quietly file it in the first one.
+    parentId: parent?.id ?? (topLevel ? TOP : ""),
     en: "",
     ar: "",
   });
   const { busy, error, run } = useSubmit(onDone, frame.onClose);
   const label = localityLabel[kind].toLowerCase();
   // Like the sign-in page: the button stays grey until both names are there.
-  const ready = form.en.trim() !== "" && form.ar.trim() !== "";
+  const ready = form.parentId !== "" && form.en.trim() !== "" && form.ar.trim() !== "";
 
   const submit = () =>
     ready &&
@@ -211,7 +226,7 @@ function Details({
         api.POST("/v1/admin/marketplaces/{id}/locations", {
           params: { path: { id: marketplace.id } },
           body: {
-            parentId: form.parentId || null,
+            parentId: form.parentId === TOP ? null : form.parentId,
             locality: kind,
             names: { en: form.en.trim(), ar: form.ar.trim() },
           },
@@ -224,9 +239,16 @@ function Details({
       {...frame}
       title={
         <>
+          <KindIcon kind={kind} size="1.25rem" />
           Add {article(label)} {label}
-          {parent ? ` in ${parent.names.en}` : ""}
         </>
+      }
+      description={
+        parent
+          ? `Inside ${parent.names.en}, ${marketplace.names.en}`
+          : topLevel
+            ? `At the top level of ${marketplace.names.en}`
+            : `In ${marketplace.names.en}`
       }
       footer={
         <>
@@ -248,9 +270,11 @@ function Details({
         }}
       >
         <div className="flex flex-col gap-4">
-          {parent ? null : (
+          {/* Fixed by the row it was opened from, or the top level for the coarsest kind. */}
+          {parent || topLevel ? null : (
             <SelectField
               label="Inside"
+              placeholder={`Choose where this ${label} sits`}
               options={options}
               value={form.parentId}
               onChange={(event) => setForm({ ...form, parentId: event.target.value })}
