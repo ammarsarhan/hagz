@@ -1,12 +1,13 @@
 "use client";
 
 import type { AdminInvitation, AdminListEntry } from "@hagz/contracts";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconArrowRight, IconPlus, IconTrash } from "@tabler/icons-react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { InviteDialog } from "@/admin/admins/invite-dialog";
 import { day, expiresIn, useAdmins } from "@/admin/admins/model";
+import { AdminPanel, AdminStatus, Initial, InvitationPanel } from "@/admin/admins/panels";
 import { Button } from "@/admin/button";
 import { DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
 import { ConfirmDialog } from "@/admin/dialog";
@@ -18,12 +19,14 @@ import { TabPanel, Tabs } from "@/admin/tabs";
 // Admins, laid out like a marketplace's page: tabs on a hairline that split it into the admins and
 // the invitations still open, each a table in the Platform pages' design (the user's references,
 // Mobbin's Skills list and Attio's Members) under its own search. Inviting someone is the add
-// flows' modal, as on Platform.
+// flows' modal, as on Platform. Clicking a row opens it in a side panel: an admin's details, or an
+// invitation's with Resend and Revoke.
 
 // Columns are module-level (TanStack needs them stable), so the signed-in admin and the page's
 // actions reach the cells through context instead of a closure.
 const RowContext = createContext<{
   self: string;
+  open: (invitation: AdminInvitation) => void;
   revoke: (invitation: AdminInvitation) => void;
 } | null>(null);
 
@@ -31,28 +34,6 @@ const RowContext = createContext<{
 
 const adminFeatures = tableFeatures({});
 const adminHelper = createColumnHelper<typeof adminFeatures, AdminListEntry>();
-
-const statusTag: Record<AdminListEntry["status"], { label: string; on: boolean }> = {
-  ACTIVE: { label: "Active", on: true },
-  SUSPENDED: { label: "Suspended", on: false },
-  BANNED: { label: "Banned", on: false },
-};
-
-function AdminStatus({ status }: { status: AdminListEntry["status"] }) {
-  const { label, on } = statusTag[status];
-  return <Tag tone={on ? "on" : "neutral"}>{label}</Tag>;
-}
-
-function Initial({ name }: { name: string }) {
-  return (
-    <span
-      aria-hidden
-      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-chip text-caption font-semibold text-ink-2"
-    >
-      {name.trim().charAt(0).toUpperCase()}
-    </span>
-  );
-}
 
 function AdminName({ admin }: { admin: AdminListEntry }) {
   const context = useContext(RowContext);
@@ -128,6 +109,7 @@ function InvitationMenu({ invitation }: { invitation: AdminInvitation }) {
     <RowMenu
       label={`Actions for the invitation to ${invitation.email}`}
       items={[
+        { label: "Open", icon: IconArrowRight, onSelect: () => context.open(invitation) },
         {
           label: "Revoke",
           icon: IconTrash,
@@ -187,6 +169,10 @@ type Section = "admins" | "invitations";
 
 type Modal = { form: "invite" } | { form: "revoke"; invitation: AdminInvitation };
 
+// The row open in a side panel. An invitation is followed by its email, which stays the same when
+// it's resent (the API replaces it with a new one).
+type Selected = { kind: "admin"; id: string } | { kind: "invitation"; email: string };
+
 export default function Admins() {
   const self = useAdmin();
   const { data, error, reload } = useAdmins();
@@ -195,6 +181,18 @@ export default function Admins() {
   const [invitationQuery, setInvitationQuery] = useState("");
   const [modal, setModal] = useState<Modal>();
   const close = () => setModal(undefined);
+  const [selected, setSelected] = useState<Selected>();
+  const openInvitation = (invitation: AdminInvitation) =>
+    setSelected({ kind: "invitation", email: invitation.email });
+  const revoke = (invitation: AdminInvitation) => setModal({ form: "revoke", invitation });
+
+  // Looked up in the latest data, so a panel shows changes, and goes once its row is gone.
+  const selectedAdmin =
+    selected?.kind === "admin" ? data?.admins.find((admin) => admin.id === selected.id) : undefined;
+  const selectedInvitation =
+    selected?.kind === "invitation"
+      ? data?.invitations.find((invitation) => invitation.email === selected.email)
+      : undefined;
 
   const admins = useMemo(
     () => filter(data?.admins ?? [], adminQuery, (admin) => [admin.name, admin.email]),
@@ -247,9 +245,7 @@ export default function Admins() {
         />
       </div>
 
-      <RowContext.Provider
-        value={{ self: self.id, revoke: (invitation) => setModal({ form: "revoke", invitation }) }}
-      >
+      <RowContext.Provider value={{ self: self.id, open: openInvitation, revoke }}>
         {section === "admins" ? (
           <TabPanel id="admins">
             <div className="mt-6">
@@ -263,6 +259,7 @@ export default function Admins() {
               <DataTable
                 table={adminTable}
                 widths={adminWidths}
+                onRowClick={(row) => setSelected({ kind: "admin", id: row.original.id })}
                 loading={!data && !error}
                 empty={
                   error ??
@@ -284,6 +281,7 @@ export default function Admins() {
               <DataTable
                 table={invitationTable}
                 widths={invitationWidths}
+                onRowClick={(row) => openInvitation(row.original)}
                 loading={!data && !error}
                 empty={
                   error ??
@@ -297,6 +295,23 @@ export default function Admins() {
         )}
       </RowContext.Provider>
 
+      {selectedAdmin ? (
+        <AdminPanel
+          key={selectedAdmin.id}
+          admin={selectedAdmin}
+          self={selectedAdmin.id === self.id}
+          onClose={() => setSelected(undefined)}
+        />
+      ) : null}
+      {selectedInvitation ? (
+        <InvitationPanel
+          key={selectedInvitation.email}
+          invitation={selectedInvitation}
+          onRevoke={() => revoke(selectedInvitation)}
+          onResent={reload}
+          onClose={() => setSelected(undefined)}
+        />
+      ) : null}
       {modal?.form === "invite" ? <InviteDialog onClose={close} onDone={reload} /> : null}
       {modal?.form === "revoke" ? (
         <ConfirmDialog

@@ -116,3 +116,14 @@ export function ReadOnlyRow({ label, value }: { label: string; value: ReactNode 
     </div>
   );
 }
+
+// A fact about what the panel shows, for viewing rather than editing: label on the left, value on
+// the right, without ReadOnlyRow's lock.
+export function DetailRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-6 py-2.5 text-label">
+      <span className="text-ink-2">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-ink">{value}</span>
+    </div>
+  );
+}
