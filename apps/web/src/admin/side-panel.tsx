@@ -89,7 +89,7 @@ export function ReadOnlyRow({ label, value }: { label: string; value: ReactNode 
   return (
     <div className="flex items-center justify-between gap-6 py-2.5 text-label">
       <span className="text-ink-2">{label}</span>
-      <span className="flex items-center gap-1.5 font-medium text-ink">
+      <span className="flex items-center gap-1.5 text-ink">
         {value}
         <IconLock
           size={14}
@@ -108,7 +108,7 @@ export function DetailRow({ label, value }: { label: string; value: ReactNode })
   return (
     <div className="flex items-center justify-between gap-6 py-2.5 text-label">
       <span className="text-ink-2">{label}</span>
-      <span className="min-w-0 truncate text-right font-medium text-ink">{value}</span>
+      <span className="min-w-0 truncate text-right text-ink">{value}</span>
     </div>
   );
 }

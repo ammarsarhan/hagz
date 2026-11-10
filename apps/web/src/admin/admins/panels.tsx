@@ -136,7 +136,7 @@ export function AdminPanel({
                     className="flex items-center justify-between gap-4 border-b border-border/75 py-2.5 last:border-b-0"
                   >
                     <div className="min-w-0">
-                      <p className="text-label font-medium text-ink">{device(session.userAgent)}</p>
+                      <p className="text-label text-ink">{device(session.userAgent)}</p>
                       <p className="mt-0.5 truncate text-caption text-ink-2">
                         {session.ipAddress ?? "Unknown address"} · signed in{" "}
                         {day(session.signedInAt)}
@@ -234,7 +234,7 @@ function AccessAction({
   return (
     <div className="flex items-center justify-between gap-12">
       <div className="min-w-0">
-        <p className="text-label font-medium text-ink">{title}</p>
+        <p className="text-label text-ink">{title}</p>
         <p className="mt-0.5 text-caption text-ink-2">{description}</p>
       </div>
       <Button variant="secondary" size="small" onClick={onClick}>

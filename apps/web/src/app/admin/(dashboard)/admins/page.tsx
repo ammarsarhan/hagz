@@ -50,7 +50,7 @@ function AdminName({ admin }: { admin: AdminListEntry }) {
   return (
     <div className="flex items-center gap-3">
       <Initial name={admin.name} />
-      <span className="truncate font-medium">{admin.name}</span>
+      <span className="truncate text-ink">{admin.name}</span>
       {admin.id === context?.self ? <Tag>You</Tag> : null}
     </div>
   );
@@ -138,7 +138,7 @@ const invitationColumns = invitationHelper.columns([
   invitationHelper.accessor((invitation) => invitation.email, {
     id: "email",
     header: "Email",
-    cell: ({ row }) => <span className="truncate font-medium">{row.original.email}</span>,
+    cell: ({ row }) => <span className="truncate text-ink">{row.original.email}</span>,
   }),
   invitationHelper.display({
     id: "invitedBy",

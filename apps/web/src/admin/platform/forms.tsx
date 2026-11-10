@@ -308,7 +308,7 @@ function Toggle({
       className={`flex items-center justify-between gap-6 ${disabled ? "cursor-default" : "cursor-pointer"}`}
     >
       <span className="flex flex-col">
-        <span className="text-label font-medium text-ink">{label}</span>
+        <span className="text-label text-ink">{label}</span>
         <span className="text-caption text-ink-2">{hint}</span>
       </span>
       <input

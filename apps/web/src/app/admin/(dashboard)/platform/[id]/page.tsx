@@ -85,7 +85,7 @@ function LocationName({ row }: { row: LocationRow }) {
       ) : (
         <span className="size-6 shrink-0" />
       )}
-      <span className="truncate font-medium">{location.names.en}</span>
+      <span className="truncate text-ink">{location.names.en}</span>
     </div>
   );
 }
@@ -203,7 +203,7 @@ const amenityColumns = amenityHelper.columns([
   amenityHelper.accessor((amenity) => amenity.names.en, {
     id: "name",
     header: "Name",
-    cell: ({ row }) => <span className="truncate font-medium">{row.original.names.en}</span>,
+    cell: ({ row }) => <span className="truncate text-ink">{row.original.names.en}</span>,
   }),
   amenityHelper.display({
     id: "arabic",
