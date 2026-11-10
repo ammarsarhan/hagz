@@ -19,7 +19,7 @@ import {
   startTotpSetup,
 } from "../application/admin-sign-in";
 import { adminSessions } from "../application/accounts";
-import { listAdmins } from "../application/admins";
+import { getAdmin, listAdmins } from "../application/admins";
 import { refreshSession, revokeByRefreshToken } from "../application/sessions";
 import { device } from "./route-helpers";
 import * as route from "./definitions/admin";
@@ -73,6 +73,10 @@ export const adminAuthRoutes = createRouter()
   })
   .openapi(route.admins, async (c) => {
     return c.json({ data: await listAdmins() }, 200);
+  })
+  .openapi(route.admin, async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await getAdmin({ id, sessionId: c.var.admin.sessionId }), 200);
   })
   .openapi(route.invitations, async (c) => {
     return c.json({ data: await listAdminInvitations() }, 200);

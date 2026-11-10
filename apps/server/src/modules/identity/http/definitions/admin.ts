@@ -3,6 +3,7 @@ import {
   AcceptAdminInvitation,
   Admin,
   AdminChallenge,
+  AdminDetails,
   AdminInvitation,
   AdminListEntry,
   AdminSignedIn,
@@ -143,6 +144,24 @@ export const admins = createRoute({
     200: { description: "The admins", ...json(list(AdminListEntry)) },
     401: unauthenticated,
     403: problemResponse(headerMissing),
+  },
+});
+
+export const admin = createRoute({
+  method: "get",
+  path: "/admin/list/{id}",
+  tags: ["Admins"],
+  summary: "One admin in full",
+  description:
+    "Who invited them, the invitations they've sent and the browsers they're signed in on.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The admin", ...json(AdminDetails) },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("ADMIN_NOT_FOUND"),
   },
 });
 

@@ -108,6 +108,7 @@ const messages = {
     en: "An admin with this email already exists.",
     ar: "يوجد مسؤول بهذا البريد الإلكتروني بالفعل.",
   },
+  ADMIN_NOT_FOUND: { en: "We couldn't find this admin.", ar: "لم نعثر على هذا المسؤول." },
   TOTP_SETUP_REQUIRED: {
     en: "Set up your authenticator app to continue.",
     ar: "أعدّ تطبيق المصادقة للمتابعة.",

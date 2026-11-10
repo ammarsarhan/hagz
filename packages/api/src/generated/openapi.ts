@@ -2563,6 +2563,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/list/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One admin in full
+         * @description Who invited them, the invitations they've sent and the browsers they're signed in on.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The admin */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminDetails"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/invitations/{id}": {
         parameters: {
             query?: never;
@@ -4839,6 +4907,40 @@ export interface components {
             lastSignedInAt: string | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        AdminDetails: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "BANNED";
+            /** @description False until the first sign-in finishes setting up the authenticator. */
+            authenticatorSetUp: boolean;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            authenticatorSetUpAt: string | null;
+            /** @description The inviting admin's name; null for the first admin. */
+            invitedBy: string | null;
+            /** @description Invitations they've sent, used or not. */
+            invitesSent: number;
+            /** @description Signed in now, most recently active first. */
+            devices: components["schemas"]["AdminDevice"][];
+        };
+        AdminDevice: {
+            /** Format: uuid */
+            id: string;
+            userAgent: string | null;
+            ipAddress: string | null;
+            /** Format: date-time */
+            signedInAt: string;
+            /** Format: date-time */
+            lastActiveAt: string;
+            /** @description The session making this request. */
+            current: boolean;
         };
         AcceptAdminInvitation: {
             /** @description From the invitation link. */

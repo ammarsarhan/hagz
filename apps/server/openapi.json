@@ -866,6 +866,123 @@
           "createdAt"
         ]
       },
+      "AdminDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "BANNED"
+            ]
+          },
+          "authenticatorSetUp": {
+            "type": "boolean",
+            "description": "False until the first sign-in finishes setting up the authenticator."
+          },
+          "lastSignedInAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "authenticatorSetUpAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "invitedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The inviting admin's name; null for the first admin."
+          },
+          "invitesSent": {
+            "type": "integer",
+            "description": "Invitations they've sent, used or not."
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDevice"
+            },
+            "description": "Signed in now, most recently active first."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "status",
+          "authenticatorSetUp",
+          "lastSignedInAt",
+          "createdAt",
+          "authenticatorSetUpAt",
+          "invitedBy",
+          "invitesSent",
+          "devices"
+        ]
+      },
+      "AdminDevice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userAgent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "signedInAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "The session making this request."
+          }
+        },
+        "required": [
+          "id",
+          "userAgent",
+          "ipAddress",
+          "signedInAt",
+          "lastActiveAt",
+          "current"
+        ]
+      },
       "AcceptAdminInvitation": {
         "type": "object",
         "properties": {
@@ -4312,6 +4429,73 @@
           },
           "403": {
             "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/list/{id}": {
+      "get": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "One admin in full",
+        "description": "Who invited them, the invitations they've sent and the browsers they're signed in on.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ADMIN_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {

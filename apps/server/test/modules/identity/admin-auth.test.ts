@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AdminChallenge, AdminSignedIn, TotpSetup } from "@hagz/contracts";
+import { AdminChallenge, AdminDetails, AdminSignedIn, TotpSetup } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { createFirstAdmin } from "@/modules/identity";
@@ -436,5 +436,53 @@ describe("admin invitations", () => {
       404,
     );
     expect((await request("GET", "/admin/invitations", { jar, header: false })).status).toBe(403);
+  });
+});
+
+describe("admin details", () => {
+  const invite = (jar: Jar, email: string) =>
+    request("POST", "/admin/invitations", { body: { email }, jar });
+  const tokenFrom = (email: string) =>
+    new URL(mailbox.lastInvitationTo(email)?.acceptUrl ?? "http://x").hash.replace("#token=", "");
+
+  it("shows who invited an admin, their invites and the browsers they're signed in on", async () => {
+    const omar = await createAdmin();
+    const { jar } = await signedIn(omar.secret);
+    await signedIn(omar.secret, 1);
+    await invite(jar, "sara@hagz.app");
+    await request("POST", "/auth/admin/invitations/accept", {
+      body: { token: tokenFrom("sara@hagz.app"), name: "Sara", password: PASSWORD },
+    });
+    const sara = await prisma.admin.findUniqueOrThrow({ where: { email: "sara@hagz.app" } });
+
+    const own = await request("GET", `/admin/list/${omar.id}`, { jar });
+    expect(own.status).toBe(200);
+    const details = AdminDetails.parse(await own.json());
+    expect(details).toMatchObject({
+      email: EMAIL,
+      invitedBy: null,
+      invitesSent: 1,
+      authenticatorSetUp: true,
+    });
+    expect(details.authenticatorSetUpAt).toEqual(expect.any(String));
+    // Both sign-ins, with this request's session marked.
+    expect(details.devices).toHaveLength(2);
+    expect(details.devices.filter((device) => device.current)).toHaveLength(1);
+
+    const invited = AdminDetails.parse(
+      await (await request("GET", `/admin/list/${sara.id}`, { jar })).json(),
+    );
+    expect(invited).toMatchObject({
+      invitedBy: "Omar",
+      invitesSent: 0,
+      authenticatorSetUp: false,
+      authenticatorSetUpAt: null,
+      devices: [],
+    });
+
+    expect((await json(await request("GET", `/admin/list/${randomUUID()}`, { jar }))).code).toBe(
+      "ADMIN_NOT_FOUND",
+    );
+    expect((await request("GET", `/admin/list/${sara.id}`, { jar: {} })).status).toBe(401);
   });
 });
