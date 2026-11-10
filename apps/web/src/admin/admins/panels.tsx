@@ -136,18 +136,19 @@ export function AdminPanel({
                     className="flex items-center justify-between gap-4 border-b border-border/75 py-2.5 last:border-b-0"
                   >
                     <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-label font-medium text-ink">
-                        {device(session.userAgent)}
-                        {session.current ? <Tag>This browser</Tag> : null}
-                      </p>
+                      <p className="text-label font-medium text-ink">{device(session.userAgent)}</p>
                       <p className="mt-0.5 truncate text-caption text-ink-2">
                         {session.ipAddress ?? "Unknown address"} · signed in{" "}
                         {day(session.signedInAt)}
                       </p>
                     </div>
-                    <span className="shrink-0 text-caption text-ink-2">
-                      Active {ago(session.lastActiveAt)}
-                    </span>
+                    {/* This browser's badge stacks over when it was last active. */}
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {session.current ? <Tag>This browser</Tag> : null}
+                      <span className="text-caption text-ink-2">
+                        Active {ago(session.lastActiveAt)}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
