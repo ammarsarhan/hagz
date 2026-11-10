@@ -84,55 +84,8 @@ export function Modal({
   );
 }
 
-// A form inside a dialog: title, fields, then cancel and submit. Errors show in the HUD.
-export function FormDialog({
-  open,
-  onClose,
-  title,
-  subtitle,
-  submitLabel,
-  busy,
-  danger = false,
-  onSubmit,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  subtitle?: ReactNode;
-  submitLabel: string;
-  busy: boolean;
-  danger?: boolean;
-  onSubmit: () => void;
-  children?: ReactNode;
-}) {
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <form
-        className="flex flex-col p-6"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit();
-        }}
-      >
-        <h2 className="text-heading font-semibold text-ink">{title}</h2>
-        {subtitle ? <p className="mt-1 text-label text-ink-2">{subtitle}</p> : null}
-        {children ? <div className="mt-6 flex flex-col gap-4">{children}</div> : null}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Button variant="secondary" onClick={onClose} disabled={busy}>
-            Cancel
-          </Button>
-          <Button type="submit" variant={danger ? "danger" : "primary"} loading={busy}>
-            {submitLabel}
-          </Button>
-        </div>
-      </form>
-    </Dialog>
-  );
-}
-
-// "Delete …?", "Revoke …?": a sentence on what happens, Cancel, and the button that does it, red
-// unless it's something that can't do harm (sending a link).
+// "Delete …?", "Revoke …?": the question, a sentence on what happens, Cancel, and the button that
+// does it, red unless it's something that can't do harm (sending a link).
 export function ConfirmDialog({
   title,
   description,
@@ -152,15 +105,26 @@ export function ConfirmDialog({
 }) {
   const { busy, run } = useSubmit(onDone, onClose);
   return (
-    <FormDialog
-      open
+    <Modal
+      narrow
       onClose={onClose}
       title={title}
-      subtitle={description}
-      submitLabel={confirmLabel}
-      danger={danger}
-      busy={busy}
-      onSubmit={() => void run(request)}
+      description={description}
+      footer={
+        <>
+          <Button variant="secondary" size="small" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            size="small"
+            variant={danger ? "danger" : "primary"}
+            loading={busy}
+            onClick={() => void run(request)}
+          >
+            {confirmLabel}
+          </Button>
+        </>
+      }
     />
   );
 }
