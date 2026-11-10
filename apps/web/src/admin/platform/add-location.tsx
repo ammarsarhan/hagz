@@ -195,7 +195,7 @@ function Details({
     en: "",
     ar: "",
   });
-  const { busy, error, run } = useSubmit(onDone, frame.onClose);
+  const { busy, run } = useSubmit(onDone, frame.onClose);
   const label = localityLabel[kind].toLowerCase();
   // Like the sign-in page: the button stays grey until both names are there.
   const ready = form.parentId !== "" && form.en.trim() !== "" && form.ar.trim() !== "";
@@ -279,11 +279,6 @@ function Details({
             />
           </div>
         </div>
-        {error ? (
-          <p role="alert" className="rounded-field bg-red/10 px-4 py-3 text-label text-red">
-            {error}
-          </p>
-        ) : null}
       </form>
     </ChooserDialog>
   );
