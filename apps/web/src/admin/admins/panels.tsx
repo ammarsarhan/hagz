@@ -48,11 +48,11 @@ const moment = (iso: string) =>
     minute: "2-digit",
   });
 
-// An admin in full, with their access looked after here. The header is just their name; the body
-// is what the API knows about them (how they joined, the authenticator, where they're signed in),
-// then Access: reset their password (an emailed link) or their authenticator, each confirmed first
-// in a modal over the panel. Neither is offered on your own account. The body scrolls when it's
-// taller than the window.
+// An admin in full, with their access looked after here. The header is their name over their
+// email; the body is what the API knows about them (how they joined, the authenticator, where
+// they're signed in), then Access: reset their password (an emailed link) or their authenticator,
+// each confirmed first in a modal over the panel. Neither is offered on your own account. The body
+// scrolls when it's taller than the window.
 export function AdminPanel({
   admin,
   self,
@@ -81,13 +81,13 @@ export function AdminPanel({
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
       title={admin.name}
+      description={admin.email}
     >
       {details ? (
         <div className="flex flex-col gap-6">
           <PanelSection title="Account">
             <div>
               <DetailRow label="Status" value={<AdminStatus status={details.status} />} />
-              <DetailRow label="Email" value={details.email} />
               <DetailRow label="Admin since" value={day(details.createdAt)} />
               <DetailRow
                 label="Invited by"
@@ -231,7 +231,7 @@ function AccessAction({
   onClick: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-6">
+    <div className="flex items-center justify-between gap-12">
       <div className="min-w-0">
         <p className="text-label font-medium text-ink">{title}</p>
         <p className="mt-0.5 text-caption text-ink-2">{description}</p>
