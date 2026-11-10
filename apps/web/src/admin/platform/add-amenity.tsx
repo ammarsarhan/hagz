@@ -7,7 +7,7 @@ import { Button } from "@/admin/button";
 import { ChooserDialog } from "@/admin/chooser";
 import { send } from "@/admin/errors";
 import { Field } from "@/admin/field";
-import { useSubmit } from "./forms";
+import { useSubmit } from "@/admin/submit";
 
 // Add amenity, in the add flows' white modal: its names and its key in one step. It starts on,
 // so venues in the marketplace can pick it right away.

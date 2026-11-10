@@ -9,7 +9,7 @@ import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
 import { KindIcon } from "./kind-icon";
-import { useSubmit } from "./forms";
+import { useSubmit } from "@/admin/submit";
 import { byName, localityLabel } from "./model";
 
 // Add location, in two steps: pick what kind of place it is from cards (one per kind this

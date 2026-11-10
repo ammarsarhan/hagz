@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "./button";
+import { useSubmit } from "./submit";
 
 // A modal on the native <dialog>: the browser traps focus, closes it on Escape and draws the
 // backdrop; a click on the backdrop closes it too. Its content mounts only while open, so every
@@ -92,5 +93,36 @@ export function FormDialog({
         </div>
       </form>
     </Dialog>
+  );
+}
+
+// "Delete …?", "Revoke …?": a sentence on what happens, Cancel, and the red button that does it.
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel = "Delete",
+  request,
+  onClose,
+  onDone,
+}: {
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  request: () => Promise<{ ok: boolean; error?: unknown }>;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { busy, run } = useSubmit(onDone, onClose);
+  return (
+    <FormDialog
+      open
+      onClose={onClose}
+      title={title}
+      subtitle={description}
+      submitLabel={confirmLabel}
+      danger
+      busy={busy}
+      onSubmit={() => void run(request)}
+    />
   );
 }
