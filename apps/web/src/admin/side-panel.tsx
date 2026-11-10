@@ -67,7 +67,7 @@ export function SidePanel({
             <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
               {title}
             </h2>
-            {description ? <p className="mt-1.5 text-body text-ink-2">{description}</p> : null}
+            {description ? <p className="mt-1 text-body text-ink-2">{description}</p> : null}
           </div>
           <button
             type="button"
