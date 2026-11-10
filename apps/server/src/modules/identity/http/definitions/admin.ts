@@ -165,6 +165,25 @@ export const admin = createRoute({
   },
 });
 
+export const resetAuthenticator = createRoute({
+  method: "delete",
+  path: "/admin/list/{id}/authenticator",
+  tags: ["Admins"],
+  summary: "Reset another admin's authenticator",
+  description:
+    "Forgets it and signs them out everywhere; their next sign-in sets up a new one. Not for your own account.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Reset" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("ADMIN_NOT_FOUND"),
+    409: problemResponse("OWN_ADMIN_ACCOUNT"),
+  },
+});
+
 export const invite = createRoute({
   method: "post",
   path: "/admin/invitations",

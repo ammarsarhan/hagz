@@ -486,3 +486,36 @@ describe("admin details", () => {
     expect((await request("GET", `/admin/list/${sara.id}`, { jar: {} })).status).toBe(401);
   });
 });
+
+describe("admin resets", () => {
+  it("reset another admin's authenticator: signed out, and set up again on the next sign-in", async () => {
+    const omar = await createAdmin();
+    const sara = await createAdmin({ email: "sara@hagz.app" });
+    const { jar } = await signedIn(omar.secret);
+    const { challengeToken } = await signIn("sara@hagz.app");
+    const saraSignedIn = jarFrom(await complete(challengeToken, currentCode(sara.secret)));
+
+    const res = await request("DELETE", `/admin/list/${sara.id}/authenticator`, { jar });
+    expect(res.status).toBe(204);
+    expect(
+      await prisma.admin.findUniqueOrThrow({
+        where: { id: sara.id },
+        select: { totpSecret: true, totpConfirmedAt: true },
+      }),
+    ).toEqual({ totpSecret: null, totpConfirmedAt: null });
+    // Her session can't be refreshed any more.
+    const refresh = await request("POST", "/auth/admin/sessions/refresh", { jar: saraSignedIn });
+    expect((await json(refresh)).code).toBe("SESSION_ENDED");
+    expect((await signIn("sara@hagz.app")).next).toBe("TOTP_SETUP");
+  });
+
+  it("refuse to reset your own authenticator, or an admin that doesn't exist", async () => {
+    const omar = await createAdmin();
+    const { jar } = await signedIn(omar.secret);
+    const own = await request("DELETE", `/admin/list/${omar.id}/authenticator`, { jar });
+    expect((await json(own)).code).toBe("OWN_ADMIN_ACCOUNT");
+    const missing = await request("DELETE", `/admin/list/${randomUUID()}/authenticator`, { jar });
+    expect((await json(missing)).code).toBe("ADMIN_NOT_FOUND");
+    expect((await signIn()).next).toBe("TOTP");
+  });
+});

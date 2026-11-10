@@ -109,6 +109,10 @@ const messages = {
     ar: "يوجد مسؤول بهذا البريد الإلكتروني بالفعل.",
   },
   ADMIN_NOT_FOUND: { en: "We couldn't find this admin.", ar: "لم نعثر على هذا المسؤول." },
+  OWN_ADMIN_ACCOUNT: {
+    en: "You can't do this to your own account. Ask another admin.",
+    ar: "لا يمكنك القيام بذلك لحسابك. اطلب من مسؤول آخر.",
+  },
   TOTP_SETUP_REQUIRED: {
     en: "Set up your authenticator app to continue.",
     ar: "أعدّ تطبيق المصادقة للمتابعة.",

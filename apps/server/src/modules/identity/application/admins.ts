@@ -29,7 +29,7 @@ export const listAdmins = async () => {
   }));
 };
 
-const adminNotFound = () =>
+export const adminNotFound = () =>
   new AppError({ code: "ADMIN_NOT_FOUND", status: 404, detail: "No such admin." });
 
 // One admin in full: how they joined (who invited them), what they've done with their own invites,
