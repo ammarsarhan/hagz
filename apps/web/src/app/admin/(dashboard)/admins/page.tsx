@@ -1,6 +1,7 @@
 "use client";
 
-import type { AdminListEntry } from "@hagz/contracts";
+import type { AdminInvitation, AdminListEntry } from "@hagz/contracts";
+import { IconMail, IconPlus } from "@tabler/icons-react";
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -10,13 +11,20 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { createContext, useContext, useState } from "react";
+import { api } from "@/admin/api";
+import { InvitationsPanel } from "@/admin/admins/invitations-panel";
+import { InviteDialog } from "@/admin/admins/invite-dialog";
 import { useAdmins } from "@/admin/admins/model";
+import { Button } from "@/admin/button";
 import { DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { ConfirmDialog } from "@/admin/dialog";
+import { send } from "@/admin/errors";
 import { PageHeader } from "@/admin/page-header";
 import { useAdmin } from "@/admin/session";
 
 // Admins, in the Platform pages' table (the user's references, Mobbin's Skills list and Attio's
-// Members): everyone who can sign in here, searchable by name or email.
+// Members): everyone who can sign in here, searchable by name or email. The open invitations are a
+// side panel from the header, and inviting someone is the add flows' modal, as on Platform.
 
 const features = tableFeatures({
   columnFilteringFeature,
@@ -115,10 +123,16 @@ const matches = (admin: AdminListEntry, query: string) => {
   return [admin.name, admin.email].some((text) => text.toLowerCase().includes(q));
 };
 
+// What's open over the table. The panel stays open under the invite and revoke modals.
+type Modal = { form: "invite" } | { form: "revoke"; invitation: AdminInvitation };
+
 export default function Admins() {
   const self = useAdmin();
-  const { data, error } = useAdmins();
+  const { data, error, reload } = useAdmins();
   const [query, setQuery] = useState("");
+  const [panel, setPanel] = useState(false);
+  const [modal, setModal] = useState<Modal>();
+  const close = () => setModal(undefined);
 
   const table = useTable({
     features,
@@ -134,7 +148,28 @@ export default function Admins() {
 
   return (
     <>
-      <PageHeader title="Admins" subtitle="The people who can sign in here." />
+      <PageHeader
+        title="Admins"
+        subtitle="The people who can sign in here, and the invitations still open."
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => setPanel(true)}
+              disabled={!data}
+            >
+              <IconMail size={16} className="size-4" stroke={2} />
+              Invitations
+              {data ? <span className="text-ink-2">{data.invitations.length}</span> : null}
+            </Button>
+            <Button size="small" onClick={() => setModal({ form: "invite" })} disabled={!data}>
+              <IconPlus size={16} className="size-4" stroke={2} />
+              Invite admin
+            </Button>
+          </>
+        }
+      />
 
       <div className="mt-8 flex items-center gap-2">
         <TableSearch value={query} onChange={setQuery} placeholder="Search admins…" />
@@ -150,6 +185,32 @@ export default function Admins() {
           />
         </SelfContext.Provider>
       </div>
+
+      {panel && data ? (
+        <InvitationsPanel
+          invitations={data.invitations}
+          onInvite={() => setModal({ form: "invite" })}
+          onRevoke={(invitation) => setModal({ form: "revoke", invitation })}
+          onClose={() => setPanel(false)}
+        />
+      ) : null}
+      {modal?.form === "invite" ? <InviteDialog onClose={close} onDone={reload} /> : null}
+      {modal?.form === "revoke" ? (
+        <ConfirmDialog
+          title={`Revoke the invitation to ${modal.invitation.email}?`}
+          description="Its link stops working. You can invite them again later."
+          confirmLabel="Revoke"
+          request={() =>
+            send(
+              api.DELETE("/v1/admin/invitations/{id}", {
+                params: { path: { id: modal.invitation.id } },
+              }),
+            )
+          }
+          onClose={close}
+          onDone={reload}
+        />
+      ) : null}
     </>
   );
 }
