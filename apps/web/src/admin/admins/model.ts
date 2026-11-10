@@ -48,3 +48,17 @@ export function useAdmins() {
 
   return { data, error, reload: () => void load() };
 }
+
+const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+// "in 2 days", "in 5 hours", "in 20 minutes": when an invitation's link stops working.
+export const expiresIn = (iso: string, now = Date.now()) => {
+  const minutes = Math.max(1, Math.round((new Date(iso).getTime() - now) / 60_000));
+  if (minutes >= 60 * 24) return relative.format(Math.round(minutes / (60 * 24)), "day");
+  if (minutes >= 60) return relative.format(Math.round(minutes / 60), "hour");
+  return relative.format(minutes, "minute");
+};
+
+// "8 Nov 2026", in the admin's own time zone.
+export const day = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });

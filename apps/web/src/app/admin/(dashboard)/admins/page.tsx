@@ -1,41 +1,36 @@
 "use client";
 
 import type { AdminInvitation, AdminListEntry } from "@hagz/contracts";
-import { IconMail, IconPlus } from "@tabler/icons-react";
-import {
-  columnFilteringFeature,
-  createColumnHelper,
-  createFilteredRowModel,
-  globalFilteringFeature,
-  tableFeatures,
-  useTable,
-} from "@tanstack/react-table";
-import { createContext, useContext, useState } from "react";
+import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import { createContext, useContext, useMemo, useState } from "react";
 import { api } from "@/admin/api";
-import { InvitationsPanel } from "@/admin/admins/invitations-panel";
 import { InviteDialog } from "@/admin/admins/invite-dialog";
-import { useAdmins } from "@/admin/admins/model";
+import { day, expiresIn, useAdmins } from "@/admin/admins/model";
 import { Button } from "@/admin/button";
-import { DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
 import { ConfirmDialog } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { PageHeader } from "@/admin/page-header";
 import { useAdmin } from "@/admin/session";
+import { TabPanel, Tabs } from "@/admin/tabs";
 
-// Admins, in the Platform pages' table (the user's references, Mobbin's Skills list and Attio's
-// Members): everyone who can sign in here, searchable by name or email. The open invitations are a
-// side panel from the header, and inviting someone is the add flows' modal, as on Platform.
+// Admins, laid out like a marketplace's page: tabs on a hairline that split it into the admins and
+// the invitations still open, each a table in the Platform pages' design (the user's references,
+// Mobbin's Skills list and Attio's Members) under its own search. Inviting someone is the add
+// flows' modal, as on Platform.
 
-const features = tableFeatures({
-  columnFilteringFeature,
-  globalFilteringFeature,
-  filteredRowModel: createFilteredRowModel(),
-});
-const helper = createColumnHelper<typeof features, AdminListEntry>();
+// Columns are module-level (TanStack needs them stable), so the signed-in admin and the page's
+// actions reach the cells through context instead of a closure.
+const RowContext = createContext<{
+  self: string;
+  revoke: (invitation: AdminInvitation) => void;
+} | null>(null);
 
-// "8 Nov 2026", in the admin's own time zone.
-const day = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+// --- Admins ---
+
+const adminFeatures = tableFeatures({});
+const adminHelper = createColumnHelper<typeof adminFeatures, AdminListEntry>();
 
 const statusTag: Record<AdminListEntry["status"], { label: string; on: boolean }> = {
   ACTIVE: { label: "Active", on: true },
@@ -43,38 +38,45 @@ const statusTag: Record<AdminListEntry["status"], { label: string; on: boolean }
   BANNED: { label: "Banned", on: false },
 };
 
-// Columns are module-level (TanStack needs them stable), so the signed-in admin reaches the name
-// cell through context instead of a closure.
-const SelfContext = createContext<string | null>(null);
+function AdminStatus({ status }: { status: AdminListEntry["status"] }) {
+  const { label, on } = statusTag[status];
+  return <Tag tone={on ? "on" : "neutral"}>{label}</Tag>;
+}
 
-function Name({ admin }: { admin: AdminListEntry }) {
-  const self = useContext(SelfContext);
+function Initial({ name }: { name: string }) {
+  return (
+    <span
+      aria-hidden
+      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-chip text-caption font-semibold text-ink-2"
+    >
+      {name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function AdminName({ admin }: { admin: AdminListEntry }) {
+  const context = useContext(RowContext);
   return (
     <div className="flex items-center gap-3">
-      <span
-        aria-hidden
-        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-chip text-caption font-semibold text-ink-2"
-      >
-        {admin.name.trim().charAt(0).toUpperCase()}
-      </span>
+      <Initial name={admin.name} />
       <span className="truncate font-medium">{admin.name}</span>
-      {admin.id === self ? <Tag>You</Tag> : null}
+      {admin.id === context?.self ? <Tag>You</Tag> : null}
     </div>
   );
 }
 
-const columns = helper.columns([
-  helper.accessor((admin) => admin.name, {
+const adminColumns = adminHelper.columns([
+  adminHelper.accessor((admin) => admin.name, {
     id: "name",
     header: "Name",
-    cell: ({ row }) => <Name admin={row.original} />,
+    cell: ({ row }) => <AdminName admin={row.original} />,
   }),
-  helper.display({
+  adminHelper.display({
     id: "email",
     header: "Email",
     cell: ({ row }) => <span className="truncate text-ink-2">{row.original.email}</span>,
   }),
-  helper.display({
+  adminHelper.display({
     id: "authenticator",
     header: "Authenticator",
     cell: ({ row }) =>
@@ -84,7 +86,7 @@ const columns = helper.columns([
         <span className="text-ink-3">Not yet</span>
       ),
   }),
-  helper.display({
+  adminHelper.display({
     id: "lastSignIn",
     header: "Last signed in",
     cell: ({ row }) =>
@@ -94,22 +96,19 @@ const columns = helper.columns([
         <span className="text-ink-3">Never</span>
       ),
   }),
-  helper.display({
+  adminHelper.display({
     id: "added",
     header: "Added",
     cell: ({ row }) => <span className="text-ink-2">{day(row.original.createdAt)}</span>,
   }),
-  helper.display({
+  adminHelper.display({
     id: "status",
     header: "Status",
-    cell: ({ row }) => {
-      const { label, on } = statusTag[row.original.status];
-      return <Tag tone={on ? "on" : "neutral"}>{label}</Tag>;
-    },
+    cell: ({ row }) => <AdminStatus status={row.original.status} />,
   }),
 ]);
 
-const widths = {
+const adminWidths = {
   email: "26%",
   authenticator: "12%",
   lastSignIn: "13%",
@@ -117,33 +116,110 @@ const widths = {
   status: "10%",
 };
 
-// Matches the name or the email.
-const matches = (admin: AdminListEntry, query: string) => {
-  const q = query.trim().toLowerCase();
-  return [admin.name, admin.email].some((text) => text.toLowerCase().includes(q));
+// --- Invitations ---
+
+const invitationFeatures = tableFeatures({});
+const invitationHelper = createColumnHelper<typeof invitationFeatures, AdminInvitation>();
+
+function InvitationMenu({ invitation }: { invitation: AdminInvitation }) {
+  const context = useContext(RowContext);
+  if (!context) return null;
+  return (
+    <RowMenu
+      label={`Actions for the invitation to ${invitation.email}`}
+      items={[
+        {
+          label: "Revoke",
+          icon: IconTrash,
+          tone: "danger",
+          onSelect: () => context.revoke(invitation),
+        },
+      ]}
+    />
+  );
+}
+
+const invitationColumns = invitationHelper.columns([
+  invitationHelper.accessor((invitation) => invitation.email, {
+    id: "email",
+    header: "Email",
+    cell: ({ row }) => <span className="truncate font-medium">{row.original.email}</span>,
+  }),
+  invitationHelper.display({
+    id: "invitedBy",
+    header: "Invited by",
+    cell: ({ row }) => <span className="truncate text-ink-2">{row.original.invitedBy}</span>,
+  }),
+  invitationHelper.display({
+    id: "sent",
+    header: "Sent",
+    cell: ({ row }) => <span className="text-ink-2">{day(row.original.createdAt)}</span>,
+  }),
+  invitationHelper.display({
+    id: "expires",
+    header: "Expires",
+    cell: ({ row }) => <span className="text-ink-2">{expiresIn(row.original.expiresAt)}</span>,
+  }),
+  invitationHelper.display({
+    id: "menu",
+    header: "",
+    cell: ({ row }) => <InvitationMenu invitation={row.original} />,
+  }),
+]);
+
+const invitationWidths = {
+  invitedBy: "24%",
+  sent: "14%",
+  expires: "14%",
+  menu: "3.5rem",
 };
 
-// What's open over the table. The panel stays open under the invite and revoke modals.
+// --- Page ---
+
+// What the search matches: any of the texts, ignoring case.
+const filter = <T,>(items: T[], query: string, texts: (item: T) => string[]) => {
+  const q = query.trim().toLowerCase();
+  if (!q) return items;
+  return items.filter((item) => texts(item).some((text) => text.toLowerCase().includes(q)));
+};
+
+type Section = "admins" | "invitations";
+
 type Modal = { form: "invite" } | { form: "revoke"; invitation: AdminInvitation };
 
 export default function Admins() {
   const self = useAdmin();
   const { data, error, reload } = useAdmins();
-  const [query, setQuery] = useState("");
-  const [panel, setPanel] = useState(false);
+  const [section, setSection] = useState<Section>("admins");
+  const [adminQuery, setAdminQuery] = useState("");
+  const [invitationQuery, setInvitationQuery] = useState("");
   const [modal, setModal] = useState<Modal>();
   const close = () => setModal(undefined);
 
-  const table = useTable({
-    features,
-    columns,
-    data: data?.admins ?? [],
+  const admins = useMemo(
+    () => filter(data?.admins ?? [], adminQuery, (admin) => [admin.name, admin.email]),
+    [data, adminQuery],
+  );
+  const invitations = useMemo(
+    () =>
+      filter(data?.invitations ?? [], invitationQuery, (invitation) => [
+        invitation.email,
+        invitation.invitedBy,
+      ]),
+    [data, invitationQuery],
+  );
+
+  const adminTable = useTable({
+    features: adminFeatures,
+    columns: adminColumns,
+    data: admins,
     getRowId: (admin) => admin.id,
-    state: { globalFilter: query },
-    onGlobalFilterChange: setQuery,
-    // One search over the whole row, run once per row from the name column.
-    getColumnCanGlobalFilter: (column) => column.id === "name",
-    globalFilterFn: (row, _columnId, value: string) => matches(row.original, value),
+  });
+  const invitationTable = useTable({
+    features: invitationFeatures,
+    columns: invitationColumns,
+    data: invitations,
+    getRowId: (invitation) => invitation.id,
   });
 
   return (
@@ -152,48 +228,75 @@ export default function Admins() {
         title="Admins"
         subtitle="The people who can sign in here, and the invitations still open."
         actions={
-          <>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => setPanel(true)}
-              disabled={!data}
-            >
-              <IconMail size={16} className="size-4" stroke={2} />
-              Invitations
-              {data ? <span className="text-ink-2">{data.invitations.length}</span> : null}
-            </Button>
-            <Button size="small" onClick={() => setModal({ form: "invite" })} disabled={!data}>
-              <IconPlus size={16} className="size-4" stroke={2} />
-              Invite admin
-            </Button>
-          </>
+          <Button size="small" onClick={() => setModal({ form: "invite" })} disabled={!data}>
+            <IconPlus size={16} className="size-4" stroke={2} />
+            Invite admin
+          </Button>
         }
       />
 
-      <div className="mt-8 flex items-center gap-2">
-        <TableSearch value={query} onChange={setQuery} placeholder="Search admins…" />
-      </div>
-
-      <div className="mt-4">
-        <SelfContext.Provider value={self.id}>
-          <DataTable
-            table={table}
-            widths={widths}
-            loading={!data && !error}
-            empty={error ?? (query ? `No admin matches “${query}”.` : "No admins yet.")}
-          />
-        </SelfContext.Provider>
-      </div>
-
-      {panel && data ? (
-        <InvitationsPanel
-          invitations={data.invitations}
-          onInvite={() => setModal({ form: "invite" })}
-          onRevoke={(invitation) => setModal({ form: "revoke", invitation })}
-          onClose={() => setPanel(false)}
+      <div className="mt-6">
+        <Tabs
+          label="Sections"
+          value={section}
+          onChange={setSection}
+          items={[
+            { id: "admins", label: "Admins", count: data?.admins.length },
+            { id: "invitations", label: "Invitations", count: data?.invitations.length },
+          ]}
         />
-      ) : null}
+      </div>
+
+      <RowContext.Provider
+        value={{ self: self.id, revoke: (invitation) => setModal({ form: "revoke", invitation }) }}
+      >
+        {section === "admins" ? (
+          <TabPanel id="admins">
+            <div className="mt-6">
+              <TableSearch
+                value={adminQuery}
+                onChange={setAdminQuery}
+                placeholder="Search admins…"
+              />
+            </div>
+            <div className="mt-4">
+              <DataTable
+                table={adminTable}
+                widths={adminWidths}
+                loading={!data && !error}
+                empty={
+                  error ??
+                  (adminQuery.trim() ? `No admin matches “${adminQuery}”.` : "No admins yet.")
+                }
+              />
+            </div>
+          </TabPanel>
+        ) : (
+          <TabPanel id="invitations">
+            <div className="mt-6">
+              <TableSearch
+                value={invitationQuery}
+                onChange={setInvitationQuery}
+                placeholder="Search invitations…"
+              />
+            </div>
+            <div className="mt-4">
+              <DataTable
+                table={invitationTable}
+                widths={invitationWidths}
+                loading={!data && !error}
+                empty={
+                  error ??
+                  (invitationQuery.trim()
+                    ? `No invitation matches “${invitationQuery}”.`
+                    : "No open invitations.")
+                }
+              />
+            </div>
+          </TabPanel>
+        )}
+      </RowContext.Provider>
+
       {modal?.form === "invite" ? <InviteDialog onClose={close} onDone={reload} /> : null}
       {modal?.form === "revoke" ? (
         <ConfirmDialog
