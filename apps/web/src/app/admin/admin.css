@@ -90,18 +90,28 @@ input:-webkit-autofill:focus {
   }
 }
 
-/* The error HUD (admin/hud.tsx) rises a little as it fades in. */
-@keyframes hud-in {
+/* The error HUD (admin/hud.tsx): a plain fade in, and out (.hud-leaving) before it's removed. It's
+   white with its text and icon in a deeper, quieter red than --color-red. */
+@theme {
+  --color-hud: #b42318;
+}
+@keyframes hud-fade {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px);
   }
 }
 .hud {
-  animation: hud-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: hud-fade 160ms ease-out;
+}
+.hud-leaving {
+  opacity: 0;
+  transition: opacity 160ms ease-in;
 }
 @media (prefers-reduced-motion: reduce) {
   .hud {
     animation: none;
+  }
+  .hud-leaving {
+    transition: none;
   }
 }

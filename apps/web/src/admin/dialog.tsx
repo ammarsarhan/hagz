@@ -48,7 +48,7 @@ export function Dialog({
   );
 }
 
-// A form inside a dialog: title, fields, the error from the last attempt, then cancel and submit.
+// A form inside a dialog: title, fields, then cancel and submit. Errors show in the HUD.
 export function FormDialog({
   open,
   onClose,
@@ -56,7 +56,6 @@ export function FormDialog({
   subtitle,
   submitLabel,
   busy,
-  error,
   danger = false,
   onSubmit,
   children,
@@ -67,7 +66,6 @@ export function FormDialog({
   subtitle?: ReactNode;
   submitLabel: string;
   busy: boolean;
-  error?: string;
   danger?: boolean;
   onSubmit: () => void;
   children?: ReactNode;
@@ -84,11 +82,6 @@ export function FormDialog({
         <h2 className="text-heading font-semibold text-ink">{title}</h2>
         {subtitle ? <p className="mt-1 text-label text-ink-2">{subtitle}</p> : null}
         {children ? <div className="mt-6 flex flex-col gap-4">{children}</div> : null}
-        {error ? (
-          <p role="alert" className="mt-5 rounded-field bg-red/10 px-4 py-3 text-label text-red">
-            {error}
-          </p>
-        ) : null}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <Button variant="secondary" onClick={onClose} disabled={busy}>
             Cancel

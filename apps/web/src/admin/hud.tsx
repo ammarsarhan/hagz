@@ -12,10 +12,10 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-// Problems that aren't the admin's fault (no connection, the server broke): a red pill at the
-// bottom centre of the window, over everything, gone after a few seconds. Unlike the staff app's
-// light HUD it's red, so it reads as an error at a glance. Refused requests (a 4xx the admin can
-// act on) stay with their form instead; see notTheirFault in errors.ts.
+// Errors: a white pill with red text and icon at the bottom centre of the window, over
+// everything, fading in and out and gone after a few seconds. Every modal's errors show here; ones
+// that aren't the admin's fault (no connection, the server broke) add Try again. See notTheirFault
+// in errors.ts.
 //
 // An open modal <dialog> makes the rest of the page inert, so a HUD outside it would show but
 // couldn't be clicked. It's drawn inside the topmost open dialog instead, or on the page if none.
@@ -23,6 +23,8 @@ import { createPortal } from "react-dom";
 const VISIBLE_MS = 5000;
 // Longer when there's something to press.
 const WITH_ACTION_MS = 8000;
+// How long it takes to fade out (.hud-leaving in admin.css) before it's removed.
+const FADE_MS = 160;
 
 export interface HudAction {
   label: string;
@@ -33,6 +35,8 @@ interface Showing {
   message: string;
   action?: HudAction;
   key: number;
+  // Fading out; removed once the fade is done.
+  leaving?: boolean;
 }
 
 const HudContext = createContext<((message: string, action?: HudAction) => void) | null>(null);
@@ -53,15 +57,20 @@ export function HudProvider({ children }: { children: ReactNode }) {
     setShowing((was) => ({ message, action, key: (was?.key ?? 0) + 1 }));
   }, []);
 
-  // Each new message restarts the clock.
+  const dismiss = useCallback(
+    () => setShowing((was) => (was && !was.leaving ? { ...was, leaving: true } : was)),
+    [],
+  );
+
+  // Each new message restarts the clock: shown for a while, then faded out, then removed. A new
+  // message while one fades out replaces it straight away.
   useEffect(() => {
     if (!showing) return;
-    const timer = setTimeout(
-      () => setShowing(undefined),
-      showing.action ? WITH_ACTION_MS : VISIBLE_MS,
-    );
+    const timer = showing.leaving
+      ? setTimeout(() => setShowing(undefined), FADE_MS)
+      : setTimeout(dismiss, showing.action ? WITH_ACTION_MS : VISIBLE_MS);
     return () => clearTimeout(timer);
-  }, [showing]);
+  }, [showing, dismiss]);
 
   const value = useMemo(() => show, [show]);
   return (
@@ -73,7 +82,8 @@ export function HudProvider({ children }: { children: ReactNode }) {
               key={showing.key}
               message={showing.message}
               action={showing.action}
-              onClose={() => setShowing(undefined)}
+              leaving={showing.leaving ?? false}
+              onClose={dismiss}
             />,
             target,
           )
@@ -85,22 +95,26 @@ export function HudProvider({ children }: { children: ReactNode }) {
 function Hud({
   message,
   action,
+  leaving,
   onClose,
 }: {
   message: string;
   action?: HudAction;
+  leaving: boolean;
   onClose: () => void;
 }) {
   return (
     <div
       role="alert"
-      className="hud fixed bottom-6 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2.5 rounded-full bg-red py-2.5 pr-3 pl-3.5 text-label font-medium text-white shadow-[0_8px_24px_-4px_rgba(217,45,32,0.28)]"
+      className={`hud fixed bottom-6 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2.5 rounded-full border border-hud/15 bg-white py-2.5 pr-3 pl-3.5 text-label font-medium text-hud shadow-[0_8px_24px_-6px_rgba(0,0,0,0.14)] ${
+        leaving ? "hud-leaving pointer-events-none" : ""
+      }`}
     >
       <IconAlertCircleFilled size={18} className="size-[1.125rem] shrink-0" />
       <span>{message}</span>
       {action ? (
         <>
-          <span aria-hidden className="h-4 w-px shrink-0 bg-white/35" />
+          <span aria-hidden className="h-4 w-px shrink-0 bg-hud/25" />
           <button
             type="button"
             onClick={() => {
@@ -117,7 +131,7 @@ function Hud({
         type="button"
         onClick={onClose}
         aria-label="Dismiss"
-        className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/75 hover:bg-white/15 hover:text-white"
+        className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-hud/70 hover:bg-hud/10 hover:text-hud"
       >
         <IconX size={16} className="size-4" stroke={2} />
       </button>

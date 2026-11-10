@@ -22,6 +22,6 @@ export const message = (error: unknown) =>
     ? "That email and password don’t match."
     : errorMessage(error, "en");
 
-// Whether a failure is the admin's to fix (a refused request: shown by the form) or not (no answer,
-// or the server broke: shown by the HUD, with a way to try again).
+// Whether a failure is the admin's to fix (a refused request: fixing the form is the way out) or
+// not (no answer, or the server broke: the HUD offers Try again).
 export const notTheirFault = (error: unknown) => !isProblem(error) || error.status >= 500;

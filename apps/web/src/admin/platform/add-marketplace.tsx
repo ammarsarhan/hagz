@@ -76,7 +76,7 @@ function Details({
     tax: String(country.vat),
     commission: "",
   });
-  const { busy, error, run } = useSubmit(onDone, frame.onClose);
+  const { busy, run } = useSubmit(onDone, frame.onClose);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm({ ...form, [field]: event.target.value });
 
@@ -161,11 +161,6 @@ function Details({
             autoFocus
           />
         </div>
-        {error ? (
-          <p role="alert" className="rounded-field bg-red/10 px-4 py-3 text-label text-red">
-            {error}
-          </p>
-        ) : null}
       </form>
     </ChooserDialog>
   );
