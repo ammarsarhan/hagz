@@ -1,9 +1,11 @@
 "use client";
 
-import type { AdminMarketplace } from "@hagz/contracts";
+import type { AdminAmenity, AdminMarketplace } from "@hagz/contracts";
 import {
   IconChevronDown,
   IconChevronRight,
+  IconEye,
+  IconEyeOff,
   IconPencil,
   IconPlus,
   IconTrash,
@@ -28,16 +30,20 @@ import { send } from "@/admin/errors";
 import { AddLocationDialog } from "@/admin/platform/add-location";
 import { AmenityDialog, DeleteDialog, EditLocationPanel } from "@/admin/platform/forms";
 import {
+  byName,
   localityLabel,
   locationTree,
   useMarketplace,
   type Actions,
   type LocationNode,
 } from "@/admin/platform/model";
+import { TabPanel, Tabs } from "@/admin/tabs";
 
 // A marketplace's page, after the user's reference (Attio's Members): a breadcrumb back to
-// Platform, the marketplace's name and settings, a hairline, then its locations as a tree under
-// a search and an Add button. Each row's ⋯ adds under it, edits or deletes it.
+// Platform, the marketplace's name and settings, then tabs on a hairline that split it into its
+// locations and its amenities. Locations are a tree under a search and an Add button, each row's ⋯
+// adding under it, editing or deleting it. Amenities are a flat list the same way, each row's ⋯
+// editing it, turning it on or off, or deleting it.
 
 const features = tableFeatures({
   rowExpandingFeature,
@@ -159,6 +165,94 @@ const widths = {
   menu: "3.5rem",
 };
 
+// --- Amenities ---
+
+const amenityFeatures = tableFeatures({});
+const amenityHelper = createColumnHelper<typeof amenityFeatures, AdminAmenity>();
+
+function AmenityMenu({ amenity }: { amenity: AdminAmenity }) {
+  const context = useContext(RowContext);
+  if (!context) return null;
+  const { actions } = context;
+  return (
+    <RowMenu
+      label={`Actions for ${amenity.names.en}`}
+      items={[
+        {
+          label: "Edit",
+          icon: IconPencil,
+          onSelect: () => actions.editAmenity(amenity),
+        },
+        amenity.isActive
+          ? { label: "Turn off", icon: IconEyeOff, onSelect: () => actions.toggleAmenity(amenity) }
+          : { label: "Turn on", icon: IconEye, onSelect: () => actions.toggleAmenity(amenity) },
+        {
+          label: "Delete",
+          icon: IconTrash,
+          tone: "danger",
+          onSelect: () => actions.deleteAmenity(amenity),
+        },
+      ]}
+    />
+  );
+}
+
+const amenityColumns = amenityHelper.columns([
+  amenityHelper.accessor((amenity) => amenity.names.en, {
+    id: "name",
+    header: "Name",
+    cell: ({ row }) => <span className="truncate font-medium">{row.original.names.en}</span>,
+  }),
+  amenityHelper.display({
+    id: "arabic",
+    header: "Arabic",
+    cell: ({ row }) => (
+      <span dir="rtl" lang="ar" className="text-ink-2">
+        {row.original.names.ar}
+      </span>
+    ),
+  }),
+  amenityHelper.display({
+    id: "key",
+    header: "Key",
+    cell: ({ row }) => <span className="text-ink-2">{row.original.key}</span>,
+  }),
+  amenityHelper.display({
+    id: "venues",
+    header: "Venues",
+    cell: ({ row }) => <Count value={row.original.venueCount} />,
+  }),
+  amenityHelper.display({
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => (row.original.isActive ? <Tag tone="on">On</Tag> : <Tag>Off</Tag>),
+  }),
+  amenityHelper.display({
+    id: "menu",
+    header: "",
+    cell: ({ row }) => <AmenityMenu amenity={row.original} />,
+  }),
+]);
+
+const amenityWidths = {
+  arabic: "22%",
+  key: "18%",
+  venues: "11%",
+  status: "11%",
+  menu: "3.5rem",
+};
+
+// The amenities whose English or Arabic name, or key, matches.
+const searchAmenities = (amenities: AdminAmenity[], query: string) => {
+  const q = query.trim().toLowerCase();
+  if (!q) return amenities;
+  return amenities.filter(({ names, key }) =>
+    [names.en, names.ar, key].some((text) => text.toLowerCase().includes(q)),
+  );
+};
+
+type Section = "locations" | "amenities";
+
 // The tree cut down to what matches the English or Arabic name, with the parents of
 // every match kept so it shows where it sits. A match keeps everything under it.
 const search = (nodes: LocationNode[], query: string): LocationNode[] => {
@@ -175,7 +269,9 @@ const search = (nodes: LocationNode[], query: string): LocationNode[] => {
 export default function AdminMarketplacePage() {
   const { id } = useParams<{ id: string }>();
   const { data, missing, error, open, actions, close, reload } = useMarketplace(id);
+  const [section, setSection] = useState<Section>("locations");
   const [query, setQuery] = useState("");
+  const [amenityQuery, setAmenityQuery] = useState("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const tree = useMemo(() => (data ? locationTree(data.locations) : []), [data]);
@@ -195,6 +291,18 @@ export default function AdminMarketplacePage() {
     autoResetExpanded: false,
   });
 
+  const amenities = useMemo(() => [...(data?.amenities ?? [])].sort(byName), [data]);
+  const amenitiesShown = useMemo(
+    () => searchAmenities(amenities, amenityQuery),
+    [amenities, amenityQuery],
+  );
+  const amenityTable = useTable({
+    features: amenityFeatures,
+    columns: amenityColumns,
+    data: amenitiesShown,
+    getRowId: (amenity) => amenity.id,
+  });
+
   if (missing) {
     return (
       <>
@@ -210,7 +318,7 @@ export default function AdminMarketplacePage() {
     <>
       <Breadcrumb current={marketplace?.names.en} />
 
-      <div className="mt-4 border-b border-border pb-6">
+      <div className="mt-4">
         <header>
           <div>
             {marketplace ? (
@@ -247,28 +355,76 @@ export default function AdminMarketplacePage() {
         </header>
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-2">
-        <TableSearch value={query} onChange={setQuery} placeholder="Search locations…" />
-        <Button
-          size="small"
-          disabled={!marketplace}
-          onClick={() => marketplace && actions.addLocation(marketplace, null)}
-        >
-          <IconPlus size={16} className="size-4" stroke={2} />
-          Add location
-        </Button>
+      <div className="mt-6">
+        <Tabs
+          label="Sections"
+          value={section}
+          onChange={setSection}
+          items={[
+            { id: "locations", label: "Locations", count: data?.locations.length },
+            { id: "amenities", label: "Amenities", count: data?.amenities.length },
+          ]}
+        />
       </div>
 
-      <div className="mt-4">
-        <RowContext.Provider value={marketplace ? { actions, marketplace } : null}>
-          <DataTable
-            table={table}
-            widths={widths}
-            loading={!data && !error}
-            empty={error ?? (searching ? `No location matches “${query}”.` : "No locations yet.")}
-          />
-        </RowContext.Provider>
-      </div>
+      <RowContext.Provider value={marketplace ? { actions, marketplace } : null}>
+        {section === "locations" ? (
+          <TabPanel id="locations">
+            <div className="mt-6 flex items-center justify-between gap-2">
+              <TableSearch value={query} onChange={setQuery} placeholder="Search locations…" />
+              <Button
+                size="small"
+                disabled={!marketplace}
+                onClick={() => marketplace && actions.addLocation(marketplace, null)}
+              >
+                <IconPlus size={16} className="size-4" stroke={2} />
+                Add location
+              </Button>
+            </div>
+            <div className="mt-4">
+              <DataTable
+                table={table}
+                widths={widths}
+                loading={!data && !error}
+                empty={
+                  error ?? (searching ? `No location matches “${query}”.` : "No locations yet.")
+                }
+              />
+            </div>
+          </TabPanel>
+        ) : (
+          <TabPanel id="amenities">
+            <div className="mt-6 flex items-center justify-between gap-2">
+              <TableSearch
+                value={amenityQuery}
+                onChange={setAmenityQuery}
+                placeholder="Search amenities…"
+              />
+              <Button
+                size="small"
+                disabled={!marketplace}
+                onClick={() => marketplace && actions.addAmenity(marketplace)}
+              >
+                <IconPlus size={16} className="size-4" stroke={2} />
+                Add amenity
+              </Button>
+            </div>
+            <div className="mt-4">
+              <DataTable
+                table={amenityTable}
+                widths={amenityWidths}
+                loading={!data && !error}
+                empty={
+                  error ??
+                  (amenityQuery.trim()
+                    ? `No amenity matches “${amenityQuery}”.`
+                    : "No amenities yet.")
+                }
+              />
+            </div>
+          </TabPanel>
+        )}
+      </RowContext.Provider>
 
       {open?.form === "location" && !open.location && data ? (
         <AddLocationDialog
