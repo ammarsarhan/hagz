@@ -91,7 +91,7 @@ export function AdminPanel({
               <DetailRow label="Admin since" value={day(details.createdAt)} />
               <DetailRow
                 label="Invited by"
-                value={details.invitedBy ?? <span className="text-ink-3">The first admin</span>}
+                value={details.invitedBy ?? <span className="text-ink-3">By seed</span>}
               />
               <DetailRow
                 label="Invitations sent"
