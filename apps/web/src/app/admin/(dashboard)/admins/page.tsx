@@ -18,9 +18,10 @@ import { TabPanel, Tabs } from "@/admin/tabs";
 
 // Admins, laid out like a marketplace's page: tabs on a hairline that split it into the admins and
 // the invitations still open, each a table in the Platform pages' design (the user's references,
-// Mobbin's Skills list and Attio's Members) under its own search. Inviting someone is the add
-// flows' modal, as on Platform. Clicking a row opens it in a side panel: an admin's details, or an
-// invitation's with Resend and Revoke.
+// Mobbin's Skills list and Attio's Members) under its own search, numbered from 1. Invite admin sits
+// on the Invitations tab, next to its search, and opens the add flows' modal, as on Platform.
+// Clicking a row opens it in a side panel: an admin's details, or an invitation's with Resend and
+// Revoke.
 
 // Columns are module-level (TanStack needs them stable), so the signed-in admin and the page's
 // actions reach the cells through context instead of a closure.
@@ -29,6 +30,15 @@ const RowContext = createContext<{
   open: (invitation: AdminInvitation) => void;
   revoke: (invitation: AdminInvitation) => void;
 } | null>(null);
+
+// Each row's place in the table as it's shown (after the search), counting from 1.
+const indexColumn = {
+  id: "index",
+  header: "#",
+  cell: ({ row }: { row: { index: number } }) => (
+    <span className="text-ink-3 tabular-nums">{row.index + 1}</span>
+  ),
+};
 
 // --- Admins ---
 
@@ -47,6 +57,7 @@ function AdminName({ admin }: { admin: AdminListEntry }) {
 }
 
 const adminColumns = adminHelper.columns([
+  adminHelper.display(indexColumn),
   adminHelper.accessor((admin) => admin.name, {
     id: "name",
     header: "Name",
@@ -90,6 +101,7 @@ const adminColumns = adminHelper.columns([
 ]);
 
 const adminWidths = {
+  index: "3.5rem",
   email: "26%",
   authenticator: "12%",
   lastSignIn: "13%",
@@ -122,6 +134,7 @@ function InvitationMenu({ invitation }: { invitation: AdminInvitation }) {
 }
 
 const invitationColumns = invitationHelper.columns([
+  invitationHelper.display(indexColumn),
   invitationHelper.accessor((invitation) => invitation.email, {
     id: "email",
     header: "Email",
@@ -150,6 +163,7 @@ const invitationColumns = invitationHelper.columns([
 ]);
 
 const invitationWidths = {
+  index: "3.5rem",
   invitedBy: "24%",
   sent: "14%",
   expires: "14%",
@@ -225,12 +239,6 @@ export default function Admins() {
       <PageHeader
         title="Admins"
         subtitle="The people who can sign in here, and the invitations still open."
-        actions={
-          <Button size="small" onClick={() => setModal({ form: "invite" })} disabled={!data}>
-            <IconPlus size={16} className="size-4" stroke={2} />
-            Invite admin
-          </Button>
-        }
       />
 
       <div className="mt-6">
@@ -270,12 +278,16 @@ export default function Admins() {
           </TabPanel>
         ) : (
           <TabPanel id="invitations">
-            <div className="mt-6">
+            <div className="mt-6 flex items-center justify-between gap-2">
               <TableSearch
                 value={invitationQuery}
                 onChange={setInvitationQuery}
                 placeholder="Search invitations…"
               />
+              <Button size="small" onClick={() => setModal({ form: "invite" })} disabled={!data}>
+                <IconPlus size={16} className="size-4" stroke={2} />
+                Invite admin
+              </Button>
             </div>
             <div className="mt-4">
               <DataTable
