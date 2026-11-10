@@ -4,7 +4,7 @@ import type { AdminMarketplace } from "@hagz/contracts";
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChooserDialog } from "@/admin/chooser";
+import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field } from "@/admin/field";
 import { useSubmit } from "@/admin/submit";
@@ -45,7 +45,7 @@ export function AddAmenityDialog({
     );
 
   return (
-    <ChooserDialog
+    <Modal
       onClose={onClose}
       title="Add amenity"
       description={`Something venues in ${marketplace.names.en} can offer.`}
@@ -81,6 +81,6 @@ export function AddAmenityDialog({
           required
         />
       </form>
-    </ChooserDialog>
+    </Modal>
   );
 }

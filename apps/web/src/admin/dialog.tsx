@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "./button";
+import { OverlayBody, OverlayFooter, OverlayHeader } from "./overlay";
 import { useSubmit } from "./submit";
 
 // A modal on the native <dialog>: the browser traps focus, closes it on Escape and draws the
@@ -46,6 +47,40 @@ export function Dialog({
     >
       {open ? children : null}
     </dialog>
+  );
+}
+
+// The admin's one modal, after the Platform pages: the shared header (title, a grey line, ×, and
+// ← back on a later step), a body that scrolls inside 85% of the window, and small buttons at the
+// bottom right. Wide (40rem) fits a grid of cards or a form; narrow (30rem) is for a question.
+export function Modal({
+  onClose,
+  title,
+  description,
+  onBack,
+  footer,
+  narrow = false,
+  children,
+}: {
+  onClose: () => void;
+  title: ReactNode;
+  // A line under the title about this step.
+  description?: ReactNode;
+  // On a later step: back to the one before.
+  onBack?: () => void;
+  footer?: ReactNode;
+  narrow?: boolean;
+  // Left out for a question that the title and description already ask.
+  children?: ReactNode;
+}) {
+  return (
+    <Dialog open wide={!narrow} onClose={onClose}>
+      <div className="flex max-h-[85vh] flex-col">
+        <OverlayHeader title={title} description={description} onClose={onClose} onBack={onBack} />
+        {children ? <OverlayBody>{children}</OverlayBody> : <div className="h-4 shrink-0" />}
+        {footer ? <OverlayFooter>{footer}</OverlayFooter> : null}
+      </div>
+    </Dialog>
   );
 }
 

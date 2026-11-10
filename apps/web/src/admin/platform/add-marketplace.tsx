@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChoiceCard, ChoiceTag, ChooserDialog, ChooserSection } from "@/admin/chooser";
+import { ChoiceCard, ChoiceTag, ChooserSection } from "@/admin/chooser";
+import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field } from "@/admin/field";
 import { Flag } from "@/admin/flag";
@@ -30,7 +31,7 @@ export function AddMarketplaceDialog({
 
   if (!country) {
     return (
-      <ChooserDialog
+      <Modal
         onClose={onClose}
         title="Add marketplace"
         description="Its currency, dial code and time zone come with it. It starts hidden from the apps."
@@ -54,7 +55,7 @@ export function AddMarketplaceDialog({
             );
           })}
         </ChooserSection>
-      </ChooserDialog>
+      </Modal>
     );
   }
 
@@ -107,7 +108,7 @@ function Details({
   };
 
   return (
-    <ChooserDialog
+    <Modal
       {...frame}
       description={`${country.code} · ${country.currency} · ${country.dialCode} · ${country.timezone}`}
       title={
@@ -163,6 +164,6 @@ function Details({
           />
         </div>
       </form>
-    </ChooserDialog>
+    </Modal>
   );
 }

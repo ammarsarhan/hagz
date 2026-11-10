@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChooserDialog } from "@/admin/chooser";
+import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field } from "@/admin/field";
 import { useSubmit } from "@/admin/submit";
@@ -24,7 +24,7 @@ export function InviteDialog({ onClose, onDone }: { onClose: () => void; onDone:
     void run(() => send(api.POST("/v1/admin/invitations", { body: { email: email.trim() } })));
 
   return (
-    <ChooserDialog
+    <Modal
       onClose={onClose}
       title="Invite admin"
       description="They'll get an email with a link to set up their account. It works for 48 hours."
@@ -57,6 +57,6 @@ export function InviteDialog({ onClose, onDone }: { onClose: () => void; onDone:
           autoFocus
         />
       </form>
-    </ChooserDialog>
+    </Modal>
   );
 }
