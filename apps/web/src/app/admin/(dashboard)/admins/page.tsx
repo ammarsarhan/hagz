@@ -312,6 +312,7 @@ export default function Admins() {
           key={selectedAdmin.id}
           admin={selectedAdmin}
           self={selectedAdmin.id === self.id}
+          onChanged={reload}
           onClose={() => setSelected(undefined)}
         />
       ) : null}

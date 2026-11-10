@@ -96,11 +96,13 @@ export function FormDialog({
   );
 }
 
-// "Delete …?", "Revoke …?": a sentence on what happens, Cancel, and the red button that does it.
+// "Delete …?", "Revoke …?": a sentence on what happens, Cancel, and the button that does it, red
+// unless it's something that can't do harm (sending a link).
 export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  danger = true,
   request,
   onClose,
   onDone,
@@ -108,6 +110,7 @@ export function ConfirmDialog({
   title: string;
   description: string;
   confirmLabel?: string;
+  danger?: boolean;
   request: () => Promise<{ ok: boolean; error?: unknown }>;
   onClose: () => void;
   onDone: () => void;
@@ -120,7 +123,7 @@ export function ConfirmDialog({
       title={title}
       subtitle={description}
       submitLabel={confirmLabel}
-      danger
+      danger={danger}
       busy={busy}
       onSubmit={() => void run(request)}
     />
