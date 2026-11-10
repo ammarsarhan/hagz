@@ -109,6 +109,10 @@ const messages = {
     ar: "يوجد مسؤول بهذا البريد الإلكتروني بالفعل.",
   },
   ADMIN_NOT_FOUND: { en: "We couldn't find this admin.", ar: "لم نعثر على هذا المسؤول." },
+  PASSWORD_RESET_INVALID: {
+    en: "This link has expired or was already used. Ask another admin for a new one.",
+    ar: "انتهت صلاحية هذا الرابط أو تم استخدامه. اطلب رابطًا جديدًا من مسؤول آخر.",
+  },
   OWN_ADMIN_ACCOUNT: {
     en: "You can't do this to your own account. Ask another admin.",
     ar: "لا يمكنك القيام بذلك لحسابك. اطلب من مسؤول آخر.",

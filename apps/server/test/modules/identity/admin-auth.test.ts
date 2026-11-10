@@ -70,6 +70,7 @@ beforeEach(async () => {
   await resetDatabase();
   await resetRedis();
   mailbox.sent.length = 0;
+  mailbox.resets.length = 0;
 });
 
 describe("first admin", () => {
@@ -517,5 +518,66 @@ describe("admin resets", () => {
     const missing = await request("DELETE", `/admin/list/${randomUUID()}/authenticator`, { jar });
     expect((await json(missing)).code).toBe("ADMIN_NOT_FOUND");
     expect((await signIn()).next).toBe("TOTP");
+  });
+});
+
+describe("admin password resets", () => {
+  const NEW_PASSWORD = "a brand new password";
+  const requestReset = (jar: Jar, id: string) =>
+    request("POST", `/admin/list/${id}/password-reset`, { jar });
+  const tokenFor = (email: string) =>
+    new URL(mailbox.lastResetTo(email)?.resetUrl ?? "http://x").hash.replace("#token=", "");
+  const reset = (token: string, password = NEW_PASSWORD) =>
+    request("POST", "/auth/admin/password-reset", { body: { token, password } });
+
+  it("email a link that sets a new password once and signs the admin out", async () => {
+    const omar = await createAdmin();
+    const sara = await createAdmin({ email: "sara@hagz.app" });
+    const { jar } = await signedIn(omar.secret);
+    const { challengeToken } = await signIn("sara@hagz.app");
+    const saraJar = jarFrom(await complete(challengeToken, currentCode(sara.secret)));
+
+    expect((await requestReset(jar, sara.id)).status).toBe(204);
+    const sent = mailbox.lastResetTo("sara@hagz.app");
+    expect(sent?.requestedBy).toBe("Omar");
+    // Like invitations, the token is in the fragment, which never reaches a server.
+    expect(sent?.resetUrl).toMatch(/^http:\/\/localhost:3001\/admin\/password\/reset#token=/);
+    // Asking changes nothing: the old password still works and she's still signed in.
+    expect((await signIn("sara@hagz.app")).next).toBe("TOTP");
+
+    const token = tokenFor("sara@hagz.app");
+    expect((await reset(token)).status).toBe(204);
+    expect((await json(await reset(token))).code).toBe("PASSWORD_RESET_INVALID");
+    const refresh = await request("POST", "/auth/admin/sessions/refresh", { jar: saraJar });
+    expect((await json(refresh)).code).toBe("SESSION_ENDED");
+    const old = await request("POST", "/auth/admin/sessions", {
+      body: { email: "sara@hagz.app", password: PASSWORD },
+    });
+    expect(old.status).toBe(401);
+    expect((await signIn("sara@hagz.app", NEW_PASSWORD)).next).toBe("TOTP");
+  });
+
+  it("only honour the newest link, and not for a suspended admin", async () => {
+    const omar = await createAdmin();
+    const sara = await createAdmin({ email: "sara@hagz.app" });
+    const { jar } = await signedIn(omar.secret);
+    await requestReset(jar, sara.id);
+    const first = tokenFor("sara@hagz.app");
+    await requestReset(jar, sara.id);
+    const second = tokenFor("sara@hagz.app");
+    expect((await json(await reset(first))).code).toBe("PASSWORD_RESET_INVALID");
+
+    await prisma.admin.update({ where: { id: sara.id }, data: { status: "SUSPENDED" } });
+    expect((await json(await reset(second))).code).toBe("PASSWORD_RESET_INVALID");
+  });
+
+  it("refuse your own account and unknown admins, and need a session to ask", async () => {
+    const omar = await createAdmin();
+    const { jar } = await signedIn(omar.secret);
+    expect((await json(await requestReset(jar, omar.id))).code).toBe("OWN_ADMIN_ACCOUNT");
+    expect((await json(await requestReset(jar, randomUUID()))).code).toBe("ADMIN_NOT_FOUND");
+    expect((await requestReset({}, omar.id)).status).toBe(401);
+    expect(mailbox.resets).toHaveLength(0);
+    expect((await json(await reset("not-a-token"))).code).toBe("PASSWORD_RESET_INVALID");
   });
 });

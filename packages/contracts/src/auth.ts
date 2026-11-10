@@ -284,6 +284,14 @@ export const AcceptAdminInvitation = z
   })
   .meta({ id: "AcceptAdminInvitation" });
 
+// Where the emailed reset link lands: the admin picks a new password.
+export const ResetAdminPassword = z
+  .object({
+    token: z.string().min(1).max(256).meta({ description: "From the reset link." }),
+    password: Password,
+  })
+  .meta({ id: "ResetAdminPassword" });
+
 export type AdminSignIn = z.infer<typeof AdminSignIn>;
 export type AdminChallenge = z.infer<typeof AdminChallenge>;
 export type StartTotpSetup = z.infer<typeof StartTotpSetup>;
@@ -297,3 +305,4 @@ export type AdminDetails = z.infer<typeof AdminDetails>;
 export type InviteAdmin = z.infer<typeof InviteAdmin>;
 export type AdminInvitation = z.infer<typeof AdminInvitation>;
 export type AcceptAdminInvitation = z.infer<typeof AcceptAdminInvitation>;
+export type ResetAdminPassword = z.infer<typeof ResetAdminPassword>;
