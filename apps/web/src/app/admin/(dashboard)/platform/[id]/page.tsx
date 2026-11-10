@@ -28,7 +28,8 @@ import { Count, DataTable, RowMenu, Skeleton, TableSearch, Tag } from "@/admin/d
 import { Flag } from "@/admin/flag";
 import { send } from "@/admin/errors";
 import { AddLocationDialog } from "@/admin/platform/add-location";
-import { AmenityDialog, DeleteDialog, EditLocationPanel } from "@/admin/platform/forms";
+import { AddAmenityDialog } from "@/admin/platform/add-amenity";
+import { DeleteDialog, EditAmenityPanel, EditLocationPanel } from "@/admin/platform/forms";
 import {
   byName,
   localityLabel,
@@ -173,7 +174,7 @@ const amenityHelper = createColumnHelper<typeof amenityFeatures, AdminAmenity>()
 function AmenityMenu({ amenity }: { amenity: AdminAmenity }) {
   const context = useContext(RowContext);
   if (!context) return null;
-  const { actions } = context;
+  const { actions, marketplace } = context;
   return (
     <RowMenu
       label={`Actions for ${amenity.names.en}`}
@@ -181,7 +182,7 @@ function AmenityMenu({ amenity }: { amenity: AdminAmenity }) {
         {
           label: "Edit",
           icon: IconPencil,
-          onSelect: () => actions.editAmenity(amenity),
+          onSelect: () => actions.editAmenity(marketplace, amenity),
         },
         amenity.isActive
           ? { label: "Turn off", icon: IconEyeOff, onSelect: () => actions.toggleAmenity(amenity) }
@@ -443,8 +444,11 @@ export default function AdminMarketplacePage() {
           onDone={reload}
         />
       ) : null}
-      {open?.form === "amenity" ? (
-        <AmenityDialog
+      {open?.form === "addAmenity" ? (
+        <AddAmenityDialog marketplace={open.marketplace} onClose={close} onDone={reload} />
+      ) : null}
+      {open?.form === "editAmenity" ? (
+        <EditAmenityPanel
           marketplace={open.marketplace}
           amenity={open.amenity}
           onClose={close}

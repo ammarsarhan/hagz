@@ -372,84 +372,95 @@ function Toggle({
 
 // --- Amenity ---
 
-export function AmenityDialog({
+// Edit amenity, in a side panel over the table.
+export function EditAmenityPanel({
   marketplace,
   amenity,
   onClose,
   onDone,
 }: {
-  marketplace?: AdminMarketplace;
-  amenity?: AdminAmenity;
+  marketplace: AdminMarketplace;
+  amenity: AdminAmenity;
   onClose: Close;
   onDone: Done;
 }) {
-  const [form, setForm] = useState({
-    key: amenity?.key ?? "",
-    en: amenity?.names.en ?? "",
-    ar: amenity?.names.ar ?? "",
-  });
-  const { busy, error, run } = useSubmit(onDone, onClose);
-  const names = { en: form.en.trim(), ar: form.ar.trim() };
+  const initial = { en: amenity.names.en, ar: amenity.names.ar, isActive: amenity.isActive };
+  const [form, setForm] = useState(initial);
+  // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
+  const [open, setOpen] = useState(true);
+  const hide = () => setOpen(false);
+  const { busy, error, run } = useSubmit(onDone, hide);
+  const changed =
+    form.en !== initial.en || form.ar !== initial.ar || form.isActive !== initial.isActive;
+  const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
 
-  const submit = () =>
+  const submit = () => {
+    if (!ready) return;
     void run(() =>
-      amenity
-        ? send(
-            api.PATCH("/v1/admin/amenities/{id}", {
-              params: { path: { id: amenity.id } },
-              body: { names },
-            }),
-          )
-        : send(
-            api.POST("/v1/admin/marketplaces/{id}/amenities", {
-              params: { path: { id: marketplace?.id ?? "" } },
-              body: { key: form.key.trim(), names },
-            }),
-          ),
+      send(
+        api.PATCH("/v1/admin/amenities/{id}", {
+          params: { path: { id: amenity.id } },
+          body: { names: { en: form.en.trim(), ar: form.ar.trim() }, isActive: form.isActive },
+        }),
+      ),
     );
+  };
 
   return (
-    <FormDialog
-      open
-      onClose={onClose}
-      title={amenity ? `Edit ${amenity.names.en}` : "Add an amenity"}
-      subtitle={amenity ? undefined : `Something venues in ${marketplace?.names.en} can offer.`}
-      submitLabel={amenity ? "Save" : "Add amenity"}
-      busy={busy}
-      error={error}
-      onSubmit={submit}
+    <SidePanel
+      open={open}
+      onRequestClose={hide}
+      onExited={onClose}
+      title={
+        <>
+          {amenity.names.en}
+          {amenity.isActive ? <Tag tone="on">On</Tag> : <Tag>Off</Tag>}
+        </>
+      }
+      description={`Amenity in ${marketplace.names.en}`}
+      footer={<EditButtons formId="edit-amenity" onClose={hide} busy={busy} ready={ready} />}
     >
-      <Field
-        label="Key"
-        placeholder="changing_rooms"
-        hint={
-          amenity
-            ? "Fixed once created."
-            : "Lowercase letters, digits and underscores. Fixed once created."
-        }
-        value={form.key}
-        onChange={(event) => setForm({ ...form, key: event.target.value })}
-        disabled={Boolean(amenity)}
-        required
-        autoFocus={!amenity}
-      />
-      <div className="grid grid-cols-2 gap-4">
-        <Field
-          label="English name"
-          value={form.en}
-          onChange={(event) => setForm({ ...form, en: event.target.value })}
-          required
-          autoFocus={Boolean(amenity)}
-        />
-        <Field
-          label="Arabic name"
-          dir="rtl"
-          value={form.ar}
-          onChange={(event) => setForm({ ...form, ar: event.target.value })}
-          required
-        />
-      </div>
-    </FormDialog>
+      <form
+        id="edit-amenity"
+        className="flex flex-col gap-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        <PanelSection title="Names">
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="English"
+              value={form.en}
+              onChange={(event) => setForm({ ...form, en: event.target.value })}
+              required
+              autoFocus
+            />
+            <Field
+              label="Arabic"
+              dir="rtl"
+              value={form.ar}
+              onChange={(event) => setForm({ ...form, ar: event.target.value })}
+              required
+            />
+          </div>
+        </PanelSection>
+        <PanelSection title="Availability">
+          <Toggle
+            label="On for venues"
+            hint="Turned off, venues can't newly pick it. Venues that offer it keep it."
+            checked={form.isActive}
+            onChange={(isActive) => setForm({ ...form, isActive })}
+          />
+        </PanelSection>
+        <PanelSection title="Code">
+          {/* Picked when it was added, and what the apps know it by: renaming doesn't change it. */}
+          <ReadOnlyRow label="Key" value={amenity.key} />
+        </PanelSection>
+        <ErrorNote error={error} />
+      </form>
+    </SidePanel>
   );
 }
 

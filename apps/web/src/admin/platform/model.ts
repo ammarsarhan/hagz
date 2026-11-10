@@ -59,7 +59,8 @@ export type Open =
       parent?: AdminLocation | null;
       location?: AdminLocation;
     }
-  | { form: "amenity"; marketplace?: AdminMarketplace; amenity?: AdminAmenity }
+  | { form: "addAmenity"; marketplace: AdminMarketplace }
+  | { form: "editAmenity"; marketplace: AdminMarketplace; amenity: AdminAmenity }
   | { form: "deleteLocation"; location: AdminLocation }
   | { form: "deleteAmenity"; amenity: AdminAmenity };
 
@@ -69,7 +70,7 @@ export interface Actions {
   editLocation: (marketplace: AdminMarketplace, location: AdminLocation) => void;
   deleteLocation: (location: AdminLocation) => void;
   addAmenity: (marketplace: AdminMarketplace) => void;
-  editAmenity: (amenity: AdminAmenity) => void;
+  editAmenity: (marketplace: AdminMarketplace, amenity: AdminAmenity) => void;
   toggleAmenity: (amenity: AdminAmenity) => void;
   deleteAmenity: (amenity: AdminAmenity) => void;
 }
@@ -143,8 +144,8 @@ export function useMarketplace(id: string) {
       addLocation: (marketplace, parent) => setOpen({ form: "location", marketplace, parent }),
       editLocation: (marketplace, location) => setOpen({ form: "location", marketplace, location }),
       deleteLocation: (location) => setOpen({ form: "deleteLocation", location }),
-      addAmenity: (marketplace) => setOpen({ form: "amenity", marketplace }),
-      editAmenity: (amenity) => setOpen({ form: "amenity", amenity }),
+      addAmenity: (marketplace) => setOpen({ form: "addAmenity", marketplace }),
+      editAmenity: (marketplace, amenity) => setOpen({ form: "editAmenity", marketplace, amenity }),
       toggleAmenity: (amenity) => {
         void send(
           api.PATCH("/v1/admin/amenities/{id}", {
