@@ -161,7 +161,7 @@ export function AdminPanel({
                 To reset your own password or authenticator, ask another admin.
               </p>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-6">
                 <AccessAction
                   title="Reset password"
                   description="Emails them a link to choose a new one. Their current password works until they do."
