@@ -10,7 +10,7 @@ export interface Admin {
   email: string;
 }
 
-const AdminContext = createContext<Admin | null>(null);
+const AdminContext = createContext<{ admin: Admin; update: (admin: Admin) => void } | null>(null);
 
 // The signed-in admin, for every dashboard page. Signed out, it goes to sign in before drawing
 // anything, so no page ever shows without a session.
@@ -25,14 +25,21 @@ export function AdminSession({ children }: { children: ReactNode }) {
   }, []);
 
   if (!admin) return null;
-  return <AdminContext.Provider value={admin}>{children}</AdminContext.Provider>;
+  return (
+    <AdminContext.Provider value={{ admin, update: setAdmin }}>{children}</AdminContext.Provider>
+  );
 }
 
-export const useAdmin = () => {
-  const admin = useContext(AdminContext);
-  if (!admin) throw new Error("useAdmin is only for pages inside AdminSession.");
-  return admin;
+const useSession = () => {
+  const session = useContext(AdminContext);
+  if (!session) throw new Error("useAdmin is only for pages inside AdminSession.");
+  return session;
 };
+
+export const useAdmin = () => useSession().admin;
+
+// For the Account page: after a rename, every page (the rail's name included) shows the new one.
+export const useUpdateAdmin = () => useSession().update;
 
 export const signOut = async () => {
   await send(api.DELETE("/v1/auth/admin/sessions/current"));
