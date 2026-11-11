@@ -186,13 +186,11 @@ export const AMENITY_ICONS = [
   "other",
 ] as const;
 
-export const AmenityIcon = z
-  .enum(AMENITY_ICONS)
-  .meta({
-    id: "AmenityIcon",
-    description: "Hagz's own icon name; each app draws it.",
-    example: "parking",
-  });
+export const AmenityIcon = z.enum(AMENITY_ICONS).meta({
+  id: "AmenityIcon",
+  description: "Hagz's own icon name; each app draws it.",
+  example: "parking",
+});
 
 export const AdminAmenity = z
   .object({
