@@ -29,8 +29,8 @@ export interface Point {
 
 // Minute samples are averaged into at most this many points: 15 minutes each over a full day, smooth
 // like Stripe's charts instead of a jagged block. A point is never shorter than a minute, so a short
-// history draws one point a minute instead of scattering into dots. A point with no samples breaks
-// the line.
+// history draws one point a minute instead of scattering into dots. A point with no samples leaves
+// a gap, bridged in grey (see `bridges`).
 const MAX_POINTS = 96;
 
 const smooth = (points: Point[], from: number, to: number) => {
@@ -49,6 +49,28 @@ const smooth = (points: Point[], from: number, to: number) => {
     at: count === 1 ? to : from + (i / (count - 1)) * span,
     value: bucket.count ? bucket.total / bucket.count : null,
   }));
+};
+
+// The gaps inside the line, each bridged by its own grey line from the last point before it to the
+// first after it, so the chart never falls apart into pieces while a gap still reads as no data.
+// Each bridge has its own key (gap0, gap1, …) with values only at its two ends: one key for all of
+// them would also join the end of one gap to the start of the next, across the black line. Gaps at
+// the start or the end have nothing on one side and stay empty.
+const bridges = (line: { at: number; value: number | null }[]) => {
+  const rows: Record<string, number | null>[] = line.map((point) => ({ ...point }));
+  const keys: string[] = [];
+  let before: number | undefined;
+  line.forEach((point, i) => {
+    if (point.value === null) return;
+    if (before !== undefined && i - before > 1) {
+      const key = `gap${keys.length}`;
+      keys.push(key);
+      rows[before]![key] = line[before]!.value;
+      rows[i]![key] = point.value;
+    }
+    before = i;
+  });
+  return { rows, keys };
 };
 
 // The tooltip card: the value leads, what it's about follows in grey.
@@ -87,21 +109,22 @@ const edgeTick =
     </text>
   );
 
-// One line through the points, broken wherever there were no samples. The peak in the label is the
-// true highest minute, not the averaged one.
+// One line through the points, in ink where there were samples and grey across the gaps where there
+// weren't. The peak in the label is the true highest minute, not the averaged one.
 export function LineChart({ points, unit }: { points: Point[]; unit: string }) {
   const values = points.flatMap((p) => (p.value === null ? [] : [p.value]));
   const peak = Math.max(1, ...values);
   const from = points[0]?.at ?? 0;
   const to = points.at(-1)?.at ?? 1;
   const line = smooth(points, from, to);
+  const { rows, keys } = bridges(line);
   const top = Math.max(1, ...line.flatMap((p) => (p.value === null ? [] : [p.value])));
   const ms = (value: number) => `${Math.round(value)} ${unit}`;
 
   return (
     <figure aria-label={`Peak ${peak} ${unit} over the period`} className="h-[9.5rem] text-ink">
       <ResponsiveContainer width="100%" height="100%">
-        <Lines data={line} margin={{ top: 8, right: 2, bottom: 0, left: 0 }}>
+        <Lines data={rows} margin={{ top: 8, right: 2, bottom: 0, left: 0 }}>
           <YAxis
             domain={[0, top]}
             ticks={[0, top]}
@@ -137,6 +160,22 @@ export function LineChart({ points, unit }: { points: Point[]; unit: string }) {
               );
             }}
           />
+          {/* Under the ink line, so its round ends cover the bridges' ends. */}
+          {keys.map((key) => (
+            <Line
+              key={key}
+              dataKey={key}
+              type="linear"
+              className="text-ink-3"
+              stroke="currentColor"
+              strokeWidth={1.75}
+              strokeLinecap="round"
+              dot={false}
+              activeDot={false}
+              connectNulls
+              isAnimationActive={false}
+            />
+          ))}
           <Line
             dataKey="value"
             type="monotone"
