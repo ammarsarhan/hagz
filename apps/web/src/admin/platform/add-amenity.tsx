@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminMarketplace } from "@hagz/contracts";
+import type { AdminMarketplace, AmenityIcon } from "@hagz/contracts";
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
@@ -8,9 +8,10 @@ import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field } from "@/admin/field";
 import { useSubmit } from "@/admin/submit";
+import { IconPicker } from "./icon-picker";
 
-// Add amenity, in the add flows' white modal: its names and its key in one step. It starts on,
-// so venues in the marketplace can pick it right away.
+// Add amenity, in the add flows' white modal: its names, its key and its icon in one step. It starts
+// on, so venues in the marketplace can pick it right away.
 
 // The API's rule for keys (CreateAmenity), checked here so the button stays grey until it passes.
 const KEY = /^[a-z][a-z0-9_]{1,39}$/;
@@ -25,21 +26,24 @@ export function AddAmenityDialog({
   onDone: () => void;
 }) {
   const [form, setForm] = useState({ en: "", ar: "", key: "" });
+  const [icon, setIcon] = useState<AmenityIcon>();
   const { busy, run } = useSubmit(onDone, onClose);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm({ ...form, [field]: event.target.value });
 
   const key = form.key.trim();
   // Like the sign-in page: the button stays grey until everything it needs is there.
-  const ready = form.en.trim() !== "" && form.ar.trim() !== "" && KEY.test(key);
+  const ready =
+    form.en.trim() !== "" && form.ar.trim() !== "" && KEY.test(key) && icon !== undefined;
 
   const submit = () =>
     ready &&
+    icon &&
     void run(() =>
       send(
         api.POST("/v1/admin/marketplaces/{id}/amenities", {
           params: { path: { id: marketplace.id } },
-          body: { key, names: { en: form.en.trim(), ar: form.ar.trim() } },
+          body: { key, icon, names: { en: form.en.trim(), ar: form.ar.trim() } },
         }),
       ),
     );
@@ -80,6 +84,7 @@ export function AddAmenityDialog({
           onChange={set("key")}
           required
         />
+        <IconPicker value={icon} onChange={setIcon} />
       </form>
     </Modal>
   );
