@@ -2,6 +2,7 @@
 
 import type { AdminVenue, VenueStatus } from "@hagz/contracts";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { day } from "@/admin/admins/model";
 import { Button } from "@/admin/button";
@@ -10,10 +11,11 @@ import { Flag } from "@/admin/flag";
 import { PageHeader } from "@/admin/page-header";
 import { TabPanel, Tabs } from "@/admin/tabs";
 import { STATUSES, statusLabel, useVenues } from "@/admin/venues/model";
+import { venueHref } from "@/admin/venues/sections";
 
 // Every venue, in any status, in the admin's one table design. Tabs filter by status (Submitted is
 // the review queue) and the search goes to the API, which sends a page at a time: Show more below
-// the table fetches the next. Opening a venue's own dashboard comes next.
+// the table fetches the next. Clicking a row opens that venue's own dashboard.
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, AdminVenue>();
@@ -119,6 +121,7 @@ const widths = {
 type Section = "ALL" | VenueStatus;
 
 export default function AdminVenues() {
+  const router = useRouter();
   const [section, setSection] = useState<Section>("ALL");
   const [query, setQuery] = useState("");
   const status = section === "ALL" ? undefined : section;
@@ -159,6 +162,7 @@ export default function AdminVenues() {
           <DataTable
             table={table}
             widths={widths}
+            onRowClick={(row) => router.push(venueHref(row.original.id))}
             loading={!data && !error}
             empty={
               error ??
