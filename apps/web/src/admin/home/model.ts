@@ -114,8 +114,8 @@ export const TRACKED = [
   { key: "server", label: "Server" },
   { key: "worker", label: "Worker" },
   { key: "database", label: "Postgres" },
-  { key: "queue", label: "Redis · jobs" },
-  { key: "cache", label: "Redis · cache" },
+  { key: "queue", label: "Jobs" },
+  { key: "cache", label: "Cache" },
 ] as const;
 export type Tracked = (typeof TRACKED)[number]["key"];
 
@@ -123,17 +123,14 @@ export const DEPENDENCIES = [
   {
     key: "database",
     label: "Postgres",
-    info: "A trivial query, every minute.",
   },
   {
     key: "queue",
-    label: "Redis · jobs",
-    info: "Jobs and rate limits. A PING, every minute.",
+    label: "Jobs",
   },
   {
     key: "cache",
-    label: "Redis · cache",
-    info: "The cache. A PING, every minute.",
+    label: "Cache",
   },
 ] as const;
 export type Dependency = (typeof DEPENDENCIES)[number]["key"];

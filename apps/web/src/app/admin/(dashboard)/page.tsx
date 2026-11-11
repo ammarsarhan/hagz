@@ -110,8 +110,8 @@ export default function AdminHome() {
     },
     { name: "Web", status: webStatus, detail: web ? `up ${uptime(web.startedAt, now)}` : "—" },
     { name: "Postgres", status: status.database.status, detail: ms(status.database.latencyMs) },
-    { name: "Redis · jobs", status: status.queue.status, detail: ms(status.queue.latencyMs) },
-    { name: "Redis · cache", status: status.cache.status, detail: ms(status.cache.latencyMs) },
+    { name: "Jobs", status: status.queue.status, detail: ms(status.queue.latencyMs) },
+    { name: "Cache", status: status.cache.status, detail: ms(status.cache.latencyMs) },
   ];
   const upCount = services.filter((s) => s.status === "UP").length;
   const serverShare = view.availability.find((a) => a.key === "server")?.share ?? null;
@@ -179,10 +179,10 @@ export default function AdminHome() {
       </div>
 
       <div className="mt-12 grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-3">
-        {DEPENDENCIES.map(({ key, label, info }) => {
+        {DEPENDENCIES.map(({ key, label }) => {
           const latency = view.latencies.find((l) => l.key === key)!;
           return (
-            <Section key={key} title={label} description={info}>
+            <Section key={key} title={label}>
               <p className="flex items-baseline gap-2">
                 <span className="text-heading text-ink">{ms(status[key].latencyMs)}</span>
                 <span className="text-label text-ink-2">

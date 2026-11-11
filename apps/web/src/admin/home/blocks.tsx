@@ -47,7 +47,7 @@ export function Section({
         </div>
         {aside}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -78,17 +78,22 @@ export function ShareTable({
   empty: string;
 }) {
   const template = columns.map((column) => column.width ?? "1fr").join(" ");
-  const cell = (column: Column | undefined) =>
-    `min-w-0 truncate px-2 ${column?.align === "right" ? "text-right" : ""}`;
+  // The outer edges are padded only when rows carry share bars, so text sits inside the bar; without
+  // them the table lines up with its section's title.
+  const barred = rows.some((row) => row.share != null);
+  const cell = (i: number) => {
+    const edge = barred ? "" : i === 0 ? "pl-0" : i === columns.length - 1 ? "pr-0" : "";
+    return `min-w-0 truncate px-2 ${edge} ${columns[i]?.align === "right" ? "text-right" : ""}`;
+  };
 
   return (
     <div role="table" className="text-label">
       <div role="row" className="grid pb-1.5" style={{ gridTemplateColumns: template }}>
-        {columns.map((column) => (
+        {columns.map((column, i) => (
           <span
             key={column.label}
             role="columnheader"
-            className={`${cell(column)} text-caption font-medium text-ink-2`}
+            className={`${cell(i)} text-caption font-medium text-ink-2`}
           >
             {column.label}
           </span>
@@ -118,7 +123,7 @@ export function ShareTable({
                 <span
                   key={i}
                   role="cell"
-                  className={`relative ${cell(columns[i])} ${i === 0 ? "text-ink" : "text-ink-2"}`}
+                  className={`relative ${cell(i)} ${i === 0 ? "text-ink" : "text-ink-2"}`}
                 >
                   {content}
                 </span>

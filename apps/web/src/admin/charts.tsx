@@ -186,6 +186,7 @@ export function LineChart({
               type="linear"
               className="text-ink-3"
               stroke="currentColor"
+              strokeOpacity={0.45}
               strokeWidth={1.75}
               strokeLinecap="round"
               dot={false}
