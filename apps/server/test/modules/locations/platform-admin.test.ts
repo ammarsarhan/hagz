@@ -289,10 +289,11 @@ describe("admin locations", () => {
 });
 
 describe("admin amenities", () => {
-  const addAmenity = (marketplaceId: string, key: string) =>
+  const addAmenity = (marketplaceId: string, key: string, icon = "other") =>
     request("POST", `/admin/marketplaces/${marketplaceId}/amenities`, {
       key,
       names: { en: key, ar: `${key} (ar)` },
+      icon,
     });
 
   it("are created per marketplace with a unique key, then renamed and turned off", async () => {
@@ -311,6 +312,33 @@ describe("admin amenities", () => {
     });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ key: "parking", isActive: false, names: { en: "Parking" } });
+  });
+
+  it("show one of Hagz's own icons, which can change", async () => {
+    const { id } = await createMarketplace();
+    const created = AdminAmenity.parse((await addAmenity(id, "parking", "parking")).body);
+    expect(created.icon).toBe("parking");
+
+    // Only names from the list: not an icon library's, and not made up.
+    expect((await addAmenity(id, "showers", "IconBath")).status).toBe(400);
+    expect((await addAmenity(id, "showers", "bath")).status).toBe(400);
+    const missing = await request("POST", `/admin/marketplaces/${id}/amenities`, {
+      key: "showers",
+      names: { en: "Showers", ar: "دشات" },
+    });
+    expect(missing.status).toBe(400);
+
+    const changed = await request("PATCH", `/admin/amenities/${created.id}`, {
+      icon: "bike_parking",
+    });
+    expect(changed.status).toBe(200);
+    expect(changed.body).toMatchObject({ icon: "bike_parking", isActive: true });
+    const wrong = await request("PATCH", `/admin/amenities/${created.id}`, { icon: "bike" });
+    expect(wrong.status).toBe(400);
+
+    // Turning it off leaves the icon as it was.
+    const off = await request("PATCH", `/admin/amenities/${created.id}`, { isActive: false });
+    expect(off.body).toMatchObject({ icon: "bike_parking", isActive: false });
   });
 
   it("delete only while no venue offers them", async () => {
@@ -345,6 +373,7 @@ describe("public reference data", () => {
         await request("POST", `/admin/marketplaces/${id}/amenities`, {
           key: "parking",
           names: { en: "Parking", ar: "موقف سيارات" },
+          icon: "parking",
         })
       ).body,
     );
@@ -353,6 +382,7 @@ describe("public reference data", () => {
         await request("POST", `/admin/marketplaces/${id}/amenities`, {
           key: "cafe",
           names: { en: "Café", ar: "كافيه" },
+          icon: "cafe",
         })
       ).body,
     );
@@ -373,7 +403,9 @@ describe("public reference data", () => {
         })
       ).json(),
     ).data;
-    expect(amenities).toEqual([{ id: parking.id, key: "parking", name: "Parking" }]);
+    expect(amenities).toEqual([
+      { id: parking.id, key: "parking", name: "Parking", icon: "parking" },
+    ]);
   });
 
   it("hides marketplaces that aren't on", async () => {

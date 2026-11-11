@@ -1,4 +1,4 @@
-import type { Amenity, Location } from "@hagz/contracts";
+import { AmenityIcon, type Amenity, type Location } from "@hagz/contracts";
 import type { Language } from "@/generated/prisma/enums";
 import { prisma } from "@/platform/db/prisma";
 import { marketplaceNotFound } from "./admin-marketplaces";
@@ -39,5 +39,10 @@ export const listAmenities = async (code: string, language: Language): Promise<A
     orderBy: { key: "asc" },
     include: { translations: true },
   });
-  return rows.map((a) => ({ id: a.id, key: a.key, name: nameIn(a.translations, language) }));
+  return rows.map((a) => ({
+    id: a.id,
+    key: a.key,
+    name: nameIn(a.translations, language),
+    icon: AmenityIcon.parse(a.icon),
+  }));
 };

@@ -3,6 +3,7 @@ model AmenityOption {
   id            String   @id @default(uuid(7)) @db.Uuid
   marketplaceId String   @db.Uuid
   key           String // Stable code, e.g. parking.
+  icon          String // One of Hagz's own icon names (AMENITY_ICONS in contracts), never a library's.
   isActive      Boolean  @default(true) // Inactive options can't be newly picked.
   createdAt     DateTime @default(now()) @db.Timestamptz
   updatedAt     DateTime @updatedAt @db.Timestamptz

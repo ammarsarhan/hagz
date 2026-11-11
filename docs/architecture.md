@@ -294,6 +294,7 @@ What slots cost: about 1 ms per booking, the generation job, the nightly roll-fo
 - Edits that two people can make at once (layout, settings, schedules) use `ETag` and `If-Match`, and a stale write gets `412`.
 - Money is `{ amount, currency }` in minor units. Timestamps are ISO 8601 in UTC.
 - Lists use cursor pagination.
+- Icons are sent by names Hagz owns, never an icon library's. An amenity stores one of `AMENITY_ICONS` (`packages/contracts`), which the API enforces and an admin picks from. Each app maps those names to its own drawings (the admin web: `admin/platform/amenity-icons.ts`, typed so no name can be missing). A library renaming an icon breaks that app's build, not stored data or released apps, and the fix is one line in its map. Adding an icon is a line in the list and in each map, then an app release. The list stays short so apps bundle only the icons they can be sent.
 
 ## Testing
 

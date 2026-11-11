@@ -1,4 +1,9 @@
-import type { AdminAmenity, CreateAmenity, UpdateAmenity } from "@hagz/contracts";
+import {
+  AmenityIcon,
+  type AdminAmenity,
+  type CreateAmenity,
+  type UpdateAmenity,
+} from "@hagz/contracts";
 import { isForeignKeyViolation, violatedUniqueIndex } from "@/platform/db/errors";
 import { prisma } from "@/platform/db/prisma";
 import { transaction } from "@/platform/db/transaction";
@@ -8,7 +13,7 @@ import { marketplaceNotFound } from "./admin-marketplaces";
 import { lockMarketplace, namesOf, translationRows, upsertNames } from "./names";
 
 // A marketplace's amenity catalog (floodlights, parking, ...), which venues pick from and price. The
-// key is fixed once created. An option can be deleted only while no venue offers it and no booking
+// key is fixed once created; the icon, one of Hagz's own icon names, can change. An option can be deleted only while no venue offers it and no booking
 // was charged for it (RESTRICT foreign keys); otherwise it's turned off, so venues can't newly pick it.
 
 const amenityNotFound = () =>
@@ -23,6 +28,8 @@ const present = (a: Row): AdminAmenity => ({
   id: a.id,
   key: a.key,
   names: namesOf(a.translations),
+  // Only ever written from AmenityIcon, so a row outside it is a bug worth failing loudly on.
+  icon: AmenityIcon.parse(a.icon),
   isActive: a.isActive,
   venueCount: a._count.venues,
 });
@@ -50,6 +57,7 @@ export const createAmenity = async (
         data: {
           marketplaceId,
           key: input.key,
+          icon: input.icon,
           translations: { create: translationRows(input.names) },
         },
         include,
@@ -77,8 +85,11 @@ export const updateAmenity = async (
   await transaction(async (tx) => {
     const found = await tx.amenityOption.findUnique({ where: { id }, select: { id: true } });
     if (!found) throw amenityNotFound();
-    if (input.isActive !== undefined) {
-      await tx.amenityOption.update({ where: { id }, data: { isActive: input.isActive } });
+    if (input.isActive !== undefined || input.icon !== undefined) {
+      await tx.amenityOption.update({
+        where: { id },
+        data: { isActive: input.isActive, icon: input.icon },
+      });
     }
     if (input.names) {
       await upsertNames(

@@ -10,6 +10,7 @@ import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { Flag } from "@/admin/flag";
 import { kindOrder } from "./countries";
+import { IconPicker } from "./icon-picker";
 import { KindIcon } from "./kind-icon";
 import { localityLabel } from "./model";
 import { useSubmit } from "@/admin/submit";
@@ -349,14 +350,22 @@ export function EditAmenityPanel({
   onClose: Close;
   onDone: Done;
 }) {
-  const initial = { en: amenity.names.en, ar: amenity.names.ar, isActive: amenity.isActive };
+  const initial = {
+    en: amenity.names.en,
+    ar: amenity.names.ar,
+    icon: amenity.icon,
+    isActive: amenity.isActive,
+  };
   const [form, setForm] = useState(initial);
   // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
   const [open, setOpen] = useState(true);
   const hide = () => setOpen(false);
   const { busy, run } = useSubmit(onDone, hide);
   const changed =
-    form.en !== initial.en || form.ar !== initial.ar || form.isActive !== initial.isActive;
+    form.en !== initial.en ||
+    form.ar !== initial.ar ||
+    form.icon !== initial.icon ||
+    form.isActive !== initial.isActive;
   const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
 
   const submit = () => {
@@ -365,7 +374,11 @@ export function EditAmenityPanel({
       send(
         api.PATCH("/v1/admin/amenities/{id}", {
           params: { path: { id: amenity.id } },
-          body: { names: { en: form.en.trim(), ar: form.ar.trim() }, isActive: form.isActive },
+          body: {
+            names: { en: form.en.trim(), ar: form.ar.trim() },
+            icon: form.icon,
+            isActive: form.isActive,
+          },
         }),
       ),
     );
@@ -410,6 +423,13 @@ export function EditAmenityPanel({
               required
             />
           </div>
+        </PanelSection>
+        <PanelSection title="Icon">
+          <IconPicker
+            label="Shown beside it in the apps"
+            value={form.icon}
+            onChange={(icon) => setForm({ ...form, icon })}
+          />
         </PanelSection>
         <PanelSection title="Availability">
           <Toggle
