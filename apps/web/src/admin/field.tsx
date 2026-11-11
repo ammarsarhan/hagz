@@ -12,35 +12,21 @@ export const boxClass = (error: boolean) =>
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  // Read by screen readers but not shown, where the page labels the field elsewhere (the Account
-  // page's left column).
-  hideLabel?: boolean;
   error?: string;
   hint?: string;
-  // Inside the box, before the text: an icon saying what goes in it.
-  leading?: ReactNode;
   trailing?: ReactNode;
 }
 
 // A labelled input. Errors are the person's to fix, so they sit right under the field.
-export function Field({
-  label,
-  hideLabel = false,
-  error,
-  hint,
-  leading,
-  trailing,
-  ...input
-}: FieldProps) {
+export function Field({ label, error, hint, trailing, ...input }: FieldProps) {
   const id = useId();
   const note = error ?? hint;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className={hideLabel ? "sr-only" : "text-label font-medium text-ink-2"}>
+      <label htmlFor={id} className="text-label font-medium text-ink-2">
         {label}
       </label>
       <div className={boxClass(Boolean(error))}>
-        {leading}
         <input
           id={id}
           aria-invalid={Boolean(error)}
