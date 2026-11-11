@@ -189,7 +189,7 @@ function ProfileTab({ details }: { details: AdminDetails | undefined }) {
           )}
         </Section>
 
-        <Section title="Your session" description={sessionLine(details)}>
+        <Section title="This session" description={sessionLine(details)}>
           <SignOutButton />
         </Section>
       </div>
