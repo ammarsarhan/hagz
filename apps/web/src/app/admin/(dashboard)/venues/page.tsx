@@ -45,17 +45,6 @@ const columns = helper.columns([
     cell: ({ row }) => <VenueName venue={row.original} />,
   }),
   helper.display({
-    id: "marketplace",
-    header: "Marketplace",
-    cell: ({ row }) => (
-      // The flag alone; the code is there for screen readers and on hover.
-      <span title={row.original.marketplace.code} className="flex">
-        <Flag code={row.original.marketplace.code} size="1.25rem" />
-        <span className="sr-only">{row.original.marketplace.code}</span>
-      </span>
-    ),
-  }),
-  helper.display({
     id: "area",
     header: "Area",
     cell: ({ row }) =>
@@ -74,6 +63,17 @@ const columns = helper.columns([
       ) : (
         <span className="text-ink-3">None</span>
       ),
+  }),
+  helper.display({
+    id: "marketplace",
+    header: "Marketplace",
+    cell: ({ row }) => (
+      // The flag alone; the code is there for screen readers and on hover.
+      <span title={row.original.marketplace.code} className="flex">
+        <Flag code={row.original.marketplace.code} size="1.25rem" />
+        <span className="sr-only">{row.original.marketplace.code}</span>
+      </span>
+    ),
   }),
   helper.display({
     id: "grounds",
