@@ -1,5 +1,6 @@
 "use client";
 
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/admin/api";
 import { Authenticator, type Challenge } from "@/admin/authenticator";
@@ -20,6 +21,7 @@ export default function AcceptAdminInvitation() {
   const [challenge, setChallenge] = useState<Challenge>();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [shown, setShown] = useState(false);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
@@ -95,7 +97,7 @@ export default function AcceptAdminInvitation() {
         <div className="mt-4">
           <Field
             label="Password"
-            type="password"
+            type={shown ? "text" : "password"}
             autoComplete="new-password"
             placeholder="Choose a password"
             value={password}
@@ -105,6 +107,21 @@ export default function AcceptAdminInvitation() {
             }}
             error={error}
             hint="At least 8 characters."
+            trailing={
+              <button
+                type="button"
+                aria-label={shown ? "Hide password" : "Show password"}
+                onClick={() => setShown(!shown)}
+                className="flex cursor-pointer text-unit hover:text-ink"
+              >
+                {/* As on sign in: the open eye while the password shows. */}
+                {shown ? (
+                  <IconEye size={20} className="size-5 shrink-0" stroke={2} />
+                ) : (
+                  <IconEyeOff size={20} className="size-5 shrink-0" stroke={2} />
+                )}
+              </button>
+            }
           />
         </div>
         <div className="mt-6">
