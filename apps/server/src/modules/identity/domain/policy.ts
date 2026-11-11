@@ -65,6 +65,8 @@ export const limits = {
   adminAcceptPerIp: { name: "admin:accept:ip", limit: 10, windowMs: minutes(15) },
   adminPasswordResetsPerAdmin: { name: "admin:reset:admin", limit: 20, windowMs: hours(24) },
   adminPasswordResetPerIp: { name: "admin:reset:ip", limit: 10, windowMs: minutes(15) },
+  // Guessing the current password from a signed-in session someone left open.
+  adminPasswordChangePerAdmin: { name: "admin:password:admin", limit: 5, windowMs: minutes(15) },
 } as const;
 
 // How long an emailed admin invitation link works.

@@ -581,3 +581,120 @@ describe("admin password resets", () => {
     expect((await json(await reset("not-a-token"))).code).toBe("PASSWORD_RESET_INVALID");
   });
 });
+
+describe("admin's own account", () => {
+  const NEW_PASSWORD = "a brand new password";
+  const change = (jar: Jar, currentPassword: string, newPassword = NEW_PASSWORD) =>
+    request("POST", "/auth/admin/me/password", { jar, body: { currentPassword, newPassword } });
+
+  it("renames the signed-in admin, and refuses an empty name", async () => {
+    const { secret } = await createAdmin();
+    const { jar } = await signedIn(secret);
+
+    const renamed = await request("PATCH", "/auth/admin/me", { jar, body: { name: "  Omar S  " } });
+    expect(renamed.status).toBe(200);
+    expect(await json(renamed)).toMatchObject({ name: "Omar S", email: EMAIL });
+    expect(await json(await request("GET", "/auth/admin/me", { jar }))).toMatchObject({
+      name: "Omar S",
+    });
+    const empty = await request("PATCH", "/auth/admin/me", { jar, body: { name: "  " } });
+    expect(empty.status).toBe(400);
+  });
+
+  it("changes the password after the current one, keeping this browser and signing out others", async () => {
+    const { id, secret } = await createAdmin();
+    const { jar } = await signedIn(secret);
+    const other = await signedIn(secret, 1);
+
+    const wrong = await change(jar, "not my password");
+    expect(wrong.status).toBe(400);
+    expect((await json(wrong)).code).toBe("WRONG_PASSWORD");
+
+    expect((await change(jar, PASSWORD)).status).toBe(204);
+    expect((await request("POST", "/auth/admin/sessions/refresh", { jar })).status).toBe(204);
+    const elsewhere = await request("POST", "/auth/admin/sessions/refresh", { jar: other.jar });
+    expect((await json(elsewhere)).code).toBe("SESSION_ENDED");
+    expect(await prisma.adminSession.count({ where: { adminId: id, revokedAt: null } })).toBe(1);
+
+    const old = await request("POST", "/auth/admin/sessions", {
+      body: { email: EMAIL, password: PASSWORD },
+    });
+    expect(old.status).toBe(401);
+    expect((await signIn(EMAIL, NEW_PASSWORD)).next).toBe("TOTP");
+  });
+
+  it("stops a reset link another admin sent", async () => {
+    const omar = await createAdmin();
+    const sara = await createAdmin({ email: "sara@hagz.app" });
+    const { jar } = await signedIn(omar.secret);
+    expect((await request("POST", `/admin/list/${sara.id}/password-reset`, { jar })).status).toBe(
+      204,
+    );
+    const token = new URL(
+      mailbox.lastResetTo("sara@hagz.app")?.resetUrl ?? "http://x",
+    ).hash.replace("#token=", "");
+
+    const { challengeToken } = await signIn("sara@hagz.app");
+    const saraJar = jarFrom(await complete(challengeToken, currentCode(sara.secret)));
+    expect((await change(saraJar, PASSWORD)).status).toBe(204);
+
+    const late = await request("POST", "/auth/admin/password-reset", {
+      body: { token, password: "yet another password" },
+    });
+    expect((await json(late)).code).toBe("PASSWORD_RESET_INVALID");
+  });
+
+  it("limits guesses at the current password", async () => {
+    const { secret } = await createAdmin();
+    const { jar } = await signedIn(secret);
+    for (let i = 0; i < 5; i++) expect((await change(jar, `guess ${i}`)).status).toBe(400);
+    expect((await change(jar, PASSWORD)).status).toBe(429);
+  });
+
+  it("signs out one other browser, only the admin's own and never this one", async () => {
+    const omar = await createAdmin();
+    const sara = await createAdmin({ email: "sara@hagz.app" });
+    const { jar } = await signedIn(omar.secret);
+    const other = await signedIn(omar.secret, 1);
+    const sessions = await prisma.adminSession.findMany({
+      where: { adminId: omar.id },
+      orderBy: { id: "asc" },
+    });
+    const [mine, theirs] = sessions;
+    if (!mine || !theirs) throw new Error("expected two sessions");
+
+    const self = await request("DELETE", `/auth/admin/me/sessions/${mine.id}`, { jar });
+    expect((await json(self)).code).toBe("CURRENT_SESSION");
+
+    expect((await request("DELETE", `/auth/admin/me/sessions/${theirs.id}`, { jar })).status).toBe(
+      204,
+    );
+    const ended = await request("POST", "/auth/admin/sessions/refresh", { jar: other.jar });
+    expect((await json(ended)).code).toBe("SESSION_ENDED");
+    expect((await request("POST", "/auth/admin/sessions/refresh", { jar })).status).toBe(204);
+
+    const again = await request("DELETE", `/auth/admin/me/sessions/${theirs.id}`, { jar });
+    expect((await json(again)).code).toBe("SESSION_NOT_FOUND");
+
+    const { challengeToken } = await signIn("sara@hagz.app");
+    await complete(challengeToken, currentCode(sara.secret));
+    const saras = await prisma.adminSession.findFirstOrThrow({ where: { adminId: sara.id } });
+    const foreign = await request("DELETE", `/auth/admin/me/sessions/${saras.id}`, { jar });
+    expect(foreign.status).toBe(404);
+    expect(
+      (await prisma.adminSession.findUniqueOrThrow({ where: { id: saras.id } })).revokedAt,
+    ).toBe(null);
+  });
+
+  it("signs out every other browser and keeps this one", async () => {
+    const { id, secret } = await createAdmin();
+    const { jar } = await signedIn(secret);
+    const other = await signedIn(secret, 1);
+
+    expect((await request("DELETE", "/auth/admin/me/sessions", { jar })).status).toBe(204);
+    expect(await prisma.adminSession.count({ where: { adminId: id, revokedAt: null } })).toBe(1);
+    expect((await request("POST", "/auth/admin/sessions/refresh", { jar })).status).toBe(204);
+    const ended = await request("POST", "/auth/admin/sessions/refresh", { jar: other.jar });
+    expect((await json(ended)).code).toBe("SESSION_ENDED");
+  });
+});

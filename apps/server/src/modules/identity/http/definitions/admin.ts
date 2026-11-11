@@ -8,12 +8,14 @@ import {
   AdminListEntry,
   AdminSignedIn,
   AdminSignIn,
+  ChangeAdminPassword,
   CompleteAdminSignIn,
   InviteAdmin,
   list,
   ResetAdminPassword,
   StartTotpSetup,
   TotpSetup,
+  UpdateAdminProfile,
 } from "@hagz/contracts";
 import {
   ADMIN_COOKIE_AUTH,
@@ -130,6 +132,82 @@ export const me = createRoute({
     200: { description: "The admin", ...json(Admin) },
     401: unauthenticated,
     403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+  },
+});
+
+export const updateMe = createRoute({
+  method: "patch",
+  path: "/auth/admin/me",
+  tags,
+  summary: "Change your own name",
+  description: "The email is the admin's sign-in and can't change here.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: body(UpdateAdminProfile),
+  responses: {
+    200: { description: "The admin, renamed", ...json(Admin) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+  },
+});
+
+export const changePassword = createRoute({
+  method: "post",
+  path: "/auth/admin/me/password",
+  tags,
+  summary: "Change your own password",
+  description:
+    "Needs the current password. Signs every other browser out (this one stays signed in), and " +
+    "a reset link another admin sent stops working.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: body(ChangeAdminPassword),
+  responses: {
+    204: { description: "Password changed" },
+    400: problemResponse("WRONG_PASSWORD: the current password isn't right; or VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+    429: rateLimited,
+  },
+});
+
+const signedOutWithin =
+  " It stops refreshing at once; a page already open there keeps working for up to the access " +
+  "token's 10 minutes.";
+
+export const signOutBrowser = createRoute({
+  method: "delete",
+  path: "/auth/admin/me/sessions/{id}",
+  tags,
+  summary: "Sign out one of your other browsers",
+  description:
+    "One of the browsers listed on your own admin page. Not this one: sign out instead." +
+    signedOutWithin,
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Signed out" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("SESSION_NOT_FOUND: not yours, or already signed out"),
+    409: problemResponse("CURRENT_SESSION: the browser asking"),
+  },
+});
+
+export const signOutOtherBrowsers = createRoute({
+  method: "delete",
+  path: "/auth/admin/me/sessions",
+  tags,
+  summary: "Sign out of every other browser",
+  description: "This browser stays signed in." + signedOutWithin,
+  middleware: [requireAdmin] as const,
+  security,
+  responses: {
+    204: { description: "Signed out" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
   },
 });
 

@@ -105,6 +105,15 @@ export const requestAdminPasswordReset = async (
   }
 };
 
+// An admin who changed their password themselves no longer needs a link another admin sent: it stops
+// working.
+export const cancelAdminPasswordReset = async (adminId: string) => {
+  await redis(async (r) => {
+    const open = await r.get(openKey(adminId));
+    if (open) await r.del(resetKey(open), openKey(adminId));
+  });
+};
+
 // Sets the new password and signs them out everywhere. The link works once, and not for an admin
 // who has been suspended or banned since it was sent.
 export const confirmAdminPasswordReset = async (
