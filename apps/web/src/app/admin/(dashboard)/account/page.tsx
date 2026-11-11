@@ -431,7 +431,8 @@ export default function Account() {
             { id: "browsers", label: "Browsers", count: details?.devices.length },
           ]}
         />
-        <div className="mt-8 max-w-[29rem]">
+        {/* Half the page wide on a desktop; the whole width once that would be too narrow. */}
+        <div className="mt-8 lg:w-1/2">
           {tab === "profile" ? (
             <TabPanel id="profile">
               <ProfileTab details={details} />
