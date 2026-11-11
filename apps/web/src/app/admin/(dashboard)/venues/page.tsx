@@ -66,10 +66,11 @@ const columns = helper.columns([
   }),
   helper.display({
     id: "marketplace",
-    header: "Marketplace",
+    // Centred, heading and flag alike, so the flag sits under the middle of its heading.
+    header: () => <span className="block text-center">Marketplace</span>,
     cell: ({ row }) => (
       // The flag alone; the code is there for screen readers and on hover.
-      <span title={row.original.marketplace.code} className="flex">
+      <span title={row.original.marketplace.code} className="flex justify-center">
         <Flag code={row.original.marketplace.code} size="1.25rem" />
         <span className="sr-only">{row.original.marketplace.code}</span>
       </span>
