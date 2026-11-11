@@ -66,12 +66,20 @@ const columns = helper.columns([
   }),
   helper.display({
     id: "marketplace",
-    // Centred, heading and flag alike, so the flag sits under the middle of its heading.
-    header: () => <span className="block text-center">Marketplace</span>,
+    header: "Marketplace",
     cell: ({ row }) => (
-      // The flag alone; the code is there for screen readers and on hover.
-      <span title={row.original.marketplace.code} className="flex justify-center">
-        <Flag code={row.original.marketplace.code} size="1.25rem" />
+      // The flag alone, centred under the heading: an invisible copy of the heading's text gives the
+      // box its width, whatever the font. The code is there for screen readers and on hover.
+      <span title={row.original.marketplace.code} className="inline-grid align-middle">
+        <span
+          aria-hidden
+          className="invisible col-start-1 row-start-1 h-0 text-caption font-medium"
+        >
+          Marketplace
+        </span>
+        <span className="col-start-1 row-start-1 flex justify-center">
+          <Flag code={row.original.marketplace.code} size="1.25rem" />
+        </span>
         <span className="sr-only">{row.original.marketplace.code}</span>
       </span>
     ),
@@ -102,7 +110,7 @@ const widths = {
   index: "3.5rem",
   area: "16%",
   owner: "14%",
-  marketplace: "7rem",
+  marketplace: "9rem",
   grounds: "6rem",
   created: "8rem",
   status: "8rem",
