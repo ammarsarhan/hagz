@@ -2,6 +2,7 @@ import type { AdminVenue, AdminVenueQuery, VenueStatus } from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { placeOf } from "../domain/names";
+import { venueNotFound } from "./access";
 
 // The admin Venues table: every venue in any status, newest first, a page at a time. Ids are UUIDv7,
 // so ordering by id is ordering by creation, and the last id on a page is the cursor for the next.
@@ -78,4 +79,11 @@ export const listAdminVenues = async ({ status, q, cursor, limit }: AdminVenueQu
     STATUSES.map((s) => [s, groups.find((g) => g.status === s)?._count ?? 0]),
   ) as Record<VenueStatus, number>;
   return { data, nextCursor: more ? (data.at(-1)?.id ?? null) : null, counts };
+};
+
+// One venue, for the header of its admin dashboard.
+export const getAdminVenue = async (id: string): Promise<AdminVenue> => {
+  const venue = await prisma.venue.findUnique({ where: { id }, select });
+  if (!venue) throw venueNotFound();
+  return present(venue);
 };

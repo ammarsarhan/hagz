@@ -198,3 +198,28 @@ describe("GET /admin/venues", () => {
     expect((await get("?cursor=nope")).status).toBe(400);
   });
 });
+
+describe("GET /admin/venues/{id}", () => {
+  it("reads one venue, in any status", async () => {
+    const venue = await addVenue({ en: "Arena", status: "DRAFT" });
+    const res = await get(`/${venue.id}`);
+    expect(res.status).toBe(200);
+    expect(AdminVenue.parse(res.body)).toMatchObject({
+      id: venue.id,
+      names: { en: "Arena", ar: null },
+      status: "DRAFT",
+      area: "Nasr City, Cairo",
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}`, false)).status).toBe(401);
+  });
+});

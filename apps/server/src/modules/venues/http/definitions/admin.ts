@@ -32,3 +32,18 @@ export const listVenues = createRoute({
     400: problemResponse("VALIDATION_FAILED: see `errors`."),
   },
 });
+
+export const getVenue = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}",
+  tags,
+  summary: "One venue, in any status",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The venue", ...json(AdminVenue) },
+    ...guarded,
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
