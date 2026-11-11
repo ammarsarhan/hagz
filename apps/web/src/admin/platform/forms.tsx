@@ -6,46 +6,19 @@ import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
 import { Tag } from "@/admin/data-table";
 import { PanelSection, ReadOnlyRow, SidePanel } from "@/admin/side-panel";
-import { FormDialog } from "@/admin/dialog";
-import { message, notTheirFault, send } from "@/admin/errors";
+import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { Flag } from "@/admin/flag";
-import { useHud } from "@/admin/hud";
 import { kindOrder } from "./countries";
 import { KindIcon } from "./kind-icon";
 import { localityLabel } from "./model";
+import { useSubmit } from "@/admin/submit";
 
-// The Platform page's forms. Each one sends its request, shows the API's message if it's refused,
-// and on success tells the page to reload.
+// The Platform page's forms. Each one sends its request through useSubmit, which shows any error in
+// the HUD, and on success tells the page to reload.
 
 type Close = () => void;
 type Done = () => void;
-
-// Shared submit plumbing: busy while waiting, close and reload on success. Every failure shows in
-// the HUD, over the modal, which stays open with what was typed. When it isn't the admin's fault
-// (no answer, a server error) the HUD has Try again, which sends the same request again; a refused
-// request would only be refused again, so the admin fixes the form instead.
-export const useSubmit = (onDone: Done, onClose: Close) => {
-  const [busy, setBusy] = useState(false);
-  const hud = useHud();
-  const run = async (request: () => Promise<{ ok: boolean; error?: unknown }>) => {
-    setBusy(true);
-    const result = await request();
-    setBusy(false);
-    if (!result.ok) {
-      hud(
-        message(result.error),
-        notTheirFault(result.error)
-          ? { label: "Try again", run: () => void run(request) }
-          : undefined,
-      );
-      return;
-    }
-    onClose();
-    onDone();
-  };
-  return { busy, run };
-};
 
 // Percent typed by a person ("14", "2.5") to basis points; null when it isn't a valid rate.
 export const basisPoints = (text: string) => {
@@ -335,7 +308,7 @@ function Toggle({
       className={`flex items-center justify-between gap-6 ${disabled ? "cursor-default" : "cursor-pointer"}`}
     >
       <span className="flex flex-col">
-        <span className="text-label font-medium text-ink">{label}</span>
+        <span className="text-label text-ink">{label}</span>
         <span className="text-caption text-ink-2">{hint}</span>
       </span>
       <input
@@ -452,35 +425,5 @@ export function EditAmenityPanel({
         </PanelSection>
       </form>
     </SidePanel>
-  );
-}
-
-// --- Delete ---
-
-export function DeleteDialog({
-  title,
-  description,
-  request,
-  onClose,
-  onDone,
-}: {
-  title: string;
-  description: string;
-  request: () => Promise<{ ok: boolean; error?: unknown }>;
-  onClose: Close;
-  onDone: Done;
-}) {
-  const { busy, run } = useSubmit(onDone, onClose);
-  return (
-    <FormDialog
-      open
-      onClose={onClose}
-      title={title}
-      subtitle={description}
-      submitLabel="Delete"
-      danger
-      busy={busy}
-      onSubmit={() => void run(request)}
-    />
   );
 }

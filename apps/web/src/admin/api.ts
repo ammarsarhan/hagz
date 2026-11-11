@@ -2,7 +2,7 @@ import { createApiClient } from "@hagz/api";
 
 // The admin session is httpOnly cookies the API sets through this site's own /v1 (next.config.ts),
 // so requests go to the same origin and the client never sees a token.
-const signedOutPages = ["/admin/login", "/admin/invitations/accept"];
+const signedOutPages = ["/admin/login", "/admin/invitations/accept", "/admin/password/reset"];
 
 export const { api } = createApiClient({
   baseUrl: "",

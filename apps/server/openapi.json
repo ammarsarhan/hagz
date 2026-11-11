@@ -866,6 +866,143 @@
           "createdAt"
         ]
       },
+      "AdminDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "BANNED"
+            ]
+          },
+          "authenticatorSetUp": {
+            "type": "boolean",
+            "description": "False until the first sign-in finishes setting up the authenticator."
+          },
+          "lastSignedInAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "authenticatorSetUpAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "invitedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The inviting admin's name; null for the first admin."
+          },
+          "invitesSent": {
+            "type": "integer",
+            "description": "Invitations they've sent, used or not."
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDevice"
+            },
+            "description": "Signed in now, most recently active first."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "status",
+          "authenticatorSetUp",
+          "lastSignedInAt",
+          "createdAt",
+          "authenticatorSetUpAt",
+          "invitedBy",
+          "invitesSent",
+          "devices"
+        ]
+      },
+      "AdminDevice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userAgent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "signedInAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "The session making this request."
+          }
+        },
+        "required": [
+          "id",
+          "userAgent",
+          "ipAddress",
+          "signedInAt",
+          "lastActiveAt",
+          "current"
+        ]
+      },
+      "ResetAdminPassword": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "From the reset link."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ]
+      },
       "AcceptAdminInvitation": {
         "type": "object",
         "properties": {
@@ -910,14 +1047,7 @@
             "description": "In `Accept-Language`, else any language."
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "DRAFT",
-              "SUBMITTED",
-              "PROVISIONING",
-              "LIVE",
-              "MAINTENANCE"
-            ]
+            "$ref": "#/components/schemas/VenueStatus"
           },
           "role": {
             "$ref": "#/components/schemas/VenueRole"
@@ -1008,6 +1138,16 @@
           "status",
           "role",
           "permissions"
+        ]
+      },
+      "VenueStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "PROVISIONING",
+          "LIVE",
+          "MAINTENANCE"
         ]
       },
       "VenueRole": {
@@ -2049,6 +2189,114 @@
             "type": "boolean"
           }
         }
+      },
+      "AdminVenue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "names": {
+            "type": "object",
+            "properties": {
+              "en": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ar": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/VenueStatus"
+          },
+          "marketplace": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string",
+                "example": "EG"
+              }
+            },
+            "required": [
+              "id",
+              "code"
+            ]
+          },
+          "area": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Nasr City, Cairo"
+          },
+          "owner": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "+201001234567"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone"
+            ],
+            "description": "Null only if the venue has no owner, which shouldn't happen."
+          },
+          "groundCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Grounds in use or under maintenance."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "names",
+          "status",
+          "marketplace",
+          "area",
+          "owner",
+          "groundCount",
+          "createdAt"
+        ]
       }
     },
     "parameters": {}
@@ -4323,6 +4571,277 @@
         }
       }
     },
+    "/v1/admin/list/{id}": {
+      "get": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "One admin in full",
+        "description": "Who invited them, the invitations they've sent and the browsers they're signed in on.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ADMIN_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/list/{id}/authenticator": {
+      "delete": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Reset another admin's authenticator",
+        "description": "Forgets it and signs them out everywhere; their next sign-in sets up a new one. Not for your own account.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reset"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ADMIN_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OWN_ADMIN_ACCOUNT",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/list/{id}/password-reset": {
+      "post": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Email another admin a link to choose a new password",
+        "description": "The link works for 24 hours, replaces any earlier one, and signs them out everywhere once used. Nothing changes until then. Not for your own account.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sent"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ADMIN_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OWN_ADMIN_ACCOUNT",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "EMAIL_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/password-reset": {
+      "post": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Choose a new password from a reset link",
+        "description": "The token is in the link's fragment (`#token=`). Signs the admin out everywhere; they then sign in with the new password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetAdminPassword"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed"
+          },
+          "400": {
+            "description": "PASSWORD_RESET_INVALID, or VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/invitations/{id}": {
       "delete": {
         "tags": [
@@ -6427,6 +6946,216 @@
           },
           "409": {
             "description": "AMENITY_IN_USE: venues offer it or bookings were charged for it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Every venue, in any status",
+        "description": "Newest first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/VenueStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Part of the name in either language, or the slug."
+            },
+            "required": false,
+            "description": "Part of the name in either language, or the slug.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of venues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminVenue"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null on the last page."
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "DRAFT": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "SUBMITTED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "PROVISIONING": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "LIVE": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "MAINTENANCE": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor",
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "One venue, in any status",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The venue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVenue"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {

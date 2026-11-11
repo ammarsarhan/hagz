@@ -2563,6 +2563,301 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/list/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One admin in full
+         * @description Who invited them, the invitations they've sent and the browsers they're signed in on.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The admin */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminDetails"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}/authenticator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Reset another admin's authenticator
+         * @description Forgets it and signs them out everywhere; their next sign-in sets up a new one. Not for your own account.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reset */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWN_ADMIN_ACCOUNT */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email another admin a link to choose a new password
+         * @description The link works for 24 hours, replaces any earlier one, and signs them out everywhere once used. Nothing changes until then. Not for your own account.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sent */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWN_ADMIN_ACCOUNT */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description EMAIL_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Choose a new password from a reset link
+         * @description The token is in the link's fragment (`#token=`). Signs the admin out everywhere; they then sign in with the new password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ResetAdminPassword"];
+                };
+            };
+            responses: {
+                /** @description Password changed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description PASSWORD_RESET_INVALID, or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/invitations/{id}": {
         parameters: {
             query?: never;
@@ -4529,6 +4824,155 @@ export interface paths {
         };
         trace?: never;
     };
+    "/v1/admin/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every venue, in any status
+         * @description Newest first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    status?: components["schemas"]["VenueStatus"];
+                    /** @description Part of the name in either language, or the slug. */
+                    q?: string;
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminVenue"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                            counts: {
+                                DRAFT?: number;
+                                SUBMITTED?: number;
+                                PROVISIONING?: number;
+                                LIVE?: number;
+                                MAINTENANCE?: number;
+                            };
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One venue, in any status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenue"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4840,6 +5284,45 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        AdminDetails: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "BANNED";
+            /** @description False until the first sign-in finishes setting up the authenticator. */
+            authenticatorSetUp: boolean;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            authenticatorSetUpAt: string | null;
+            /** @description The inviting admin's name; null for the first admin. */
+            invitedBy: string | null;
+            /** @description Invitations they've sent, used or not. */
+            invitesSent: number;
+            /** @description Signed in now, most recently active first. */
+            devices: components["schemas"]["AdminDevice"][];
+        };
+        AdminDevice: {
+            /** Format: uuid */
+            id: string;
+            userAgent: string | null;
+            ipAddress: string | null;
+            /** Format: date-time */
+            signedInAt: string;
+            /** Format: date-time */
+            lastActiveAt: string;
+            /** @description The session making this request. */
+            current: boolean;
+        };
+        ResetAdminPassword: {
+            /** @description From the reset link. */
+            token: string;
+            password: string;
+        };
         AcceptAdminInvitation: {
             /** @description From the invitation link. */
             token: string;
@@ -4852,8 +5335,7 @@ export interface components {
             slug: string;
             /** @description In `Accept-Language`, else any language. */
             name: string | null;
-            /** @enum {string} */
-            status: "DRAFT" | "SUBMITTED" | "PROVISIONING" | "LIVE" | "MAINTENANCE";
+            status: components["schemas"]["VenueStatus"];
             role: components["schemas"]["VenueRole"];
             /** @description What the signed-in member may do here; all `manage` for the owner. */
             permissions: {
@@ -4894,6 +5376,8 @@ export interface components {
                 venue: "none" | "view" | "manage";
             };
         };
+        /** @enum {string} */
+        VenueStatus: "DRAFT" | "SUBMITTED" | "PROVISIONING" | "LIVE" | "MAINTENANCE";
         /**
          * @description Each venue has exactly one `OWNER`, who can do everything.
          * @enum {string}
@@ -5307,6 +5791,36 @@ export interface components {
         UpdateAmenity: {
             names?: components["schemas"]["Names"];
             isActive?: boolean;
+        };
+        AdminVenue: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            names: {
+                en: string | null;
+                ar: string | null;
+            };
+            status: components["schemas"]["VenueStatus"];
+            marketplace: {
+                /** Format: uuid */
+                id: string;
+                /** @example EG */
+                code: string;
+            };
+            /** @example Nasr City, Cairo */
+            area: string | null;
+            /** @description Null only if the venue has no owner, which shouldn't happen. */
+            owner: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @example +201001234567 */
+                phone: string | null;
+            } | null;
+            /** @description Grounds in use or under maintenance. */
+            groundCount: number;
+            /** Format: date-time */
+            createdAt: string;
         };
     };
     responses: never;

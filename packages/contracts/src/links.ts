@@ -26,6 +26,7 @@ export type AppName = keyof typeof APPS;
 export const ROUTES = {
   staffInvitation: { app: "dashboard", path: "/manage/invite/[code]" },
   adminInvitation: { app: "web", path: "/admin/invitations/accept" },
+  adminPasswordReset: { app: "web", path: "/admin/password/reset" },
 } as const satisfies Record<string, { app: AppName | "web"; path: string }>;
 
 export type RouteName = keyof typeof ROUTES;
@@ -51,5 +52,7 @@ export const links = (webUrl: string) => {
     // logs and Referer headers. The page reads it with JavaScript.
     adminInvitation: (token: string) =>
       `${base}${ROUTES.adminInvitation.path}#token=${encodeURIComponent(token)}`,
+    adminPasswordReset: (token: string) =>
+      `${base}${ROUTES.adminPasswordReset.path}#token=${encodeURIComponent(token)}`,
   } satisfies Record<RouteName, (value: string) => string>;
 };

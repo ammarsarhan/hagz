@@ -232,6 +232,29 @@ export const AdminListEntry = Admin.extend({
   createdAt: z.iso.datetime(),
 }).meta({ id: "AdminListEntry" });
 
+// A browser an admin is signed in on: one session, until it's signed out or runs out.
+export const AdminDevice = z
+  .object({
+    id: z.uuid(),
+    userAgent: z.string().nullable(),
+    ipAddress: z.string().nullable(),
+    signedInAt: z.iso.datetime(),
+    lastActiveAt: z.iso.datetime(),
+    current: z.boolean().meta({ description: "The session making this request." }),
+  })
+  .meta({ id: "AdminDevice" });
+
+// One admin in full, for their page: the list entry, how they joined and where they're signed in.
+export const AdminDetails = AdminListEntry.extend({
+  authenticatorSetUpAt: z.iso.datetime().nullable(),
+  invitedBy: z
+    .string()
+    .nullable()
+    .meta({ description: "The inviting admin's name; null for the first admin." }),
+  invitesSent: z.int().meta({ description: "Invitations they've sent, used or not." }),
+  devices: z.array(AdminDevice).meta({ description: "Signed in now, most recently active first." }),
+}).meta({ id: "AdminDetails" });
+
 export const AdminSignedIn = z
   .object({
     admin: Admin,
@@ -261,6 +284,14 @@ export const AcceptAdminInvitation = z
   })
   .meta({ id: "AcceptAdminInvitation" });
 
+// Where the emailed reset link lands: the admin picks a new password.
+export const ResetAdminPassword = z
+  .object({
+    token: z.string().min(1).max(256).meta({ description: "From the reset link." }),
+    password: Password,
+  })
+  .meta({ id: "ResetAdminPassword" });
+
 export type AdminSignIn = z.infer<typeof AdminSignIn>;
 export type AdminChallenge = z.infer<typeof AdminChallenge>;
 export type StartTotpSetup = z.infer<typeof StartTotpSetup>;
@@ -269,6 +300,9 @@ export type CompleteAdminSignIn = z.infer<typeof CompleteAdminSignIn>;
 export type Admin = z.infer<typeof Admin>;
 export type AdminSignedIn = z.infer<typeof AdminSignedIn>;
 export type AdminListEntry = z.infer<typeof AdminListEntry>;
+export type AdminDevice = z.infer<typeof AdminDevice>;
+export type AdminDetails = z.infer<typeof AdminDetails>;
 export type InviteAdmin = z.infer<typeof InviteAdmin>;
 export type AdminInvitation = z.infer<typeof AdminInvitation>;
 export type AcceptAdminInvitation = z.infer<typeof AcceptAdminInvitation>;
+export type ResetAdminPassword = z.infer<typeof ResetAdminPassword>;

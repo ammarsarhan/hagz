@@ -3,6 +3,7 @@ import {
   AcceptAdminInvitation,
   Admin,
   AdminChallenge,
+  AdminDetails,
   AdminInvitation,
   AdminListEntry,
   AdminSignedIn,
@@ -10,6 +11,7 @@ import {
   CompleteAdminSignIn,
   InviteAdmin,
   list,
+  ResetAdminPassword,
   StartTotpSetup,
   TotpSetup,
 } from "@hagz/contracts";
@@ -146,6 +148,64 @@ export const admins = createRoute({
   },
 });
 
+export const admin = createRoute({
+  method: "get",
+  path: "/admin/list/{id}",
+  tags: ["Admins"],
+  summary: "One admin in full",
+  description:
+    "Who invited them, the invitations they've sent and the browsers they're signed in on.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    200: { description: "The admin", ...json(AdminDetails) },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("ADMIN_NOT_FOUND"),
+  },
+});
+
+export const resetAuthenticator = createRoute({
+  method: "delete",
+  path: "/admin/list/{id}/authenticator",
+  tags: ["Admins"],
+  summary: "Reset another admin's authenticator",
+  description:
+    "Forgets it and signs them out everywhere; their next sign-in sets up a new one. Not for your own account.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Reset" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("ADMIN_NOT_FOUND"),
+    409: problemResponse("OWN_ADMIN_ACCOUNT"),
+  },
+});
+
+export const requestPasswordReset = createRoute({
+  method: "post",
+  path: "/admin/list/{id}/password-reset",
+  tags: ["Admins"],
+  summary: "Email another admin a link to choose a new password",
+  description:
+    "The link works for 24 hours, replaces any earlier one, and signs them out everywhere once used. Nothing changes until then. Not for your own account.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Sent" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("ADMIN_NOT_FOUND"),
+    409: problemResponse("OWN_ADMIN_ACCOUNT"),
+    429: rateLimited,
+    503: problemResponse("EMAIL_UNAVAILABLE: retry later."),
+  },
+});
+
 export const invite = createRoute({
   method: "post",
   path: "/admin/invitations",
@@ -195,6 +255,21 @@ export const revokeInvitation = createRoute({
     403: problemResponse(headerMissing),
     404: problemResponse("INVITATION_NOT_FOUND"),
     409: problemResponse("INVITATION_ALREADY_ACCEPTED"),
+  },
+});
+
+export const resetPassword = createRoute({
+  method: "post",
+  path: "/auth/admin/password-reset",
+  tags,
+  summary: "Choose a new password from a reset link",
+  description:
+    "The token is in the link's fragment (`#token=`). Signs the admin out everywhere; they then sign in with the new password.",
+  request: body(ResetAdminPassword),
+  responses: {
+    204: { description: "Password changed" },
+    400: problemResponse("PASSWORD_RESET_INVALID, or VALIDATION_FAILED"),
+    429: rateLimited,
   },
 });
 

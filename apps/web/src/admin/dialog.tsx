@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { Button } from "./button";
+import { OverlayBody, OverlayFooter, OverlayHeader } from "./overlay";
+import { useSubmit } from "./submit";
 
 // A modal on the native <dialog>: the browser traps focus, closes it on Escape and draws the
 // backdrop; a click on the backdrop closes it too. Its content mounts only while open, so every
@@ -48,49 +50,81 @@ export function Dialog({
   );
 }
 
-// A form inside a dialog: title, fields, then cancel and submit. Errors show in the HUD.
-export function FormDialog({
-  open,
+// The admin's one modal, after the Platform pages: the shared header (title, a grey line, ×, and
+// ← back on a later step), a body that scrolls inside 85% of the window, and small buttons at the
+// bottom right. Wide (40rem) fits a grid of cards or a form; narrow (30rem) is for a question.
+export function Modal({
   onClose,
   title,
-  subtitle,
-  submitLabel,
-  busy,
-  danger = false,
-  onSubmit,
+  description,
+  onBack,
+  footer,
+  narrow = false,
   children,
 }: {
-  open: boolean;
   onClose: () => void;
-  title: string;
-  subtitle?: ReactNode;
-  submitLabel: string;
-  busy: boolean;
-  danger?: boolean;
-  onSubmit: () => void;
+  title: ReactNode;
+  // A line under the title about this step.
+  description?: ReactNode;
+  // On a later step: back to the one before.
+  onBack?: () => void;
+  footer?: ReactNode;
+  narrow?: boolean;
+  // Left out for a question that the title and description already ask.
   children?: ReactNode;
 }) {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <form
-        className="flex flex-col p-6"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit();
-        }}
-      >
-        <h2 className="text-heading font-semibold text-ink">{title}</h2>
-        {subtitle ? <p className="mt-1 text-label text-ink-2">{subtitle}</p> : null}
-        {children ? <div className="mt-6 flex flex-col gap-4">{children}</div> : null}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Button variant="secondary" onClick={onClose} disabled={busy}>
+    <Dialog open wide={!narrow} onClose={onClose}>
+      <div className="flex max-h-[85vh] flex-col">
+        <OverlayHeader title={title} description={description} onClose={onClose} onBack={onBack} />
+        {children ? <OverlayBody>{children}</OverlayBody> : <div className="h-4 shrink-0" />}
+        {footer ? <OverlayFooter>{footer}</OverlayFooter> : null}
+      </div>
+    </Dialog>
+  );
+}
+
+// "Delete …?", "Revoke …?": the question, a sentence on what happens, Cancel, and the button that
+// does it, red unless it's something that can't do harm (sending a link).
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel = "Delete",
+  danger = true,
+  request,
+  onClose,
+  onDone,
+}: {
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  request: () => Promise<{ ok: boolean; error?: unknown }>;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { busy, run } = useSubmit(onDone, onClose);
+  return (
+    <Modal
+      narrow
+      onClose={onClose}
+      title={title}
+      description={description}
+      footer={
+        <>
+          <Button variant="secondary" size="small" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant={danger ? "danger" : "primary"} loading={busy}>
-            {submitLabel}
+          <Button
+            size="small"
+            variant={danger ? "danger" : "primary"}
+            loading={busy}
+            onClick={() => void run(request)}
+          >
+            {confirmLabel}
           </Button>
-        </div>
-      </form>
-    </Dialog>
+        </>
+      }
+    />
   );
 }
