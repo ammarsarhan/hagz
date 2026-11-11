@@ -71,6 +71,24 @@ function Reveal({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
   );
 }
 
+// Signs this browser out and goes to sign in; the spinner stays until the page changes.
+function SignOutButton() {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      size="small"
+      variant="secondary"
+      loading={busy}
+      onClick={() => {
+        setBusy(true);
+        void signOut();
+      }}
+    >
+      Sign out
+    </Button>
+  );
+}
+
 // Only failures that aren't the admin's fault are worth trying again as they are.
 const useFailure = () => {
   const hud = useHud();
@@ -151,6 +169,13 @@ function ProfileTab({ details }: { details: AdminDetails | undefined }) {
           ) : (
             <Skeleton className="h-4 w-56" />
           )}
+        </Section>
+
+        <Section
+          title="Sign out"
+          description="Leave the admin on this browser. Your other browsers stay signed in."
+        >
+          <SignOutButton />
         </Section>
       </div>
     </>
@@ -317,7 +342,6 @@ function BrowsersTab({
   const fail = useFailure();
   const [ending, setEnding] = useState<string>();
   const [confirmAll, setConfirmAll] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   const end = async (id: string) => {
     setEnding(id);
@@ -355,24 +379,7 @@ function BrowsersTab({
     <>
       <Section title="Signed in on" description="Sign out of any browser you don't recognise.">
         <ul className="border-t border-border">
-          {here ? (
-            <BrowserRow
-              session={here}
-              action={
-                <Button
-                  size="small"
-                  variant="secondary"
-                  loading={signingOut}
-                  onClick={() => {
-                    setSigningOut(true);
-                    void signOut();
-                  }}
-                >
-                  Sign out
-                </Button>
-              }
-            />
-          ) : null}
+          {here ? <BrowserRow session={here} action={<SignOutButton />} /> : null}
           {others.map((session) => (
             <BrowserRow
               key={session.id}
