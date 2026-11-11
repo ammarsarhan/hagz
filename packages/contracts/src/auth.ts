@@ -284,6 +284,19 @@ export const AcceptAdminInvitation = z
   })
   .meta({ id: "AcceptAdminInvitation" });
 
+// The signed-in admin changing their own account (the Account page). The email is their sign-in and
+// can't change here.
+export const UpdateAdminProfile = z
+  .object({ name: z.string().trim().min(1).max(100) })
+  .meta({ id: "UpdateAdminProfile" });
+
+export const ChangeAdminPassword = z
+  .object({
+    currentPassword: z.string().min(1).max(128),
+    newPassword: Password,
+  })
+  .meta({ id: "ChangeAdminPassword" });
+
 // Where the emailed reset link lands: the admin picks a new password.
 export const ResetAdminPassword = z
   .object({
@@ -306,3 +319,5 @@ export type InviteAdmin = z.infer<typeof InviteAdmin>;
 export type AdminInvitation = z.infer<typeof AdminInvitation>;
 export type AcceptAdminInvitation = z.infer<typeof AcceptAdminInvitation>;
 export type ResetAdminPassword = z.infer<typeof ResetAdminPassword>;
+export type UpdateAdminProfile = z.infer<typeof UpdateAdminProfile>;
+export type ChangeAdminPassword = z.infer<typeof ChangeAdminPassword>;
