@@ -96,6 +96,24 @@ const useFailure = () => {
     hud(message(error), notTheirFault(error) ? { label: "Try again", run: retry } : undefined);
 };
 
+// "11 Nov, 14:20", in the admin's own time zone.
+const signedInAt = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+// When this browser signed in, once the details are in.
+const sessionLine = (details: AdminDetails | undefined) => {
+  const here = details?.devices.find((session) => session.current);
+  const since = here
+    ? `You've been signed in since ${signedInAt.format(new Date(here.signedInAt))}. `
+    : "";
+  return `${since}Your other browsers stay signed in.`;
+};
+
 function ProfileTab({ details }: { details: AdminDetails | undefined }) {
   const admin = useAdmin();
   const updateAdmin = useUpdateAdmin();
@@ -171,10 +189,7 @@ function ProfileTab({ details }: { details: AdminDetails | undefined }) {
           )}
         </Section>
 
-        <Section
-          title="Sign out"
-          description="Leave the admin on this browser. Your other browsers stay signed in."
-        >
+        <Section title="Your session" description={sessionLine(details)}>
           <SignOutButton />
         </Section>
       </div>
