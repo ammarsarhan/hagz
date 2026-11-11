@@ -661,18 +661,19 @@ describe("admin's own account", () => {
       orderBy: { id: "asc" },
     });
     const [mine, theirs] = sessions;
+    if (!mine || !theirs) throw new Error("expected two sessions");
 
-    const self = await request("DELETE", `/auth/admin/me/sessions/${mine!.id}`, { jar });
+    const self = await request("DELETE", `/auth/admin/me/sessions/${mine.id}`, { jar });
     expect((await json(self)).code).toBe("CURRENT_SESSION");
 
-    expect((await request("DELETE", `/auth/admin/me/sessions/${theirs!.id}`, { jar })).status).toBe(
+    expect((await request("DELETE", `/auth/admin/me/sessions/${theirs.id}`, { jar })).status).toBe(
       204,
     );
     const ended = await request("POST", "/auth/admin/sessions/refresh", { jar: other.jar });
     expect((await json(ended)).code).toBe("SESSION_ENDED");
     expect((await request("POST", "/auth/admin/sessions/refresh", { jar })).status).toBe(204);
 
-    const again = await request("DELETE", `/auth/admin/me/sessions/${theirs!.id}`, { jar });
+    const again = await request("DELETE", `/auth/admin/me/sessions/${theirs.id}`, { jar });
     expect((await json(again)).code).toBe("SESSION_NOT_FOUND");
 
     const { challengeToken } = await signIn("sara@hagz.app");
