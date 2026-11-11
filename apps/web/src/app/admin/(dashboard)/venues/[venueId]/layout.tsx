@@ -10,8 +10,8 @@ import { venueHref, venueSections } from "@/admin/venues/sections";
 import { useCurrentVenue, VenueProvider } from "@/admin/venues/venue";
 
 // A venue's own dashboard, opened from the Venues table: a breadcrumb back, the venue's name and
-// status, then its sections as tabs, each a page of its own. A placeholder structure until the
-// user's layout for it arrives.
+// status, then its sections as tabs, each a page of its own. The layout the user chose (2026-11-11),
+// under the main rail.
 export default function VenueLayout({ children }: { children: ReactNode }) {
   const { venueId } = useParams<{ venueId: string }>();
   return (

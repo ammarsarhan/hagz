@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react";
 
 // A venue's admin dashboard (/admin/venues/[venueId]/…), one page per section. The structure is set;
-// the layout comes from the user's design, and each section is filled in by the phase that builds it
+// the layout is agreed, and each section is filled in by the phase that builds it
 // (docs/plan.md). `slug` is the path under the venue; the overview has none.
 
 export interface VenueSection {
