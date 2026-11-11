@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 const LENGTH = 6;
 
 // Six boxes, as in the staff app: 60 high, 14 corners, 8 apart. One real input sits over them, so
-// typing, pasting all six digits and the browser's one-time-code autofill all just work.
+// typing, pasting all six digits and the browser's one-time-code autofill all just work. That input
+// is invisible, so the active box draws its own blinking caret: alone in an empty box, or after the
+// digit once all six are in, where a text field's caret would be.
 export function CodeInput({
   value,
   onChange,
@@ -66,6 +68,13 @@ export function CodeInput({
                 className={`flex h-[3.75rem] flex-1 items-center justify-center rounded-field bg-white text-2xl font-semibold text-ink ${look}`}
               >
                 {value[i] ?? ""}
+                {active ? (
+                  <span
+                    // A new key on every keystroke restarts the blink, so it's solid while typing.
+                    key={value.length}
+                    className={`caret h-7 w-0.5 rounded-full bg-ink ${value[i] ? "ml-0.5" : ""}`}
+                  />
+                ) : null}
               </div>
             );
           })}

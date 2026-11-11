@@ -122,3 +122,19 @@ input:-webkit-autofill:focus {
 .recharts-wrapper:focus {
   outline: none;
 }
+
+/* The code input's caret (admin/code-input.tsx): on and off like a text field's, half a second each,
+   with no fade between. Remounted on every keystroke, so it starts solid while typing. */
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.caret {
+  animation: caret-blink 1.06s step-end infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
