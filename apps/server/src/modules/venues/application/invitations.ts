@@ -23,7 +23,7 @@ import {
   STAFF_INVITED,
   STAFF_JOINED,
 } from "../domain/events";
-import { initialsOf, nameIn, translationIn } from "../domain/names";
+import { initialsOf, nameIn, placeOf, translationIn } from "../domain/names";
 import {
   allows,
   beyondGranter,
@@ -366,21 +366,6 @@ const inviteeOf = async (staffId: string) => {
 // The invitee isn't on the staff yet: they see the team as a size and two sets of initials (the
 // owner's first), never names, phones or ids.
 const TEAM_PREVIEW = 2;
-
-// "Zamalek, Cairo": the venue's own place, then the one it sits in (if any), which is how people
-// say where a pitch is; the street address is longer and less telling.
-const placeOf = (
-  location: {
-    translations: { language: Language; name: string }[];
-    parent: { translations: { language: Language; name: string }[] } | null;
-  },
-  language: Language,
-) => {
-  const names = [location, location.parent]
-    .map((place) => (place ? nameIn(place.translations, language) : null))
-    .filter((name): name is string => Boolean(name));
-  return names.length > 0 ? names.join(language === "AR" ? "، " : ", ") : null;
-};
 
 const presentReceived = async (
   invitations: (InvitationRow & { invitor: { name: string } })[],

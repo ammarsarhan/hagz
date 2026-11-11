@@ -40,7 +40,7 @@ const columns = helper.columns([
     cell: ({ row: { original: m } }) => (
       <div className="flex items-center gap-3">
         <Flag code={m.code} />
-        <span className="truncate font-medium">{m.names.en}</span>
+        <span className="truncate text-ink">{m.names.en}</span>
         <span dir="rtl" lang="ar" className="truncate text-ink-3">
           {m.names.ar}
         </span>

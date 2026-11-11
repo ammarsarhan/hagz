@@ -63,7 +63,12 @@ export const limits = {
   adminTotpPerIp: { name: "admin:totp:ip", limit: 20, windowMs: minutes(15) },
   adminInvitesPerAdmin: { name: "admin:invite:admin", limit: 20, windowMs: hours(24) },
   adminAcceptPerIp: { name: "admin:accept:ip", limit: 10, windowMs: minutes(15) },
+  adminPasswordResetsPerAdmin: { name: "admin:reset:admin", limit: 20, windowMs: hours(24) },
+  adminPasswordResetPerIp: { name: "admin:reset:ip", limit: 10, windowMs: minutes(15) },
 } as const;
 
 // How long an emailed admin invitation link works.
 export const ADMIN_INVITATION_TTL_SECONDS = 48 * 60 * 60;
+
+// How long an emailed admin password reset link works.
+export const ADMIN_PASSWORD_RESET_TTL_SECONDS = 24 * 60 * 60;

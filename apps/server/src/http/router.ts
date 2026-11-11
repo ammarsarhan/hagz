@@ -1,7 +1,7 @@
 import { adminAuthRoutes, customerAuthRoutes, staffAuthRoutes } from "@/modules/identity";
 import { locationsRoutes, platformAdminRoutes } from "@/modules/locations";
 import { systemRoutes } from "@/modules/system";
-import { venuesStaffRoutes } from "@/modules/venues";
+import { venuesAdminRoutes, venuesStaffRoutes } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
 import { notFound, onError } from "@/http/errors";
@@ -37,6 +37,7 @@ router.route("/v1", adminAuthRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
+router.route("/v1", venuesAdminRoutes);
 
 // The contract the apps are built against, and a browsable page for it. Not served in production:
 // they list every route, including admin ones. The committed copy is apps/server/openapi.json.

@@ -29,7 +29,8 @@ import { Flag } from "@/admin/flag";
 import { send } from "@/admin/errors";
 import { AddLocationDialog } from "@/admin/platform/add-location";
 import { AddAmenityDialog } from "@/admin/platform/add-amenity";
-import { DeleteDialog, EditAmenityPanel, EditLocationPanel } from "@/admin/platform/forms";
+import { ConfirmDialog } from "@/admin/dialog";
+import { EditAmenityPanel, EditLocationPanel } from "@/admin/platform/forms";
 import {
   byName,
   localityLabel,
@@ -84,7 +85,7 @@ function LocationName({ row }: { row: LocationRow }) {
       ) : (
         <span className="size-6 shrink-0" />
       )}
-      <span className="truncate font-medium">{location.names.en}</span>
+      <span className="truncate text-ink">{location.names.en}</span>
     </div>
   );
 }
@@ -202,7 +203,7 @@ const amenityColumns = amenityHelper.columns([
   amenityHelper.accessor((amenity) => amenity.names.en, {
     id: "name",
     header: "Name",
-    cell: ({ row }) => <span className="truncate font-medium">{row.original.names.en}</span>,
+    cell: ({ row }) => <span className="truncate text-ink">{row.original.names.en}</span>,
   }),
   amenityHelper.display({
     id: "arabic",
@@ -456,7 +457,7 @@ export default function AdminMarketplacePage() {
         />
       ) : null}
       {open?.form === "deleteLocation" ? (
-        <DeleteDialog
+        <ConfirmDialog
           title={`Delete ${open.location.names.en}?`}
           description="Only possible while it has no locations under it and no venues in it."
           request={() =>
@@ -471,7 +472,7 @@ export default function AdminMarketplacePage() {
         />
       ) : null}
       {open?.form === "deleteAmenity" ? (
-        <DeleteDialog
+        <ConfirmDialog
           title={`Delete ${open.amenity.names.en}?`}
           description="Only possible while no venue offers it. Otherwise turn it off."
           request={() =>
