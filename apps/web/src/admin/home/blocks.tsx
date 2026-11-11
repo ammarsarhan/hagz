@@ -78,13 +78,10 @@ export function ShareTable({
   empty: string;
 }) {
   const template = columns.map((column) => column.width ?? "1fr").join(" ");
-  // The outer edges are padded only when rows carry share bars, so text sits inside the bar; without
-  // them the table lines up with its section's title.
-  const barred = rows.some((row) => row.share != null);
-  const cell = (i: number) => {
-    const edge = barred ? "" : i === 0 ? "pl-0" : i === columns.length - 1 ? "pr-0" : "";
-    return `min-w-0 truncate px-2 ${edge} ${columns[i]?.align === "right" ? "text-right" : ""}`;
-  };
+  // Every cell is flush left with room on its right, so headings and text line up with the section's
+  // title; a share bar reaches a little further left instead, to keep its text off the bar's edge.
+  const cell = (i: number) =>
+    `min-w-0 truncate pr-2 pl-0 ${columns[i]?.align === "right" ? "text-right" : ""}`;
 
   return (
     <div role="table" className="text-label">
@@ -115,8 +112,10 @@ export function ShareTable({
               {row.share != null ? (
                 <span
                   aria-hidden
-                  className="absolute inset-y-0 left-0 rounded-[0.375rem] bg-chip"
-                  style={{ width: `${Math.max(0, Math.min(1, row.share)) * 100}%` }}
+                  className="absolute inset-y-0 -left-2 rounded-[0.375rem] bg-chip"
+                  style={{
+                    width: `calc(${Math.max(0, Math.min(1, row.share))} * (100% + 0.5rem))`,
+                  }}
                 />
               ) : null}
               {row.cells.map((content, i) => (

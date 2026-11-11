@@ -329,16 +329,18 @@ export function OverviewChart({
               return (
                 <Readout
                   value={
-                    <ul>
+                    // Smaller and regular weight, a line apart: four figures read as a list, not
+                    // four headlines.
+                    <ul className="flex flex-col gap-1.5 py-0.5 text-caption font-normal">
                       {series.map((s) => (
                         <li key={s.key} className="flex items-center justify-between gap-4">
-                          <span className="font-medium text-ink-2">{s.label}</span>
+                          <span className="text-ink-2">{s.label}</span>
                           <span>{row[s.key] == null ? "—" : ms(row[s.key]!)}</span>
                         </li>
                       ))}
                       {row.down ? (
                         <li className="flex items-center justify-between gap-4 text-red">
-                          <span className="font-medium">Down</span>
+                          <span>Down</span>
                           <span>{Math.round(row.down)} min</span>
                         </li>
                       ) : null}
