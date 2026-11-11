@@ -29,6 +29,8 @@ import { TabPanel, Tabs } from "@/admin/tabs";
 // The email is the sign-in and stays as invited; a lost authenticator is reset by another admin.
 
 const MIN_PASSWORD = 8;
+// The forms keep the width their fields always had, while the sections around them take half the page.
+const formClass = "flex max-w-[29rem] flex-col gap-5";
 
 type TabId = "profile" | "security" | "browsers";
 
@@ -108,7 +110,7 @@ function ProfileTab({ details }: { details: AdminDetails | undefined }) {
       <div className="mt-8">
         <Section title="Profile" description="How other admins see you, in the admin list.">
           <form
-            className="flex flex-col gap-5"
+            className={formClass}
             onSubmit={(event: FormEvent) => {
               event.preventDefault();
               if (changed && !empty && !busy) void save();
@@ -196,7 +198,7 @@ function SecurityTab({
     <>
       <Section title="Password" description="Changing it signs your other browsers out.">
         <form
-          className="flex flex-col gap-5"
+          className={formClass}
           onSubmit={(event: FormEvent) => {
             event.preventDefault();
             if (valid && !busy) void change();
