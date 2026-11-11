@@ -40,7 +40,7 @@ export default function AcceptAdminInvitation() {
     return (
       <PageShell
         title="This link is incomplete"
-        subtitle="Part of it is missing. Open the link in your invitation email again."
+        subtitle="The link you followed is missing some details. Please open it again from your invitation email."
       >
         <Button variant="secondary" onClick={toSignIn}>
           Go to sign in

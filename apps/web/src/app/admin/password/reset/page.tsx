@@ -47,7 +47,7 @@ export default function ResetAdminPassword() {
     return (
       <PageShell
         title="This link is incomplete"
-        subtitle="Part of it is missing. Open the link in your email again."
+        subtitle="The link you followed is missing some details. Please open it again from the email you received."
       >
         <Button variant="secondary" onClick={toSignIn}>
           Go to sign in
