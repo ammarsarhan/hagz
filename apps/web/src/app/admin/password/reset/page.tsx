@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
 import { message, problemCode, send } from "@/admin/errors";
@@ -22,16 +22,10 @@ export default function ResetAdminPassword() {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  // Read once: the fragment is cleared below, so a second run (React runs effects twice in
-  // development) would find no token and show the link as ended.
-  const read = useRef(false);
+  // The token stays in the address bar so a refresh still works. It's single-use, so a copy left
+  // in history is dead once it's used.
   useEffect(() => {
-    if (read.current) return;
-    read.current = true;
-    const value = new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
-    setToken(value);
-    // Out of the address bar, so it isn't left in history or shared by accident.
-    if (value) window.history.replaceState(null, "", window.location.pathname);
+    setToken(new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "");
   }, []);
 
   const toSignIn = () => window.location.assign("/admin/login");
@@ -49,7 +43,20 @@ export default function ResetAdminPassword() {
     );
   }
 
-  if (ended || !token) {
+  if (!token) {
+    return (
+      <PageShell
+        title="This link is incomplete"
+        subtitle="Part of it is missing. Open the link in your email again."
+      >
+        <Button variant="secondary" onClick={toSignIn}>
+          Go to sign in
+        </Button>
+      </PageShell>
+    );
+  }
+
+  if (ended) {
     return (
       <PageShell
         title="This link has ended"
