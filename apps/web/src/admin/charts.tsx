@@ -3,7 +3,8 @@
 // The admin home's charts, drawn with Recharts: a single line with its peak top left and 0 bottom
 // left (Stripe's style), the overview of every response time with downtime as bars behind it
 // (Gumloop's Insights, the user's reference of 2026-11-11), and availability strips of blocks. All
-// answer hover and keyboard focus with a tooltip.
+// answer hover with a tooltip. None take focus (accessibilityLayer off, the user's call of
+// 2026-11-11): the figures beside each chart and the tables below carry the same numbers as text.
 //
 // Recharts writes colors as SVG attributes, where CSS variables don't resolve, so marks stroke and
 // fill with currentColor under a text-* class, or take a fill-*/stroke-* class on the element itself.
@@ -142,7 +143,11 @@ export function LineChart({
   return (
     <figure aria-label={`Peak ${Math.round(top)} ${unit} in the range`} className="h-36 text-ink">
       <ResponsiveContainer width="100%" height="100%">
-        <Lines data={rows} margin={{ top: 8, right: 2, bottom: 0, left: 0 }}>
+        <Lines
+          data={rows}
+          margin={{ top: 8, right: 2, bottom: 0, left: 0 }}
+          accessibilityLayer={false}
+        >
           <YAxis
             domain={[0, top]}
             ticks={[0, top]}
@@ -293,7 +298,11 @@ export function OverviewChart({
   return (
     <figure aria-label="Response times over the range" className="h-64 text-ink">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+        <ComposedChart
+          data={rows}
+          margin={{ top: 8, right: 4, bottom: 0, left: 0 }}
+          accessibilityLayer={false}
+        >
           <CartesianGrid yAxisId="ms" vertical={false} className="stroke-border" />
           <YAxis
             yAxisId="ms"
@@ -441,6 +450,7 @@ export function AvailabilityStrip({
           data={blocks}
           margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
           barCategoryGap={1}
+          accessibilityLayer={false}
         >
           <XAxis dataKey="at" hide />
           <YAxis domain={[0, 1]} hide />

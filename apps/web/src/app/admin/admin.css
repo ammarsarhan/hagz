@@ -116,14 +116,9 @@ input:-webkit-autofill:focus {
   }
 }
 
-/* Charts (admin/charts.tsx) can take focus, so the arrow keys move their tooltip. A click focuses
-   them too, which shouldn't draw the browser's outline; only keyboard focus gets a ring. */
+/* Charts (admin/charts.tsx) aren't in the tab order, but Recharts still gives some of its layers
+   tabindex="-1", which a click can focus: that shouldn't draw the browser's outline. */
 .recharts-wrapper :focus,
 .recharts-wrapper:focus {
   outline: none;
-}
-.recharts-wrapper .recharts-surface:focus-visible {
-  outline: 1.5px solid var(--color-ink);
-  outline-offset: 4px;
-  border-radius: 0.25rem;
 }
