@@ -11,6 +11,7 @@ import {
 } from "@tabler/icons-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { api } from "@/admin/api";
+import { Avatar } from "@/admin/avatar";
 import { ago, day, device, useAdminDetails } from "@/admin/admins/model";
 import { Button } from "@/admin/button";
 import { Skeleton, Tag } from "@/admin/data-table";
@@ -24,6 +25,7 @@ import { TabPanel, Tabs } from "@/admin/tabs";
 
 // The signed-in admin's own account, option 3 of Figma A4 (Tabs, after Acctual and Railway, picked
 // 2026-11-11): Profile, Security and Browsers under the title, each a narrow column of sections.
+// Profile opens with an identity header (3A, picked the same day) over its sections.
 // The email is the sign-in and stays as invited; a lost authenticator is reset by another admin.
 
 const MIN_PASSWORD = 8;
@@ -94,50 +96,61 @@ function ProfileTab({ details }: { details: AdminDetails | undefined }) {
 
   return (
     <>
-      <Section title="Profile" description="How other admins see you, in the admin list.">
-        <form
-          className="flex flex-col gap-5"
-          onSubmit={(event: FormEvent) => {
-            event.preventDefault();
-            if (changed && !empty && !busy) void save();
-          }}
-        >
-          <Field
-            label="Name"
-            autoComplete="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            error={empty ? "Your name can't be empty." : undefined}
-          />
-          <Field
-            label="Email address"
-            type="email"
-            value={admin.email}
-            disabled
-            readOnly
-            hint="Your sign-in. It stays the address you were invited at."
-            trailing={<IconLock size={18} className="size-[1.125rem] shrink-0 text-ink-3" />}
-          />
-          <div>
-            <Button type="submit" size="small" loading={busy} disabled={!changed || empty}>
-              Save changes
-            </Button>
-          </div>
-        </form>
-      </Section>
+      {/* Who's signed in, as option 2's header (Figma 3A): the initials, name and email. */}
+      <div className="flex items-center gap-5 border-b border-border pb-8">
+        <Avatar name={admin.name} size="large" />
+        <div className="min-w-0">
+          <p className="truncate text-[1.375rem] leading-7 font-semibold text-ink">{admin.name}</p>
+          <p className="truncate text-body text-ink-2">{admin.email}</p>
+        </div>
+      </div>
 
-      <Section title="Membership" description="When you joined the admin.">
-        {details ? (
-          <p className="text-label text-ink">
-            Admin since {day(details.createdAt)}
-            <span className="text-ink-2">
-              {details.invitedBy ? ` · invited by ${details.invitedBy}` : " · the first admin"}
-            </span>
-          </p>
-        ) : (
-          <Skeleton className="h-4 w-56" />
-        )}
-      </Section>
+      <div className="mt-8">
+        <Section title="Profile" description="How other admins see you, in the admin list.">
+          <form
+            className="flex flex-col gap-5"
+            onSubmit={(event: FormEvent) => {
+              event.preventDefault();
+              if (changed && !empty && !busy) void save();
+            }}
+          >
+            <Field
+              label="Name"
+              autoComplete="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              error={empty ? "Your name can't be empty." : undefined}
+            />
+            <Field
+              label="Email address"
+              type="email"
+              value={admin.email}
+              disabled
+              readOnly
+              hint="Your sign-in. It stays the address you were invited at."
+              trailing={<IconLock size={18} className="size-[1.125rem] shrink-0 text-ink-3" />}
+            />
+            <div>
+              <Button type="submit" size="small" loading={busy} disabled={!changed || empty}>
+                Save changes
+              </Button>
+            </div>
+          </form>
+        </Section>
+
+        <Section title="Membership" description="When you joined the admin.">
+          {details ? (
+            <p className="text-label text-ink">
+              Admin since {day(details.createdAt)}
+              <span className="text-ink-2">
+                {details.invitedBy ? ` · invited by ${details.invitedBy}` : " · the first admin"}
+              </span>
+            </p>
+          ) : (
+            <Skeleton className="h-4 w-56" />
+          )}
+        </Section>
+      </div>
     </>
   );
 }
