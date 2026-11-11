@@ -289,7 +289,7 @@ describe("admin locations", () => {
 });
 
 describe("admin amenities", () => {
-  const addAmenity = (marketplaceId: string, key: string, icon: string = "other") =>
+  const addAmenity = (marketplaceId: string, key: string, icon = "other") =>
     request("POST", `/admin/marketplaces/${marketplaceId}/amenities`, {
       key,
       names: { en: key, ar: `${key} (ar)` },
