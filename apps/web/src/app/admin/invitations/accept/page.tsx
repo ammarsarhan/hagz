@@ -73,7 +73,10 @@ export default function AcceptAdminInvitation() {
   };
 
   return (
-    <PageShell title="Create your account" subtitle="You’ve been invited to Hagz Admin.">
+    <PageShell
+      title="Create your account"
+      subtitle="You’ve been invited to help manage the platform."
+    >
       <form
         className="flex flex-col"
         onSubmit={(event) => {
