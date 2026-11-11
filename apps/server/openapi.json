@@ -1047,14 +1047,7 @@
             "description": "In `Accept-Language`, else any language."
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "DRAFT",
-              "SUBMITTED",
-              "PROVISIONING",
-              "LIVE",
-              "MAINTENANCE"
-            ]
+            "$ref": "#/components/schemas/VenueStatus"
           },
           "role": {
             "$ref": "#/components/schemas/VenueRole"
@@ -1145,6 +1138,16 @@
           "status",
           "role",
           "permissions"
+        ]
+      },
+      "VenueStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "PROVISIONING",
+          "LIVE",
+          "MAINTENANCE"
         ]
       },
       "VenueRole": {
@@ -2186,6 +2189,114 @@
             "type": "boolean"
           }
         }
+      },
+      "AdminVenue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "names": {
+            "type": "object",
+            "properties": {
+              "en": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ar": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/VenueStatus"
+          },
+          "marketplace": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string",
+                "example": "EG"
+              }
+            },
+            "required": [
+              "id",
+              "code"
+            ]
+          },
+          "area": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Nasr City, Cairo"
+          },
+          "owner": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "+201001234567"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone"
+            ],
+            "description": "Null only if the venue has no owner, which shouldn't happen."
+          },
+          "groundCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Grounds in use or under maintenance."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "names",
+          "status",
+          "marketplace",
+          "area",
+          "owner",
+          "groundCount",
+          "createdAt"
+        ]
       }
     },
     "parameters": {}
@@ -6835,6 +6946,150 @@
           },
           "409": {
             "description": "AMENITY_IN_USE: venues offer it or bookings were charged for it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Every venue, in any status",
+        "description": "Newest first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/VenueStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Part of the name in either language, or the slug."
+            },
+            "required": false,
+            "description": "Part of the name in either language, or the slug.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of venues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminVenue"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null on the last page."
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "DRAFT": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "SUBMITTED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "PROVISIONING": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "LIVE": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "MAINTENANCE": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor",
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {

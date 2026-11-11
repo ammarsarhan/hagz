@@ -4824,6 +4824,90 @@ export interface paths {
         };
         trace?: never;
     };
+    "/v1/admin/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every venue, in any status
+         * @description Newest first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    status?: components["schemas"]["VenueStatus"];
+                    /** @description Part of the name in either language, or the slug. */
+                    q?: string;
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminVenue"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                            counts: {
+                                DRAFT?: number;
+                                SUBMITTED?: number;
+                                PROVISIONING?: number;
+                                LIVE?: number;
+                                MAINTENANCE?: number;
+                            };
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5186,8 +5270,7 @@ export interface components {
             slug: string;
             /** @description In `Accept-Language`, else any language. */
             name: string | null;
-            /** @enum {string} */
-            status: "DRAFT" | "SUBMITTED" | "PROVISIONING" | "LIVE" | "MAINTENANCE";
+            status: components["schemas"]["VenueStatus"];
             role: components["schemas"]["VenueRole"];
             /** @description What the signed-in member may do here; all `manage` for the owner. */
             permissions: {
@@ -5228,6 +5311,8 @@ export interface components {
                 venue: "none" | "view" | "manage";
             };
         };
+        /** @enum {string} */
+        VenueStatus: "DRAFT" | "SUBMITTED" | "PROVISIONING" | "LIVE" | "MAINTENANCE";
         /**
          * @description Each venue has exactly one `OWNER`, who can do everything.
          * @enum {string}
@@ -5641,6 +5726,36 @@ export interface components {
         UpdateAmenity: {
             names?: components["schemas"]["Names"];
             isActive?: boolean;
+        };
+        AdminVenue: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            names: {
+                en: string | null;
+                ar: string | null;
+            };
+            status: components["schemas"]["VenueStatus"];
+            marketplace: {
+                /** Format: uuid */
+                id: string;
+                /** @example EG */
+                code: string;
+            };
+            /** @example Nasr City, Cairo */
+            area: string | null;
+            /** @description Null only if the venue has no owner, which shouldn't happen. */
+            owner: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @example +201001234567 */
+                phone: string | null;
+            } | null;
+            /** @description Grounds in use or under maintenance. */
+            groundCount: number;
+            /** Format: date-time */
+            createdAt: string;
         };
     };
     responses: never;
