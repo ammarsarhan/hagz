@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const LENGTH = 6;
 
@@ -24,6 +24,11 @@ export function CodeInput({
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
+  // autoFocus can land before React is listening (the server's HTML focuses it on load), so the focus
+  // event is missed; ask once mounted instead.
+  useEffect(() => {
+    if (document.activeElement === input.current) setFocused(true);
+  }, []);
   return (
     <div className="flex flex-col gap-2">
       <div className="relative" onClick={() => input.current?.focus()}>
