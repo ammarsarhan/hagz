@@ -134,11 +134,72 @@ export const UpdateLocation = z
 
 // --- Amenities ---
 
+// The icons an amenity can show, by names Hagz owns. The database stores one of these, never an icon
+// library's name; each app maps them to its own drawings, so renaming or swapping the library never
+// touches stored data. Adding one means a line here and in each app's map, and an app release.
+export const AMENITY_ICONS = [
+  // Facilities
+  "parking",
+  "bike_parking",
+  "changing_rooms",
+  "showers",
+  "toilets",
+  "lockers",
+  "prayer_room",
+  "seating",
+  "covered",
+  "air_conditioning",
+  "floodlights",
+  "wifi",
+  "charging",
+  "screen",
+  "sound",
+  // Food and drink
+  "cafe",
+  "restaurant",
+  "snacks",
+  "water",
+  "ice_cream",
+  // Sport
+  "ball_rental",
+  "kit_rental",
+  "scoreboard",
+  "video",
+  "tournaments",
+  "gym",
+  "pool",
+  "warm_up",
+  // Families
+  "kids_area",
+  "family",
+  // Access and safety
+  "accessible",
+  "first_aid",
+  "security",
+  "cctv",
+  "transport",
+  // Payment
+  "card_payment",
+  "cash",
+  "shop",
+  // Anything else
+  "other",
+] as const;
+
+export const AmenityIcon = z
+  .enum(AMENITY_ICONS)
+  .meta({
+    id: "AmenityIcon",
+    description: "Hagz's own icon name; each app draws it.",
+    example: "parking",
+  });
+
 export const AdminAmenity = z
   .object({
     id: z.uuid(),
     key: z.string().meta({ description: "Stable code, fixed once created.", example: "parking" }),
     names: Names,
+    icon: AmenityIcon,
     isActive: z.boolean().meta({ description: "Inactive options can't be newly picked." }),
     venueCount: z.int(),
   })
@@ -151,11 +212,16 @@ export const CreateAmenity = z
       .regex(/^[a-z][a-z0-9_]{1,39}$/, "Lowercase letters, digits and underscores.")
       .meta({ example: "parking" }),
     names: Names,
+    icon: AmenityIcon,
   })
   .meta({ id: "CreateAmenity" });
 
 export const UpdateAmenity = z
-  .object({ names: Names.optional(), isActive: z.boolean().optional() })
+  .object({
+    names: Names.optional(),
+    icon: AmenityIcon.optional(),
+    isActive: z.boolean().optional(),
+  })
   .meta({ id: "UpdateAmenity" });
 
 // --- Public (in the request's language) ---
@@ -178,6 +244,7 @@ export const Amenity = z
     id: z.uuid(),
     key: z.string().meta({ example: "parking" }),
     name: z.string().meta({ description: "In the requested language." }),
+    icon: AmenityIcon,
   })
   .meta({ id: "Amenity" });
 
@@ -189,6 +256,7 @@ export type UpdateMarketplace = z.infer<typeof UpdateMarketplace>;
 export type AdminLocation = z.infer<typeof AdminLocation>;
 export type CreateLocation = z.infer<typeof CreateLocation>;
 export type UpdateLocation = z.infer<typeof UpdateLocation>;
+export type AmenityIcon = z.infer<typeof AmenityIcon>;
 export type AdminAmenity = z.infer<typeof AdminAmenity>;
 export type CreateAmenity = z.infer<typeof CreateAmenity>;
 export type UpdateAmenity = z.infer<typeof UpdateAmenity>;
