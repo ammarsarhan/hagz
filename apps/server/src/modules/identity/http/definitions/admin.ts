@@ -8,12 +8,14 @@ import {
   AdminListEntry,
   AdminSignedIn,
   AdminSignIn,
+  ChangeAdminPassword,
   CompleteAdminSignIn,
   InviteAdmin,
   list,
   ResetAdminPassword,
   StartTotpSetup,
   TotpSetup,
+  UpdateAdminProfile,
 } from "@hagz/contracts";
 import {
   ADMIN_COOKIE_AUTH,
@@ -130,6 +132,43 @@ export const me = createRoute({
     200: { description: "The admin", ...json(Admin) },
     401: unauthenticated,
     403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+  },
+});
+
+export const updateMe = createRoute({
+  method: "patch",
+  path: "/auth/admin/me",
+  tags,
+  summary: "Change your own name",
+  description: "The email is the admin's sign-in and can't change here.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: body(UpdateAdminProfile),
+  responses: {
+    200: { description: "The admin, renamed", ...json(Admin) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+  },
+});
+
+export const changePassword = createRoute({
+  method: "post",
+  path: "/auth/admin/me/password",
+  tags,
+  summary: "Change your own password",
+  description:
+    "Needs the current password. Signs every other browser out (this one stays signed in), and " +
+    "a reset link another admin sent stops working.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: body(ChangeAdminPassword),
+  responses: {
+    204: { description: "Password changed" },
+    400: problemResponse("WRONG_PASSWORD: the current password isn't right; or VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+    429: rateLimited,
   },
 });
 

@@ -19,6 +19,7 @@ import {
   startTotpSetup,
 } from "../application/admin-sign-in";
 import { adminSessions } from "../application/accounts";
+import { changeAdminPassword, updateAdminProfile } from "../application/admin-account";
 import {
   confirmAdminPasswordReset,
   requestAdminPasswordReset,
@@ -71,6 +72,13 @@ export const adminAuthRoutes = createRouter()
   })
   .openapi(route.me, async (c) => {
     return c.json(await currentAdmin(c.var.admin.adminId), 200);
+  })
+  .openapi(route.updateMe, async (c) => {
+    return c.json(await updateAdminProfile(c.var.admin.adminId, c.req.valid("json")), 200);
+  })
+  .openapi(route.changePassword, async (c) => {
+    await changeAdminPassword(c.var.admin, c.req.valid("json"));
+    return c.body(null, 204);
   })
   .openapi(route.invite, async (c) => {
     const { email } = c.req.valid("json");
