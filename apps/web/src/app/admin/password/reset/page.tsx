@@ -1,5 +1,6 @@
 "use client";
 
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
@@ -19,6 +20,7 @@ export default function ResetAdminPassword() {
   const [ended, setEnded] = useState(false);
   const [done, setDone] = useState(false);
   const [password, setPassword] = useState("");
+  const [shown, setShown] = useState(false);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
@@ -92,7 +94,7 @@ export default function ResetAdminPassword() {
       >
         <Field
           label="New password"
-          type="password"
+          type={shown ? "text" : "password"}
           autoComplete="new-password"
           autoFocus
           placeholder="Choose a password"
@@ -103,6 +105,21 @@ export default function ResetAdminPassword() {
           }}
           error={error}
           hint="At least 8 characters."
+          trailing={
+            <button
+              type="button"
+              aria-label={shown ? "Hide password" : "Show password"}
+              onClick={() => setShown(!shown)}
+              className="flex cursor-pointer text-unit hover:text-ink"
+            >
+              {/* As on sign in: the open eye while the password shows. */}
+              {shown ? (
+                <IconEye size={20} className="size-5 shrink-0" stroke={2} />
+              ) : (
+                <IconEyeOff size={20} className="size-5 shrink-0" stroke={2} />
+              )}
+            </button>
+          }
         />
         <div className="mt-6">
           <Button type="submit" loading={busy} disabled={password.length < MIN_PASSWORD}>
