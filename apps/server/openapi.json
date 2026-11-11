@@ -164,13 +164,63 @@
           "name": {
             "type": "string",
             "description": "In the requested language."
+          },
+          "icon": {
+            "$ref": "#/components/schemas/AmenityIcon"
           }
         },
         "required": [
           "id",
           "key",
-          "name"
+          "name",
+          "icon"
         ]
+      },
+      "AmenityIcon": {
+        "type": "string",
+        "enum": [
+          "parking",
+          "bike_parking",
+          "changing_rooms",
+          "showers",
+          "toilets",
+          "lockers",
+          "prayer_room",
+          "seating",
+          "covered",
+          "air_conditioning",
+          "floodlights",
+          "wifi",
+          "charging",
+          "screen",
+          "sound",
+          "cafe",
+          "restaurant",
+          "snacks",
+          "water",
+          "ice_cream",
+          "ball_rental",
+          "kit_rental",
+          "scoreboard",
+          "video",
+          "tournaments",
+          "gym",
+          "pool",
+          "warm_up",
+          "kids_area",
+          "family",
+          "accessible",
+          "first_aid",
+          "security",
+          "cctv",
+          "transport",
+          "card_payment",
+          "cash",
+          "shop",
+          "other"
+        ],
+        "description": "Hagz's own icon name; each app draws it.",
+        "example": "parking"
       },
       "VerificationCodeSent": {
         "type": "object",
@@ -2178,6 +2228,9 @@
           "names": {
             "$ref": "#/components/schemas/Names"
           },
+          "icon": {
+            "$ref": "#/components/schemas/AmenityIcon"
+          },
           "isActive": {
             "type": "boolean",
             "description": "Inactive options can't be newly picked."
@@ -2190,6 +2243,7 @@
           "id",
           "key",
           "names",
+          "icon",
           "isActive",
           "venueCount"
         ]
@@ -2204,11 +2258,15 @@
           },
           "names": {
             "$ref": "#/components/schemas/Names"
+          },
+          "icon": {
+            "$ref": "#/components/schemas/AmenityIcon"
           }
         },
         "required": [
           "key",
-          "names"
+          "names",
+          "icon"
         ]
       },
       "UpdateAmenity": {
@@ -2216,6 +2274,9 @@
         "properties": {
           "names": {
             "$ref": "#/components/schemas/Names"
+          },
+          "icon": {
+            "$ref": "#/components/schemas/AmenityIcon"
           },
           "isActive": {
             "type": "boolean"

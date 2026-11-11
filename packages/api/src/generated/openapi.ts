@@ -5299,7 +5299,14 @@ export interface components {
             key: string;
             /** @description In the requested language. */
             name: string;
+            icon: components["schemas"]["AmenityIcon"];
         };
+        /**
+         * @description Hagz's own icon name; each app draws it.
+         * @example parking
+         * @enum {string}
+         */
+        AmenityIcon: "parking" | "bike_parking" | "changing_rooms" | "showers" | "toilets" | "lockers" | "prayer_room" | "seating" | "covered" | "air_conditioning" | "floodlights" | "wifi" | "charging" | "screen" | "sound" | "cafe" | "restaurant" | "snacks" | "water" | "ice_cream" | "ball_rental" | "kit_rental" | "scoreboard" | "video" | "tournaments" | "gym" | "pool" | "warm_up" | "kids_area" | "family" | "accessible" | "first_aid" | "security" | "cctv" | "transport" | "card_payment" | "cash" | "shop" | "other";
         /** @description Returned whether or not the number has an account. */
         VerificationCodeSent: {
             /**
@@ -6047,6 +6054,7 @@ export interface components {
              */
             key: string;
             names: components["schemas"]["Names"];
+            icon: components["schemas"]["AmenityIcon"];
             /** @description Inactive options can't be newly picked. */
             isActive: boolean;
             venueCount: number;
@@ -6055,9 +6063,11 @@ export interface components {
             /** @example parking */
             key: string;
             names: components["schemas"]["Names"];
+            icon: components["schemas"]["AmenityIcon"];
         };
         UpdateAmenity: {
             names?: components["schemas"]["Names"];
+            icon?: components["schemas"]["AmenityIcon"];
             isActive?: boolean;
         };
         AdminVenue: {

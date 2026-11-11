@@ -29,6 +29,7 @@ import { Flag } from "@/admin/flag";
 import { send } from "@/admin/errors";
 import { AddLocationDialog } from "@/admin/platform/add-location";
 import { AddAmenityDialog } from "@/admin/platform/add-amenity";
+import { amenityIcons } from "@/admin/platform/amenity-icons";
 import { ConfirmDialog } from "@/admin/dialog";
 import { EditAmenityPanel, EditLocationPanel } from "@/admin/platform/forms";
 import {
@@ -203,7 +204,20 @@ const amenityColumns = amenityHelper.columns([
   amenityHelper.accessor((amenity) => amenity.names.en, {
     id: "name",
     header: "Name",
-    cell: ({ row }) => <span className="truncate text-ink">{row.original.names.en}</span>,
+    cell: ({ row }) => {
+      const { icon: Drawn, label } = amenityIcons[row.original.icon];
+      return (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <Drawn
+            size={18}
+            className="size-[1.125rem] shrink-0 text-ink-2"
+            stroke={1.75}
+            aria-label={`Icon: ${label}`}
+          />
+          <span className="truncate text-ink">{row.original.names.en}</span>
+        </span>
+      );
+    },
   }),
   amenityHelper.display({
     id: "arabic",
