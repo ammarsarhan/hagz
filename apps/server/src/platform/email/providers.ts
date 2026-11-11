@@ -1,6 +1,10 @@
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
-import type { AdminInvitationEmail, EmailProvider } from "./email-provider";
+import type {
+  AdminInvitationEmail,
+  AdminPasswordResetEmail,
+  EmailProvider,
+} from "./email-provider";
 
 // Development: the email goes to the console, so invitations work without an email account. Never
 // used outside development: an invitation link in deployed logs lets anyone who reads them become an
@@ -13,29 +17,45 @@ export const consoleProvider: EmailProvider = {
     );
     return Promise.resolve();
   },
+  sendAdminPasswordReset: ({ to, requestedBy, resetUrl, expiresAt }) => {
+    logger.info(
+      { to, requestedBy, resetUrl, expiresAt },
+      "admin password reset email (development: not sent)",
+    );
+    return Promise.resolve();
+  },
 };
 
 // Tests: keeps what was sent, so a test can follow the link like the recipient would.
 export const createInMemoryProvider = () => {
   const sent: AdminInvitationEmail[] = [];
+  const resets: AdminPasswordResetEmail[] = [];
   return {
     sent,
+    resets,
     sendAdminInvitation: (email: AdminInvitationEmail) => {
       sent.push(email);
       return Promise.resolve();
     },
+    sendAdminPasswordReset: (email: AdminPasswordResetEmail) => {
+      resets.push(email);
+      return Promise.resolve();
+    },
     lastInvitationTo: (to: string) => sent.findLast((email) => email.to === to),
+    lastResetTo: (to: string) => resets.findLast((email) => email.to === to),
   } satisfies EmailProvider & Record<string, unknown>;
 };
 
 // Staging and production until a provider is chosen: fail visibly instead of pretending to send.
+const unavailable = () =>
+  Promise.reject(
+    new AppError({
+      code: "EMAIL_UNAVAILABLE",
+      status: 503,
+      detail: "Emails can't be sent right now. Please try again later.",
+    }),
+  );
 export const unconfiguredProvider: EmailProvider = {
-  sendAdminInvitation: () =>
-    Promise.reject(
-      new AppError({
-        code: "EMAIL_UNAVAILABLE",
-        status: 503,
-        detail: "Emails can't be sent right now. Please try again later.",
-      }),
-    ),
+  sendAdminInvitation: unavailable,
+  sendAdminPasswordReset: unavailable,
 };

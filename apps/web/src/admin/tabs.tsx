@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
 // Tabs that split a page into sections, after the user's reference (Attio's Members): labels with
@@ -74,5 +75,37 @@ export function TabPanel({ id, children }: { id: string; children: ReactNode }) 
     <div role="tabpanel" id={`panel-${id}`} aria-labelledby={`tab-${id}`}>
       {children}
     </div>
+  );
+}
+
+// The same tabs as links, for sections that are pages of their own (a venue's dashboard): each has
+// its URL, so it can be bookmarked, opened in a new tab, and reached with Back.
+export function LinkTabs({
+  label,
+  items,
+  current,
+}: {
+  label: string;
+  items: { href: string; label: string }[];
+  current: string;
+}) {
+  return (
+    <nav aria-label={label} className="flex gap-6 border-b border-border">
+      {items.map((item) => {
+        const selected = item.href === current;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={selected ? "page" : undefined}
+            className={`-mb-px border-b-2 pb-2.5 text-label font-medium transition-colors ${
+              selected ? "border-ink text-ink" : "border-transparent text-ink-2 hover:text-ink"
+            }`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

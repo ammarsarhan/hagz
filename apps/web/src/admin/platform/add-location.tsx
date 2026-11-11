@@ -4,12 +4,13 @@ import type { AdminLocation, AdminMarketplace, Locality } from "@hagz/contracts"
 import { useMemo, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { ChoiceCard, ChooserDialog, ChooserSection } from "@/admin/chooser";
+import { ChoiceCard, ChooserSection } from "@/admin/chooser";
+import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
 import { KindIcon } from "./kind-icon";
-import { useSubmit } from "./forms";
+import { useSubmit } from "@/admin/submit";
 import { byName, localityLabel } from "./model";
 
 // Add location, in two steps: pick what kind of place it is from cards (one per kind this
@@ -101,7 +102,7 @@ export function AddLocationDialog({
 
   if (!kind) {
     return (
-      <ChooserDialog
+      <Modal
         onClose={onClose}
         title="Add location"
         description={
@@ -140,7 +141,7 @@ export function AddLocationDialog({
             );
           })}
         </ChooserSection>
-      </ChooserDialog>
+      </Modal>
     );
   }
 
@@ -216,7 +217,7 @@ function Details({
     );
 
   return (
-    <ChooserDialog
+    <Modal
       {...frame}
       title={
         <>
@@ -280,6 +281,6 @@ function Details({
           </div>
         </div>
       </form>
-    </ChooserDialog>
+    </Modal>
   );
 }

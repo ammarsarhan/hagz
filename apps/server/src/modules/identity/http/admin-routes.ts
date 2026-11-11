@@ -19,7 +19,12 @@ import {
   startTotpSetup,
 } from "../application/admin-sign-in";
 import { adminSessions } from "../application/accounts";
-import { listAdmins } from "../application/admins";
+import {
+  confirmAdminPasswordReset,
+  requestAdminPasswordReset,
+  resetAdminAuthenticator,
+} from "../application/admin-resets";
+import { getAdmin, listAdmins } from "../application/admins";
 import { refreshSession, revokeByRefreshToken } from "../application/sessions";
 import { device } from "./route-helpers";
 import * as route from "./definitions/admin";
@@ -73,6 +78,23 @@ export const adminAuthRoutes = createRouter()
   })
   .openapi(route.admins, async (c) => {
     return c.json({ data: await listAdmins() }, 200);
+  })
+  .openapi(route.admin, async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await getAdmin({ id, sessionId: c.var.admin.sessionId }), 200);
+  })
+  .openapi(route.resetAuthenticator, async (c) => {
+    await resetAdminAuthenticator({ adminId: c.req.valid("param").id, by: c.var.admin.adminId });
+    return c.body(null, 204);
+  })
+  .openapi(route.requestPasswordReset, async (c) => {
+    await requestAdminPasswordReset({ adminId: c.req.valid("param").id, by: c.var.admin.adminId });
+    return c.body(null, 204);
+  })
+  .openapi(route.resetPassword, async (c) => {
+    const { token, password } = c.req.valid("json");
+    await confirmAdminPasswordReset({ token, password, ip: clientIp(c) });
+    return c.body(null, 204);
   })
   .openapi(route.invitations, async (c) => {
     return c.json({ data: await listAdminInvitations() }, 200);

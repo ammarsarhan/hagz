@@ -9,6 +9,21 @@ export const nameIn = <Language extends string>(
   language: Language,
 ): string | null => translationIn(translations, language)?.name ?? null;
 
+// "Zamalek, Cairo": the venue's own place, then the one it sits in (if any), which is how people
+// say where a pitch is; the street address is longer and less telling.
+export const placeOf = <Language extends string>(
+  location: {
+    translations: { language: Language; name: string }[];
+    parent: { translations: { language: Language; name: string }[] } | null;
+  },
+  language: Language,
+): string | null => {
+  const names = [location, location.parent]
+    .map((place) => (place ? nameIn(place.translations, language) : null))
+    .filter((name): name is string => Boolean(name));
+  return names.length > 0 ? names.join(language === "AR" ? "، " : ", ") : null;
+};
+
 // "Omar Saleh" → "OS", "Mona" → "M": the first letters of the first and last words. Array.from keeps
 // letters outside the BMP whole.
 export const initialsOf = (name: string): string => {

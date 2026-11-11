@@ -74,15 +74,26 @@ The admin side (`/v1/admin/venues`):
   - check the tax number;
   - set a commission override if agreed;
   - adjust photos if needed.
-- **Go live** (`PROVISIONING` → `LIVE`) once both languages exist and slot generation has run for every ground (`generatedUntil` is set).
-- **Pause and resume** any live venue.
+- **Go live** (`PROVISIONING` → `LIVE`) once both languages exist, the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)), and slot generation has run for every ground (`generatedUntil` is set).
+- **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
 - **Transfer ownership** to an existing member. In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified.
 
 ## Edits after going live
 
 - **Every edit applies at once** for members with the permission for that area (`venue` for details, location, photos, amenities, layout and settings; `schedule` for grounds, prices and schedules). Name and location included; nothing waits for an admin.
 - **Every edit is a `VenueEvent` with the previous and new values** of what changed (`VENUE_DETAILS_CHANGED`, `VENUE_LOCATION_CHANGED`, `VENUE_SETTINGS_CHANGED`, and so on). Admins see a venue's history in the admin panel and can **revert** a change, which applies the previous values and writes its own event.
+- **A live venue keeps an active ground.** See below.
 - **The area can't move to another marketplace.** A live venue's currency, VAT, amenities and payouts belong to its marketplace, so a new location must be in the same one. The pin must still fall inside it.
+
+### A live venue always has a ground
+
+A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to book shouldn't be in search. Grounds under `MAINTENANCE` don't count, and neither do `DELETED` ones (agreed 2026-11-11).
+
+- **Going live and resuming** check it, as above.
+- **Deleting a ground, or putting it under maintenance,** when it's the live venue's last `ACTIVE` one is refused with `409 LAST_ACTIVE_GROUND`: add another ground first, or pause the venue. The venue is never paused behind the owner's back.
+- **Concurrency:** every ground status change locks the venue row (`FOR UPDATE`) before counting, so two members pausing the last two grounds at once can't each see the other as still active.
+- A venue in `DRAFT`, `SUBMITTED`, `PROVISIONING` or `MAINTENANCE` can have no active grounds; the submit checklist asks for one separately.
+- Enforced in the API (PRs 2.4 and 2.7), not the database: the rule spans two tables and changes with the venue's status.
 
 ## Slugs and SEO
 

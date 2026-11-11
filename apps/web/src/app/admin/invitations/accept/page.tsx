@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/admin/api";
 import { Authenticator, type Challenge } from "@/admin/authenticator";
 import { Button } from "@/admin/button";
@@ -20,19 +21,14 @@ export default function AcceptAdminInvitation() {
   const [challenge, setChallenge] = useState<Challenge>();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [shown, setShown] = useState(false);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  // Read once: the fragment is cleared below, so a second run (React runs effects twice in
-  // development) would find no token and show the link as ended.
-  const read = useRef(false);
+  // The token stays in the address bar so a refresh still works. It's single-use, so a copy left
+  // in history is dead once it's used.
   useEffect(() => {
-    if (read.current) return;
-    read.current = true;
-    const value = new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
-    setToken(value);
-    // Out of the address bar, so it isn't left in history or shared by accident.
-    if (value) window.history.replaceState(null, "", window.location.pathname);
+    setToken(new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "");
   }, []);
 
   // The account exists by now, so running out of time means signing in, not accepting again.
@@ -40,7 +36,20 @@ export default function AcceptAdminInvitation() {
 
   if (token === undefined) return null;
 
-  if (ended || !token) {
+  if (!token) {
+    return (
+      <PageShell
+        title="This link is incomplete"
+        subtitle="The link you followed is missing some details. Please open it again from your invitation email."
+      >
+        <Button variant="secondary" onClick={toSignIn}>
+          Go to sign in
+        </Button>
+      </PageShell>
+    );
+  }
+
+  if (ended) {
     return (
       <PageShell
         title="This invitation has ended"
@@ -73,7 +82,10 @@ export default function AcceptAdminInvitation() {
   };
 
   return (
-    <PageShell title="Create your account" subtitle="You’ve been invited to Hagz Admin.">
+    <PageShell
+      title="Create your account"
+      subtitle="You’ve been invited to help manage the platform."
+    >
       <form
         className="flex flex-col"
         onSubmit={(event) => {
@@ -92,7 +104,7 @@ export default function AcceptAdminInvitation() {
         <div className="mt-4">
           <Field
             label="Password"
-            type="password"
+            type={shown ? "text" : "password"}
             autoComplete="new-password"
             placeholder="Choose a password"
             value={password}
@@ -102,6 +114,21 @@ export default function AcceptAdminInvitation() {
             }}
             error={error}
             hint="At least 8 characters."
+            trailing={
+              <button
+                type="button"
+                aria-label={shown ? "Hide password" : "Show password"}
+                onClick={() => setShown(!shown)}
+                className="flex cursor-pointer text-unit hover:text-ink"
+              >
+                {/* As on sign in: the open eye while the password shows. */}
+                {shown ? (
+                  <IconEye size={20} className="size-5 shrink-0" stroke={2} />
+                ) : (
+                  <IconEyeOff size={20} className="size-5 shrink-0" stroke={2} />
+                )}
+              </button>
+            }
           />
         </div>
         <div className="mt-6">
