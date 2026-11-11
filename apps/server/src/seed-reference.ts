@@ -1,4 +1,4 @@
-import type { Locality } from "@hagz/contracts";
+import type { AmenityIcon, Locality } from "@hagz/contracts";
 import { prisma } from "@/platform/db/prisma";
 import { cache, queueConnection } from "@/platform/redis/connections";
 
@@ -90,13 +90,13 @@ const EGYPT: Place[] = [
   governorate("south-sinai", "South Sinai", "جنوب سيناء"),
 ];
 
-const AMENITIES = [
-  { key: "floodlights", en: "Floodlights", ar: "كشافات إضاءة" },
-  { key: "parking", en: "Parking", ar: "موقف سيارات" },
-  { key: "changing_rooms", en: "Changing rooms", ar: "غرف تبديل الملابس" },
-  { key: "showers", en: "Showers", ar: "دشات" },
-  { key: "cafe", en: "Café", ar: "كافيتريا" },
-  { key: "ball_rental", en: "Ball rental", ar: "تأجير الكرة" },
+const AMENITIES: { key: string; icon: AmenityIcon; en: string; ar: string }[] = [
+  { key: "floodlights", icon: "floodlights", en: "Floodlights", ar: "كشافات إضاءة" },
+  { key: "parking", icon: "parking", en: "Parking", ar: "موقف سيارات" },
+  { key: "changing_rooms", icon: "changing_rooms", en: "Changing rooms", ar: "غرف تبديل الملابس" },
+  { key: "showers", icon: "showers", en: "Showers", ar: "دشات" },
+  { key: "cafe", icon: "cafe", en: "Café", ar: "كافيتريا" },
+  { key: "ball_rental", icon: "ball_rental", en: "Ball rental", ar: "تأجير الكرة" },
 ];
 
 const names = (en: string, ar: string) => [
@@ -158,6 +158,7 @@ const ensureAmenity = async (marketplaceId: string, amenity: (typeof AMENITIES)[
     data: {
       marketplaceId,
       key: amenity.key,
+      icon: amenity.icon,
       translations: { create: names(amenity.en, amenity.ar) },
     },
   });

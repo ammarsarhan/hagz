@@ -3,6 +3,7 @@ CREATE TABLE "AmenityOption" (
     "id" UUID NOT NULL,
     "marketplaceId" UUID NOT NULL,
     "key" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
