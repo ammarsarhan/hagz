@@ -60,15 +60,21 @@ export default function AdminHome() {
             onChange={(event) => setRangeId(event.target.value as RangeId)}
             options={RANGES.map((r) => ({ value: r.id, label: r.label }))}
           />
+          {/* The icon spins while it loads, rather than the button's own spinner: that one is
+              bigger than the icon and would grow the button for a moment. */}
           <Button
             size="small"
             variant="secondary"
             aria-label="Refresh"
             title="Refresh"
-            loading={refreshing}
+            aria-busy={refreshing}
             onClick={() => void refresh()}
           >
-            <IconRefresh size={16} className="size-4" stroke={2} />
+            <IconRefresh
+              size={16}
+              className={`size-4 ${refreshing ? "animate-spin" : ""}`}
+              stroke={2}
+            />
           </Button>
         </>
       }

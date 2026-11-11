@@ -69,8 +69,10 @@ export function useSystem() {
     };
   }, [load, loadHistory]);
 
-  // The refresh button: both at once, with the button busy until they're back.
+  // The refresh button: both at once, busy until they're back. A click while busy does nothing (the
+  // button isn't disabled, which would grey it out for a moment).
   const refresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
     await Promise.all([load(), loadHistory()]);
     setRefreshing(false);
