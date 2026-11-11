@@ -13,6 +13,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Avatar } from "./avatar";
 import { useAdmin } from "./session";
 
 // The sections, in the order the user set (2026-11-04), grouped (2026-11-05): an overview, the
@@ -36,14 +37,6 @@ export const groups: { label: string; items: { href: string; label: string; icon
     ],
   },
 ];
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
 
 // The full-detail mark, as on the sign-in pages.
 function Mark() {
@@ -133,9 +126,7 @@ export function Rail() {
           aria-current={pathname.startsWith("/admin/account") ? "page" : undefined}
           className={`flex w-full items-center gap-2.5 rounded-[0.625rem] p-1.5 hover:bg-chip ${pathname.startsWith("/admin/account") ? "bg-chip" : ""}`}
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-[0.75rem] font-semibold text-white">
-            {initials(admin.name)}
-          </span>
+          <Avatar name={admin.name} />
           <span className="min-w-0 text-left">
             <span className="block truncate text-label font-medium text-ink">{admin.name}</span>
             <span className="block truncate text-caption text-ink-2">{admin.email}</span>
