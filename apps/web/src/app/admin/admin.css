@@ -90,8 +90,8 @@ input:-webkit-autofill:focus {
   }
 }
 
-/* The error HUD (admin/hud.tsx): a plain fade in, and out (.hud-leaving) before it's removed. Its
-   red is a deeper, quieter one than --color-red, so it reads as an error without glaring. */
+/* The error HUD (admin/hud.tsx): a plain fade in, and out (.hud-leaving) before it's removed. It's
+   white with its text and icon in a deeper, quieter red than --color-red. */
 @theme {
   --color-hud: #b42318;
 }

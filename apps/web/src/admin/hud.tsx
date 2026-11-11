@@ -12,10 +12,10 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-// Errors: a red pill at the bottom centre of the window, over everything, gone after a few
-// seconds. Its red is a quiet one, so it reads as an error without glaring. Every
-// modal's errors show here; ones that aren't the admin's fault (no connection, the server broke)
-// add Try again. See notTheirFault in errors.ts.
+// Errors: a white pill with red text and icon at the bottom centre of the window, over
+// everything, fading in and out and gone after a few seconds. Every modal's errors show here; ones
+// that aren't the admin's fault (no connection, the server broke) add Try again. See notTheirFault
+// in errors.ts.
 //
 // An open modal <dialog> makes the rest of the page inert, so a HUD outside it would show but
 // couldn't be clicked. It's drawn inside the topmost open dialog instead, or on the page if none.
@@ -106,7 +106,7 @@ function Hud({
   return (
     <div
       role="alert"
-      className={`hud fixed bottom-6 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2.5 rounded-full bg-hud py-2.5 pr-3 pl-3.5 text-label font-medium text-white shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] ${
+      className={`hud fixed bottom-6 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2.5 rounded-full border border-hud/15 bg-white py-2.5 pr-3 pl-3.5 text-label font-medium text-hud shadow-[0_8px_24px_-6px_rgba(0,0,0,0.14)] ${
         leaving ? "hud-leaving pointer-events-none" : ""
       }`}
     >
@@ -114,7 +114,7 @@ function Hud({
       <span>{message}</span>
       {action ? (
         <>
-          <span aria-hidden className="h-4 w-px shrink-0 bg-white/35" />
+          <span aria-hidden className="h-4 w-px shrink-0 bg-hud/25" />
           <button
             type="button"
             onClick={() => {
@@ -131,7 +131,7 @@ function Hud({
         type="button"
         onClick={onClose}
         aria-label="Dismiss"
-        className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/75 hover:bg-white/15 hover:text-white"
+        className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-hud/70 hover:bg-hud/10 hover:text-hud"
       >
         <IconX size={16} className="size-4" stroke={2} />
       </button>
