@@ -19,7 +19,12 @@ import {
   startTotpSetup,
 } from "../application/admin-sign-in";
 import { adminSessions } from "../application/accounts";
-import { changeAdminPassword, updateAdminProfile } from "../application/admin-account";
+import {
+  changeAdminPassword,
+  signOutAdminBrowser,
+  signOutOtherAdminBrowsers,
+  updateAdminProfile,
+} from "../application/admin-account";
 import {
   confirmAdminPasswordReset,
   requestAdminPasswordReset,
@@ -78,6 +83,14 @@ export const adminAuthRoutes = createRouter()
   })
   .openapi(route.changePassword, async (c) => {
     await changeAdminPassword(c.var.admin, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.signOutBrowser, async (c) => {
+    await signOutAdminBrowser(c.var.admin, c.req.valid("param").id);
+    return c.body(null, 204);
+  })
+  .openapi(route.signOutOtherBrowsers, async (c) => {
+    await signOutOtherAdminBrowsers(c.var.admin);
     return c.body(null, 204);
   })
   .openapi(route.invite, async (c) => {

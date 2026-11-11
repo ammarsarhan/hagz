@@ -4539,6 +4539,115 @@
         }
       }
     },
+    "/v1/auth/admin/me/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Sign out one of your other browsers",
+        "description": "One of the browsers listed on your own admin page. Not this one: sign out instead. It stops refreshing at once; a page already open there keeps working for up to the access token's 10 minutes.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND: not yours, or already signed out",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CURRENT_SESSION: the browser asking",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/admin/me/sessions": {
+      "delete": {
+        "tags": [
+          "Admin auth"
+        ],
+        "summary": "Sign out of every other browser",
+        "description": "This browser stays signed in. It stops refreshing at once; a page already open there keeps working for up to the access token's 10 minutes.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Signed out"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/invitations": {
       "post": {
         "tags": [

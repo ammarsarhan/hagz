@@ -60,3 +60,44 @@ export const changeAdminPassword = async (
   await cancelAdminPasswordReset(adminId);
   logger.info({ adminId }, "admin changed their password");
 };
+
+const browserNotFound = () =>
+  new AppError({
+    code: "SESSION_NOT_FOUND",
+    status: 404,
+    detail: "You aren't signed in on that browser.",
+  });
+
+// Signs one of the admin's other browsers out. Only their own, and not the one asking: that's
+// signing out, which also clears the cookies.
+export const signOutAdminBrowser = async (
+  { adminId, sessionId }: { adminId: string; sessionId: string },
+  id: string,
+  clock: Clock = systemClock,
+) => {
+  if (id === sessionId) {
+    throw new AppError({
+      code: "CURRENT_SESSION",
+      status: 409,
+      detail: "That's this browser. Sign out instead.",
+    });
+  }
+  const { count } = await prisma.adminSession.updateMany({
+    where: { id, adminId, revokedAt: null, expiresAt: { gt: clock.now() } },
+    data: { revokedAt: clock.now() },
+  });
+  if (count === 0) throw browserNotFound();
+  logger.info({ adminId, sessionId: id }, "admin signed out one of their browsers");
+};
+
+// Signs every browser but this one out.
+export const signOutOtherAdminBrowsers = async (
+  { adminId, sessionId }: { adminId: string; sessionId: string },
+  clock: Clock = systemClock,
+) => {
+  const { count } = await prisma.adminSession.updateMany({
+    where: { adminId, revokedAt: null, id: { not: sessionId } },
+    data: { revokedAt: clock.now() },
+  });
+  logger.info({ adminId, count }, "admin signed out their other browsers");
+};

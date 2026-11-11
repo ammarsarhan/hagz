@@ -117,6 +117,14 @@ const messages = {
     en: "That isn't your current password.",
     ar: "هذه ليست كلمة المرور الحالية.",
   },
+  SESSION_NOT_FOUND: {
+    en: "That browser is already signed out.",
+    ar: "تم تسجيل الخروج من هذا المتصفح بالفعل.",
+  },
+  CURRENT_SESSION: {
+    en: "That's this browser. Sign out instead.",
+    ar: "هذا هو المتصفح الحالي. سجّل الخروج بدلًا من ذلك.",
+  },
   OWN_ADMIN_ACCOUNT: {
     en: "You can't do this to your own account. Ask another admin.",
     ar: "لا يمكنك القيام بذلك لحسابك. اطلب من مسؤول آخر.",

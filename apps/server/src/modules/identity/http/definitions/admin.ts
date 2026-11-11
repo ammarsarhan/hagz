@@ -172,6 +172,45 @@ export const changePassword = createRoute({
   },
 });
 
+const signedOutWithin =
+  " It stops refreshing at once; a page already open there keeps working for up to the access " +
+  "token's 10 minutes.";
+
+export const signOutBrowser = createRoute({
+  method: "delete",
+  path: "/auth/admin/me/sessions/{id}",
+  tags,
+  summary: "Sign out one of your other browsers",
+  description:
+    "One of the browsers listed on your own admin page. Not this one: sign out instead." +
+    signedOutWithin,
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Signed out" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+    404: problemResponse("SESSION_NOT_FOUND: not yours, or already signed out"),
+    409: problemResponse("CURRENT_SESSION: the browser asking"),
+  },
+});
+
+export const signOutOtherBrowsers = createRoute({
+  method: "delete",
+  path: "/auth/admin/me/sessions",
+  tags,
+  summary: "Sign out of every other browser",
+  description: "This browser stays signed in." + signedOutWithin,
+  middleware: [requireAdmin] as const,
+  security,
+  responses: {
+    204: { description: "Signed out" },
+    401: unauthenticated,
+    403: problemResponse(headerMissing),
+  },
+});
+
 export const admins = createRoute({
   method: "get",
   path: "/admin/list",
