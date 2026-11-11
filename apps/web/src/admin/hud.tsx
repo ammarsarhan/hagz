@@ -12,10 +12,10 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-// Problems that aren't the admin's fault (no connection, the server broke): a red pill at the
-// bottom centre of the window, over everything, gone after a few seconds. Unlike the staff app's
-// light HUD it's red, so it reads as an error at a glance. Refused requests (a 4xx the admin can
-// act on) stay with their form instead; see notTheirFault in errors.ts.
+// Errors: a red pill at the bottom centre of the window, over everything, gone after a few
+// seconds. Unlike the staff app's light HUD it's red, so it reads as an error at a glance. Every
+// modal's errors show here; ones that aren't the admin's fault (no connection, the server broke)
+// add Try again. See notTheirFault in errors.ts.
 //
 // An open modal <dialog> makes the rest of the page inert, so a HUD outside it would show but
 // couldn't be clicked. It's drawn inside the topmost open dialog instead, or on the page if none.
