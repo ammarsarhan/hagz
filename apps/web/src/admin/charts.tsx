@@ -451,12 +451,19 @@ export function AvailabilityStrip({
           margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
           barCategoryGap={1}
           accessibilityLayer={false}
+          // Recharts handles mouse moves one frame late and doesn't cancel that on mouse leave, so
+          // leaving a 24px strip within a frame turns the readout back on after it was hidden, and
+          // it stays. Handling moves right away leaves nothing pending to undo the leave.
+          throttledEvents={[]}
         >
           <XAxis dataKey="at" hide />
           <YAxis domain={[0, 1]} hide />
           <Tooltip
             isAnimationActive={false}
             cursor={false}
+            // The strip is 24px tall, so the readout spills over the strips below it. Those are
+            // positioned and come later in the page, so without a z-index they paint on top of it.
+            wrapperStyle={{ zIndex: 10 }}
             content={({ active, payload }) => {
               const block = payload[0]?.payload as Block | undefined;
               if (!active || !block) return null;
