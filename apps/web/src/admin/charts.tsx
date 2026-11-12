@@ -457,6 +457,9 @@ export function AvailabilityStrip({
           <Tooltip
             isAnimationActive={false}
             cursor={false}
+            // The strip is 24px tall, so the readout spills over the strips below it. Those are
+            // positioned and come later in the page, so without a z-index they paint on top of it.
+            wrapperStyle={{ zIndex: 10 }}
             content={({ active, payload }) => {
               const block = payload[0]?.payload as Block | undefined;
               if (!active || !block) return null;
