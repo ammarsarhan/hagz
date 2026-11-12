@@ -10,7 +10,7 @@ Agreed on 2026-10-27:
 - **Languages:** the owner writes the name, description and address in one language or both. Admins fill in the missing language while provisioning. Going live requires Arabic and English.
 - **Slug:** a random id generated at creation and never changed, e.g. `/venue/k7m2x9pq` (see [Slugs and SEO](#slugs-and-seo)).
 - **Location:** the owner drops a pin or searches Google Places, the app suggests the area from the `Location` tree, and the owner confirms or changes it.
-- **One open draft per staff account.** Any number of venues past that, so chains are fine.
+- **One unfinished venue per staff account.** A venue they own in `DRAFT`, `SUBMITTED` or `PROVISIONING` blocks starting another until it goes live (clarified 2026-11-12). Any number of live venues, so chains are fine.
 - **Nothing is deleted.** Drafts stay until submitted, and a rejected venue goes back to `DRAFT` with the reason.
 - **Ownership changes only through support.** An admin transfers it to an existing member after checking identity, because ownership controls payouts.
 - **After going live, nothing is reviewed again.** Members with the right permission edit anything, including the name and location, and it applies at once. Every edit is a `VenueEvent` with the previous and new values, so admins can audit and revert from the admin panel.
@@ -35,7 +35,7 @@ Each transition is a `VenueEvent` (`VENUE_CREATED`, `VENUE_SUBMITTED`, `VENUE_WI
 - the confirmed `locationId` from the `Location` tree.
 
 In one transaction, the server:
-1. Locks the staff row and checks they have **no other venue in `DRAFT`** where they're the owner. If they do, `409 DRAFT_EXISTS`, with that venue's id so the app can open it.
+1. Locks the staff row and checks they own **no other unfinished venue** (`DRAFT`, `SUBMITTED` or `PROVISIONING`). If they do, `409 UNFINISHED_VENUE_EXISTS`, with that venue's id and status so the app can open it.
 2. Checks the location belongs to an **active marketplace**, and the pin falls inside it. The marketplace comes from the location, so the owner never picks one.
 3. Creates the `Venue` with its **permanent random slug**, its `VenueTranslation`, and `VenueSettings` with the platform defaults (including the default staff permissions for invitations). The slug isn't public until the venue is live.
 4. Creates the `OWNER` membership and the `VENUE_CREATED` event.
@@ -67,7 +67,7 @@ The checklist is computed from the data on every request. Nothing stores "step 3
 The admin side (`/v1/admin/venues`):
 
 - **Queue:** venues by status, oldest submission first, with the owner and the submission history.
-- **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees. The draft then counts as the owner's one open draft again.
+- **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees. It stays the owner's one unfinished venue, so rejecting (like withdrawing) needs no check.
 - **Approve** (`SUBMITTED` → `PROVISIONING`).
 - **Provision**, while in `PROVISIONING`:
   - complete the translations so Arabic and English both exist;
@@ -76,7 +76,7 @@ The admin side (`/v1/admin/venues`):
   - adjust photos if needed.
 - **Go live** (`PROVISIONING` → `LIVE`) once both languages exist, the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)), and slot generation has run for every ground (`generatedUntil` is set).
 - **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
-- **Transfer ownership** to an existing member. In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified.
+- **Transfer ownership** to an existing member. In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified. Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one.
 
 ## Edits after going live
 
@@ -110,13 +110,13 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 ## Schema changes
 
 - **No new tables.** Lifecycle steps and edits are new `VenueEvent` types, listed above, and each edit event stores the previous and new values.
-- **No column for the one-draft rule:** it's checked in the creation transaction under a lock on the staff row.
+- **No column for the one-unfinished-venue rule:** it's checked under a lock on the staff row when a venue is created or transferred, the only two ways someone gains one.
 
 ## Errors
 
 | Code | When |
 |---|---|
-| `409 DRAFT_EXISTS` | Creating a venue while already owning one in `DRAFT` (includes its id) |
+| `409 UNFINISHED_VENUE_EXISTS` | Creating a venue, or receiving an unfinished one by transfer, while already owning one in `DRAFT`, `SUBMITTED` or `PROVISIONING` (includes its id and status) |
 | `422 SETUP_INCOMPLETE` | Submitting with checklist items missing (lists them) |
 | `409 VENUE_STATUS_CONFLICT` | An action not allowed in the current status, e.g. editing listing details while `SUBMITTED` |
 | `422 LOCATION_OUTSIDE_MARKETPLACE` | The pin isn't inside the marketplace of the chosen area, or a new area is in another marketplace |
