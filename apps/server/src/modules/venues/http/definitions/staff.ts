@@ -1,5 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  VenueLayout,
+  VenueLayoutView,
   CopySchedule,
   CreateGround,
   Ground,
@@ -475,6 +477,52 @@ export const copySchedule = createRoute({
     404: groundGone,
     409: locked,
     422: problemResponse("SCHEDULE_TIER_WITHOUT_PRICE (with the `tier` and the `groundId`)"),
+  },
+});
+
+export const layout = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/layout",
+  tags,
+  summary: "The venue layout",
+  description:
+    "Needs `venue: view`. Before the first save, a suggested empty grid (`saved: false`). " +
+    "`unplacedGroundIds` are the grounds still to place.",
+  middleware: [requireStaff, requireVenueAccess("venue", "view")] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The layout", ...json(VenueLayoutView) },
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+  },
+});
+
+export const saveLayout = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/layout",
+  tags,
+  summary: "Save the whole venue layout",
+  description:
+    "Needs `venue: manage`. Replaces the layout in one go. Ground footprints come from their " +
+    "sport and size; everything must be inside the grid without overlapping, and entrances on " +
+    "their side.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(VenueLayout) } },
+  responses: {
+    200: { description: "The layout after saving", ...json(VenueLayoutView) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+    422: problemResponse(
+      "INVALID_LAYOUT, with a `reason`: OUT_OF_BOUNDS, OVERLAP (with the `items`), " +
+        "UNKNOWN_GROUND or DUPLICATE_GROUND (with the `groundId`), ENTRANCE_OUT_OF_RANGE or " +
+        "DUPLICATE_ENTRANCE.",
+    ),
   },
 });
 

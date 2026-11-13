@@ -40,6 +40,7 @@ import {
   reorderGrounds,
   updateGround,
 } from "../application/grounds";
+import { saveLayout, venueLayout } from "../application/layout";
 import { createVenue, venueSetup } from "../application/venue-setup";
 import * as route from "./definitions/staff";
 
@@ -121,6 +122,12 @@ export const venuesStaffRoutes = createRouter()
   .openapi(route.copySchedule, async (c) => {
     await copySchedule(c.var.venue, c.req.valid("param").groundId, c.req.valid("json"));
     return c.body(null, 204);
+  })
+  .openapi(route.layout, async (c) => {
+    return c.json(await venueLayout(c.var.venue.venueId), 200);
+  })
+  .openapi(route.saveLayout, async (c) => {
+    return c.json(await saveLayout(c.var.venue, c.req.valid("json")), 200);
   })
   .openapi(route.members, async (c) => {
     return c.json({ data: await listMembers(c.var.venue.venueId) }, 200);
