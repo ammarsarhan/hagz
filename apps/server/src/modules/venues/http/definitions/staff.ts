@@ -526,6 +526,72 @@ export const saveLayout = createRoute({
   },
 });
 
+const lifecycle = (path: string, summary: string, description: string, conflict: string) =>
+  createRoute({
+    method: "post",
+    path: `/staff/venues/{venueId}/${path}`,
+    tags,
+    summary,
+    description,
+    middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+    security,
+    request: { params: venueParams },
+    responses: {
+      200: { description: "The venue's setup after the change", ...json(VenueSetup) },
+      401: unauthenticated,
+      403: problemResponse("PERMISSION_DENIED, OWNER_ONLY or ACCOUNT_SUSPENDED"),
+      404: notMember,
+      409: problemResponse(conflict),
+      422: problemResponse("SETUP_INCOMPLETE (with the `missing` item keys)"),
+    },
+  });
+
+export const submitVenue = lifecycle(
+  "submit",
+  "Send the venue for review",
+  "Owner only. Every required setup item must be done. Locks the venue until an admin decides " +
+    "or the owner withdraws it.",
+  "VENUE_STATUS_CONFLICT: only a draft can be sent (with `venueStatus`).",
+);
+
+export const withdrawVenue = lifecycle(
+  "withdraw",
+  "Take the venue out of review, back to a draft",
+  "Owner only.",
+  "VENUE_STATUS_CONFLICT: only a venue in review (with `venueStatus`).",
+);
+
+const pauseOrResume = (path: "pause" | "resume", summary: string, description: string) =>
+  createRoute({
+    method: "post",
+    path: `/staff/venues/{venueId}/${path}`,
+    tags,
+    summary,
+    description,
+    middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+    security,
+    request: { params: venueParams },
+    responses: {
+      204: { description: "Done" },
+      401: unauthenticated,
+      403: denied,
+      404: notMember,
+      409: problemResponse("VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND"),
+    },
+  });
+
+export const pauseVenue = pauseOrResume(
+  "pause",
+  "Pause a live venue",
+  "Needs `venue: manage`. Its page stays up with a notice; no new bookings, existing ones stand.",
+);
+
+export const resumeVenue = pauseOrResume(
+  "resume",
+  "Reopen a paused venue",
+  "Needs `venue: manage`, and an active ground.",
+);
+
 export const members = createRoute({
   method: "get",
   path: "/staff/venues/{venueId}/members",

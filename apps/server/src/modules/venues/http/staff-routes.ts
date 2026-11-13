@@ -41,6 +41,7 @@ import {
   updateGround,
 } from "../application/grounds";
 import { saveLayout, venueLayout } from "../application/layout";
+import { pauseVenue, resumeVenue, submitVenue, withdrawVenue } from "../application/review";
 import { createVenue, venueSetup } from "../application/venue-setup";
 import * as route from "./definitions/staff";
 
@@ -128,6 +129,20 @@ export const venuesStaffRoutes = createRouter()
   })
   .openapi(route.saveLayout, async (c) => {
     return c.json(await saveLayout(c.var.venue, c.req.valid("json")), 200);
+  })
+  .openapi(route.submitVenue, async (c) => {
+    return c.json(await submitVenue(c.var.venue, requestLanguage(c)), 200);
+  })
+  .openapi(route.withdrawVenue, async (c) => {
+    return c.json(await withdrawVenue(c.var.venue, requestLanguage(c)), 200);
+  })
+  .openapi(route.pauseVenue, async (c) => {
+    await pauseVenue(c.var.venue.venueId, { staffId: c.var.staff.staffId });
+    return c.body(null, 204);
+  })
+  .openapi(route.resumeVenue, async (c) => {
+    await resumeVenue(c.var.venue.venueId, { staffId: c.var.staff.staffId });
+    return c.body(null, 204);
   })
   .openapi(route.members, async (c) => {
     return c.json({ data: await listMembers(c.var.venue.venueId) }, 200);
