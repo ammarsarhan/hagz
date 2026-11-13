@@ -218,8 +218,16 @@ const messages = {
     ar: "لديك ملعب لم يبدأ العمل بعد. أكمل إعداده أولًا.",
   },
   VENUE_STATUS_CONFLICT: {
-    en: "You can't do that until the venue is approved.",
-    ar: "لا يمكنك القيام بذلك قبل الموافقة على الملعب.",
+    en: "You can't do this at the venue's current stage.",
+    ar: "لا يمكنك القيام بذلك في المرحلة الحالية للملعب.",
+  },
+  INVALID_SETTINGS: {
+    en: "Some of these settings don't fit together. Check them and try again.",
+    ar: "بعض هذه الإعدادات لا تتوافق معًا. راجعها وحاول مرة أخرى.",
+  },
+  AMENITY_NOT_AVAILABLE: {
+    en: "Some of these amenities aren't available anymore.",
+    ar: "بعض هذه المرافق لم تعد متاحة.",
   },
   LOCATION_OUTSIDE_MARKETPLACE: {
     en: "The pin is outside the area's country. Move it and try again.",
