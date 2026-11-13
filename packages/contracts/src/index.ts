@@ -7,6 +7,7 @@ export * from "./links";
 export * from "./marketplaces";
 export * from "./permissions";
 export * from "./platform";
+export * from "./venue-edit";
 export * from "./venue-setup";
 export * from "./venues";
 export * from "./problem";
