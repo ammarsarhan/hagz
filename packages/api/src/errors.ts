@@ -217,6 +217,10 @@ const messages = {
     en: "You already have a venue that isn't live yet. Finish setting it up first.",
     ar: "لديك ملعب لم يبدأ العمل بعد. أكمل إعداده أولًا.",
   },
+  VENUE_STATUS_CONFLICT: {
+    en: "You can't do that until the venue is approved.",
+    ar: "لا يمكنك القيام بذلك قبل الموافقة على الملعب.",
+  },
   LOCATION_OUTSIDE_MARKETPLACE: {
     en: "The pin is outside the area's country. Move it and try again.",
     ar: "الدبوس خارج دولة هذه المنطقة. حرّكه وحاول مرة أخرى.",

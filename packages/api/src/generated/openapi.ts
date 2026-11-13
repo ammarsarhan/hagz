@@ -3746,7 +3746,7 @@ export interface paths {
         put?: never;
         /**
          * Invite someone to the staff
-         * @description Needs `staff: manage`. Sends a WhatsApp message with a link that opens the dashboard app; if the number already has a staff account, the invitation also shows in their app. Works for 48 hours; inviting the same number again replaces the earlier invitation. Only the owner can give more in an area than they have themselves.
+         * @description Needs `staff: manage`, and a venue an admin has approved (`PROVISIONING`, `LIVE` or `MAINTENANCE`). Sends a WhatsApp message with a link that opens the dashboard app; if the number already has a staff account, the invitation also shows in their app. Works for 48 hours; inviting the same number again replaces the earlier invitation. Only the owner can give more in an area than they have themselves.
          */
         post: {
             parameters: {
@@ -3808,7 +3808,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ALREADY_A_MEMBER */
+                /** @description ALREADY_A_MEMBER, or VENUE_STATUS_CONFLICT: not approved yet (with `venueStatus`). */
                 409: {
                     headers: {
                         [name: string]: unknown;
