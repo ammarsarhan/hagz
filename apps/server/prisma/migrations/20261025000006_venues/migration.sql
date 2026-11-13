@@ -127,6 +127,7 @@ CREATE TABLE "VenueMedia" (
     "key" TEXT NOT NULL,
     "type" "MediaType" NOT NULL,
     "contentType" TEXT NOT NULL,
+    "size" INTEGER NOT NULL,
     "status" "MediaStatus" NOT NULL DEFAULT 'PENDING',
     "position" INTEGER NOT NULL,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -351,3 +352,6 @@ ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_fill_check" CHECK ("la
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueCustomer" ADD CONSTRAINT "VenueCustomer_counts_check" CHECK ("bookingCount" >= 0 AND "noShowCount" >= 0);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "VenueMedia" ADD CONSTRAINT "VenueMedia_size_check" CHECK ("size" > 0);

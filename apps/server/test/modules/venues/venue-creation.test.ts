@@ -321,6 +321,7 @@ describe("the setup checklist", () => {
         key: `venues/${setup.venue.id}/${position}.jpg`,
         type: "IMAGE" as const,
         contentType: "image/jpeg",
+        size: 4,
         status: "READY" as const,
         position,
       })),

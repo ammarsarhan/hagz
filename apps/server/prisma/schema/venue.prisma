@@ -159,6 +159,7 @@ model VenueMedia {
   key         String      @unique // Object storage key.
   type        MediaType
   contentType String
+  size        Int // Bytes, as declared when the upload was asked for; checked on confirm. CHECK: > 0.
   status      MediaStatus @default(PENDING)
   position    Int
   createdAt   DateTime    @default(now()) @db.Timestamptz

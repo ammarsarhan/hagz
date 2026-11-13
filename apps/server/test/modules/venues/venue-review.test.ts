@@ -118,6 +118,7 @@ const aReadyDraft = async () => {
       key: `venues/${venueId}/${position}.jpg`,
       type: "IMAGE" as const,
       contentType: "image/jpeg",
+      size: 4,
       status: "READY" as const,
       position,
     })),
