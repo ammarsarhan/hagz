@@ -3,6 +3,10 @@
 export { default as IconAlertCircle } from "@tabler/icons-react-native/IconAlertCircle";
 export { default as IconAlertCircleFilled } from "@tabler/icons-react-native/IconAlertCircleFilled";
 export { default as IconCircleCheck } from "@tabler/icons-react-native/IconCircleCheck";
+export { default as IconCircleCheckFilled } from "@tabler/icons-react-native/IconCircleCheckFilled";
+export { default as IconCurrentLocation } from "@tabler/icons-react-native/IconCurrentLocation";
+export { default as IconMapPin } from "@tabler/icons-react-native/IconMapPin";
+export { default as IconSearch } from "@tabler/icons-react-native/IconSearch";
 export { default as IconClock } from "@tabler/icons-react-native/IconClock";
 export { default as IconBrandWhatsapp } from "@tabler/icons-react-native/IconBrandWhatsapp";
 export { default as IconChevronDown } from "@tabler/icons-react-native/IconChevronDown";

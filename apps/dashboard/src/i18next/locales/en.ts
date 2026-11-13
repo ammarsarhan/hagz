@@ -123,6 +123,117 @@ const en = {
         haveCodeBody: "Join with the code an owner sent you.",
         profile: "Your profile",
         retry: "Try again",
+        draftSubtitle: "Pick up where you left off.",
+        draft: {
+          heading: "Your venue",
+          settingUp: "Setting up",
+          inReview: "In review",
+          continue: "Continue setting up",
+          sendWhenDone: "Send for review once the {{count}} required items are done",
+        },
+      },
+      createVenue: {
+        start: {
+          title: "Add your venue",
+          subtitle: "Three steps. Nothing is public until we've reviewed it together.",
+          step: "Step {{number}}",
+          action: "Get started",
+          steps: {
+            place: {
+              title: "Name and place",
+              body: "Your venue's name and where it is on the map. About a minute.",
+            },
+            setup: {
+              title: "Set it up",
+              body: "Grounds and prices, opening hours, photos and how players pay. Any order, saved as you go.",
+            },
+            review: {
+              title: "Send for review",
+              body: "We check the details with you, then your venue opens for bookings.",
+            },
+          },
+        },
+        name: {
+          title: "What's your venue called?",
+          subtitle:
+            "Use the name players already know. Arabic or English is fine; we add the other language before you go live.",
+          label: "Venue name",
+        },
+        place: {
+          findTitle: "Where is {{name}}?",
+          findBody: "Search for it, or move the map to it. Players use this for directions.",
+          pinTitle: "Is the pin in the right spot?",
+          pinBody: "Move the map until the pin sits on your entrance.",
+          movePin: "Move the map to adjust the pin",
+          pinnedHere: "This spot on the map",
+          areaTitle: "Is it in {{area}}?",
+          areaUnknownTitle: "Which area is it in?",
+          areaBody: "Players browse venues by area. We picked this one from your pin.",
+          create: "Yes, create venue",
+          differentArea: "Choose a different area",
+          chooseArea: "Choose an area",
+          areaSearchPlaceholder: "Search areas",
+          noAreas: "No area by that name.",
+          searchTitle: "Find your venue",
+          searchPlaceholder: "Search for your venue or street",
+          useMyLocation: "Use my current location",
+          cantFind: "Can't find it?",
+          dropPin: "Drop a pin on the map",
+          clear: "Clear search",
+          noResults:
+            "Nothing for \u201C{{query}}\u201D. Try a street or a landmark, or drop a pin.",
+          searchFailed: "Couldn't search right now",
+          searchUnavailable: "Search isn't available. Drop a pin on the map instead.",
+          locationDenied: "Location is off for Hagz",
+          locationFailed: "Couldn't find where you are",
+          outsideMarketplaces: "Hagz isn't in that country yet",
+        },
+      },
+      setup: {
+        subtitle:
+          "Finish setting up in any order. When the required items are done, send it for review.",
+        untitled: "Your venue",
+        progress: "{{done}} of {{total}} required done",
+        nextUp: "Next up: {{item}}",
+        allDone: "Everything required is done.",
+        required: "Required",
+        optional: "Optional",
+        itemsLeft_one: "{{count}} required item left. Review usually takes a day.",
+        itemsLeft_other: "{{count}} required items left. Review usually takes a day.",
+        readyToSend: "Everything required is done. Review usually takes a day.",
+        send: "Send for review",
+        states: {
+          todo: "To do",
+          done: "Done",
+          optional: "Optional",
+          // GROUNDS is the only item that blocks another (opening hours, and the layout), so these
+          // two name it. Revisit if the API ever blocks on something else.
+          waiting: "Waiting on grounds",
+          blockedBody: "Add a ground first",
+        },
+        items: {
+          DETAILS: { title: "Details", body: "Add a description and a phone number" },
+          LOCATION: { title: "Location", body: "Where players will find you" },
+          PHOTOS: { title: "Photos", body: "Add at least 3 photos of your grounds" },
+          GROUNDS: { title: "Grounds and prices", body: "Add your first ground and what it costs" },
+          SCHEDULES: {
+            title: "Opening hours",
+            body: "Set the hours each ground takes bookings",
+          },
+          LAYOUT: {
+            title: "Layout",
+            body: "Arrange your grounds the way they sit on the ground",
+          },
+          SETTINGS: {
+            title: "Payments and cancellations",
+            body: "Choose how players pay and your refund rules",
+          },
+          AMENITIES: {
+            title: "Amenities",
+            body: "Floodlights, parking, changing rooms and more",
+          },
+          TAX_NUMBER: { title: "Tax number", body: "Only if you charge VAT" },
+        },
       },
       invitation: {
         title: "Join {{venue}}",
