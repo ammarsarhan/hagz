@@ -265,7 +265,8 @@ export const confirmPhoto = createRoute({
   path: "/staff/venues/{venueId}/photos/{photoId}/confirm",
   tags,
   summary: "Confirm an upload, putting the photo on the venue",
-  description: "Needs `venue: manage`. Checks the stored file is the type that was declared.",
+  description:
+    "Needs `venue: manage`. Checks the stored file is the type and size that were declared.",
   middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
   security,
   request: { params: photoParams },

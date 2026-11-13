@@ -4064,7 +4064,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm an upload, putting the photo on the venue
-         * @description Needs `venue: manage`. Checks the stored file is the type that was declared.
+         * @description Needs `venue: manage`. Checks the stored file is the type and size that were declared.
          */
         post: {
             parameters: {
