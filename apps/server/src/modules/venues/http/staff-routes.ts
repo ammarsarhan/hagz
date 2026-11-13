@@ -23,6 +23,13 @@ import {
   updateVenue,
   venueDetail,
 } from "../application/venue-edit";
+import {
+  confirmPhoto,
+  listPhotos,
+  removePhoto,
+  reorderPhotos,
+  requestPhotoUpload,
+} from "../application/venue-media";
 import { createVenue, venueSetup } from "../application/venue-setup";
 import * as route from "./definitions/staff";
 
@@ -53,6 +60,22 @@ export const venuesStaffRoutes = createRouter()
   })
   .openapi(route.setAmenities, async (c) => {
     return c.json(await setAmenities(c.var.venue, c.req.valid("json")), 200);
+  })
+  .openapi(route.photos, async (c) => {
+    return c.json({ data: await listPhotos(c.var.venue.venueId) }, 200);
+  })
+  .openapi(route.requestPhotoUpload, async (c) => {
+    return c.json(await requestPhotoUpload(c.var.venue, c.req.valid("json")), 201);
+  })
+  .openapi(route.confirmPhoto, async (c) => {
+    return c.json(await confirmPhoto(c.var.venue, c.req.valid("param").photoId), 200);
+  })
+  .openapi(route.reorderPhotos, async (c) => {
+    return c.json({ data: await reorderPhotos(c.var.venue, c.req.valid("json")) }, 200);
+  })
+  .openapi(route.removePhoto, async (c) => {
+    await removePhoto(c.var.venue, c.req.valid("param").photoId);
+    return c.body(null, 204);
   })
   .openapi(route.members, async (c) => {
     return c.json({ data: await listMembers(c.var.venue.venueId) }, 200);

@@ -1,6 +1,10 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   CreateVenue,
+  PhotoUpload,
+  ReorderPhotos,
+  RequestPhotoUpload,
+  VenuePhoto,
   Language,
   SetVenueAmenities,
   StaffVenueDetail,
@@ -204,6 +208,104 @@ export const setAmenities = createRoute({
     404: notMember,
     409: locked,
     422: problemResponse("AMENITY_NOT_AVAILABLE (with the `optionIds`)"),
+  },
+});
+
+const photoParams = venueParams.extend({ photoId: z.uuid() });
+
+export const photos = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/photos",
+  tags,
+  summary: "The venue's photos, in order",
+  description: "Needs `venue: view`. Includes uploads not confirmed yet (`PENDING`).",
+  middleware: [requireStaff, requireVenueAccess("venue", "view")] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "Photos, the cover first", ...json(list(VenuePhoto)) },
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+  },
+});
+
+export const requestPhotoUpload = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/photos",
+  tags,
+  summary: "Start uploading a photo",
+  description:
+    "Needs `venue: manage`. Answers with a signed request to send the file to (valid 15 " +
+    "minutes); upload it, then confirm. The app resizes photos before uploading.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(RequestPhotoUpload) } },
+  responses: {
+    201: { description: "Where to upload", ...json(PhotoUpload) },
+    400: problemResponse("VALIDATION_FAILED: only JPEG, PNG or WebP, up to 10 MB."),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: problemResponse("PHOTO_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`)"),
+    503: problemResponse("STORAGE_UNAVAILABLE"),
+  },
+});
+
+export const confirmPhoto = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/photos/{photoId}/confirm",
+  tags,
+  summary: "Confirm an upload, putting the photo on the venue",
+  description: "Needs `venue: manage`. Checks the stored file is the type that was declared.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: photoParams },
+  responses: {
+    200: { description: "The photo, now ready", ...json(VenuePhoto) },
+    401: unauthenticated,
+    403: denied,
+    404: problemResponse("VENUE_NOT_FOUND or PHOTO_NOT_FOUND"),
+    409: problemResponse("UPLOAD_NOT_FOUND, or VENUE_STATUS_CONFLICT (with `venueStatus`)"),
+    422: problemResponse("UPLOAD_MISMATCH: ask for a new upload."),
+  },
+});
+
+export const reorderPhotos = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/photos/order",
+  tags,
+  summary: "Reorder the photos; the first is the cover",
+  description: "Needs `venue: manage`. Lists every ready photo exactly once.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(ReorderPhotos) } },
+  responses: {
+    200: { description: "Photos in the new order", ...json(list(VenuePhoto)) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+    422: problemResponse("INVALID_PHOTO_ORDER"),
+  },
+});
+
+export const removePhoto = createRoute({
+  method: "delete",
+  path: "/staff/venues/{venueId}/photos/{photoId}",
+  tags,
+  summary: "Remove a photo",
+  description: "Needs `venue: manage`.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: photoParams },
+  responses: {
+    204: { description: "Removed" },
+    401: unauthenticated,
+    403: denied,
+    404: problemResponse("VENUE_NOT_FOUND or PHOTO_NOT_FOUND"),
+    409: locked,
   },
 });
 
