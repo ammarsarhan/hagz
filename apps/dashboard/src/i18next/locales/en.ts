@@ -130,6 +130,13 @@ const en = {
           inReview: "In review",
           continue: "Continue setting up",
           sendWhenDone: "Send for review once the {{count}} required items are done",
+          updatedNow: "Last updated just now",
+          updatedMinutes_one: "Last updated {{count}} minute ago",
+          updatedMinutes_other: "Last updated {{count}} minutes ago",
+          updatedHours_one: "Last updated {{count}} hour ago",
+          updatedHours_other: "Last updated {{count}} hours ago",
+          updatedDays_one: "Last updated {{count}} day ago",
+          updatedDays_other: "Last updated {{count}} days ago",
         },
       },
       createVenue: {
