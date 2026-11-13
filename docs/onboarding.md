@@ -22,12 +22,12 @@ Agreed on 2026-10-27:
 | Status | Who moves it here | What the owner can do | Visible to customers |
 |---|---|---|---|
 | `DRAFT` | The owner creates it, or an admin rejects it | Edit everything, then submit | No |
-| `SUBMITTED` | The owner submits | Withdraw it (back to `DRAFT`). Edit grounds, schedules and settings. Listing details are locked while it's reviewed | No |
-| `PROVISIONING` | An admin approves | Edit grounds, schedules, settings and staff, and invite staff. Listing identity stays locked | No |
+| `SUBMITTED` | The owner submits | Withdraw it (back to `DRAFT`). **Nothing else changes** until an admin decides (decided 2026-11-13) | No |
+| `PROVISIONING` | An admin approves | Edit grounds, hours, layout, settings and amenities, and invite staff. The listing (name, description, address, location, photos) stays locked | No |
 | `LIVE` | An admin, once provisioning is complete | Everything, applied at once (see [Edits after going live](#edits-after-going-live)) | Yes: page, search, sitemap, bookings |
 | `MAINTENANCE` | The owner (`venue: manage`) or an admin | Everything, then switch back to `LIVE` | Page visible with a notice. No new bookings; existing bookings stand |
 
-Each transition is a `VenueEvent` (`VENUE_CREATED`, `VENUE_SUBMITTED`, `VENUE_WITHDRAWN`, `VENUE_REJECTED` with the reason, `VENUE_APPROVED`, `VENUE_LIVE`, `VENUE_PAUSED`, `VENUE_RESUMED`). The owner gets a notification on approval, rejection and going live; admins get one on each submission. The current rejection reason is the latest `VENUE_REJECTED` event, so `Venue` needs no extra column.
+Each transition is a `VenueEvent` (`VENUE_CREATED`, `VENUE_SUBMITTED`, `VENUE_WITHDRAWN`, `VENUE_REJECTED` with the reason, `VENUE_APPROVED`, `VENUE_LIVE`, `VENUE_PAUSED`, `VENUE_RESUMED`). The owner gets an in-app notification on approval, rejection and going live; admins get one on each submission (WhatsApp messages come once Meta templates are set up). The current rejection reason is the latest `VENUE_REJECTED` event, so `Venue` needs no extra column.
 
 ## Step 1: creating the draft
 
@@ -52,11 +52,11 @@ The response is the venue with its checklist, the same as the setup endpoint bel
 |---|---|---|---|
 | Details | Name, description and address in at least one language. A phone number | `PATCH /venues/{id}`, `PUT /venues/{id}/translations/{language}` | `venue` |
 | Location | The pin and the area (set at creation; editable) | `PATCH /venues/{id}` | `venue` |
-| Photos | At least 3 `READY` images (PR 2.3) | Media endpoints | `venue` |
+| Photos | At least 3 `READY` images (decided 2026-11-13), at most 20; JPEG, PNG or WebP up to 10 MB, resized by the app | `…/photos` (upload, confirm, reorder, delete) | `venue` |
 | Amenities | Optional | `PUT /venues/{id}/amenities` | `venue` |
-| Grounds | At least one active ground with prices (PR 2.4) | Ground endpoints | `schedule` |
-| Schedules | Every active ground has opening hours (PR 2.4) | Schedule endpoints | `schedule` |
-| Layout | Only for venues with more than one ground (PR 2.5) | Layout endpoints | `venue` |
+| Grounds | At least one active ground (prices are required to create one) | `…/grounds` | `schedule` |
+| Schedules | Every active ground open at least an hour a week; `BLOCKED` by Grounds until there is one | `…/grounds/{id}/schedule` (and `/copy`) | `schedule` |
+| Layout | Only appears with two or more active grounds; every active ground placed | `…/layout` (read, save whole) | `venue` |
 | Settings | A cancellation policy chosen by the owner (payment mode and notice have working defaults) | `PUT /venues/{id}/settings` | `venue` |
 | Tax number | Optional; if set, an admin checks it while provisioning | `PATCH /venues/{id}` | `venue` |
 
@@ -68,17 +68,17 @@ The checklist is computed from the data on every request. Nothing stores "step 3
 
 The admin side (`/v1/admin/venues`):
 
-- **Queue:** venues by status, oldest submission first, with the owner and the submission history.
+- **Queue:** `GET /admin/venues/review`, submitted venues oldest submission first, with the owner. The full history is `GET /admin/venues/{id}/history`.
 - **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees. It stays the owner's one unfinished venue, so rejecting (like withdrawing) needs no check.
 - **Approve** (`SUBMITTED` → `PROVISIONING`).
 - **Provision**, while in `PROVISIONING`:
-  - complete the translations so Arabic and English both exist;
-  - check the tax number;
-  - set a commission override if agreed;
-  - adjust photos if needed.
-- **Go live** (`PROVISIONING` → `LIVE`) once both languages exist, the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)), and slot generation has run for every ground (`generatedUntil` is set).
+  - complete the translations so Arabic and English both exist (`PUT /admin/venues/{id}/translations/{language}`);
+  - check the tax number (`POST …/tax-number-check`, recorded as an event);
+  - set a commission override if agreed (PR 2.8);
+  - adjust photos if needed (later).
+- **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. **Slot generation (PR 2.6) is deferred**, so going live doesn't yet wait for `generatedUntil`; that condition returns with 2.6.
 - **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
-- **Transfer ownership** to an existing member. In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified. Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one.
+- **Transfer ownership** to an existing member (not built yet; revert and transfer come after the review core). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified. Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one.
 
 ## Edits after going live
 
@@ -121,13 +121,23 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 | Code | When |
 |---|---|
 | `409 UNFINISHED_VENUE_EXISTS` | Creating a venue, or receiving an unfinished one by transfer, while already owning one in `DRAFT`, `SUBMITTED` or `PROVISIONING` (includes `venueId` and `venueStatus`) |
-| `422 SETUP_INCOMPLETE` | Submitting with checklist items missing (lists them) |
+| `422 SETUP_INCOMPLETE` | Submitting with checklist items missing (lists them in `missing`) |
+| `403 OWNER_ONLY` | Submitting or withdrawing by anyone but the owner |
+| `422 GO_LIVE_BLOCKED` | Going live without both languages or an active ground (`missing`) |
+| `409 NO_ACTIVE_GROUND` | Resuming a paused venue with no active ground |
+| `409 LAST_ACTIVE_GROUND` | Pausing or deleting a live venue's last active ground |
+| `422 INVALID_SETTINGS` | Settings that don't fit together, e.g. a deposit without a percentage (`field`) |
+| `422 INVALID_GROUND` | A ground change that doesn't fit, e.g. a size the sport doesn't come in (`field`) |
+| `422 SCHEDULE_TIER_WITHOUT_PRICE` | Peak or discount hours on a ground without that price (`tier`, and `groundId` when copying) |
+| `422 INVALID_LAYOUT` | A layout with something out of bounds, overlapping, or misplaced (`reason`) |
+| `422 AMENITY_NOT_AVAILABLE` | Picking an amenity from another marketplace, or one that's been retired (`optionIds`) |
+| `409 PHOTO_LIMIT_REACHED`, `409 UPLOAD_NOT_FOUND`, `422 UPLOAD_MISMATCH` | Photos: the 20th is the last; confirming before the file arrives; a file of another type |
 | `409 VENUE_STATUS_CONFLICT` | An action not allowed in the current status, e.g. inviting staff before approval, or editing listing details while `SUBMITTED` (includes `venueStatus`) |
 | `422 LOCATION_NOT_FOUND` | Creating a venue in an area that doesn't exist, or whose marketplace isn't active |
 | `422 LOCATION_OUTSIDE_MARKETPLACE` | The pin isn't inside the marketplace of the chosen area, or a new area is in another marketplace |
 
-## Open
+## Decided
 
-- How many photos submission requires (3 above is a placeholder).
+2026-11-13: submission needs at least 3 photos. Cancellation presets: Flexible 100% up to 2 hours before kick-off; Moderate 100% up to 24 hours, 50% up to 6; Strict 50% up to 48 hours; less notice than the last tier refunds nothing. Minimum notice is one of 0, 30, 60, 120, 180, 360, 720 or 1440 minutes. All three payment modes can be chosen before payments ship (Phase 6), with no gate at going live yet.
 
-Decided 2026-11-12: the venue phone is only checked as a valid number (it's shown to players, not used to sign in), and the owner must choose a cancellation policy consciously (no default counts as done).
+2026-11-12: the venue phone is only checked as a valid number (it's shown to players, not used to sign in), and the owner must choose a cancellation policy consciously (no default counts as done).
