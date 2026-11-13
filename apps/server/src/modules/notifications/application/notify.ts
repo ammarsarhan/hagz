@@ -23,3 +23,15 @@ export const notifyStaff = async (tx: Tx, notifications: StaffNotification[], cl
     });
   }
 };
+
+export type AdminNotification = {
+  [T in NotificationType]: { adminId: string; venueId: string; type: T; data: NotificationData[T] };
+}[NotificationType];
+
+// Admins read notifications in the admin web, which has no push channel yet, so these are in-app
+// only: the row is the notification, with no deliveries to send.
+export const notifyAdmins = async (tx: Tx, notifications: AdminNotification[]) => {
+  for (const { adminId, venueId, type, data } of notifications) {
+    await tx.notification.create({ data: { adminId, venueId, type, data } });
+  }
+};

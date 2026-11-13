@@ -58,6 +58,17 @@ const schema = z.object({
     .url()
     .transform((url) => url.replace(/\/+$/, ""))
     .optional(),
+  // Object storage for photos: any S3-compatible bucket (Cloudflare R2 in production). All five or
+  // none; without them development stores files on disk and other environments can't take uploads.
+  STORAGE_ENDPOINT: z.url().optional(),
+  STORAGE_BUCKET: z.string().min(1).optional(),
+  STORAGE_ACCESS_KEY_ID: z.string().min(1).optional(),
+  STORAGE_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  // Where stored files are read from: the bucket's public domain (a CDN in front of R2).
+  STORAGE_PUBLIC_URL: z
+    .url()
+    .transform((url) => url.replace(/\/+$/, ""))
+    .optional(),
   // Set by Railway on every deploy; shown on the admin home as the running version. Unset locally.
   RAILWAY_GIT_COMMIT_SHA: z.string().min(7).optional(),
   // No defaults for secrets: a missing or short one stops the process instead of running insecurely.
@@ -67,7 +78,23 @@ const schema = z.object({
   TOTP_ENCRYPTION_KEY: aesKey,
 });
 
-const parsed = schema.safeParse(process.env);
+const STORAGE_KEYS = [
+  "STORAGE_ENDPOINT",
+  "STORAGE_BUCKET",
+  "STORAGE_ACCESS_KEY_ID",
+  "STORAGE_SECRET_ACCESS_KEY",
+  "STORAGE_PUBLIC_URL",
+] as const;
+
+const parsed = schema
+  .refine(
+    (values) => {
+      const set = STORAGE_KEYS.filter((key) => values[key] !== undefined).length;
+      return set === 0 || set === STORAGE_KEYS.length;
+    },
+    { message: `Set all of ${STORAGE_KEYS.join(", ")}, or none`, path: ["STORAGE_ENDPOINT"] },
+  )
+  .safeParse(process.env);
 
 if (!parsed.success) {
   // console, not the logger: the logger is configured from these variables.

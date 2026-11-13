@@ -43,9 +43,19 @@ export const timeout = honoTimeout(
 );
 
 // JSON only. Files go straight to object storage through presigned URLs, never through the API.
-export const bodyLimit = honoBodyLimit({
+const jsonBodyLimit = honoBodyLimit({
   maxSize: 100 * 1024,
   onError: () => {
     throw new HTTPException(413, { message: "Request body is larger than 100 KB." });
   },
+});
+
+// Every body is JSON and small, except photo uploads to the development file store
+// (http/dev-storage.ts), which sets its own limit. In other environments uploads go straight to the
+// bucket and never reach the API.
+export const DEV_STORAGE_PATH = "/v1/dev/storage/";
+
+export const bodyLimit = createMiddleware(async (c, next) => {
+  if (c.req.path.startsWith(DEV_STORAGE_PATH)) return next();
+  return jsonBodyLimit(c, next);
 });

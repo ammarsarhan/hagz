@@ -11,7 +11,7 @@ const STATUSES: VenueStatus[] = ["DRAFT", "SUBMITTED", "PROVISIONING", "LIVE", "
 
 const place = { translations: { select: { language: true, name: true } } } as const;
 
-const select = {
+export const adminVenueSelect = {
   id: true,
   slug: true,
   status: true,
@@ -26,9 +26,9 @@ const select = {
   _count: { select: { grounds: { where: { status: { not: "DELETED" } } } } },
 } as const satisfies Prisma.VenueSelect;
 
-type Row = Prisma.VenueGetPayload<{ select: typeof select }>;
+type Row = Prisma.VenueGetPayload<{ select: typeof adminVenueSelect }>;
 
-const present = (venue: Row): AdminVenue => {
+export const presentAdminVenue = (venue: Row): AdminVenue => {
   const exact = (language: "EN" | "AR") =>
     venue.translations.find((t) => t.language === language)?.name ?? null;
   const owner = venue.memberships[0]?.staff ?? null;
@@ -67,14 +67,14 @@ export const listAdminVenues = async ({ status, q, cursor, limit }: AdminVenueQu
       where: { ...search, ...(status && { status }), ...(cursor && { id: { lt: cursor } }) },
       orderBy: { id: "desc" },
       take: limit + 1,
-      select,
+      select: adminVenueSelect,
     }),
     // For the status tabs: how many match the search in each status.
     prisma.venue.groupBy({ by: ["status"], where: search, _count: true }),
   ]);
 
   const more = rows.length > limit;
-  const data = (more ? rows.slice(0, limit) : rows).map(present);
+  const data = (more ? rows.slice(0, limit) : rows).map(presentAdminVenue);
   const counts = Object.fromEntries(
     STATUSES.map((s) => [s, groups.find((g) => g.status === s)?._count ?? 0]),
   ) as Record<VenueStatus, number>;
@@ -83,7 +83,7 @@ export const listAdminVenues = async ({ status, q, cursor, limit }: AdminVenueQu
 
 // One venue, for the header of its admin dashboard.
 export const getAdminVenue = async (id: string): Promise<AdminVenue> => {
-  const venue = await prisma.venue.findUnique({ where: { id }, select });
+  const venue = await prisma.venue.findUnique({ where: { id }, select: adminVenueSelect });
   if (!venue) throw venueNotFound();
-  return present(venue);
+  return presentAdminVenue(venue);
 };

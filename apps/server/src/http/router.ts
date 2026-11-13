@@ -4,6 +4,7 @@ import { systemRoutes } from "@/modules/system";
 import { venuesAdminRoutes, venuesStaffRoutes } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
+import { devStorage, localDisk } from "@/http/dev-storage";
 import { notFound, onError } from "@/http/errors";
 import { health } from "@/http/health";
 import { accessLog, bodyLimit, requestContext, requestId, timeout } from "@/http/middleware";
@@ -38,6 +39,9 @@ router.route("/v1", venuesStaffRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
 router.route("/v1", venuesAdminRoutes);
+
+// Photos stored on disk in development are uploaded to and read from here (http/dev-storage.ts).
+if (localDisk) router.route("/v1/dev/storage", devStorage(localDisk));
 
 // The contract the apps are built against, and a browsable page for it. Not served in production:
 // they list every route, including admin ones. The committed copy is apps/server/openapi.json.

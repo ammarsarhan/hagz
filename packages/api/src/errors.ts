@@ -212,6 +212,89 @@ const messages = {
     en: "There are no previous permissions to restore.",
     ar: "لا توجد صلاحيات سابقة لاستعادتها.",
   },
+  // Venue setup
+  UNFINISHED_VENUE_EXISTS: {
+    en: "You already have a venue that isn't live yet. Finish setting it up first.",
+    ar: "لديك ملعب لم يبدأ العمل بعد. أكمل إعداده أولًا.",
+  },
+  VENUE_STATUS_CONFLICT: {
+    en: "You can't do this at the venue's current stage.",
+    ar: "لا يمكنك القيام بذلك في المرحلة الحالية للملعب.",
+  },
+  INVALID_SETTINGS: {
+    en: "Some of these settings don't fit together. Check them and try again.",
+    ar: "بعض هذه الإعدادات لا تتوافق معًا. راجعها وحاول مرة أخرى.",
+  },
+  PHOTO_LIMIT_REACHED: {
+    en: "A venue can have up to 20 photos. Remove one to add another.",
+    ar: "يمكن أن يحتوي الملعب على 20 صورة كحد أقصى. احذف صورة لإضافة أخرى.",
+  },
+  PHOTO_NOT_FOUND: { en: "We couldn't find this photo.", ar: "لم نعثر على هذه الصورة." },
+  UPLOAD_NOT_FOUND: {
+    en: "The photo didn't finish uploading. Try again.",
+    ar: "لم يكتمل رفع الصورة. حاول مرة أخرى.",
+  },
+  UPLOAD_MISMATCH: {
+    en: "That file isn't a photo we can use. Choose another one.",
+    ar: "هذا الملف ليس صورة يمكننا استخدامها. اختر صورة أخرى.",
+  },
+  INVALID_PHOTO_ORDER: {
+    en: "The photos changed while you were arranging them. Try again.",
+    ar: "تغيّرت الصور أثناء ترتيبها. حاول مرة أخرى.",
+  },
+  STORAGE_UNAVAILABLE: {
+    en: "Photos can't be uploaded right now. Try again later.",
+    ar: "لا يمكن رفع الصور حاليًا. حاول لاحقًا.",
+  },
+  GROUND_NOT_FOUND: { en: "We couldn't find this ground.", ar: "لم نعثر على هذا الملعب الفرعي." },
+  GROUND_LIMIT_REACHED: {
+    en: "A venue can have up to 100 grounds.",
+    ar: "يمكن أن يحتوي المكان على 100 ملعب كحد أقصى.",
+  },
+  LAST_ACTIVE_GROUND: {
+    en: "This is your last open ground. Add another, or pause the venue first.",
+    ar: "هذا آخر ملعب مفتوح لديك. أضف ملعبًا آخر أو أوقف المكان مؤقتًا أولًا.",
+  },
+  INVALID_GROUND: {
+    en: "Some of these ground details don't fit together. Check them and try again.",
+    ar: "بعض تفاصيل الملعب لا تتوافق معًا. راجعها وحاول مرة أخرى.",
+  },
+  INVALID_GROUND_ORDER: {
+    en: "The grounds changed while you were arranging them. Try again.",
+    ar: "تغيّرت الملاعب أثناء ترتيبها. حاول مرة أخرى.",
+  },
+  SCHEDULE_TIER_WITHOUT_PRICE: {
+    en: "Set a peak or discount price before marking hours with it.",
+    ar: "حدّد سعر الذروة أو الخصم قبل تمييز الساعات به.",
+  },
+  INVALID_LAYOUT: {
+    en: "Something on the layout is out of place. Check it and try again.",
+    ar: "يوجد عنصر في غير مكانه على المخطط. راجعه وحاول مرة أخرى.",
+  },
+  OWNER_ONLY: {
+    en: "Only the venue's owner can do this.",
+    ar: "مالك المكان فقط يمكنه القيام بذلك.",
+  },
+  SETUP_INCOMPLETE: {
+    en: "Finish the required setup steps before sending your venue for review.",
+    ar: "أكمل خطوات الإعداد المطلوبة قبل إرسال المكان للمراجعة.",
+  },
+  GO_LIVE_BLOCKED: {
+    en: "The venue needs its listing in Arabic and English and an open ground to go live.",
+    ar: "يحتاج المكان إلى بياناته بالعربية والإنجليزية وملعب مفتوح ليبدأ العمل.",
+  },
+  NO_ACTIVE_GROUND: {
+    en: "Reopen a ground, or add one, before reopening the venue.",
+    ar: "أعد فتح ملعب أو أضف ملعبًا قبل إعادة فتح المكان.",
+  },
+  AMENITY_NOT_AVAILABLE: {
+    en: "Some of these amenities aren't available anymore.",
+    ar: "بعض هذه المرافق لم تعد متاحة.",
+  },
+  LOCATION_OUTSIDE_MARKETPLACE: {
+    en: "The pin is outside the area's country. Move it and try again.",
+    ar: "الدبوس خارج دولة هذه المنطقة. حرّكه وحاول مرة أخرى.",
+  },
 } as const satisfies Record<string, Record<Language, string>>;
 
 export type ProblemCode = keyof typeof messages;
@@ -251,6 +334,9 @@ const short = {
   VERIFICATION_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  LOCATION_OUTSIDE_MARKETPLACE: { en: "Pin is in another country", ar: "الدبوس في دولة أخرى" },
+  STORAGE_UNAVAILABLE: { en: "Couldn't upload the photo", ar: "تعذّر رفع الصورة" },
+  UPLOAD_NOT_FOUND: { en: "Upload didn't finish", ar: "لم يكتمل الرفع" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 

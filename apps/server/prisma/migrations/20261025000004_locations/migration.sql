@@ -11,6 +11,10 @@ CREATE TABLE "Marketplace" (
     "taxRate" INTEGER NOT NULL DEFAULT 0,
     "commissionRate" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT false,
+    "minimumLatitude" DOUBLE PRECISION,
+    "maximumLatitude" DOUBLE PRECISION,
+    "minimumLongitude" DOUBLE PRECISION,
+    "maximumLongitude" DOUBLE PRECISION,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -86,3 +90,6 @@ ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_tax_check" CHECK ("taxRate
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_commission_check" CHECK ("commissionRate" BETWEEN 0 AND 10000);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_bounds_check" CHECK (num_nonnulls("minimumLatitude", "maximumLatitude", "minimumLongitude", "maximumLongitude") IN (0, 4) AND ("minimumLatitude" IS NULL OR ("minimumLatitude" BETWEEN -90 AND 90 AND "maximumLatitude" BETWEEN -90 AND 90 AND "minimumLatitude" < "maximumLatitude" AND "minimumLongitude" BETWEEN -180 AND 180 AND "maximumLongitude" BETWEEN -180 AND 180 AND "minimumLongitude" < "maximumLongitude")));

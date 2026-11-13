@@ -5,7 +5,7 @@ import type {
   StaffVenue,
 } from "@hagz/contracts";
 import { Prisma } from "@/generated/prisma/client";
-import type { Language } from "@/generated/prisma/enums";
+import type { Language, VenueStatus } from "@/generated/prisma/enums";
 import { notifyStaff } from "@/modules/notifications";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { generateJoinCode, hashCode, normalizeJoinCode } from "@/platform/crypto/codes";
@@ -37,6 +37,7 @@ import {
   permissionAboveYourOwn,
   sessionEnded,
   venueNotFound,
+  venueStatusConflict,
   type VenueAccess,
 } from "./access";
 import { staffManagersOf } from "./staff-managers";
@@ -205,6 +206,8 @@ const unavailableHere = () =>
     detail: "Invitations can't be sent from this environment yet.",
   });
 
+const INVITING: VenueStatus[] = ["PROVISIONING", "LIVE", "MAINTENANCE"];
+
 // Everything an invitation is except the WhatsApp message: also used by the dev seed script, which
 // prints the code instead of sending it.
 export const createInvitation = async (
@@ -222,6 +225,19 @@ export const createInvitation = async (
         const granted = await lockGranter(tx, actor.venueId, actor.staffId);
         if (!granted) throw venueNotFound();
         if (!allows(granted.staff, "manage")) throw missingPermission("staff", "manage");
+        // Staff join once an admin has approved the venue (user, 2026-11-13): a draft or a venue in
+        // review has nothing for them to do yet. Rejection only happens before approval, so an
+        // approved venue never drops back here.
+        const venue = await tx.venue.findUniqueOrThrow({
+          where: { id: actor.venueId },
+          select: { status: true },
+        });
+        if (!INVITING.includes(venue.status)) {
+          throw venueStatusConflict(
+            venue.status,
+            "Staff can be invited once the venue is approved.",
+          );
+        }
 
         const settings = await tx.venueSettings.findUnique({
           where: { venueId: actor.venueId },
