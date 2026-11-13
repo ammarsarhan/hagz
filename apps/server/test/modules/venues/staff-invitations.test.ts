@@ -113,6 +113,29 @@ describe("sending an invitation", () => {
     expect(notification).toMatchObject({ type: "STAFF_INVITED", venueId: venue.id });
   });
 
+  it("waits until the venue is approved", async () => {
+    const { venue, owner } = await venueWithStaff();
+
+    for (const status of ["DRAFT", "SUBMITTED"] as const) {
+      await prisma.venue.update({ where: { id: venue.id }, data: { status } });
+      const res = await invite(owner.id, venue.id, { phone: INVITEE, permissions: permissions() });
+      expect(res.status).toBe(409);
+      expect(await problem(res)).toMatchObject({
+        code: "VENUE_STATUS_CONFLICT",
+        venueStatus: status,
+      });
+    }
+    expect(outbox.invitations).toHaveLength(0);
+    expect(await prisma.venueInvitation.count()).toBe(0);
+
+    // Approved: provisioning, live, or paused.
+    for (const status of ["PROVISIONING", "LIVE", "MAINTENANCE"] as const) {
+      await prisma.venue.update({ where: { id: venue.id }, data: { status } });
+      const res = await invite(owner.id, venue.id, { phone: INVITEE, permissions: permissions() });
+      expect(res.status).toBe(201);
+    }
+  });
+
   it("defaults to the venue's default permissions", async () => {
     const { venue, owner } = await venueWithStaff();
     await prisma.venueSettings.create({
