@@ -58,6 +58,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    "expo-dev-client",
     "expo-secure-store",
     "expo-status-bar",
     // Held while the app decides where it opens (src/lib/boot.ts): the staff logo on white.
