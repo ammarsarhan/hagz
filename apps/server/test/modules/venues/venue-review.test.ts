@@ -354,7 +354,8 @@ describe("a venue's history", () => {
       ["VENUE_APPROVED", "ADMIN"],
       ["VENUE_SUBMITTED", "STAFF"],
     ]);
-    expect(first.data[0]?.actor).toMatchObject({ id: adminId, name: expect.any(String) });
+    expect(first.data[0]?.actor.id).toBe(adminId);
+    expect(first.data[0]?.actor.name).toBeTruthy();
     expect(first.next).toBe(first.data[1]?.id);
 
     const rest = History.parse(
