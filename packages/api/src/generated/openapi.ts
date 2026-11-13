@@ -3313,6 +3313,146 @@ export interface paths {
             };
         };
         put?: never;
+        /**
+         * Create a venue
+         * @description Creates a `DRAFT` with the caller as its `OWNER` (docs/onboarding.md, step 1). The name is stored in the caller's app language. The marketplace comes from the location, and the pin must fall inside it. One unfinished venue (`DRAFT`, `SUBMITTED` or `PROVISIONING`) per owner. Answers with the setup checklist.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateVenue"];
+                };
+            };
+            responses: {
+                /** @description The new draft and its checklist */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSetup"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `venueStatus`. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue's setup checklist
+         * @description Needs `venue: view`. Computed from the venue's data on every request (docs/onboarding.md, step 2). Items appear as their features ship.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The checklist */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSetup"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -5658,6 +5798,58 @@ export interface components {
          * @enum {string}
          */
         VenueRole: "OWNER" | "MEMBER";
+        VenueSetup: {
+            venue: {
+                /** Format: uuid */
+                id: string;
+                /** @description Permanent. Public once the venue is live. */
+                slug: string;
+                status: components["schemas"]["VenueStatus"];
+                /** @description In `Accept-Language`, else any language. */
+                name: string | null;
+            };
+            items: components["schemas"]["SetupItem"][];
+            /** @description Counts of required items, for the progress ring and the draft card. */
+            required: {
+                done: number;
+                total: number;
+            };
+            /** @description A draft with every required item done. */
+            canSubmit: boolean;
+        };
+        SetupItem: {
+            key: components["schemas"]["SetupItemKey"];
+            /** @description Needed before the venue can be sent for review. */
+            required: boolean;
+            state: components["schemas"]["SetupItemState"];
+            blockedBy: components["schemas"]["SetupItemKey"] & (string | null);
+        };
+        /** @enum {string} */
+        SetupItemKey: "DETAILS" | "LOCATION" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
+        /**
+         * @description `BLOCKED`: can't be done until `blockedBy` is.
+         * @enum {string}
+         */
+        SetupItemState: "DONE" | "MISSING" | "BLOCKED";
+        CreateVenue: {
+            /**
+             * @description In the owner's app language; the other language is added before going live.
+             * @example Champions Arena
+             */
+            name: string;
+            /** @description The pin. Must fall inside the marketplace. */
+            coordinates: {
+                latitude: number;
+                longitude: number;
+            };
+            /** @description Google's place id, when the owner picked a search result. */
+            placeId?: string;
+            /**
+             * Format: uuid
+             * @description The area the owner confirmed. Its marketplace becomes the venue's.
+             */
+            locationId: string;
+        };
         VenueMember: {
             /** Format: uuid */
             staffId: string;
