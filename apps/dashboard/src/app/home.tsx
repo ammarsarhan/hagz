@@ -14,6 +14,7 @@ import { useInvitationSheet } from "@/components/use-invitation-sheet";
 import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
+import { runningVenues, unfinishedVenue } from "@/lib/venues";
 
 // Where signing in lands. Staff who belong to a venue go on to its tabs (venue/); staff who don't see
 // first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable row of blue
@@ -35,7 +36,10 @@ export default function Home() {
     me.data && venues.data && received.data
       ? { me: me.data, venues: venues.data, invitations: received.data }
       : null;
-  const hasVenue = (data?.venues.length ?? 0) > 0;
+  // Only a venue that's running sends them to the tabs. One still being set up shows here, as the
+  // card that carries on where they left off (docs/flows.md, "draft venues").
+  const hasVenue = runningVenues(data?.venues).length > 0;
+  const draft = unfinishedVenue(data?.venues);
   // Links wait for the page to load, and are left for the venue's home when that's where this goes.
   const invitation = useInvitationSheet({
     phone: data?.me.phone.replace(/^\+20/, ""),
@@ -94,7 +98,9 @@ export default function Home() {
         subtitle={
           invitations.length > 0
             ? t("screens.firstRun.invitedSubtitle", { count: invitations.length })
-            : t("screens.firstRun.emptySubtitle")
+            : draft
+              ? t("screens.firstRun.draftSubtitle")
+              : t("screens.firstRun.emptySubtitle")
         }
       >
         {t("screens.firstRun.welcome", { name: firstName })}
@@ -102,6 +108,7 @@ export default function Home() {
       <StartOptions
         invitations={invitations}
         phone={phone}
+        draft={draft}
         onOpen={invitation.open}
         onHaveCode={() => invitation.open("code")}
         onDeclined={invitation.drop}

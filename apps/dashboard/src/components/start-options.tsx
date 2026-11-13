@@ -8,6 +8,8 @@ import { isRTL } from "@/lib/language";
 import { displayPhone, isolate } from "@/lib/phone";
 import { useHud } from "./hud";
 import { InfoRows } from "./info-rows";
+import type { components } from "@hagz/api";
+import { DraftCard } from "./draft-card";
 import { InvitationCard, type ReceivedInvitation } from "./invitation-card";
 import { StartTiles } from "./start-tiles";
 import { Text } from "./text";
@@ -27,6 +29,7 @@ const PEEK = 32;
 export function StartOptions({
   invitations,
   phone,
+  draft,
   onOpen,
   onHaveCode,
   onDeclined,
@@ -34,6 +37,9 @@ export function StartOptions({
   invitations: ReceivedInvitation[];
   // The signed-in number, without +20.
   phone: string;
+  // The venue they started and haven't finished, if there is one: it takes the place of "Create
+  // your venue", since the API allows only one at a time.
+  draft?: components["schemas"]["StaffVenue"];
   onOpen: (invitation: ReceivedInvitation) => void;
   onHaveCode: () => void;
   onDeclined: (invitationId: string) => void;
@@ -57,12 +63,29 @@ export function StartOptions({
   };
 
   const startTiles = (
-    <StartTiles onCreateVenue={() => router.push("/create-venue")} onHaveCode={onHaveCode} />
+    <StartTiles
+      onCreateVenue={() => router.push("/create-venue")}
+      onHaveCode={onHaveCode}
+      canCreate={!draft}
+    />
   );
+
+  // The venue they're part-way through, above everything else they could do next.
+  const theirDraft = draft ? (
+    <>
+      <SectionLabel>{t("screens.firstRun.draft.heading")}</SectionLabel>
+      <DraftCard
+        venue={draft}
+        onPress={() => router.push({ pathname: "/setup/[venueId]", params: { venueId: draft.id } })}
+      />
+    </>
+  ) : null;
 
   if (!invited) {
     return (
       <>
+        {theirDraft}
+        {draft ? <View className="mt-[22px]" /> : null}
         {startTiles}
         <View className="mt-[22px]">
           <InfoRows
@@ -91,6 +114,7 @@ export function StartOptions({
         onOpen={onOpen}
         onDecline={(received) => void decline(received)}
       />
+      {theirDraft ? <View className="mt-[22px]">{theirDraft}</View> : null}
       <View className="mt-[22px]">
         <SectionLabel>{t("screens.firstRun.moreWays")}</SectionLabel>
       </View>
