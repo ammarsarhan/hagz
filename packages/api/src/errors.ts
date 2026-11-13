@@ -267,6 +267,10 @@ const messages = {
     en: "Set a peak or discount price before marking hours with it.",
     ar: "حدّد سعر الذروة أو الخصم قبل تمييز الساعات به.",
   },
+  INVALID_LAYOUT: {
+    en: "Something on the layout is out of place. Check it and try again.",
+    ar: "يوجد عنصر في غير مكانه على المخطط. راجعه وحاول مرة أخرى.",
+  },
   AMENITY_NOT_AVAILABLE: {
     en: "Some of these amenities aren't available anymore.",
     ar: "بعض هذه المرافق لم تعد متاحة.",
