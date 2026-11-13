@@ -225,6 +225,27 @@ const messages = {
     en: "Some of these settings don't fit together. Check them and try again.",
     ar: "بعض هذه الإعدادات لا تتوافق معًا. راجعها وحاول مرة أخرى.",
   },
+  PHOTO_LIMIT_REACHED: {
+    en: "A venue can have up to 20 photos. Remove one to add another.",
+    ar: "يمكن أن يحتوي الملعب على 20 صورة كحد أقصى. احذف صورة لإضافة أخرى.",
+  },
+  PHOTO_NOT_FOUND: { en: "We couldn't find this photo.", ar: "لم نعثر على هذه الصورة." },
+  UPLOAD_NOT_FOUND: {
+    en: "The photo didn't finish uploading. Try again.",
+    ar: "لم يكتمل رفع الصورة. حاول مرة أخرى.",
+  },
+  UPLOAD_MISMATCH: {
+    en: "That file isn't a photo we can use. Choose another one.",
+    ar: "هذا الملف ليس صورة يمكننا استخدامها. اختر صورة أخرى.",
+  },
+  INVALID_PHOTO_ORDER: {
+    en: "The photos changed while you were arranging them. Try again.",
+    ar: "تغيّرت الصور أثناء ترتيبها. حاول مرة أخرى.",
+  },
+  STORAGE_UNAVAILABLE: {
+    en: "Photos can't be uploaded right now. Try again later.",
+    ar: "لا يمكن رفع الصور حاليًا. حاول لاحقًا.",
+  },
   AMENITY_NOT_AVAILABLE: {
     en: "Some of these amenities aren't available anymore.",
     ar: "بعض هذه المرافق لم تعد متاحة.",
@@ -273,6 +294,8 @@ const short = {
   CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   LOCATION_OUTSIDE_MARKETPLACE: { en: "Pin is in another country", ar: "الدبوس في دولة أخرى" },
+  STORAGE_UNAVAILABLE: { en: "Couldn't upload the photo", ar: "تعذّر رفع الصورة" },
+  UPLOAD_NOT_FOUND: { en: "Upload didn't finish", ar: "لم يكتمل الرفع" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 
