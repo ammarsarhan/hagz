@@ -1,7 +1,15 @@
 import * as Location from "expo-location";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, FlatList, Keyboard, Modal, Pressable, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
+  Modal,
+  Pressable,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
@@ -19,7 +27,6 @@ import { SheetHud, useHud } from "./hud";
 import { IconCurrentLocation, IconMapPin, IconSearch, IconX } from "./icons";
 import { CloseButton } from "./nav";
 import { Text } from "./text";
-import { TextInput } from "react-native";
 
 // Finding a venue by name or street (Figma "Venue creation · 4 Search sheet", 280:38): Google's
 // suggestions as the owner types, their current location, or dropping a pin by hand for the many

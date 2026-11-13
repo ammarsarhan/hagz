@@ -143,6 +143,13 @@ export default function CreateVenuePlace() {
     setStage("area");
   };
 
+  // The checklist takes the flow's place rather than stacking on top of it: there's no going back
+  // to the map once the draft exists, and closing the checklist lands on first run.
+  const openSetup = (venueId: string) => {
+    if (router.canDismiss()) router.dismissAll();
+    router.push({ pathname: "/setup/[venueId]", params: { venueId } });
+  };
+
   const create = async () => {
     if (!area) return;
     setCreating(true);
@@ -162,9 +169,7 @@ export default function CreateVenuePlace() {
       // They already have a venue they haven't finished: that's the one to go back to, not a
       // second one. The API says which.
       const existing = failure?.code === "UNFINISHED_VENUE_EXISTS" ? failure.venueId : undefined;
-      if (typeof existing === "string") {
-        router.dismissTo({ pathname: "/setup/[venueId]", params: { venueId: existing } });
-      }
+      if (typeof existing === "string") openSetup(existing);
       hud.show(hudMessage(result.error));
       return;
     }
@@ -172,7 +177,7 @@ export default function CreateVenuePlace() {
     // venues list is stale now that there's a draft on it.
     queryClient.setQueryData(queries.setup(result.data.venue.id).queryKey, result.data);
     void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
-    router.dismissTo({ pathname: "/setup/[venueId]", params: { venueId: result.data.venue.id } });
+    openSetup(result.data.venue.id);
   };
 
   return (

@@ -41,7 +41,8 @@ export default function VenueSetupScreen() {
     if (failed) hud.show(hudMessage(setup.error));
   }, [failed, setup.error, hud]);
 
-  const close = () => (router.canGoBack() ? router.dismissTo("/home") : router.replace("/home"));
+  // Closing leaves the setup flow for where it started: first run, which now shows the draft card.
+  const close = () => (router.canGoBack() ? router.back() : router.replace("/home"));
 
   if (!setup.data) {
     return (
