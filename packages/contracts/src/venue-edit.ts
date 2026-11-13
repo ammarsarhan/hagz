@@ -41,12 +41,16 @@ export const CancellationTiers = z
   .min(1)
   .max(MAXIMUM_CANCELLATION_TIERS)
   .refine(
+    // Each tier against the one before it.
     (tiers) =>
-      tiers.every(
-        (tier, i) =>
-          i === 0 ||
-          (tier.hours < tiers[i - 1]!.hours && tier.refundPercent <= tiers[i - 1]!.refundPercent),
-      ),
+      tiers.slice(1).every((tier, i) => {
+        const before = tiers[i];
+        return (
+          before !== undefined &&
+          tier.hours < before.hours &&
+          tier.refundPercent <= before.refundPercent
+        );
+      }),
     {
       message:
         "Tiers go from the most notice to the least, and refunds never go up as notice drops.",
