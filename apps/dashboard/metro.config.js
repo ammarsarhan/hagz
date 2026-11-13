@@ -1,6 +1,6 @@
 // NativeWind 5 works entirely through Metro: it compiles global.css with Tailwind and swaps
-// react-native imports for versions that accept `className`. No Babel plugin or native code, so the
-// app still runs in Expo Go.
+// react-native imports for versions that accept `className`. No Babel plugin or native code of its
+// own.
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativewind } = require("nativewind/metro");
 
