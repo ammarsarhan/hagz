@@ -41,3 +41,6 @@ next-env.d.ts
 
 # neon (local project/branch link, per developer)
 .neon
+
+# local file store for photos in development (apps/server/.storage)
+.storage
