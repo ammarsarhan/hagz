@@ -39,3 +39,14 @@ export const GROUND_SCHEDULE_CHANGED = "GROUND_SCHEDULE_CHANGED";
 export const GROUND_SCHEDULE_COPIED = "GROUND_SCHEDULE_COPIED";
 // The layout, saved whole.
 export const VENUE_LAYOUT_CHANGED = "VENUE_LAYOUT_CHANGED";
+// The venue's lifecycle (docs/onboarding.md): submitted and withdrawn by the owner, reviewed and
+// taken live by an admin, paused and resumed by either.
+export const VENUE_SUBMITTED = "VENUE_SUBMITTED";
+export const VENUE_WITHDRAWN = "VENUE_WITHDRAWN";
+export const VENUE_APPROVED = "VENUE_APPROVED";
+export const VENUE_REJECTED = "VENUE_REJECTED";
+export const VENUE_LIVE = "VENUE_LIVE";
+export const VENUE_PAUSED = "VENUE_PAUSED";
+export const VENUE_RESUMED = "VENUE_RESUMED";
+export const TAX_NUMBER_CHECKED = "TAX_NUMBER_CHECKED";
+export const LIFECYCLE_EVENTS = [VENUE_SUBMITTED, VENUE_WITHDRAWN, VENUE_REJECTED, VENUE_APPROVED];
