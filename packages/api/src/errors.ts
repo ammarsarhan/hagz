@@ -246,6 +246,27 @@ const messages = {
     en: "Photos can't be uploaded right now. Try again later.",
     ar: "لا يمكن رفع الصور حاليًا. حاول لاحقًا.",
   },
+  GROUND_NOT_FOUND: { en: "We couldn't find this ground.", ar: "لم نعثر على هذا الملعب الفرعي." },
+  GROUND_LIMIT_REACHED: {
+    en: "A venue can have up to 100 grounds.",
+    ar: "يمكن أن يحتوي المكان على 100 ملعب كحد أقصى.",
+  },
+  LAST_ACTIVE_GROUND: {
+    en: "This is your last open ground. Add another, or pause the venue first.",
+    ar: "هذا آخر ملعب مفتوح لديك. أضف ملعبًا آخر أو أوقف المكان مؤقتًا أولًا.",
+  },
+  INVALID_GROUND: {
+    en: "Some of these ground details don't fit together. Check them and try again.",
+    ar: "بعض تفاصيل الملعب لا تتوافق معًا. راجعها وحاول مرة أخرى.",
+  },
+  INVALID_GROUND_ORDER: {
+    en: "The grounds changed while you were arranging them. Try again.",
+    ar: "تغيّرت الملاعب أثناء ترتيبها. حاول مرة أخرى.",
+  },
+  SCHEDULE_TIER_WITHOUT_PRICE: {
+    en: "Set a peak or discount price before marking hours with it.",
+    ar: "حدّد سعر الذروة أو الخصم قبل تمييز الساعات به.",
+  },
   AMENITY_NOT_AVAILABLE: {
     en: "Some of these amenities aren't available anymore.",
     ar: "بعض هذه المرافق لم تعد متاحة.",
