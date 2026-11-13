@@ -1,5 +1,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  CopySchedule,
+  CreateGround,
+  Ground,
+  ReorderGrounds,
+  UpdateGround,
+  WeekSchedule,
   CreateVenue,
   PhotoUpload,
   ReorderPhotos,
@@ -306,6 +312,169 @@ export const removePhoto = createRoute({
     403: denied,
     404: problemResponse("VENUE_NOT_FOUND or PHOTO_NOT_FOUND"),
     409: locked,
+  },
+});
+
+const groundParams = venueParams.extend({ groundId: z.uuid() });
+const groundGone = problemResponse("VENUE_NOT_FOUND or GROUND_NOT_FOUND");
+
+export const grounds = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/grounds",
+  tags,
+  summary: "The venue's grounds, in order",
+  description: "Needs `venue: view`. Deleted grounds are left out.",
+  middleware: [requireStaff, requireVenueAccess("venue", "view")] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "Grounds", ...json(list(Ground)) },
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+  },
+});
+
+export const createGround = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/grounds",
+  tags,
+  summary: "Add a ground",
+  description:
+    "Needs `schedule: manage`. The name is stored in the caller's app language. Football comes " +
+    "in 5, 7 and 11-a-side; other sports are `STANDARD`.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(CreateGround) } },
+  responses: {
+    201: { description: "The new ground", ...json(Ground) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: problemResponse("GROUND_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`)"),
+  },
+});
+
+export const updateGround = createRoute({
+  method: "patch",
+  path: "/staff/venues/{venueId}/grounds/{groundId}",
+  tags,
+  summary: "Change a ground, or pause or resume it",
+  description:
+    "Needs `schedule: manage`. Only what's sent changes; the result is checked as a whole. A new " +
+    "sport or size takes the ground off the layout if it no longer fits there.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: groundParams, body: { required: true, ...json(UpdateGround) } },
+  responses: {
+    200: { description: "The ground after the change", ...json(Ground) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: groundGone,
+    409: problemResponse("LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`)"),
+    422: problemResponse("INVALID_GROUND (with the `field`)"),
+  },
+});
+
+export const removeGround = createRoute({
+  method: "delete",
+  path: "/staff/venues/{venueId}/grounds/{groundId}",
+  tags,
+  summary: "Remove a ground",
+  description:
+    "Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: groundParams },
+  responses: {
+    204: { description: "Removed" },
+    401: unauthenticated,
+    403: denied,
+    404: groundGone,
+    409: problemResponse("LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`)"),
+  },
+});
+
+export const reorderGrounds = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/grounds/order",
+  tags,
+  summary: "Reorder the grounds",
+  description: "Needs `schedule: manage`. Lists every ground exactly once.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(ReorderGrounds) } },
+  responses: {
+    200: { description: "Grounds in the new order", ...json(list(Ground)) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+    422: problemResponse("INVALID_GROUND_ORDER"),
+  },
+});
+
+export const groundSchedule = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/grounds/{groundId}/schedule",
+  tags,
+  summary: "A ground's weekly hours",
+  description: "Needs `schedule: view`. Days left out are closed.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "view")] as const,
+  security,
+  request: { params: groundParams },
+  responses: {
+    200: { description: "The week", ...json(WeekSchedule) },
+    401: unauthenticated,
+    403: denied,
+    404: groundGone,
+  },
+});
+
+export const putSchedule = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/grounds/{groundId}/schedule",
+  tags,
+  summary: "Set a ground's weekly hours",
+  description:
+    "Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; " +
+    "the last two need the ground to have that price. Hours past midnight belong in the next day.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: groundParams, body: { required: true, ...json(WeekSchedule) } },
+  responses: {
+    200: { description: "The week after the change", ...json(WeekSchedule) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: groundGone,
+    409: locked,
+    422: problemResponse("SCHEDULE_TIER_WITHOUT_PRICE (with the `tier`)"),
+  },
+});
+
+export const copySchedule = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/grounds/{groundId}/schedule/copy",
+  tags,
+  summary: "Copy a ground's weekly hours to others",
+  description:
+    "Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own " +
+    "prices, so each must have the prices the copied tiers need.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: groundParams, body: { required: true, ...json(CopySchedule) } },
+  responses: {
+    204: { description: "Copied" },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: groundGone,
+    409: locked,
+    422: problemResponse("SCHEDULE_TIER_WITHOUT_PRICE (with the `tier` and the `groundId`)"),
   },
 });
 
