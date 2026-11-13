@@ -15,7 +15,12 @@ import { useOpenInvitations } from "@/components/invitation-card";
 import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
+import { useRefreshWhenShown } from "@/lib/use-refresh";
 import { runningVenues, unfinishedVenue } from "@/lib/venues";
+
+// What can change on another phone while this screen is open: invitations sent or taken back, and
+// the draft (its name, area, "Last updated").
+const REFRESHED = [queries.venues.queryKey, queries.invitations.queryKey];
 
 // Where signing in lands. Staff who belong to a venue go on to its tabs (venue/); staff who don't see
 // first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable row of blue
@@ -30,6 +35,7 @@ export default function Home() {
   const me = useQuery(queries.me);
   const venues = useQuery(queries.venues);
   const received = useQuery(queries.invitations);
+  useRefreshWhenShown(REFRESHED);
   const invitations = useOpenInvitations(received.data);
   const reads = [me, venues, received];
   const failure = reads.find((read) => read.isError)?.error;
