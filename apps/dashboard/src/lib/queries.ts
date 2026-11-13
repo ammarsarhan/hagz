@@ -26,7 +26,8 @@ export const queries = {
     queryFn: async () => (await fetched(api.GET("/v1/staff/invitations"))).data,
   }),
   // A venue's setup checklist. Refetched when an item is finished, so the progress ring and the
-  // "Send for review" button follow the work.
+  // "Send for review" button follow the work. A save should invalidate `venues` (a prefix of this
+  // key, so both refetch): the draft card's name and "Last updated" come from that list.
   setup: (venueId: string) =>
     queryOptions({
       queryKey: ["staff", "venues", venueId, "setup"],
