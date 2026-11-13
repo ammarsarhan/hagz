@@ -51,7 +51,9 @@ export const createVenue = async (marketplaceId: string, slug = `venue-${++seque
   const location = await prisma.location.create({
     data: { marketplaceId, locality: "GOVERNORATE", slug: `location-${sequence}` },
   });
-  return prisma.venue.create({ data: { marketplaceId, locationId: location.id, slug } });
+  return prisma.venue.create({
+    data: { marketplaceId, locationId: location.id, slug, status: "LIVE" },
+  });
 };
 
 export const createCustomer = async ({
