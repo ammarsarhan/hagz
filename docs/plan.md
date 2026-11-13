@@ -13,6 +13,7 @@ Agreed on 2026-10-27, on top of the product and schema decisions already made:
 - **Discovery is Postgres only:** PostGIS for distance, `pg_trgm` and full-text search for names, indexed `GroundSlot` for availability. No separate search engine, so availability is always exact.
 - **Every v1 feature ships before launch**, loyalty, reviews and discounts included.
 - **Hosting stays platform-agnostic until Phase 9** (added on 2026-11-08). Staging is on Railway and a VPS is being considered for production. The app is written against the host contract in [deployment.md](deployment.md), and nothing new depends on Railway.
+- **The Expo apps run as development builds, made with EAS Build** (changed on 2026-11-13 from Expo Go). Each app's `eas.json` has `development` (the dev client, against a local Metro), `preview` (staging) and `production` profiles. Native modules outside Expo Go are fair game: Google Maps on both platforms now, and a native Paymob SDK is an option for 5.1. A new native module or config plugin means a new development build; JavaScript changes don't.
 - **Payments: Paymob, through its styled embedded card fields** (Pixel or a native SDK). The card number goes from the device to Paymob and never reaches Hagz, so PCI scope stays at SAQ A. Hagz designs the checkout; Paymob owns the card inputs.
 
 ## Phase 0: Platform ✅
