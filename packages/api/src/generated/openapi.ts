@@ -4973,6 +4973,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue layout
+         * @description Needs `venue: view`. Before the first save, a suggested empty grid (`saved: false`). `unplacedGroundIds` are the grounds still to place.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The layout */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueLayoutView"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        /**
+         * Save the whole venue layout
+         * @description Needs `venue: manage`. Replaces the layout in one go. Ground footprints come from their sport and size; everything must be inside the grid without overlapping, and entrances on their side.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VenueLayout"];
+                };
+            };
+            responses: {
+                /** @description The layout after saving */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueLayoutView"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_LAYOUT, with a `reason`: OUT_OF_BOUNDS, OVERLAP (with the `items`), UNKNOWN_GROUND or DUPLICATE_GROUND (with the `groundId`), ENTRANCE_OUT_OF_RANGE or DUPLICATE_ENTRANCE. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/members": {
         parameters: {
             query?: never;
@@ -7338,7 +7489,7 @@ export interface components {
             blockedBy: components["schemas"]["SetupItemKey"] & (string | null);
         };
         /** @enum {string} */
-        SetupItemKey: "DETAILS" | "LOCATION" | "PHOTOS" | "GROUNDS" | "SCHEDULES" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
+        SetupItemKey: "DETAILS" | "LOCATION" | "PHOTOS" | "GROUNDS" | "SCHEDULES" | "LAYOUT" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
         /**
          * @description `BLOCKED`: can't be done until `blockedBy` is.
          * @enum {string}
@@ -7605,6 +7756,53 @@ export interface components {
         PriceTier: "BASE" | "PEAK" | "DISCOUNT";
         CopySchedule: {
             groundIds: string[];
+        };
+        VenueLayoutView: {
+            columns: number;
+            rows: number;
+            grounds: components["schemas"]["PlacedGround"][];
+            facilities: components["schemas"]["PlacedFacility"][];
+            entrances: components["schemas"]["Entrance"][];
+            /** @description False until the first save: a suggested empty grid. */
+            saved: boolean;
+            /** @description Grounds not on the layout yet. */
+            unplacedGroundIds: string[];
+        };
+        /** @description Top-left cell; the footprint comes from the ground. */
+        PlacedGround: {
+            /** Format: uuid */
+            groundId: string;
+            x: number;
+            y: number;
+            orientation: components["schemas"]["Orientation"];
+        };
+        /**
+         * @description `VERTICAL` swaps the footprint's width and height.
+         * @enum {string}
+         */
+        Orientation: "HORIZONTAL" | "VERTICAL";
+        PlacedFacility: {
+            type: components["schemas"]["FacilityType"];
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        };
+        /** @enum {string} */
+        FacilityType: "CAFE" | "TOILETS" | "CHANGING_ROOMS" | "PARKING" | "SEATING";
+        Entrance: {
+            side: components["schemas"]["EntranceSide"];
+            /** @description Cells from the side's start (left or top). */
+            offset: number;
+        };
+        /** @enum {string} */
+        EntranceSide: "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
+        VenueLayout: {
+            columns: number;
+            rows: number;
+            grounds: components["schemas"]["PlacedGround"][];
+            facilities: components["schemas"]["PlacedFacility"][];
+            entrances: components["schemas"]["Entrance"][];
         };
         VenueMember: {
             /** Format: uuid */

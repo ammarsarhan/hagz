@@ -1350,6 +1350,7 @@
           "PHOTOS",
           "GROUNDS",
           "SCHEDULES",
+          "LAYOUT",
           "SETTINGS",
           "AMENITIES",
           "TAX_NUMBER"
@@ -2385,6 +2386,215 @@
         },
         "required": [
           "groundIds"
+        ]
+      },
+      "VenueLayoutView": {
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "grounds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedGround"
+            },
+            "maxItems": 100
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedFacility"
+            },
+            "maxItems": 50
+          },
+          "entrances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Entrance"
+            },
+            "maxItems": 10
+          },
+          "saved": {
+            "type": "boolean",
+            "description": "False until the first save: a suggested empty grid."
+          },
+          "unplacedGroundIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Grounds not on the layout yet."
+          }
+        },
+        "required": [
+          "columns",
+          "rows",
+          "grounds",
+          "facilities",
+          "entrances",
+          "saved",
+          "unplacedGroundIds"
+        ]
+      },
+      "PlacedGround": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "orientation": {
+            "$ref": "#/components/schemas/Orientation"
+          }
+        },
+        "required": [
+          "groundId",
+          "x",
+          "y",
+          "orientation"
+        ],
+        "description": "Top-left cell; the footprint comes from the ground."
+      },
+      "Orientation": {
+        "type": "string",
+        "enum": [
+          "HORIZONTAL",
+          "VERTICAL"
+        ],
+        "description": "`VERTICAL` swaps the footprint's width and height."
+      },
+      "PlacedFacility": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/FacilityType"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "type",
+          "x",
+          "y",
+          "width",
+          "height"
+        ]
+      },
+      "FacilityType": {
+        "type": "string",
+        "enum": [
+          "CAFE",
+          "TOILETS",
+          "CHANGING_ROOMS",
+          "PARKING",
+          "SEATING"
+        ]
+      },
+      "Entrance": {
+        "type": "object",
+        "properties": {
+          "side": {
+            "$ref": "#/components/schemas/EntranceSide"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59,
+            "description": "Cells from the side's start (left or top)."
+          }
+        },
+        "required": [
+          "side",
+          "offset"
+        ]
+      },
+      "EntranceSide": {
+        "type": "string",
+        "enum": [
+          "TOP",
+          "RIGHT",
+          "BOTTOM",
+          "LEFT"
+        ]
+      },
+      "VenueLayout": {
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "grounds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedGround"
+            },
+            "maxItems": 100
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlacedFacility"
+            },
+            "maxItems": 50
+          },
+          "entrances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Entrance"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "columns",
+          "rows",
+          "grounds",
+          "facilities",
+          "entrances"
         ]
       },
       "VenueMember": {
@@ -8401,6 +8611,178 @@
           },
           "422": {
             "description": "SCHEDULE_TIER_WITHOUT_PRICE (with the `tier` and the `groundId`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/layout": {
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "The venue layout",
+        "description": "Needs `venue: view`. Before the first save, a suggested empty grid (`saved: false`). `unplacedGroundIds` are the grounds still to place.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The layout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueLayoutView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Save the whole venue layout",
+        "description": "Needs `venue: manage`. Replaces the layout in one go. Ground footprints come from their sport and size; everything must be inside the grid without overlapping, and entrances on their side.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VenueLayout"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The layout after saving",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueLayoutView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_LAYOUT, with a `reason`: OUT_OF_BOUNDS, OVERLAP (with the `items`), UNKNOWN_GROUND or DUPLICATE_GROUND (with the `groundId`), ENTRANCE_OUT_OF_RANGE or DUPLICATE_ENTRANCE.",
             "content": {
               "application/problem+json": {
                 "schema": {
