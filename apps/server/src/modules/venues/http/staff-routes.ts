@@ -16,6 +16,13 @@ import {
   changePermissions,
   restorePermissions,
 } from "../application/members";
+import {
+  putTranslation,
+  setAmenities,
+  updateSettings,
+  updateVenue,
+  venueDetail,
+} from "../application/venue-edit";
 import { createVenue, venueSetup } from "../application/venue-setup";
 import * as route from "./definitions/staff";
 
@@ -30,6 +37,22 @@ export const venuesStaffRoutes = createRouter()
   })
   .openapi(route.setup, async (c) => {
     return c.json(await venueSetup(c.var.venue.venueId, requestLanguage(c)), 200);
+  })
+  .openapi(route.venueDetail, async (c) => {
+    return c.json(await venueDetail(c.var.venue.venueId), 200);
+  })
+  .openapi(route.updateVenue, async (c) => {
+    return c.json(await updateVenue(c.var.venue, c.req.valid("json")), 200);
+  })
+  .openapi(route.putTranslation, async (c) => {
+    const { language } = c.req.valid("param");
+    return c.json(await putTranslation(c.var.venue, language, c.req.valid("json")), 200);
+  })
+  .openapi(route.updateSettings, async (c) => {
+    return c.json(await updateSettings(c.var.venue, c.req.valid("json")), 200);
+  })
+  .openapi(route.setAmenities, async (c) => {
+    return c.json(await setAmenities(c.var.venue, c.req.valid("json")), 200);
   })
   .openapi(route.members, async (c) => {
     return c.json({ data: await listMembers(c.var.venue.venueId) }, 200);

@@ -1,6 +1,12 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   CreateVenue,
+  Language,
+  SetVenueAmenities,
+  StaffVenueDetail,
+  UpdateVenue,
+  UpdateVenueSettings,
+  VenueTranslationInput,
   InviteStaff,
   list,
   ReceivedStaffInvitation,
@@ -85,6 +91,119 @@ export const setup = createRoute({
     401: unauthenticated,
     403: denied,
     404: notMember,
+  },
+});
+
+const locked = problemResponse(
+  "VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz " +
+    "provisions the venue, the listing (name, description, address, location, photos) can't.",
+);
+
+export const venueDetail = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}",
+  tags,
+  summary: "Everything the setup and edit screens show",
+  description: "Needs `venue: view`.",
+  middleware: [requireStaff, requireVenueAccess("venue", "view")] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The venue", ...json(StaffVenueDetail) },
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+  },
+});
+
+export const updateVenue = createRoute({
+  method: "patch",
+  path: "/staff/venues/{venueId}",
+  tags,
+  summary: "Change the phone, tax number or location",
+  description:
+    "Needs `venue: manage`. Only what's sent changes. A new area must be in the venue's " +
+    "marketplace, with the pin inside it.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(UpdateVenue) } },
+  responses: {
+    200: { description: "The venue after the change", ...json(StaffVenueDetail) },
+    400: problemResponse("INVALID_PHONE_NUMBER or VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+    422: problemResponse("LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE"),
+  },
+});
+
+export const putTranslation = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/translations/{language}",
+  tags,
+  summary: "Set the name, description and address in one language",
+  description:
+    "Needs `venue: manage`. The app writes the owner's language; Hagz adds the other one " +
+    "before the venue goes live.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: {
+    params: venueParams.extend({ language: Language }),
+    body: { required: true, ...json(VenueTranslationInput) },
+  },
+  responses: {
+    200: { description: "The venue after the change", ...json(StaffVenueDetail) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+  },
+});
+
+export const updateSettings = createRoute({
+  method: "patch",
+  path: "/staff/venues/{venueId}/settings",
+  tags,
+  summary: "Change how bookings are confirmed, paid for and refunded",
+  description:
+    "Needs `venue: manage`. Only what's sent changes; the result is checked as a whole. " +
+    "`DEPOSIT` needs `depositPercent` and `CUSTOM` needs `cancellationTiers`; switching away " +
+    "clears them.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(UpdateVenueSettings) } },
+  responses: {
+    200: { description: "The venue after the change", ...json(StaffVenueDetail) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+    422: problemResponse("INVALID_SETTINGS (with the `field`)"),
+  },
+});
+
+export const setAmenities = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/amenities",
+  tags,
+  summary: "Set which amenities the venue has, and their prices",
+  description:
+    "Needs `venue: manage`. Replaces the whole set. Options come from the venue's marketplace; " +
+    "a retired one can be kept but not newly picked.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SetVenueAmenities) } },
+  responses: {
+    200: { description: "The venue after the change", ...json(StaffVenueDetail) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
+    409: locked,
+    422: problemResponse("AMENITY_NOT_AVAILABLE (with the `optionIds`)"),
   },
 });
 
