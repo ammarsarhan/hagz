@@ -32,8 +32,10 @@ The staff app reads `EXPO_PUBLIC_API_URL` (the local machine's address in develo
 the same network reach the API) and `EXPO_PUBLIC_GOOGLE_API_KEY`, which is Google Places and
 Geocoding for placing a venue on the map. Without the key the map and dropping a pin still work;
 searching says it isn't available. The key ships inside the app, so restrict it in Google Cloud to
-the apps' bundle ids and to those two APIs. Android builds also need `GOOGLE_MAPS_ANDROID_KEY`,
-which the config plugin passes to Google Maps; iOS draws Apple Maps and needs nothing.
+the apps' bundle ids and to those two APIs. Maps are Google's wherever they can be: Android
+has Google Maps in Expo Go already, and iOS builds get it from `GOOGLE_MAPS_IOS_KEY`
+(`GOOGLE_MAPS_ANDROID_KEY` for Android builds). Expo Go on iOS can't load Google's SDK, so it falls
+back to Apple Maps there.
 
 ## Checks
 

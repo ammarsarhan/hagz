@@ -27,11 +27,16 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: bundleIdFor("dashboard", env),
     associatedDomains: webHost ? [`applinks:${webHost}`] : [],
+    // Google Maps on iOS, which is what people here read: it needs the Google Maps SDK compiled
+    // in, so it only applies to builds. Expo Go has Apple Maps and falls back to it.
+    ...(process.env.GOOGLE_MAPS_IOS_KEY
+      ? { config: { googleMapsApiKey: process.env.GOOGLE_MAPS_IOS_KEY } }
+      : {}),
   },
   android: {
     package: bundleIdFor("dashboard", env),
-    // Maps on Android are Google's, which needs a key of its own in builds (Expo Go brings its
-    // own). iOS draws Apple Maps, which needs none. Left out when unset so builds still work.
+    // Android maps are Google's, with a key of its own in builds (Expo Go brings its own). Left
+    // out when unset so builds still work.
     ...(process.env.GOOGLE_MAPS_ANDROID_KEY
       ? { config: { googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_KEY } } }
       : {}),
