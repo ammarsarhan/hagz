@@ -44,7 +44,9 @@ const config: ExpoConfig = {
   scheme: schemeFor("dashboard", env),
   ios: {
     bundleIdentifier: bundleIdFor("dashboard", env),
-    associatedDomains: webHost ? [`applinks:${webHost}`] : [],
+    // Left out, not empty, without a web host: even an empty list adds the Associated Domains
+    // entitlement, which a free Apple account (local iPhone builds) can't sign.
+    ...(webHost && { associatedDomains: [`applinks:${webHost}`] }),
   },
   android: {
     package: bundleIdFor("dashboard", env),
