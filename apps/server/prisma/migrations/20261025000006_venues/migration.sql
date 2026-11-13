@@ -44,8 +44,8 @@ CREATE TABLE "VenueTranslation" (
     "venueId" UUID NOT NULL,
     "language" "Language" NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "address" TEXT NOT NULL,
+    "description" TEXT,
+    "address" TEXT,
 
     CONSTRAINT "VenueTranslation_pkey" PRIMARY KEY ("venueId","language")
 );
@@ -87,7 +87,7 @@ CREATE TABLE "VenueSettings" (
     "paymentMode" "PaymentMode" NOT NULL DEFAULT 'MANUAL',
     "depositPercent" INTEGER,
     "paymentWindow" INTEGER,
-    "cancellationPolicy" "CancellationPolicy" NOT NULL DEFAULT 'MODERATE',
+    "cancellationPolicy" "CancellationPolicy",
     "cancellationTiers" JSONB,
     "loyaltyStamps" INTEGER,
     "loyaltyWindow" INTEGER,
@@ -338,7 +338,7 @@ ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_window_check" CHECK ("
 ALTER TABLE "Venue" ADD CONSTRAINT "Venue_commission_check" CHECK ("commissionRate" BETWEEN 0 AND 10000);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_cancellation_check" CHECK ((("cancellationPolicy" = 'CUSTOM') = ("cancellationTiers" IS NOT NULL)) AND ("cancellationTiers" IS NULL OR jsonb_typeof("cancellationTiers") = 'array'));
+ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_cancellation_check" CHECK ((("cancellationPolicy" = 'CUSTOM') IS TRUE) = ("cancellationTiers" IS NOT NULL) AND ("cancellationTiers" IS NULL OR jsonb_typeof("cancellationTiers") = 'array'));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_loyalty_check" CHECK ((("loyaltyStamps" IS NULL) = ("loyaltyWindow" IS NULL)) AND ("loyaltyStamps" IS NULL OR ("loyaltyStamps" >= 2 AND "loyaltyWindow" > 0)));
