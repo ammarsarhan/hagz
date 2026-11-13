@@ -11,6 +11,7 @@ Agreed on 2026-10-27:
 - **Slug:** a random id generated at creation and never changed, e.g. `/venue/k7m2x9pq` (see [Slugs and SEO](#slugs-and-seo)).
 - **Location:** the owner drops a pin or searches Google Places, the app suggests the area from the `Location` tree (matching Google's address to our location names), and the owner confirms or changes it. The API checks the pin against a rough bounding box per marketplace, enough to catch a pin in the wrong country (decided 2026-11-12).
 - **Drafts live outside the venue dashboard.** An unfinished venue opens its own setup flow, reached from first run (no venues yet) or from the Venues section of the Account tab; the dashboard's tabs and switcher are for `LIVE` and `MAINTENANCE` venues (decided 2026-11-12).
+- **Staff join after approval.** Invitations can only be sent once an admin has approved the venue (`PROVISIONING`, `LIVE` or `MAINTENANCE`); before that the API answers `409 VENUE_STATUS_CONFLICT` (decided 2026-11-13). A draft or a venue in review has nothing for staff to do, and rejection only happens before approval, so an approved venue never loses the ability.
 - **One unfinished venue per staff account.** A venue they own in `DRAFT`, `SUBMITTED` or `PROVISIONING` blocks starting another until it goes live (clarified 2026-11-12). Any number of live venues, so chains are fine.
 - **Nothing is deleted.** Drafts stay until submitted, and a rejected venue goes back to `DRAFT` with the reason.
 - **Ownership changes only through support.** An admin transfers it to an existing member after checking identity, because ownership controls payouts.
@@ -21,8 +22,8 @@ Agreed on 2026-10-27:
 | Status | Who moves it here | What the owner can do | Visible to customers |
 |---|---|---|---|
 | `DRAFT` | The owner creates it, or an admin rejects it | Edit everything, then submit | No |
-| `SUBMITTED` | The owner submits | Withdraw it (back to `DRAFT`). Set up staff and invitations. Listing details are locked while it's reviewed | No |
-| `PROVISIONING` | An admin approves | Edit grounds, schedules, settings and staff. Listing identity stays locked | No |
+| `SUBMITTED` | The owner submits | Withdraw it (back to `DRAFT`). Edit grounds, schedules and settings. Listing details are locked while it's reviewed | No |
+| `PROVISIONING` | An admin approves | Edit grounds, schedules, settings and staff, and invite staff. Listing identity stays locked | No |
 | `LIVE` | An admin, once provisioning is complete | Everything, applied at once (see [Edits after going live](#edits-after-going-live)) | Yes: page, search, sitemap, bookings |
 | `MAINTENANCE` | The owner (`venue: manage`) or an admin | Everything, then switch back to `LIVE` | Page visible with a notice. No new bookings; existing bookings stand |
 
@@ -121,7 +122,7 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 |---|---|
 | `409 UNFINISHED_VENUE_EXISTS` | Creating a venue, or receiving an unfinished one by transfer, while already owning one in `DRAFT`, `SUBMITTED` or `PROVISIONING` (includes `venueId` and `venueStatus`) |
 | `422 SETUP_INCOMPLETE` | Submitting with checklist items missing (lists them) |
-| `409 VENUE_STATUS_CONFLICT` | An action not allowed in the current status, e.g. editing listing details while `SUBMITTED` |
+| `409 VENUE_STATUS_CONFLICT` | An action not allowed in the current status, e.g. inviting staff before approval, or editing listing details while `SUBMITTED` (includes `venueStatus`) |
 | `422 LOCATION_NOT_FOUND` | Creating a venue in an area that doesn't exist, or whose marketplace isn't active |
 | `422 LOCATION_OUTSIDE_MARKETPLACE` | The pin isn't inside the marketplace of the chosen area, or a new area is in another marketplace |
 
