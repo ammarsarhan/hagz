@@ -16,12 +16,20 @@ import {
   changePermissions,
   restorePermissions,
 } from "../application/members";
+import { createVenue, venueSetup } from "../application/venue-setup";
 import * as route from "./definitions/staff";
 
 export const venuesStaffRoutes = createRouter()
   .openapi(route.myVenues, async (c) => {
     const data = await listMyVenues(c.var.staff.staffId, requestLanguage(c));
     return c.json({ data }, 200);
+  })
+  .openapi(route.createVenue, async (c) => {
+    const setup = await createVenue(c.var.staff.staffId, c.req.valid("json"), requestLanguage(c));
+    return c.json(setup, 201);
+  })
+  .openapi(route.setup, async (c) => {
+    return c.json(await venueSetup(c.var.venue.venueId, requestLanguage(c)), 200);
   })
   .openapi(route.members, async (c) => {
     return c.json({ data: await listMembers(c.var.venue.venueId) }, 200);

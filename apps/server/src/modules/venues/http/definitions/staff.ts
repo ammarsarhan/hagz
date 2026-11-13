@@ -1,5 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  CreateVenue,
   InviteStaff,
   list,
   ReceivedStaffInvitation,
@@ -7,6 +8,7 @@ import {
   StaffPermissions,
   StaffVenue,
   VenueMember,
+  VenueSetup,
 } from "@hagz/contracts";
 import { requireStaff, STAFF_BEARER } from "@/platform/http/authenticate";
 import { json, problemResponse } from "@/platform/http/definitions";
@@ -36,6 +38,53 @@ export const myVenues = createRoute({
     200: { description: "My venues", ...json(list(StaffVenue)) },
     401: unauthenticated,
     403: problemResponse("ACCOUNT_SUSPENDED"),
+  },
+});
+
+export const createVenue = createRoute({
+  method: "post",
+  path: "/staff/venues",
+  tags,
+  summary: "Create a venue",
+  description:
+    "Creates a `DRAFT` with the caller as its `OWNER` (docs/onboarding.md, step 1). The name is " +
+    "stored in the caller's app language. The marketplace comes from the location, and the pin " +
+    "must fall inside it. One unfinished venue (`DRAFT`, `SUBMITTED` or `PROVISIONING`) per " +
+    "owner. Answers with the setup checklist.",
+  middleware: [requireStaff] as const,
+  security,
+  request: { body: { required: true, ...json(CreateVenue) } },
+  responses: {
+    201: { description: "The new draft and its checklist", ...json(VenueSetup) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: problemResponse("ACCOUNT_SUSPENDED"),
+    409: problemResponse(
+      "UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `status`.",
+    ),
+    422: problemResponse(
+      "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or " +
+        "LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country).",
+    ),
+  },
+});
+
+export const setup = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/setup",
+  tags,
+  summary: "The venue's setup checklist",
+  description:
+    "Needs `venue: view`. Computed from the venue's data on every request (docs/onboarding.md, " +
+    "step 2). Items appear as their features ship.",
+  middleware: [requireStaff, requireVenueAccess("venue", "view")] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The checklist", ...json(VenueSetup) },
+    401: unauthenticated,
+    403: denied,
+    404: notMember,
   },
 });
 
