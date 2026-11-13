@@ -60,7 +60,7 @@ export const createVenue = createRoute({
     401: unauthenticated,
     403: problemResponse("ACCOUNT_SUSPENDED"),
     409: problemResponse(
-      "UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `status`.",
+      "UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `venueStatus`.",
     ),
     422: problemResponse(
       "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or " +

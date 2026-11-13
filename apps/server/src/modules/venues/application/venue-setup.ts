@@ -21,7 +21,8 @@ export const unfinishedVenueExists = (venue: { id: string; status: VenueStatus }
     code: "UNFINISHED_VENUE_EXISTS",
     status: 409,
     detail: "You already have a venue that isn't live yet. Finish it first.",
-    extensions: { venueId: venue.id, status: venue.status },
+    // `status` is the problem's HTTP status (RFC 9457), so the venue's goes in its own member.
+    extensions: { venueId: venue.id, venueStatus: venue.status },
   });
 
 export const locationNotFound = () =>
