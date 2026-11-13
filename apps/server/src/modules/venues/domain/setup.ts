@@ -6,8 +6,8 @@ import {
 } from "@hagz/contracts";
 
 // The setup checklist (docs/onboarding.md, step 2), computed from the venue's data on every request
-// and never stored, so it can't disagree with the venue. Items join as their features ship: grounds
-// and schedules (2.4) and layout (2.5) add their own facts and rules here.
+// and never stored, so it can't disagree with the venue. Items join as their features ship: the
+// layout (2.5) adds its own facts and rules here.
 
 export interface SetupFacts {
   status: VenueSetup["venue"]["status"];
@@ -15,6 +15,8 @@ export interface SetupFacts {
   translations: { name: string; description: string | null; address: string | null }[];
   hasPin: boolean;
   readyPhotos: number;
+  // Open hours per active ground (paused grounds don't count).
+  activeGrounds: { openHours: number }[];
   cancellationPolicy: string | null;
   amenityCount: number;
   taxNumber: string | null;
@@ -32,22 +34,39 @@ const detailsDone = (facts: SetupFacts) =>
 // purpose (user, 2026-11-12), so it alone decides the item.
 const settingsDone = (facts: SetupFacts) => facts.cancellationPolicy !== null;
 
-const RULES: { key: SetupItemKey; required: boolean; done: (facts: SetupFacts) => boolean }[] = [
+const hasGrounds = (facts: SetupFacts) => facts.activeGrounds.length > 0;
+
+interface Rule {
+  key: SetupItemKey;
+  required: boolean;
+  done: (facts: SetupFacts) => boolean;
+  // Can't be done before this item is.
+  after?: { key: SetupItemKey; done: (facts: SetupFacts) => boolean };
+}
+
+const RULES: Rule[] = [
   { key: "DETAILS", required: true, done: detailsDone },
   { key: "LOCATION", required: true, done: (facts) => facts.hasPin },
   { key: "PHOTOS", required: true, done: (facts) => facts.readyPhotos >= MINIMUM_VENUE_PHOTOS },
+  { key: "GROUNDS", required: true, done: hasGrounds },
+  {
+    key: "SCHEDULES",
+    required: true,
+    // Every active ground open at least an hour a week.
+    done: (facts) => hasGrounds(facts) && facts.activeGrounds.every((g) => g.openHours > 0),
+    after: { key: "GROUNDS", done: hasGrounds },
+  },
   { key: "SETTINGS", required: true, done: settingsDone },
   { key: "AMENITIES", required: false, done: (facts) => facts.amenityCount > 0 },
   { key: "TAX_NUMBER", required: false, done: (facts) => filled(facts.taxNumber) },
 ];
 
 export const setupChecklist = (facts: SetupFacts): Omit<VenueSetup, "venue"> => {
-  const items: SetupItem[] = RULES.map(({ key, required, done }) => ({
-    key,
-    required,
-    state: done(facts) ? "DONE" : "MISSING",
-    blockedBy: null,
-  }));
+  const items: SetupItem[] = RULES.map(({ key, required, done, after }) => {
+    if (after && !after.done(facts))
+      return { key, required, state: "BLOCKED", blockedBy: after.key };
+    return { key, required, state: done(facts) ? "DONE" : "MISSING", blockedBy: null };
+  });
   const required = items.filter((item) => item.required);
   const done = required.filter((item) => item.state === "DONE").length;
   return {

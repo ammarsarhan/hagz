@@ -8,6 +8,7 @@ const fresh: SetupFacts = {
   translations: [{ name: "Champions Arena", description: null, address: null }],
   hasPin: true,
   readyPhotos: 0,
+  activeGrounds: [],
   cancellationPolicy: null,
   amenityCount: 0,
   taxNumber: null,
@@ -20,6 +21,7 @@ const complete: SetupFacts = {
     { name: "Champions Arena", description: "Three 5-a-side pitches.", address: "12 Street 9" },
   ],
   readyPhotos: 3,
+  activeGrounds: [{ openHours: 63 }],
   cancellationPolicy: "MODERATE",
 };
 
@@ -33,17 +35,19 @@ describe("setup checklist", () => {
       ["DETAILS", true, "MISSING"],
       ["LOCATION", true, "DONE"],
       ["PHOTOS", true, "MISSING"],
+      ["GROUNDS", true, "MISSING"],
+      ["SCHEDULES", true, "BLOCKED"],
       ["SETTINGS", true, "MISSING"],
       ["AMENITIES", false, "MISSING"],
       ["TAX_NUMBER", false, "MISSING"],
     ]);
-    expect(setup.required).toEqual({ done: 1, total: 4 });
+    expect(setup.required).toEqual({ done: 1, total: 6 });
     expect(setup.canSubmit).toBe(false);
   });
 
   it("can be submitted once every required item is done, optional ones aside", () => {
     const setup = setupChecklist(complete);
-    expect(setup.required).toEqual({ done: 4, total: 4 });
+    expect(setup.required).toEqual({ done: 6, total: 6 });
     expect(setup.canSubmit).toBe(true);
   });
 
@@ -105,10 +109,22 @@ describe("setup checklist", () => {
     const extras = { ...complete, amenityCount: 2, taxNumber: "100-200-300" };
     expect(stateOf(extras, "AMENITIES")).toBe("DONE");
     expect(stateOf(extras, "TAX_NUMBER")).toBe("DONE");
-    expect(setupChecklist(extras).required).toEqual({ done: 4, total: 4 });
+    expect(setupChecklist(extras).required).toEqual({ done: 6, total: 6 });
   });
 
-  it("blocks nothing yet", () => {
-    expect(setupChecklist(fresh).items.every((item) => item.blockedBy === null)).toBe(true);
+  it("waits for a ground before asking for hours", () => {
+    const hours = (facts: SetupFacts) =>
+      setupChecklist(facts).items.find((item) => item.key === "SCHEDULES");
+    expect(hours(fresh)).toMatchObject({ state: "BLOCKED", blockedBy: "GROUNDS" });
+    expect(hours({ ...fresh, activeGrounds: [{ openHours: 0 }] })).toMatchObject({
+      state: "MISSING",
+      blockedBy: null,
+    });
+  });
+
+  it("needs every active ground to open at least an hour", () => {
+    const grounds = [{ openHours: 63 }, { openHours: 0 }];
+    expect(stateOf({ ...complete, activeGrounds: grounds }, "SCHEDULES")).toBe("MISSING");
+    expect(stateOf({ ...complete, activeGrounds: [{ openHours: 1 }] }, "SCHEDULES")).toBe("DONE");
   });
 });

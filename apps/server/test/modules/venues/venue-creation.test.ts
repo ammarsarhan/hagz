@@ -91,11 +91,13 @@ describe("creating a venue", () => {
       ["DETAILS", "MISSING"],
       ["LOCATION", "DONE"],
       ["PHOTOS", "MISSING"],
+      ["GROUNDS", "MISSING"],
+      ["SCHEDULES", "BLOCKED"],
       ["SETTINGS", "MISSING"],
       ["AMENITIES", "MISSING"],
       ["TAX_NUMBER", "MISSING"],
     ]);
-    expect(setup.required).toEqual({ done: 1, total: 4 });
+    expect(setup.required).toEqual({ done: 1, total: 6 });
     expect(setup.canSubmit).toBe(false);
 
     const venue = await prisma.venue.findUniqueOrThrow({
@@ -324,8 +326,21 @@ describe("the setup checklist", () => {
       })),
     });
 
+    await prisma.ground.create({
+      data: {
+        venueId: setup.venue.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 0,
+        basePrice: 60000,
+        schedules: { create: { dayOfWeek: 4, hours: { "19": "BASE" } } },
+      },
+    });
+
     const after = VenueSetup.parse(await (await call(owner.id, "GET", path)).json());
-    expect(after.required).toEqual({ done: 4, total: 4 });
+    expect(after.required).toEqual({ done: 6, total: 6 });
     expect(after.canSubmit).toBe(true);
   });
 

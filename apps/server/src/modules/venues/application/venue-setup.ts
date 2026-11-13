@@ -172,6 +172,7 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
       taxNumber: true,
       translations: { select: { language: true, name: true, description: true, address: true } },
       settings: { select: { cancellationPolicy: true } },
+      grounds: { where: { status: "ACTIVE" }, select: { schedules: { select: { hours: true } } } },
       _count: { select: { amenities: true, media: { where: { type: "IMAGE", status: "READY" } } } },
     },
   });
@@ -192,6 +193,12 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
       translations: venue.translations,
       hasPin: pin?.hasPin ?? false,
       readyPhotos: venue._count.media,
+      activeGrounds: venue.grounds.map((ground) => ({
+        openHours: ground.schedules.reduce(
+          (sum, day) => sum + Object.keys((day.hours ?? {}) as object).length,
+          0,
+        ),
+      })),
       cancellationPolicy: venue.settings?.cancellationPolicy ?? null,
       amenityCount: venue._count.amenities,
       taxNumber: venue.taxNumber,
