@@ -19,3 +19,10 @@ export const STAFF_JOINED = "STAFF_JOINED";
 
 // The venue's lifecycle (docs/onboarding.md): the owner is the actor when creating it.
 export const VENUE_CREATED = "VENUE_CREATED";
+// Edits during setup and after going live, each with the previous and new values so admins can audit
+// them (and revert, later).
+export const VENUE_DETAILS_CHANGED = "VENUE_DETAILS_CHANGED";
+export const VENUE_LOCATION_CHANGED = "VENUE_LOCATION_CHANGED";
+export const VENUE_TRANSLATION_CHANGED = "VENUE_TRANSLATION_CHANGED";
+export const VENUE_SETTINGS_CHANGED = "VENUE_SETTINGS_CHANGED";
+export const VENUE_AMENITIES_CHANGED = "VENUE_AMENITIES_CHANGED";
