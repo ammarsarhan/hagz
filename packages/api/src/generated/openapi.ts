@@ -8446,6 +8446,16 @@ export interface components {
             /** @description In `Accept-Language`, else any language. */
             name: string | null;
             status: components["schemas"]["VenueStatus"];
+            /**
+             * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
+             * @example Maadi, Cairo
+             */
+            location: string | null;
+            /**
+             * Format: date-time
+             * @description When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created).
+             */
+            lastActivityAt: string;
             role: components["schemas"]["VenueRole"];
             /** @description What the signed-in member may do here; all `manage` for the owner. */
             permissions: {

@@ -1131,6 +1131,19 @@
           "status": {
             "$ref": "#/components/schemas/VenueStatus"
           },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where the venue is: its area and the place above it, in `Accept-Language`, else any language.",
+            "example": "Maadi, Cairo"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created)."
+          },
           "role": {
             "$ref": "#/components/schemas/VenueRole"
           },
@@ -1218,6 +1231,8 @@
           "slug",
           "name",
           "status",
+          "location",
+          "lastActivityAt",
           "role",
           "permissions"
         ]
