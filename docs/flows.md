@@ -270,7 +270,10 @@ flowchart LR
 
 ### D5 Setup checklist and review
 
-The checklist is Home while the venue isn't live. Items are done in any order, each saved as real data.
+The checklist is a flow of its own, not a tab: a venue being set up has no bookings, money or
+calendar to run, so it never appears in the venue tabs, the switcher or Home. Staff with no venue
+reach it from first run, as the black "Continue setting up" card; staff who already run a venue
+reach it from Account › Venues. Items are done in any order, each saved as real data.
 
 ```mermaid
 flowchart LR
