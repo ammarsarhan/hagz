@@ -90,11 +90,12 @@ describe("creating a venue", () => {
     expect(setup.items.map((item) => [item.key, item.state])).toEqual([
       ["DETAILS", "MISSING"],
       ["LOCATION", "DONE"],
+      ["PHOTOS", "MISSING"],
       ["SETTINGS", "MISSING"],
       ["AMENITIES", "MISSING"],
       ["TAX_NUMBER", "MISSING"],
     ]);
-    expect(setup.required).toEqual({ done: 1, total: 3 });
+    expect(setup.required).toEqual({ done: 1, total: 4 });
     expect(setup.canSubmit).toBe(false);
 
     const venue = await prisma.venue.findUniqueOrThrow({
@@ -312,8 +313,19 @@ describe("the setup checklist", () => {
       data: { cancellationPolicy: "MODERATE" },
     });
 
+    await prisma.venueMedia.createMany({
+      data: [0, 1, 2].map((position) => ({
+        venueId: setup.venue.id,
+        key: `venues/${setup.venue.id}/${position}.jpg`,
+        type: "IMAGE" as const,
+        contentType: "image/jpeg",
+        status: "READY" as const,
+        position,
+      })),
+    });
+
     const after = VenueSetup.parse(await (await call(owner.id, "GET", path)).json());
-    expect(after.required).toEqual({ done: 3, total: 3 });
+    expect(after.required).toEqual({ done: 4, total: 4 });
     expect(after.canSubmit).toBe(true);
   });
 

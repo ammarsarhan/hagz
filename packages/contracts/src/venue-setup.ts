@@ -30,10 +30,10 @@ export const CreateVenue = z
   })
   .meta({ id: "CreateVenue" });
 
-// Items appear as the features behind them ship: photos, grounds, schedules and layout join with
-// their own PRs (2.3–2.5).
+// Items appear as the features behind them ship: grounds, schedules and layout join with their own
+// PRs (2.4, 2.5).
 export const SetupItemKey = z
-  .enum(["DETAILS", "LOCATION", "SETTINGS", "AMENITIES", "TAX_NUMBER"])
+  .enum(["DETAILS", "LOCATION", "PHOTOS", "SETTINGS", "AMENITIES", "TAX_NUMBER"])
   .meta({ id: "SetupItemKey" });
 
 export const SetupItemState = z.enum(["DONE", "MISSING", "BLOCKED"]).meta({

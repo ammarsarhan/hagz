@@ -7,6 +7,7 @@ const fresh: SetupFacts = {
   phone: null,
   translations: [{ name: "Champions Arena", description: null, address: null }],
   hasPin: true,
+  readyPhotos: 0,
   cancellationPolicy: null,
   amenityCount: 0,
   taxNumber: null,
@@ -18,6 +19,7 @@ const complete: SetupFacts = {
   translations: [
     { name: "Champions Arena", description: "Three 5-a-side pitches.", address: "12 Street 9" },
   ],
+  readyPhotos: 3,
   cancellationPolicy: "MODERATE",
 };
 
@@ -30,17 +32,18 @@ describe("setup checklist", () => {
     expect(setup.items.map((item) => [item.key, item.required, item.state])).toEqual([
       ["DETAILS", true, "MISSING"],
       ["LOCATION", true, "DONE"],
+      ["PHOTOS", true, "MISSING"],
       ["SETTINGS", true, "MISSING"],
       ["AMENITIES", false, "MISSING"],
       ["TAX_NUMBER", false, "MISSING"],
     ]);
-    expect(setup.required).toEqual({ done: 1, total: 3 });
+    expect(setup.required).toEqual({ done: 1, total: 4 });
     expect(setup.canSubmit).toBe(false);
   });
 
   it("can be submitted once every required item is done, optional ones aside", () => {
     const setup = setupChecklist(complete);
-    expect(setup.required).toEqual({ done: 3, total: 3 });
+    expect(setup.required).toEqual({ done: 4, total: 4 });
     expect(setup.canSubmit).toBe(true);
   });
 
@@ -84,6 +87,11 @@ describe("setup checklist", () => {
     });
   });
 
+  it("needs three ready photos", () => {
+    expect(stateOf({ ...complete, readyPhotos: 2 }, "PHOTOS")).toBe("MISSING");
+    expect(stateOf({ ...complete, readyPhotos: 3 }, "PHOTOS")).toBe("DONE");
+  });
+
   it("needs a pin for the location", () => {
     expect(stateOf({ ...complete, hasPin: false }, "LOCATION")).toBe("MISSING");
   });
@@ -97,7 +105,7 @@ describe("setup checklist", () => {
     const extras = { ...complete, amenityCount: 2, taxNumber: "100-200-300" };
     expect(stateOf(extras, "AMENITIES")).toBe("DONE");
     expect(stateOf(extras, "TAX_NUMBER")).toBe("DONE");
-    expect(setupChecklist(extras).required).toEqual({ done: 3, total: 3 });
+    expect(setupChecklist(extras).required).toEqual({ done: 4, total: 4 });
   });
 
   it("blocks nothing yet", () => {

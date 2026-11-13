@@ -1,14 +1,20 @@
-import type { SetupItem, SetupItemKey, VenueSetup } from "@hagz/contracts";
+import {
+  MINIMUM_VENUE_PHOTOS,
+  type SetupItem,
+  type SetupItemKey,
+  type VenueSetup,
+} from "@hagz/contracts";
 
 // The setup checklist (docs/onboarding.md, step 2), computed from the venue's data on every request
-// and never stored, so it can't disagree with the venue. Items join as their features ship: photos
-// (2.3), grounds and schedules (2.4) and layout (2.5) add their own facts and rules here.
+// and never stored, so it can't disagree with the venue. Items join as their features ship: grounds
+// and schedules (2.4) and layout (2.5) add their own facts and rules here.
 
 export interface SetupFacts {
   status: VenueSetup["venue"]["status"];
   phone: string | null;
   translations: { name: string; description: string | null; address: string | null }[];
   hasPin: boolean;
+  readyPhotos: number;
   cancellationPolicy: string | null;
   amenityCount: number;
   taxNumber: string | null;
@@ -29,6 +35,7 @@ const settingsDone = (facts: SetupFacts) => facts.cancellationPolicy !== null;
 const RULES: { key: SetupItemKey; required: boolean; done: (facts: SetupFacts) => boolean }[] = [
   { key: "DETAILS", required: true, done: detailsDone },
   { key: "LOCATION", required: true, done: (facts) => facts.hasPin },
+  { key: "PHOTOS", required: true, done: (facts) => facts.readyPhotos >= MINIMUM_VENUE_PHOTOS },
   { key: "SETTINGS", required: true, done: settingsDone },
   { key: "AMENITIES", required: false, done: (facts) => facts.amenityCount > 0 },
   { key: "TAX_NUMBER", required: false, done: (facts) => filled(facts.taxNumber) },

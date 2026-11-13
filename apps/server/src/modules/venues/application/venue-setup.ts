@@ -172,7 +172,7 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
       taxNumber: true,
       translations: { select: { language: true, name: true, description: true, address: true } },
       settings: { select: { cancellationPolicy: true } },
-      _count: { select: { amenities: true } },
+      _count: { select: { amenities: true, media: { where: { type: "IMAGE", status: "READY" } } } },
     },
   });
   if (!venue) throw venueNotFound();
@@ -191,6 +191,7 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
       phone: venue.phone,
       translations: venue.translations,
       hasPin: pin?.hasPin ?? false,
+      readyPhotos: venue._count.media,
       cancellationPolicy: venue.settings?.cancellationPolicy ?? null,
       amenityCount: venue._count.amenities,
       taxNumber: venue.taxNumber,
