@@ -25,4 +25,37 @@ export const queries = {
     queryKey: ["staff", "invitations"],
     queryFn: async () => (await fetched(api.GET("/v1/staff/invitations"))).data,
   }),
+  // A venue's setup checklist. Refetched when an item is finished, so the progress ring and the
+  // "Send for review" button follow the work.
+  setup: (venueId: string) =>
+    queryOptions({
+      queryKey: ["staff", "venues", venueId, "setup"],
+      queryFn: () =>
+        fetched(api.GET("/v1/staff/venues/{venueId}/setup", { params: { path: { venueId } } })),
+    }),
+};
+
+// Reference data: the same for everyone and changed by admins only, so it's fetched once and kept
+// for the session rather than refetched behind every screen that needs it.
+const REFERENCE = { staleTime: Infinity, gcTime: Infinity } as const;
+
+export const reference = {
+  marketplaces: queryOptions({
+    queryKey: ["marketplaces"],
+    queryFn: async () => (await fetched(api.GET("/v1/marketplaces"))).data,
+    ...REFERENCE,
+  }),
+  // A marketplace's areas, flat (build the tree from parentId). Used to file a new venue under the
+  // area its pin falls in (lib/areas.ts).
+  locations: (code: string) =>
+    queryOptions({
+      queryKey: ["marketplaces", code, "locations"],
+      queryFn: async () =>
+        (
+          await fetched(
+            api.GET("/v1/marketplaces/{code}/locations", { params: { path: { code } } }),
+          )
+        ).data,
+      ...REFERENCE,
+    }),
 };
