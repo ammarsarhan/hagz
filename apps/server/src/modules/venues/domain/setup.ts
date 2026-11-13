@@ -69,7 +69,7 @@ const RULES: Rule[] = [
   { key: "TAX_NUMBER", required: false, done: (facts) => filled(facts.taxNumber) },
 ];
 
-export const setupChecklist = (facts: SetupFacts): Omit<VenueSetup, "venue"> => {
+export const setupChecklist = (facts: SetupFacts): Omit<VenueSetup, "venue" | "rejection"> => {
   const items: SetupItem[] = RULES.filter((rule) => rule.applies?.(facts) ?? true).map(
     ({ key, required, done, after }) => {
       if (after && !after.done(facts))
