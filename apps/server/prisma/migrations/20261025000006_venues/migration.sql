@@ -44,8 +44,8 @@ CREATE TABLE "VenueTranslation" (
     "venueId" UUID NOT NULL,
     "language" "Language" NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "address" TEXT NOT NULL,
+    "description" TEXT,
+    "address" TEXT,
 
     CONSTRAINT "VenueTranslation_pkey" PRIMARY KEY ("venueId","language")
 );
@@ -87,7 +87,7 @@ CREATE TABLE "VenueSettings" (
     "paymentMode" "PaymentMode" NOT NULL DEFAULT 'MANUAL',
     "depositPercent" INTEGER,
     "paymentWindow" INTEGER,
-    "cancellationPolicy" "CancellationPolicy" NOT NULL DEFAULT 'MODERATE',
+    "cancellationPolicy" "CancellationPolicy",
     "cancellationTiers" JSONB,
     "loyaltyStamps" INTEGER,
     "loyaltyWindow" INTEGER,
@@ -127,6 +127,7 @@ CREATE TABLE "VenueMedia" (
     "key" TEXT NOT NULL,
     "type" "MediaType" NOT NULL,
     "contentType" TEXT NOT NULL,
+    "size" INTEGER NOT NULL,
     "status" "MediaStatus" NOT NULL DEFAULT 'PENDING',
     "position" INTEGER NOT NULL,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -338,7 +339,7 @@ ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_window_check" CHECK ("
 ALTER TABLE "Venue" ADD CONSTRAINT "Venue_commission_check" CHECK ("commissionRate" BETWEEN 0 AND 10000);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_cancellation_check" CHECK ((("cancellationPolicy" = 'CUSTOM') = ("cancellationTiers" IS NOT NULL)) AND ("cancellationTiers" IS NULL OR jsonb_typeof("cancellationTiers") = 'array'));
+ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_cancellation_check" CHECK ((("cancellationPolicy" = 'CUSTOM') IS TRUE) = ("cancellationTiers" IS NOT NULL) AND ("cancellationTiers" IS NULL OR jsonb_typeof("cancellationTiers") = 'array'));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_loyalty_check" CHECK ((("loyaltyStamps" IS NULL) = ("loyaltyWindow" IS NULL)) AND ("loyaltyStamps" IS NULL OR ("loyaltyStamps" >= 2 AND "loyaltyWindow" > 0)));
@@ -351,3 +352,6 @@ ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_fill_check" CHECK ("la
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueCustomer" ADD CONSTRAINT "VenueCustomer_counts_check" CHECK ("bookingCount" >= 0 AND "noShowCount" >= 0);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "VenueMedia" ADD CONSTRAINT "VenueMedia_size_check" CHECK ("size" > 0);

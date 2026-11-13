@@ -31,6 +31,10 @@ export const sessionEnded = () =>
 export const venueNotFound = () =>
   new AppError({ code: "VENUE_NOT_FOUND", status: 404, detail: "There's no such venue." });
 
+// An action the venue's status doesn't allow yet (docs/onboarding.md, "Lifecycle").
+export const venueStatusConflict = (venueStatus: string, detail: string) =>
+  new AppError({ code: "VENUE_STATUS_CONFLICT", status: 409, detail, extensions: { venueStatus } });
+
 export const missingPermission = (area: PermissionArea, level: PermissionLevel) =>
   new AppError({
     code: "PERMISSION_DENIED",

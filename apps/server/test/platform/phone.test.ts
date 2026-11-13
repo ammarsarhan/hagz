@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMobileNumber, requireMobileNumber } from "@/platform/phone/phone";
+import { parseMobileNumber, requireMobileNumber, requirePhoneNumber } from "@/platform/phone/phone";
 
 describe("parseMobileNumber", () => {
   it.each([
@@ -36,6 +36,22 @@ describe("requireMobileNumber", () => {
   it("throws a 400 the app can show", () => {
     expect(() => requireMobileNumber("+20223456789")).toThrow(
       expect.objectContaining({ status: 400, code: "INVALID_PHONE_NUMBER" }),
+    );
+  });
+});
+
+describe("venue phone numbers", () => {
+  it.each([
+    ["+20 2 2358 0000", "+20223580000"],
+    ["+20 100 123 4567", "+201001234567"],
+    ["+971 4 330 0000", "+97143300000"],
+  ])("accepts %s, landlines included", (input, e164) => {
+    expect(requirePhoneNumber(input)).toBe(e164);
+  });
+
+  it.each(["0100 123 4567", "+20 12", "call us", ""])("refuses %j", (input) => {
+    expect(() => requirePhoneNumber(input)).toThrow(
+      expect.objectContaining({ code: "INVALID_PHONE_NUMBER" }),
     );
   });
 });
