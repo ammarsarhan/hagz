@@ -271,6 +271,22 @@ const messages = {
     en: "Something on the layout is out of place. Check it and try again.",
     ar: "يوجد عنصر في غير مكانه على المخطط. راجعه وحاول مرة أخرى.",
   },
+  OWNER_ONLY: {
+    en: "Only the venue's owner can do this.",
+    ar: "مالك المكان فقط يمكنه القيام بذلك.",
+  },
+  SETUP_INCOMPLETE: {
+    en: "Finish the required setup steps before sending your venue for review.",
+    ar: "أكمل خطوات الإعداد المطلوبة قبل إرسال المكان للمراجعة.",
+  },
+  GO_LIVE_BLOCKED: {
+    en: "The venue needs its listing in Arabic and English and an open ground to go live.",
+    ar: "يحتاج المكان إلى بياناته بالعربية والإنجليزية وملعب مفتوح ليبدأ العمل.",
+  },
+  NO_ACTIVE_GROUND: {
+    en: "Reopen a ground, or add one, before reopening the venue.",
+    ar: "أعد فتح ملعب أو أضف ملعبًا قبل إعادة فتح المكان.",
+  },
   AMENITY_NOT_AVAILABLE: {
     en: "Some of these amenities aren't available anymore.",
     ar: "بعض هذه المرافق لم تعد متاحة.",
