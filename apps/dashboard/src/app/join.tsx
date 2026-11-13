@@ -7,6 +7,7 @@ import { Screen } from "@/components/screen";
 import { StartOptions } from "@/components/start-options";
 import { Title } from "@/components/title";
 import { useInvitationSheet } from "@/components/use-invitation-sheet";
+import { useOpenInvitations } from "@/components/invitation-card";
 import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
 
@@ -18,7 +19,7 @@ export default function Join() {
   const received = useQuery(queries.invitations);
   const phone = me.data?.phone.replace(/^\+20/, "");
   const invitation = useInvitationSheet({ phone, takeLinks: false, onJoined: () => router.back() });
-  const invitations = received.data;
+  const invitations = useOpenInvitations(received.data);
 
   return (
     <Screen>

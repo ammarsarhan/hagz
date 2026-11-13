@@ -7,18 +7,26 @@ import type { components } from "@hagz/api";
 import { DRAFT_CARD_ART, DRAFT_CARD_ART_SIZE } from "@/assets/map-art";
 import { queries } from "@/lib/queries";
 import { isRTL } from "@/lib/language";
+import { useNow } from "@/lib/use-now";
 import { Text } from "./text";
 
 type StaffVenue = components["schemas"]["StaffVenue"];
 
-// How long ago the venue last changed, in the largest whole unit: under a minute is "just now".
-// Worked out when the card renders, like an invitation's time left.
-const sinceLastActivity = (lastActivityAt: string, now = Date.now()) => {
-  const minutes = Math.max(0, Math.floor((now - new Date(lastActivityAt).getTime()) / 60_000));
-  if (minutes < 1) return { unit: "now" } as const;
-  if (minutes < 60) return { unit: "minutes", count: minutes } as const;
-  if (minutes < 24 * 60) return { unit: "hours", count: Math.floor(minutes / 60) } as const;
-  return { unit: "days", count: Math.floor(minutes / (24 * 60)) } as const;
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+// How long ago the venue last changed, in the largest whole unit (under a minute is "just now"), and
+// when that will next read differently: the next whole minute, hour or day since the change.
+const sinceLastActivity = (lastActivityAt: string, now: number) => {
+  const at = new Date(lastActivityAt).getTime();
+  const elapsed = Math.max(0, now - at);
+  const step = elapsed < HOUR ? MINUTE : elapsed < DAY ? HOUR : DAY;
+  const count = Math.floor(elapsed / step);
+  const changesAt = at + (count + 1) * step;
+  if (elapsed < MINUTE) return { unit: "now", changesAt } as const;
+  const unit = step === MINUTE ? "minutes" : step === HOUR ? "hours" : "days";
+  return { unit, count, changesAt } as const;
 };
 
 // The venue being set up, on first run (Figma "First run · draft card · Black, progress as top
@@ -37,7 +45,9 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
   const total = required?.total ?? 0;
   const status = venue.status === "DRAFT" ? "settingUp" : "inReview";
   const [updatedWrapped, setUpdatedWrapped] = useState(false);
-  const since = sinceLastActivity(venue.lastActivityAt);
+  // Redrawn as the time passes, so it doesn't stay on "30 minutes ago" while first run is left open.
+  const now = useNow((time) => sinceLastActivity(venue.lastActivityAt, time).changesAt);
+  const since = sinceLastActivity(venue.lastActivityAt, now);
   const lastUpdated =
     since.unit === "now"
       ? t("screens.firstRun.draft.updatedNow")

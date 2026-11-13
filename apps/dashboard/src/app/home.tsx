@@ -11,6 +11,7 @@ import { Screen } from "@/components/screen";
 import { StartOptions } from "@/components/start-options";
 import { Title } from "@/components/title";
 import { useInvitationSheet } from "@/components/use-invitation-sheet";
+import { useOpenInvitations } from "@/components/invitation-card";
 import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
@@ -29,12 +30,13 @@ export default function Home() {
   const me = useQuery(queries.me);
   const venues = useQuery(queries.venues);
   const received = useQuery(queries.invitations);
+  const invitations = useOpenInvitations(received.data);
   const reads = [me, venues, received];
   const failure = reads.find((read) => read.isError)?.error;
   const failed = failure !== undefined && failure !== null;
   const data =
-    me.data && venues.data && received.data
-      ? { me: me.data, venues: venues.data, invitations: received.data }
+    me.data && venues.data && invitations
+      ? { me: me.data, venues: venues.data, invitations }
       : null;
   // Only a venue that's running sends them to the tabs. One still being set up shows here, as the
   // card that carries on where they left off (docs/flows.md, "draft venues").
@@ -88,7 +90,6 @@ export default function Home() {
     />
   );
 
-  const { invitations } = data;
   const phone = data.me.phone.replace(/^\+20/, "");
 
   return (
@@ -96,8 +97,8 @@ export default function Home() {
       {topBar}
       <Title
         subtitle={
-          invitations.length > 0
-            ? t("screens.firstRun.invitedSubtitle", { count: invitations.length })
+          data.invitations.length > 0
+            ? t("screens.firstRun.invitedSubtitle", { count: data.invitations.length })
             : draft
               ? t("screens.firstRun.draftSubtitle")
               : t("screens.firstRun.emptySubtitle")
@@ -106,7 +107,7 @@ export default function Home() {
         {t("screens.firstRun.welcome", { name: firstName })}
       </Title>
       <StartOptions
-        invitations={invitations}
+        invitations={data.invitations}
         phone={phone}
         draft={draft}
         onOpen={invitation.open}
