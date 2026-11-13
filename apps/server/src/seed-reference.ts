@@ -106,8 +106,21 @@ const names = (en: string, ar: string) => [
 
 const counts = { marketplace: 0, locations: 0, amenities: 0 };
 
+// Egypt with a margin (the Halaib triangle to the Mediterranean, the Libyan border to the Red Sea):
+// a pin outside it is in the wrong country, not just the wrong street.
+const EGYPT_BOUNDS = {
+  minimumLatitude: 21.5,
+  maximumLatitude: 32,
+  minimumLongitude: 24.5,
+  maximumLongitude: 37,
+};
+
 const ensureMarketplace = async () => {
   const existing = await prisma.marketplace.findUnique({ where: { code: "EG" } });
+  // Databases seeded before the bounding box existed get it on the next run.
+  if (existing?.minimumLatitude === null) {
+    return prisma.marketplace.update({ where: { id: existing.id }, data: EGYPT_BOUNDS });
+  }
   if (existing) return existing;
   counts.marketplace++;
   return prisma.marketplace.create({
@@ -118,6 +131,7 @@ const ensureMarketplace = async () => {
       timezone: "Africa/Cairo",
       taxRate: 1400,
       isActive: true,
+      ...EGYPT_BOUNDS,
       translations: { create: names("Egypt", "مصر") },
     },
   });
