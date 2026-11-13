@@ -1409,6 +1409,509 @@
           "locationId"
         ]
       },
+      "StaffVenueDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VenueStatus"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "taxNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "coordinates": {
+                "$ref": "#/components/schemas/Coordinates"
+              },
+              "placeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "coordinates",
+              "placeId"
+            ]
+          },
+          "translations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueTranslation"
+            }
+          },
+          "settings": {
+            "$ref": "#/components/schemas/VenueSettings"
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueAmenity"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "status",
+          "phone",
+          "taxNumber",
+          "location",
+          "translations",
+          "settings",
+          "amenities"
+        ]
+      },
+      "Coordinates": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "description": "A point in degrees (WGS 84)."
+      },
+      "VenueTranslation": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 600
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "address",
+          "language"
+        ]
+      },
+      "Language": {
+        "type": "string",
+        "enum": [
+          "EN",
+          "AR"
+        ]
+      },
+      "VenueSettings": {
+        "type": "object",
+        "properties": {
+          "autoConfirm": {
+            "type": "boolean"
+          },
+          "minimumNotice": {
+            "$ref": "#/components/schemas/MinimumNotice"
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "depositPercent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 99
+          },
+          "cancellationPolicy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FLEXIBLE",
+              "MODERATE",
+              "STRICT",
+              "CUSTOM",
+              null
+            ],
+            "description": "Null until the owner chooses one."
+          },
+          "cancellationTiers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CancellationTier"
+            },
+            "description": "The policy's tiers: the preset's, or the owner's own for `CUSTOM`."
+          },
+          "loyalty": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "stamps": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 20,
+                "description": "Bookings per free one."
+              },
+              "windowDays": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 365,
+                "description": "Days the stamps last."
+              }
+            },
+            "required": [
+              "stamps",
+              "windowDays"
+            ],
+            "description": "Null: no loyalty rewards."
+          }
+        },
+        "required": [
+          "autoConfirm",
+          "minimumNotice",
+          "paymentMode",
+          "depositPercent",
+          "cancellationPolicy",
+          "cancellationTiers",
+          "loyalty"
+        ]
+      },
+      "MinimumNotice": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [
+              0
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              30
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              60
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              120
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              180
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              360
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              720
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              1440
+            ]
+          }
+        ],
+        "description": "Minutes before kick-off that booking closes."
+      },
+      "PaymentMode": {
+        "type": "string",
+        "enum": [
+          "MANUAL",
+          "DEPOSIT",
+          "PLATFORM"
+        ],
+        "description": "`MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online."
+      },
+      "CancellationTier": {
+        "type": "object",
+        "properties": {
+          "hours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 336
+          },
+          "refundPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "hours",
+          "refundPercent"
+        ]
+      },
+      "VenueAmenity": {
+        "type": "object",
+        "properties": {
+          "optionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "price": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Minor units; null when free."
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/AmenityPricing"
+          }
+        },
+        "required": [
+          "optionId",
+          "price",
+          "pricing"
+        ]
+      },
+      "AmenityPricing": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "PER_HOUR",
+          "PER_BOOKING",
+          null
+        ]
+      },
+      "UpdateVenue": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 30,
+            "description": "Shown to players. International format; landlines are fine."
+          },
+          "taxNumber": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9-]{5,20}$",
+            "description": "Set only if the venue charges VAT."
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "coordinates": {
+                "$ref": "#/components/schemas/Coordinates"
+              },
+              "placeId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "locationId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "coordinates",
+              "placeId",
+              "locationId"
+            ],
+            "description": "A new pin and area, in the same marketplace."
+          }
+        }
+      },
+      "VenueTranslationInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 600
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "address"
+        ]
+      },
+      "UpdateVenueSettings": {
+        "type": "object",
+        "properties": {
+          "autoConfirm": {
+            "type": "boolean"
+          },
+          "minimumNotice": {
+            "$ref": "#/components/schemas/MinimumNotice"
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "depositPercent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 99
+          },
+          "cancellationPolicy": {
+            "$ref": "#/components/schemas/CancellationPolicy"
+          },
+          "cancellationTiers": {
+            "$ref": "#/components/schemas/CancellationTiers"
+          },
+          "loyalty": {
+            "$ref": "#/components/schemas/Loyalty"
+          }
+        }
+      },
+      "CancellationPolicy": {
+        "type": "string",
+        "enum": [
+          "FLEXIBLE",
+          "MODERATE",
+          "STRICT",
+          "CUSTOM"
+        ]
+      },
+      "CancellationTiers": {
+        "type": [
+          "array",
+          "null"
+        ],
+        "items": {
+          "$ref": "#/components/schemas/CancellationTier"
+        },
+        "minItems": 1,
+        "maxItems": 5
+      },
+      "Loyalty": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "stamps": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 20,
+            "description": "Bookings per free one."
+          },
+          "windowDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Days the stamps last."
+          }
+        },
+        "required": [
+          "stamps",
+          "windowDays"
+        ]
+      },
+      "SetVenueAmenities": {
+        "type": "object",
+        "properties": {
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueAmenity"
+            },
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "amenities"
+        ]
+      },
       "VenueMember": {
         "type": "object",
         "properties": {
@@ -5673,6 +6176,497 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}": {
+      "get": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Everything the setup and edit screens show",
+        "description": "Needs `venue: view`.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The venue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenueDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Change the phone, tax number or location",
+        "description": "Needs `venue: manage`. Only what's sent changes. A new area must be in the venue's marketplace, with the pin inside it.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVenue"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The venue after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenueDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER or VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/translations/{language}": {
+      "put": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Set the name, description and address in one language",
+        "description": "Needs `venue: manage`. The app writes the owner's language; Hagz adds the other one before the venue goes live.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Language"
+            },
+            "required": true,
+            "name": "language",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VenueTranslationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The venue after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenueDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/settings": {
+      "patch": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Change how bookings are confirmed, paid for and refunded",
+        "description": "Needs `venue: manage`. Only what's sent changes; the result is checked as a whole. `DEPOSIT` needs `depositPercent` and `CUSTOM` needs `cancellationTiers`; switching away clears them.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVenueSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The venue after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenueDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_SETTINGS (with the `field`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/amenities": {
+      "put": {
+        "tags": [
+          "Venue staff"
+        ],
+        "summary": "Set which amenities the venue has, and their prices",
+        "description": "Needs `venue: manage`. Replaces the whole set. Options come from the venue's marketplace; a retired one can be kept but not newly picked.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetVenueAmenities"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The venue after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffVenueDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "AMENITY_NOT_AVAILABLE (with the `optionIds`)",
             "content": {
               "application/problem+json": {
                 "schema": {

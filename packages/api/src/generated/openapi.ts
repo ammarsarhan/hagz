@@ -3460,6 +3460,446 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything the setup and edit screens show
+         * @description Needs `venue: view`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the phone, tax number or location
+         * @description Needs `venue: manage`. Only what's sent changes. A new area must be in the venue's marketplace, with the pin inside it.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateVenue"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/translations/{language}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the name, description and address in one language
+         * @description Needs `venue: manage`. The app writes the owner's language; Hagz adds the other one before the venue goes live.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    language: components["schemas"]["Language"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VenueTranslationInput"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change how bookings are confirmed, paid for and refunded
+         * @description Needs `venue: manage`. Only what's sent changes; the result is checked as a whole. `DEPOSIT` needs `depositPercent` and `CUSTOM` needs `cancellationTiers`; switching away clears them.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateVenueSettings"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_SETTINGS (with the `field`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set which amenities the venue has, and their prices
+         * @description Needs `venue: manage`. Replaces the whole set. Options come from the venue's marketplace; a retired one can be kept but not newly picked.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetVenueAmenities"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AMENITY_NOT_AVAILABLE (with the `optionIds`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/members": {
         parameters: {
             query?: never;
@@ -5849,6 +6289,115 @@ export interface components {
              * @description The area the owner confirmed. Its marketplace becomes the venue's.
              */
             locationId: string;
+        };
+        StaffVenueDetail: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            status: components["schemas"]["VenueStatus"];
+            phone: string | null;
+            taxNumber: string | null;
+            location: {
+                /** Format: uuid */
+                id: string;
+                coordinates: components["schemas"]["Coordinates"];
+                placeId: string | null;
+            };
+            translations: components["schemas"]["VenueTranslation"][];
+            settings: components["schemas"]["VenueSettings"];
+            amenities: components["schemas"]["VenueAmenity"][];
+        };
+        /** @description A point in degrees (WGS 84). */
+        Coordinates: {
+            latitude: number;
+            longitude: number;
+        } | null;
+        VenueTranslation: {
+            name: string;
+            description: string | null;
+            address: string | null;
+            language: components["schemas"]["Language"];
+        };
+        /** @enum {string} */
+        Language: "EN" | "AR";
+        VenueSettings: {
+            autoConfirm: boolean;
+            minimumNotice: components["schemas"]["MinimumNotice"];
+            paymentMode: components["schemas"]["PaymentMode"];
+            depositPercent: number | null;
+            /**
+             * @description Null until the owner chooses one.
+             * @enum {string|null}
+             */
+            cancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM" | null;
+            /** @description The policy's tiers: the preset's, or the owner's own for `CUSTOM`. */
+            cancellationTiers: components["schemas"]["CancellationTier"][] | null;
+            /** @description Null: no loyalty rewards. */
+            loyalty: {
+                /** @description Bookings per free one. */
+                stamps: number;
+                /** @description Days the stamps last. */
+                windowDays: number;
+            } | null;
+        };
+        /** @description Minutes before kick-off that booking closes. */
+        MinimumNotice: 0 | 30 | 60 | 120 | 180 | 360 | 720 | 1440;
+        /**
+         * @description `MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online.
+         * @enum {string}
+         */
+        PaymentMode: "MANUAL" | "DEPOSIT" | "PLATFORM";
+        CancellationTier: {
+            hours: number;
+            refundPercent: number;
+        };
+        VenueAmenity: {
+            /** Format: uuid */
+            optionId: string;
+            /** @description Minor units; null when free. */
+            price: number | null;
+            pricing: components["schemas"]["AmenityPricing"];
+        };
+        /** @enum {string|null} */
+        AmenityPricing: "PER_HOUR" | "PER_BOOKING" | null;
+        UpdateVenue: {
+            /** @description Shown to players. International format; landlines are fine. */
+            phone?: string | null;
+            /** @description Set only if the venue charges VAT. */
+            taxNumber?: string | null;
+            /** @description A new pin and area, in the same marketplace. */
+            location?: {
+                coordinates: components["schemas"]["Coordinates"];
+                placeId: string | null;
+                /** Format: uuid */
+                locationId: string;
+            };
+        };
+        VenueTranslationInput: {
+            name: string;
+            description: string | null;
+            address: string | null;
+        };
+        UpdateVenueSettings: {
+            autoConfirm?: boolean;
+            minimumNotice?: components["schemas"]["MinimumNotice"];
+            paymentMode?: components["schemas"]["PaymentMode"];
+            depositPercent?: number | null;
+            cancellationPolicy?: components["schemas"]["CancellationPolicy"];
+            cancellationTiers?: components["schemas"]["CancellationTiers"];
+            loyalty?: components["schemas"]["Loyalty"];
+        };
+        /** @enum {string} */
+        CancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM";
+        CancellationTiers: components["schemas"]["CancellationTier"][] | null;
+        Loyalty: {
+            /** @description Bookings per free one. */
+            stamps: number;
+            /** @description Days the stamps last. */
+            windowDays: number;
+        } | null;
+        SetVenueAmenities: {
+            amenities: components["schemas"]["VenueAmenity"][];
         };
         VenueMember: {
             /** Format: uuid */
