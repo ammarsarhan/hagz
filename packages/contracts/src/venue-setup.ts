@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Rejection } from "./review";
 import { VenueStatus } from "./venues";
 
 // Creating a venue and its setup checklist (docs/onboarding.md, steps 1 and 2).
@@ -72,6 +73,9 @@ export const VenueSetup = z
       .object({ done: z.int().min(0), total: z.int().min(0) })
       .meta({ description: "Counts of required items, for the progress ring and the draft card." }),
     canSubmit: z.boolean().meta({ description: "A draft with every required item done." }),
+    rejection: Rejection.nullable().meta({
+      description: "Why the last review sent this draft back; null otherwise.",
+    }),
   })
   .meta({ id: "VenueSetup" });
 
