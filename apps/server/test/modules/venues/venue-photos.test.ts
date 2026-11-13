@@ -111,6 +111,22 @@ describe("uploading a photo", () => {
     expect(await store.head(key)).toBeNull();
   });
 
+  it("throws away a file of another size than declared", async () => {
+    const { owner, path } = await aDraft();
+    const { photo } = PhotoUpload.parse(
+      await (await call(owner.id, "POST", `${path}/photos`, JPEG)).json(),
+    );
+    const key = await keyOf(photo.id);
+    store.put(key, new Uint8Array([1, 2, 3, 4, 5, 6]), "image/jpeg");
+    const res = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`);
+    expect(res.status).toBe(422);
+    expect(await problem(res)).toMatchObject({ code: "UPLOAD_MISMATCH" });
+    expect(await store.head(key)).toBeNull();
+    expect((await prisma.venueMedia.findUniqueOrThrow({ where: { id: photo.id } })).status).toBe(
+      "PENDING",
+    );
+  });
+
   it("takes JPEG, PNG and WebP up to 10 MB", async () => {
     const { owner, path } = await aDraft();
     for (const body of [
@@ -133,6 +149,7 @@ describe("uploading a photo", () => {
         key: `venues/${venueId}/${position}.jpg`,
         type: "IMAGE" as const,
         contentType: "image/jpeg",
+        size: 4,
         status: "READY" as const,
         position,
       })),

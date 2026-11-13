@@ -102,6 +102,7 @@ export const requestPhotoUpload = async (
         key: `venues/${actor.venueId}/${randomUUID()}.${EXTENSIONS[input.contentType]}`,
         type: "IMAGE",
         contentType: input.contentType,
+        size: input.size,
         position: last ? last.position + 1 : 0,
       },
       select: { id: true, key: true, status: true, position: true },
@@ -114,19 +115,22 @@ export const requestPhotoUpload = async (
   };
 };
 
-// Checks the file that arrived is the one declared, so a signed upload can't be swapped for
-// something else (the store enforces the signed headers too; this covers stores that don't).
+// Checks the file that arrived is the one declared, its type and its size, so an upload can't be
+// swapped for something else.
 export const confirmPhoto = async (actor: VenueAccess, photoId: string): Promise<VenuePhoto> => {
   const media = await prisma.venueMedia.findFirst({
     where: { id: photoId, venueId: actor.venueId, type: "IMAGE" },
-    select: { id: true, key: true, status: true, position: true, contentType: true },
+    select: { id: true, key: true, status: true, position: true, contentType: true, size: true },
   });
   if (!media) throw photoNotFound();
   if (media.status === "READY") return present(media);
 
   const stored = await storage.head(media.key);
   if (!stored) throw uploadMissing();
-  if (stored.contentType !== null && stored.contentType !== media.contentType) {
+  // The bucket refuses a different type or size against the signed headers; the local disk store
+  // in development has no signature, so this check is what holds there.
+  const otherType = stored.contentType !== null && stored.contentType !== media.contentType;
+  if (otherType || stored.size !== media.size) {
     await storage.remove(media.key);
     throw uploadMismatch();
   }
