@@ -13,8 +13,33 @@ Agreed on 2026-10-27, on top of the product and schema decisions already made:
 - **Discovery is Postgres only:** PostGIS for distance, `pg_trgm` and full-text search for names, indexed `GroundSlot` for availability. No separate search engine, so availability is always exact.
 - **Every v1 feature ships before launch**, loyalty, reviews and discounts included.
 - **Hosting stays platform-agnostic until Phase 9** (added on 2026-11-08). Staging is on Railway and a VPS is being considered for production. The app is written against the host contract in [deployment.md](deployment.md), and nothing new depends on Railway.
-- **The Expo apps run as development builds, made with EAS Build** (changed on 2026-11-13 from Expo Go). Each app's `eas.json` has `development` (the dev client, against a local Metro), `preview` (staging) and `production` profiles. Native modules outside Expo Go are fair game: Google Maps on both platforms now, and a native Paymob SDK is an option for 5.1. A new native module or config plugin means a new development build; JavaScript changes don't.
+- **The Expo apps run as development builds, made with EAS Build** (changed on 2026-11-13 from Expo Go). Each app's `eas.json` has `development` (the dev client, against a local Metro), `preview` (staging) and `production` profiles. Native modules outside Expo Go are fair game: Google Maps on both platforms now, and a native Paymob SDK is an option for 5.1. A new native module or config plugin means a new development build; JavaScript changes don't. **EAS builds are capped at 14 a month** (added on 2026-11-13), so native changes are planned and batched: see [Native builds](#native-builds).
 - **Payments: Paymob, through its styled embedded card fields** (Pixel or a native SDK). The card number goes from the device to Paymob and never reaches Hagz, so PCI scope stays at SAQ A. Hagz designs the checkout; Paymob owns the card inputs.
+
+## Native builds
+
+Added on 2026-11-13. The EAS plan allows **14 builds a month**, and each platform counts as one build. A development build holds only the native layer; screens, styles, pure-JS packages and `EXPO_PUBLIC_*` values reach it from Metro. So a build is needed only when the **native fingerprint** changes: a package with native code added, removed or upgraded; an Expo SDK or React Native bump; a config plugin or its options (permission text, splash, locales); native fields in `app.config.ts` (bundle id, scheme, associated domains, intent filters); icons and splash images; the EAS variables `app.config.ts` reads (the Maps keys); a patch that touches native files.
+
+### Rules
+
+- **Build locally first. EAS is the fallback.** iOS is built locally in Xcode (free Apple ID) and never uses EAS for development. Android is built locally (`expo run:android`, or `eas build --local`) once Android Studio is set up; until then, Android development builds are the only EAS builds. EAS is for `preview` and `production` builds, and for anything that can't be built locally.
+- **One native baseline per app, installed up front.** Every native module the plan already needs goes into each app in one batch (below), with its permission text, so the phases after it are JavaScript only. A module that's in the build but not used yet costs nothing.
+- **The native layer is frozen between baselines.** No Expo SDK or React Native upgrades until Phase 10 unless a bug forces one, and then they're batched with any other native change that's waiting. Patch bumps of `expo-*` packages wait too.
+- **Prefer a JavaScript option** when one is good enough (React Native's own `Share`, `Linking`, JS-only libraries). A new native dependency mid-phase needs a reason in its PR, and goes to the next scheduled build instead of triggering its own.
+- **Every PR says whether it needs a build.** Each app keeps the fingerprint of its current build in `apps/<app>/native-fingerprint.json` (from `npx @expo/fingerprint`), and CI flags a PR whose fingerprint doesn't match. A PR that changes it says so in its description and is merged together with the other native changes waiting.
+- **Keep two builds in reserve** each month for mistakes (a wrong key, a failed build, a plugin option missed).
+
+### Baselines
+
+| Build | When | Native contents |
+|---|---|---|
+| Dashboard baseline | Before the rest of Phase 2's UI (photos, layout editor) | Already in: Maps, location, localization, secure store, SVG, splash. Adds: `expo-image-picker` (photo library and camera permission text), `expo-image-manipulator` (resizing before upload, [onboarding.md](onboarding.md)), `expo-image`, `react-native-gesture-handler` and `react-native-reanimated` (layout editor, bottom sheets, calendar gestures in Phase 4), Rive (onboarding motion), `expo-haptics`, `expo-clipboard` |
+| Customer baseline | At the start of 1.U2 | The same set minus Rive, plus Maps and location (Phase 3 near me), with the customer app's own permission text |
+| Payments | After the 5.1 spike decides | `react-native-webview` for Pixel, or the native Paymob SDK; Apple Pay and Google Pay entitlements. One build per app that takes payments |
+| Push | Phase 7.1 | `expo-notifications` with FCM (`google-services.json`) and APNs credentials. Both apps. Push on iOS needs the paid Apple developer account |
+| Launch | Phase 9 and 10 | Sentry, device attestation (Play Integrity, App Attest), final icons and splash screens, and the SDK upgrade if one is due; then `preview` and `production` builds for both apps |
+
+Roughly, a month with a baseline uses 2 to 4 EAS builds (Android for one or both apps, plus a retry), and a month without one uses none. If a phase needs a native module that isn't listed here, it's added to this table before the work starts.
 
 ## Phase 0: Platform ✅
 Errors, logging, request ids, timeouts, health and shutdown, transactions, `Clock`, idempotency columns, test harness, OpenAPI docs, CI. Merged in #58 and #59.
