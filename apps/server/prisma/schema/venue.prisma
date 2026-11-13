@@ -48,13 +48,14 @@ model Venue {
   @@index([marketplaceId, averageRating])
 }
 
-// At least one language (API).
+// At least one language (API). A draft starts with the name only; description and address are
+// setup checklist items, required before it's submitted.
 model VenueTranslation {
   venueId     String   @db.Uuid
   language    Language
   name        String
-  description String
-  address     String
+  description String?
+  address     String?
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
@@ -112,7 +113,7 @@ model VenueSettings {
   paymentMode        PaymentMode        @default(MANUAL)
   depositPercent     Int? // Share paid online.
   paymentWindow      Int? // Minutes a HELD booking waits for payment; null = platform default.
-  cancellationPolicy CancellationPolicy @default(MODERATE)
+  cancellationPolicy CancellationPolicy? // Null until the owner picks one: a setup checklist item.
   cancellationTiers  Json? // CUSTOM only, e.g. [{ "hours": 24, "refundPercent": 100 }].
   loyaltyStamps      Int? // Bookings per free one; null = off.
   loyaltyWindow      Int? // Days.
@@ -158,6 +159,7 @@ model VenueMedia {
   key         String      @unique // Object storage key.
   type        MediaType
   contentType String
+  size        Int // Bytes, as declared when the upload was asked for; checked on confirm. CHECK: > 0.
   status      MediaStatus @default(PENDING)
   position    Int
   createdAt   DateTime    @default(now()) @db.Timestamptz

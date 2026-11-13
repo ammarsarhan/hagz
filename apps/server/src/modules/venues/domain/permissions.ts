@@ -13,6 +13,18 @@ const everywhere = (level: PermissionLevel) =>
 export const NO_PERMISSIONS = everywhere("none");
 export const ALL_PERMISSIONS = everywhere("manage");
 
+// What a new venue's invitations offer until the owner changes it (VenueSettings.defaultPermissions):
+// front-desk work (the calendar, customers, taking cash) without money, staff or the listing.
+export const DEFAULT_INVITATION_PERMISSIONS: StaffPermissions = {
+  bookings: "manage",
+  customers: "manage",
+  schedule: "view",
+  payments: "manage",
+  finance: "none",
+  staff: "none",
+  venue: "view",
+};
+
 // Stored permissions are plain JSON. Anything that doesn't parse grants nothing.
 export const parsePermissions = (stored: unknown): StaffPermissions => {
   const parsed = StaffPermissions.safeParse(stored);

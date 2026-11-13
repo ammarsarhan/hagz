@@ -1,3 +1,4 @@
+import { parsePhoneNumberFromString as parsePhoneNumberWithMetadata } from "libphonenumber-js/max";
 import { parsePhoneNumberFromString } from "libphonenumber-js/mobile";
 import { AppError } from "@/platform/errors/app-error";
 
@@ -34,4 +35,20 @@ export const requireMobileNumber = (input: string): MobileNumber => {
     });
   }
   return number;
+};
+
+// Any real number, landlines included: a venue's phone is shown to players to call, not used to
+// sign in (decided 2026-11-12), and many venues list a landline. Uses the full metadata, which
+// tells numbers apart better than the minimal set.
+export const requirePhoneNumber = (input: string): string => {
+  const trimmed = input.trim();
+  const parsed = trimmed.startsWith("+") ? parsePhoneNumberWithMetadata(trimmed) : undefined;
+  if (!parsed?.isValid()) {
+    throw new AppError({
+      code: "INVALID_PHONE_NUMBER",
+      status: 400,
+      detail: "Enter a phone number in international format, e.g. +20 2 2358 0000.",
+    });
+  }
+  return parsed.number;
 };

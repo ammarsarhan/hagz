@@ -8,6 +8,12 @@ export interface NotificationData {
   STAFF_INVITED: { invitationId: string };
   // An invitation was accepted: tells the venue's staff managers who joined.
   STAFF_JOINED: { staffId: string };
+  // The venue's review (docs/onboarding.md, step 3). To admins: an owner sent a venue for review.
+  VENUE_SUBMITTED: { submittedBy: string };
+  // To the owner: approved (now provisioning), sent back with a reason, or live.
+  VENUE_APPROVED: Record<string, never>;
+  VENUE_REJECTED: { reason: string };
+  VENUE_LIVE: Record<string, never>;
 }
 
 export type NotificationType = keyof NotificationData;
