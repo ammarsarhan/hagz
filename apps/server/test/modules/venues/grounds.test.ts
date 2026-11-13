@@ -63,9 +63,15 @@ describe("changing a ground", () => {
 describe("weekly hours", () => {
   it("need a price for each tier they use", () => {
     const evening = [{ dayOfWeek: 4, hours: [{ hour: 19, tier: "PEAK" as const }] }];
-    expect(() => { checkScheduleAgainstPrices(evening, pitch); }).not.toThrow();
+    expect(() => {
+      checkScheduleAgainstPrices(evening, pitch);
+    }).not.toThrow();
     const quiet = [{ dayOfWeek: 4, hours: [{ hour: 16, tier: "DISCOUNT" as const }] }];
-    expect(failure(() => { checkScheduleAgainstPrices(quiet, pitch); })).toMatchObject({
+    expect(
+      failure(() => {
+        checkScheduleAgainstPrices(quiet, pitch);
+      }),
+    ).toMatchObject({
       code: "SCHEDULE_TIER_WITHOUT_PRICE",
       extensions: { tier: "DISCOUNT" },
     });
