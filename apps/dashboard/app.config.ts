@@ -30,6 +30,11 @@ const config: ExpoConfig = {
   },
   android: {
     package: bundleIdFor("dashboard", env),
+    // Maps on Android are Google's, which needs a key of its own in builds (Expo Go brings its
+    // own). iOS draws Apple Maps, which needs none. Left out when unset so builds still work.
+    ...(process.env.GOOGLE_MAPS_ANDROID_KEY
+      ? { config: { googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_KEY } } }
+      : {}),
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       monochromeImage: "./assets/adaptive-icon-monochrome.png",
@@ -57,6 +62,16 @@ const config: ExpoConfig = {
     ],
     // Builds lay Arabic out right-to-left natively (I18nManager); Screen sets Yoga's direction too.
     ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
+    // Only to centre the map on the owner while they place their venue's pin; never in the
+    // background, and the venue's pin is the only thing kept.
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission:
+          "Hagz uses your location to centre the map while you place your venue.",
+        isAndroidBackgroundLocationEnabled: false,
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
