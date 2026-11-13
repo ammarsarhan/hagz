@@ -1,6 +1,6 @@
 import type { StaffPermissions, StaffVenue, VenueMember } from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
-import type { Language } from "@/generated/prisma/enums";
+import type { Language, VenueRole } from "@/generated/prisma/enums";
 import { prisma } from "@/platform/db/prisma";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
@@ -10,7 +10,7 @@ import {
   RESTRICTED_AFTER_PASSWORD_RESET,
   type PermissionEventData,
 } from "../domain/events";
-import { nameIn } from "../domain/names";
+import { nameIn, placeOf } from "../domain/names";
 import {
   allows,
   beyondGranter,
@@ -26,7 +26,66 @@ import {
   type VenueAccess,
 } from "./access";
 
-// The venues a member belongs to, for the dashboard's venue switcher.
+const place = { translations: { select: { language: true, name: true } } } as const;
+
+// What a member sees of a venue, wherever the dashboard gets one: the list below, or joining one.
+export const staffVenueSelect = {
+  id: true,
+  slug: true,
+  status: true,
+  createdAt: true,
+  translations: { select: { language: true, name: true } },
+  location: { select: { ...place, parent: { select: place } } },
+} as const satisfies Prisma.VenueSelect;
+
+type StaffVenueRow = Prisma.VenueGetPayload<{ select: typeof staffVenueSelect }>;
+
+interface MembershipRow {
+  role: VenueRole;
+  permissions: unknown;
+  venue: StaffVenueRow;
+}
+
+// Every change to a venue writes a VenueEvent (details, photos, grounds, hours, layout, settings,
+// team, review), so the newest one is when it last changed, whatever part changed. One grouped read
+// for all the venues, on the (venueId, createdAt) index.
+const lastActivityOf = async (venueIds: string[]) => {
+  if (venueIds.length === 0) return new Map<string, Date>();
+  const rows = await prisma.venueEvent.groupBy({
+    by: ["venueId"],
+    where: { venueId: { in: venueIds } },
+    _max: { createdAt: true },
+  });
+  const latest = new Map<string, Date>();
+  for (const row of rows) if (row._max.createdAt) latest.set(row.venueId, row._max.createdAt);
+  return latest;
+};
+
+const toStaffVenue = (
+  { role, permissions, venue }: MembershipRow,
+  lastActivity: Map<string, Date>,
+  language: Language,
+): StaffVenue => ({
+  id: venue.id,
+  slug: venue.slug,
+  name: nameIn(venue.translations, language),
+  status: venue.status,
+  location: placeOf(venue.location, language),
+  // Every venue has its VENUE_CREATED event; createdAt is only a fallback.
+  lastActivityAt: (lastActivity.get(venue.id) ?? venue.createdAt).toISOString(),
+  role,
+  permissions: effectivePermissions(role, permissions),
+});
+
+export const presentStaffVenues = async (memberships: MembershipRow[], language: Language) => {
+  const lastActivity = await lastActivityOf(memberships.map(({ venue }) => venue.id));
+  return memberships.map((membership) => toStaffVenue(membership, lastActivity, language));
+};
+
+export const presentStaffVenue = async (membership: MembershipRow, language: Language) =>
+  toStaffVenue(membership, await lastActivityOf([membership.venue.id]), language);
+
+// The venues a member belongs to, for the dashboard's venue switcher and first run.
 export const listMyVenues = async (staffId: string, language: Language): Promise<StaffVenue[]> => {
   const staff = await prisma.staff.findUnique({
     where: { id: staffId },
@@ -35,30 +94,12 @@ export const listMyVenues = async (staffId: string, language: Language): Promise
       deletedAt: true,
       memberships: {
         orderBy: { createdAt: "asc" },
-        select: {
-          role: true,
-          permissions: true,
-          venue: {
-            select: {
-              id: true,
-              slug: true,
-              status: true,
-              translations: { select: { language: true, name: true } },
-            },
-          },
-        },
+        select: { role: true, permissions: true, venue: { select: staffVenueSelect } },
       },
     },
   });
   if (staff?.status !== "ACTIVE" || staff.deletedAt !== null) throw accountSuspended();
-  return staff.memberships.map(({ role, permissions, venue }) => ({
-    id: venue.id,
-    slug: venue.slug,
-    name: nameIn(venue.translations, language),
-    status: venue.status,
-    role,
-    permissions: effectivePermissions(role, permissions),
-  }));
+  return presentStaffVenues(staff.memberships, language);
 };
 
 // The newest permission event of each member: when it's a password-reset restriction, it's what
