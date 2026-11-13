@@ -30,7 +30,7 @@ export const CreateVenue = z
   })
   .meta({ id: "CreateVenue" });
 
-// Items appear as the features behind them ship: the layout joins with PR 2.5.
+// Every setup item. LAYOUT only appears for venues with two or more active grounds.
 export const SetupItemKey = z
   .enum([
     "DETAILS",
@@ -38,6 +38,7 @@ export const SetupItemKey = z
     "PHOTOS",
     "GROUNDS",
     "SCHEDULES",
+    "LAYOUT",
     "SETTINGS",
     "AMENITIES",
     "TAX_NUMBER",

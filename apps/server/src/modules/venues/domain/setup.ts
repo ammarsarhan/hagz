@@ -6,8 +6,7 @@ import {
 } from "@hagz/contracts";
 
 // The setup checklist (docs/onboarding.md, step 2), computed from the venue's data on every request
-// and never stored, so it can't disagree with the venue. Items join as their features ship: the
-// layout (2.5) adds its own facts and rules here.
+// and never stored, so it can't disagree with the venue.
 
 export interface SetupFacts {
   status: VenueSetup["venue"]["status"];
@@ -16,7 +15,7 @@ export interface SetupFacts {
   hasPin: boolean;
   readyPhotos: number;
   // Open hours per active ground (paused grounds don't count).
-  activeGrounds: { openHours: number }[];
+  activeGrounds: { openHours: number; placed: boolean }[];
   cancellationPolicy: string | null;
   amenityCount: number;
   taxNumber: string | null;
@@ -42,6 +41,8 @@ interface Rule {
   done: (facts: SetupFacts) => boolean;
   // Can't be done before this item is.
   after?: { key: SetupItemKey; done: (facts: SetupFacts) => boolean };
+  // Left off the checklist when it doesn't apply.
+  applies?: (facts: SetupFacts) => boolean;
 }
 
 const RULES: Rule[] = [
@@ -56,17 +57,26 @@ const RULES: Rule[] = [
     done: (facts) => hasGrounds(facts) && facts.activeGrounds.every((g) => g.openHours > 0),
     after: { key: "GROUNDS", done: hasGrounds },
   },
+  {
+    // Only venues with more than one ground need a layout (decided 2026-10-24).
+    key: "LAYOUT",
+    required: true,
+    done: (facts) => facts.activeGrounds.every((g) => g.placed),
+    applies: (facts) => facts.activeGrounds.length > 1,
+  },
   { key: "SETTINGS", required: true, done: settingsDone },
   { key: "AMENITIES", required: false, done: (facts) => facts.amenityCount > 0 },
   { key: "TAX_NUMBER", required: false, done: (facts) => filled(facts.taxNumber) },
 ];
 
 export const setupChecklist = (facts: SetupFacts): Omit<VenueSetup, "venue"> => {
-  const items: SetupItem[] = RULES.map(({ key, required, done, after }) => {
-    if (after && !after.done(facts))
-      return { key, required, state: "BLOCKED", blockedBy: after.key };
-    return { key, required, state: done(facts) ? "DONE" : "MISSING", blockedBy: null };
-  });
+  const items: SetupItem[] = RULES.filter((rule) => rule.applies?.(facts) ?? true).map(
+    ({ key, required, done, after }) => {
+      if (after && !after.done(facts))
+        return { key, required, state: "BLOCKED", blockedBy: after.key };
+      return { key, required, state: done(facts) ? "DONE" : "MISSING", blockedBy: null };
+    },
+  );
   const required = items.filter((item) => item.required);
   const done = required.filter((item) => item.state === "DONE").length;
   return {

@@ -21,7 +21,7 @@ const complete: SetupFacts = {
     { name: "Champions Arena", description: "Three 5-a-side pitches.", address: "12 Street 9" },
   ],
   readyPhotos: 3,
-  activeGrounds: [{ openHours: 63 }],
+  activeGrounds: [{ openHours: 63, placed: false }],
   cancellationPolicy: "MODERATE",
 };
 
@@ -116,15 +116,32 @@ describe("setup checklist", () => {
     const hours = (facts: SetupFacts) =>
       setupChecklist(facts).items.find((item) => item.key === "SCHEDULES");
     expect(hours(fresh)).toMatchObject({ state: "BLOCKED", blockedBy: "GROUNDS" });
-    expect(hours({ ...fresh, activeGrounds: [{ openHours: 0 }] })).toMatchObject({
+    expect(hours({ ...fresh, activeGrounds: [{ openHours: 0, placed: false }] })).toMatchObject({
       state: "MISSING",
       blockedBy: null,
     });
   });
 
+  it("asks for a layout only with two or more grounds, all of them placed", () => {
+    const layout = (activeGrounds: SetupFacts["activeGrounds"]) =>
+      setupChecklist({ ...complete, activeGrounds }).items.find((item) => item.key === "LAYOUT");
+    expect(layout([{ openHours: 9, placed: false }])).toBeUndefined();
+    const two = [
+      { openHours: 9, placed: true },
+      { openHours: 9, placed: false },
+    ];
+    expect(layout(two)).toMatchObject({ required: true, state: "MISSING" });
+    expect(layout(two.map((g) => ({ ...g, placed: true })))).toMatchObject({ state: "DONE" });
+  });
+
   it("needs every active ground to open at least an hour", () => {
-    const grounds = [{ openHours: 63 }, { openHours: 0 }];
+    const grounds = [
+      { openHours: 63, placed: true },
+      { openHours: 0, placed: true },
+    ];
     expect(stateOf({ ...complete, activeGrounds: grounds }, "SCHEDULES")).toBe("MISSING");
-    expect(stateOf({ ...complete, activeGrounds: [{ openHours: 1 }] }, "SCHEDULES")).toBe("DONE");
+    expect(
+      stateOf({ ...complete, activeGrounds: [{ openHours: 1, placed: false }] }, "SCHEDULES"),
+    ).toBe("DONE");
   });
 });
