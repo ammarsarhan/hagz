@@ -33,7 +33,7 @@ Added on 2026-11-13. The EAS plan allows **14 builds a month**, and each platfor
 
 | Build | When | Native contents |
 |---|---|---|
-| Dashboard baseline | Before the rest of Phase 2's UI (photos, layout editor) | Already in: Maps, location, localization, secure store, SVG, splash. Adds: `expo-image-picker` (photo library and camera permission text), `expo-image-manipulator` (resizing before upload, [onboarding.md](onboarding.md)), `expo-image`, `react-native-gesture-handler` and `react-native-reanimated` (layout editor, bottom sheets, calendar gestures in Phase 4), Rive (onboarding motion), `expo-haptics`, `expo-clipboard` |
+| Dashboard baseline | Before the rest of Phase 2's UI (photos, layout editor) | Already in: Maps, location, localization, secure store, SVG, splash, and Reanimated, Worklets and Gesture Handler (through NativeWind; enough for the layout editor, bottom sheets and Phase 4's calendar gestures). Adds: `expo-image-picker` (photo library and camera permission text), `expo-image-manipulator` (resizing before upload, [onboarding.md](onboarding.md)), `expo-image`, Rive (onboarding motion), `expo-haptics`, `expo-clipboard` |
 | Customer baseline | At the start of 1.U2 | The same set minus Rive, plus Maps and location (Phase 3 near me), with the customer app's own permission text |
 | Payments | After the 5.1 spike decides | `react-native-webview` for Pixel, or the native Paymob SDK; Apple Pay and Google Pay entitlements. One build per app that takes payments |
 | Push | Phase 7.1 | `expo-notifications` with FCM (`google-services.json`) and APNs credentials. Both apps. Push on iOS needs the paid Apple developer account |
