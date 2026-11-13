@@ -64,7 +64,10 @@ interface Bounds {
 
 // A rough box per marketplace (user, 2026-11-12): it catches a pin dropped in the wrong country.
 // No box means no check.
-const insideBounds = (bounds: Bounds, { latitude, longitude }: CreateVenue["coordinates"]) => {
+export const insideBounds = (
+  bounds: Bounds,
+  { latitude, longitude }: CreateVenue["coordinates"],
+) => {
   const { minimumLatitude, maximumLatitude, minimumLongitude, maximumLongitude } = bounds;
   if (
     minimumLatitude === null ||
