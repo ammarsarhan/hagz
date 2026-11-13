@@ -4317,6 +4317,662 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/grounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue's grounds, in order
+         * @description Needs `venue: view`. Deleted grounds are left out.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Grounds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Ground"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add a ground
+         * @description Needs `schedule: manage`. The name is stored in the caller's app language. Football comes in 5, 7 and 11-a-side; other sports are `STANDARD`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateGround"];
+                };
+            };
+            responses: {
+                /** @description The new ground */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ground"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GROUND_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder the grounds
+         * @description Needs `schedule: manage`. Lists every ground exactly once.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReorderGrounds"];
+                };
+            };
+            responses: {
+                /** @description Grounds in the new order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Ground"][];
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_GROUND_ORDER */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a ground
+         * @description Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Change a ground, or pause or resume it
+         * @description Needs `schedule: manage`. Only what's sent changes; the result is checked as a whole. A new sport or size takes the ground off the layout if it no longer fits there.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateGround"];
+                };
+            };
+            responses: {
+                /** @description The ground after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ground"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_GROUND (with the `field`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A ground's weekly hours
+         * @description Needs `schedule: view`. Days left out are closed.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The week */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WeekSchedule"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        /**
+         * Set a ground's weekly hours
+         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WeekSchedule"];
+                };
+            };
+            responses: {
+                /** @description The week after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WeekSchedule"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SCHEDULE_TIER_WITHOUT_PRICE (with the `tier`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a ground's weekly hours to others
+         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CopySchedule"];
+                };
+            };
+            responses: {
+                /** @description Copied */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SCHEDULE_TIER_WITHOUT_PRICE (with the `tier` and the `groundId`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/members": {
         parameters: {
             query?: never;
@@ -6682,7 +7338,7 @@ export interface components {
             blockedBy: components["schemas"]["SetupItemKey"] & (string | null);
         };
         /** @enum {string} */
-        SetupItemKey: "DETAILS" | "LOCATION" | "PHOTOS" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
+        SetupItemKey: "DETAILS" | "LOCATION" | "PHOTOS" | "GROUNDS" | "SCHEDULES" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
         /**
          * @description `BLOCKED`: can't be done until `blockedBy` is.
          * @enum {string}
@@ -6854,6 +7510,101 @@ export interface components {
         ReorderPhotos: {
             /** @description Every ready photo, in the new order; the first becomes the cover. */
             photoIds: string[];
+        };
+        Ground: {
+            /** Format: uuid */
+            id: string;
+            name: string | null;
+            sport: components["schemas"]["GroundSport"];
+            size: components["schemas"]["GroundSize"];
+            surface: components["schemas"]["GroundSurface"];
+            environment: components["schemas"]["GroundEnvironment"];
+            status: components["schemas"]["GroundStatus"];
+            position: number;
+            basePrice: number;
+            peakPrice: number | null;
+            discountPrice: number | null;
+            minimumSlots: number;
+            maximumSlots: number;
+            /** @description Open hours in its week; 0 until set. */
+            openHours: number;
+        };
+        /** @enum {string} */
+        GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
+        /**
+         * @description `STANDARD` for sports without size variants.
+         * @enum {string}
+         */
+        GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
+        /** @enum {string} */
+        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "OTHER";
+        /**
+         * @description `COVERED`: a roof with open sides.
+         * @enum {string}
+         */
+        GroundEnvironment: "INDOOR" | "OUTDOOR" | "COVERED";
+        /**
+         * @description `MAINTENANCE`: temporarily unbookable.
+         * @enum {string}
+         */
+        GroundStatus: "ACTIVE" | "MAINTENANCE";
+        CreateGround: {
+            /** @example Pitch 1 */
+            name: string;
+            sport: components["schemas"]["GroundSport"];
+            size: components["schemas"]["GroundSize"];
+            surface: components["schemas"]["GroundSurface"];
+            environment: components["schemas"]["GroundEnvironment"];
+            /** @description Per hour, in minor units. */
+            basePrice: number;
+            /** @description Per hour, in minor units. */
+            peakPrice: number | null;
+            /** @description Per hour, in minor units. */
+            discountPrice: number | null;
+            /** @description Shortest booking, in hours. */
+            minimumSlots: number;
+            /** @description Longest booking, in hours. */
+            maximumSlots: number;
+        };
+        ReorderGrounds: {
+            groundIds: string[];
+        };
+        UpdateGround: {
+            /** @example Pitch 1 */
+            name?: string;
+            sport?: components["schemas"]["GroundSport"];
+            size?: components["schemas"]["GroundSize"];
+            surface?: components["schemas"]["GroundSurface"];
+            environment?: components["schemas"]["GroundEnvironment"];
+            /** @description Per hour, in minor units. */
+            basePrice?: number;
+            /** @description Per hour, in minor units. */
+            peakPrice?: number | null;
+            /** @description Per hour, in minor units. */
+            discountPrice?: number | null;
+            /** @description Shortest booking, in hours. */
+            minimumSlots?: number;
+            /** @description Longest booking, in hours. */
+            maximumSlots?: number;
+            status?: components["schemas"]["GroundStatus"];
+        };
+        WeekSchedule: {
+            /** @description Days left out are closed. */
+            days: components["schemas"]["ScheduleDay"][];
+        };
+        ScheduleDay: {
+            /** @description 0 is Sunday. */
+            dayOfWeek: number;
+            hours: components["schemas"]["ScheduleHour"][];
+        };
+        ScheduleHour: {
+            hour: number;
+            tier: components["schemas"]["PriceTier"];
+        };
+        /** @enum {string} */
+        PriceTier: "BASE" | "PEAK" | "DISCOUNT";
+        CopySchedule: {
+            groundIds: string[];
         };
         VenueMember: {
             /** Format: uuid */
