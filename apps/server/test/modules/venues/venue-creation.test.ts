@@ -142,7 +142,8 @@ describe("creating a venue", () => {
   it("works without a Google place id", async () => {
     const { area } = await egypt();
     const owner = await someStaff();
-    const { placeId: _, ...dropped } = draft(area.id);
+    // Left out of the JSON body entirely.
+    const dropped = { ...draft(area.id), placeId: undefined };
 
     const res = await call(owner.id, "POST", "/venues", dropped);
     expect(res.status).toBe(201);
