@@ -212,6 +212,15 @@ const messages = {
     en: "There are no previous permissions to restore.",
     ar: "لا توجد صلاحيات سابقة لاستعادتها.",
   },
+  // Venue setup
+  UNFINISHED_VENUE_EXISTS: {
+    en: "You already have a venue that isn't live yet. Finish setting it up first.",
+    ar: "لديك ملعب لم يبدأ العمل بعد. أكمل إعداده أولًا.",
+  },
+  LOCATION_OUTSIDE_MARKETPLACE: {
+    en: "The pin is outside the area's country. Move it and try again.",
+    ar: "الدبوس خارج دولة هذه المنطقة. حرّكه وحاول مرة أخرى.",
+  },
 } as const satisfies Record<string, Record<Language, string>>;
 
 export type ProblemCode = keyof typeof messages;
@@ -251,6 +260,7 @@ const short = {
   VERIFICATION_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
+  LOCATION_OUTSIDE_MARKETPLACE: { en: "Pin is in another country", ar: "الدبوس في دولة أخرى" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 
