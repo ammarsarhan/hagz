@@ -15,6 +15,24 @@ const env = (process.env.APP_ENV ?? "development") as Environment;
 if (!ENVIRONMENTS.includes(env)) throw new Error(`Unknown APP_ENV: ${env}`);
 const webHost = process.env.WEB_URL ? new URL(process.env.WEB_URL).host : undefined;
 
+// The app runs as a development build (expo-dev-client), not in Expo Go, so the native side is ours:
+// Google Maps is compiled in on both platforms and the map is the same everywhere. Each platform has
+// its own key, because a key is locked to one kind of app (iOS bundle id, or Android package and
+// signing certificate). They're EAS environment variables, read when EAS prebuilds the app; a build
+// without one would draw an empty map, so it fails instead. `expo start` doesn't need them.
+const mapsKeys = {
+  ios: process.env.GOOGLE_MAPS_IOS_KEY,
+  android: process.env.GOOGLE_MAPS_ANDROID_KEY,
+};
+if (process.env.EAS_BUILD === "true") {
+  const platform = process.env.EAS_BUILD_PLATFORM as keyof typeof mapsKeys | undefined;
+  if (platform && !mapsKeys[platform]) {
+    throw new Error(
+      `GOOGLE_MAPS_${platform.toUpperCase()}_KEY is not set for this EAS environment.`,
+    );
+  }
+}
+
 const config: ExpoConfig = {
   name: appNameFor("dashboard", env),
   slug: "hagz-dashboard",
@@ -27,19 +45,9 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: bundleIdFor("dashboard", env),
     associatedDomains: webHost ? [`applinks:${webHost}`] : [],
-    // Google Maps on iOS, which is what people here read: it needs the Google Maps SDK compiled
-    // in, so it only applies to builds. Expo Go has Apple Maps and falls back to it.
-    ...(process.env.GOOGLE_MAPS_IOS_KEY
-      ? { config: { googleMapsApiKey: process.env.GOOGLE_MAPS_IOS_KEY } }
-      : {}),
   },
   android: {
     package: bundleIdFor("dashboard", env),
-    // Android maps are Google's, with a key of its own in builds (Expo Go brings its own). Left
-    // out when unset so builds still work.
-    ...(process.env.GOOGLE_MAPS_ANDROID_KEY
-      ? { config: { googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_KEY } } }
-      : {}),
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       monochromeImage: "./assets/adaptive-icon-monochrome.png",
@@ -77,6 +85,13 @@ const config: ExpoConfig = {
           "Hagz uses your location to centre the map while you place your venue.",
         isAndroidBackgroundLocationEnabled: false,
       },
+    ],
+    // react-native-maps' own plugin: Expo's built-in maps settings (ios.config.googleMapsApiKey,
+    // android.config.googleMaps) are skipped once a package ships a plugin, so the keys go here. The
+    // iOS key is also what adds Google's SDK to the Podfile.
+    [
+      "react-native-maps",
+      { iosGoogleMapsApiKey: mapsKeys.ios, androidGoogleMapsApiKey: mapsKeys.android },
     ],
   ],
   experiments: {

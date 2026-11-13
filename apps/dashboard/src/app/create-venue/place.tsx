@@ -3,9 +3,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import Constants from "expo-constants";
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from "react-native";
-import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE, type Region } from "react-native-maps";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import { MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
@@ -49,17 +48,9 @@ const SETTLE_MS = 500;
 // Hagz's only marketplace for now; a pin abroad is turned away by the API.
 const FALLBACK_COUNTRY = "EG";
 
-// Google Maps wherever it can be drawn: it's the map people in Egypt and the Gulf read, and it
-// knows the pitches, compounds and street names Apple Maps doesn't. Android has it in Expo Go
-// already. On iOS it needs Google's SDK compiled into the app, which Expo Go doesn't ship, so
-// Expo Go draws Apple Maps and a build with GOOGLE_MAPS_IOS_KEY set draws Google.
-//
-// `appOwnership` is deprecated but it's the only thing that still tells Expo Go apart from a
-// development build; `executionEnvironment` reports "storeClient" for both.
-const inExpoGo = Constants.appOwnership === "expo";
-const hasIosKey = Boolean(Constants.expoConfig?.ios?.config?.googleMapsApiKey);
-const PROVIDER =
-  Platform.OS === "ios" && (inExpoGo || !hasIosKey) ? PROVIDER_DEFAULT : PROVIDER_GOOGLE;
+// Google Maps on both platforms: it's the map people in Egypt and the Gulf read, and it knows the
+// pitches, compounds and street names Apple Maps doesn't. Its SDK is compiled into the app with a
+// key per platform (app.config.ts).
 
 export default function CreateVenuePlace() {
   const { t } = useTranslation();
@@ -198,7 +189,7 @@ export default function CreateVenuePlace() {
       <StatusBar style="dark" />
       <MapView
         ref={map}
-        provider={PROVIDER}
+        provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFill}
         initialRegion={START}
         // The card covers the bottom, so the map's middle — and the pin — sits above it.
