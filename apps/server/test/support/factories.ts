@@ -14,12 +14,20 @@ interface MarketplaceInput {
   code?: string;
   isActive?: boolean;
   names?: Partial<Record<Language, string>>;
+  // Where venue pins may fall; none by default, so no check.
+  bounds?: {
+    minimumLatitude: number;
+    maximumLatitude: number;
+    minimumLongitude: number;
+    maximumLongitude: number;
+  };
 }
 
 export const createMarketplace = ({
   code = nextCode(),
   isActive = true,
   names = { EN: `Country ${code}` },
+  bounds,
 }: MarketplaceInput = {}) =>
   prisma.marketplace.create({
     data: {
@@ -28,6 +36,7 @@ export const createMarketplace = ({
       dialCode: "+20",
       timezone: "Africa/Cairo",
       isActive,
+      ...bounds,
       translations: {
         create: Object.entries(names).map(([language, name]) => ({
           language: language as Language,
