@@ -173,6 +173,7 @@ describe("location", () => {
     );
     expect(venue.location).toEqual({
       id: zamalek.id,
+      requestedArea: null,
       coordinates: ZAMALEK,
       placeId: "ChIJ-zamalek",
     });
@@ -180,6 +181,29 @@ describe("location", () => {
     expect(event?.data).toMatchObject({
       previous: { coordinates: MAADI, placeId: null },
       next: { coordinates: ZAMALEK, placeId: "ChIJ-zamalek", locationId: zamalek.id },
+    });
+  });
+
+  it("replaces an area the owner asked for with one from the list", async () => {
+    const { owner, path, venueId, zamalek } = await aDraft();
+    await prisma.venue.update({
+      where: { id: venueId },
+      data: { locationId: null, requestedArea: "Zamalek West" },
+    });
+    expect((await detailOf(await call(owner.id, "GET", path))).location).toMatchObject({
+      id: null,
+      requestedArea: "Zamalek West",
+    });
+
+    const venue = await detailOf(
+      await call(owner.id, "PATCH", path, {
+        location: { coordinates: ZAMALEK, placeId: null, locationId: zamalek.id },
+      }),
+    );
+    expect(venue.location).toMatchObject({ id: zamalek.id, requestedArea: null });
+    const [event] = await eventsOf(venueId, "VENUE_LOCATION_CHANGED");
+    expect(event?.data).toMatchObject({
+      previous: { locationId: null, requestedArea: "Zamalek West" },
     });
   });
 
