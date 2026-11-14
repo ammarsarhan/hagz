@@ -95,6 +95,8 @@ export default function CreateVenuePlace() {
   const [placed, setPlaced] = useState(false);
   const [nudged, setNudged] = useState(false);
   const [chosenArea, setChosenArea] = useState<Location | null>(null);
+  // An area that isn't in the list, in the owner's words, for Hagz to add while reviewing.
+  const [requestedArea, setRequestedArea] = useState<string | null>(null);
   // How tall the bottom card is, so the map's middle (and the pin) sits above it.
   const [cardHeight, setCardHeight] = useState(0);
 
@@ -110,8 +112,12 @@ export default function CreateVenuePlace() {
     () => (place && locations.data ? matchArea(place.parts, locations.data) : null),
     [place, locations.data],
   );
-  const area = chosenArea ?? suggested;
-  const label = area && locations.data ? areaLabel(area, locations.data) : null;
+  const area = requestedArea ? null : (chosenArea ?? suggested);
+  const label = requestedArea
+    ? { name: requestedArea, within: t("screens.createVenue.place.requestedNote") }
+    : area && locations.data
+      ? areaLabel(area, locations.data)
+      : null;
 
   const moveTo = useCallback((coordinates: Coordinates) => {
     setPin(coordinates);
@@ -216,6 +222,7 @@ export default function CreateVenuePlace() {
     setPlace(found);
     setPlaced(true);
     setChosenArea(null);
+    setRequestedArea(null);
     moveTo(found.coordinates);
     setStage("pin");
   };
@@ -244,7 +251,7 @@ export default function CreateVenuePlace() {
   };
 
   const create = async () => {
-    if (!area) return;
+    if (!area && !requestedArea) return;
     setCreating(true);
     const result = await send(
       api.POST("/v1/staff/venues", {
@@ -252,7 +259,11 @@ export default function CreateVenuePlace() {
           name,
           coordinates: pin,
           ...(place?.placeId ? { placeId: place.placeId } : {}),
-          locationId: area.id,
+          // The pin's country is the marketplace a requested area goes in; the API checks the
+          // pin is inside it.
+          ...(requestedArea
+            ? { requestedArea: { name: requestedArea, marketplace: country } }
+            : { locationId: area?.id }),
         },
       }),
     );
@@ -366,6 +377,7 @@ export default function CreateVenuePlace() {
         {stage === "area" ? (
           <AreaStep
             label={label}
+            requested={requestedArea !== null}
             loading={locations.isPending}
             creating={creating}
             onChange={() => setChoosingArea(true)}
@@ -416,9 +428,15 @@ export default function CreateVenuePlace() {
         visible={choosingArea}
         locations={locations.data ?? []}
         selected={area}
+        requested={requestedArea}
         onClose={() => setChoosingArea(false)}
         onPick={(picked) => {
           setChosenArea(picked);
+          setRequestedArea(null);
+          setChoosingArea(false);
+        }}
+        onRequest={(name) => {
+          setRequestedArea(name);
           setChoosingArea(false);
         }}
       />
@@ -587,15 +605,18 @@ function Step({
 }
 
 // The last card: the area we matched, to confirm or change. With no match (an address Google
-// writes differently, or a part of town we haven't seeded) it asks instead of guessing.
+// writes differently, or a part of town we haven't seeded) it asks instead of guessing, and an area
+// the owner asked for says Hagz will add it.
 function AreaStep({
   label,
+  requested,
   loading,
   creating,
   onChange,
   onConfirm,
 }: {
   label: { name: string; within: string } | null;
+  requested: boolean;
   loading: boolean;
   creating: boolean;
   onChange: () => void;
@@ -610,7 +631,11 @@ function AreaStep({
           : t("screens.createVenue.place.areaUnknownTitle")}
       </Text>
       <Text className="mb-5 mt-1.5 px-1 text-subtitle text-ink-2">
-        {t("screens.createVenue.place.areaBody")}
+        {t(
+          requested
+            ? "screens.createVenue.place.requestedBody"
+            : "screens.createVenue.place.areaBody",
+        )}
       </Text>
 
       <Pressable
