@@ -260,10 +260,7 @@ describe("creating a venue", () => {
   });
 
   describe("an area Hagz doesn't cover yet", () => {
-    const requested = (
-      marketplace: string,
-      overrides: Partial<CreateVenue> = {},
-    ): CreateVenue => ({
+    const requested = (marketplace: string, overrides: Partial<CreateVenue> = {}): CreateVenue => ({
       ...draft(randomUUID(), overrides),
       locationId: undefined,
       requestedArea: { name: "Sheikh Zayed, Giza", marketplace },
