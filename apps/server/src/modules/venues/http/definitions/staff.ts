@@ -81,7 +81,8 @@ export const createVenue = createRoute({
       "UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `venueStatus`.",
     ),
     422: problemResponse(
-      "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or " +
+      "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), " +
+        "MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or " +
         "LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country).",
     ),
   },

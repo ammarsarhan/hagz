@@ -9,7 +9,8 @@ Agreed on 2026-10-27:
 - **Create, then a checklist.** The first step creates a `DRAFT` with the basics. The setup checklist can then be done in any order, and every item is saved as real data, never as wizard state. Submitting unlocks when every required item is done.
 - **Languages:** the owner writes the name, description and address in their app language only; the app shows no language switch (decided 2026-11-13). Admins fill in the other language while provisioning. Going live requires Arabic and English.
 - **Slug:** a random id generated at creation and never changed, e.g. `/venue/k7m2x9pq` (see [Slugs and SEO](#slugs-and-seo)).
-- **Location:** the owner drops a pin or searches Google Places, the app suggests the area from the `Location` tree (matching Google's address to our location names), and the owner confirms or changes it. The API checks the pin against a rough bounding box per marketplace, enough to catch a pin in the wrong country (decided 2026-11-12).
+- **Location:** the owner drops a pin or searches Google Places, the API suggests the area whose centre is nearest the pin, within 8 km (`GET /marketplaces/{code}/areas/nearest`), and the owner confirms or changes it by searching areas (`GET /marketplaces/{code}/areas`, either language, nearest first). Not Google's address: in Egypt it names police districts, so a pin in Smouha comes back as Sidi Gaber (decided 2026-11-14). Admins set each area's centre on the Platform page. The API checks the pin against a rough bounding box per marketplace, enough to catch a pin in the wrong country (decided 2026-11-12).
+- **Areas Hagz doesn't cover yet.** If the owner's area isn't in the list, they write it in and the venue is created with `requestedArea` instead of `locationId`, in the marketplace of the country the pin is in (decided 2026-11-14). An admin adds the area under Locations and sets it with `PUT /admin/venues/{id}/area`, which clears the request; approval waits for it (`422 AREA_NOT_SET`). Picking an area from the list later also replaces the request.
 - **Drafts live outside the venue dashboard.** An unfinished venue opens its own setup flow, reached from first run (no venues yet) or from the Venues section of the Account tab; the dashboard's tabs and switcher are for `LIVE` and `MAINTENANCE` venues (decided 2026-11-12).
 - **Staff join after approval.** Invitations can only be sent once an admin has approved the venue (`PROVISIONING`, `LIVE` or `MAINTENANCE`); before that the API answers `409 VENUE_STATUS_CONFLICT` (decided 2026-11-13). A draft or a venue in review has nothing for staff to do, and rejection only happens before approval, so an approved venue never loses the ability.
 - **One unfinished venue per staff account.** A venue they own in `DRAFT`, `SUBMITTED` or `PROVISIONING` blocks starting another until it goes live (clarified 2026-11-12). Any number of live venues, so chains are fine.
@@ -135,6 +136,8 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 | `409 VENUE_STATUS_CONFLICT` | An action not allowed in the current status, e.g. inviting staff before approval, or editing listing details while `SUBMITTED` (includes `venueStatus`) |
 | `422 LOCATION_NOT_FOUND` | Creating a venue in an area that doesn't exist, or whose marketplace isn't active |
 | `422 LOCATION_OUTSIDE_MARKETPLACE` | The pin isn't inside the marketplace of the chosen area, or a new area is in another marketplace |
+| `422 MARKETPLACE_NOT_FOUND` | Requesting an area in a country Hagz doesn't operate in |
+| `422 AREA_NOT_SET` | Approving a venue still waiting for the area its owner asked for (`requestedArea`) |
 
 ## Decided
 

@@ -9,4 +9,5 @@ export const colors = {
   onPrimary: "#ffffff",
   red: "#d92d20",
   green: "#067647",
+  border: "#ebebeb",
 } as const;

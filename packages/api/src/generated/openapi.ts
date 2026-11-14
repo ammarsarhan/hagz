@@ -116,6 +116,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/marketplaces/{code}/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Areas a venue can be filed under
+         * @description The leaves of the location tree, matching `q` in either language. With a point, nearest first (areas without a centre last); without one, by name. Names follow `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Part of the name, in Arabic or English; spelling variants match. */
+                    q?: string;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Areas */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Area"][];
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/marketplaces/{code}/areas/nearest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The area to suggest for a point
+         * @description The area whose centre is nearest, if one is within 8 km; otherwise `area` is null and the owner picks one or asks for theirs. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    latitude?: number | null;
+                    longitude?: number | null;
+                };
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The suggestion */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            area: components["schemas"]["Area"] & (Record<string, never> | null);
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/marketplaces/{code}/amenities": {
         parameters: {
             query?: never;
@@ -3375,7 +3526,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
+                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -7427,7 +7578,7 @@ export interface paths {
         put?: never;
         /**
          * Approve a venue in review
-         * @description Moves it to provisioning; the owner is told.
+         * @description Moves it to provisioning; the owner is told. A venue still waiting for the area its owner asked for needs one set first.
          */
         post: {
             parameters: {
@@ -7476,6 +7627,15 @@ export interface paths {
                 };
                 /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AREA_NOT_SET (with the owner's `requestedArea`) */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -7573,6 +7733,94 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/area": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a venue's area
+         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetVenueArea"];
+                };
+            };
+            responses: {
+                /** @description Set */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8127,6 +8375,25 @@ export interface components {
         };
         /** @enum {string} */
         Locality: "REGION" | "EMIRATE" | "GOVERNORATE" | "MUNICIPALITY" | "WILAYAT" | "CITY" | "DISTRICT" | "AREA" | "NEIGHBORHOOD";
+        Area: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description In the requested language.
+             * @example Smouha
+             */
+            name: string;
+            /**
+             * @description The top of its tree (governorate or city); null for a top-level area.
+             * @example Alexandria
+             */
+            within: string | null;
+            /**
+             * @description Metres from the given point to the area's centre; null without either.
+             * @example 640
+             */
+            distance: number | null;
+        };
         Amenity: {
             /** Format: uuid */
             id: string;
@@ -8446,6 +8713,16 @@ export interface components {
             /** @description In `Accept-Language`, else any language. */
             name: string | null;
             status: components["schemas"]["VenueStatus"];
+            /**
+             * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
+             * @example Maadi, Cairo
+             */
+            location: string | null;
+            /**
+             * Format: date-time
+             * @description When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created).
+             */
+            lastActivityAt: string;
             role: components["schemas"]["VenueRole"];
             /** @description What the signed-in member may do here; all `manage` for the owner. */
             permissions: {
@@ -8547,9 +8824,19 @@ export interface components {
             placeId?: string;
             /**
              * Format: uuid
-             * @description The area the owner confirmed. Its marketplace becomes the venue's.
+             * @description The area the owner confirmed. Its marketplace becomes the venue's. Send this or `requestedArea`, not both.
              */
-            locationId: string;
+            locationId?: string;
+            /** @description An area Hagz doesn't cover yet, in the owner's words. An admin adds it and sets it on the venue while reviewing; the venue can't be approved before then. */
+            requestedArea?: {
+                /** @example Sheikh Zayed, Giza */
+                name: string;
+                /**
+                 * @description ISO 3166-1 alpha-2.
+                 * @example EG
+                 */
+                marketplace: string;
+            };
         };
         StaffVenueDetail: {
             /** Format: uuid */
@@ -8558,9 +8845,30 @@ export interface components {
             status: components["schemas"]["VenueStatus"];
             phone: string | null;
             taxNumber: string | null;
+            marketplace: {
+                /**
+                 * @description Whose amenity options apply.
+                 * @example EG
+                 */
+                code: string;
+                /**
+                 * @description ISO 4217; prices are in its minor units.
+                 * @example EGP
+                 */
+                currency: string;
+            };
             location: {
-                /** Format: uuid */
-                id: string;
+                /**
+                 * Format: uuid
+                 * @description Null while Hagz adds `requestedArea`.
+                 */
+                id: string | null;
+                /** @description The area, in the request's language. */
+                name: string | null;
+                /** @description The top of the area's tree (its governorate), as areas show it. */
+                within: string | null;
+                /** @description The area the owner asked for, until an admin sets one. */
+                requestedArea: string | null;
                 coordinates: components["schemas"]["Coordinates"];
                 placeId: string | null;
             };
@@ -9209,6 +9517,11 @@ export interface components {
              */
             slug: string;
             names: components["schemas"]["Names"];
+            /** @description Roughly the middle; a venue's pin suggests the nearest. Null: never suggested. */
+            center: {
+                latitude: number;
+                longitude: number;
+            } | null;
             childCount: number;
             venueCount: number;
             /** Format: date-time */
@@ -9222,11 +9535,17 @@ export interface components {
             parentId: string | null;
             locality: components["schemas"]["Locality"];
             names: components["schemas"]["Names"];
+            center?: components["schemas"]["Coordinates"];
         };
         /** @description The slug stays as it was. */
         UpdateLocation: {
             locality?: components["schemas"]["Locality"];
             names?: components["schemas"]["Names"];
+            /** @description Null clears it. */
+            center?: {
+                latitude: number;
+                longitude: number;
+            } | null;
         };
         AdminAmenity: {
             /** Format: uuid */
@@ -9270,6 +9589,11 @@ export interface components {
             };
             /** @example Nasr City, Cairo */
             area: string | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
             /** @description Null only if the venue has no owner, which shouldn't happen. */
             owner: {
                 /** Format: uuid */
@@ -9300,6 +9624,11 @@ export interface components {
             };
             /** @example Nasr City, Cairo */
             area: string | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
             /** @description Null only if the venue has no owner, which shouldn't happen. */
             owner: {
                 /** Format: uuid */
@@ -9324,6 +9653,11 @@ export interface components {
              * @example Add photos of the pitches themselves, not only the entrance.
              */
             reason: string;
+        };
+        /** @description Clears the owner's requested area. */
+        SetVenueArea: {
+            /** Format: uuid */
+            locationId: string;
         };
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {

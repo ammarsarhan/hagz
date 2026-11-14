@@ -5,7 +5,8 @@ import { language } from "@/lib/language";
 // classes say otherwise. The font is the system's (SF Pro, SF Arabic, Roboto). Use this instead of
 // react-native's Text.
 const WEIGHT = /\bfont-(normal|medium|semibold)\b/;
-const COLOR = /\btext-(ink|ink-2|ink-3|unit|white|red|green|primary|on-primary|on-primary-muted)\b/;
+const COLOR =
+  /\btext-(ink|ink-2|ink-3|unit|white|red|green|primary|primary-soft|on-primary|on-primary-muted|on-ink-muted)\b/;
 
 export function Text({ className = "", style, ...props }: TextProps & { className?: string }) {
   const classes = [

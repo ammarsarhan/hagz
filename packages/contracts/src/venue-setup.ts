@@ -11,6 +11,19 @@ export const Coordinates = z
   })
   .meta({ id: "Coordinates", description: "A point in degrees (WGS 84)." });
 
+// An area the owner asked for because it isn't in the list. The marketplace is the country the pin
+// is in (Google's country code), since there's no area to take it from.
+export const RequestedArea = z
+  .object({
+    name: z.string().trim().min(2).max(80).meta({ example: "Sheikh Zayed, Giza" }),
+    marketplace: z
+      .string()
+      .length(2)
+      .toUpperCase()
+      .meta({ description: "ISO 3166-1 alpha-2.", example: "EG" }),
+  })
+  .meta({ id: "RequestedArea" });
+
 export const CreateVenue = z
   .object({
     name: z.string().trim().min(2).max(60).meta({
@@ -25,11 +38,30 @@ export const CreateVenue = z
       .max(300)
       .optional()
       .meta({ description: "Google's place id, when the owner picked a search result." }),
-    locationId: z.uuid().meta({
-      description: "The area the owner confirmed. Its marketplace becomes the venue's.",
+    locationId: z
+      .uuid()
+      .optional()
+      .meta({
+        description:
+          "The area the owner confirmed. Its marketplace becomes the venue's. " +
+          "Send this or `requestedArea`, not both.",
+      }),
+    requestedArea: RequestedArea.optional().meta({
+      description:
+        "An area Hagz doesn't cover yet, in the owner's words. An admin adds it and sets it on " +
+        "the venue while reviewing; the venue can't be approved before then.",
     }),
   })
+  .refine((venue) => (venue.locationId === undefined) !== (venue.requestedArea === undefined), {
+    message: "Send locationId or requestedArea, not both.",
+    path: ["locationId"],
+  })
   .meta({ id: "CreateVenue" });
+
+// An admin setting the venue's area, usually the one its owner asked for.
+export const SetVenueArea = z
+  .object({ locationId: z.uuid() })
+  .meta({ id: "SetVenueArea", description: "Clears the owner's requested area." });
 
 // Every setup item. LAYOUT only appears for venues with two or more active grounds.
 export const SetupItemKey = z
@@ -80,7 +112,9 @@ export const VenueSetup = z
   .meta({ id: "VenueSetup" });
 
 export type Coordinates = z.infer<typeof Coordinates>;
+export type RequestedArea = z.infer<typeof RequestedArea>;
 export type CreateVenue = z.infer<typeof CreateVenue>;
+export type SetVenueArea = z.infer<typeof SetVenueArea>;
 export type SetupItemKey = z.infer<typeof SetupItemKey>;
 export type SetupItemState = z.infer<typeof SetupItemState>;
 export type SetupItem = z.infer<typeof SetupItem>;

@@ -33,6 +33,13 @@ export const locationNotFound = () =>
     detail: "There's no such area, or Hagz doesn't operate there yet.",
   });
 
+export const marketplaceNotFound = () =>
+  new AppError({
+    code: "MARKETPLACE_NOT_FOUND",
+    status: 422,
+    detail: "Hagz doesn't operate in that country yet.",
+  });
+
 export const locationOutsideMarketplace = () =>
   new AppError({
     code: "LOCATION_OUTSIDE_MARKETPLACE",
@@ -54,6 +61,39 @@ const freeSlug = async (tx: Tx) => {
   const slug = candidates.find((candidate) => !used.has(candidate));
   if (!slug) throw new Error("No free venue slug among the candidates");
   return slug;
+};
+
+const boundsSelect = {
+  isActive: true,
+  minimumLatitude: true,
+  maximumLatitude: true,
+  minimumLongitude: true,
+  maximumLongitude: true,
+} as const;
+
+// The venue's marketplace: its area's, or, for an area Hagz doesn't cover yet, the country the owner
+// says the pin is in. Either way the pin has to be inside that country's box.
+const marketplaceFor = async (tx: Tx, input: CreateVenue): Promise<string> => {
+  if (input.locationId !== undefined) {
+    const location = await tx.location.findUnique({
+      where: { id: input.locationId },
+      select: { marketplaceId: true, marketplace: { select: boundsSelect } },
+    });
+    if (!location?.marketplace.isActive) throw locationNotFound();
+    if (!insideBounds(location.marketplace, input.coordinates)) {
+      throw locationOutsideMarketplace();
+    }
+    return location.marketplaceId;
+  }
+  // The contract allows only one of the two, so this is the request.
+  if (!input.requestedArea) throw locationNotFound();
+  const marketplace = await tx.marketplace.findUnique({
+    where: { code: input.requestedArea.marketplace },
+    select: { id: true, ...boundsSelect },
+  });
+  if (!marketplace?.isActive) throw marketplaceNotFound();
+  if (!insideBounds(marketplace, input.coordinates)) throw locationOutsideMarketplace();
+  return marketplace.id;
 };
 
 interface Bounds {
@@ -107,28 +147,12 @@ export const createVenue = async (
     });
     if (unfinished) throw unfinishedVenueExists(unfinished.venue);
 
-    const location = await tx.location.findUnique({
-      where: { id: input.locationId },
-      select: {
-        marketplaceId: true,
-        marketplace: {
-          select: {
-            isActive: true,
-            minimumLatitude: true,
-            maximumLatitude: true,
-            minimumLongitude: true,
-            maximumLongitude: true,
-          },
-        },
-      },
-    });
-    if (!location?.marketplace.isActive) throw locationNotFound();
-    if (!insideBounds(location.marketplace, input.coordinates)) throw locationOutsideMarketplace();
-
+    const marketplaceId = await marketplaceFor(tx, input);
     const venue = await tx.venue.create({
       data: {
-        marketplaceId: location.marketplaceId,
-        locationId: input.locationId,
+        marketplaceId,
+        locationId: input.locationId ?? null,
+        requestedArea: input.requestedArea?.name ?? null,
         slug: await freeSlug(tx),
         placeId: input.placeId ?? null,
         translations: { create: { language: staff.language, name: input.name } },
@@ -150,7 +174,8 @@ export const createVenue = async (
         data: {
           name: input.name,
           language: staff.language,
-          locationId: input.locationId,
+          locationId: input.locationId ?? null,
+          requestedArea: input.requestedArea ?? null,
           coordinates: input.coordinates,
           placeId: input.placeId ?? null,
         },

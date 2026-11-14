@@ -2,6 +2,7 @@ import { auth } from "./api";
 import { leaveToOnboarding, resetTo } from "./navigation";
 import { queries } from "./queries";
 import { queryClient } from "./query";
+import { runningVenues } from "./venues";
 
 // Longest the way in waits on the server before showing the screen anyway (which then shows its own
 // loading, or a retry when offline).
@@ -19,7 +20,7 @@ export const landing = async (): Promise<"/venue" | "/home"> => {
   const timedOut = new Promise<undefined>((resolve) => setTimeout(resolve, LANDING_WAIT_MS));
   const venues = await Promise.race([loaded.catch(() => undefined), timedOut]);
   // Not known (slow, offline): first run's page decides once it loads, and moves on if need be.
-  return venues && venues.length > 0 ? "/venue" : "/home";
+  return venues && runningVenues(venues).length > 0 ? "/venue" : "/home";
 };
 
 // Just signed in or up, or opened a link while signed in: straight to where they belong.

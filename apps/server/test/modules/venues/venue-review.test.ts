@@ -269,6 +269,80 @@ describe("reviewing", () => {
   });
 });
 
+describe("an area the owner asked for", () => {
+  // A ready draft whose owner asked for an area Hagz doesn't cover, in review.
+  const waitingForArea = async () => {
+    const draft = await aReadyDraft();
+    await prisma.venue.update({
+      where: { id: draft.venueId },
+      data: { locationId: null, requestedArea: "Sheikh Zayed, Giza" },
+    });
+    await submit(draft.owner.id, draft.path);
+    const { marketplaceId } = await prisma.venue.findUniqueOrThrow({
+      where: { id: draft.venueId },
+    });
+    return { ...draft, marketplaceId };
+  };
+
+  it("shows admins the request in place of an area", async () => {
+    const { venueId } = await waitingForArea();
+    const res = await admin("GET", `/venues/${venueId}`);
+    expect(await res.json()).toMatchObject({ area: null, requestedArea: "Sheikh Zayed, Giza" });
+  });
+
+  it("holds approval until an admin sets an area, which replaces the request", async () => {
+    const { venueId, marketplaceId } = await waitingForArea();
+    const blocked = await admin("POST", `/venues/${venueId}/approve`);
+    expect(blocked.status).toBe(422);
+    expect(await problem(blocked)).toMatchObject({
+      code: "AREA_NOT_SET",
+      requestedArea: "Sheikh Zayed, Giza",
+    });
+    expect(await statusOf(venueId)).toBe("SUBMITTED");
+
+    const zayed = await prisma.location.create({
+      data: { marketplaceId, locality: "DISTRICT", slug: "sheikh-zayed" },
+    });
+    expect((await admin("PUT", `/venues/${venueId}/area`, { locationId: zayed.id })).status).toBe(
+      204,
+    );
+    expect(await prisma.venue.findUniqueOrThrow({ where: { id: venueId } })).toMatchObject({
+      locationId: zayed.id,
+      requestedArea: null,
+    });
+    const event = await prisma.venueEvent.findFirstOrThrow({
+      where: { venueId, type: "VENUE_AREA_SET" },
+    });
+    expect(event).toMatchObject({
+      adminId,
+      data: {
+        previous: { locationId: null, requestedArea: "Sheikh Zayed, Giza" },
+        next: { locationId: zayed.id },
+      },
+    });
+
+    expect((await admin("POST", `/venues/${venueId}/approve`)).status).toBe(204);
+  });
+
+  it("only takes an area in the venue's marketplace", async () => {
+    const { venueId } = await waitingForArea();
+    const elsewhere = await createMarketplace();
+    const dubai = await prisma.location.create({
+      data: { marketplaceId: elsewhere.id, locality: "DISTRICT", slug: "al-nahda" },
+    });
+
+    const abroad = await admin("PUT", `/venues/${venueId}/area`, { locationId: dubai.id });
+    expect(abroad.status).toBe(422);
+    expect(await problem(abroad)).toMatchObject({ code: "LOCATION_OUTSIDE_MARKETPLACE" });
+    const missing = await admin("PUT", `/venues/${venueId}/area`, { locationId: randomUUID() });
+    expect(missing.status).toBe(422);
+    expect(await problem(missing)).toMatchObject({ code: "LOCATION_NOT_FOUND" });
+
+    const venue = await prisma.venue.findUniqueOrThrow({ where: { id: venueId } });
+    expect(venue.requestedArea).toBe("Sheikh Zayed, Giza");
+  });
+});
+
 describe("going live", () => {
   const provisioning = async () => {
     const draft = await aReadyDraft();

@@ -1,21 +1,21 @@
 // A country Hagz operates in. CHECKs: taxRate and commissionRate 0–10000; the bounding box is all
 // four corners or none, in range, minimum below maximum.
 model Marketplace {
-  id             String   @id @default(uuid(7)) @db.Uuid
-  code           String   @unique @db.Char(2) // ISO 3166-1 alpha-2
-  currency       String   @db.Char(3) // ISO 4217
-  dialCode       String // E.164 prefix
-  timezone       String // IANA
-  taxRate        Int      @default(0) // VAT in basis points (1400 = 14%).
-  commissionRate Int      @default(0) // Basis points.
-  isActive       Boolean  @default(false) // Hidden until launch.
+  id               String   @id @default(uuid(7)) @db.Uuid
+  code             String   @unique @db.Char(2) // ISO 3166-1 alpha-2
+  currency         String   @db.Char(3) // ISO 4217
+  dialCode         String // E.164 prefix
+  timezone         String // IANA
+  taxRate          Int      @default(0) // VAT in basis points (1400 = 14%).
+  commissionRate   Int      @default(0) // Basis points.
+  isActive         Boolean  @default(false) // Hidden until launch.
   // Rough box (degrees) a venue's map pin must fall inside. Null: no check.
   minimumLatitude  Float?
   maximumLatitude  Float?
   minimumLongitude Float?
   maximumLongitude Float?
-  createdAt      DateTime @default(now()) @db.Timestamptz
-  updatedAt      DateTime @updatedAt @db.Timestamptz
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @updatedAt @db.Timestamptz
 
   translations MarketplaceTranslation[]
   locations    Location[]
@@ -35,13 +35,16 @@ model MarketplaceTranslation {
 
 // Tree node, e.g. Cairo → Nasr City. The parent shares the marketplace.
 model Location {
-  id            String   @id @default(uuid(7)) @db.Uuid
-  marketplaceId String   @db.Uuid
-  parentId      String?  @db.Uuid // Null at the top level.
+  id            String                                 @id @default(uuid(7)) @db.Uuid
+  marketplaceId String                                 @db.Uuid
+  parentId      String?                                @db.Uuid // Null at the top level.
   locality      Locality
   slug          String // From the English name: /ae/dubai/al-nahda
-  createdAt     DateTime @default(now()) @db.Timestamptz
-  updatedAt     DateTime @updatedAt @db.Timestamptz
+  // Roughly the middle of the area. A venue's pin suggests the nearest area that has one (Google's
+  // address names police districts, not the neighbourhoods people say). Null: never suggested.
+  center        Unsupported("geography(Point, 4326)")?
+  createdAt     DateTime                               @default(now()) @db.Timestamptz
+  updatedAt     DateTime                               @updatedAt @db.Timestamptz
 
   marketplace  Marketplace           @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
   parent       Location?             @relation("Hierarchy", fields: [parentId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
@@ -56,6 +59,7 @@ model Location {
   @@unique([parentId, slug], map: "Location_child_slug_key", where: { parentId: { not: null } })
   @@index([parentId])
   @@index([marketplaceId, locality])
+  @@index([center], type: Gist)
 }
 
 model LocationTranslation {

@@ -259,6 +259,73 @@ describe("creating a venue", () => {
     });
   });
 
+  describe("an area Hagz doesn't cover yet", () => {
+    const requested = (marketplace: string, overrides: Partial<CreateVenue> = {}): CreateVenue => ({
+      ...draft(randomUUID(), overrides),
+      locationId: undefined,
+      requestedArea: { name: "Sheikh Zayed, Giza", marketplace },
+    });
+
+    it("keeps the owner's words in place of an area, in the country they named", async () => {
+      const marketplace = await createMarketplace({ code: "EG", bounds: EGYPT });
+      const owner = await someStaff();
+
+      // The code is read case-blind, as Google sends it either way.
+      const res = await call(owner.id, "POST", "/venues", requested("eg"));
+      expect(res.status).toBe(201);
+      const { venue } = VenueSetup.parse(await res.json());
+
+      const row = await prisma.venue.findUniqueOrThrow({
+        where: { id: venue.id },
+        include: { events: true },
+      });
+      expect(row).toMatchObject({
+        marketplaceId: marketplace.id,
+        locationId: null,
+        requestedArea: "Sheikh Zayed, Giza",
+      });
+      expect(row.events[0]?.data).toMatchObject({
+        locationId: null,
+        requestedArea: { name: "Sheikh Zayed, Giza", marketplace: "EG" },
+      });
+    });
+
+    it("needs a country Hagz operates in", async () => {
+      await createMarketplace({ code: "SA", isActive: false });
+      const owner = await someStaff();
+      for (const code of ["SA", "AE"]) {
+        const res = await call(owner.id, "POST", "/venues", requested(code));
+        expect(res.status).toBe(422);
+        expect(await problem(res)).toMatchObject({ code: "MARKETPLACE_NOT_FOUND" });
+      }
+      expect(await prisma.venue.count()).toBe(0);
+    });
+
+    it("refuses a pin outside that country", async () => {
+      await createMarketplace({ code: "EG", bounds: EGYPT });
+      const owner = await someStaff();
+      const dubai = { latitude: 25.2048, longitude: 55.2708 };
+
+      const res = await call(owner.id, "POST", "/venues", requested("EG", { coordinates: dubai }));
+      expect(res.status).toBe(422);
+      expect(await problem(res)).toMatchObject({ code: "LOCATION_OUTSIDE_MARKETPLACE" });
+    });
+
+    it("takes an area from the list or a requested one, never both or neither", async () => {
+      const { area } = await egypt();
+      const owner = await someStaff();
+      const both = { ...requested("EG"), locationId: area.id };
+      const neither = { ...requested("EG"), requestedArea: undefined };
+      const unnamed = { ...requested("EG"), requestedArea: { name: " ", marketplace: "EG" } };
+
+      for (const body of [both, neither, unnamed]) {
+        const res = await call(owner.id, "POST", "/venues", body);
+        expect(res.status).toBe(400);
+        expect(await problem(res)).toMatchObject({ code: "VALIDATION_FAILED" });
+      }
+    });
+  });
+
   it("validates the name and the pin", async () => {
     const { area } = await egypt();
     const owner = await someStaff();

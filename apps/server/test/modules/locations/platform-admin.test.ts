@@ -266,6 +266,34 @@ describe("admin locations", () => {
     });
   });
 
+  it("set, move and clear an area's centre", async () => {
+    const { id } = await createMarketplace();
+    const smouha = { latitude: 31.2155, longitude: 29.942 };
+    const created = await request("POST", `/admin/marketplaces/${id}/locations`, {
+      parentId: null,
+      locality: "DISTRICT",
+      names: { en: "Smouha", ar: "سموحة" },
+      center: smouha,
+    });
+    expect(created.status).toBe(201);
+    const location = AdminLocation.parse(created.body);
+    expect(location.center).toEqual(smouha);
+
+    const moved = { latitude: 31.2, longitude: 29.95 };
+    const res = await request("PATCH", `/admin/locations/${location.id}`, { center: moved });
+    expect(AdminLocation.parse(res.body).center).toEqual(moved);
+    const { body } = await request("GET", `/admin/marketplaces/${id}/locations`);
+    expect(list(AdminLocation).parse(body).data[0]?.center).toEqual(moved);
+
+    // Renaming leaves it alone; null clears it.
+    const renamed = await request("PATCH", `/admin/locations/${location.id}`, {
+      names: { en: "Smouha", ar: "سموحه" },
+    });
+    expect(AdminLocation.parse(renamed.body).center).toEqual(moved);
+    const cleared = await request("PATCH", `/admin/locations/${location.id}`, { center: null });
+    expect(AdminLocation.parse(cleared.body).center).toBeNull();
+  });
+
   it("delete only while nothing is under them or in them", async () => {
     const { id } = await createMarketplace();
     const cairo = AdminLocation.parse((await addLocation(id, "Cairo")).body);

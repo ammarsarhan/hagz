@@ -11,9 +11,16 @@ import { Screen } from "@/components/screen";
 import { StartOptions } from "@/components/start-options";
 import { Title } from "@/components/title";
 import { useInvitationSheet } from "@/components/use-invitation-sheet";
+import { useOpenInvitations } from "@/components/invitation-card";
 import { hudMessage } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
+import { useRefreshWhenShown } from "@/lib/use-refresh";
+import { runningVenues, unfinishedVenue } from "@/lib/venues";
+
+// What can change on another phone while this screen is open: invitations sent or taken back, and
+// the draft (its name, area, "Last updated").
+const REFRESHED = [queries.venues.queryKey, queries.invitations.queryKey];
 
 // Where signing in lands. Staff who belong to a venue go on to its tabs (venue/); staff who don't see
 // first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable row of blue
@@ -28,14 +35,19 @@ export default function Home() {
   const me = useQuery(queries.me);
   const venues = useQuery(queries.venues);
   const received = useQuery(queries.invitations);
+  useRefreshWhenShown(REFRESHED);
+  const invitations = useOpenInvitations(received.data);
   const reads = [me, venues, received];
   const failure = reads.find((read) => read.isError)?.error;
   const failed = failure !== undefined && failure !== null;
   const data =
-    me.data && venues.data && received.data
-      ? { me: me.data, venues: venues.data, invitations: received.data }
+    me.data && venues.data && invitations
+      ? { me: me.data, venues: venues.data, invitations }
       : null;
-  const hasVenue = (data?.venues.length ?? 0) > 0;
+  // Only a venue that's running sends them to the tabs. One still being set up shows here, as the
+  // card that carries on where they left off (docs/flows.md, "draft venues").
+  const hasVenue = runningVenues(data?.venues).length > 0;
+  const draft = unfinishedVenue(data?.venues);
   // Links wait for the page to load, and are left for the venue's home when that's where this goes.
   const invitation = useInvitationSheet({
     phone: data?.me.phone.replace(/^\+20/, ""),
@@ -84,7 +96,6 @@ export default function Home() {
     />
   );
 
-  const { invitations } = data;
   const phone = data.me.phone.replace(/^\+20/, "");
 
   return (
@@ -92,16 +103,19 @@ export default function Home() {
       {topBar}
       <Title
         subtitle={
-          invitations.length > 0
-            ? t("screens.firstRun.invitedSubtitle", { count: invitations.length })
-            : t("screens.firstRun.emptySubtitle")
+          data.invitations.length > 0
+            ? t("screens.firstRun.invitedSubtitle", { count: data.invitations.length })
+            : draft
+              ? t("screens.firstRun.draftSubtitle")
+              : t("screens.firstRun.emptySubtitle")
         }
       >
         {t("screens.firstRun.welcome", { name: firstName })}
       </Title>
       <StartOptions
-        invitations={invitations}
+        invitations={data.invitations}
         phone={phone}
+        draft={draft}
         onOpen={invitation.open}
         onHaveCode={() => invitation.open("code")}
         onDeclined={invitation.drop}

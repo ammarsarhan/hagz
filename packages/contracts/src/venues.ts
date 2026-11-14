@@ -19,6 +19,17 @@ export const StaffVenue = z
     slug: z.string(),
     name: z.string().nullable().meta({ description: "In `Accept-Language`, else any language." }),
     status: VenueStatus,
+    location: z.string().nullable().meta({
+      description:
+        "Where the venue is: its area and the place above it, in `Accept-Language`, else any language.",
+      example: "Maadi, Cairo",
+    }),
+    lastActivityAt: z.iso.datetime().meta({
+      description:
+        "When anything about the venue last changed: its details, photos, grounds, hours, layout, " +
+        "settings, team or review status (its newest change history entry, else when it was " +
+        "created).",
+    }),
     role: VenueRole,
     permissions: StaffPermissions.meta({
       description: "What the signed-in member may do here; all `manage` for the owner.",
@@ -116,6 +127,15 @@ export const AdminVenue = z
     status: VenueStatus,
     marketplace: z.object({ id: z.uuid(), code: z.string().meta({ example: "EG" }) }),
     area: z.string().nullable().meta({ example: "Nasr City, Cairo" }),
+    requestedArea: z
+      .string()
+      .nullable()
+      .meta({
+        description:
+          "An area the owner asked for because Hagz doesn't cover it; `area` is null until an " +
+          "admin adds it and sets it.",
+        example: "Sheikh Zayed, Giza",
+      }),
     owner: z
       .object({
         id: z.uuid(),

@@ -26,6 +26,7 @@ import {
   settingsView,
   type StoredSettings,
 } from "../domain/settings";
+import { nameIn } from "../domain/names";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { insideBounds, locationNotFound, locationOutsideMarketplace } from "./venue-setup";
 
@@ -86,7 +87,14 @@ const stored = (row: SettingsRow | null): StoredSettings =>
     ? { ...row, cancellationTiers: row.cancellationTiers as StoredSettings["cancellationTiers"] }
     : DEFAULT_SETTINGS;
 
-export const venueDetail = async (venueId: string): Promise<StaffVenueDetail> => {
+const names = { translations: { select: { language: true, name: true } } } as const;
+
+// Everything the setup and edit screens show, with the area named in `display` (the app's
+// language): the area itself and the top of its tree, as the area picker shows it.
+export const venueDetail = async (
+  venueId: string,
+  display: Language,
+): Promise<StaffVenueDetail> => {
   const venue = await prisma.venue.findUnique({
     where: { id: venueId },
     select: {
@@ -97,6 +105,16 @@ export const venueDetail = async (venueId: string): Promise<StaffVenueDetail> =>
       taxNumber: true,
       placeId: true,
       locationId: true,
+      requestedArea: true,
+      marketplace: { select: { code: true, currency: true } },
+      location: {
+        select: {
+          ...names,
+          parent: {
+            select: { ...names, parent: { select: { ...names, parent: { select: names } } } },
+          },
+        },
+      },
       translations: {
         orderBy: { language: "asc" },
         select: { language: true, name: true, description: true, address: true },
@@ -106,14 +124,20 @@ export const venueDetail = async (venueId: string): Promise<StaffVenueDetail> =>
     },
   });
   if (!venue) throw venueNotFound();
+  const area = venue.location;
+  const top = area?.parent?.parent?.parent ?? area?.parent?.parent ?? area?.parent;
   return {
     id: venue.id,
     slug: venue.slug,
     status: venue.status,
     phone: venue.phone,
     taxNumber: venue.taxNumber,
+    marketplace: venue.marketplace,
     location: {
       id: venue.locationId,
+      name: area ? nameIn(area.translations, display) : null,
+      within: top ? nameIn(top.translations, display) : null,
+      requestedArea: venue.requestedArea,
       coordinates: await pinOf(prisma, venueId),
       placeId: venue.placeId,
     },
@@ -133,13 +157,19 @@ const event = (
 
 // Phone and tax number (operations: still editable while provisioning, when Hagz checks the tax
 // number), and the location (listing).
-export const updateVenue = async (actor: VenueAccess, input: UpdateVenue) => {
+export const updateVenue = async (actor: VenueAccess, input: UpdateVenue, display: Language) => {
   const phone = input.phone == null ? input.phone : requirePhoneNumber(input.phone);
   await transaction(async (tx) => {
     const venue = await lockForEdit(tx, actor.venueId, input.location ? "listing" : "operations");
     const current = await tx.venue.findUniqueOrThrow({
       where: { id: actor.venueId },
-      select: { phone: true, taxNumber: true, placeId: true, locationId: true },
+      select: {
+        phone: true,
+        taxNumber: true,
+        placeId: true,
+        locationId: true,
+        requestedArea: true,
+      },
     });
 
     const details: Record<string, { previous: unknown; next: unknown }> = {};
@@ -186,8 +216,13 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue) => {
         coordinates: await pinOf(tx, actor.venueId),
         placeId: current.placeId,
         locationId: current.locationId,
+        requestedArea: current.requestedArea,
       };
-      await tx.venue.update({ where: { id: actor.venueId }, data: { placeId, locationId } });
+      // Picking an area from the list replaces any the owner asked for.
+      await tx.venue.update({
+        where: { id: actor.venueId },
+        data: { placeId, locationId, requestedArea: null },
+      });
       await tx.$executeRaw`
         UPDATE "Venue"
         SET coordinates = ST_SetSRID(ST_MakePoint(${coordinates.longitude}, ${coordinates.latitude}), 4326)::geography
@@ -198,7 +233,7 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue) => {
       });
     }
   });
-  return venueDetail(actor.venueId);
+  return venueDetail(actor.venueId, display);
 };
 
 // One language's name, description and address. The app writes the owner's language; admins fill
@@ -207,12 +242,13 @@ export const putTranslation = async (
   actor: VenueAccess,
   language: Language,
   input: VenueTranslationInput,
+  display: Language,
 ) => {
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "listing");
     await writeTranslation(tx, actor.venueId, language, input, { staffId: actor.staffId });
   });
-  return venueDetail(actor.venueId);
+  return venueDetail(actor.venueId, display);
 };
 
 export const writeTranslation = async (
@@ -247,7 +283,11 @@ export const writeTranslation = async (
   });
 };
 
-export const updateSettings = async (actor: VenueAccess, change: UpdateVenueSettings) => {
+export const updateSettings = async (
+  actor: VenueAccess,
+  change: UpdateVenueSettings,
+  display: Language,
+) => {
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const row = await tx.venueSettings.findUnique({
@@ -273,7 +313,7 @@ export const updateSettings = async (actor: VenueAccess, change: UpdateVenueSett
       changes,
     } as Prisma.InputJsonValue);
   });
-  return venueDetail(actor.venueId);
+  return venueDetail(actor.venueId, display);
 };
 
 export const amenityNotAvailable = (optionIds: string[]) =>
@@ -286,7 +326,11 @@ export const amenityNotAvailable = (optionIds: string[]) =>
 
 // The whole set at once, as the pill screen saves it. An option the marketplace has since retired
 // can stay if the venue already had it, but can't be newly picked.
-export const setAmenities = async (actor: VenueAccess, input: SetVenueAmenities) => {
+export const setAmenities = async (
+  actor: VenueAccess,
+  input: SetVenueAmenities,
+  display: Language,
+) => {
   await transaction(async (tx) => {
     const venue = await lockForEdit(tx, actor.venueId, "operations");
     const previous = await tx.venueAmenity.findMany({
@@ -316,5 +360,5 @@ export const setAmenities = async (actor: VenueAccess, input: SetVenueAmenities)
     });
     await event(tx, actor.venueId, actor.staffId, VENUE_AMENITIES_CHANGED, { previous, next });
   });
-  return venueDetail(actor.venueId);
+  return venueDetail(actor.venueId, display);
 };

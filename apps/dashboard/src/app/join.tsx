@@ -7,8 +7,13 @@ import { Screen } from "@/components/screen";
 import { StartOptions } from "@/components/start-options";
 import { Title } from "@/components/title";
 import { useInvitationSheet } from "@/components/use-invitation-sheet";
+import { useOpenInvitations } from "@/components/invitation-card";
 import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
+import { useRefreshWhenShown } from "@/lib/use-refresh";
+
+// Invitations can be sent or taken back from another phone while this screen is open.
+const REFRESHED = [queries.invitations.queryKey];
 
 // "Join or create a venue", from the Account tab, for staff already on a venue's team: the same
 // invitations and start tiles as first run, under a back button. Joining goes back to the tabs.
@@ -16,9 +21,10 @@ export default function Join() {
   const { t } = useTranslation();
   const me = useQuery(queries.me);
   const received = useQuery(queries.invitations);
+  useRefreshWhenShown(REFRESHED);
   const phone = me.data?.phone.replace(/^\+20/, "");
   const invitation = useInvitationSheet({ phone, takeLinks: false, onJoined: () => router.back() });
-  const invitations = received.data;
+  const invitations = useOpenInvitations(received.data);
 
   return (
     <Screen>

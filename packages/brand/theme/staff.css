@@ -7,4 +7,9 @@
   --color-on-primary: var(--color-white);
   /* Body text on the blue onboarding slides: 5.2:1 on blue, where the soft blue would fail. */
   --color-on-primary-muted: #d2d7fb;
+  /* A quieter blue on white, for a small label next to primary text (the setup steps' "Step 1"). */
+  --color-primary-soft: var(--color-blue-mid);
+  /* On the black draft card: its quiet lines, and the unfilled part of its progress line. */
+  --color-on-ink-muted: #a3a7ae;
+  --color-ink-track: #2c2e33;
 }

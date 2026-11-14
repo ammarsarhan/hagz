@@ -15,6 +15,24 @@ const env = (process.env.APP_ENV ?? "development") as Environment;
 if (!ENVIRONMENTS.includes(env)) throw new Error(`Unknown APP_ENV: ${env}`);
 const webHost = process.env.WEB_URL ? new URL(process.env.WEB_URL).host : undefined;
 
+// The app runs as a development build (expo-dev-client), not in Expo Go, so the native side is ours:
+// Google Maps is compiled in on both platforms and the map is the same everywhere. Each platform has
+// its own key, because a key is locked to one kind of app (iOS bundle id, or Android package and
+// signing certificate). They're EAS environment variables, read when EAS prebuilds the app; a build
+// without one would draw an empty map, so it fails instead. `expo start` doesn't need them.
+const mapsKeys = {
+  ios: process.env.GOOGLE_MAPS_IOS_KEY,
+  android: process.env.GOOGLE_MAPS_ANDROID_KEY,
+};
+if (process.env.EAS_BUILD === "true") {
+  const platform = process.env.EAS_BUILD_PLATFORM as keyof typeof mapsKeys | undefined;
+  if (platform && !mapsKeys[platform]) {
+    throw new Error(
+      `GOOGLE_MAPS_${platform.toUpperCase()}_KEY is not set for this EAS environment.`,
+    );
+  }
+}
+
 const config: ExpoConfig = {
   name: appNameFor("dashboard", env),
   slug: "hagz-dashboard",
@@ -26,7 +44,9 @@ const config: ExpoConfig = {
   scheme: schemeFor("dashboard", env),
   ios: {
     bundleIdentifier: bundleIdFor("dashboard", env),
-    associatedDomains: webHost ? [`applinks:${webHost}`] : [],
+    // Left out, not empty, without a web host: even an empty list adds the Associated Domains
+    // entitlement, which a free Apple account (local iPhone builds) can't sign.
+    ...(webHost && { associatedDomains: [`applinks:${webHost}`] }),
   },
   android: {
     package: bundleIdFor("dashboard", env),
@@ -48,6 +68,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    "expo-dev-client",
     "expo-secure-store",
     "expo-status-bar",
     // Held while the app decides where it opens (src/lib/boot.ts): the staff logo on white.
@@ -57,6 +78,34 @@ const config: ExpoConfig = {
     ],
     // Builds lay Arabic out right-to-left natively (I18nManager); Screen sets Yoga's direction too.
     ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
+    // Only to centre the map on the owner while they place their venue's pin; never in the
+    // background, and the venue's pin is the only thing kept.
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission:
+          "Hagz uses your location to centre the map while you place your venue.",
+        isAndroidBackgroundLocationEnabled: false,
+      },
+    ],
+    // Venue photos (setup's Photos item): picked from the library or taken there and then, resized
+    // in the app before upload (expo-image-manipulator, no plugin), shown with expo-image.
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Hagz uses your photos so you can add pictures of your venue.",
+        cameraPermission: "Hagz uses the camera so you can take pictures of your venue.",
+        microphonePermission: false,
+      },
+    ],
+    "expo-image",
+    // react-native-maps' own plugin: Expo's built-in maps settings (ios.config.googleMapsApiKey,
+    // android.config.googleMaps) are skipped once a package ships a plugin, so the keys go here. The
+    // iOS key is also what adds Google's SDK to the Podfile.
+    [
+      "react-native-maps",
+      { iosGoogleMapsApiKey: mapsKeys.ios, androidGoogleMapsApiKey: mapsKeys.android },
+    ],
   ],
   experiments: {
     typedRoutes: true,
