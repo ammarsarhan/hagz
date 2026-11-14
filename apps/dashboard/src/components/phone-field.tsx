@@ -31,7 +31,7 @@ export function PhoneField({ value, onChangeText, label, error }: PhoneFieldProp
       {label ? <FieldLabel>{label}</FieldLabel> : null}
       <FieldBox focused={focused} error={Boolean(error)} ltr>
         <View className="flex-row items-center gap-0.5">
-          <Text className="text-[17px] text-unit">+20</Text>
+          <Text className="text-[16px] text-unit">+20</Text>
           <IconChevronDown size={16} color={colors.unit} strokeWidth={2} />
         </View>
         <TextInput

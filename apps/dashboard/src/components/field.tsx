@@ -36,7 +36,7 @@ export function FieldLabel({ children }: { children: string }) {
   return <Text className="mb-2 text-label font-medium text-ink-2">{children}</Text>;
 }
 
-export const inputClass = "h-full flex-1 text-[17px] text-ink";
+export const inputClass = "h-full flex-1 text-[16px] text-ink";
 
 interface FieldProps extends Omit<TextInputProps, "className" | "style"> {
   label?: string;
@@ -89,14 +89,16 @@ export function TextArea({
   placeholder?: string;
 }) {
   const [focused, setFocused] = useState(false);
+  // A little less padding above and below than at the sides, so the text sits in the box the way a
+  // one-line field's does rather than floating in it.
   const border = focused
-    ? "border-[1.5px] border-primary px-[15.5px] py-[13.5px]"
-    : "border border-border px-4 py-3.5";
+    ? "border-[1.5px] border-primary px-[15.5px] py-[11.5px]"
+    : "border border-border px-4 py-3";
   return (
     <View className="mb-4">
       <FieldLabel>{label}</FieldLabel>
       <TextInput
-        className={`min-h-[120px] rounded-field bg-white text-[17px] leading-[1.35] text-ink ${border}`}
+        className={`min-h-[120px] rounded-field bg-white text-[16px] leading-[1.35] text-ink ${border}`}
         value={value}
         onChangeText={onChangeText}
         maxLength={maxLength}
