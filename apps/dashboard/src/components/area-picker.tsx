@@ -4,7 +4,7 @@ import { FlatList, Pressable, TextInput, View, useWindowDimensions } from "react
 import { choosableAreas, type Location } from "@/lib/areas";
 import { colors } from "@/lib/colors";
 import { FieldBox, inputClass } from "./field";
-import { IconCircleCheckFilled, IconSearch } from "./icons";
+import { IconCircleCheckFilled, IconPlus, IconSearch } from "./icons";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
 
@@ -14,18 +14,25 @@ import { Text } from "./text";
 //
 // Only the leaves are offered: a venue belongs to a neighbourhood, not to a governorate, and the
 // parent is shown beside each name so two "Nasr City" rows can be told apart.
+//
+// An area that isn't listed can still be asked for: whatever's typed becomes a request, which Hagz
+// adds while reviewing the venue (docs/onboarding.md, "Areas Hagz doesn't cover yet").
 export function AreaPicker({
   visible,
   locations,
   selected,
+  requested,
   onClose,
   onPick,
+  onRequest,
 }: {
   visible: boolean;
   locations: Location[];
   selected: Location | null;
+  requested: string | null;
   onClose: () => void;
   onPick: (location: Location) => void;
+  onRequest: (name: string) => void;
 }) {
   const { t } = useTranslation();
   const { height } = useWindowDimensions();
@@ -41,11 +48,19 @@ export function AreaPicker({
           area.within.toLocaleLowerCase().includes(typed),
       )
     : areas;
+  // Offered for anything typed that isn't exactly one of ours: "Maadi" is in the list, so it's
+  // picked, not asked for.
+  const request = query.trim().replace(/\s+/g, " ");
+  const canRequest =
+    request.length >= 2 && !areas.some((area) => area.name.toLocaleLowerCase() === typed);
 
   return (
     <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
-      <Text accessibilityRole="header" className="mb-4 mt-1 text-heading font-semibold">
+      <Text accessibilityRole="header" className="mt-1 text-heading font-semibold">
         {t("screens.createVenue.place.chooseArea")}
+      </Text>
+      <Text className="mb-4 mt-1.5 text-body text-ink-2">
+        {t("screens.createVenue.place.chooseAreaBody")}
       </Text>
       <FieldBox focused={focused} error={false}>
         <IconSearch size={20} color={focused || query ? colors.ink : colors.ink3} />
@@ -66,9 +81,33 @@ export function AreaPicker({
           keyExtractor={(area) => area.location.id}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text className="pt-7 text-body text-ink-2">
-              {t("screens.createVenue.place.noAreas")}
-            </Text>
+            canRequest ? undefined : (
+              <Text className="pt-7 text-body text-ink-2">
+                {t("screens.createVenue.place.noAreas")}
+              </Text>
+            )
+          }
+          ListFooterComponent={
+            canRequest ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: requested === request }}
+                onPress={() => onRequest(request)}
+                className="flex-row items-center gap-3 py-3.5 active:opacity-60"
+              >
+                <View className="size-9 items-center justify-center rounded-full bg-blue-tint">
+                  <IconPlus size={18} color={colors.primary} strokeWidth={2} />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-subtitle font-medium leading-[1.31]" numberOfLines={2}>
+                    {t("screens.createVenue.place.requestArea", { area: request })}
+                  </Text>
+                  <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
+                    {t("screens.createVenue.place.requestAreaNote")}
+                  </Text>
+                </View>
+              </Pressable>
+            ) : undefined
           }
           renderItem={({ item }) => (
             <Pressable

@@ -172,6 +172,13 @@ const en = {
           create: "Yes, create venue",
           differentArea: "Choose a different area",
           chooseArea: "Choose an area",
+          chooseAreaBody:
+            "Pick the area your venue is in. Not listed? Type its name and request it, and Hagz adds it when your venue is submitted.",
+          requestArea: "Request \u201C{{area}}\u201D",
+          requestAreaNote: "Hagz adds it when your venue is submitted",
+          requestedNote: "New area, added on submission",
+          requestedBody:
+            "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",
           areaSearchPlaceholder: "Search areas",
           noAreas: "No area by that name.",
           searchTitle: "Find your venue",

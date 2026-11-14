@@ -206,6 +206,12 @@ const ar: ArabicTranslations = {
           create: "نعم، أنشئ الملعب",
           differentArea: "اختر منطقة أخرى",
           chooseArea: "اختر المنطقة",
+          chooseAreaBody:
+            "اختر المنطقة التي يقع فيها ملعبك. غير موجودة؟ اكتب اسمها واطلب إضافتها، وستضيفها حجز عند إرسال ملعبك.",
+          requestArea: "اطلب \u201C{{area}}\u201D",
+          requestAreaNote: "تضيفها حجز عند إرسال ملعبك",
+          requestedNote: "منطقة جديدة، تُضاف عند الإرسال",
+          requestedBody: "حجز لا تغطي هذه المنطقة بعد. سنضيفها عند إرسال ملعبك.",
           areaSearchPlaceholder: "ابحث عن منطقة",
           noAreas: "لا توجد منطقة بهذا الاسم.",
           searchTitle: "ابحث عن ملعبك",
