@@ -215,6 +215,7 @@ const ar: ArabicTranslations = {
           areaSearchPlaceholder: "ابحث عن منطقة",
           noAreas: "لا توجد منطقة بهذا الاسم.",
           searchTitle: "ابحث عن ملعبك",
+          searchBody: "ابحث باسمه أو باسم الشارع، أو ابدأ من مكانك الحالي.",
           searchPlaceholder: "ابحث عن ملعبك أو الشارع",
           useMyLocation: "استخدم موقعي الحالي",
           cantFind: "لم تجده؟",

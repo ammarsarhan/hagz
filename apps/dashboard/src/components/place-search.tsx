@@ -172,9 +172,12 @@ export function PlaceSearch({
           </View>
           <Text
             accessibilityRole="header"
-            className="mb-4 mt-1 text-[22px] font-semibold leading-[1.27] tracking-[-0.3px]"
+            className="mt-1 text-[22px] font-semibold leading-[1.27] tracking-[-0.3px]"
           >
             {t("screens.createVenue.place.searchTitle")}
+          </Text>
+          <Text className="mb-4 mt-1.5 text-body text-ink-2">
+            {t("screens.createVenue.place.searchBody")}
           </Text>
 
           <FieldBox focused={focused} error={false}>
@@ -209,14 +212,14 @@ export function PlaceSearch({
             accessibilityRole="button"
             onPress={() => void useMyLocation()}
             disabled={picking !== null}
-            className="flex-row items-center gap-3 border-b border-border py-[18px] active:opacity-60"
+            className="flex-row items-center gap-2.5 border-b border-border py-[15px] active:opacity-60"
           >
             {picking === "me" ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
-              <IconCurrentLocation size={20} color={colors.primary} />
+              <IconCurrentLocation size={18} color={colors.primary} />
             )}
-            <Text className="text-subtitle font-medium text-primary">
+            <Text className="text-body font-medium text-primary">
               {t("screens.createVenue.place.useMyLocation")}
             </Text>
           </Pressable>

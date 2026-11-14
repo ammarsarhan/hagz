@@ -182,6 +182,7 @@ const en = {
           areaSearchPlaceholder: "Search areas",
           noAreas: "No area by that name.",
           searchTitle: "Find your venue",
+          searchBody: "Search by its name or street, or start from where you are.",
           searchPlaceholder: "Search for your venue or street",
           useMyLocation: "Use my current location",
           cantFind: "Can't find it?",
