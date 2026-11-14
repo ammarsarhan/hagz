@@ -222,6 +222,7 @@ const en = {
           library: "Choose from library",
           camera: "Take a photo",
           cameraBlocked: "Allow camera access in Settings to take photos.",
+          pickerFailed: "Couldn't open your photos. Try again.",
           left_one: "Add {{count}} more to finish this step.",
           left_other: "Add {{count}} more to finish this step.",
           done: "Done",

@@ -92,6 +92,9 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
   const width = screen - 40;
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [choosingSource, setChoosingSource] = useState(false);
+  // The source tapped in the sheet, opened once the sheet has gone: iOS won't present the system
+  // picker while another modal (the sheet) is still on screen, and does nothing instead.
+  const [source, setSource] = useState<"library" | "camera" | null>(null);
   const [chosen, setChosen] = useState<Photo | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -143,8 +146,21 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
     }
   };
 
-  const pick = async (source: "library" | "camera") => {
+  const choose = (picked: "library" | "camera") => {
+    setSource(picked);
     setChoosingSource(false);
+  };
+
+  const pick = async (source: "library" | "camera") => {
+    try {
+      await openPicker(source);
+    } catch (error) {
+      console.warn(error);
+      hud.show(t("screens.setup.photos.pickerFailed"));
+    }
+  };
+
+  const openPicker = async (source: "library" | "camera") => {
     if (source === "camera") {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) return hud.show(t("screens.setup.photos.cameraBlocked"));
@@ -316,6 +332,11 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       <Sheet
         visible={choosingSource}
         onClose={() => setChoosingSource(false)}
+        onHidden={() => {
+          if (!source) return;
+          setSource(null);
+          void pick(source);
+        }}
         closeLabel={t("components.shared.nav.close")}
       >
         <Text accessibilityRole="header" className="mb-2 text-[22px] font-semibold leading-[1.27]">
@@ -324,12 +345,12 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
         <SheetRow
           icon={<IconPhoto size={22} color={colors.ink} strokeWidth={1.75} />}
           label={t("screens.setup.photos.library")}
-          onPress={() => void pick("library")}
+          onPress={() => choose("library")}
         />
         <SheetRow
           icon={<IconCamera size={22} color={colors.ink} strokeWidth={1.75} />}
           label={t("screens.setup.photos.camera")}
-          onPress={() => void pick("camera")}
+          onPress={() => choose("camera")}
           last
         />
       </Sheet>
