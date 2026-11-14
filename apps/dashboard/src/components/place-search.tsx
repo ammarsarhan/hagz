@@ -251,11 +251,9 @@ export function PlaceSearch({
                   )}
                 </View>
                 <View className="flex-1">
-                  <Text className="text-subtitle font-medium leading-[1.31]">{item.name}</Text>
+                  <Text className="text-subtitle font-medium leading-[1.25]">{item.name}</Text>
                   {item.address ? (
-                    <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
-                      {item.address}
-                    </Text>
+                    <Text className="text-label leading-[1.29] text-ink-2">{item.address}</Text>
                   ) : null}
                 </View>
               </Pressable>
