@@ -29,10 +29,13 @@ interface SheetProps {
   // Called once it has slid away.
   onHidden?: () => void;
   closeLabel: string;
+  // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
+  // its own under it.
+  header?: ReactNode;
   children: ReactNode;
 }
 
-export function Sheet({ visible, onClose, onHidden, closeLabel, children }: SheetProps) {
+export function Sheet({ visible, onClose, onHidden, closeLabel, header, children }: SheetProps) {
   const insets = useSafeAreaInsets();
   const progress = useRef(new Animated.Value(0)).current;
   // Stay mounted while sliding out.
@@ -93,7 +96,12 @@ export function Sheet({ visible, onClose, onHidden, closeLabel, children }: Shee
             {/* Tapping the panel outside a field or button closes the keyboard. */}
             <Pressable accessible={false} onPress={Keyboard.dismiss}>
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
-              <View className="flex-row justify-end">
+              <View className="h-10 flex-row items-center justify-end">
+                {header ? (
+                  <View pointerEvents="none" className="absolute inset-x-12 items-center">
+                    {header}
+                  </View>
+                ) : null}
                 <CloseButton label={closeLabel} onPress={onClose} />
               </View>
               {children}

@@ -227,9 +227,9 @@ const en = {
           left_other: "Add {{count}} more to finish this step.",
           done: "Done",
           cover: "Cover",
-          photoNumber: "Photo {{number}}",
-          makeCover: "Make it the cover",
-          remove: "Remove photo",
+          photoNumber: "Photo #{{number}}",
+          removeShort: "Remove",
+          setCover: "Set as cover",
         },
         details: {
           subtitle:

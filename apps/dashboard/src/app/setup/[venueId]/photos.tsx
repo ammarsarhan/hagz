@@ -357,47 +357,61 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       </Sheet>
 
       {chosen ? (
+        // After a reference the user sent (a wallpaper preview): the title on the close button's
+        // row, the picture large with its chip in the corner, and the two actions side by side.
         <Sheet
           visible={actionsOpen}
           onClose={() => setActionsOpen(false)}
           onHidden={() => setChosen(null)}
           closeLabel={t("components.shared.nav.close")}
+          header={
+            <View className="flex-row items-center gap-2">
+              <IconPhoto size={20} color={colors.ink} strokeWidth={1.75} />
+              <Text accessibilityRole="header" className="text-subtitle font-semibold">
+                {t("screens.setup.photos.photoNumber", {
+                  number: ready.findIndex((photo) => photo.id === chosen.id) + 1,
+                })}
+              </Text>
+            </View>
+          }
         >
-          {/* Which photo this is, in the order players see them: also the gap between the close
-              button and the picture. */}
-          <Text
-            accessibilityRole="header"
-            className="mb-4 mt-1 text-[22px] font-semibold leading-[1.27]"
-          >
-            {t("screens.setup.photos.photoNumber", {
-              number: ready.findIndex((photo) => photo.id === chosen.id) + 1,
-            })}
-          </Text>
-          <Image
-            source={{ uri: reachable(chosen.url) }}
-            contentFit="cover"
-            style={{ height: 180, borderRadius: 8, marginBottom: 16 }}
-          />
-          <View className="gap-1">
-            {ready[0]?.id !== chosen.id ? (
-              <Button
-                label={t("screens.setup.photos.makeCover")}
-                variant="secondary"
-                onPress={() => makeCover(chosen)}
-              />
+          <View className="mb-4 mt-5">
+            <Image
+              source={{ uri: reachable(chosen.url) }}
+              contentFit="cover"
+              style={{ aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: colors.border }}
+            />
+            {ready[0]?.id === chosen.id ? (
+              <View className="absolute bottom-3 start-3 rounded-full bg-ink px-3 py-1.5">
+                <Text className="text-label font-semibold text-white">
+                  {t("screens.setup.photos.cover")}
+                </Text>
+              </View>
             ) : null}
-            {/* Destructive, without red (the staff app has none): a bin and a heavier weight, still
-                a line of text under the main action rather than a second button. */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("screens.setup.photos.remove")}
-              onPress={() => void remove(chosen)}
-              hitSlop={8}
-              className="h-12 flex-row items-center justify-center gap-1.5 active:opacity-60"
-            >
-              <IconTrash size={18} color={colors.ink} strokeWidth={2} />
-              <Text className="text-body font-semibold">{t("screens.setup.photos.remove")}</Text>
-            </Pressable>
+          </View>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              {/* Destructive without red (the staff app has none): grey, with a bin. */}
+              <Button
+                label={t("screens.setup.photos.removeShort")}
+                variant="secondary"
+                icon={<IconTrash size={18} color={colors.ink} strokeWidth={2} />}
+                onPress={() => void remove(chosen)}
+              />
+            </View>
+            <View className="flex-1">
+              {ready[0]?.id === chosen.id ? (
+                <Button
+                  label={t("screens.setup.photos.done")}
+                  onPress={() => setActionsOpen(false)}
+                />
+              ) : (
+                <Button
+                  label={t("screens.setup.photos.setCover")}
+                  onPress={() => makeCover(chosen)}
+                />
+              )}
+            </View>
           </View>
         </Sheet>
       ) : null}
