@@ -142,23 +142,9 @@ const en = {
       createVenue: {
         start: {
           title: "Add your venue",
-          subtitle: "Three steps. Nothing is public until we've reviewed it together.",
-          step: "Step {{number}}",
+          subtitle:
+            "Place it on the map, set up your grounds and prices, then send it to us. Nothing is public until we've reviewed it together.",
           action: "Get started",
-          steps: {
-            place: {
-              title: "Name and place",
-              body: "Your venue's name and where it is on the map. About a minute.",
-            },
-            setup: {
-              title: "Set it up",
-              body: "Grounds and prices, opening hours, photos and how players pay. Any order, saved as you go.",
-            },
-            review: {
-              title: "Send for review",
-              body: "We check the details with you, then your venue opens for bookings.",
-            },
-          },
         },
         name: {
           title: "What's your venue called?",
