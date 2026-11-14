@@ -9,7 +9,7 @@ import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
-import { CloseButton, NavBar } from "@/components/nav";
+import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
@@ -44,8 +44,8 @@ export default function VenueSetupScreen() {
     if (failed) hud.show(hudMessage(setup.error));
   }, [failed, setup.error, hud]);
 
-  // Closing leaves the setup flow for where it started: first run, which now shows the draft card.
-  const close = () => (router.canGoBack() ? router.back() : router.replace("/home"));
+  // Back leaves the setup flow for where it started: first run, which now shows the draft card.
+  const leave = () => (router.canGoBack() ? router.back() : router.replace("/home"));
 
   if (!setup.data) {
     return (
@@ -56,7 +56,7 @@ export default function VenueSetupScreen() {
           ) : undefined
         }
       >
-        <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={close} />} />
+        <NavBar start={<BackButton label={t("components.shared.nav.back")} onPress={leave} />} />
         {failed ? null : (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color={colors.ink3} />
@@ -82,13 +82,13 @@ export default function VenueSetupScreen() {
         />
       }
     >
-      {/* Once the name has scrolled away it rides beside the close button, with the count under
+      {/* Once the name has scrolled away it rides beside the back button, with the count under
           it, so the screen still says whose checklist this is. Screen readers get the big title. */}
       <NavBar
         flush
         start={
           <CompactTitle
-            button={<CloseButton label={t("components.shared.nav.close")} onPress={close} />}
+            button={<BackButton label={t("components.shared.nav.back")} onPress={leave} />}
             title={name}
             detail={t("screens.setup.compactProgress", {
               done: required.done,
