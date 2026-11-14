@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
-import { Field } from "@/components/field";
+import { Field, TextArea } from "@/components/field";
 import { IconEye, IconEyeOff } from "@/components/icons";
 import { useHud } from "@/components/hud";
 import { BackButton, CloseButton, NavBar } from "@/components/nav";
@@ -21,6 +21,7 @@ export default function Components() {
   const { t } = useTranslation();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [about, setAbout] = useState("");
   const [password, setPassword] = useState("");
   const [shown, setShown] = useState(false);
   const [code, setCode] = useState("");
@@ -42,6 +43,31 @@ export default function Components() {
         <View>
           <Title subtitle={t("screens.components.subtitle")}>{t("screens.components.title")}</Title>
 
+          {/* A filled field over an empty one, so the text and the placeholder line up. */}
+          <Field
+            label={t("screens.setup.details.name")}
+            value="Ammar's Pitch"
+            onChangeText={() => undefined}
+          />
+          <Field
+            label={t("screens.setup.details.address")}
+            value=""
+            onChangeText={() => undefined}
+            placeholder={t("screens.setup.details.addressPlaceholder")}
+          />
+          <TextArea
+            label={t("screens.setup.details.description")}
+            value={about}
+            onChangeText={setAbout}
+            maxLength={600}
+            placeholder={t("screens.setup.details.descriptionPlaceholder")}
+          />
+          <TextArea
+            label={t("screens.setup.details.description")}
+            value="Three 5-a-side pitches and one 7-a-side on new artificial grass, lit until 2 am."
+            onChangeText={() => undefined}
+            maxLength={600}
+          />
           <PhoneField
             label={t("common.fields.mobileNumber")}
             value={phone}
