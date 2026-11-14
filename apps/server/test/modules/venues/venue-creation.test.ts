@@ -9,7 +9,14 @@ import {
 import { signJwt } from "@/platform/crypto/jwt";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { addMember, createMarketplace, createStaff, createVenue } from "../../support/factories";
+import {
+  addMember,
+  box,
+  createMarketplace,
+  createStaff,
+  createVenue,
+  setCentre,
+} from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 const call = async (
@@ -43,12 +50,7 @@ const problem = async (res: Response) => {
 
 // Maadi, Cairo.
 const MAADI = { latitude: 29.9602, longitude: 31.2569 };
-const EGYPT = {
-  minimumLatitude: 21.5,
-  maximumLatitude: 32,
-  minimumLongitude: 24.5,
-  maximumLongitude: 37,
-};
+const EGYPT = box({ south: 21.5, west: 24.5, north: 32, east: 37 });
 
 let phones = 0;
 const someStaff = (language: "AR" | "EN" = "EN") =>
@@ -56,7 +58,7 @@ const someStaff = (language: "AR" | "EN" = "EN") =>
 
 // An active marketplace with Egypt's box and an area in it.
 const egypt = async () => {
-  const marketplace = await createMarketplace({ bounds: EGYPT });
+  const marketplace = await createMarketplace({ boundary: EGYPT });
   const area = await prisma.location.create({
     data: { marketplaceId: marketplace.id, locality: "DISTRICT", slug: `maadi-${phones}` },
   });
@@ -222,7 +224,7 @@ describe("creating a venue", () => {
     });
 
     it("needs the area's marketplace to be active", async () => {
-      const marketplace = await createMarketplace({ isActive: false, bounds: EGYPT });
+      const marketplace = await createMarketplace({ isActive: false, boundary: EGYPT });
       const area = await prisma.location.create({
         data: { marketplaceId: marketplace.id, locality: "DISTRICT", slug: "dormant" },
       });
@@ -243,7 +245,46 @@ describe("creating a venue", () => {
       expect(await prisma.venue.count()).toBe(0);
     });
 
-    it("skips the check for a marketplace without a box", async () => {
+    it("takes a pin inside the area's country", async () => {
+      const { area } = await egypt();
+      const owner = await someStaff();
+      const res = await call(owner.id, "POST", "/venues", draft(area.id));
+      expect(res.status).toBe(201);
+    });
+
+    it("refuses a pin too far from the area's centre, and says how far", async () => {
+      const { area } = await egypt();
+      // Smouha, Alexandria: the pin is in Maadi, about 180 km away.
+      await setCentre(area.id, { latitude: 31.2155, longitude: 29.942 });
+      const owner = await someStaff();
+
+      const res = await call(owner.id, "POST", "/venues", draft(area.id));
+      expect(res.status).toBe(422);
+      const body = await problem(res);
+      expect(body).toMatchObject({ code: "PIN_FAR_FROM_AREA", areaId: area.id, limit: 15_000 });
+      expect(body.distance).toBeGreaterThan(150_000);
+      expect(await prisma.venue.count()).toBe(0);
+    });
+
+    it("takes a pin near the area's centre", async () => {
+      const { area } = await egypt();
+      // About 2 km from the pin.
+      await setCentre(area.id, { latitude: 29.9776, longitude: 31.2569 });
+      const owner = await someStaff();
+      const res = await call(owner.id, "POST", "/venues", draft(area.id));
+      expect(res.status).toBe(201);
+    });
+
+    it("skips the distance for an area without a centre", async () => {
+      const { area } = await egypt();
+      const owner = await someStaff();
+      // Aswan: in Egypt, far from Maadi, and the area has no centre to measure from.
+      const aswan = { latitude: 24.0889, longitude: 32.8998 };
+      const res = await call(owner.id, "POST", "/venues", draft(area.id, { coordinates: aswan }));
+      expect(res.status).toBe(201);
+    });
+
+    it("skips the check for a marketplace without a border", async () => {
       const marketplace = await createMarketplace();
       const area = await prisma.location.create({
         data: { marketplaceId: marketplace.id, locality: "DISTRICT", slug: "anywhere" },
@@ -267,7 +308,7 @@ describe("creating a venue", () => {
     });
 
     it("keeps the owner's words in place of an area, in the country they named", async () => {
-      const marketplace = await createMarketplace({ code: "EG", bounds: EGYPT });
+      const marketplace = await createMarketplace({ code: "EG", boundary: EGYPT });
       const owner = await someStaff();
 
       // The code is read case-blind, as Google sends it either way.
@@ -301,8 +342,8 @@ describe("creating a venue", () => {
       expect(await prisma.venue.count()).toBe(0);
     });
 
-    it("refuses a pin outside that country", async () => {
-      await createMarketplace({ code: "EG", bounds: EGYPT });
+    it("refuses a pin outside that country, by its border, not a box", async () => {
+      await createMarketplace({ code: "EG", boundary: EGYPT });
       const owner = await someStaff();
       const dubai = { latitude: 25.2048, longitude: 55.2708 };
 

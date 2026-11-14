@@ -16,7 +16,13 @@ import { signJwt } from "@/platform/crypto/jwt";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { addMember, createAdmin, createMarketplace, createStaff } from "../../support/factories";
+import {
+  addMember,
+  createAdmin,
+  createMarketplace,
+  createStaff,
+  setCentre,
+} from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 // ---------- Callers ----------
@@ -322,6 +328,21 @@ describe("an area the owner asked for", () => {
     });
 
     expect((await admin("POST", `/venues/${venueId}/approve`)).status).toBe(204);
+  });
+
+  it("only takes an area near the venue's pin", async () => {
+    const { venueId, marketplaceId } = await waitingForArea();
+    // The pin is in Maadi; Smouha is in Alexandria.
+    const smouha = await prisma.location.create({
+      data: { marketplaceId, locality: "DISTRICT", slug: "smouha" },
+    });
+    await setCentre(smouha.id, { latitude: 31.2155, longitude: 29.942 });
+
+    const far = await admin("PUT", `/venues/${venueId}/area`, { locationId: smouha.id });
+    expect(far.status).toBe(422);
+    expect(await problem(far)).toMatchObject({ code: "PIN_FAR_FROM_AREA", areaId: smouha.id });
+    const venue = await prisma.venue.findUniqueOrThrow({ where: { id: venueId } });
+    expect(venue).toMatchObject({ locationId: null, requestedArea: "Sheikh Zayed, Giza" });
   });
 
   it("only takes an area in the venue's marketplace", async () => {

@@ -1,6 +1,7 @@
 import type { AmenityIcon, Locality } from "@hagz/contracts";
 import { prisma } from "@/platform/db/prisma";
 import { cache, queueConnection } from "@/platform/redis/connections";
+import EGYPT_BOUNDARY from "./reference/egypt-boundary.json";
 
 // Reference data for Egypt, the launch marketplace: the marketplace itself, its 27 governorates, the
 // districts and cities of the launch areas (Cairo, Giza, Alexandria), and its amenity options. Admins
@@ -142,23 +143,21 @@ const names = (en: string, ar: string) => [
   { language: "AR" as const, name: ar },
 ];
 
-const counts = { marketplace: 0, locations: 0, centers: 0, amenities: 0 };
+const counts = { marketplace: 0, locations: 0, centers: 0, boundaries: 0, amenities: 0 };
 
-// Egypt with a margin (the Halaib triangle to the Mediterranean, the Libyan border to the Red Sea):
-// a pin outside it is in the wrong country, not just the wrong street.
-const EGYPT_BOUNDS = {
-  minimumLatitude: 21.5,
-  maximumLatitude: 32,
-  minimumLongitude: 24.5,
-  maximumLongitude: 37,
-};
+// Egypt's border, which a venue's pin must fall inside (venues' pin-checks.ts). From Natural Earth's
+// 1:10m "Admin 0 – Countries" (naturalearthdata.com, public domain; feature ADM0_A3 = EGY, which
+// includes the Halaib triangle Egypt administers), widened by 2 km so venues on the coast and in
+// border towns aren't cut off by the coarse coastline, then simplified to about 500 m in PostGIS:
+//
+//   ST_AsGeoJSON(ST_Multi(ST_SimplifyPreserveTopology(
+//     ST_Buffer(ST_GeomFromGeoJSON(<feature geometry>)::geography, 2000)::geometry, 0.005)), 5)
+//
+// Checked against Alexandria's corniche, Montaza, Taba, Rafah, Siwa and Halaib (inside) and Eilat,
+// Aqaba, Gaza City, Benghazi and Khartoum (outside).
 
 const ensureMarketplace = async () => {
   const existing = await prisma.marketplace.findUnique({ where: { code: "EG" } });
-  // Databases seeded before the bounding box existed get it on the next run.
-  if (existing?.minimumLatitude === null) {
-    return prisma.marketplace.update({ where: { id: existing.id }, data: EGYPT_BOUNDS });
-  }
   if (existing) return existing;
   counts.marketplace++;
   return prisma.marketplace.create({
@@ -169,7 +168,6 @@ const ensureMarketplace = async () => {
       timezone: "Africa/Cairo",
       taxRate: 1400,
       isActive: true,
-      ...EGYPT_BOUNDS,
       translations: { create: names("Egypt", "مصر") },
     },
   });
@@ -222,13 +220,23 @@ const ensureAmenity = async (marketplaceId: string, amenity: (typeof AMENITIES)[
   });
 };
 
+// Only where there's none yet: an admin may have replaced it since.
+const ensureBoundary = async (marketplaceId: string, boundary: object) => {
+  counts.boundaries += await prisma.$executeRaw`
+    UPDATE "Marketplace"
+    SET boundary = ST_GeomFromGeoJSON(${JSON.stringify(boundary)})::geography
+    WHERE id = ${marketplaceId}::uuid AND boundary IS NULL`;
+};
+
 try {
   const egypt = await ensureMarketplace();
+  await ensureBoundary(egypt.id, EGYPT_BOUNDARY);
   for (const place of EGYPT) await ensurePlace(egypt.id, null, place);
   for (const amenity of AMENITIES) await ensureAmenity(egypt.id, amenity);
   console.log(
     `Egypt: added ${counts.marketplace} marketplace, ${counts.locations} locations, ` +
-      `${counts.centers} area centres, ${counts.amenities} amenity options ` +
+      `${counts.centers} area centres, ${counts.boundaries} border, ` +
+      `${counts.amenities} amenity options ` +
       `(everything else was already there).`,
   );
 } finally {

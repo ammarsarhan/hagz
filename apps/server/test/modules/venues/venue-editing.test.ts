@@ -12,7 +12,7 @@ import { NO_PERMISSIONS } from "@/modules/venues/domain/permissions";
 import { signJwt } from "@/platform/crypto/jwt";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { addMember, createMarketplace, createStaff } from "../../support/factories";
+import { addMember, box, createMarketplace, createStaff, setCentre } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 const call = async (staffId: string, method: string, path: string, body?: unknown) =>
@@ -37,12 +37,7 @@ const only = (granted: Partial<StaffPermissions>): StaffPermissions => ({
   ...granted,
 });
 
-const EGYPT = {
-  minimumLatitude: 21.5,
-  maximumLatitude: 32,
-  minimumLongitude: 24.5,
-  maximumLongitude: 37,
-};
+const EGYPT = box({ south: 21.5, west: 24.5, north: 32, east: 37 });
 const MAADI = { latitude: 29.9602, longitude: 31.2569 };
 const ZAMALEK = { latitude: 30.0609, longitude: 31.2197 };
 
@@ -52,7 +47,7 @@ const someStaff = () =>
 
 // A fresh draft in Maadi, with its owner, its marketplace and a second area there.
 const aDraft = async () => {
-  const marketplace = await createMarketplace({ bounds: EGYPT });
+  const marketplace = await createMarketplace({ boundary: EGYPT });
   const area = (slug: string, more: Partial<Prisma.LocationUncheckedCreateInput> = {}) =>
     prisma.location.create({
       data: {
@@ -225,7 +220,27 @@ describe("location", () => {
     });
   });
 
-  it("can't move to another marketplace's area, or outside the box", async () => {
+  it("can't move the pin far from the area's centre", async () => {
+    const { owner, path, zamalek } = await aDraft();
+    await setCentre(zamalek.id, { latitude: 30.0609, longitude: 31.2197 });
+    // Maadi is about 12 km from Zamalek's centre: allowed.
+    const near = await call(owner.id, "PATCH", path, {
+      location: { coordinates: MAADI, placeId: null, locationId: zamalek.id },
+    });
+    expect(near.status).toBe(200);
+    // Alexandria isn't.
+    const far = await call(owner.id, "PATCH", path, {
+      location: {
+        coordinates: { latitude: 31.2155, longitude: 29.942 },
+        placeId: null,
+        locationId: zamalek.id,
+      },
+    });
+    expect(far.status).toBe(422);
+    expect(await problem(far)).toMatchObject({ code: "PIN_FAR_FROM_AREA", areaId: zamalek.id });
+  });
+
+  it("can't move to another marketplace's area, or outside the border", async () => {
     const { owner, path, maadi } = await aDraft();
     const other = await createMarketplace();
     const abroad = await prisma.location.create({

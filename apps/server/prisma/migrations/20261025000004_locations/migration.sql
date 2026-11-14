@@ -11,10 +11,7 @@ CREATE TABLE "Marketplace" (
     "taxRate" INTEGER NOT NULL DEFAULT 0,
     "commissionRate" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT false,
-    "minimumLatitude" DOUBLE PRECISION,
-    "maximumLatitude" DOUBLE PRECISION,
-    "minimumLongitude" DOUBLE PRECISION,
-    "maximumLongitude" DOUBLE PRECISION,
+    "boundary" geography(MultiPolygon, 4326),
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -57,6 +54,9 @@ CREATE TABLE "LocationTranslation" (
 CREATE UNIQUE INDEX "Marketplace_code_key" ON "Marketplace"("code");
 
 -- CreateIndex
+CREATE INDEX "Marketplace_boundary_idx" ON "Marketplace" USING GIST ("boundary");
+
+-- CreateIndex
 CREATE INDEX "Location_parentId_idx" ON "Location"("parentId");
 
 -- CreateIndex
@@ -96,4 +96,4 @@ ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_tax_check" CHECK ("taxRate
 ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_commission_check" CHECK ("commissionRate" BETWEEN 0 AND 10000);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_bounds_check" CHECK (num_nonnulls("minimumLatitude", "maximumLatitude", "minimumLongitude", "maximumLongitude") IN (0, 4) AND ("minimumLatitude" IS NULL OR ("minimumLatitude" BETWEEN -90 AND 90 AND "maximumLatitude" BETWEEN -90 AND 90 AND "minimumLatitude" < "maximumLatitude" AND "minimumLongitude" BETWEEN -180 AND 180 AND "maximumLongitude" BETWEEN -180 AND 180 AND "minimumLongitude" < "maximumLongitude")));
+ALTER TABLE "Marketplace" ADD CONSTRAINT "Marketplace_boundary_check" CHECK ("boundary" IS NULL OR ST_IsValid("boundary"::geometry));
