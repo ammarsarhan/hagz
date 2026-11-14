@@ -136,6 +136,7 @@ export default function VenueSetupScreen() {
 const SCREENS: Partial<Record<SetupItem["key"], string>> = {
   DETAILS: "details",
   LOCATION: "location",
+  PHOTOS: "photos",
   AMENITIES: "amenities",
   TAX_NUMBER: "tax",
 };

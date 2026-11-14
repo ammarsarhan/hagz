@@ -17,9 +17,12 @@ const NAV_GAP = 14;
 export function FadingScroll({
   children,
   scrollY,
+  scrollEnabled = true,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
+  // Off while something inside is being dragged (photos into order), so the drag doesn't scroll.
+  scrollEnabled?: boolean;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
@@ -37,6 +40,7 @@ export function FadingScroll({
     <View className="-mx-5 flex-1">
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
         // A form inside it: a tap on another field or a button works first time, keyboard up or not.
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"

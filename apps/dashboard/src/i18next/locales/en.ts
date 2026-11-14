@@ -212,6 +212,23 @@ const en = {
         required: "Required",
         optional: "Optional",
         send: "Send for review",
+        photos: {
+          emptyBody:
+            "Add at least 3. The first one is the cover players see first, so pick your best pitch shot.",
+          body: "Hold a photo and drag to reorder. The first one is the cover.",
+          add: "Add photos",
+          addBody: "From your library or camera, up to 20.",
+          addMore: "Add more",
+          library: "Choose from library",
+          camera: "Take a photo",
+          cameraBlocked: "Allow camera access in Settings to take photos.",
+          left_one: "Add {{count}} more to finish this step.",
+          left_other: "Add {{count}} more to finish this step.",
+          done: "Done",
+          cover: "Cover",
+          makeCover: "Make it the cover",
+          remove: "Remove photo",
+        },
         details: {
           subtitle:
             "What players read on your venue page. Write it in English; we'll add the Arabic before you go live.",

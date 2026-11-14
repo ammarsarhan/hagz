@@ -35,6 +35,17 @@ export const queries = {
       queryFn: () =>
         fetched(api.GET("/v1/staff/venues/{venueId}/setup", { params: { path: { venueId } } })),
     }),
+  // The venue's photos, cover first (pending uploads included, as PENDING).
+  photos: (venueId: string) =>
+    queryOptions({
+      queryKey: ["staff", "venues", venueId, "photos"],
+      queryFn: async () =>
+        (
+          await fetched(
+            api.GET("/v1/staff/venues/{venueId}/photos", { params: { path: { venueId } } }),
+          )
+        ).data,
+    }),
   // Everything a setup item's screen edits, in one read. Each save answers with the venue as it now
   // is, which goes straight back in here (lib/venue-edit.ts).
   venue: (venueId: string) =>

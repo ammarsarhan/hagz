@@ -63,3 +63,7 @@ export { default as IconUmbrella } from "@tabler/icons-react-native/IconUmbrella
 export { default as IconVideo } from "@tabler/icons-react-native/IconVideo";
 export { default as IconWheelchair } from "@tabler/icons-react-native/IconWheelchair";
 export { default as IconWifi } from "@tabler/icons-react-native/IconWifi";
+// Photos.
+export { default as IconCamera } from "@tabler/icons-react-native/IconCamera";
+export { default as IconPhoto } from "@tabler/icons-react-native/IconPhoto";
+export { default as IconPhotoPlus } from "@tabler/icons-react-native/IconPhotoPlus";
