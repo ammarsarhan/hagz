@@ -394,8 +394,9 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
               {/* Destructive without red (the staff app has none): grey, with a bin. */}
               <Button
                 label={t("screens.setup.photos.removeShort")}
+                compact
                 variant="secondary"
-                icon={<IconTrash size={18} color={colors.ink} strokeWidth={2} />}
+                icon={<IconTrash size={17} color={colors.ink} strokeWidth={2} />}
                 onPress={() => void remove(chosen)}
               />
             </View>
@@ -403,11 +404,13 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
               {ready[0]?.id === chosen.id ? (
                 <Button
                   label={t("screens.setup.photos.done")}
+                  compact
                   onPress={() => setActionsOpen(false)}
                 />
               ) : (
                 <Button
                   label={t("screens.setup.photos.setCover")}
+                  compact
                   onPress={() => makeCover(chosen)}
                 />
               )}
