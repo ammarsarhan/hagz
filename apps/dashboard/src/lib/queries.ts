@@ -35,6 +35,14 @@ export const queries = {
       queryFn: () =>
         fetched(api.GET("/v1/staff/venues/{venueId}/setup", { params: { path: { venueId } } })),
     }),
+  // Everything a setup item's screen edits, in one read. Each save answers with the venue as it now
+  // is, which goes straight back in here (lib/venue-edit.ts).
+  venue: (venueId: string) =>
+    queryOptions({
+      queryKey: ["staff", "venues", venueId, "detail"],
+      queryFn: () =>
+        fetched(api.GET("/v1/staff/venues/{venueId}", { params: { path: { venueId } } })),
+    }),
 };
 
 // Reference data: the same for everyone and changed by admins only, so it's fetched once and kept
@@ -47,6 +55,18 @@ export const reference = {
     queryFn: async () => (await fetched(api.GET("/v1/marketplaces"))).data,
     ...REFERENCE,
   }),
+  // What a venue in this marketplace can offer, named in the app's language.
+  amenities: (code: string) =>
+    queryOptions({
+      queryKey: ["marketplaces", code, "amenities"],
+      queryFn: async () =>
+        (
+          await fetched(
+            api.GET("/v1/marketplaces/{code}/amenities", { params: { path: { code } } }),
+          )
+        ).data,
+      ...REFERENCE,
+    }),
 };
 
 // Areas a venue can be filed under, asked of the API rather than worked out in the app: it suggests

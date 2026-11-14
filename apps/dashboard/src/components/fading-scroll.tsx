@@ -37,6 +37,9 @@ export function FadingScroll({
     <View className="-mx-5 flex-1">
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
+        // A form inside it: a tap on another field or a button works first time, keyboard up or not.
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: FADE }}
         onLayout={(event) => {

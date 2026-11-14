@@ -72,3 +72,43 @@ export function Field({ label, error, trailing, onFocus, onBlur, ...input }: Fie
     </View>
   );
 }
+
+// A longer answer (a venue's description): the field's box, growing from four lines, text from the
+// top. The count of what's left sits under it on the end side, like the name step's.
+export function TextArea({
+  label,
+  value,
+  maxLength,
+  onChangeText,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  maxLength: number;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const border = focused
+    ? "border-[1.5px] border-primary px-[15.5px] py-[13.5px]"
+    : "border border-border px-4 py-3.5";
+  return (
+    <View className="mb-4">
+      <FieldLabel>{label}</FieldLabel>
+      <TextInput
+        className={`min-h-[120px] rounded-field bg-white text-[17px] leading-[1.35] text-ink ${border}`}
+        value={value}
+        onChangeText={onChangeText}
+        maxLength={maxLength}
+        multiline
+        textAlignVertical="top"
+        placeholder={placeholder}
+        placeholderTextColor={colors.ink3}
+        selectionColor={colors.primary}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+      <Text className="mt-2 self-end text-caption text-ink-3">{`${value.length}/${maxLength}`}</Text>
+    </View>
+  );
+}

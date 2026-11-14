@@ -154,14 +154,38 @@ export default function VenueSetupScreen() {
           </View>
         </View>
 
-        <Group heading={t("screens.setup.required")} items={items.filter((i) => i.required)} />
-        <Group heading={t("screens.setup.optional")} items={items.filter((i) => !i.required)} />
+        <Group
+          venueId={venueId}
+          heading={t("screens.setup.required")}
+          items={items.filter((i) => i.required)}
+        />
+        <Group
+          venueId={venueId}
+          heading={t("screens.setup.optional")}
+          items={items.filter((i) => !i.required)}
+        />
       </FadingScroll>
     </Screen>
   );
 }
 
-function Group({ heading, items }: { heading: string; items: SetupItem[] }) {
+// The items with a screen so far, and where it is. The rest arrive with their slice of Phase 2.
+const SCREENS: Partial<Record<SetupItem["key"], string>> = {
+  DETAILS: "details",
+  LOCATION: "location",
+  AMENITIES: "amenities",
+  TAX_NUMBER: "tax",
+};
+
+function Group({
+  venueId,
+  heading,
+  items,
+}: {
+  venueId: string;
+  heading: string;
+  items: SetupItem[];
+}) {
   const { t } = useTranslation();
   const hud = useHud();
   if (items.length === 0) return null;
@@ -178,9 +202,12 @@ function Group({ heading, items }: { heading: string; items: SetupItem[] }) {
           key={item.key}
           item={item}
           last={index === items.length - 1}
-          // Each item's own screen arrives with its slice of Phase 2; until then the row says so
-          // rather than opening something half-built.
-          onPress={() => hud.show(t("common.comingNext"))}
+          // An item without its screen yet says so rather than opening something half-built.
+          onPress={() => {
+            const screen = SCREENS[item.key];
+            if (!screen) return hud.show(t("common.comingNext"));
+            router.push(`/setup/${venueId}/${screen}`);
+          }}
         />
       ))}
     </>
