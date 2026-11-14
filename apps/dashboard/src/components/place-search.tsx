@@ -140,7 +140,7 @@ export function PlaceSearch({
       // The address is a nicety here; the pin is what matters, so a failed lookup still moves on.
       const place = await addressAt(coordinates).catch((error: unknown) => {
         console.warn(error);
-        return { address: "", coordinates, parts: [] } satisfies Place;
+        return { address: "", coordinates } satisfies Place;
       });
       Keyboard.dismiss();
       onPick(place);

@@ -2,14 +2,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ExpoLocation from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, AppState, Linking, Pressable, StyleSheet, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import { LOCATION_ART, LOCATION_ART_SIZE, MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
-import { AreaPicker } from "@/components/area-picker";
+import { AreaPicker, type Area } from "@/components/area-picker";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import {
@@ -24,13 +24,12 @@ import { PlaceSearch } from "@/components/place-search";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { areaLabel, matchArea, type Location } from "@/lib/areas";
 import { api } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { addressAt, type Coordinates, type Place } from "@/lib/places";
-import { queries, reference } from "@/lib/queries";
+import { areas, queries, reference } from "@/lib/queries";
 
 // Adding a venue, step 3 (Figma "Venue creation · 3 Find your venue", 282:2, "· 5 Adjust the pin",
 // 283:2 and "Confirm the area · B", 295:2): one full-screen map the owner never leaves, with the
@@ -94,7 +93,7 @@ export default function CreateVenuePlace() {
   // Until the map has been moved or a place picked, there's nothing to continue to.
   const [placed, setPlaced] = useState(false);
   const [nudged, setNudged] = useState(false);
-  const [chosenArea, setChosenArea] = useState<Location | null>(null);
+  const [chosenArea, setChosenArea] = useState<Area | null>(null);
   // An area that isn't in the list, in the owner's words, for Hagz to add while reviewing.
   const [requestedArea, setRequestedArea] = useState<string | null>(null);
   // How tall the bottom card is, so the map's middle (and the pin) sits above it.
@@ -102,21 +101,17 @@ export default function CreateVenuePlace() {
 
   const country = place?.country ?? FALLBACK_COUNTRY;
   const marketplaces = useQuery(reference.marketplaces);
-  const locations = useQuery({
-    ...reference.locations(country),
+  // The area whose centre is nearest the pin, which the owner confirms or changes. Not Google's
+  // address: in Egypt it names police districts, so a pin in Smouha would come back "Sidi Gaber".
+  const nearest = useQuery({
+    ...areas.nearest(country, pin),
     enabled: stage === "area",
   });
-
-  // The area the address falls in, which the owner confirms or changes.
-  const suggested = useMemo(
-    () => (place && locations.data ? matchArea(place.parts, locations.data) : null),
-    [place, locations.data],
-  );
-  const area = requestedArea ? null : (chosenArea ?? suggested);
+  const area = requestedArea ? null : (chosenArea ?? nearest.data ?? null);
   const label = requestedArea
     ? { name: requestedArea, within: t("screens.createVenue.place.requestedNote") }
-    : area && locations.data
-      ? areaLabel(area, locations.data)
+    : area
+      ? { name: area.name, within: area.within ?? "" }
       : null;
 
   const moveTo = useCallback((coordinates: Coordinates) => {
@@ -205,7 +200,7 @@ export default function CreateVenuePlace() {
         .catch((error: unknown) => {
           console.warn(error);
           // The address is only a label here; the pin is what the venue is created with.
-          if (!dropped) setPlace({ address: "", coordinates: pin, parts: [] });
+          if (!dropped) setPlace({ address: "", coordinates: pin });
         })
         .finally(() => {
           if (!dropped) setLocating(false);
@@ -378,7 +373,7 @@ export default function CreateVenuePlace() {
           <AreaStep
             label={label}
             requested={requestedArea !== null}
-            loading={locations.isPending}
+            loading={nearest.isPending}
             creating={creating}
             onChange={() => setChoosingArea(true)}
             onConfirm={() => void create()}
@@ -426,7 +421,8 @@ export default function CreateVenuePlace() {
       )}
       <AreaPicker
         visible={choosingArea}
-        locations={locations.data ?? []}
+        country={country}
+        near={pin}
         selected={area}
         requested={requestedArea}
         onClose={() => setChoosingArea(false)}

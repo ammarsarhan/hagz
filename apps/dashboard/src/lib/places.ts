@@ -46,19 +46,11 @@ export interface Coordinates {
   longitude: number;
 }
 
-// One piece of an address, as Google breaks it up. `types` says what it is ("sublocality_level_1",
-// "locality"), which is how an area is matched to ours (lib/areas.ts).
-export interface AddressPart {
-  name: string;
-  types: string[];
-}
-
 export interface Place {
   placeId?: string;
   name?: string;
   address: string;
   coordinates: Coordinates;
-  parts: AddressPart[];
   // ISO 3166-1 alpha-2, for the marketplace the areas come from.
   country?: string;
 }
@@ -152,12 +144,6 @@ interface PlaceResponse {
   addressComponents?: { longText?: string; shortText?: string; types?: string[] }[];
 }
 
-const partsOf = (components: PlaceResponse["addressComponents"]): AddressPart[] =>
-  (components ?? []).map((component) => ({
-    name: component.longText ?? component.shortText ?? "",
-    types: component.types ?? [],
-  }));
-
 const countryOf = (components: PlaceResponse["addressComponents"]): string | undefined =>
   components?.find((component) => component.types?.includes("country"))?.shortText;
 
@@ -178,7 +164,6 @@ export const placeDetails = async (placeId: string, sessionToken: string): Promi
     name: body.displayName?.text,
     address: body.formattedAddress ?? "",
     coordinates: { latitude, longitude },
-    parts: partsOf(body.addressComponents),
     country: countryOf(body.addressComponents),
   };
 };
@@ -204,7 +189,6 @@ export const addressAt = async (coordinates: Coordinates): Promise<Place> => {
   return {
     address: first?.formatted_address ?? "",
     coordinates,
-    parts: partsOf(components),
     country: countryOf(components),
   };
 };
