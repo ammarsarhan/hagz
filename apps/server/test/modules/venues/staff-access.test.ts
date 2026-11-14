@@ -112,6 +112,7 @@ describe("my venues", () => {
     await addMember(b.id, ownerA.id, { permissions: permissions({ venue: "view" }) });
     // A in Maadi, under Cairo; B keeps its untranslated area.
     const venueA = await prisma.venue.findUniqueOrThrow({ where: { id: a.id } });
+    if (!venueA.locationId) throw new Error("The factory's venue has an area");
     const cairo = await prisma.location.create({
       data: {
         marketplaceId: venueA.marketplaceId,
@@ -163,6 +164,13 @@ describe("my venues", () => {
 
     // Arabic where there is some, else any language.
     expect((await venues("ar"))[0]?.location).toBe("المعادي، Cairo");
+
+    // Waiting for an area Hagz doesn't cover yet: the owner's own words.
+    await prisma.venue.update({
+      where: { id: b.id },
+      data: { locationId: null, requestedArea: "Sheikh Zayed, Giza" },
+    });
+    expect((await venues("en"))[1]?.location).toBe("Sheikh Zayed, Giza");
   });
 });
 

@@ -36,6 +36,7 @@ export const staffVenueSelect = {
   createdAt: true,
   translations: { select: { language: true, name: true } },
   location: { select: { ...place, parent: { select: place } } },
+  requestedArea: true,
 } as const satisfies Prisma.VenueSelect;
 
 type StaffVenueRow = Prisma.VenueGetPayload<{ select: typeof staffVenueSelect }>;
@@ -70,7 +71,8 @@ const toStaffVenue = (
   slug: venue.slug,
   name: nameIn(venue.translations, language),
   status: venue.status,
-  location: placeOf(venue.location, language),
+  // A draft waiting for the area its owner asked for shows it in their own words.
+  location: placeOf(venue.location, language) ?? venue.requestedArea,
   // Every venue has its VENUE_CREATED event; createdAt is only a fallback.
   lastActivityAt: (lastActivity.get(venue.id) ?? venue.createdAt).toISOString(),
   role,
