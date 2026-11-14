@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { Button } from "@/components/button";
+import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { CloseButton, NavBar } from "@/components/nav";
@@ -86,8 +87,11 @@ export default function VenueSetupScreen() {
         </>
       }
     >
-      <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={close} />} />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <NavBar
+        flush
+        start={<CloseButton label={t("components.shared.nav.close")} onPress={close} />}
+      />
+      <FadingScroll>
         <Title subtitle={t("screens.setup.subtitle")}>
           {venue.name ?? t("screens.setup.untitled")}
         </Title>
@@ -108,8 +112,7 @@ export default function VenueSetupScreen() {
 
         <Group heading={t("screens.setup.required")} items={items.filter((i) => i.required)} />
         <Group heading={t("screens.setup.optional")} items={items.filter((i) => !i.required)} />
-        <View className="h-4" />
-      </ScrollView>
+      </FadingScroll>
     </Screen>
   );
 }

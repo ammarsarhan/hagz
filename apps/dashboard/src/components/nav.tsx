@@ -44,10 +44,21 @@ export function CloseButton({ label, onPress }: { label: string; onPress?: () =>
   return <RoundButton icon={IconX} label={label} onPress={onPress} />;
 }
 
-// The row above the title. No centre label (decided 2026-11-01): start and end slots only.
-export function NavBar({ start, end }: { start?: ReactNode; end?: ReactNode }) {
+// The row above the title. No centre label (decided 2026-11-01): start and end slots only. Flush
+// drops the gap under it, for a body that carries the gap itself (FadingScroll).
+export function NavBar({
+  start,
+  end,
+  flush = false,
+}: {
+  start?: ReactNode;
+  end?: ReactNode;
+  flush?: boolean;
+}) {
   return (
-    <View className="-mx-1 mb-[22px] h-10 flex-row items-center justify-between">
+    <View
+      className={`-mx-1 h-10 flex-row items-center justify-between ${flush ? "" : "mb-[22px]"}`}
+    >
       <View>{start}</View>
       <View>{end}</View>
     </View>
