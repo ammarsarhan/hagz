@@ -75,6 +75,8 @@ export function Field({ label, error, trailing, onFocus, onBlur, ...input }: Fie
 
 // A longer answer (a venue's description): the field's box, growing from four lines, text from the
 // top. The count of what's left sits under it on the end side, like the name step's.
+const PAD_Y = 10;
+
 export function TextArea({
   label,
   value,
@@ -89,11 +91,9 @@ export function TextArea({
   placeholder?: string;
 }) {
   const [focused, setFocused] = useState(false);
-  // A little less padding above and below than at the sides, so the text sits in the box the way a
-  // one-line field's does rather than floating in it.
   const border = focused
-    ? "border-[1.5px] border-primary px-[15.5px] py-[11.5px]"
-    : "border border-border px-4 py-3";
+    ? "border-[1.5px] border-primary px-[15.5px]"
+    : "border border-border px-4";
   return (
     <View className="mb-4">
       <FieldLabel>{label}</FieldLabel>
@@ -109,6 +109,13 @@ export function TextArea({
         selectionColor={colors.primary}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        // As a style, not py-*: that compiles to paddingBlock, which a multiline input on iOS
+        // ignores. With the line's own leading on top, this puts the first line's letters as far
+        // from the top edge as from the side.
+        style={{
+          paddingTop: (focused ? -0.5 : 0) + PAD_Y,
+          paddingBottom: (focused ? -0.5 : 0) + PAD_Y,
+        }}
       />
       <Text className="mt-2 self-end text-caption text-ink-3">{`${value.length}/${maxLength}`}</Text>
     </View>
