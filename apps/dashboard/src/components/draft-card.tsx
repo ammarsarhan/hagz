@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { SvgXml } from "react-native-svg";
@@ -43,19 +42,14 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
   const required = setup.data?.required;
   const done = required?.done ?? 0;
   const total = required?.total ?? 0;
-  const status = venue.status === "DRAFT" ? "settingUp" : "inReview";
-  const [updatedWrapped, setUpdatedWrapped] = useState(false);
   // Redrawn as the time passes, so it doesn't stay on "30 minutes ago" while first run is left open.
   const now = useNow((time) => sinceLastActivity(venue.lastActivityAt, time).changesAt);
   const since = sinceLastActivity(venue.lastActivityAt, now);
-  const lastUpdated =
+  // "2m ago": short, since it heads the card on its own.
+  const ago =
     since.unit === "now"
-      ? t("screens.firstRun.draft.updatedNow")
-      : since.unit === "minutes"
-        ? t("screens.firstRun.draft.updatedMinutes", { count: since.count })
-        : since.unit === "hours"
-          ? t("screens.firstRun.draft.updatedHours", { count: since.count })
-          : t("screens.firstRun.draft.updatedDays", { count: since.count });
+      ? t("screens.firstRun.draft.agoNow")
+      : t(`screens.firstRun.draft.ago.${since.unit}`, { count: since.count });
 
   return (
     <Pressable
@@ -85,7 +79,7 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
 
       <View className="px-5 pb-5 pt-[22px]">
         <Text className="text-caption font-medium text-on-ink-muted">
-          {t(`screens.firstRun.draft.${status}`)}
+          {venue.status === "DRAFT" ? ago : t("screens.firstRun.draft.inReview", { ago })}
         </Text>
         <Text className="mb-1 mt-1.5 text-heading font-semibold tracking-[-0.3px] text-white">
           {venue.name ?? t("screens.setup.untitled")}
@@ -95,34 +89,17 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
             {venue.location}
           </Text>
         ) : null}
-        {/* "3 of 7 required done · Last updated 30 minutes ago", or on two lines when it doesn't
-            fit. As on the invitation card, the dot stays laid out when they wrap, only hidden, so
-            the wrap can't flip back. */}
-        <View className="flex-row flex-wrap">
-          {required ? (
-            <Text className="text-label text-on-ink-muted">
-              {t("screens.setup.progress", { done, total })}
-              <Text
-                className="text-label text-on-ink-muted"
-                style={updatedWrapped ? { color: "transparent" } : undefined}
-              >
-                {" · "}
-              </Text>
-            </Text>
-          ) : null}
-          <Text
-            className="text-label text-on-ink-muted"
-            onLayout={(e) => setUpdatedWrapped(e.nativeEvent.layout.y > 0)}
-          >
-            {lastUpdated}
+        {required ? (
+          <Text className="text-label text-on-ink-muted">
+            {t("screens.setup.progress", { done, total })}
           </Text>
-        </View>
+        ) : null}
         <View className="mt-6 h-14 items-center justify-center rounded-full bg-white">
           <Text className="text-button font-semibold">{t("screens.firstRun.draft.continue")}</Text>
         </View>
         {required ? (
           <Text className="mt-3.5 text-center text-caption text-on-ink-muted">
-            {t("screens.firstRun.draft.sendWhenDone", { count: total })}
+            {t("screens.firstRun.draft.sendWhenDone")}
           </Text>
         ) : null}
       </View>
