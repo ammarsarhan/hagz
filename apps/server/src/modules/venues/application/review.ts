@@ -31,8 +31,9 @@ import {
 import { goLiveGaps } from "../domain/review";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { adminVenueSelect, presentAdminVenue } from "./admin-venues";
-import { writeTranslation } from "./venue-edit";
-import { locationNotFound, locationOutsideMarketplace, venueSetup } from "./venue-setup";
+import { pinOf, writeTranslation } from "./venue-edit";
+import { checkPin, locationOutsideMarketplace } from "./pin-checks";
+import { locationNotFound, venueSetup } from "./venue-setup";
 
 // A venue's review and going live (PR 2.7, docs/onboarding.md step 3). Every step locks the venue
 // row, checks the status it starts from, and records a VenueEvent; notifications are written in the
@@ -301,6 +302,9 @@ export const setVenueArea = async (
     });
     if (!location) throw locationNotFound();
     if (location.marketplaceId !== venue.marketplaceId) throw locationOutsideMarketplace();
+    // The pin stays where the owner put it, so the area has to suit it.
+    const pin = await pinOf(tx, venueId);
+    if (pin) await checkPin(tx, { marketplaceId: venue.marketplaceId, locationId, pin });
     await tx.venue.update({ where: { id: venueId }, data: { locationId, requestedArea: null } });
     await record(tx, venueId, { adminId }, VENUE_AREA_SET, {
       previous: { locationId: venue.locationId, requestedArea: venue.requestedArea },

@@ -28,7 +28,8 @@ import {
 } from "../domain/settings";
 import { nameIn } from "../domain/names";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
-import { insideBounds, locationNotFound, locationOutsideMarketplace } from "./venue-setup";
+import { checkPin, locationOutsideMarketplace } from "./pin-checks";
+import { locationNotFound } from "./venue-setup";
 
 // Editing a venue during setup and after it goes live (docs/onboarding.md): details, location,
 // translations, settings and amenities. Every edit locks the venue row, so it can't race a submit,
@@ -48,7 +49,7 @@ export const lockForEdit = async (tx: Tx, venueId: string, part: EditPart): Prom
   return venue;
 };
 
-const pinOf = async (db: Tx | typeof prisma, venueId: string) => {
+export const pinOf = async (db: Tx | typeof prisma, venueId: string) => {
   const [pin] = await db.$queryRaw<{ latitude: number | null; longitude: number | null }[]>`
     SELECT ST_Y(coordinates::geometry) AS latitude, ST_X(coordinates::geometry) AS longitude
     FROM "Venue" WHERE id = ${venueId}::uuid`;
@@ -195,22 +196,14 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue, displa
         where: { id: locationId },
         select: {
           marketplaceId: true,
-          marketplace: {
-            select: {
-              isActive: true,
-              minimumLatitude: true,
-              maximumLatitude: true,
-              minimumLongitude: true,
-              maximumLongitude: true,
-            },
-          },
+          marketplace: { select: { isActive: true } },
         },
       });
       if (!location?.marketplace.isActive) throw locationNotFound();
       // A venue's currency, VAT, amenities and payouts belong to its marketplace, so a new area
       // must be in the same one (docs/onboarding.md, "Edits after going live").
       if (location.marketplaceId !== venue.marketplaceId) throw locationOutsideMarketplace();
-      if (!insideBounds(location.marketplace, coordinates)) throw locationOutsideMarketplace();
+      await checkPin(tx, { marketplaceId: venue.marketplaceId, locationId, pin: coordinates });
 
       const previous = {
         coordinates: await pinOf(tx, actor.venueId),

@@ -1,3 +1,4 @@
+import type { Coordinates } from "@hagz/contracts";
 import type { Language } from "@/generated/prisma/enums";
 import { hashPassword } from "@/platform/crypto/passwords";
 import { encryptTotpSecret, generateTotpSecret } from "@/platform/crypto/totp";
@@ -10,33 +11,51 @@ const nextCode = () => {
   return String.fromCharCode(65 + (Math.floor(n / 26) % 26), 65 + (n % 26));
 };
 
+// A border for tests: a rectangle, as a GeoJSON polygon (Marketplace.boundary takes any shape).
+export const box = ({
+  south,
+  west,
+  north,
+  east,
+}: {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}) => ({
+  type: "Polygon" as const,
+  coordinates: [
+    [
+      [west, south],
+      [east, south],
+      [east, north],
+      [west, north],
+      [west, south],
+    ],
+  ],
+});
+
 interface MarketplaceInput {
   code?: string;
   isActive?: boolean;
   names?: Partial<Record<Language, string>>;
-  // Where venue pins may fall; none by default, so no check.
-  bounds?: {
-    minimumLatitude: number;
-    maximumLatitude: number;
-    minimumLongitude: number;
-    maximumLongitude: number;
-  };
+  // Where venue pins may fall (see `box`); none by default, so no check.
+  boundary?: ReturnType<typeof box>;
 }
 
-export const createMarketplace = ({
+export const createMarketplace = async ({
   code = nextCode(),
   isActive = true,
   names = { EN: `Country ${code}` },
-  bounds,
-}: MarketplaceInput = {}) =>
-  prisma.marketplace.create({
+  boundary,
+}: MarketplaceInput = {}) => {
+  const marketplace = await prisma.marketplace.create({
     data: {
       code,
       currency: "EGP",
       dialCode: "+20",
       timezone: "Africa/Cairo",
       isActive,
-      ...bounds,
       translations: {
         create: Object.entries(names).map(([language, name]) => ({
           language: language as Language,
@@ -45,6 +64,21 @@ export const createMarketplace = ({
       },
     },
   });
+  if (boundary) {
+    await prisma.$executeRaw`
+      UPDATE "Marketplace"
+      SET boundary = ST_Multi(ST_GeomFromGeoJSON(${JSON.stringify(boundary)}))::geography
+      WHERE id = ${marketplace.id}::uuid`;
+  }
+  return marketplace;
+};
+
+// Puts an area's centre somewhere (Location.center is PostGIS, which Prisma can't write).
+export const setCentre = (locationId: string, { latitude, longitude }: Coordinates) =>
+  prisma.$executeRaw`
+    UPDATE "Location"
+    SET center = ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography
+    WHERE id = ${locationId}::uuid`;
 
 // A published venue with the minimum it needs: a marketplace and a top-level location.
 export const createVenue = async (marketplaceId: string, slug = `venue-${++sequence}`) => {

@@ -55,6 +55,7 @@ export const createMarketplace = createRoute({
     ...guarded,
     409: problemResponse("MARKETPLACE_EXISTS: that code is taken."),
     400: invalid,
+    422: problemResponse("INVALID_BOUNDARY: the border's edges cross (`reason` says where)."),
   },
 });
 
@@ -79,6 +80,7 @@ export const updateMarketplace = createRoute({
         "LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace.",
     ),
     400: invalid,
+    422: problemResponse("INVALID_BOUNDARY: the border's edges cross (`reason` says where)."),
   },
 });
 

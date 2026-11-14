@@ -3488,6 +3488,10 @@
           "amenityCount": {
             "type": "integer"
           },
+          "hasBoundary": {
+            "type": "boolean",
+            "description": "Has a border venue pins are checked against. Without one, any pin is taken."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3507,6 +3511,7 @@
           "locationCount",
           "venueCount",
           "amenityCount",
+          "hasBoundary",
           "createdAt"
         ]
       },
@@ -3571,6 +3576,94 @@
             "maximum": 10000,
             "description": "Basis points: 1400 is 14%.",
             "example": 1400
+          },
+          "boundary": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Polygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          }
+                        ]
+                      },
+                      "minItems": 4
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "MultiPolygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            },
+                            {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            }
+                          ]
+                        },
+                        "minItems": 4
+                      },
+                      "minItems": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its border; null or left out for none (no pin check)."
           }
         },
         "required": [
@@ -3622,6 +3715,94 @@
             "maximum": 10000,
             "description": "Basis points: 1400 is 14%.",
             "example": 1400
+          },
+          "boundary": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Polygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          }
+                        ]
+                      },
+                      "minItems": 4
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "MultiPolygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            },
+                            {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            }
+                          ]
+                        },
+                        "minItems": 4
+                      },
+                      "minItems": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its border; null or left out for none (no pin check)."
           },
           "isActive": {
             "type": "boolean"
@@ -7460,7 +7641,7 @@
             }
           },
           "422": {
-            "description": "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country).",
+            "description": "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the country's border), or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7699,7 +7880,7 @@
             }
           },
           "422": {
-            "description": "LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE",
+            "description": "LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area, or a pin outside the country's border) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10938,6 +11119,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "INVALID_BOUNDARY: the border's edges cross (`reason` says where).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       }
@@ -11028,6 +11219,16 @@
           },
           "409": {
             "description": "MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOUNDARY: the border's edges cross (`reason` says where).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12145,7 +12346,7 @@
           "Venues (admin)"
         ],
         "summary": "Set a venue's area",
-        "description": "Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace.",
+        "description": "Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace, and near the venue's pin.",
         "security": [
           {
             "adminCookie": []
@@ -12217,7 +12418,7 @@
             }
           },
           "422": {
-            "description": "LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE",
+            "description": "LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres).",
             "content": {
               "application/problem+json": {
                 "schema": {

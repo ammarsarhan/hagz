@@ -9,6 +9,7 @@ import { ALL_PERMISSIONS, DEFAULT_INVITATION_PERMISSIONS } from "../domain/permi
 import { setupChecklist } from "../domain/setup";
 import { generateSlug } from "../domain/slug";
 import { accountSuspended, venueNotFound } from "./access";
+import { checkPin } from "./pin-checks";
 import { rejectionOf } from "./review";
 
 // Creating a venue and reading its setup checklist (docs/onboarding.md, steps 1 and 2).
@@ -40,13 +41,6 @@ export const marketplaceNotFound = () =>
     detail: "Hagz doesn't operate in that country yet.",
   });
 
-export const locationOutsideMarketplace = () =>
-  new AppError({
-    code: "LOCATION_OUTSIDE_MARKETPLACE",
-    status: 422,
-    detail: "The pin isn't in the same country as the area.",
-  });
-
 // Candidates checked per creation. A clash needs one of these to match one of the existing slugs
 // (31^8 possible), so in practice the first is free; the unique index still guards the rare race.
 const SLUG_CANDIDATES = 5;
@@ -63,67 +57,32 @@ const freeSlug = async (tx: Tx) => {
   return slug;
 };
 
-const boundsSelect = {
-  isActive: true,
-  minimumLatitude: true,
-  maximumLatitude: true,
-  minimumLongitude: true,
-  maximumLongitude: true,
-} as const;
-
 // The venue's marketplace: its area's, or, for an area Hagz doesn't cover yet, the country the owner
-// says the pin is in. Either way the pin has to be inside that country's box.
+// says the pin is in. Either way the pin has to be inside that country, and near the area when
+// there is one (pin-checks.ts).
 const marketplaceFor = async (tx: Tx, input: CreateVenue): Promise<string> => {
   if (input.locationId !== undefined) {
     const location = await tx.location.findUnique({
       where: { id: input.locationId },
-      select: { marketplaceId: true, marketplace: { select: boundsSelect } },
+      select: { marketplaceId: true, marketplace: { select: { isActive: true } } },
     });
     if (!location?.marketplace.isActive) throw locationNotFound();
-    if (!insideBounds(location.marketplace, input.coordinates)) {
-      throw locationOutsideMarketplace();
-    }
+    await checkPin(tx, {
+      marketplaceId: location.marketplaceId,
+      locationId: input.locationId,
+      pin: input.coordinates,
+    });
     return location.marketplaceId;
   }
   // The contract allows only one of the two, so this is the request.
   if (!input.requestedArea) throw locationNotFound();
   const marketplace = await tx.marketplace.findUnique({
     where: { code: input.requestedArea.marketplace },
-    select: { id: true, ...boundsSelect },
+    select: { id: true, isActive: true },
   });
   if (!marketplace?.isActive) throw marketplaceNotFound();
-  if (!insideBounds(marketplace, input.coordinates)) throw locationOutsideMarketplace();
+  await checkPin(tx, { marketplaceId: marketplace.id, pin: input.coordinates });
   return marketplace.id;
-};
-
-interface Bounds {
-  minimumLatitude: number | null;
-  maximumLatitude: number | null;
-  minimumLongitude: number | null;
-  maximumLongitude: number | null;
-}
-
-// A rough box per marketplace (user, 2026-11-12): it catches a pin dropped in the wrong country.
-// No box means no check.
-export const insideBounds = (
-  bounds: Bounds,
-  { latitude, longitude }: CreateVenue["coordinates"],
-) => {
-  const { minimumLatitude, maximumLatitude, minimumLongitude, maximumLongitude } = bounds;
-  if (
-    minimumLatitude === null ||
-    maximumLatitude === null ||
-    minimumLongitude === null ||
-    maximumLongitude === null
-  ) {
-    return true;
-  }
-  return (
-    latitude >= minimumLatitude &&
-    latitude <= maximumLatitude &&
-    longitude >= minimumLongitude &&
-    longitude <= maximumLongitude
-  );
 };
 
 // A signed-in staff account creates a DRAFT and becomes its OWNER. The name is stored in the

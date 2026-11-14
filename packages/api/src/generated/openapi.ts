@@ -3526,7 +3526,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
+                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the country's border), or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -3749,7 +3749,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area, or a pin outside the country's border) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -6693,6 +6693,15 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
+                /** @description INVALID_BOUNDARY: the border's edges cross (`reason` says where). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -6780,6 +6789,15 @@ export interface paths {
                 };
                 /** @description MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace. */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOUNDARY: the border's edges cross (`reason` says where). */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -7749,7 +7767,7 @@ export interface paths {
         get?: never;
         /**
          * Set a venue's area
-         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace.
+         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace, and near the venue's pin.
          */
         put: {
             parameters: {
@@ -7809,7 +7827,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -9444,6 +9462,8 @@ export interface components {
             locationCount: number;
             venueCount: number;
             amenityCount: number;
+            /** @description Has a border venue pins are checked against. Without one, any pin is taken. */
+            hasBoundary: boolean;
             /** Format: date-time */
             createdAt: string;
         };
@@ -9478,6 +9498,22 @@ export interface components {
              * @example 1400
              */
             commissionRate: number;
+            /** @description Its border; null or left out for none (no pin check). */
+            boundary?: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: [
+                    number,
+                    number
+                ][][];
+            } | {
+                /** @enum {string} */
+                type: "MultiPolygon";
+                coordinates: [
+                    number,
+                    number
+                ][][][];
+            } | null;
         };
         /** @description Only the fields sent change. `code` and `currency` are refused once it's in use. */
         UpdateMarketplace: {
@@ -9500,6 +9536,22 @@ export interface components {
              * @example 1400
              */
             commissionRate?: number;
+            /** @description Its border; null or left out for none (no pin check). */
+            boundary?: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: [
+                    number,
+                    number
+                ][][];
+            } | {
+                /** @enum {string} */
+                type: "MultiPolygon";
+                coordinates: [
+                    number,
+                    number
+                ][][][];
+            } | null;
             isActive?: boolean;
         };
         AdminLocation: {

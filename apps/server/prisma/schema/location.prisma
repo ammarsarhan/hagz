@@ -1,5 +1,5 @@
-// A country Hagz operates in. CHECKs: taxRate and commissionRate 0–10000; the bounding box is all
-// four corners or none, in range, minimum below maximum.
+// A country Hagz operates in. CHECKs: taxRate and commissionRate 0–10000; the boundary is a valid
+// shape.
 model Marketplace {
   id               String   @id @default(uuid(7)) @db.Uuid
   code             String   @unique @db.Char(2) // ISO 3166-1 alpha-2
@@ -9,11 +9,8 @@ model Marketplace {
   taxRate          Int      @default(0) // VAT in basis points (1400 = 14%).
   commissionRate   Int      @default(0) // Basis points.
   isActive         Boolean  @default(false) // Hidden until launch.
-  // Rough box (degrees) a venue's map pin must fall inside. Null: no check.
-  minimumLatitude  Float?
-  maximumLatitude  Float?
-  minimumLongitude Float?
-  maximumLongitude Float?
+  // The country's border: a venue's map pin must fall inside it. Null: no check.
+  boundary         Unsupported("geography(MultiPolygon, 4326)")?
   createdAt        DateTime @default(now()) @db.Timestamptz
   updatedAt        DateTime @updatedAt @db.Timestamptz
 
@@ -21,6 +18,8 @@ model Marketplace {
   locations    Location[]
   venues       Venue[]
   amenities    AmenityOption[]
+
+  @@index([boundary], type: Gist)
 }
 
 model MarketplaceTranslation {
