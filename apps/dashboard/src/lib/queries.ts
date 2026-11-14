@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api";
 import { send } from "./api-errors";
+import type { Coordinates } from "./places";
 
 // The answer, or the failure thrown, which is how TanStack Query expects a query to fail. The error
 // is the same problem (or network failure) `send` gives screens, so the messages don't change.
@@ -46,17 +47,45 @@ export const reference = {
     queryFn: async () => (await fetched(api.GET("/v1/marketplaces"))).data,
     ...REFERENCE,
   }),
-  // A marketplace's areas, flat (build the tree from parentId). Used to file a new venue under the
-  // area its pin falls in (lib/areas.ts).
-  locations: (code: string) =>
+};
+
+// Areas a venue can be filed under, asked of the API rather than worked out in the app: it suggests
+// the area nearest the pin and searches by name in either language (docs/onboarding.md). Areas
+// change rarely, so an answer is kept a few minutes. Points are rounded to about a metre, so the
+// map settling on the same spot twice is one request.
+const AREAS = { staleTime: 5 * 60_000 } as const;
+const rounded = ({ latitude, longitude }: Coordinates) => ({
+  latitude: Number(latitude.toFixed(5)),
+  longitude: Number(longitude.toFixed(5)),
+});
+
+export const areas = {
+  // The area to suggest for the pin, or null when none is near enough.
+  nearest: (code: string, pin: Coordinates) =>
     queryOptions({
-      queryKey: ["marketplaces", code, "locations"],
+      queryKey: ["marketplaces", code, "areas", "nearest", rounded(pin)],
       queryFn: async () =>
         (
           await fetched(
-            api.GET("/v1/marketplaces/{code}/locations", { params: { path: { code } } }),
+            api.GET("/v1/marketplaces/{code}/areas/nearest", {
+              params: { path: { code }, query: rounded(pin) },
+            }),
+          )
+        ).area,
+      ...AREAS,
+    }),
+  // What's typed, nearest the pin first; with nothing typed, simply the nearest.
+  search: (code: string, q: string, pin: Coordinates) =>
+    queryOptions({
+      queryKey: ["marketplaces", code, "areas", { q, ...rounded(pin) }],
+      queryFn: async () =>
+        (
+          await fetched(
+            api.GET("/v1/marketplaces/{code}/areas", {
+              params: { path: { code }, query: { ...(q ? { q } : {}), ...rounded(pin) } },
+            }),
           )
         ).data,
-      ...REFERENCE,
+      ...AREAS,
     }),
 };
