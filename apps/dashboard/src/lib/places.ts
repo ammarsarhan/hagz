@@ -1,3 +1,5 @@
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 import { language } from "./language";
 
 // Google, for the one job of finding where a venue is: search as the owner types (Places API, New),
@@ -5,10 +7,25 @@ import { language } from "./language";
 // (Geocoding API). Nothing here is stored; what we keep is in the venue the API creates.
 //
 // The key is public by design (it ships in the app), so it must be restricted in Google Cloud to
-// this app's bundle ids and to these three APIs. Without it the search sheet says so rather than
-// failing quietly, and a pin can still be dropped by hand.
+// this app's bundle ids and to these APIs (Places API (New) and Geocoding API). Without it the
+// search sheet says so rather than failing quietly, and a pin can still be dropped by hand.
 const key = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 export const placesConfigured = Boolean(key);
+
+// These are plain HTTPS calls, not the native SDK, so Google can't tell which app is asking unless
+// it's told: an app-restricted key turns every request away without these headers. The ids come
+// from the app's own config; Android also needs the signing certificate's SHA-1.
+const appHeaders = (): Record<string, string> => {
+  const config = Constants.expoConfig;
+  if (Platform.OS === "ios" && config?.ios?.bundleIdentifier) {
+    return { "X-Ios-Bundle-Identifier": config.ios.bundleIdentifier };
+  }
+  const cert = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CERT;
+  if (Platform.OS === "android" && config?.android?.package && cert) {
+    return { "X-Android-Package": config.android.package, "X-Android-Cert": cert };
+  }
+  return {};
+};
 
 const PLACES = "https://places.googleapis.com/v1";
 const GEOCODE = "https://maps.googleapis.com/maps/api/geocode/json";
@@ -54,7 +71,10 @@ const call = async <T>(url: string, init?: RequestInit): Promise<T> => {
   if (!key) throw new PlacesError("EXPO_PUBLIC_GOOGLE_API_KEY is not set.");
   let response: Response;
   try {
-    response = await fetch(url, init);
+    response = await fetch(url, {
+      ...init,
+      headers: { ...appHeaders(), ...(init?.headers as Record<string, string> | undefined) },
+    });
   } catch (cause) {
     throw new PlacesError(`Google could not be reached: ${String(cause)}`);
   }
@@ -65,6 +85,11 @@ const call = async <T>(url: string, init?: RequestInit): Promise<T> => {
   };
   if (!response.ok || body === null) {
     throw new PlacesError(body?.error?.message ?? `Google answered ${response.status}.`);
+  }
+  // The Geocoding API answers a refused key with 200 and an empty list, so its own status is the
+  // only sign; ZERO_RESULTS is a real answer (open desert, the sea).
+  if (body.status && body.status !== "OK" && body.status !== "ZERO_RESULTS") {
+    throw new PlacesError(body.error_message ?? `Google answered ${body.status}.`);
   }
   return body;
 };
