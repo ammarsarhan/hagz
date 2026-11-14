@@ -3526,7 +3526,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
+                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the country's border), or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -3749,7 +3749,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area, or a pin outside the country's border) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -7749,7 +7749,7 @@ export interface paths {
         get?: never;
         /**
          * Set a venue's area
-         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace.
+         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace, and near the venue's pin.
          */
         put: {
             parameters: {
@@ -7809,7 +7809,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
                 422: {
                     headers: {
                         [name: string]: unknown;

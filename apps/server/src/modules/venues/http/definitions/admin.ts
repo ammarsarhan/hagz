@@ -112,7 +112,7 @@ export const setVenueArea = createRoute({
   summary: "Set a venue's area",
   description:
     "Usually the one its owner asked for, once added under Locations; clears `requestedArea`. " +
-    "The area must be in the venue's marketplace.",
+    "The area must be in the venue's marketplace, and near the venue's pin.",
   middleware: [requireAdmin] as const,
   security,
   request: { params: venueParams, body: { required: true, ...json(SetVenueArea) } },
@@ -121,7 +121,10 @@ export const setVenueArea = createRoute({
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),
-    422: problemResponse("LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE"),
+    422: problemResponse(
+      "LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area) or " +
+        "PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres).",
+    ),
   },
 });
 
