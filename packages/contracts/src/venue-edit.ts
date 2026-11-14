@@ -177,7 +177,11 @@ export const StaffVenueDetail = z
     phone: z.string().nullable(),
     taxNumber: z.string().nullable(),
     location: z.object({
-      id: z.uuid(),
+      id: z.uuid().nullable().meta({ description: "Null while Hagz adds `requestedArea`." }),
+      requestedArea: z
+        .string()
+        .nullable()
+        .meta({ description: "The area the owner asked for, until an admin sets one." }),
       coordinates: Coordinates.nullable(),
       placeId: z.string().nullable(),
     }),

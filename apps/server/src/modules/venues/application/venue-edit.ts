@@ -97,6 +97,7 @@ export const venueDetail = async (venueId: string): Promise<StaffVenueDetail> =>
       taxNumber: true,
       placeId: true,
       locationId: true,
+      requestedArea: true,
       translations: {
         orderBy: { language: "asc" },
         select: { language: true, name: true, description: true, address: true },
@@ -114,6 +115,7 @@ export const venueDetail = async (venueId: string): Promise<StaffVenueDetail> =>
     taxNumber: venue.taxNumber,
     location: {
       id: venue.locationId,
+      requestedArea: venue.requestedArea,
       coordinates: await pinOf(prisma, venueId),
       placeId: venue.placeId,
     },
@@ -139,7 +141,13 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue) => {
     const venue = await lockForEdit(tx, actor.venueId, input.location ? "listing" : "operations");
     const current = await tx.venue.findUniqueOrThrow({
       where: { id: actor.venueId },
-      select: { phone: true, taxNumber: true, placeId: true, locationId: true },
+      select: {
+        phone: true,
+        taxNumber: true,
+        placeId: true,
+        locationId: true,
+        requestedArea: true,
+      },
     });
 
     const details: Record<string, { previous: unknown; next: unknown }> = {};
@@ -186,8 +194,13 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue) => {
         coordinates: await pinOf(tx, actor.venueId),
         placeId: current.placeId,
         locationId: current.locationId,
+        requestedArea: current.requestedArea,
       };
-      await tx.venue.update({ where: { id: actor.venueId }, data: { placeId, locationId } });
+      // Picking an area from the list replaces any the owner asked for.
+      await tx.venue.update({
+        where: { id: actor.venueId },
+        data: { placeId, locationId, requestedArea: null },
+      });
       await tx.$executeRaw`
         UPDATE "Venue"
         SET coordinates = ST_SetSRID(ST_MakePoint(${coordinates.longitude}, ${coordinates.latitude}), 4326)::geography

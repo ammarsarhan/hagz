@@ -1440,13 +1440,35 @@
           "locationId": {
             "type": "string",
             "format": "uuid",
-            "description": "The area the owner confirmed. Its marketplace becomes the venue's."
+            "description": "The area the owner confirmed. Its marketplace becomes the venue's. Send this or `requestedArea`, not both."
+          },
+          "requestedArea": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 80,
+                "example": "Sheikh Zayed, Giza"
+              },
+              "marketplace": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2,
+                "description": "ISO 3166-1 alpha-2.",
+                "example": "EG"
+              }
+            },
+            "required": [
+              "name",
+              "marketplace"
+            ],
+            "description": "An area Hagz doesn't cover yet, in the owner's words. An admin adds it and sets it on the venue while reviewing; the venue can't be approved before then."
           }
         },
         "required": [
           "name",
-          "coordinates",
-          "locationId"
+          "coordinates"
         ]
       },
       "StaffVenueDetail": {
@@ -1478,8 +1500,19 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "string",
-                "format": "uuid"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "Null while Hagz adds `requestedArea`."
+              },
+              "requestedArea": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The area the owner asked for, until an admin sets one."
               },
               "coordinates": {
                 "$ref": "#/components/schemas/Coordinates"
@@ -1493,6 +1526,7 @@
             },
             "required": [
               "id",
+              "requestedArea",
               "coordinates",
               "placeId"
             ]
@@ -3734,6 +3768,14 @@
             ],
             "example": "Nasr City, Cairo"
           },
+          "requestedArea": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.",
+            "example": "Sheikh Zayed, Giza"
+          },
           "owner": {
             "type": [
               "object",
@@ -3779,6 +3821,7 @@
           "status",
           "marketplace",
           "area",
+          "requestedArea",
           "owner",
           "groundCount",
           "createdAt"
@@ -3842,6 +3885,14 @@
             ],
             "example": "Nasr City, Cairo"
           },
+          "requestedArea": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.",
+            "example": "Sheikh Zayed, Giza"
+          },
           "owner": {
             "type": [
               "object",
@@ -3892,6 +3943,7 @@
           "status",
           "marketplace",
           "area",
+          "requestedArea",
           "owner",
           "groundCount",
           "createdAt",
@@ -3912,6 +3964,19 @@
         "required": [
           "reason"
         ]
+      },
+      "SetVenueArea": {
+        "type": "object",
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "locationId"
+        ],
+        "description": "Clears the owner's requested area."
       },
       "CheckTaxNumber": {
         "type": "object",
@@ -7038,7 +7103,7 @@
             }
           },
           "422": {
-            "description": "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country).",
+            "description": "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11553,7 +11618,7 @@
           "Venues (admin)"
         ],
         "summary": "Approve a venue in review",
-        "description": "Moves it to provisioning; the owner is told.",
+        "description": "Moves it to provisioning; the owner is told. A venue still waiting for the area its owner asked for needs one set first.",
         "security": [
           {
             "adminCookie": []
@@ -11606,6 +11671,16 @@
           },
           "409": {
             "description": "VENUE_STATUS_CONFLICT (with `venueStatus`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "AREA_NOT_SET (with the owner's `requestedArea`)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11696,6 +11771,96 @@
           },
           "409": {
             "description": "VENUE_STATUS_CONFLICT (with `venueStatus`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/area": {
+      "put": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Set a venue's area",
+        "description": "Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetVenueArea"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Set"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE",
             "content": {
               "application/problem+json": {
                 "schema": {

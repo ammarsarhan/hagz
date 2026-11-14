@@ -8,6 +8,7 @@ import {
   page,
   RejectVenue,
   ReviewVenue,
+  SetVenueArea,
   VenueHistoryEvent,
   VenueHistoryQuery,
   VenueStatus,
@@ -99,8 +100,30 @@ const step = (path: string, summary: string, description: string, extra = {}) =>
 export const approveVenue = step(
   "approve",
   "Approve a venue in review",
-  "Moves it to provisioning; the owner is told.",
+  "Moves it to provisioning; the owner is told. A venue still waiting for the area its owner " +
+    "asked for needs one set first.",
+  { 422: problemResponse("AREA_NOT_SET (with the owner's `requestedArea`)") },
 );
+
+export const setVenueArea = createRoute({
+  method: "put",
+  path: "/admin/venues/{id}/area",
+  tags,
+  summary: "Set a venue's area",
+  description:
+    "Usually the one its owner asked for, once added under Locations; clears `requestedArea`. " +
+    "The area must be in the venue's marketplace.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SetVenueArea) } },
+  responses: {
+    204: { description: "Set" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+    422: problemResponse("LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE"),
+  },
+});
 
 export const rejectVenue = createRoute({
   method: "post",

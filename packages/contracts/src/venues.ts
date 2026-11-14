@@ -127,6 +127,15 @@ export const AdminVenue = z
     status: VenueStatus,
     marketplace: z.object({ id: z.uuid(), code: z.string().meta({ example: "EG" }) }),
     area: z.string().nullable().meta({ example: "Nasr City, Cairo" }),
+    requestedArea: z
+      .string()
+      .nullable()
+      .meta({
+        description:
+          "An area the owner asked for because Hagz doesn't cover it; `area` is null until an " +
+          "admin adds it and sets it.",
+        example: "Sheikh Zayed, Giza",
+      }),
     owner: z
       .object({
         id: z.uuid(),

@@ -393,6 +393,7 @@ const presentReceived = async (
     select: {
       id: true,
       translations: { select: { language: true, name: true, address: true } },
+      requestedArea: true,
       location: {
         select: {
           translations: { select: { language: true, name: true } },
@@ -420,7 +421,7 @@ const presentReceived = async (
         name: translation?.name ?? null,
         // Drafts store an empty address until the owner fills it in.
         address: translation && translation.address !== "" ? translation.address : null,
-        location: venue ? placeOf(venue.location, language) : null,
+        location: venue ? (placeOf(venue.location, language) ?? venue.requestedArea) : null,
         groundCount: venue?._count.grounds ?? 0,
         team: {
           size: venue?._count.memberships ?? 0,

@@ -1,8 +1,10 @@
-// Marketplace matches the location's. CHECK: commissionRate 0–10000.
+// Marketplace matches the location's. CHECK: commissionRate 0–10000; exactly one of locationId, requestedArea.
 model Venue {
   id             String                                 @id @default(uuid(7)) @db.Uuid
   marketplaceId  String                                 @db.Uuid
-  locationId     String                                 @db.Uuid
+  locationId     String?                                @db.Uuid // Null while an admin adds requestedArea.
+  // An area Hagz doesn't cover yet, as the owner wrote it. CHECK: exactly one of the two.
+  requestedArea  String?
   slug           String                                 @unique // /venue/[slug]
   status         VenueStatus                            @default(DRAFT)
   placeId        String?
@@ -18,7 +20,7 @@ model Venue {
   updatedAt      DateTime                               @updatedAt @db.Timestamptz
 
   marketplace   Marketplace         @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
-  location      Location            @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  location      Location?           @relation(fields: [locationId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
   translations  VenueTranslation[]
   memberships   VenueMembership[]
   invitations   VenueInvitation[]
@@ -106,11 +108,11 @@ model VenueInvitation {
 // regularHorizon 1–12, confirmationWindow and reminderLead 1–168, freedDiscountHours 1–48;
 // lapsedAfter 1–12, regularBookings >= 1, regularPeriod 1–26, fillAlertHours 1–72; staffHoldMinutes 5–60.
 model VenueSettings {
-  venueId            String             @id @db.Uuid
+  venueId            String              @id @db.Uuid
   defaultPermissions Json // For new invitations.
-  minimumNotice      Int                @default(60) // Minutes before kick-off that booking closes.
-  autoConfirm        Boolean            @default(true) // False: staff approve each booking.
-  paymentMode        PaymentMode        @default(MANUAL)
+  minimumNotice      Int                 @default(60) // Minutes before kick-off that booking closes.
+  autoConfirm        Boolean             @default(true) // False: staff approve each booking.
+  paymentMode        PaymentMode         @default(MANUAL)
   depositPercent     Int? // Share paid online.
   paymentWindow      Int? // Minutes a HELD booking waits for payment; null = platform default.
   cancellationPolicy CancellationPolicy? // Null until the owner picks one: a setup checklist item.
@@ -118,21 +120,21 @@ model VenueSettings {
   loyaltyStamps      Int? // Bookings per free one; null = off.
   loyaltyWindow      Int? // Days.
   // Regulars
-  regularHorizon     Int                @default(4) // Weeks of reservations kept ahead.
-  confirmationWindow Int                @default(24) // Hours before kick-off a reservation must be confirmed.
-  reminderLead       Int                @default(24) // Hours before that deadline the reminder goes out.
+  regularHorizon     Int                 @default(4) // Weeks of reservations kept ahead.
+  confirmationWindow Int                 @default(24) // Hours before kick-off a reservation must be confirmed.
+  reminderLead       Int                 @default(24) // Hours before that deadline the reminder goes out.
   freedDiscountHours Int? // Freed slots this close to kick-off get the DISCOUNT tier; null = off.
   // Filling slots
-  lapsedAfter        Int                @default(3) // Weeks without a booking before a regular is lapsed.
-  regularBookings    Int                @default(3) // Bookings within regularPeriod that make a regular.
-  regularPeriod      Int                @default(8) // Weeks.
-  fillAlertHours     Int                @default(6) // Hours before kick-off to alert about an empty slot.
-  fillAlertOnRelease Boolean            @default(true)
-  fillAlertNearStart Boolean            @default(true)
-  fillAlertDigest    Boolean            @default(true)
-  staffHoldMinutes   Int                @default(15) // How long a staff hold keeps slots before it expires.
-  createdAt          DateTime           @default(now()) @db.Timestamptz
-  updatedAt          DateTime           @updatedAt @db.Timestamptz
+  lapsedAfter        Int                 @default(3) // Weeks without a booking before a regular is lapsed.
+  regularBookings    Int                 @default(3) // Bookings within regularPeriod that make a regular.
+  regularPeriod      Int                 @default(8) // Weeks.
+  fillAlertHours     Int                 @default(6) // Hours before kick-off to alert about an empty slot.
+  fillAlertOnRelease Boolean             @default(true)
+  fillAlertNearStart Boolean             @default(true)
+  fillAlertDigest    Boolean             @default(true)
+  staffHoldMinutes   Int                 @default(15) // How long a staff hold keeps slots before it expires.
+  createdAt          DateTime            @default(now()) @db.Timestamptz
+  updatedAt          DateTime            @updatedAt @db.Timestamptz
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 }
