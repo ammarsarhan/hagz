@@ -37,6 +37,7 @@ CREATE TABLE "Location" (
     "parentId" UUID,
     "locality" "Locality" NOT NULL,
     "slug" TEXT NOT NULL,
+    "center" geography(Point, 4326),
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -60,6 +61,9 @@ CREATE INDEX "Location_parentId_idx" ON "Location"("parentId");
 
 -- CreateIndex
 CREATE INDEX "Location_marketplaceId_locality_idx" ON "Location"("marketplaceId", "locality");
+
+-- CreateIndex
+CREATE INDEX "Location_center_idx" ON "Location" USING GIST ("center");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Location_id_marketplaceId_key" ON "Location"("id", "marketplaceId");
