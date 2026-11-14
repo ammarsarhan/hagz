@@ -8845,6 +8845,18 @@ export interface components {
             status: components["schemas"]["VenueStatus"];
             phone: string | null;
             taxNumber: string | null;
+            marketplace: {
+                /**
+                 * @description Whose amenity options apply.
+                 * @example EG
+                 */
+                code: string;
+                /**
+                 * @description ISO 4217; prices are in its minor units.
+                 * @example EGP
+                 */
+                currency: string;
+            };
             location: {
                 /**
                  * Format: uuid

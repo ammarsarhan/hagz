@@ -106,6 +106,7 @@ export const venueDetail = async (
       placeId: true,
       locationId: true,
       requestedArea: true,
+      marketplace: { select: { code: true, currency: true } },
       location: {
         select: {
           ...names,
@@ -131,6 +132,7 @@ export const venueDetail = async (
     status: venue.status,
     phone: venue.phone,
     taxNumber: venue.taxNumber,
+    marketplace: venue.marketplace,
     location: {
       id: venue.locationId,
       name: area ? nameIn(area.translations, display) : null,

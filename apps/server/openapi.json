@@ -1533,6 +1533,25 @@
               "null"
             ]
           },
+          "marketplace": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Whose amenity options apply.",
+                "example": "EG"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217; prices are in its minor units.",
+                "example": "EGP"
+              }
+            },
+            "required": [
+              "code",
+              "currency"
+            ]
+          },
           "location": {
             "type": "object",
             "properties": {
@@ -1606,6 +1625,7 @@
           "status",
           "phone",
           "taxNumber",
+          "marketplace",
           "location",
           "translations",
           "settings",
