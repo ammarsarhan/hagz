@@ -10,14 +10,16 @@ export const nameIn = <Language extends string>(
 ): string | null => translationIn(translations, language)?.name ?? null;
 
 // "Zamalek, Cairo": the venue's own place, then the one it sits in (if any), which is how people
-// say where a pitch is; the street address is longer and less telling.
+// say where a pitch is; the street address is longer and less telling. A venue waiting for its
+// requested area has none.
 export const placeOf = <Language extends string>(
   location: {
     translations: { language: Language; name: string }[];
     parent: { translations: { language: Language; name: string }[] } | null;
-  },
+  } | null,
   language: Language,
 ): string | null => {
+  if (!location) return null;
   const names = [location, location.parent]
     .map((place) => (place ? nameIn(place.translations, language) : null))
     .filter((name): name is string => Boolean(name));
