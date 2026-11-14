@@ -254,6 +254,7 @@ const ar: ArabicTranslations = {
           left_other: "أضف {{count}} صورة أخرى لإتمام هذه الخطوة.",
           done: "تم",
           cover: "الغلاف",
+          photoNumber: "الصورة {{number}}",
           makeCover: "اجعلها الغلاف",
           remove: "احذف الصورة",
         },

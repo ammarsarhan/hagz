@@ -363,6 +363,16 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
           onHidden={() => setChosen(null)}
           closeLabel={t("components.shared.nav.close")}
         >
+          {/* Which photo this is, in the order players see them: also the gap between the close
+              button and the picture. */}
+          <Text
+            accessibilityRole="header"
+            className="mb-4 mt-1 text-[22px] font-semibold leading-[1.27]"
+          >
+            {t("screens.setup.photos.photoNumber", {
+              number: ready.findIndex((photo) => photo.id === chosen.id) + 1,
+            })}
+          </Text>
           <Image
             source={{ uri: reachable(chosen.url) }}
             contentFit="cover"
@@ -383,10 +393,10 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
               accessibilityLabel={t("screens.setup.photos.remove")}
               onPress={() => void remove(chosen)}
               hitSlop={8}
-              className="h-14 flex-row items-center justify-center gap-2 active:opacity-60"
+              className="h-12 flex-row items-center justify-center gap-1.5 active:opacity-60"
             >
-              <IconTrash size={20} color={colors.ink} strokeWidth={2} />
-              <Text className="text-button font-semibold">{t("screens.setup.photos.remove")}</Text>
+              <IconTrash size={18} color={colors.ink} strokeWidth={2} />
+              <Text className="text-body font-semibold">{t("screens.setup.photos.remove")}</Text>
             </Pressable>
           </View>
         </Sheet>
