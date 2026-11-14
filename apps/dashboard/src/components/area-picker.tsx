@@ -31,7 +31,7 @@ export type Area = components["schemas"]["Area"];
 // Before anything's typed it lists the areas nearest the pin, with how far each is; typing searches
 // every area by name, in Arabic or English, nearest first. The API does both (only the page shown is
 // fetched, never the whole tree). Anything typed can also be asked for: an area Hagz doesn't cover
-// yet, which it adds when the venue is submitted (docs/onboarding.md).
+// yet, which it adds when the venue is submitted (docs/onboarding.md), unless `allowRequest` is off.
 const DEBOUNCE_MS = 250;
 const MIN_REQUEST = 2;
 
@@ -39,8 +39,9 @@ export function AreaPicker({
   visible,
   country,
   near,
-  selected,
+  selectedId,
   requested,
+  allowRequest = true,
   onClose,
   onPick,
   onRequest,
@@ -50,11 +51,13 @@ export function AreaPicker({
   country: string;
   // The pin: results nearest it come first.
   near: Coordinates;
-  selected: Area | null;
+  selectedId: string | null;
   requested: string | null;
+  // Off where the API takes supported areas only (moving an existing venue's pin).
+  allowRequest?: boolean;
   onClose: () => void;
   onPick: (area: Area) => void;
-  onRequest: (name: string) => void;
+  onRequest?: (name: string) => void;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -86,6 +89,7 @@ export function AreaPicker({
   const typed = query.trim().replace(/\s+/g, " ");
   const found = results.data ?? [];
   const canRequest =
+    allowRequest &&
     typed.length >= MIN_REQUEST &&
     !found.some((area) => area.name.toLocaleLowerCase() === typed.toLocaleLowerCase());
 
@@ -163,7 +167,7 @@ export function AreaPicker({
                   accessibilityState={{ selected: requested === typed }}
                   onPress={() => {
                     Keyboard.dismiss();
-                    onRequest(typed);
+                    onRequest?.(typed);
                   }}
                   hitSlop={8}
                   className="pt-[18px] active:opacity-60"
@@ -180,7 +184,7 @@ export function AreaPicker({
             renderItem={({ item }) => (
               <AreaRow
                 area={item}
-                selected={item.id === selected?.id}
+                selected={item.id === selectedId}
                 onPress={() => {
                   Keyboard.dismiss();
                   onPick(item);
