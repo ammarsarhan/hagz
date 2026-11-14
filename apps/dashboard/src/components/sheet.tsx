@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, Keyboard, KeyboardAvoidingView, Modal, Pressable, View } from "react-native";
+import {
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isRTL } from "@/lib/language";
 import { SheetHud } from "./hud";
@@ -9,8 +17,9 @@ import { CloseButton } from "./nav";
 // the close button (end side) above the content. Tapping outside closes it. The Modal renders
 // outside the screen, so it sets the direction itself, and it rises with the keyboard.
 //
-// To close, set `visible` to false and keep it mounted: it slides down, then calls `onHidden`, which
-// is when to unmount it. Unmounting straight away skips the slide.
+// To close, set `visible` to false and keep it mounted: it slides down, then calls `onHidden` once
+// it's really gone (on iOS, when the Modal says it's dismissed), which is when to unmount it or to
+// present something else. Unmounting straight away skips the slide.
 const DURATION = 220;
 
 interface SheetProps {
@@ -45,7 +54,9 @@ export function Sheet({ visible, onClose, onHidden, closeLabel, children }: Shee
     }).start(({ finished }) => {
       if (!finished || visible) return;
       setMounted(false);
-      hidden.current?.();
+      // On iOS the Modal is still on screen until it reports it's gone (onDismiss below), and
+      // anything presented before then (the photo picker) is silently refused.
+      if (Platform.OS !== "ios") hidden.current?.();
     });
   }, [visible, progress]);
 
@@ -55,6 +66,7 @@ export function Sheet({ visible, onClose, onHidden, closeLabel, children }: Shee
       visible={mounted}
       animationType="none"
       onRequestClose={onClose}
+      onDismiss={Platform.OS === "ios" ? () => hidden.current?.() : undefined}
       statusBarTranslucent
     >
       <View className="flex-1">
