@@ -24,7 +24,14 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <HudProvider>
-        <Stack screenOptions={{ headerShown: false, animation: settled ? "default" : "none" }} />
+        <Stack screenOptions={{ headerShown: false, animation: settled ? "default" : "none" }}>
+          {/* The map comes up over the flow rather than sliding in from the side: it's a place
+              to do one thing (put the pin down) and leave, and closing it lands back on the name. */}
+          <Stack.Screen
+            name="create-venue/place"
+            options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
+          />
+        </Stack>
       </HudProvider>
     </QueryClientProvider>
   );

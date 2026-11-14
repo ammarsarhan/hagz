@@ -154,6 +154,13 @@ const en = {
         },
         place: {
           findTitle: "Where is {{name}}?",
+          locationBody:
+            "Let Hagz use your location and the map starts where you are. Most owners add their venue standing in it.",
+          locationBlockedBody:
+            "Location is off for Hagz. Turn it on in Settings and the map starts where you are, or search for your venue instead.",
+          allowLocation: "Use my location",
+          openSettings: "Open Settings",
+          searchInstead: "Search instead",
           findBody: "Search for it, or move the map to it. Players use this for directions.",
           pinTitle: "Is the pin in the right spot?",
           pinBody: "Move the map until the pin sits on your entrance.",

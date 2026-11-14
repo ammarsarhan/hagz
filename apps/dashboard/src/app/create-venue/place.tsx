@@ -1,19 +1,29 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as ExpoLocation from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, AppState, Linking, Pressable, StyleSheet, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
-import { MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
+import { LOCATION_ART, LOCATION_ART_SIZE, MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
 import { AreaPicker } from "@/components/area-picker";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
-import { IconCircleCheckFilled, IconChevronLeft, IconMapPin, IconSearch } from "@/components/icons";
+import {
+  IconCircleCheckFilled,
+  IconChevronLeft,
+  IconMapPin,
+  IconSearch,
+  IconX,
+} from "@/components/icons";
+import { CloseButton, NavBar } from "@/components/nav";
 import { PlaceSearch } from "@/components/place-search";
+import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
+import { Title } from "@/components/title";
 import { areaLabel, matchArea, type Location } from "@/lib/areas";
 import { api } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
@@ -32,7 +42,16 @@ import { queries, reference } from "@/lib/queries";
 //   area  the area we matched from the address, to confirm or change, then the draft is created
 //
 // Players browse by area and drive to the pin, so both have to be right, and only the owner knows.
+//
+// The screen comes up as a modal over the flow (app/_layout.tsx). Without location permission, a
+// full-screen prompt stands in front of the map first: the map opening on the owner, who's usually
+// standing in their venue, saves most of them the search.
 type Stage = "find" | "pin" | "area";
+// checking  asking the phone, under a white cover so the map doesn't flash before the prompt
+// ask       the prompt, whose button brings up the system's own question
+// blocked   the prompt, after the owner said no for good: only Settings can turn it back on
+// done      the map, whatever the answer was
+type Permission = "checking" | "ask" | "blocked" | "done";
 
 // Where the map opens before it knows better: Cairo, wide enough to see which part of it you're in.
 const START: Region = {
@@ -41,6 +60,8 @@ const START: Region = {
   latitudeDelta: 0.22,
   longitudeDelta: 0.22,
 };
+// Around the owner's own position: their street and the next few, to spot the venue from.
+const NEARBY = { latitudeDelta: 0.01, longitudeDelta: 0.01 };
 // Close enough to pick out a gate once a venue has been found.
 const CLOSE = { latitudeDelta: 0.004, longitudeDelta: 0.004 };
 // After the map stops moving, before asking Google what's under the pin.
@@ -61,6 +82,7 @@ export default function CreateVenuePlace() {
   const map = useRef<MapView>(null);
 
   const [stage, setStage] = useState<Stage>("find");
+  const [permission, setPermission] = useState<Permission>("checking");
   const [searching, setSearching] = useState(false);
   const [choosingArea, setChoosingArea] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -95,6 +117,73 @@ export default function CreateVenuePlace() {
     setPin(coordinates);
     map.current?.animateToRegion({ ...coordinates, ...CLOSE }, 400);
   }, []);
+
+  // Start the map on the owner. Being where they stand counts as placing it: they can go straight
+  // on to checking the pin.
+  const centreOnOwner = useCallback(async () => {
+    try {
+      const position = await ExpoLocation.getCurrentPositionAsync({
+        accuracy: ExpoLocation.Accuracy.Balanced,
+      });
+      const coordinates = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+      setPin(coordinates);
+      setPlaced(true);
+      map.current?.animateToRegion({ ...coordinates, ...NEARBY }, 400);
+    } catch (error) {
+      console.warn(error);
+      hud.show(t("screens.createVenue.place.locationFailed"));
+    }
+  }, [hud, t]);
+
+  // Whether the prompt is needed at all. With permission already given there's nothing to ask.
+  const checkPermission = useCallback(async () => {
+    try {
+      const current = await ExpoLocation.getForegroundPermissionsAsync();
+      if (current.granted) {
+        setPermission("done");
+        void centreOnOwner();
+      } else {
+        setPermission(current.canAskAgain ? "ask" : "blocked");
+      }
+    } catch (error) {
+      // No answer from the phone: the map still works without it.
+      console.warn(error);
+      setPermission("done");
+    }
+  }, [centreOnOwner]);
+
+  useEffect(() => {
+    void checkPermission();
+    // Only on arrival (checkPermission doesn't change): after that, the prompt's buttons decide.
+  }, [checkPermission]);
+
+  // Sent to Settings: look again when they come back, and carry on if they turned it on.
+  useEffect(() => {
+    if (permission !== "blocked") return;
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void checkPermission();
+    });
+    return () => subscription.remove();
+  }, [permission, checkPermission]);
+
+  const allowLocation = async () => {
+    if (permission === "blocked") {
+      void Linking.openSettings();
+      return;
+    }
+    const answer = await ExpoLocation.requestForegroundPermissionsAsync().catch(
+      (error: unknown) => {
+        console.warn(error);
+        return null;
+      },
+    );
+    // A no isn't asked about again here: the map works without it, by search or by hand.
+    setPermission("done");
+    if (answer?.granted) void centreOnOwner();
+  };
 
   // What's under the pin, once the map has settled. Only while the pin is being placed: the picked
   // place already came with an address, and by the area step nothing moves any more.
@@ -223,13 +312,21 @@ export default function CreateVenuePlace() {
         className="absolute inset-x-5 flex-row items-center gap-2.5"
         style={{ top: insets.top + 8 }}
       >
-        <FloatingButton label={t("components.shared.nav.back")} onPress={back}>
-          <IconChevronLeft
-            size={20}
-            color={colors.ink}
-            strokeWidth={2}
-            style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
-          />
+        {/* At the first step this closes the modal, so it's a cross, not a back arrow. */}
+        <FloatingButton
+          label={t(stage === "find" ? "components.shared.nav.close" : "components.shared.nav.back")}
+          onPress={back}
+        >
+          {stage === "find" ? (
+            <IconX size={20} color={colors.ink} strokeWidth={2} />
+          ) : (
+            <IconChevronLeft
+              size={20}
+              color={colors.ink}
+              strokeWidth={2}
+              style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+            />
+          )}
         </FloatingButton>
         {stage === "area" ? null : (
           <Pressable
@@ -304,6 +401,17 @@ export default function CreateVenuePlace() {
           setStage("pin");
         }}
       />
+      {permission === "checking" ? (
+        <View style={StyleSheet.absoluteFill} className="bg-white" />
+      ) : permission === "done" ? null : (
+        <LocationPrompt
+          name={name}
+          blocked={permission === "blocked"}
+          onAllow={() => void allowLocation()}
+          onSkip={() => setPermission("done")}
+          onClose={() => router.back()}
+        />
+      )}
       <AreaPicker
         visible={choosingArea}
         locations={locations.data ?? []}
@@ -334,6 +442,67 @@ const cardShadow = {
   shadowOffset: { width: 0, height: -6 },
   elevation: 12,
 } as const;
+
+// In front of the map until location is settled: the step's own question, and why the app would
+// like to know where the owner is. The map loads behind it, so it's ready when the prompt goes.
+function LocationPrompt({
+  name,
+  blocked,
+  onAllow,
+  onSkip,
+  onClose,
+}: {
+  name: string;
+  blocked: boolean;
+  onAllow: () => void;
+  onSkip: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={StyleSheet.absoluteFill} className="bg-white">
+      <Screen
+        footer={
+          <>
+            <Button
+              label={t(
+                blocked
+                  ? "screens.createVenue.place.openSettings"
+                  : "screens.createVenue.place.allowLocation",
+              )}
+              onPress={onAllow}
+            />
+            <Button
+              label={t("screens.createVenue.place.searchInstead")}
+              variant="ghost"
+              onPress={onSkip}
+            />
+          </>
+        }
+      >
+        <NavBar
+          start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />}
+        />
+        <View className="mb-[18px] items-center">
+          <SvgXml
+            xml={LOCATION_ART}
+            width={LOCATION_ART_SIZE.width}
+            height={LOCATION_ART_SIZE.height}
+          />
+        </View>
+        <Title
+          subtitle={t(
+            blocked
+              ? "screens.createVenue.place.locationBlockedBody"
+              : "screens.createVenue.place.locationBody",
+          )}
+        >
+          {t("screens.createVenue.place.findTitle", { name })}
+        </Title>
+      </Screen>
+    </View>
+  );
+}
 
 function FloatingButton({
   label,

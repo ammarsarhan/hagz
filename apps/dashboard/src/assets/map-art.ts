@@ -9,6 +9,13 @@ export const MAP_PIN_SIZE = { width: 28, height: 40 } as const;
 export const MAP_PIN =
   '<svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 1C6.82 1 1 6.82 1 14C1 23.75 14 39 14 39C14 39 27 23.75 27 14C27 6.82 21.18 1 14 1Z" fill="#1F38ED"/><circle cx="14" cy="14" r="4.75" fill="#142399"/></svg>';
 
+// Over the location prompt that opens the map: the pin standing on rings of the brand blue, as if
+// the map had already found you. 240 × 184.
+export const LOCATION_ART_SIZE = { width: 240, height: 184 } as const;
+
+export const LOCATION_ART =
+  '<svg width="240" height="184" viewBox="0 0 240 184" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="120" cy="112" r="72" fill="#1F38ED" fill-opacity="0.05"/><circle cx="120" cy="112" r="50" fill="#1F38ED" fill-opacity="0.08"/><circle cx="120" cy="112" r="28" fill="#1F38ED" fill-opacity="0.12"/><ellipse cx="120" cy="113" rx="7" ry="2.5" fill="#0B0B0C" fill-opacity="0.3"/><path d="M120 52C109.5 52 101 60.5 101 71C101 85.25 120 112 120 112C120 112 139 85.25 139 71C139 60.5 130.5 52 120 52Z" fill="#1F38ED"/><circle cx="120" cy="71" r="7" fill="#142399"/></svg>';
+
 // The corner the draft card is cut with, on its own black ("First run · draft card · Black,
 // progress as top border", 302:6). 160 × 132, anchored to the card's top end corner.
 export const DRAFT_CARD_ART_SIZE = { width: 160, height: 132 } as const;
