@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Animated, Pressable, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { Button } from "@/components/button";
+import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
@@ -27,11 +28,6 @@ import { queries } from "@/lib/queries";
 // (docs/flows.md, "draft venues"), so the tabs would be dead ends around a checklist.
 type SetupItem = components["schemas"]["SetupItem"];
 
-// The compact title fades in over the last stretch of the big one going under the nav bar, rising
-// this far as it does.
-const COMPACT_FADE = 24;
-const COMPACT_RISE = 6;
-
 // The ring around the count of required items done.
 const RING = 60;
 const RING_WIDTH = 4;
@@ -41,10 +37,7 @@ export default function VenueSetupScreen() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const hud = useHud();
   const setup = useQuery(queries.setup(venueId));
-  const { width } = useWindowDimensions();
-  const scrollY = useRef(new Animated.Value(0)).current;
-  // Where the big title ends in the scroll; the compact one is fully in once it's gone under.
-  const [titleEnd, setTitleEnd] = useState(0);
+  const compact = useCompactTitle();
 
   const failed = setup.isError;
   useEffect(() => {
@@ -75,19 +68,6 @@ export default function VenueSetupScreen() {
 
   const { venue, items, required, canSubmit } = setup.data;
   const name = venue.name ?? t("screens.setup.untitled");
-  const fadeIn = [Math.max(titleEnd - COMPACT_FADE, 0), Math.max(titleEnd, 1)];
-  const compact = {
-    opacity: scrollY.interpolate({ inputRange: fadeIn, outputRange: [0, 1], extrapolate: "clamp" }),
-    transform: [
-      {
-        translateY: scrollY.interpolate({
-          inputRange: fadeIn,
-          outputRange: [COMPACT_RISE, 0],
-          extrapolate: "clamp",
-        }),
-      },
-    ],
-  };
   // What to do next: the first required item that can actually be done now.
   const next = items.find((item) => item.required && item.state === "MISSING");
 
@@ -107,36 +87,19 @@ export default function VenueSetupScreen() {
       <NavBar
         flush
         start={
-          <View className="flex-row items-center gap-3">
-            <CloseButton label={t("components.shared.nav.close")} onPress={close} />
-            <Animated.View
-              pointerEvents="none"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              // The gutters, the close button and the gap: a long name ends in "…", not off-screen.
-              style={[compact, { maxWidth: width - 40 - 40 - 12 }]}
-            >
-              <Text className="text-body font-semibold leading-[1.25]" numberOfLines={1}>
-                {name}
-              </Text>
-              <Text className="text-caption text-ink-2" numberOfLines={1}>
-                {t("screens.setup.compactProgress", {
-                  done: required.done,
-                  total: required.total,
-                })}
-              </Text>
-            </Animated.View>
-          </View>
+          <CompactTitle
+            button={<CloseButton label={t("components.shared.nav.close")} onPress={close} />}
+            title={name}
+            detail={t("screens.setup.compactProgress", {
+              done: required.done,
+              total: required.total,
+            })}
+            style={compact.style}
+          />
         }
       />
-      <FadingScroll scrollY={scrollY}>
-        <Title
-          subtitle={t("screens.setup.subtitle")}
-          onTitleLayout={(event) => {
-            const { y, height } = event.nativeEvent.layout;
-            setTitleEnd(y + height);
-          }}
-        >
+      <FadingScroll scrollY={compact.scrollY}>
+        <Title subtitle={t("screens.setup.subtitle")} onTitleLayout={compact.onTitleLayout}>
           {name}
         </Title>
 

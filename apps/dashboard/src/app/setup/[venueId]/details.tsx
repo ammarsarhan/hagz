@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
+import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { Field, TextArea } from "@/components/field";
 import { BackButton, NavBar } from "@/components/nav";
@@ -39,6 +40,7 @@ export default function SetupDetails() {
 function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
   const { t } = useTranslation();
   const { save, saving } = useSaveVenue(venueId);
+  const compact = useCompactTitle();
   // The app's language, or else whichever the venue was started in: its name carries over, and is
   // saved in the app's language from here.
   const start =
@@ -114,10 +116,18 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
     >
       <NavBar
         flush
-        start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
+        start={
+          <CompactTitle
+            button={
+              <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
+            }
+            title={t("screens.setup.items.DETAILS.title")}
+            style={compact.style}
+          />
+        }
       />
-      <FadingScroll>
-        <Title subtitle={t("screens.setup.details.subtitle")}>
+      <FadingScroll scrollY={compact.scrollY}>
+        <Title subtitle={t("screens.setup.details.subtitle")} onTitleLayout={compact.onTitleLayout}>
           {t("screens.setup.items.DETAILS.title")}
         </Title>
         <Field

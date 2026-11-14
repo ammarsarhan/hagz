@@ -6,6 +6,7 @@ import { Pressable, Switch, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { AmenityIcon } from "@/components/amenity-icon";
 import { Button } from "@/components/button";
+import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, FieldLabel, inputClass } from "@/components/field";
 import { BackButton, NavBar } from "@/components/nav";
@@ -69,6 +70,7 @@ function AmenitiesForm({
 }) {
   const { t } = useTranslation();
   const { save, saving } = useSaveVenue(venueId);
+  const compact = useCompactTitle();
   const currency = venue.marketplace.currency;
   const decimals = decimalsOf(currency);
   const [offered, setOffered] = useState<Map<string, Offered>>(
@@ -123,10 +125,21 @@ function AmenitiesForm({
     <Screen footer={<Button label={t("common.actions.save")} loading={saving} onPress={submit} />}>
       <NavBar
         flush
-        start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}
+        start={
+          <CompactTitle
+            button={
+              <BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />
+            }
+            title={t("screens.setup.items.AMENITIES.title")}
+            style={compact.style}
+          />
+        }
       />
-      <FadingScroll>
-        <Title subtitle={t("screens.setup.amenities.subtitle")}>
+      <FadingScroll scrollY={compact.scrollY}>
+        <Title
+          subtitle={t("screens.setup.amenities.subtitle")}
+          onTitleLayout={compact.onTitleLayout}
+        >
           {t("screens.setup.items.AMENITIES.title")}
         </Title>
         <View className="flex-row flex-wrap gap-2.5">
@@ -275,7 +288,7 @@ function PriceSheet({
         <>
           <FieldLabel>{t("screens.setup.amenities.price")}</FieldLabel>
           <FieldBox focused={focused} error={false} ltr>
-            <Text className="text-[17px] text-unit">{currency}</Text>
+            <Text className="text-[16px] text-unit">{currency}</Text>
             <TextInput
               className={inputClass}
               value={amount}
