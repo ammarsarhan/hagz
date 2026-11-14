@@ -57,7 +57,7 @@ export function NavBar({
 }) {
   return (
     <View
-      className={`-mx-1 h-10 flex-row items-center justify-between ${flush ? "" : "mb-[22px]"}`}
+      className={`-mx-1 flex-row items-center justify-between ${flush ? "h-14 py-2" : "mb-[22px] h-10"}`}
     >
       <View>{start}</View>
       <View>{end}</View>

@@ -10,8 +10,9 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 // Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
 // tracked on the native side, so whatever it animates keeps pace with the finger.
 const FADE = 28;
-// The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding.
-const NAV_GAP = 22;
+// The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding, less the 8px a
+// flush NavBar pads under itself.
+const NAV_GAP = 14;
 
 export function FadingScroll({
   children,
