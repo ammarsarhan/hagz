@@ -3488,6 +3488,10 @@
           "amenityCount": {
             "type": "integer"
           },
+          "hasBoundary": {
+            "type": "boolean",
+            "description": "Has a border venue pins are checked against. Without one, any pin is taken."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3507,6 +3511,7 @@
           "locationCount",
           "venueCount",
           "amenityCount",
+          "hasBoundary",
           "createdAt"
         ]
       },
@@ -3571,6 +3576,94 @@
             "maximum": 10000,
             "description": "Basis points: 1400 is 14%.",
             "example": 1400
+          },
+          "boundary": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Polygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          }
+                        ]
+                      },
+                      "minItems": 4
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "MultiPolygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            },
+                            {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            }
+                          ]
+                        },
+                        "minItems": 4
+                      },
+                      "minItems": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its border; null or left out for none (no pin check)."
           }
         },
         "required": [
@@ -3622,6 +3715,94 @@
             "maximum": 10000,
             "description": "Basis points: 1400 is 14%.",
             "example": 1400
+          },
+          "boundary": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "Polygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          }
+                        ]
+                      },
+                      "minItems": 4
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "MultiPolygon"
+                    ]
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            },
+                            {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            }
+                          ]
+                        },
+                        "minItems": 4
+                      },
+                      "minItems": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "coordinates"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its border; null or left out for none (no pin check)."
           },
           "isActive": {
             "type": "boolean"
@@ -10938,6 +11119,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "INVALID_BOUNDARY: the border's edges cross (`reason` says where).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       }
@@ -11028,6 +11219,16 @@
           },
           "409": {
             "description": "MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOUNDARY: the border's edges cross (`reason` says where).",
             "content": {
               "application/problem+json": {
                 "schema": {

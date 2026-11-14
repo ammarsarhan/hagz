@@ -41,6 +41,30 @@ const BasisPoints = z
 
 // --- Marketplaces ---
 
+// A country's border as GeoJSON (RFC 7946): a Polygon or MultiPolygon in [longitude, latitude]
+// pairs, each ring closed (its last point is its first). The shape is checked here; whether it's
+// valid as a shape (no crossing edges) is PostGIS's to say (INVALID_BOUNDARY).
+const Position = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
+const Ring = z
+  .array(Position)
+  .min(4)
+  .refine((ring) => {
+    const [first, last] = [ring[0], ring.at(-1)];
+    return first?.[0] === last?.[0] && first?.[1] === last?.[1];
+  }, "Each ring ends where it starts.");
+const PolygonRings = z.array(Ring).min(1);
+
+export const Boundary = z
+  .discriminatedUnion("type", [
+    z.object({ type: z.literal("Polygon"), coordinates: PolygonRings }),
+    z.object({ type: z.literal("MultiPolygon"), coordinates: z.array(PolygonRings).min(1) }),
+  ])
+  .meta({
+    id: "Boundary",
+    description:
+      "The country's border: venue pins must fall inside it. GeoJSON Polygon or MultiPolygon.",
+  });
+
 export const AdminMarketplace = z
   .object({
     id: z.uuid(),
@@ -61,6 +85,9 @@ export const AdminMarketplace = z
     locationCount: z.int(),
     venueCount: z.int(),
     amenityCount: z.int(),
+    hasBoundary: z.boolean().meta({
+      description: "Has a border venue pins are checked against. Without one, any pin is taken.",
+    }),
     createdAt: z.iso.datetime(),
   })
   .meta({ id: "AdminMarketplace" });
@@ -93,6 +120,9 @@ export const CreateMarketplace = z
       .meta({ example: "Africa/Cairo" }),
     taxRate: BasisPoints,
     commissionRate: BasisPoints,
+    boundary: Boundary.nullable()
+      .optional()
+      .meta({ description: "Its border; null or left out for none (no pin check)." }),
   })
   .meta({ id: "CreateMarketplace", description: "Created hidden; turn it on when it's ready." });
 
@@ -297,6 +327,7 @@ export type Area = z.infer<typeof Area>;
 export type AreaQuery = z.infer<typeof AreaQuery>;
 export type NearestAreaQuery = z.infer<typeof NearestAreaQuery>;
 export type Names = z.infer<typeof Names>;
+export type Boundary = z.infer<typeof Boundary>;
 export type AdminMarketplace = z.infer<typeof AdminMarketplace>;
 export type CreateMarketplace = z.infer<typeof CreateMarketplace>;
 export type UpdateMarketplace = z.infer<typeof UpdateMarketplace>;
