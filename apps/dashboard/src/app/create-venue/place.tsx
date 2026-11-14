@@ -455,11 +455,12 @@ function AreaStep({
         ) : (
           <>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold leading-[1.3] tracking-[-0.2px]">
+              {/* A row in the card, not a second title: the step's heading already names it. */}
+              <Text className="text-subtitle font-semibold">
                 {label?.name ?? t("screens.createVenue.place.chooseArea")}
               </Text>
               {label?.within ? (
-                <Text className="mt-0.5 text-body text-ink-2">{label.within}</Text>
+                <Text className="mt-0.5 text-label text-ink-2">{label.within}</Text>
               ) : null}
             </View>
             {label ? <IconCircleCheckFilled size={20} color={colors.primary} /> : null}
