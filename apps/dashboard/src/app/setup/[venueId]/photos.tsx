@@ -281,7 +281,7 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
           />
         }
       />
-      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging}>
+      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging} topFade={16}>
         <Title
           subtitle={t(empty ? "screens.setup.photos.emptyBody" : "screens.setup.photos.body")}
           onTitleLayout={compact.onTitleLayout}
