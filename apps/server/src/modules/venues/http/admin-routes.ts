@@ -9,6 +9,7 @@ import {
   rejectVenue,
   resumeVenue,
   reviewQueue,
+  setVenueArea,
   venueHistory,
 } from "../application/review";
 import * as route from "./definitions/admin";
@@ -30,6 +31,10 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.rejectVenue, async (c) => {
     await rejectVenue(c.var.admin.adminId, c.req.valid("param").id, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.setVenueArea, async (c) => {
+    await setVenueArea(c.var.admin.adminId, c.req.valid("param").id, c.req.valid("json"));
     return c.body(null, 204);
   })
   .openapi(route.provisionTranslation, async (c) => {

@@ -23,6 +23,8 @@ export const VENUE_CREATED = "VENUE_CREATED";
 // them (and revert, later).
 export const VENUE_DETAILS_CHANGED = "VENUE_DETAILS_CHANGED";
 export const VENUE_LOCATION_CHANGED = "VENUE_LOCATION_CHANGED";
+// An admin setting the area, usually the one the owner asked for when Hagz didn't cover it.
+export const VENUE_AREA_SET = "VENUE_AREA_SET";
 export const VENUE_TRANSLATION_CHANGED = "VENUE_TRANSLATION_CHANGED";
 export const VENUE_SETTINGS_CHANGED = "VENUE_SETTINGS_CHANGED";
 export const VENUE_AMENITIES_CHANGED = "VENUE_AMENITIES_CHANGED";
