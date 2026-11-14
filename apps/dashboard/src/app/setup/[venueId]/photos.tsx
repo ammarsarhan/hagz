@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -417,21 +418,40 @@ function SheetRow({
   );
 }
 
-// A tile glides to its new place when the order changes.
+// A tile glides to its new place when the order changes. It moves by transform (no layout pass per
+// frame), and the glide restarts only when its place really changes: keyed on the numbers, since
+// the grid rebuilds its slot objects on every render, and a drop causes several renders in a row.
+const GLIDE = { duration: 260, easing: Easing.out(Easing.cubic) };
+
 const useSlotStyle = (slot: Slot | undefined) => {
-  const x = useSharedValue(slot?.x ?? 0);
-  const y = useSharedValue(slot?.y ?? 0);
-  const width = useSharedValue(slot?.width ?? 0);
-  const height = useSharedValue(slot?.height ?? 0);
+  const sx = slot?.x ?? 0;
+  const sy = slot?.y ?? 0;
+  const sw = slot?.width ?? 0;
+  const sh = slot?.height ?? 0;
+  const x = useSharedValue(sx);
+  const y = useSharedValue(sy);
+  const width = useSharedValue(sw);
+  const height = useSharedValue(sh);
+  // Where it's headed: a dropped tile heads back here when the order didn't change.
+  const targetX = useSharedValue(sx);
+  const targetY = useSharedValue(sy);
   useEffect(() => {
-    if (!slot) return;
-    const timing = { duration: 220 };
-    x.value = withTiming(slot.x, timing);
-    y.value = withTiming(slot.y, timing);
-    width.value = withTiming(slot.width, timing);
-    height.value = withTiming(slot.height, timing);
-  }, [slot, x, y, width, height]);
-  return { x, y, width, height };
+    targetX.value = sx;
+    targetY.value = sy;
+    x.value = withTiming(sx, GLIDE);
+    y.value = withTiming(sy, GLIDE);
+    width.value = withTiming(sw, GLIDE);
+    height.value = withTiming(sh, GLIDE);
+  }, [sx, sy, sw, sh, x, y, width, height, targetX, targetY]);
+  const box = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: width.value,
+    height: height.value,
+    transform: [{ translateX: x.value }, { translateY: y.value }],
+  }));
+  return { x, y, width, height, targetX, targetY, box };
 };
 
 function PhotoTile({
@@ -483,24 +503,34 @@ function PhotoTile({
         place.x.value + touchX.value + event.translationX,
         place.y.value + touchY.value + event.translationY,
       );
+      // The drag becomes the tile's position, so it carries on from where it was let go instead
+      // of springing back first: home if the order stays, or (a frame later, once the new order
+      // arrives) on to its new place.
+      place.x.value = place.x.value + dx.value;
+      place.y.value = place.y.value + dy.value;
+      dx.value = 0;
+      dy.value = 0;
+      place.x.value = withTiming(place.targetX.value, GLIDE);
+      place.y.value = withTiming(place.targetY.value, GLIDE);
     })
     .onFinalize(() => {
-      dx.value = withTiming(0, { duration: 180 });
-      dy.value = withTiming(0, { duration: 180 });
+      // A drag that never got going (or was cancelled) just settles back.
+      dx.value = withTiming(0, GLIDE);
+      dy.value = withTiming(0, GLIDE);
       lifted.value = withTiming(0, { duration: 180 });
     });
   const tap = Gesture.Tap().onEnd(() => runOnJS(onPress)());
 
   const style = useAnimatedStyle(() => ({
     position: "absolute",
-    left: place.x.value,
-    top: place.y.value,
+    left: 0,
+    top: 0,
     width: place.width.value,
     height: place.height.value,
     zIndex: lifted.value > 0 ? 10 : 1,
     transform: [
-      { translateX: dx.value },
-      { translateY: dy.value },
+      { translateX: place.x.value + dx.value },
+      { translateY: place.y.value + dy.value },
       { scale: 1 + (LIFT - 1) * lifted.value },
     ],
     shadowOpacity: 0.18 * lifted.value,
@@ -536,15 +566,9 @@ function PhotoTile({
 // A photo on its way up: the picked image, dimmed, with how much has gone.
 function UploadTile({ upload, slot }: { upload: Upload; slot: Slot | undefined }) {
   const place = useSlotStyle(slot);
-  const style = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: place.x.value,
-    top: place.y.value,
-    width: place.width.value,
-    height: place.height.value,
-  }));
+
   return (
-    <Animated.View style={style}>
+    <Animated.View style={place.box}>
       <Image
         source={{ uri: upload.uri }}
         contentFit="cover"
@@ -562,15 +586,9 @@ function UploadTile({ upload, slot }: { upload: Upload; slot: Slot | undefined }
 function AddTile({ slot, onPress }: { slot: Slot | undefined; onPress: () => void }) {
   const { t } = useTranslation();
   const place = useSlotStyle(slot);
-  const style = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: place.x.value,
-    top: place.y.value,
-    width: place.width.value,
-    height: place.height.value,
-  }));
+
   return (
-    <Animated.View style={style}>
+    <Animated.View style={place.box}>
       <Pressable
         accessibilityRole="button"
         onPress={onPress}
