@@ -237,6 +237,43 @@ export const Location = z
     description: "A place in a marketplace's tree; build the tree from `parentId`.",
   });
 
+// A place a venue can be filed under: the leaves of the tree, never a governorate with areas in it.
+export const Area = z
+  .object({
+    id: z.uuid(),
+    name: z.string().meta({ description: "In the requested language.", example: "Smouha" }),
+    within: z.string().nullable().meta({
+      description: "The top of its tree (governorate or city); null for a top-level area.",
+      example: "Alexandria",
+    }),
+    distance: z.int().min(0).nullable().meta({
+      description: "Metres from the given point to the area's centre; null without either.",
+      example: 640,
+    }),
+  })
+  .meta({ id: "Area" });
+
+const latitude = z.coerce.number().min(-90).max(90);
+const longitude = z.coerce.number().min(-180).max(180);
+
+export const AreaQuery = z
+  .object({
+    q: z.string().trim().max(60).optional().meta({
+      description: "Part of the name, in Arabic or English; spelling variants match.",
+      example: "smouha",
+    }),
+    latitude: latitude.optional(),
+    longitude: longitude.optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .refine((query) => (query.latitude === undefined) === (query.longitude === undefined), {
+    message: "Send latitude and longitude together.",
+    path: ["latitude"],
+  })
+  .meta({ id: "AreaQuery" });
+
+export const NearestAreaQuery = z.object({ latitude, longitude }).meta({ id: "NearestAreaQuery" });
+
 export const Amenity = z
   .object({
     id: z.uuid(),
@@ -247,6 +284,9 @@ export const Amenity = z
   .meta({ id: "Amenity" });
 
 export type Locality = z.infer<typeof Locality>;
+export type Area = z.infer<typeof Area>;
+export type AreaQuery = z.infer<typeof AreaQuery>;
+export type NearestAreaQuery = z.infer<typeof NearestAreaQuery>;
 export type Names = z.infer<typeof Names>;
 export type AdminMarketplace = z.infer<typeof AdminMarketplace>;
 export type CreateMarketplace = z.infer<typeof CreateMarketplace>;
