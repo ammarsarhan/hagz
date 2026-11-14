@@ -35,13 +35,16 @@ model MarketplaceTranslation {
 
 // Tree node, e.g. Cairo → Nasr City. The parent shares the marketplace.
 model Location {
-  id            String   @id @default(uuid(7)) @db.Uuid
-  marketplaceId String   @db.Uuid
-  parentId      String?  @db.Uuid // Null at the top level.
+  id            String                                 @id @default(uuid(7)) @db.Uuid
+  marketplaceId String                                 @db.Uuid
+  parentId      String?                                @db.Uuid // Null at the top level.
   locality      Locality
   slug          String // From the English name: /ae/dubai/al-nahda
-  createdAt     DateTime @default(now()) @db.Timestamptz
-  updatedAt     DateTime @updatedAt @db.Timestamptz
+  // Roughly the middle of the area. A venue's pin suggests the nearest area that has one (Google's
+  // address names police districts, not the neighbourhoods people say). Null: never suggested.
+  center        Unsupported("geography(Point, 4326)")?
+  createdAt     DateTime                               @default(now()) @db.Timestamptz
+  updatedAt     DateTime                               @updatedAt @db.Timestamptz
 
   marketplace  Marketplace           @relation(fields: [marketplaceId], references: [id], onDelete: Restrict)
   parent       Location?             @relation("Hierarchy", fields: [parentId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
@@ -56,6 +59,7 @@ model Location {
   @@unique([parentId, slug], map: "Location_child_slug_key", where: { parentId: { not: null } })
   @@index([parentId])
   @@index([marketplaceId, locality])
+  @@index([center], type: Gist)
 }
 
 model LocationTranslation {
