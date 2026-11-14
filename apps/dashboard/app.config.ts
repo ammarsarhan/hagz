@@ -88,6 +88,17 @@ const config: ExpoConfig = {
         isAndroidBackgroundLocationEnabled: false,
       },
     ],
+    // Venue photos (setup's Photos item): picked from the library or taken there and then, resized
+    // in the app before upload (expo-image-manipulator, no plugin), shown with expo-image.
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Hagz uses your photos so you can add pictures of your venue.",
+        cameraPermission: "Hagz uses the camera so you can take pictures of your venue.",
+        microphonePermission: false,
+      },
+    ],
+    "expo-image",
     // react-native-maps' own plugin: Expo's built-in maps settings (ios.config.googleMapsApiKey,
     // android.config.googleMaps) are skipped once a package ships a plugin, so the keys go here. The
     // iOS key is also what adds Google's SDK to the Podfile.
