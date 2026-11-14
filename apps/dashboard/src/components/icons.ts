@@ -67,3 +67,4 @@ export { default as IconWifi } from "@tabler/icons-react-native/IconWifi";
 export { default as IconCamera } from "@tabler/icons-react-native/IconCamera";
 export { default as IconPhoto } from "@tabler/icons-react-native/IconPhoto";
 export { default as IconPhotoPlus } from "@tabler/icons-react-native/IconPhotoPlus";
+export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";

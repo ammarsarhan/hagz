@@ -19,7 +19,7 @@ import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
-import { IconCamera, IconPhoto, IconPhotoPlus, IconPlus } from "@/components/icons";
+import { IconCamera, IconPhoto, IconPhotoPlus, IconPlus, IconTrash } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
@@ -375,11 +375,18 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
                 onPress={() => makeCover(chosen)}
               />
             ) : null}
-            <Button
-              label={t("screens.setup.photos.remove")}
-              variant="ghost"
+            {/* Destructive, without red (the staff app has none): a bin and a heavier weight, still
+                a line of text under the main action rather than a second button. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("screens.setup.photos.remove")}
               onPress={() => void remove(chosen)}
-            />
+              hitSlop={8}
+              className="h-14 flex-row items-center justify-center gap-2 active:opacity-60"
+            >
+              <IconTrash size={20} color={colors.ink} strokeWidth={2} />
+              <Text className="text-button font-semibold">{t("screens.setup.photos.remove")}</Text>
+            </Pressable>
           </View>
         </Sheet>
       ) : null}
