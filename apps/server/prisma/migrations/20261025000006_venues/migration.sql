@@ -23,7 +23,8 @@ CREATE TYPE "CancellationPolicy" AS ENUM ('FLEXIBLE', 'MODERATE', 'STRICT', 'CUS
 CREATE TABLE "Venue" (
     "id" UUID NOT NULL,
     "marketplaceId" UUID NOT NULL,
-    "locationId" UUID NOT NULL,
+    "locationId" UUID,
+    "requestedArea" TEXT,
     "slug" TEXT NOT NULL,
     "status" "VenueStatus" NOT NULL DEFAULT 'DRAFT',
     "placeId" TEXT,
@@ -337,6 +338,10 @@ ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_window_check" CHECK ("
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Venue" ADD CONSTRAINT "Venue_commission_check" CHECK ("commissionRate" BETWEEN 0 AND 10000);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+-- An area from the list, or one the owner asked for until an admin sets it: never both, never none.
+ALTER TABLE "Venue" ADD CONSTRAINT "Venue_area_check" CHECK (num_nonnulls("locationId", "requestedArea") = 1);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_cancellation_check" CHECK ((("cancellationPolicy" = 'CUSTOM') IS TRUE) = ("cancellationTiers" IS NOT NULL) AND ("cancellationTiers" IS NULL OR jsonb_typeof("cancellationTiers") = 'array'));
