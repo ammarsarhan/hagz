@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, ScrollView, View } from "react-native";
+import { Animated, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
 // them. The gap under the nav bar is padding inside the scroll, so rows scroll right up to the close
 // button, and each edge fades the content out (only while there's more past it) rather than cutting
 // a row in half against white. Full width, so the fades span the gutters too.
+//
+// Pass `scrollY` to drive something else from the scroll (the setup checklist's compact title). It's
+// tracked on the native side, so whatever it animates keeps pace with the finger.
 const FADE = 28;
 // The nav bar's spacing (NavBar's mb-[22px]), here as the scroll's top padding.
 const NAV_GAP = 22;
 
-export function FadingScroll({ children }: { children: ReactNode }) {
+export function FadingScroll({
+  children,
+  scrollY,
+}: {
+  children: ReactNode;
+  scrollY?: Animated.Value;
+}) {
+  const own = useRef(new Animated.Value(0)).current;
+  const offset = scrollY ?? own;
   const size = useRef({ height: 0, content: 0, y: 0 });
   const [edges, setEdges] = useState({ top: false, bottom: false });
 
@@ -23,7 +34,7 @@ export function FadingScroll({ children }: { children: ReactNode }) {
 
   return (
     <View className="-mx-5 flex-1">
-      <ScrollView
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: NAV_GAP, paddingBottom: FADE }}
@@ -35,13 +46,16 @@ export function FadingScroll({ children }: { children: ReactNode }) {
           size.current.content = height;
           measure();
         }}
-        onScroll={(event) => {
-          size.current.y = event.nativeEvent.contentOffset.y;
-          measure();
-        }}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: offset } } }], {
+          useNativeDriver: true,
+          listener: (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+            size.current.y = event.nativeEvent.contentOffset.y;
+            measure();
+          },
+        })}
       >
         {children}
-      </ScrollView>
+      </Animated.ScrollView>
       <Fade edge="top" shown={edges.top} />
       <Fade edge="bottom" shown={edges.bottom} />
     </View>

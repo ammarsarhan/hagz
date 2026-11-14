@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { ActivityIndicator, Animated, Pressable, View, useWindowDimensions } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { Button } from "@/components/button";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -27,6 +27,11 @@ import { queries } from "@/lib/queries";
 // (docs/flows.md, "draft venues"), so the tabs would be dead ends around a checklist.
 type SetupItem = components["schemas"]["SetupItem"];
 
+// The compact title fades in over the last stretch of the big one going under the nav bar, rising
+// this far as it does.
+const COMPACT_FADE = 24;
+const COMPACT_RISE = 6;
+
 // The ring around the count of required items done.
 const RING = 60;
 const RING_WIDTH = 4;
@@ -36,6 +41,10 @@ export default function VenueSetupScreen() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
   const hud = useHud();
   const setup = useQuery(queries.setup(venueId));
+  const { width } = useWindowDimensions();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  // Where the big title ends in the scroll; the compact one is fully in once it's gone under.
+  const [titleEnd, setTitleEnd] = useState(0);
 
   const failed = setup.isError;
   useEffect(() => {
@@ -65,35 +74,70 @@ export default function VenueSetupScreen() {
   }
 
   const { venue, items, required, canSubmit } = setup.data;
-  const left = required.total - required.done;
+  const name = venue.name ?? t("screens.setup.untitled");
+  const fadeIn = [Math.max(titleEnd - COMPACT_FADE, 0), Math.max(titleEnd, 1)];
+  const compact = {
+    opacity: scrollY.interpolate({ inputRange: fadeIn, outputRange: [0, 1], extrapolate: "clamp" }),
+    transform: [
+      {
+        translateY: scrollY.interpolate({
+          inputRange: fadeIn,
+          outputRange: [COMPACT_RISE, 0],
+          extrapolate: "clamp",
+        }),
+      },
+    ],
+  };
   // What to do next: the first required item that can actually be done now.
   const next = items.find((item) => item.required && item.state === "MISSING");
 
   return (
     <Screen
       footer={
-        <>
-          <Text className="text-center text-caption text-ink-2">
-            {canSubmit
-              ? t("screens.setup.readyToSend")
-              : t("screens.setup.itemsLeft", { count: left })}
-          </Text>
-          <Button
-            label={t("screens.setup.send")}
-            variant={canSubmit ? "primary" : "secondary"}
-            disabled={!canSubmit}
-            onPress={() => hud.show(t("common.comingNext"))}
-          />
-        </>
+        <Button
+          label={t("screens.setup.send")}
+          variant={canSubmit ? "primary" : "secondary"}
+          disabled={!canSubmit}
+          onPress={() => hud.show(t("common.comingNext"))}
+        />
       }
     >
+      {/* Once the name has scrolled away it rides beside the close button, with the count under
+          it, so the screen still says whose checklist this is. Screen readers get the big title. */}
       <NavBar
         flush
-        start={<CloseButton label={t("components.shared.nav.close")} onPress={close} />}
+        start={
+          <View className="flex-row items-center gap-3">
+            <CloseButton label={t("components.shared.nav.close")} onPress={close} />
+            <Animated.View
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              // The gutters, the close button and the gap: a long name ends in "…", not off-screen.
+              style={[compact, { maxWidth: width - 40 - 40 - 12 }]}
+            >
+              <Text className="text-body font-semibold leading-[1.25]" numberOfLines={1}>
+                {name}
+              </Text>
+              <Text className="text-caption text-ink-2" numberOfLines={1}>
+                {t("screens.setup.compactProgress", {
+                  done: required.done,
+                  total: required.total,
+                })}
+              </Text>
+            </Animated.View>
+          </View>
+        }
       />
-      <FadingScroll>
-        <Title subtitle={t("screens.setup.subtitle")}>
-          {venue.name ?? t("screens.setup.untitled")}
+      <FadingScroll scrollY={scrollY}>
+        <Title
+          subtitle={t("screens.setup.subtitle")}
+          onTitleLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            setTitleEnd(y + height);
+          }}
+        >
+          {name}
         </Title>
 
         <View className="mb-2 flex-row items-center gap-4 pt-1">
