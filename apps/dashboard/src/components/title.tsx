@@ -1,22 +1,29 @@
 import type { ReactNode } from "react";
-import { Keyboard, Pressable, View } from "react-native";
+import { Keyboard, Pressable, View, type LayoutChangeEvent } from "react-native";
 import { Text } from "./text";
 
 // The big start-aligned title (28/34, 600) and its grey subtitle, which can hold inline links. An
 // `action` (such as "Change" under the number a code went to) gets its own line under the subtitle,
-// so it never wraps onto the end of the sentence.
+// so it never wraps onto the end of the sentence. `onTitleLayout` says where the title itself sits,
+// for a screen that shows it again in the nav bar once it's scrolled away.
 export function Title({
   children,
   subtitle,
   action,
+  onTitleLayout,
 }: {
   children: string;
   subtitle?: ReactNode;
   action?: { label: string; onPress: () => void };
+  onTitleLayout?: (event: LayoutChangeEvent) => void;
 }) {
   return (
     <>
-      <Text accessibilityRole="header" className="mb-2 text-title font-semibold tracking-[-0.4px]">
+      <Text
+        accessibilityRole="header"
+        className="mb-2 text-title font-semibold tracking-[-0.4px]"
+        onLayout={onTitleLayout}
+      >
         {children}
       </Text>
       {subtitle ? (

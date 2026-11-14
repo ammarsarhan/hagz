@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Coordinates } from "./venue-setup";
 
 // Reference data every venue shares, managed by admins on the Platform page: marketplaces (the
 // countries Hagz operates in), the location tree inside each, and each marketplace's amenity catalog.
@@ -40,6 +41,30 @@ const BasisPoints = z
 
 // --- Marketplaces ---
 
+// A country's border as GeoJSON (RFC 7946): a Polygon or MultiPolygon in [longitude, latitude]
+// pairs, each ring closed (its last point is its first). The shape is checked here; whether it's
+// valid as a shape (no crossing edges) is PostGIS's to say (INVALID_BOUNDARY).
+const Position = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
+const Ring = z
+  .array(Position)
+  .min(4)
+  .refine((ring) => {
+    const [first, last] = [ring[0], ring.at(-1)];
+    return first?.[0] === last?.[0] && first?.[1] === last?.[1];
+  }, "Each ring ends where it starts.");
+const PolygonRings = z.array(Ring).min(1);
+
+export const Boundary = z
+  .discriminatedUnion("type", [
+    z.object({ type: z.literal("Polygon"), coordinates: PolygonRings }),
+    z.object({ type: z.literal("MultiPolygon"), coordinates: z.array(PolygonRings).min(1) }),
+  ])
+  .meta({
+    id: "Boundary",
+    description:
+      "The country's border: venue pins must fall inside it. GeoJSON Polygon or MultiPolygon.",
+  });
+
 export const AdminMarketplace = z
   .object({
     id: z.uuid(),
@@ -60,6 +85,9 @@ export const AdminMarketplace = z
     locationCount: z.int(),
     venueCount: z.int(),
     amenityCount: z.int(),
+    hasBoundary: z.boolean().meta({
+      description: "Has a border venue pins are checked against. Without one, any pin is taken.",
+    }),
     createdAt: z.iso.datetime(),
   })
   .meta({ id: "AdminMarketplace" });
@@ -92,6 +120,9 @@ export const CreateMarketplace = z
       .meta({ example: "Africa/Cairo" }),
     taxRate: BasisPoints,
     commissionRate: BasisPoints,
+    boundary: Boundary.nullable()
+      .optional()
+      .meta({ description: "Its border; null or left out for none (no pin check)." }),
   })
   .meta({ id: "CreateMarketplace", description: "Created hidden; turn it on when it's ready." });
 
@@ -114,6 +145,9 @@ export const AdminLocation = z
       example: "nasr-city",
     }),
     names: Names,
+    center: Coordinates.nullable().meta({
+      description: "Roughly the middle; a venue's pin suggests the nearest. Null: never suggested.",
+    }),
     childCount: z.int(),
     venueCount: z.int(),
     createdAt: z.iso.datetime(),
@@ -125,11 +159,16 @@ export const CreateLocation = z
     parentId: z.uuid().nullable().meta({ description: "Null for the top of the tree." }),
     locality: Locality,
     names: Names,
+    center: Coordinates.nullable().optional(),
   })
   .meta({ id: "CreateLocation" });
 
 export const UpdateLocation = z
-  .object({ locality: Locality.optional(), names: Names.optional() })
+  .object({
+    locality: Locality.optional(),
+    names: Names.optional(),
+    center: Coordinates.nullable().optional().meta({ description: "Null clears it." }),
+  })
   .meta({ id: "UpdateLocation", description: "The slug stays as it was." });
 
 // --- Amenities ---
@@ -237,6 +276,43 @@ export const Location = z
     description: "A place in a marketplace's tree; build the tree from `parentId`.",
   });
 
+// A place a venue can be filed under: the leaves of the tree, never a governorate with areas in it.
+export const Area = z
+  .object({
+    id: z.uuid(),
+    name: z.string().meta({ description: "In the requested language.", example: "Smouha" }),
+    within: z.string().nullable().meta({
+      description: "The top of its tree (governorate or city); null for a top-level area.",
+      example: "Alexandria",
+    }),
+    distance: z.int().min(0).nullable().meta({
+      description: "Metres from the given point to the area's centre; null without either.",
+      example: 640,
+    }),
+  })
+  .meta({ id: "Area" });
+
+const latitude = z.coerce.number().min(-90).max(90);
+const longitude = z.coerce.number().min(-180).max(180);
+
+export const AreaQuery = z
+  .object({
+    q: z.string().trim().max(60).optional().meta({
+      description: "Part of the name, in Arabic or English; spelling variants match.",
+      example: "smouha",
+    }),
+    latitude: latitude.optional(),
+    longitude: longitude.optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .refine((query) => (query.latitude === undefined) === (query.longitude === undefined), {
+    message: "Send latitude and longitude together.",
+    path: ["latitude"],
+  })
+  .meta({ id: "AreaQuery" });
+
+export const NearestAreaQuery = z.object({ latitude, longitude }).meta({ id: "NearestAreaQuery" });
+
 export const Amenity = z
   .object({
     id: z.uuid(),
@@ -247,7 +323,11 @@ export const Amenity = z
   .meta({ id: "Amenity" });
 
 export type Locality = z.infer<typeof Locality>;
+export type Area = z.infer<typeof Area>;
+export type AreaQuery = z.infer<typeof AreaQuery>;
+export type NearestAreaQuery = z.infer<typeof NearestAreaQuery>;
 export type Names = z.infer<typeof Names>;
+export type Boundary = z.infer<typeof Boundary>;
 export type AdminMarketplace = z.infer<typeof AdminMarketplace>;
 export type CreateMarketplace = z.infer<typeof CreateMarketplace>;
 export type UpdateMarketplace = z.infer<typeof UpdateMarketplace>;

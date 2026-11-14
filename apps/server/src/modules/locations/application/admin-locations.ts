@@ -1,7 +1,7 @@
 import type { AdminLocation, CreateLocation, UpdateLocation } from "@hagz/contracts";
 import { isForeignKeyViolation, violatedUniqueIndex } from "@/platform/db/errors";
 import { prisma } from "@/platform/db/prisma";
-import { transaction } from "@/platform/db/transaction";
+import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
 import { slugify } from "../domain/slug";
@@ -21,12 +21,31 @@ const include = { translations: true, _count: { select: { children: true, venues
 type Row = NonNullable<Awaited<ReturnType<typeof findOne>>>;
 const findOne = (id: string) => prisma.location.findUnique({ where: { id }, include });
 
-const present = (l: Row): AdminLocation => ({
+// Prisma can't read or write PostGIS columns, so the centre goes through SQL.
+type Center = AdminLocation["center"];
+
+const centersOf = async (ids: string[]) => {
+  const rows = await prisma.$queryRaw<{ id: string; latitude: number; longitude: number }[]>`
+    SELECT id, ST_Y(center::geometry) AS latitude, ST_X(center::geometry) AS longitude
+    FROM "Location" WHERE id = ANY(${ids}::uuid[]) AND center IS NOT NULL`;
+  return new Map(rows.map(({ id, latitude, longitude }) => [id, { latitude, longitude }]));
+};
+
+const setCenter = (tx: Tx, id: string, center: Center) =>
+  center
+    ? tx.$executeRaw`
+        UPDATE "Location"
+        SET center = ST_SetSRID(ST_MakePoint(${center.longitude}, ${center.latitude}), 4326)::geography
+        WHERE id = ${id}::uuid`
+    : tx.$executeRaw`UPDATE "Location" SET center = NULL WHERE id = ${id}::uuid`;
+
+const present = (l: Row, center: Center): AdminLocation => ({
   id: l.id,
   parentId: l.parentId,
   locality: l.locality,
   slug: l.slug,
   names: namesOf(l.translations),
+  center,
   childCount: l._count.children,
   venueCount: l._count.venues,
   createdAt: l.createdAt.toISOString(),
@@ -41,7 +60,8 @@ export const listAdminLocations = async (marketplaceId: string): Promise<AdminLo
     orderBy: { slug: "asc" },
     include,
   });
-  return rows.map(present);
+  const centers = await centersOf(rows.map((row) => row.id));
+  return rows.map((row) => present(row, centers.get(row.id) ?? null));
 };
 
 export const createLocation = async (
@@ -66,7 +86,7 @@ export const createLocation = async (
           });
         }
       }
-      return tx.location.create({
+      const location = await tx.location.create({
         data: {
           marketplaceId,
           parentId: input.parentId,
@@ -76,9 +96,11 @@ export const createLocation = async (
         },
         include,
       });
+      if (input.center) await setCenter(tx, location.id, input.center);
+      return location;
     });
     logger.info({ adminId, locationId: created.id, marketplaceId }, "location created");
-    return present(created);
+    return present(created, input.center ?? null);
   } catch (error) {
     const index = violatedUniqueIndex(error);
     if (index === "Location_root_slug_key" || index === "Location_child_slug_key") {
@@ -114,11 +136,12 @@ export const updateLocation = async (
         input.names,
       );
     }
+    if (input.center !== undefined) await setCenter(tx, id, input.center);
   });
   logger.info({ adminId, locationId: id, fields: Object.keys(input) }, "location updated");
   const updated = await findOne(id);
   if (!updated) throw locationNotFound();
-  return present(updated);
+  return present(updated, (await centersOf([id])).get(id) ?? null);
 };
 
 export const deleteLocation = async (id: string, adminId: string): Promise<void> => {

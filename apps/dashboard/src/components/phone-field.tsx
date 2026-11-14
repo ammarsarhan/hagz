@@ -19,19 +19,20 @@ interface PhoneFieldProps {
   value: string;
   onChangeText: (digits: string) => void;
   label?: string;
+  required?: boolean;
   error?: string;
 }
 
 // The country code sits before the number in grey, like a unit. Phone numbers read left to right
 // in Arabic too, so the box keeps that direction.
-export function PhoneField({ value, onChangeText, label, error }: PhoneFieldProps) {
+export function PhoneField({ value, onChangeText, label, required, error }: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className={error ? "" : "mb-4"}>
-      {label ? <FieldLabel>{label}</FieldLabel> : null}
+      {label ? <FieldLabel required={required}>{label}</FieldLabel> : null}
       <FieldBox focused={focused} error={Boolean(error)} ltr>
         <View className="flex-row items-center gap-0.5">
-          <Text className="text-[17px] text-unit">+20</Text>
+          <Text className="text-[16px] text-unit">+20</Text>
           <IconChevronDown size={16} color={colors.unit} strokeWidth={2} />
         </View>
         <TextInput

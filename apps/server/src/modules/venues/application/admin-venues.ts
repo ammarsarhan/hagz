@@ -19,6 +19,7 @@ export const adminVenueSelect = {
   marketplace: { select: { id: true, code: true } },
   translations: { select: { language: true, name: true } },
   location: { select: { ...place, parent: { select: place } } },
+  requestedArea: true,
   memberships: {
     where: { role: "OWNER" },
     select: { staff: { select: { id: true, name: true, phone: true } } },
@@ -39,6 +40,7 @@ export const presentAdminVenue = (venue: Row): AdminVenue => {
     status: venue.status,
     marketplace: venue.marketplace,
     area: placeOf(venue.location, "EN"),
+    requestedArea: venue.requestedArea,
     owner,
     groundCount: venue._count.grounds,
     createdAt: venue.createdAt.toISOString(),

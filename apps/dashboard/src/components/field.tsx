@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { TextInput, View, type TextInputProps } from "react-native";
 import { colors } from "@/lib/colors";
 import { FieldError } from "./field-error";
@@ -32,25 +33,47 @@ export function FieldBox({
   );
 }
 
-export function FieldLabel({ children }: { children: string }) {
-  return <Text className="mb-2 text-label font-medium text-ink-2">{children}</Text>;
+// A required field's label ends in an asterisk, in the label's own grey: the staff app has no red
+// for status (emphasis is weight), and the asterisk is a convention people read without colour.
+// Screen readers hear "required" instead of "star".
+export function FieldLabel({
+  children,
+  required = false,
+}: {
+  children: string;
+  required?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Text
+      className="mb-2 text-label font-medium text-ink-2"
+      accessibilityLabel={
+        required ? `${children}, ${t("components.shared.field.required")}` : undefined
+      }
+    >
+      {children}
+      {/* A thin space: the asterisk belongs to the word, not after it. */}
+      {required ? "\u2009*" : null}
+    </Text>
+  );
 }
 
-export const inputClass = "h-full flex-1 text-[17px] text-ink";
+export const inputClass = "h-full flex-1 text-[16px] text-ink";
 
 interface FieldProps extends Omit<TextInputProps, "className" | "style"> {
   label?: string;
+  required?: boolean;
   error?: string;
   // Something after the input, like the show-password eye.
   trailing?: ReactNode;
 }
 
 // A labelled text input. Errors are the person's to fix, so they sit right under the field.
-export function Field({ label, error, trailing, onFocus, onBlur, ...input }: FieldProps) {
+export function Field({ label, required, error, trailing, onFocus, onBlur, ...input }: FieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className={error ? "" : "mb-4"}>
-      {label ? <FieldLabel>{label}</FieldLabel> : null}
+      {label ? <FieldLabel required={required}>{label}</FieldLabel> : null}
       <FieldBox focused={focused} error={Boolean(error)}>
         <TextInput
           className={inputClass}
@@ -69,6 +92,57 @@ export function Field({ label, error, trailing, onFocus, onBlur, ...input }: Fie
         {trailing}
       </FieldBox>
       {error ? <FieldError>{error}</FieldError> : null}
+    </View>
+  );
+}
+
+// A longer answer (a venue's description): the field's box, growing from four lines, text from the
+// top. The count of what's left sits under it on the end side, like the name step's.
+const PAD_Y = 10;
+
+export function TextArea({
+  label,
+  required,
+  value,
+  maxLength,
+  onChangeText,
+  placeholder,
+}: {
+  label: string;
+  required?: boolean;
+  value: string;
+  maxLength: number;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const border = focused
+    ? "border-[1.5px] border-primary px-[15.5px]"
+    : "border border-border px-4";
+  return (
+    <View className="mb-4">
+      <FieldLabel required={required}>{label}</FieldLabel>
+      <TextInput
+        className={`min-h-[120px] rounded-field bg-white text-[16px] leading-[1.35] text-ink ${border}`}
+        value={value}
+        onChangeText={onChangeText}
+        maxLength={maxLength}
+        multiline
+        textAlignVertical="top"
+        placeholder={placeholder}
+        placeholderTextColor={colors.ink3}
+        selectionColor={colors.primary}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        // As a style, not py-*: that compiles to paddingBlock, which a multiline input on iOS
+        // ignores. With the line's own leading on top, this puts the first line's letters as far
+        // from the top edge as from the side.
+        style={{
+          paddingTop: (focused ? -0.5 : 0) + PAD_Y,
+          paddingBottom: (focused ? -0.5 : 0) + PAD_Y,
+        }}
+      />
+      <Text className="mt-2 self-end text-caption text-ink-3">{`${value.length}/${maxLength}`}</Text>
     </View>
   );
 }

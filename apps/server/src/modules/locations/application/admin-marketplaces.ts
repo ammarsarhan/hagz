@@ -1,7 +1,12 @@
-import type { AdminMarketplace, CreateMarketplace, UpdateMarketplace } from "@hagz/contracts";
+import type {
+  AdminMarketplace,
+  Boundary,
+  CreateMarketplace,
+  UpdateMarketplace,
+} from "@hagz/contracts";
 import { violatedUniqueIndex } from "@/platform/db/errors";
 import { prisma } from "@/platform/db/prisma";
-import { transaction } from "@/platform/db/transaction";
+import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
 import { lockMarketplace, namesOf, translationRows, upsertNames } from "./names";
@@ -11,6 +16,10 @@ import { lockMarketplace, namesOf, translationRows, upsertNames } from "./names"
 // once anything uses the marketplace: a location, a venue or an amenity option. URLs carry the
 // code, and prices and payouts the currency. VAT and commission can change; they apply to bookings
 // made after the change.
+//
+// Its border (Marketplace.boundary) is what venue pins are checked against (venues' pin-checks.ts).
+// It's PostGIS, which Prisma can't read or write, so it goes through SQL, and the list only says
+// whether there is one: a border is thousands of points nobody needs in a table.
 
 export const marketplaceNotFound = () =>
   new AppError({ code: "MARKETPLACE_NOT_FOUND", status: 404, detail: "No such marketplace." });
@@ -23,7 +32,42 @@ const include = {
 type Row = NonNullable<Awaited<ReturnType<typeof findOne>>>;
 const findOne = (id: string) => prisma.marketplace.findUnique({ where: { id }, include });
 
-const present = (m: Row): AdminMarketplace => {
+export const invalidBoundary = (reason: string) =>
+  new AppError({
+    code: "INVALID_BOUNDARY",
+    status: 422,
+    detail: "That border isn't a valid shape. Check that its edges don't cross.",
+    extensions: { reason },
+  });
+
+// The marketplaces among these that have a border.
+const withBoundary = async (ids: string[]) =>
+  new Set(
+    (
+      await prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Marketplace" WHERE id = ANY(${ids}::uuid[]) AND boundary IS NOT NULL`
+    ).map((row) => row.id),
+  );
+
+// Sets the border, or clears it with null. PostGIS judges the shape first, so a crossing edge is a
+// 422 with its reason rather than the table's CHECK failing.
+const setBoundary = async (tx: Tx, id: string, boundary: Boundary | null) => {
+  if (boundary === null) {
+    await tx.$executeRaw`UPDATE "Marketplace" SET boundary = NULL WHERE id = ${id}::uuid`;
+    return;
+  }
+  const geojson = JSON.stringify(boundary);
+  const [shape] = await tx.$queryRaw<{ valid: boolean; reason: string }[]>`
+    SELECT ST_IsValid(g) AS valid, ST_IsValidReason(g) AS reason
+    FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326) AS g) AS shape`;
+  if (!shape?.valid) throw invalidBoundary(shape?.reason ?? "Unknown");
+  await tx.$executeRaw`
+    UPDATE "Marketplace"
+    SET boundary = ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326))::geography
+    WHERE id = ${id}::uuid`;
+};
+
+const present = (m: Row, hasBoundary: boolean): AdminMarketplace => {
   const { locations, venues, amenities } = m._count;
   return {
     id: m.id,
@@ -39,12 +83,16 @@ const present = (m: Row): AdminMarketplace => {
     locationCount: locations,
     venueCount: venues,
     amenityCount: amenities,
+    hasBoundary,
     createdAt: m.createdAt.toISOString(),
   };
 };
 
-export const listAdminMarketplaces = async (): Promise<AdminMarketplace[]> =>
-  (await prisma.marketplace.findMany({ orderBy: { code: "asc" }, include })).map(present);
+export const listAdminMarketplaces = async (): Promise<AdminMarketplace[]> => {
+  const rows = await prisma.marketplace.findMany({ orderBy: { code: "asc" }, include });
+  const bordered = await withBoundary(rows.map((row) => row.id));
+  return rows.map((row) => present(row, bordered.has(row.id)));
+};
 
 const codeTaken = (error: unknown) =>
   violatedUniqueIndex(error) === "Marketplace_code_key"
@@ -59,14 +107,18 @@ export const createMarketplace = async (
   input: CreateMarketplace,
   adminId: string,
 ): Promise<AdminMarketplace> => {
-  const { names, ...fields } = input;
+  const { names, boundary, ...fields } = input;
   try {
-    const created = await prisma.marketplace.create({
-      data: { ...fields, isActive: false, translations: { create: translationRows(names) } },
-      include,
+    const created = await transaction(async (tx) => {
+      const row = await tx.marketplace.create({
+        data: { ...fields, isActive: false, translations: { create: translationRows(names) } },
+        include,
+      });
+      if (boundary) await setBoundary(tx, row.id, boundary);
+      return row;
     });
     logger.info({ adminId, marketplaceId: created.id, code: created.code }, "marketplace created");
-    return present(created);
+    return present(created, Boolean(boundary));
   } catch (error) {
     throw codeTaken(error);
   }
@@ -77,7 +129,7 @@ export const updateMarketplace = async (
   input: UpdateMarketplace,
   adminId: string,
 ): Promise<AdminMarketplace> => {
-  const { names, ...fields } = input;
+  const { names, boundary, ...fields } = input;
   try {
     await transaction(async (tx) => {
       // Locked, so a location or amenity can't be added between the check and the change.
@@ -86,7 +138,8 @@ export const updateMarketplace = async (
       const fixed = (["code", "currency"] as const).filter(
         (field) => fields[field] !== undefined && fields[field] !== current[field],
       );
-      if (fixed.length > 0 && present(current).inUse) {
+      const { locations, venues, amenities } = current._count;
+      if (fixed.length > 0 && locations + venues + amenities > 0) {
         throw new AppError({
           code: "MARKETPLACE_IN_USE",
           status: 409,
@@ -110,6 +163,7 @@ export const updateMarketplace = async (
         }
       }
       await tx.marketplace.update({ where: { id }, data: fields });
+      if (boundary !== undefined) await setBoundary(tx, id, boundary);
       if (names) {
         await upsertNames(
           (row) =>
@@ -128,5 +182,5 @@ export const updateMarketplace = async (
   logger.info({ adminId, marketplaceId: id, fields: Object.keys(input) }, "marketplace updated");
   const updated = await findOne(id);
   if (!updated) throw marketplaceNotFound();
-  return present(updated);
+  return present(updated, (await withBoundary([id])).has(id));
 };

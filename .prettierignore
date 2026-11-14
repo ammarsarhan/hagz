@@ -9,3 +9,7 @@ apps/server/openapi.json
 
 # Written by openapi-typescript (pnpm --filter @hagz/api generate).
 packages/api/src/generated/
+
+# Map data: country borders as one line of GeoJSON (apps/server/src/seed-reference.ts says how
+# they were made). Formatting would put every coordinate on its own line.
+apps/server/src/reference/*.json

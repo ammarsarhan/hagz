@@ -40,6 +40,7 @@ import {
   venueStatusConflict,
   type VenueAccess,
 } from "./access";
+import { presentStaffVenue, staffVenueSelect } from "./members";
 import { staffManagersOf } from "./staff-managers";
 
 // Staff join a venue only by invitation (decided 2026-10-24). A member who manages staff enters a phone
@@ -392,6 +393,7 @@ const presentReceived = async (
     select: {
       id: true,
       translations: { select: { language: true, name: true, address: true } },
+      requestedArea: true,
       location: {
         select: {
           translations: { select: { language: true, name: true } },
@@ -419,7 +421,7 @@ const presentReceived = async (
         name: translation?.name ?? null,
         // Drafts store an empty address until the owner fills it in.
         address: translation && translation.address !== "" ? translation.address : null,
-        location: venue ? placeOf(venue.location, language) : null,
+        location: venue ? (placeOf(venue.location, language) ?? venue.requestedArea) : null,
         groundCount: venue?._count.grounds ?? 0,
         team: {
           size: venue?._count.memberships ?? 0,
@@ -561,22 +563,15 @@ export const acceptInvitation = async (
   const venue = await prisma.venue.findUniqueOrThrow({
     where: { id: venueId },
     select: {
-      id: true,
-      slug: true,
-      status: true,
-      translations: { select: { language: true, name: true } },
+      ...staffVenueSelect,
       memberships: { where: { staffId }, select: { role: true, permissions: true } },
     },
   });
   const [membership] = venue.memberships;
-  return {
-    id: venue.id,
-    slug: venue.slug,
-    name: nameIn(venue.translations, language),
-    status: venue.status,
-    role: membership?.role ?? "MEMBER",
-    permissions: effectivePermissions(membership?.role ?? "MEMBER", membership?.permissions),
-  };
+  return presentStaffVenue(
+    { role: membership?.role ?? "MEMBER", permissions: membership?.permissions, venue },
+    language,
+  );
 };
 
 // Turning an invitation down withdraws it; the venue can send a new one.

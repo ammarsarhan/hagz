@@ -12,7 +12,7 @@ import { slugify } from "@/modules/locations/domain/slug";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { createAdmin, createVenue } from "../../support/factories";
+import { box, createAdmin, createVenue } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 let cookie = "";
@@ -142,6 +142,72 @@ describe("admin marketplaces", () => {
     }
   });
 
+  it("take a border as GeoJSON, replace it and clear it, and say whether they have one", async () => {
+    const square = box({ south: 22, west: 25, north: 31.7, east: 35 });
+    const created = await request("POST", "/admin/marketplaces", { ...egypt, boundary: square });
+    expect(created.status).toBe(201);
+    const { id, hasBoundary } = AdminMarketplace.parse(created.body);
+    expect(hasBoundary).toBe(true);
+    const covers = async (latitude: number, longitude: number) => {
+      const [row] = await prisma.$queryRaw<{ inside: boolean | null }[]>`
+        SELECT ST_Covers(boundary, ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography) AS inside
+        FROM "Marketplace" WHERE id = ${id}::uuid`;
+      return row?.inside;
+    };
+    expect(await covers(30.04, 31.24)).toBe(true);
+
+    // A MultiPolygon replaces it.
+    const smaller = box({ south: 29, west: 30, north: 31, east: 32 });
+    const multi = { type: "MultiPolygon", coordinates: [smaller.coordinates] };
+    const replaced = await request("PATCH", `/admin/marketplaces/${id}`, { boundary: multi });
+    expect(AdminMarketplace.parse(replaced.body).hasBoundary).toBe(true);
+    expect(await covers(25, 33)).toBe(false);
+
+    const cleared = await request("PATCH", `/admin/marketplaces/${id}`, { boundary: null });
+    expect(AdminMarketplace.parse(cleared.body).hasBoundary).toBe(false);
+    const { body } = await request("GET", "/admin/marketplaces");
+    expect(list(AdminMarketplace).parse(body).data[0]?.hasBoundary).toBe(false);
+  });
+
+  it("refuse a border that isn't a shape", async () => {
+    const { id } = await createMarketplace();
+    // A bow tie: its edges cross.
+    const bowTie = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [30, 30],
+          [32, 32],
+          [32, 30],
+          [30, 32],
+          [30, 30],
+        ],
+      ],
+    };
+    const crossed = await request("PATCH", `/admin/marketplaces/${id}`, { boundary: bowTie });
+    expect(crossed.status).toBe(422);
+    expect(crossed.body).toMatchObject({ code: "INVALID_BOUNDARY" });
+
+    const open = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [30, 30],
+          [32, 30],
+          [32, 32],
+          [30, 32],
+        ],
+      ],
+    };
+    for (const bad of [open, { type: "Point", coordinates: [31, 30] }]) {
+      expect((await request("PATCH", `/admin/marketplaces/${id}`, { boundary: bad })).status).toBe(
+        400,
+      );
+    }
+    const { body } = await request("GET", "/admin/marketplaces");
+    expect(list(AdminMarketplace).parse(body).data[0]?.hasBoundary).toBe(false);
+  });
+
   it("edit rates, names and visibility, and the code while nothing uses it", async () => {
     const { id } = await createMarketplace();
     const res = await request("PATCH", `/admin/marketplaces/${id}`, {
@@ -264,6 +330,34 @@ describe("admin locations", () => {
       locality: "CITY",
       names: { en: "Greater Cairo", ar: "القاهرة الكبرى" },
     });
+  });
+
+  it("set, move and clear an area's centre", async () => {
+    const { id } = await createMarketplace();
+    const smouha = { latitude: 31.2155, longitude: 29.942 };
+    const created = await request("POST", `/admin/marketplaces/${id}/locations`, {
+      parentId: null,
+      locality: "DISTRICT",
+      names: { en: "Smouha", ar: "سموحة" },
+      center: smouha,
+    });
+    expect(created.status).toBe(201);
+    const location = AdminLocation.parse(created.body);
+    expect(location.center).toEqual(smouha);
+
+    const moved = { latitude: 31.2, longitude: 29.95 };
+    const res = await request("PATCH", `/admin/locations/${location.id}`, { center: moved });
+    expect(AdminLocation.parse(res.body).center).toEqual(moved);
+    const { body } = await request("GET", `/admin/marketplaces/${id}/locations`);
+    expect(list(AdminLocation).parse(body).data[0]?.center).toEqual(moved);
+
+    // Renaming leaves it alone; null clears it.
+    const renamed = await request("PATCH", `/admin/locations/${location.id}`, {
+      names: { en: "Smouha", ar: "سموحه" },
+    });
+    expect(AdminLocation.parse(renamed.body).center).toEqual(moved);
+    const cleared = await request("PATCH", `/admin/locations/${location.id}`, { center: null });
+    expect(AdminLocation.parse(cleared.body).center).toBeNull();
   });
 
   it("delete only while nothing is under them or in them", async () => {

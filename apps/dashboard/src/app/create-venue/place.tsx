@@ -1,0 +1,579 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as ExpoLocation from "expo-location";
+import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ActivityIndicator, AppState, Linking, Pressable, StyleSheet, View } from "react-native";
+import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SvgXml } from "react-native-svg";
+import { LOCATION_ART, LOCATION_ART_SIZE } from "@/assets/map-art";
+import { AreaPicker, type Area } from "@/components/area-picker";
+import { Button } from "@/components/button";
+import { useHud } from "@/components/hud";
+import { IconChevronLeft, IconMapPin, IconSearch, IconX } from "@/components/icons";
+import { CloseButton, NavBar } from "@/components/nav";
+import { PlaceSearch } from "@/components/place-search";
+import {
+  AreaCard,
+  cardShadow,
+  FloatingButton,
+  floatShadow,
+  PinOverlay,
+} from "@/components/venue-map";
+import { Screen } from "@/components/screen";
+import { Text } from "@/components/text";
+import { Title } from "@/components/title";
+import { api } from "@/lib/api";
+import { hudMessage, problem, send } from "@/lib/api-errors";
+import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
+import { addressAt, type Coordinates, type Place } from "@/lib/places";
+import { areas, queries, reference } from "@/lib/queries";
+
+// Adding a venue, step 3 (Figma "Venue creation · 3 Find your venue", 282:2, "· 5 Adjust the pin",
+// 283:2 and "Confirm the area · B", 295:2): one full-screen map the owner never leaves, with the
+// card at the bottom changing as they go.
+//
+//   find  search for the venue, use their own position, or just move the map to it
+//   pin   the pin sits in the middle of the map and the map moves under it, so a pitch down an
+//         unnamed lane can still be placed exactly; the address follows it
+//   area  the area we matched from the address, to confirm or change, then the draft is created
+//
+// Players browse by area and drive to the pin, so both have to be right, and only the owner knows.
+//
+// The screen comes up as a modal over the flow (app/_layout.tsx). Without location permission, a
+// full-screen prompt stands in front of the map first: the map opening on the owner, who's usually
+// standing in their venue, saves most of them the search.
+type Stage = "find" | "pin" | "area";
+// checking  asking the phone, under a white cover so the map doesn't flash before the prompt
+// ask       the prompt, whose button brings up the system's own question
+// blocked   the prompt, after the owner said no for good: only Settings can turn it back on
+// done      the map, whatever the answer was
+type Permission = "checking" | "ask" | "blocked" | "done";
+
+// Where the map opens before it knows better: Cairo, wide enough to see which part of it you're in.
+const START: Region = {
+  latitude: 30.0444,
+  longitude: 31.2357,
+  latitudeDelta: 0.22,
+  longitudeDelta: 0.22,
+};
+// Around the owner's own position: their street and the next few, to spot the venue from.
+const NEARBY = { latitudeDelta: 0.01, longitudeDelta: 0.01 };
+// Close enough to pick out a gate once a venue has been found.
+const CLOSE = { latitudeDelta: 0.004, longitudeDelta: 0.004 };
+// After the map stops moving, before asking Google what's under the pin.
+const SETTLE_MS = 500;
+// Hagz's only marketplace for now; a pin abroad is turned away by the API.
+const FALLBACK_COUNTRY = "EG";
+
+// Google Maps on both platforms: it's the map people in Egypt and the Gulf read, and it knows the
+// pitches, compounds and street names Apple Maps doesn't. Its SDK is compiled into the app with a
+// key per platform (app.config.ts).
+
+export default function CreateVenuePlace() {
+  const { t } = useTranslation();
+  const { name = "" } = useLocalSearchParams<{ name: string }>();
+  const insets = useSafeAreaInsets();
+  const hud = useHud();
+  const queryClient = useQueryClient();
+  const map = useRef<MapView>(null);
+
+  const [stage, setStage] = useState<Stage>("find");
+  const [permission, setPermission] = useState<Permission>("checking");
+  const [searching, setSearching] = useState(false);
+  const [choosingArea, setChoosingArea] = useState(false);
+  const [creating, setCreating] = useState(false);
+  // The point under the pin: the middle of the map, wherever it has been moved to.
+  const [pin, setPin] = useState<Coordinates>(START);
+  // Google's answer for that point, or for the place that was picked.
+  const [place, setPlace] = useState<Place | null>(null);
+  const [locating, setLocating] = useState(false);
+  // Until the map has been moved or a place picked, there's nothing to continue to.
+  const [placed, setPlaced] = useState(false);
+  const [nudged, setNudged] = useState(false);
+  const [chosenArea, setChosenArea] = useState<Area | null>(null);
+  // An area that isn't in the list, in the owner's words, for Hagz to add while reviewing.
+  const [requestedArea, setRequestedArea] = useState<string | null>(null);
+  // How tall the bottom card is, so the map's middle (and the pin) sits above it.
+  const [cardHeight, setCardHeight] = useState(0);
+
+  const country = place?.country ?? FALLBACK_COUNTRY;
+  const marketplaces = useQuery(reference.marketplaces);
+  // The area whose centre is nearest the pin, which the owner confirms or changes. Not Google's
+  // address: in Egypt it names police districts, so a pin in Smouha would come back "Sidi Gaber".
+  const nearest = useQuery({
+    ...areas.nearest(country, pin),
+    enabled: stage === "area",
+  });
+  const area = requestedArea ? null : (chosenArea ?? nearest.data ?? null);
+  const label = requestedArea
+    ? { name: requestedArea, within: t("screens.createVenue.place.requestedNote") }
+    : area
+      ? { name: area.name, within: area.within ?? "" }
+      : null;
+
+  const moveTo = useCallback((coordinates: Coordinates) => {
+    setPin(coordinates);
+    map.current?.animateToRegion({ ...coordinates, ...CLOSE }, 400);
+  }, []);
+
+  // Start the map on the owner. Being where they stand counts as placing it: they can go straight
+  // on to checking the pin.
+  const centreOnOwner = useCallback(async () => {
+    try {
+      const position = await ExpoLocation.getCurrentPositionAsync({
+        accuracy: ExpoLocation.Accuracy.Balanced,
+      });
+      const coordinates = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+      setPin(coordinates);
+      setPlaced(true);
+      map.current?.animateToRegion({ ...coordinates, ...NEARBY }, 400);
+    } catch (error) {
+      console.warn(error);
+      hud.show(t("screens.createVenue.place.locationFailed"));
+    }
+  }, [hud, t]);
+
+  // Whether the prompt is needed at all. With permission already given there's nothing to ask.
+  const checkPermission = useCallback(async () => {
+    try {
+      const current = await ExpoLocation.getForegroundPermissionsAsync();
+      if (current.granted) {
+        setPermission("done");
+        void centreOnOwner();
+      } else {
+        setPermission(current.canAskAgain ? "ask" : "blocked");
+      }
+    } catch (error) {
+      // No answer from the phone: the map still works without it.
+      console.warn(error);
+      setPermission("done");
+    }
+  }, [centreOnOwner]);
+
+  useEffect(() => {
+    void checkPermission();
+    // Only on arrival (checkPermission doesn't change): after that, the prompt's buttons decide.
+  }, [checkPermission]);
+
+  // Sent to Settings: look again when they come back, and carry on if they turned it on.
+  useEffect(() => {
+    if (permission !== "blocked") return;
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void checkPermission();
+    });
+    return () => subscription.remove();
+  }, [permission, checkPermission]);
+
+  const allowLocation = async () => {
+    if (permission === "blocked") {
+      void Linking.openSettings();
+      return;
+    }
+    const answer = await ExpoLocation.requestForegroundPermissionsAsync().catch(
+      (error: unknown) => {
+        console.warn(error);
+        return null;
+      },
+    );
+    // A no isn't asked about again here: the map works without it, by search or by hand.
+    setPermission("done");
+    if (answer?.granted) void centreOnOwner();
+  };
+
+  // What's under the pin, once the map has settled. Only while the pin is being placed: the picked
+  // place already came with an address, and by the area step nothing moves any more.
+  useEffect(() => {
+    if (stage !== "pin" || !placed) return;
+    let dropped = false;
+    setLocating(true);
+    const timer = setTimeout(() => {
+      addressAt(pin)
+        .then((found) => {
+          if (!dropped) setPlace(found);
+        })
+        .catch((error: unknown) => {
+          console.warn(error);
+          // The address is only a label here; the pin is what the venue is created with.
+          if (!dropped) setPlace({ address: "", coordinates: pin });
+        })
+        .finally(() => {
+          if (!dropped) setLocating(false);
+        });
+    }, SETTLE_MS);
+    return () => {
+      dropped = true;
+      clearTimeout(timer);
+    };
+  }, [stage, placed, pin]);
+
+  const pickedPlace = (found: Place) => {
+    setSearching(false);
+    setPlace(found);
+    setPlaced(true);
+    setChosenArea(null);
+    setRequestedArea(null);
+    moveTo(found.coordinates);
+    setStage("pin");
+  };
+
+  const back = () => {
+    if (stage === "area") return setStage("pin");
+    if (stage === "pin") return setStage("find");
+    router.back();
+  };
+
+  const toArea = () => {
+    const active = marketplaces.data?.some((marketplace) => marketplace.code === country);
+    // Somewhere Hagz hasn't opened yet: say so here rather than as a 422 after the last step.
+    if (marketplaces.data && !active) {
+      hud.show(t("screens.createVenue.place.outsideMarketplaces"));
+      return;
+    }
+    setStage("area");
+  };
+
+  // The checklist takes the flow's place rather than stacking on top of it: there's no going back
+  // to the map once the draft exists, and closing the checklist lands on first run.
+  const openSetup = (venueId: string) => {
+    if (router.canDismiss()) router.dismissAll();
+    router.push({ pathname: "/setup/[venueId]", params: { venueId } });
+  };
+
+  const create = async () => {
+    if (!area && !requestedArea) return;
+    setCreating(true);
+    const result = await send(
+      api.POST("/v1/staff/venues", {
+        body: {
+          name,
+          coordinates: pin,
+          ...(place?.placeId ? { placeId: place.placeId } : {}),
+          // The pin's country is the marketplace a requested area goes in; the API checks the
+          // pin is inside it.
+          ...(requestedArea
+            ? { requestedArea: { name: requestedArea, marketplace: country } }
+            : { locationId: area?.id }),
+        },
+      }),
+    );
+    setCreating(false);
+    if (!result.ok) {
+      const failure = problem(result.error);
+      // They already have a venue they haven't finished: that's the one to go back to, not a
+      // second one. The API says which.
+      const existing = failure?.code === "UNFINISHED_VENUE_EXISTS" ? failure.venueId : undefined;
+      if (typeof existing === "string") openSetup(existing);
+      hud.show(hudMessage(result.error));
+      return;
+    }
+    // The checklist is in hand already, so its screen opens with it rather than a spinner, and the
+    // venues list is stale now that there's a draft on it.
+    queryClient.setQueryData(queries.setup(result.data.venue.id).queryKey, result.data);
+    void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+    openSetup(result.data.venue.id);
+  };
+
+  return (
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+      <StatusBar style="dark" />
+      <MapView
+        ref={map}
+        provider={PROVIDER_GOOGLE}
+        style={StyleSheet.absoluteFill}
+        initialRegion={START}
+        // The card covers the bottom, so the map's middle — and the pin — sits above it.
+        mapPadding={{ top: 0, right: 0, bottom: cardHeight, left: 0 }}
+        showsUserLocation
+        showsMyLocationButton={false}
+        toolbarEnabled={false}
+        scrollEnabled={stage !== "area"}
+        zoomEnabled={stage !== "area"}
+        rotateEnabled={false}
+        pitchEnabled={false}
+        onRegionChangeComplete={(region, details) => {
+          setPin({ latitude: region.latitude, longitude: region.longitude });
+          if (details?.isGesture === false) return;
+          setPlaced(true);
+          setNudged(true);
+          // Moving the map by hand at the first step is a way of saying "it's here".
+          if (stage === "find") setStage("pin");
+        }}
+      />
+
+      <PinOverlay
+        bottom={cardHeight}
+        top={insets.top}
+        visible={stage !== "find"}
+        hint={stage === "pin" && !nudged ? t("screens.createVenue.place.movePin") : null}
+      />
+
+      {/* The controls float over the map: back, and what the map is showing. */}
+      <View
+        className="absolute inset-x-5 flex-row items-center gap-2.5"
+        style={{ top: insets.top + 8 }}
+      >
+        {/* At the first step this closes the modal, so it's a cross, not a back arrow. */}
+        <FloatingButton
+          label={t(stage === "find" ? "components.shared.nav.close" : "components.shared.nav.back")}
+          onPress={back}
+        >
+          {stage === "find" ? (
+            <IconX size={20} color={colors.ink} strokeWidth={2} />
+          ) : (
+            <IconChevronLeft
+              size={20}
+              color={colors.ink}
+              strokeWidth={2}
+              style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+            />
+          )}
+        </FloatingButton>
+        {stage === "area" ? null : (
+          <Pressable
+            accessibilityRole="search"
+            onPress={() => setSearching(true)}
+            className="h-11 flex-1 flex-row items-center gap-2.5 rounded-full bg-white px-4 active:opacity-80"
+            style={floatShadow}
+          >
+            {stage === "find" ? (
+              <>
+                <IconSearch size={20} color={colors.ink3} />
+                <Text className="text-body text-ink-2" numberOfLines={1}>
+                  {t("screens.createVenue.place.searchPlaceholder")}
+                </Text>
+              </>
+            ) : (
+              <>
+                <IconMapPin size={20} color={colors.ink} />
+                {locating ? (
+                  <ActivityIndicator size="small" color={colors.ink3} />
+                ) : (
+                  <Text className="flex-1 text-label font-medium" numberOfLines={1}>
+                    {place?.address || t("screens.createVenue.place.pinnedHere")}
+                  </Text>
+                )}
+              </>
+            )}
+          </Pressable>
+        )}
+      </View>
+
+      <View
+        className="absolute inset-x-0 bottom-0 rounded-t-sheet bg-white px-5 pt-10"
+        style={{ paddingBottom: insets.bottom + 26, ...cardShadow }}
+        onLayout={(event) => setCardHeight(event.nativeEvent.layout.height)}
+      >
+        {stage === "area" ? (
+          <AreaStep
+            label={label}
+            requested={requestedArea !== null}
+            loading={nearest.isPending}
+            creating={creating}
+            onChange={() => setChoosingArea(true)}
+            onConfirm={() => void create()}
+          />
+        ) : (
+          <Step
+            title={
+              stage === "find"
+                ? t("screens.createVenue.place.findTitle", { name })
+                : t("screens.createVenue.place.pinTitle")
+            }
+            body={
+              stage === "find"
+                ? t("screens.createVenue.place.findBody")
+                : t("screens.createVenue.place.pinBody")
+            }
+            action={t("common.actions.continue")}
+            disabled={stage === "find" ? !placed : locating}
+            onPress={() => (stage === "find" ? setStage("pin") : toArea())}
+          />
+        )}
+      </View>
+
+      <PlaceSearch
+        visible={searching}
+        near={pin}
+        onClose={() => setSearching(false)}
+        onPick={pickedPlace}
+        onDropPin={() => {
+          setSearching(false);
+          setPlaced(true);
+          setStage("pin");
+        }}
+      />
+      {permission === "checking" ? (
+        <View style={StyleSheet.absoluteFill} className="bg-white" />
+      ) : permission === "done" ? null : (
+        <LocationPrompt
+          name={name}
+          blocked={permission === "blocked"}
+          onAllow={() => void allowLocation()}
+          onSkip={() => setPermission("done")}
+          onClose={() => router.back()}
+        />
+      )}
+      <AreaPicker
+        visible={choosingArea}
+        country={country}
+        near={pin}
+        selectedId={area?.id ?? null}
+        requested={requestedArea}
+        onClose={() => setChoosingArea(false)}
+        onPick={(picked) => {
+          setChosenArea(picked);
+          setRequestedArea(null);
+          setChoosingArea(false);
+        }}
+        onRequest={(name) => {
+          setRequestedArea(name);
+          setChoosingArea(false);
+        }}
+      />
+    </View>
+  );
+}
+
+// In front of the map until location is settled: the step's own question, and why the app would
+// like to know where the owner is. The map loads behind it, so it's ready when the prompt goes.
+function LocationPrompt({
+  name,
+  blocked,
+  onAllow,
+  onSkip,
+  onClose,
+}: {
+  name: string;
+  blocked: boolean;
+  onAllow: () => void;
+  onSkip: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={StyleSheet.absoluteFill} className="bg-white">
+      <Screen
+        footer={
+          <>
+            <Button
+              label={t(
+                blocked
+                  ? "screens.createVenue.place.openSettings"
+                  : "screens.createVenue.place.allowLocation",
+              )}
+              onPress={onAllow}
+            />
+            <Button
+              label={t("screens.createVenue.place.searchInstead")}
+              variant="ghost"
+              onPress={onSkip}
+            />
+          </>
+        }
+      >
+        <NavBar
+          start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />}
+        />
+        <View className="mb-[18px] items-center">
+          <SvgXml
+            xml={LOCATION_ART}
+            width={LOCATION_ART_SIZE.width}
+            height={LOCATION_ART_SIZE.height}
+          />
+        </View>
+        <Title
+          subtitle={t(
+            blocked
+              ? "screens.createVenue.place.locationBlockedBody"
+              : "screens.createVenue.place.locationBody",
+          )}
+        >
+          {t("screens.createVenue.place.findTitle", { name })}
+        </Title>
+      </Screen>
+    </View>
+  );
+}
+
+// The card's usual shape: what this step is for, and one button on.
+function Step({
+  title,
+  body,
+  action,
+  disabled,
+  onPress,
+}: {
+  title: string;
+  body: string;
+  action: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <>
+      <Text accessibilityRole="header" className="px-1 text-title font-semibold tracking-[-0.4px]">
+        {title}
+      </Text>
+      <Text className="mb-5 mt-1.5 px-1 text-subtitle text-ink-2">{body}</Text>
+      <Button label={action} disabled={disabled} onPress={onPress} />
+    </>
+  );
+}
+
+// The last card: the area we matched, to confirm or change. With no match (an address Google
+// writes differently, or a part of town we haven't seeded) it asks instead of guessing, and an area
+// the owner asked for says Hagz will add it.
+function AreaStep({
+  label,
+  requested,
+  loading,
+  creating,
+  onChange,
+  onConfirm,
+}: {
+  label: { name: string; within: string } | null;
+  requested: boolean;
+  loading: boolean;
+  creating: boolean;
+  onChange: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Text accessibilityRole="header" className="px-1 text-title font-semibold tracking-[-0.4px]">
+        {label
+          ? t("screens.createVenue.place.areaTitle", { area: label.name })
+          : t("screens.createVenue.place.areaUnknownTitle")}
+      </Text>
+      <Text className="mb-5 mt-1.5 px-1 text-subtitle text-ink-2">
+        {t(
+          requested
+            ? "screens.createVenue.place.requestedBody"
+            : "screens.createVenue.place.areaBody",
+        )}
+      </Text>
+
+      <AreaCard
+        label={label}
+        loading={loading}
+        change={t("screens.createVenue.place.differentArea")}
+        onChange={onChange}
+      />
+
+      <Button
+        label={t("screens.createVenue.place.create")}
+        disabled={!label}
+        loading={creating}
+        onPress={onConfirm}
+      />
+    </>
+  );
+}

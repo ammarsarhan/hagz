@@ -9,7 +9,8 @@ Agreed on 2026-10-27:
 - **Create, then a checklist.** The first step creates a `DRAFT` with the basics. The setup checklist can then be done in any order, and every item is saved as real data, never as wizard state. Submitting unlocks when every required item is done.
 - **Languages:** the owner writes the name, description and address in their app language only; the app shows no language switch (decided 2026-11-13). Admins fill in the other language while provisioning. Going live requires Arabic and English.
 - **Slug:** a random id generated at creation and never changed, e.g. `/venue/k7m2x9pq` (see [Slugs and SEO](#slugs-and-seo)).
-- **Location:** the owner drops a pin or searches Google Places, the app suggests the area from the `Location` tree (matching Google's address to our location names), and the owner confirms or changes it. The API checks the pin against a rough bounding box per marketplace, enough to catch a pin in the wrong country (decided 2026-11-12).
+- **Location:** the owner drops a pin or searches Google Places, the API suggests the area whose centre is nearest the pin, within 8 km (`GET /marketplaces/{code}/areas/nearest`), and the owner confirms or changes it by searching areas (`GET /marketplaces/{code}/areas`, either language, nearest first). Not Google's address: in Egypt it names police districts, so a pin in Smouha comes back as Sidi Gaber (decided 2026-11-14). Admins set each area's centre on the Platform page. The API checks the pin itself, in PostGIS and never with Google (the server only sees coordinates and an area id, sent by the app): it must be inside the marketplace's border (`Marketplace.boundary`), and within 15 km of the chosen area's centre (decided 2026-11-14, replacing the 2026-11-12 bounding box). The border catches a pin in the wrong country, the distance one in the wrong part of it. A marketplace without a border, or an area without a centre, skips that check.
+- **Areas Hagz doesn't cover yet.** If the owner's area isn't in the list, they write it in and the venue is created with `requestedArea` instead of `locationId`, in the marketplace of the country the pin is in (decided 2026-11-14). An admin adds the area under Locations and sets it with `PUT /admin/venues/{id}/area`, which clears the request; approval waits for it (`422 AREA_NOT_SET`). Picking an area from the list later also replaces the request.
 - **Drafts live outside the venue dashboard.** An unfinished venue opens its own setup flow, reached from first run (no venues yet) or from the Venues section of the Account tab; the dashboard's tabs and switcher are for `LIVE` and `MAINTENANCE` venues (decided 2026-11-12).
 - **Staff join after approval.** Invitations can only be sent once an admin has approved the venue (`PROVISIONING`, `LIVE` or `MAINTENANCE`); before that the API answers `409 VENUE_STATUS_CONFLICT` (decided 2026-11-13). A draft or a venue in review has nothing for staff to do, and rejection only happens before approval, so an approved venue never loses the ability.
 - **One unfinished venue per staff account.** A venue they own in `DRAFT`, `SUBMITTED` or `PROVISIONING` blocks starting another until it goes live (clarified 2026-11-12). Any number of live venues, so chains are fine.
@@ -38,7 +39,7 @@ Each transition is a `VenueEvent` (`VENUE_CREATED`, `VENUE_SUBMITTED`, `VENUE_WI
 
 In one transaction, the server:
 1. Locks the staff row and checks they own **no other unfinished venue** (`DRAFT`, `SUBMITTED` or `PROVISIONING`). If they do, `409 UNFINISHED_VENUE_EXISTS`, with that venue's `venueId` and `venueStatus` so the app can open it. Venues they only work at don't count.
-2. Checks the location exists and belongs to an **active marketplace** (else `422 LOCATION_NOT_FOUND`), and the pin falls inside the marketplace's bounding box (else `422 LOCATION_OUTSIDE_MARKETPLACE`; a marketplace without a box isn't checked). The marketplace comes from the location, so the owner never picks one.
+2. Checks the location exists and belongs to an **active marketplace** (else `422 LOCATION_NOT_FOUND`), that the pin falls inside the marketplace's border (else `422 LOCATION_OUTSIDE_MARKETPLACE`), and that it's within 15 km of the area's centre (else `422 PIN_FAR_FROM_AREA`). A marketplace without a border, or an area without a centre, skips that check. Moving the pin later and an admin setting the area run the same checks. The marketplace comes from the location, so the owner never picks one.
 3. Creates the `Venue` with its **permanent random slug**, a `VenueTranslation` with the name only, and `VenueSettings` with the platform defaults: no cancellation policy yet, and invitations offering front-desk permissions (`bookings`, `customers` and `payments` on `manage`; `schedule` and `venue` on `view`; `finance` and `staff` on `none`). The slug isn't public until the venue is live.
 4. Creates the `OWNER` membership and the `VENUE_CREATED` event.
 
@@ -113,7 +114,7 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 
 - **No new tables.** Lifecycle steps and edits are new `VenueEvent` types, listed above, and each edit event stores the previous and new values.
 - **Draft-friendly columns** (PR 2.2): `VenueTranslation.description` and `address` are optional, since a draft starts with a name only; `VenueSettings.cancellationPolicy` is null until the owner chooses one (its CHECK uses `IS TRUE` so a missing policy can't carry custom tiers).
-- **`Marketplace` bounding box:** four optional corners (`minimumLatitude`, `maximumLatitude`, `minimumLongitude`, `maximumLongitude`), all or none, checked by a CHECK. Egypt's is seeded.
+- **`Marketplace.boundary`:** the country's border as a PostGIS `geography(MultiPolygon)`, GiST-indexed, valid by a CHECK. Egypt's is seeded from Natural Earth (public domain), widened 2 km so coastal and border venues aren't cut off; admins can replace it with GeoJSON (`boundary` on `POST /admin/marketplaces` and `PATCH /admin/marketplaces/{id}`).
 - **No column for the one-unfinished-venue rule:** it's checked under a lock on the staff row when a venue is created or transferred, the only two ways someone gains one.
 
 ## Errors
@@ -134,7 +135,10 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 | `409 PHOTO_LIMIT_REACHED`, `409 UPLOAD_NOT_FOUND`, `422 UPLOAD_MISMATCH` | Photos: the 20th is the last; confirming before the file arrives; a file of another type |
 | `409 VENUE_STATUS_CONFLICT` | An action not allowed in the current status, e.g. inviting staff before approval, or editing listing details while `SUBMITTED` (includes `venueStatus`) |
 | `422 LOCATION_NOT_FOUND` | Creating a venue in an area that doesn't exist, or whose marketplace isn't active |
-| `422 LOCATION_OUTSIDE_MARKETPLACE` | The pin isn't inside the marketplace of the chosen area, or a new area is in another marketplace |
+| `422 LOCATION_OUTSIDE_MARKETPLACE` | The pin isn't inside the marketplace's border, or a new area is in another marketplace |
+| `422 PIN_FAR_FROM_AREA` | The pin is more than 15 km from the chosen area's centre (`areaId`, `distance`, `limit`, in metres) |
+| `422 MARKETPLACE_NOT_FOUND` | Requesting an area in a country Hagz doesn't operate in |
+| `422 AREA_NOT_SET` | Approving a venue still waiting for the area its owner asked for (`requestedArea`) |
 
 ## Decided
 

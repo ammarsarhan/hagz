@@ -7,7 +7,7 @@ import { nameIn } from "./names";
 // What the apps read: an active marketplace's location tree and amenity options, named in the
 // request's language. Hidden marketplaces answer like ones that don't exist.
 
-const activeMarketplaceId = async (code: string) => {
+export const activeMarketplaceId = async (code: string) => {
   const marketplace = await prisma.marketplace.findFirst({
     where: { code: code.toUpperCase(), isActive: true },
     select: { id: true },
