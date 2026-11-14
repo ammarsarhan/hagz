@@ -3,6 +3,7 @@ import type {
   RejectVenue,
   Rejection,
   ReviewVenue,
+  SetVenueArea,
   VenueHistoryEvent,
   VenueHistoryQuery,
   VenueSetup,
@@ -19,6 +20,7 @@ import {
   LIFECYCLE_EVENTS,
   TAX_NUMBER_CHECKED,
   VENUE_APPROVED,
+  VENUE_AREA_SET,
   VENUE_LIVE,
   VENUE_PAUSED,
   VENUE_REJECTED,
@@ -29,8 +31,9 @@ import {
 import { goLiveGaps } from "../domain/review";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { adminVenueSelect, presentAdminVenue } from "./admin-venues";
-import { writeTranslation } from "./venue-edit";
-import { venueSetup } from "./venue-setup";
+import { pinOf, writeTranslation } from "./venue-edit";
+import { checkPin, locationOutsideMarketplace } from "./pin-checks";
+import { locationNotFound, venueSetup } from "./venue-setup";
 
 // A venue's review and going live (PR 2.7, docs/onboarding.md step 3). Every step locks the venue
 // row, checks the status it starts from, and records a VenueEvent; notifications are written in the
@@ -59,6 +62,14 @@ const goLiveBlocked = (missing: string[]) =>
     status: 422,
     detail: "The venue needs Arabic and English listings and an active ground to go live.",
     extensions: { missing },
+  });
+
+const areaNotSet = (requestedArea: string | null) =>
+  new AppError({
+    code: "AREA_NOT_SET",
+    status: 422,
+    detail: "Add the area the owner asked for and set it on the venue before approving it.",
+    extensions: { requestedArea },
   });
 
 const noActiveGround = () =>
@@ -235,13 +246,17 @@ export const approveVenue = async (
   clock: Clock = systemClock,
 ) => {
   await transaction(async (tx) => {
-    await move(
-      tx,
-      venueId,
-      ["SUBMITTED"],
-      "PROVISIONING",
-      statusTo("Only a venue in review can be approved."),
-    );
+    const status = await lock(tx, venueId);
+    if (status !== "SUBMITTED") {
+      throw venueStatusConflict(status, "Only a venue in review can be approved.");
+    }
+    // Search, the listing's address and the customer filters all need a real area.
+    const venue = await tx.venue.findUniqueOrThrow({
+      where: { id: venueId },
+      select: { locationId: true, requestedArea: true },
+    });
+    if (venue.locationId === null) throw areaNotSet(venue.requestedArea);
+    await tx.venue.update({ where: { id: venueId }, data: { status: "PROVISIONING" } });
     await record(tx, venueId, { adminId }, VENUE_APPROVED);
     await tellOwner(tx, venueId, { type: "VENUE_APPROVED", data: {} }, clock);
   });
@@ -264,6 +279,37 @@ export const rejectVenue = async (
     );
     await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason });
     await tellOwner(tx, venueId, { type: "VENUE_REJECTED", data: { reason } }, clock);
+  });
+};
+
+// Usually the area the owner asked for, once an admin has added it under Locations; it replaces the
+// request. Any status, so a wrong area can be put right later too. The area stays in the venue's
+// marketplace, which its currency, VAT and payouts belong to.
+export const setVenueArea = async (
+  adminId: string,
+  venueId: string,
+  { locationId }: SetVenueArea,
+) => {
+  await transaction(async (tx) => {
+    await lock(tx, venueId);
+    const venue = await tx.venue.findUniqueOrThrow({
+      where: { id: venueId },
+      select: { marketplaceId: true, locationId: true, requestedArea: true },
+    });
+    const location = await tx.location.findUnique({
+      where: { id: locationId },
+      select: { marketplaceId: true },
+    });
+    if (!location) throw locationNotFound();
+    if (location.marketplaceId !== venue.marketplaceId) throw locationOutsideMarketplace();
+    // The pin stays where the owner put it, so the area has to suit it.
+    const pin = await pinOf(tx, venueId);
+    if (pin) await checkPin(tx, { marketplaceId: venue.marketplaceId, locationId, pin });
+    await tx.venue.update({ where: { id: venueId }, data: { locationId, requestedArea: null } });
+    await record(tx, venueId, { adminId }, VENUE_AREA_SET, {
+      previous: { locationId: venue.locationId, requestedArea: venue.requestedArea },
+      next: { locationId },
+    });
   });
 };
 

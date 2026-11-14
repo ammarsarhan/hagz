@@ -1,5 +1,13 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { Amenity, list, Location, Marketplace } from "@hagz/contracts";
+import {
+  Amenity,
+  Area,
+  AreaQuery,
+  list,
+  Location,
+  Marketplace,
+  NearestAreaQuery,
+} from "@hagz/contracts";
 import { json, problemResponse } from "@/platform/http/definitions";
 
 export const listMarketplaces = createRoute({
@@ -34,6 +42,41 @@ export const listLocations = createRoute({
   request: { params: code },
   responses: {
     200: { description: "Locations", ...json(list(Location)) },
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const searchAreas = createRoute({
+  method: "get",
+  path: "/marketplaces/{code}/areas",
+  tags: ["Locations"],
+  summary: "Areas a venue can be filed under",
+  description:
+    "The leaves of the location tree, matching `q` in either language. With a point, nearest " +
+    "first (areas without a centre last); without one, by name. Names follow `Accept-Language`. " +
+    "Public.",
+  request: { params: code, query: AreaQuery },
+  responses: {
+    200: { description: "Areas", ...json(list(Area)) },
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const nearestArea = createRoute({
+  method: "get",
+  path: "/marketplaces/{code}/areas/nearest",
+  tags: ["Locations"],
+  summary: "The area to suggest for a point",
+  description:
+    "The area whose centre is nearest, if one is within 8 km; otherwise `area` is null and the " +
+    "owner picks one or asks for theirs. Public.",
+  request: { params: code, query: NearestAreaQuery },
+  responses: {
+    200: { description: "The suggestion", ...json(z.object({ area: Area.nullable() })) },
+    400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),
   },

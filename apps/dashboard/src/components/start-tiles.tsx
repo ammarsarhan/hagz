@@ -18,11 +18,16 @@ const ART_HEIGHT = 92;
 export function StartTiles({
   onCreateVenue,
   onHaveCode,
+  // With a venue already being set up, creating another isn't offered (the API allows one
+  // unfinished venue at a time), so the code tile has the row to itself and lies on its side.
+  canCreate = true,
 }: {
   onCreateVenue: () => void;
   onHaveCode: () => void;
+  canCreate?: boolean;
 }) {
   const { t } = useTranslation();
+  if (!canCreate) return <WideCodeTile onPress={onHaveCode} />;
   return (
     <View className="flex-row gap-2.5">
       <Tile
@@ -76,6 +81,34 @@ export function StartTiles({
         }
       />
     </View>
+  );
+}
+
+// The code tile across the row: the words on one side, the code's six slots on the other.
+function WideCodeTile({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t("screens.firstRun.haveCode")}
+      accessibilityHint={t("screens.firstRun.haveCodeBody")}
+      onPress={onPress}
+      className="flex-row items-center gap-4 rounded-[18px] bg-field p-4 active:opacity-70"
+    >
+      <View className="flex-1">
+        <Text className="text-[15px] font-semibold leading-[1.33]">
+          {t("screens.firstRun.haveCode")}
+        </Text>
+        <Text className="mt-0.5 text-caption text-ink-2">{t("screens.firstRun.haveCodeBody")}</Text>
+      </View>
+      <View className="flex-row gap-[5px]">
+        {[0, 1, 2, 3, 4, 5].map((slot) => (
+          <View key={slot} className="h-[30px] w-3.5 rounded-[5px] bg-white">
+            <View className="absolute bottom-2 left-[3px] right-[3px] h-0.5 rounded-full bg-grab" />
+          </View>
+        ))}
+      </View>
+    </Pressable>
   );
 }
 

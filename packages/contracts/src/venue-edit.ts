@@ -176,8 +176,23 @@ export const StaffVenueDetail = z
     status: VenueStatus,
     phone: z.string().nullable(),
     taxNumber: z.string().nullable(),
+    marketplace: z.object({
+      code: z.string().meta({ description: "Whose amenity options apply.", example: "EG" }),
+      currency: z
+        .string()
+        .meta({ description: "ISO 4217; prices are in its minor units.", example: "EGP" }),
+    }),
     location: z.object({
-      id: z.uuid(),
+      id: z.uuid().nullable().meta({ description: "Null while Hagz adds `requestedArea`." }),
+      name: z.string().nullable().meta({ description: "The area, in the request's language." }),
+      within: z
+        .string()
+        .nullable()
+        .meta({ description: "The top of the area's tree (its governorate), as areas show it." }),
+      requestedArea: z
+        .string()
+        .nullable()
+        .meta({ description: "The area the owner asked for, until an admin sets one." }),
       coordinates: Coordinates.nullable(),
       placeId: z.string().nullable(),
     }),

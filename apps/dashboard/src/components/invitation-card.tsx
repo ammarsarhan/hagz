@@ -5,13 +5,35 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
+import { useNow } from "@/lib/use-now";
 import { artVariant, invitationArt } from "./invitation-art";
 import { Text } from "./text";
 
 export type ReceivedInvitation = components["schemas"]["ReceivedStaffInvitation"];
 
-export const hoursLeft = (expiresAt: string) =>
-  Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 3_600_000));
+const HOUR = 3_600_000;
+
+const hoursLeft = (expiresAt: string, now: number) =>
+  Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / HOUR));
+
+// When "Expires in 5 hours" next reads differently: once fewer than 5 whole hours are left, and in
+// the last hour ("Expires soon"), when it runs out.
+const hoursLeftChangeAt = (expiresAt: string, now: number) => {
+  const end = new Date(expiresAt).getTime();
+  return now < end ? end - hoursLeft(expiresAt, now) * HOUR : undefined;
+};
+
+// The invitations that haven't run out yet, kept up to date while the screen is open: one that
+// expires drops off then, not at the next fetch. (The server stops listing it too.)
+export function useOpenInvitations(invitations: ReceivedInvitation[] | undefined) {
+  const now = useNow((time) => {
+    const ends = (invitations ?? [])
+      .map((invitation) => new Date(invitation.expiresAt).getTime())
+      .filter((end) => end > time);
+    return ends.length > 0 ? Math.min(...ends) : undefined;
+  });
+  return invitations?.filter((invitation) => new Date(invitation.expiresAt).getTime() > now);
+}
 
 // An invitation on the first-run screen, as approved in Figma: the blue card with its decoration
 // picked from the venue, who invited you, the venue, its area and size, Decline and Join, and
@@ -36,7 +58,8 @@ export function InvitationCard({
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const [countsWrapped, setCountsWrapped] = useState(false);
   const { venue } = invitation;
-  const hours = hoursLeft(invitation.expiresAt);
+  const now = useNow((time) => hoursLeftChangeAt(invitation.expiresAt, time));
+  const hours = hoursLeft(invitation.expiresAt, now);
   const place = venue.location ?? venue.address;
   const counts = [
     t("components.invitationCard.grounds", { count: venue.groundCount }),

@@ -106,6 +106,72 @@ describe("my venues", () => {
       }),
     );
   });
+
+  it("says where each venue is and when it last changed", async () => {
+    const { a, b, ownerA } = await world();
+    await addMember(b.id, ownerA.id, { permissions: permissions({ venue: "view" }) });
+    // A in Maadi, under Cairo; B keeps its untranslated area.
+    const venueA = await prisma.venue.findUniqueOrThrow({ where: { id: a.id } });
+    if (!venueA.locationId) throw new Error("The factory's venue has an area");
+    const cairo = await prisma.location.create({
+      data: {
+        marketplaceId: venueA.marketplaceId,
+        locality: "GOVERNORATE",
+        slug: "cairo",
+        translations: { create: [{ language: "EN", name: "Cairo" }] },
+      },
+    });
+    await prisma.location.update({
+      where: { id: venueA.locationId },
+      data: {
+        parentId: cairo.id,
+        translations: {
+          create: [
+            { language: "EN", name: "Maadi" },
+            { language: "AR", name: "المعادي" },
+          ],
+        },
+      },
+    });
+    const older = new Date("2026-11-01T10:00:00Z");
+    const newer = new Date("2026-11-02T10:00:00Z");
+    await prisma.venueEvent.createMany({
+      data: [
+        { venueId: a.id, staffId: ownerA.id, type: "VENUE_CREATED", createdAt: older },
+        { venueId: a.id, staffId: ownerA.id, type: "VENUE_DETAILS_CHANGED", createdAt: newer },
+      ],
+    });
+
+    const venues = async (language: string) =>
+      list(StaffVenue).parse(
+        await (
+          await router.request("/v1/staff/venues", {
+            headers: {
+              Authorization: `Bearer ${await tokenFor(ownerA.id)}`,
+              "Accept-Language": language,
+            },
+          })
+        ).json(),
+      ).data;
+
+    const [first, second] = await venues("en");
+    expect(first?.location).toBe("Maadi, Cairo");
+    expect(first?.lastActivityAt).toBe(newer.toISOString());
+    // No events: when it was created.
+    const venueB = await prisma.venue.findUniqueOrThrow({ where: { id: b.id } });
+    expect(second?.location).toBeNull();
+    expect(second?.lastActivityAt).toBe(venueB.createdAt.toISOString());
+
+    // Arabic where there is some, else any language.
+    expect((await venues("ar"))[0]?.location).toBe("المعادي، Cairo");
+
+    // Waiting for an area Hagz doesn't cover yet: the owner's own words.
+    await prisma.venue.update({
+      where: { id: b.id },
+      data: { locationId: null, requestedArea: "Sheikh Zayed, Giza" },
+    });
+    expect((await venues("en"))[1]?.location).toBe("Sheikh Zayed, Giza");
+  });
 });
 
 describe("tenant isolation", () => {

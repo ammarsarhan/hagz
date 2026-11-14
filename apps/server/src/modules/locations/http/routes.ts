@@ -17,6 +17,7 @@ import {
   listAdminMarketplaces,
   updateMarketplace,
 } from "../application/admin-marketplaces";
+import { nearestArea, searchAreas } from "../application/areas";
 import { listMarketplaces } from "../application/list-marketplaces";
 import { listAmenities, listLocations } from "../application/public-reference";
 import * as admin from "./definitions/admin";
@@ -30,6 +31,16 @@ export const locationsRoutes = createRouter()
   .openapi(route.listLocations, async (c) => {
     const data = await listLocations(c.req.valid("param").code, requestLanguage(c));
     return c.json({ data }, 200);
+  })
+  .openapi(route.searchAreas, async (c) => {
+    const { code } = c.req.valid("param");
+    const data = await searchAreas(code, c.req.valid("query"), requestLanguage(c));
+    return c.json({ data }, 200);
+  })
+  .openapi(route.nearestArea, async (c) => {
+    const { code } = c.req.valid("param");
+    const area = await nearestArea(code, c.req.valid("query"), requestLanguage(c));
+    return c.json({ area }, 200);
   })
   .openapi(route.listAmenities, async (c) => {
     const data = await listAmenities(c.req.valid("param").code, requestLanguage(c));

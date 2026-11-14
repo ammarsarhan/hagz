@@ -15,10 +15,10 @@ import { isRTL } from "@/lib/language";
 // back to it when popped). Tapping anywhere that isn't a field or button closes the keyboard. The gutters sit on inner Views because SafeAreaView is native and sets its own side
 // padding from the insets, which would overwrite them (and className doesn't reach it anyway).
 //
-// The direction is set here, on a plain View of its own, rather than through I18nManager: Expo Go
-// resets I18nManager on every load, while Yoga's `direction` lays the screen out right-to-left
-// everywhere. Builds are right-to-left natively too (expo-localization), and since `direction` is
-// absolute the two agree rather than flipping twice.
+// The direction is set here too, on a plain View of its own: the app is right-to-left natively in
+// Arabic (expo-localization's supportsRTL), and Yoga's `direction` pins every screen to the app's
+// language (lib/language.ts) whatever I18nManager says. It's absolute, so the two agree rather than
+// flipping twice.
 // The footer's top padding (pt-3).
 const FOOTER_TOP = 12;
 

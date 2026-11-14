@@ -9,6 +9,7 @@ import { ALL_PERMISSIONS, DEFAULT_INVITATION_PERMISSIONS } from "../domain/permi
 import { setupChecklist } from "../domain/setup";
 import { generateSlug } from "../domain/slug";
 import { accountSuspended, venueNotFound } from "./access";
+import { checkPin } from "./pin-checks";
 import { rejectionOf } from "./review";
 
 // Creating a venue and reading its setup checklist (docs/onboarding.md, steps 1 and 2).
@@ -33,11 +34,11 @@ export const locationNotFound = () =>
     detail: "There's no such area, or Hagz doesn't operate there yet.",
   });
 
-export const locationOutsideMarketplace = () =>
+export const marketplaceNotFound = () =>
   new AppError({
-    code: "LOCATION_OUTSIDE_MARKETPLACE",
+    code: "MARKETPLACE_NOT_FOUND",
     status: 422,
-    detail: "The pin isn't in the same country as the area.",
+    detail: "Hagz doesn't operate in that country yet.",
   });
 
 // Candidates checked per creation. A clash needs one of these to match one of the existing slugs
@@ -56,34 +57,32 @@ const freeSlug = async (tx: Tx) => {
   return slug;
 };
 
-interface Bounds {
-  minimumLatitude: number | null;
-  maximumLatitude: number | null;
-  minimumLongitude: number | null;
-  maximumLongitude: number | null;
-}
-
-// A rough box per marketplace (user, 2026-11-12): it catches a pin dropped in the wrong country.
-// No box means no check.
-export const insideBounds = (
-  bounds: Bounds,
-  { latitude, longitude }: CreateVenue["coordinates"],
-) => {
-  const { minimumLatitude, maximumLatitude, minimumLongitude, maximumLongitude } = bounds;
-  if (
-    minimumLatitude === null ||
-    maximumLatitude === null ||
-    minimumLongitude === null ||
-    maximumLongitude === null
-  ) {
-    return true;
+// The venue's marketplace: its area's, or, for an area Hagz doesn't cover yet, the country the owner
+// says the pin is in. Either way the pin has to be inside that country, and near the area when
+// there is one (pin-checks.ts).
+const marketplaceFor = async (tx: Tx, input: CreateVenue): Promise<string> => {
+  if (input.locationId !== undefined) {
+    const location = await tx.location.findUnique({
+      where: { id: input.locationId },
+      select: { marketplaceId: true, marketplace: { select: { isActive: true } } },
+    });
+    if (!location?.marketplace.isActive) throw locationNotFound();
+    await checkPin(tx, {
+      marketplaceId: location.marketplaceId,
+      locationId: input.locationId,
+      pin: input.coordinates,
+    });
+    return location.marketplaceId;
   }
-  return (
-    latitude >= minimumLatitude &&
-    latitude <= maximumLatitude &&
-    longitude >= minimumLongitude &&
-    longitude <= maximumLongitude
-  );
+  // The contract allows only one of the two, so this is the request.
+  if (!input.requestedArea) throw locationNotFound();
+  const marketplace = await tx.marketplace.findUnique({
+    where: { code: input.requestedArea.marketplace },
+    select: { id: true, isActive: true },
+  });
+  if (!marketplace?.isActive) throw marketplaceNotFound();
+  await checkPin(tx, { marketplaceId: marketplace.id, pin: input.coordinates });
+  return marketplace.id;
 };
 
 // A signed-in staff account creates a DRAFT and becomes its OWNER. The name is stored in the
@@ -107,28 +106,12 @@ export const createVenue = async (
     });
     if (unfinished) throw unfinishedVenueExists(unfinished.venue);
 
-    const location = await tx.location.findUnique({
-      where: { id: input.locationId },
-      select: {
-        marketplaceId: true,
-        marketplace: {
-          select: {
-            isActive: true,
-            minimumLatitude: true,
-            maximumLatitude: true,
-            minimumLongitude: true,
-            maximumLongitude: true,
-          },
-        },
-      },
-    });
-    if (!location?.marketplace.isActive) throw locationNotFound();
-    if (!insideBounds(location.marketplace, input.coordinates)) throw locationOutsideMarketplace();
-
+    const marketplaceId = await marketplaceFor(tx, input);
     const venue = await tx.venue.create({
       data: {
-        marketplaceId: location.marketplaceId,
-        locationId: input.locationId,
+        marketplaceId,
+        locationId: input.locationId ?? null,
+        requestedArea: input.requestedArea?.name ?? null,
         slug: await freeSlug(tx),
         placeId: input.placeId ?? null,
         translations: { create: { language: staff.language, name: input.name } },
@@ -150,7 +133,8 @@ export const createVenue = async (
         data: {
           name: input.name,
           language: staff.language,
-          locationId: input.locationId,
+          locationId: input.locationId ?? null,
+          requestedArea: input.requestedArea ?? null,
           coordinates: input.coordinates,
           placeId: input.placeId ?? null,
         },

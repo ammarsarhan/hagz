@@ -23,6 +23,9 @@ const en = {
         expiresSoon: "Expires within the hour",
       },
       shared: {
+        field: {
+          required: "required",
+        },
         nav: {
           back: "Back",
           close: "Close",
@@ -47,6 +50,7 @@ const en = {
         signOut: "Sign out",
         sendCode: "Send code",
         verify: "Verify",
+        save: "Save",
         change: "Change",
         forgotPassword: "Forgot password?",
       },
@@ -123,6 +127,174 @@ const en = {
         haveCodeBody: "Join with the code an owner sent you.",
         profile: "Your profile",
         retry: "Try again",
+        draftSubtitle: "Pick up where you left off.",
+        draft: {
+          heading: "Your venue",
+          inReview: "In review · {{ago}}",
+          continue: "Continue setup",
+          sendWhenDone: "Send for review when it's ready",
+          agoNow: "Just now",
+          ago: {
+            minutes: "{{count}}m ago",
+            hours: "{{count}}h ago",
+            days: "{{count}}d ago",
+          },
+        },
+      },
+      createVenue: {
+        start: {
+          title: "Add your venue",
+          subtitle:
+            "Place it on the map, set up your grounds and prices, then send it to us. Nothing is public until we've reviewed it together.",
+          action: "Get started",
+        },
+        name: {
+          title: "What's your venue called?",
+          subtitle:
+            "Use the name players already know. Arabic or English is fine; we add the other language before you go live.",
+          label: "Venue name",
+        },
+        place: {
+          findTitle: "Where is {{name}}?",
+          locationBody:
+            "Let Hagz use your location and the map starts where you are. Most owners add their venue standing in it.",
+          locationBlockedBody:
+            "Location is off for Hagz. Turn it on in Settings and the map starts where you are, or search for your venue instead.",
+          allowLocation: "Use my location",
+          openSettings: "Open Settings",
+          searchInstead: "Search instead",
+          findBody: "Search for it, or move the map to it. Players use this for directions.",
+          pinTitle: "Is the pin in the right spot?",
+          pinBody: "Move the map until the pin sits on your entrance.",
+          movePin: "Move the map to adjust the pin",
+          pinnedHere: "This spot on the map",
+          areaTitle: "Is it in {{area}}?",
+          areaUnknownTitle: "Which area is it in?",
+          areaBody: "Players browse venues by area. We picked this one from your pin.",
+          create: "Yes, create venue",
+          differentArea: "Choose a different area",
+          chooseArea: "Choose an area",
+          chooseAreaBody:
+            "Pick the area your venue is in. Not listed? Type its name and request it, and Hagz adds it when your venue is submitted.",
+          requestArea: "Request \u201C{{area}}\u201D",
+          nearYourPin: "Near your pin",
+          notListed: "Not listed?",
+          noAreaCalled: "No area called \u201C{{query}}\u201D yet.",
+          distanceKm: "{{km}} km",
+          requestedNote: "New area, added on submission",
+          requestedBody:
+            "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",
+          areaSearchPlaceholder: "Search areas",
+          searchTitle: "Find your venue",
+          searchBody: "Search by its name or street, or start from where you are.",
+          searchPlaceholder: "Search for your venue or street",
+          useMyLocation: "Use my current location",
+          cantFind: "Can't find it?",
+          dropPin: "Drop a pin on the map",
+          clear: "Clear search",
+          noResults:
+            "Nothing for \u201C{{query}}\u201D. Try a street or a landmark, or drop a pin.",
+          searchFailed: "Couldn't search right now",
+          searchUnavailable: "Search isn't available. Drop a pin on the map instead.",
+          locationDenied: "Location is off for Hagz",
+          locationFailed: "Couldn't find where you are",
+          outsideMarketplaces: "Hagz isn't in that country yet",
+        },
+      },
+      setup: {
+        subtitle:
+          "Finish setting up in any order. When the required items are done, send it for review.",
+        untitled: "Your venue",
+        progress: "{{done}} of {{total}} required done",
+        compactProgress: "{{done}}/{{total}} items done",
+        nextUp: "Next up: {{item}}",
+        allDone: "Everything required is done.",
+        required: "Required",
+        optional: "Optional",
+        send: "Send for review",
+        photos: {
+          emptyBody:
+            "Add at least 3. The first one is the cover players see first, so pick your best pitch shot.",
+          body: "Hold a photo and drag to reorder. The first one is the cover.",
+          add: "Add photos",
+          addBody: "From your library or camera, up to 20.",
+          addMore: "Add more",
+          library: "Choose from library",
+          camera: "Take a photo",
+          cameraBlocked: "Allow camera access in Settings to take photos.",
+          left_one: "Add {{count}} more to finish this step.",
+          left_other: "Add {{count}} more to finish this step.",
+          done: "Done",
+          cover: "Cover",
+          makeCover: "Make it the cover",
+          remove: "Remove photo",
+        },
+        details: {
+          subtitle:
+            "What players read on your venue page. Write it in English; we'll add the Arabic before you go live.",
+          name: "Venue name",
+          description: "Description",
+          descriptionPlaceholder: "Your pitches, the grass, the lights, parking…",
+          address: "Street address",
+          addressPlaceholder: "Building, street and district",
+          phone: "Phone players can call",
+        },
+        location: {
+          body: "Players are sent to this pin. Move the map to adjust it, or change the area it's listed under.",
+          changeArea: "Change area",
+        },
+        amenities: {
+          subtitle:
+            "Tap what your venue has. Tap again to add a price if players pay extra for it.",
+          free: "Free",
+          extra: "Extra charge",
+          paid: "Players pay extra for it",
+          paidBody: "Added to their booking when they pick it.",
+          price: "Price",
+          perHour: "Per hour",
+          perBooking: "Per booking",
+          perHourPrice: "{{currency}} {{amount}}/hr",
+          perBookingPrice: "{{currency}} {{amount}}",
+          remove: "Remove {{amenity}}",
+        },
+        tax: {
+          subtitle:
+            "Only if you charge VAT. It's printed on players' receipts, and we check it with you before you go live.",
+          label: "Tax registration number",
+          hint: "Digits and dashes",
+        },
+        states: {
+          todo: "To do",
+          done: "Done",
+          optional: "Optional",
+          // GROUNDS is the only item that blocks another (opening hours, and the layout), so these
+          // two name it. Revisit if the API ever blocks on something else.
+          waiting: "Waiting on grounds",
+          blockedBody: "Add a ground first",
+        },
+        items: {
+          DETAILS: { title: "Details", body: "Add a description and a phone number" },
+          LOCATION: { title: "Location", body: "Where players will find you" },
+          PHOTOS: { title: "Photos", body: "Add at least 3 photos of your grounds" },
+          GROUNDS: { title: "Grounds and prices", body: "Add your first ground and what it costs" },
+          SCHEDULES: {
+            title: "Opening hours",
+            body: "Set the hours each ground takes bookings",
+          },
+          LAYOUT: {
+            title: "Layout",
+            body: "Arrange your grounds the way they sit on the ground",
+          },
+          SETTINGS: {
+            title: "Payments and cancellations",
+            body: "Choose how players pay and your refund rules",
+          },
+          AMENITIES: {
+            title: "Amenities",
+            body: "Floodlights, parking, changing rooms and more",
+          },
+          TAX_NUMBER: { title: "Tax number", body: "Only if you charge VAT" },
+        },
       },
       invitation: {
         title: "Join {{venue}}",

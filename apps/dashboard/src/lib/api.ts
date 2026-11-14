@@ -14,6 +14,12 @@ const devApiUrl = () => {
 const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? devApiUrl() : undefined);
 if (!baseUrl) throw new Error("EXPO_PUBLIC_API_URL is not set.");
 
+// Local dev storage (the API with no storage configured) hands out http://localhost:3000 links, which
+// only the machine running it can open. In development they're pointed at the API's address as the
+// app sees it, so a phone on the network can upload and load photos too.
+export const reachable = (url: string) =>
+  __DEV__ ? url.replace(/^http:\/\/localhost:\d+/, baseUrl) : url;
+
 export const { api, auth } = createApiClient({
   baseUrl,
   audience: "staff",

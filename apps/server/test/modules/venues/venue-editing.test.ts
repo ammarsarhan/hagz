@@ -6,12 +6,13 @@ import {
   type StaffPermissions,
 } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { Prisma } from "@/generated/prisma/client";
 import { router } from "@/http/router";
 import { NO_PERMISSIONS } from "@/modules/venues/domain/permissions";
 import { signJwt } from "@/platform/crypto/jwt";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { addMember, createMarketplace, createStaff } from "../../support/factories";
+import { addMember, box, createMarketplace, createStaff, setCentre } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 const call = async (staffId: string, method: string, path: string, body?: unknown) =>
@@ -36,12 +37,7 @@ const only = (granted: Partial<StaffPermissions>): StaffPermissions => ({
   ...granted,
 });
 
-const EGYPT = {
-  minimumLatitude: 21.5,
-  maximumLatitude: 32,
-  minimumLongitude: 24.5,
-  maximumLongitude: 37,
-};
+const EGYPT = box({ south: 21.5, west: 24.5, north: 32, east: 37 });
 const MAADI = { latitude: 29.9602, longitude: 31.2569 };
 const ZAMALEK = { latitude: 30.0609, longitude: 31.2197 };
 
@@ -51,13 +47,27 @@ const someStaff = () =>
 
 // A fresh draft in Maadi, with its owner, its marketplace and a second area there.
 const aDraft = async () => {
-  const marketplace = await createMarketplace({ bounds: EGYPT });
-  const area = (slug: string) =>
+  const marketplace = await createMarketplace({ boundary: EGYPT });
+  const area = (slug: string, more: Partial<Prisma.LocationUncheckedCreateInput> = {}) =>
     prisma.location.create({
-      data: { marketplaceId: marketplace.id, locality: "DISTRICT", slug: `${slug}-${phones}` },
+      data: {
+        marketplaceId: marketplace.id,
+        locality: "DISTRICT",
+        slug: `${slug}-${phones}`,
+        ...more,
+      },
     });
+  const named = (en: string, ar: string) => ({
+    translations: {
+      create: [
+        { language: "EN" as const, name: en },
+        { language: "AR" as const, name: ar },
+      ],
+    },
+  });
   const maadi = await area("maadi");
-  const zamalek = await area("zamalek");
+  const cairo = await area("cairo", { locality: "GOVERNORATE", ...named("Cairo", "القاهرة") });
+  const zamalek = await area("zamalek", { parentId: cairo.id, ...named("Zamalek", "الزمالك") });
   const owner = await someStaff();
   const body: CreateVenue = { name: "Champions Arena", coordinates: MAADI, locationId: maadi.id };
   const created = VenueSetup.parse(await (await call(owner.id, "POST", "/venues", body)).json());
@@ -171,8 +181,12 @@ describe("location", () => {
         location: { coordinates: ZAMALEK, placeId: "ChIJ-zamalek", locationId: zamalek.id },
       }),
     );
+    // Named in the request's language, under its governorate.
     expect(venue.location).toEqual({
       id: zamalek.id,
+      name: "Zamalek",
+      within: "Cairo",
+      requestedArea: null,
       coordinates: ZAMALEK,
       placeId: "ChIJ-zamalek",
     });
@@ -183,7 +197,50 @@ describe("location", () => {
     });
   });
 
-  it("can't move to another marketplace's area, or outside the box", async () => {
+  it("replaces an area the owner asked for with one from the list", async () => {
+    const { owner, path, venueId, zamalek } = await aDraft();
+    await prisma.venue.update({
+      where: { id: venueId },
+      data: { locationId: null, requestedArea: "Zamalek West" },
+    });
+    expect((await detailOf(await call(owner.id, "GET", path))).location).toMatchObject({
+      id: null,
+      requestedArea: "Zamalek West",
+    });
+
+    const venue = await detailOf(
+      await call(owner.id, "PATCH", path, {
+        location: { coordinates: ZAMALEK, placeId: null, locationId: zamalek.id },
+      }),
+    );
+    expect(venue.location).toMatchObject({ id: zamalek.id, requestedArea: null });
+    const [event] = await eventsOf(venueId, "VENUE_LOCATION_CHANGED");
+    expect(event?.data).toMatchObject({
+      previous: { locationId: null, requestedArea: "Zamalek West" },
+    });
+  });
+
+  it("can't move the pin far from the area's centre", async () => {
+    const { owner, path, zamalek } = await aDraft();
+    await setCentre(zamalek.id, { latitude: 30.0609, longitude: 31.2197 });
+    // Maadi is about 12 km from Zamalek's centre: allowed.
+    const near = await call(owner.id, "PATCH", path, {
+      location: { coordinates: MAADI, placeId: null, locationId: zamalek.id },
+    });
+    expect(near.status).toBe(200);
+    // Alexandria isn't.
+    const far = await call(owner.id, "PATCH", path, {
+      location: {
+        coordinates: { latitude: 31.2155, longitude: 29.942 },
+        placeId: null,
+        locationId: zamalek.id,
+      },
+    });
+    expect(far.status).toBe(422);
+    expect(await problem(far)).toMatchObject({ code: "PIN_FAR_FROM_AREA", areaId: zamalek.id });
+  });
+
+  it("can't move to another marketplace's area, or outside the border", async () => {
     const { owner, path, maadi } = await aDraft();
     const other = await createMarketplace();
     const abroad = await prisma.location.create({

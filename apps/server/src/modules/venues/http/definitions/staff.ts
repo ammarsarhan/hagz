@@ -81,8 +81,10 @@ export const createVenue = createRoute({
       "UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `venueStatus`.",
     ),
     422: problemResponse(
-      "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or " +
-        "LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country).",
+      "LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), " +
+        "MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), " +
+        "LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the country's border), or " +
+        "PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres).",
     ),
   },
 });
@@ -146,7 +148,10 @@ export const updateVenue = createRoute({
     403: denied,
     404: notMember,
     409: locked,
-    422: problemResponse("LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE"),
+    422: problemResponse(
+      "LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area, or a pin " +
+        "outside the country's border) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres).",
+    ),
   },
 });
 
