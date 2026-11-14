@@ -52,7 +52,8 @@ export function FieldLabel({
       }
     >
       {children}
-      {required ? " *" : null}
+      {/* A thin space: the asterisk belongs to the word, not after it. */}
+      {required ? "\u2009*" : null}
     </Text>
   );
 }
