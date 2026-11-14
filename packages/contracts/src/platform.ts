@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Coordinates } from "./venue-setup";
 
 // Reference data every venue shares, managed by admins on the Platform page: marketplaces (the
 // countries Hagz operates in), the location tree inside each, and each marketplace's amenity catalog.
@@ -114,6 +115,9 @@ export const AdminLocation = z
       example: "nasr-city",
     }),
     names: Names,
+    center: Coordinates.nullable().meta({
+      description: "Roughly the middle; a venue's pin suggests the nearest. Null: never suggested.",
+    }),
     childCount: z.int(),
     venueCount: z.int(),
     createdAt: z.iso.datetime(),
@@ -125,11 +129,16 @@ export const CreateLocation = z
     parentId: z.uuid().nullable().meta({ description: "Null for the top of the tree." }),
     locality: Locality,
     names: Names,
+    center: Coordinates.nullable().optional(),
   })
   .meta({ id: "CreateLocation" });
 
 export const UpdateLocation = z
-  .object({ locality: Locality.optional(), names: Names.optional() })
+  .object({
+    locality: Locality.optional(),
+    names: Names.optional(),
+    center: Coordinates.nullable().optional().meta({ description: "Null clears it." }),
+  })
   .meta({ id: "UpdateLocation", description: "The slug stays as it was." });
 
 // --- Amenities ---
