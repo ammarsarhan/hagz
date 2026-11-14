@@ -3375,7 +3375,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
+                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), or LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the area's country). */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -7427,7 +7427,7 @@ export interface paths {
         put?: never;
         /**
          * Approve a venue in review
-         * @description Moves it to provisioning; the owner is told.
+         * @description Moves it to provisioning; the owner is told. A venue still waiting for the area its owner asked for needs one set first.
          */
         post: {
             parameters: {
@@ -7476,6 +7476,15 @@ export interface paths {
                 };
                 /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AREA_NOT_SET (with the owner's `requestedArea`) */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -7573,6 +7582,94 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/area": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a venue's area
+         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetVenueArea"];
+                };
+            };
+            responses: {
+                /** @description Set */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND or LOCATION_OUTSIDE_MARKETPLACE */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8547,9 +8644,19 @@ export interface components {
             placeId?: string;
             /**
              * Format: uuid
-             * @description The area the owner confirmed. Its marketplace becomes the venue's.
+             * @description The area the owner confirmed. Its marketplace becomes the venue's. Send this or `requestedArea`, not both.
              */
-            locationId: string;
+            locationId?: string;
+            /** @description An area Hagz doesn't cover yet, in the owner's words. An admin adds it and sets it on the venue while reviewing; the venue can't be approved before then. */
+            requestedArea?: {
+                /** @example Sheikh Zayed, Giza */
+                name: string;
+                /**
+                 * @description ISO 3166-1 alpha-2.
+                 * @example EG
+                 */
+                marketplace: string;
+            };
         };
         StaffVenueDetail: {
             /** Format: uuid */
@@ -8559,8 +8666,13 @@ export interface components {
             phone: string | null;
             taxNumber: string | null;
             location: {
-                /** Format: uuid */
-                id: string;
+                /**
+                 * Format: uuid
+                 * @description Null while Hagz adds `requestedArea`.
+                 */
+                id: string | null;
+                /** @description The area the owner asked for, until an admin sets one. */
+                requestedArea: string | null;
                 coordinates: components["schemas"]["Coordinates"];
                 placeId: string | null;
             };
@@ -9270,6 +9382,11 @@ export interface components {
             };
             /** @example Nasr City, Cairo */
             area: string | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
             /** @description Null only if the venue has no owner, which shouldn't happen. */
             owner: {
                 /** Format: uuid */
@@ -9300,6 +9417,11 @@ export interface components {
             };
             /** @example Nasr City, Cairo */
             area: string | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
             /** @description Null only if the venue has no owner, which shouldn't happen. */
             owner: {
                 /** Format: uuid */
@@ -9324,6 +9446,11 @@ export interface components {
              * @example Add photos of the pitches themselves, not only the entrance.
              */
             reason: string;
+        };
+        /** @description Clears the owner's requested area. */
+        SetVenueArea: {
+            /** Format: uuid */
+            locationId: string;
         };
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
