@@ -132,6 +132,7 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
         </Title>
         <Field
           label={t("screens.setup.details.name")}
+          required
           value={name}
           onChangeText={setName}
           maxLength={NAME.max}
@@ -139,6 +140,7 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
         />
         <TextArea
           label={t("screens.setup.details.description")}
+          required
           value={description}
           onChangeText={setDescription}
           maxLength={DESCRIPTION_MAX}
@@ -146,6 +148,7 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
         />
         <Field
           label={t("screens.setup.details.address")}
+          required
           value={address}
           onChangeText={setAddress}
           maxLength={ADDRESS_MAX}
@@ -153,6 +156,7 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
         />
         <PhoneField
           label={t("screens.setup.details.phone")}
+          required
           value={phone}
           onChangeText={(digits) => {
             setPhone(digits);

@@ -51,6 +51,7 @@ export default function Components() {
           />
           <Field
             label={t("screens.setup.details.address")}
+            required
             value=""
             onChangeText={() => undefined}
             placeholder={t("screens.setup.details.addressPlaceholder")}

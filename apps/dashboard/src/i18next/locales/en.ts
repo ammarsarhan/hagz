@@ -23,6 +23,9 @@ const en = {
         expiresSoon: "Expires within the hour",
       },
       shared: {
+        field: {
+          required: "required",
+        },
         nav: {
           back: "Back",
           close: "Close",

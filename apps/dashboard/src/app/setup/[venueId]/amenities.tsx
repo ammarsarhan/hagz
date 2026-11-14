@@ -286,7 +286,7 @@ function PriceSheet({
 
       {paid ? (
         <>
-          <FieldLabel>{t("screens.setup.amenities.price")}</FieldLabel>
+          <FieldLabel required>{t("screens.setup.amenities.price")}</FieldLabel>
           <FieldBox focused={focused} error={false} ltr>
             <Text className="text-[16px] text-unit">{currency}</Text>
             <TextInput

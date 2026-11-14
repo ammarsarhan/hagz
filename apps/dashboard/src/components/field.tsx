@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { TextInput, View, type TextInputProps } from "react-native";
 import { colors } from "@/lib/colors";
 import { FieldError } from "./field-error";
@@ -32,25 +33,46 @@ export function FieldBox({
   );
 }
 
-export function FieldLabel({ children }: { children: string }) {
-  return <Text className="mb-2 text-label font-medium text-ink-2">{children}</Text>;
+// A required field's label ends in an asterisk, in the label's own grey: the staff app has no red
+// for status (emphasis is weight), and the asterisk is a convention people read without colour.
+// Screen readers hear "required" instead of "star".
+export function FieldLabel({
+  children,
+  required = false,
+}: {
+  children: string;
+  required?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Text
+      className="mb-2 text-label font-medium text-ink-2"
+      accessibilityLabel={
+        required ? `${children}, ${t("components.shared.field.required")}` : undefined
+      }
+    >
+      {children}
+      {required ? " *" : null}
+    </Text>
+  );
 }
 
 export const inputClass = "h-full flex-1 text-[16px] text-ink";
 
 interface FieldProps extends Omit<TextInputProps, "className" | "style"> {
   label?: string;
+  required?: boolean;
   error?: string;
   // Something after the input, like the show-password eye.
   trailing?: ReactNode;
 }
 
 // A labelled text input. Errors are the person's to fix, so they sit right under the field.
-export function Field({ label, error, trailing, onFocus, onBlur, ...input }: FieldProps) {
+export function Field({ label, required, error, trailing, onFocus, onBlur, ...input }: FieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className={error ? "" : "mb-4"}>
-      {label ? <FieldLabel>{label}</FieldLabel> : null}
+      {label ? <FieldLabel required={required}>{label}</FieldLabel> : null}
       <FieldBox focused={focused} error={Boolean(error)}>
         <TextInput
           className={inputClass}
@@ -79,12 +101,14 @@ const PAD_Y = 10;
 
 export function TextArea({
   label,
+  required,
   value,
   maxLength,
   onChangeText,
   placeholder,
 }: {
   label: string;
+  required?: boolean;
   value: string;
   maxLength: number;
   onChangeText: (text: string) => void;
@@ -96,7 +120,7 @@ export function TextArea({
     : "border border-border px-4";
   return (
     <View className="mb-4">
-      <FieldLabel>{label}</FieldLabel>
+      <FieldLabel required={required}>{label}</FieldLabel>
       <TextInput
         className={`min-h-[120px] rounded-field bg-white text-[16px] leading-[1.35] text-ink ${border}`}
         value={value}

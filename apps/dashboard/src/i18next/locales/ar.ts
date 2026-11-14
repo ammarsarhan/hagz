@@ -37,6 +37,9 @@ const ar: ArabicTranslations = {
         expiresSoon: "تنتهي خلال الساعة",
       },
       shared: {
+        field: {
+          required: "مطلوب",
+        },
         nav: {
           back: "رجوع",
           close: "إغلاق",
