@@ -1,25 +1,44 @@
-import { useMemo, useState } from "react";
+import type { components } from "@hagz/api";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, Pressable, TextInput, View, useWindowDimensions } from "react-native";
-import { choosableAreas, type Location } from "@/lib/areas";
+import {
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
+  Modal,
+  Pressable,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
+import type { Coordinates } from "@/lib/places";
+import { areas } from "@/lib/queries";
 import { FieldBox, inputClass } from "./field";
-import { IconCircleCheckFilled, IconPlus, IconSearch } from "./icons";
-import { Sheet } from "./sheet";
+import { SheetHud } from "./hud";
+import { IconCircleCheckFilled, IconSearch } from "./icons";
+import { CloseButton } from "./nav";
 import { Text } from "./text";
 
-// When the area matched from the pin is wrong, or there was no match: every area the marketplace
-// has, filtered as you type. Areas are seeded by admins, so this is the whole list — a few hundred
-// rows at most, which a filtered list handles without paging.
+export type Area = components["schemas"]["Area"];
+
+// Choosing the area a venue is filed under (Figma "Area picker · 2 Typing, with matches", 427:192).
+// It's the "Find your venue" sheet again: it covers the map, so the keyboard leaves the results
+// room, and the whole list scrolls as one.
 //
-// Only the leaves are offered: a venue belongs to a neighbourhood, not to a governorate, and the
-// parent is shown beside each name so two "Nasr City" rows can be told apart.
-//
-// An area that isn't listed can still be asked for: whatever's typed becomes a request, which Hagz
-// adds while reviewing the venue (docs/onboarding.md, "Areas Hagz doesn't cover yet").
+// Before anything's typed it lists the areas nearest the pin, with how far each is; typing searches
+// every area by name, in Arabic or English, nearest first. The API does both (only the page shown is
+// fetched, never the whole tree). Anything typed can also be asked for: an area Hagz doesn't cover
+// yet, which it adds when the venue is submitted (docs/onboarding.md).
+const DEBOUNCE_MS = 250;
+const MIN_REQUEST = 2;
+
 export function AreaPicker({
   visible,
-  locations,
+  country,
+  near,
   selected,
   requested,
   onClose,
@@ -27,110 +46,191 @@ export function AreaPicker({
   onRequest,
 }: {
   visible: boolean;
-  locations: Location[];
-  selected: Location | null;
+  // The pin's country, whose areas these are.
+  country: string;
+  // The pin: results nearest it come first.
+  near: Coordinates;
+  selected: Area | null;
   requested: string | null;
   onClose: () => void;
-  onPick: (location: Location) => void;
+  onPick: (area: Area) => void;
   onRequest: (name: string) => void;
 }) {
   const { t } = useTranslation();
-  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  // What's searched for: the query once typing pauses, so a word is one request, not six.
+  const [searched, setSearched] = useState("");
 
-  const areas = useMemo(() => choosableAreas(locations), [locations]);
-  const typed = query.trim().toLocaleLowerCase();
-  const shown = typed
-    ? areas.filter(
-        (area) =>
-          area.name.toLocaleLowerCase().includes(typed) ||
-          area.within.toLocaleLowerCase().includes(typed),
-      )
-    : areas;
-  // Offered for anything typed that isn't exactly one of ours: "Maadi" is in the list, so it's
-  // picked, not asked for.
-  const request = query.trim().replace(/\s+/g, " ");
+  // A fresh sheet each time it opens.
+  useEffect(() => {
+    if (!visible) return;
+    setQuery("");
+    setSearched("");
+  }, [visible]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearched(query.trim()), DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const results = useQuery({
+    ...areas.search(country, searched, near),
+    enabled: visible,
+    // The last answer stays up while the next one loads, so the list doesn't blink per keystroke.
+    placeholderData: keepPreviousData,
+  });
+
+  // Typed text, tidied, is what a request would send.
+  const typed = query.trim().replace(/\s+/g, " ");
+  const found = results.data ?? [];
   const canRequest =
-    request.length >= 2 && !areas.some((area) => area.name.toLocaleLowerCase() === typed);
+    typed.length >= MIN_REQUEST &&
+    !found.some((area) => area.name.toLocaleLowerCase() === typed.toLocaleLowerCase());
 
   return (
-    <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
-      <Text accessibilityRole="header" className="mt-1 text-heading font-semibold">
-        {t("screens.createVenue.place.chooseArea")}
-      </Text>
-      <Text className="mb-4 mt-1.5 text-body text-ink-2">
-        {t("screens.createVenue.place.chooseAreaBody")}
-      </Text>
-      <FieldBox focused={focused} error={false}>
-        <IconSearch size={20} color={focused || query ? colors.ink : colors.ink3} />
-        <TextInput
-          className={inputClass}
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t("screens.createVenue.place.areaSearchPlaceholder")}
-          placeholderTextColor={colors.ink3}
-          selectionColor={colors.primary}
-          autoCorrect={false}
-        />
-      </FieldBox>
-      {/* Tall enough to show several areas, short enough to leave the map behind it in view. */}
-      <View style={{ height: Math.min(360, height * 0.45) }}>
-        <FlatList
-          data={shown}
-          keyExtractor={(area) => area.location.id}
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={
-            canRequest ? undefined : (
-              <Text className="pt-7 text-body text-ink-2">
-                {t("screens.createVenue.place.noAreas")}
-              </Text>
-            )
-          }
-          ListFooterComponent={
-            canRequest ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: requested === request }}
-                onPress={() => onRequest(request)}
-                className="flex-row items-center gap-3 py-3.5 active:opacity-60"
-              >
-                <View className="size-9 items-center justify-center rounded-full bg-blue-tint">
-                  <IconPlus size={18} color={colors.primary} strokeWidth={2} />
+    <Modal
+      transparent
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View className="flex-1 bg-scrim" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+        <View
+          className="flex-1 rounded-t-[24px] bg-white px-6 pt-4"
+          style={{ marginTop: insets.top + 14 }}
+        >
+          <View className="flex-row justify-end">
+            <CloseButton label={t("components.shared.nav.close")} onPress={onClose} />
+          </View>
+          <Text
+            accessibilityRole="header"
+            className="mt-1 text-[22px] font-semibold leading-[1.27] tracking-[-0.3px]"
+          >
+            {t("screens.createVenue.place.chooseArea")}
+          </Text>
+          <Text className="mb-4 mt-1.5 text-body text-ink-2">
+            {t("screens.createVenue.place.chooseAreaBody")}
+          </Text>
+
+          <FieldBox focused={focused} error={false}>
+            <IconSearch size={20} color={focused || query ? colors.ink : colors.ink3} />
+            <TextInput
+              className={inputClass}
+              value={query}
+              onChangeText={setQuery}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder={t("screens.createVenue.place.areaSearchPlaceholder")}
+              placeholderTextColor={colors.ink3}
+              selectionColor={colors.primary}
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+          </FieldBox>
+
+          <FlatList
+            className="flex-1"
+            data={found}
+            keyExtractor={(area) => area.id}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={{ paddingTop: 10, paddingBottom: insets.bottom + 24 }}
+            ListHeaderComponent={
+              typed ? undefined : (
+                <Text className="pb-0.5 pt-3 text-label font-medium text-ink-2">
+                  {t("screens.createVenue.place.nearYourPin")}
+                </Text>
+              )
+            }
+            ListEmptyComponent={
+              results.isPending ? (
+                <View className="items-center pt-8">
+                  <ActivityIndicator color={colors.ink3} />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-subtitle font-medium leading-[1.31]" numberOfLines={2}>
-                    {t("screens.createVenue.place.requestArea", { area: request })}
+              ) : typed ? (
+                <Text className="pt-4 text-body text-ink-2">
+                  {t("screens.createVenue.place.noAreaCalled", { query: typed })}
+                </Text>
+              ) : undefined
+            }
+            ListFooterComponent={
+              canRequest ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: requested === typed }}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    onRequest(typed);
+                  }}
+                  hitSlop={8}
+                  className="pt-[18px] active:opacity-60"
+                >
+                  <Text className="text-body text-ink-2">
+                    {t("screens.createVenue.place.notListed")}{" "}
+                    <Text className="text-body font-medium text-primary">
+                      {t("screens.createVenue.place.requestArea", { area: typed })}
+                    </Text>
                   </Text>
-                  <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
-                    {t("screens.createVenue.place.requestAreaNote")}
-                  </Text>
-                </View>
-              </Pressable>
-            ) : undefined
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: item.location.id === selected?.id }}
-              onPress={() => onPick(item.location)}
-              className="flex-row items-center gap-3 border-b border-border py-3.5 active:opacity-60"
-            >
-              <View className="flex-1">
-                <Text className="text-subtitle font-medium leading-[1.31]">{item.name}</Text>
-                {item.within ? (
-                  <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
-                    {item.within}
-                  </Text>
-                ) : null}
-              </View>
-              {item.location.id === selected?.id ? (
-                <IconCircleCheckFilled size={20} color={colors.primary} />
-              ) : null}
-            </Pressable>
-          )}
-        />
+                </Pressable>
+              ) : undefined
+            }
+            renderItem={({ item }) => (
+              <AreaRow
+                area={item}
+                selected={item.id === selected?.id}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  onPick(item);
+                }}
+              />
+            )}
+          />
+        </View>
+        <SheetHud open={visible} bottom={insets.bottom + 14} />
       </View>
-    </Sheet>
+    </Modal>
+  );
+}
+
+// 1.1 km, 10 km: a decimal only while it tells nearby areas apart.
+const distanceIn = (metres: number) => {
+  const km = metres / 1000;
+  return km < 10 ? km.toFixed(1) : String(Math.round(km));
+};
+
+function AreaRow({
+  area,
+  selected,
+  onPress,
+}: {
+  area: Area;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      className="flex-row items-center gap-3 border-b border-border py-[13px] active:opacity-60"
+    >
+      <View className="flex-1">
+        <Text className="text-subtitle font-medium leading-[1.25]">{area.name}</Text>
+        {area.within ? (
+          <Text className="text-label leading-[1.29] text-ink-2">{area.within}</Text>
+        ) : null}
+      </View>
+      {selected ? (
+        <IconCircleCheckFilled size={20} color={colors.primary} />
+      ) : area.distance !== null ? (
+        <Text className="text-label text-ink-3">
+          {t("screens.createVenue.place.distanceKm", { km: distanceIn(area.distance) })}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }

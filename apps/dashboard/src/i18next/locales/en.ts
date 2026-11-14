@@ -175,12 +175,14 @@ const en = {
           chooseAreaBody:
             "Pick the area your venue is in. Not listed? Type its name and request it, and Hagz adds it when your venue is submitted.",
           requestArea: "Request \u201C{{area}}\u201D",
-          requestAreaNote: "Hagz adds it when your venue is submitted",
+          nearYourPin: "Near your pin",
+          notListed: "Not listed?",
+          noAreaCalled: "No area called \u201C{{query}}\u201D yet.",
+          distanceKm: "{{km}} km",
           requestedNote: "New area, added on submission",
           requestedBody:
             "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",
           areaSearchPlaceholder: "Search areas",
-          noAreas: "No area by that name.",
           searchTitle: "Find your venue",
           searchBody: "Search by its name or street, or start from where you are.",
           searchPlaceholder: "Search for your venue or street",
