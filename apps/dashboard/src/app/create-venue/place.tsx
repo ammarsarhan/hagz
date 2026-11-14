@@ -381,7 +381,7 @@ function PinOverlay({
       <View className="items-center">
         <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
         {/* The ground under the point. */}
-        <View className="-mt-[3px] h-1.5 w-4 rounded-full bg-ink/25" />
+        <View className="-mt-0.5 h-1 w-2.5 rounded-full bg-ink/30" />
         {hint ? (
           <View className="mt-2.5 rounded-hud bg-ink px-3.5 py-2">
             <Text className="text-caption font-medium text-white">{hint}</Text>

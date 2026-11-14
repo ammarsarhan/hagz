@@ -1,12 +1,13 @@
 // The drawings the venue-creation flow puts on top of a map and on the draft card, exported from the
 // approved Figma frames (file Yvfn2eA7Z2yGb6IbL8P1ZB) as SVG for react-native-svg.
 
-// The pin that sits in the middle of the map while the owner moves it under their entrance
-// ("Venue creation · 5 Adjust the pin", 283:2). 36 × 48, point at the bottom.
-export const MAP_PIN_SIZE = { width: 36, height: 48 } as const;
+// The pin that sits in the middle of the map while the owner moves it under their entrance. Drawn
+// after Google Maps' own pin so it reads as "this spot" at a glance: a plain teardrop in the brand
+// blue with a darker dot, no outline. 28 × 40, point at the bottom.
+export const MAP_PIN_SIZE = { width: 28, height: 40 } as const;
 
 export const MAP_PIN =
-  '<svg width="36" height="48" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="Icon" clip-path="url(#clip0_0_4)"><path id="Vector" d="M18 1C8.6 1 1 8.6 1 18C1 30.5 18 47 18 47C18 47 35 30.5 35 18C35 8.6 27.4 1 18 1Z" fill="#1F38ED" stroke-width="2" stroke="white"/><path id="Vector_2" d="M18 24.5C21.5899 24.5 24.5 21.5899 24.5 18C24.5 14.4101 21.5899 11.5 18 11.5C14.4101 11.5 11.5 14.4101 11.5 18C11.5 21.5899 14.4101 24.5 18 24.5Z" fill="white"/></g><defs><clipPath id="clip0_0_4"><rect width="36" height="48" fill="white"/></clipPath></defs></svg>';
+  '<svg width="28" height="40" viewBox="0 0 28 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 1C6.82 1 1 6.82 1 14C1 23.75 14 39 14 39C14 39 27 23.75 27 14C27 6.82 21.18 1 14 1Z" fill="#1F38ED"/><circle cx="14" cy="14" r="4.75" fill="#142399"/></svg>';
 
 // The corner the draft card is cut with, on its own black ("First run · draft card · Black,
 // progress as top border", 302:6). 160 × 132, anchored to the card's top end corner.
