@@ -31,6 +31,11 @@ export default function RootLayout() {
             name="create-venue/place"
             options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
           />
+          {/* Moving the pin later is the same map, so it comes up the same way. */}
+          <Stack.Screen
+            name="setup/[venueId]/location"
+            options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
+          />
         </Stack>
       </HudProvider>
     </QueryClientProvider>

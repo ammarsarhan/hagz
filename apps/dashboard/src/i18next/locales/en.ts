@@ -47,6 +47,7 @@ const en = {
         signOut: "Sign out",
         sendCode: "Send code",
         verify: "Verify",
+        save: "Save",
         change: "Change",
         forgotPassword: "Forgot password?",
       },
@@ -208,6 +209,40 @@ const en = {
         required: "Required",
         optional: "Optional",
         send: "Send for review",
+        details: {
+          subtitle:
+            "What players read on your venue page. Write it in English; we'll add the Arabic before you go live.",
+          name: "Venue name",
+          description: "Description",
+          descriptionPlaceholder: "Your pitches, the grass, the lights, parking…",
+          address: "Street address",
+          addressPlaceholder: "Building, street and district",
+          phone: "Phone players can call",
+        },
+        location: {
+          body: "Players are sent to this pin. Move the map to adjust it, or change the area it's listed under.",
+          changeArea: "Change area",
+        },
+        amenities: {
+          subtitle:
+            "Tap what your venue has. Tap again to add a price if players pay extra for it.",
+          free: "Free",
+          extra: "Extra charge",
+          paid: "Players pay extra for it",
+          paidBody: "Added to their booking when they pick it.",
+          price: "Price",
+          perHour: "Per hour",
+          perBooking: "Per booking",
+          perHourPrice: "{{currency}} {{amount}}/hr",
+          perBookingPrice: "{{currency}} {{amount}}",
+          remove: "Remove {{amenity}}",
+        },
+        tax: {
+          subtitle:
+            "Only if you charge VAT. It's printed on players' receipts, and we check it with you before you go live.",
+          label: "Tax registration number",
+          hint: "Digits and dashes",
+        },
         states: {
           todo: "To do",
           done: "Done",

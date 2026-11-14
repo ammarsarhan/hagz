@@ -61,6 +61,7 @@ const ar: ArabicTranslations = {
         signOut: "تسجيل الخروج",
         sendCode: "إرسال الرمز",
         verify: "تحقق",
+        save: "حفظ",
         change: "تغيير",
         forgotPassword: "نسيت كلمة المرور؟",
       },
@@ -231,6 +232,39 @@ const ar: ArabicTranslations = {
         required: "مطلوب",
         optional: "اختياري",
         send: "أرسل للمراجعة",
+        details: {
+          subtitle:
+            "ما يقرؤه اللاعبون في صفحة ملعبك. اكتبه بالعربية، وسنضيف الإنجليزية قبل الإطلاق.",
+          name: "اسم الملعب",
+          description: "الوصف",
+          descriptionPlaceholder: "ملاعبك، النجيل، الإضاءة، مكان الركن…",
+          address: "العنوان",
+          addressPlaceholder: "المبنى والشارع والحي",
+          phone: "رقم يتصل به اللاعبون",
+        },
+        location: {
+          body: "يصل اللاعبون إلى هذا الدبوس. حرّك الخريطة لضبطه، أو غيّر المنطقة المدرج فيها.",
+          changeArea: "غيّر المنطقة",
+        },
+        amenities: {
+          subtitle: "اضغط على ما يتوفر في ملعبك، واضغط مرة أخرى لإضافة سعر إن كان بمقابل.",
+          free: "مجانًا",
+          extra: "بمقابل",
+          paid: "يدفع اللاعبون مقابله",
+          paidBody: "يُضاف إلى حجزهم عند اختياره.",
+          price: "السعر",
+          perHour: "بالساعة",
+          perBooking: "بالحجز",
+          perHourPrice: "{{amount}} {{currency}}/ساعة",
+          perBookingPrice: "{{amount}} {{currency}}",
+          remove: "احذف {{amenity}}",
+        },
+        tax: {
+          subtitle:
+            "فقط إن كنت تحصّل ضريبة القيمة المضافة. يُطبع على إيصالات اللاعبين، ونراجعه معك قبل الإطلاق.",
+          label: "رقم التسجيل الضريبي",
+          hint: "أرقام وشرطات",
+        },
         states: {
           todo: "مطلوب",
           done: "تم",
