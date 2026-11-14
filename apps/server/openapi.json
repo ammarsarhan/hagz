@@ -150,6 +150,43 @@
           "NEIGHBORHOOD"
         ]
       },
+      "Area": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "In the requested language.",
+            "example": "Smouha"
+          },
+          "within": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The top of its tree (governorate or city); null for a top-level area.",
+            "example": "Alexandria"
+          },
+          "distance": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Metres from the given point to the area's centre; null without either.",
+            "example": 640
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "within",
+          "distance"
+        ]
+      },
       "Amenity": {
         "type": "object",
         "properties": {
@@ -3567,6 +3604,29 @@
           "names": {
             "$ref": "#/components/schemas/Names"
           },
+          "center": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "description": "Roughly the middle; a venue's pin suggests the nearest. Null: never suggested."
+          },
           "childCount": {
             "type": "integer"
           },
@@ -3584,6 +3644,7 @@
           "locality",
           "slug",
           "names",
+          "center",
           "childCount",
           "venueCount",
           "createdAt"
@@ -3605,6 +3666,9 @@
           },
           "names": {
             "$ref": "#/components/schemas/Names"
+          },
+          "center": {
+            "$ref": "#/components/schemas/Coordinates"
           }
         },
         "required": [
@@ -3621,6 +3685,29 @@
           },
           "names": {
             "$ref": "#/components/schemas/Names"
+          },
+          "center": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "description": "Null clears it."
           }
         },
         "description": "The slug stays as it was."
@@ -4128,6 +4215,240 @@
                   "required": [
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplaces/{code}/areas": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "summary": "Areas a venue can be filed under",
+        "description": "The leaves of the location tree, matching `q` in either language. With a point, nearest first (areas without a centre last); without one, by name. Names follow `Accept-Language`. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$",
+              "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+              "example": "EG"
+            },
+            "required": true,
+            "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 60,
+              "description": "Part of the name, in Arabic or English; spelling variants match.",
+              "example": "smouha"
+            },
+            "required": false,
+            "description": "Part of the name, in Arabic or English; spelling variants match.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "latitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "longitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Areas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Area"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplaces/{code}/areas/nearest": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "summary": "The area to suggest for a point",
+        "description": "The area whose centre is nearest, if one is within 8 km; otherwise `area` is null and the owner picks one or asks for theirs. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$",
+              "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+              "example": "EG"
+            },
+            "required": true,
+            "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "latitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "longitude",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The suggestion",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Area"
+                        },
+                        {
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "area"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }

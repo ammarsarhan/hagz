@@ -116,6 +116,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/marketplaces/{code}/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Areas a venue can be filed under
+         * @description The leaves of the location tree, matching `q` in either language. With a point, nearest first (areas without a centre last); without one, by name. Names follow `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Part of the name, in Arabic or English; spelling variants match. */
+                    q?: string;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Areas */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Area"][];
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/marketplaces/{code}/areas/nearest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The area to suggest for a point
+         * @description The area whose centre is nearest, if one is within 8 km; otherwise `area` is null and the owner picks one or asks for theirs. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    latitude?: number | null;
+                    longitude?: number | null;
+                };
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The suggestion */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            area: components["schemas"]["Area"] & (Record<string, never> | null);
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/marketplaces/{code}/amenities": {
         parameters: {
             query?: never;
@@ -8224,6 +8375,25 @@ export interface components {
         };
         /** @enum {string} */
         Locality: "REGION" | "EMIRATE" | "GOVERNORATE" | "MUNICIPALITY" | "WILAYAT" | "CITY" | "DISTRICT" | "AREA" | "NEIGHBORHOOD";
+        Area: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description In the requested language.
+             * @example Smouha
+             */
+            name: string;
+            /**
+             * @description The top of its tree (governorate or city); null for a top-level area.
+             * @example Alexandria
+             */
+            within: string | null;
+            /**
+             * @description Metres from the given point to the area's centre; null without either.
+             * @example 640
+             */
+            distance: number | null;
+        };
         Amenity: {
             /** Format: uuid */
             id: string;
@@ -9321,6 +9491,11 @@ export interface components {
              */
             slug: string;
             names: components["schemas"]["Names"];
+            /** @description Roughly the middle; a venue's pin suggests the nearest. Null: never suggested. */
+            center: {
+                latitude: number;
+                longitude: number;
+            } | null;
             childCount: number;
             venueCount: number;
             /** Format: date-time */
@@ -9334,11 +9509,17 @@ export interface components {
             parentId: string | null;
             locality: components["schemas"]["Locality"];
             names: components["schemas"]["Names"];
+            center?: components["schemas"]["Coordinates"];
         };
         /** @description The slug stays as it was. */
         UpdateLocation: {
             locality?: components["schemas"]["Locality"];
             names?: components["schemas"]["Names"];
+            /** @description Null clears it. */
+            center?: {
+                latitude: number;
+                longitude: number;
+            } | null;
         };
         AdminAmenity: {
             /** Format: uuid */
