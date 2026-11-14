@@ -1544,6 +1544,20 @@
                 "format": "uuid",
                 "description": "Null while Hagz adds `requestedArea`."
               },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The area, in the request's language."
+              },
+              "within": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The top of the area's tree (its governorate), as areas show it."
+              },
               "requestedArea": {
                 "type": [
                   "string",
@@ -1563,6 +1577,8 @@
             },
             "required": [
               "id",
+              "name",
+              "within",
               "requestedArea",
               "coordinates",
               "placeId"

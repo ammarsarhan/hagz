@@ -6,6 +6,7 @@ import {
   type StaffPermissions,
 } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { Prisma } from "@/generated/prisma/client";
 import { router } from "@/http/router";
 import { NO_PERMISSIONS } from "@/modules/venues/domain/permissions";
 import { signJwt } from "@/platform/crypto/jwt";
@@ -52,12 +53,26 @@ const someStaff = () =>
 // A fresh draft in Maadi, with its owner, its marketplace and a second area there.
 const aDraft = async () => {
   const marketplace = await createMarketplace({ bounds: EGYPT });
-  const area = (slug: string) =>
+  const area = (slug: string, more: Partial<Prisma.LocationUncheckedCreateInput> = {}) =>
     prisma.location.create({
-      data: { marketplaceId: marketplace.id, locality: "DISTRICT", slug: `${slug}-${phones}` },
+      data: {
+        marketplaceId: marketplace.id,
+        locality: "DISTRICT",
+        slug: `${slug}-${phones}`,
+        ...more,
+      },
     });
+  const named = (en: string, ar: string) => ({
+    translations: {
+      create: [
+        { language: "EN" as const, name: en },
+        { language: "AR" as const, name: ar },
+      ],
+    },
+  });
   const maadi = await area("maadi");
-  const zamalek = await area("zamalek");
+  const cairo = await area("cairo", { locality: "GOVERNORATE", ...named("Cairo", "القاهرة") });
+  const zamalek = await area("zamalek", { parentId: cairo.id, ...named("Zamalek", "الزمالك") });
   const owner = await someStaff();
   const body: CreateVenue = { name: "Champions Arena", coordinates: MAADI, locationId: maadi.id };
   const created = VenueSetup.parse(await (await call(owner.id, "POST", "/venues", body)).json());
@@ -171,8 +186,11 @@ describe("location", () => {
         location: { coordinates: ZAMALEK, placeId: "ChIJ-zamalek", locationId: zamalek.id },
       }),
     );
+    // Named in the request's language, under its governorate.
     expect(venue.location).toEqual({
       id: zamalek.id,
+      name: "Zamalek",
+      within: "Cairo",
       requestedArea: null,
       coordinates: ZAMALEK,
       placeId: "ChIJ-zamalek",

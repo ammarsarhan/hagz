@@ -178,6 +178,11 @@ export const StaffVenueDetail = z
     taxNumber: z.string().nullable(),
     location: z.object({
       id: z.uuid().nullable().meta({ description: "Null while Hagz adds `requestedArea`." }),
+      name: z.string().nullable().meta({ description: "The area, in the request's language." }),
+      within: z
+        .string()
+        .nullable()
+        .meta({ description: "The top of the area's tree (its governorate), as areas show it." }),
       requestedArea: z
         .string()
         .nullable()

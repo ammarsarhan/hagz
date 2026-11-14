@@ -8851,6 +8851,10 @@ export interface components {
                  * @description Null while Hagz adds `requestedArea`.
                  */
                 id: string | null;
+                /** @description The area, in the request's language. */
+                name: string | null;
+                /** @description The top of the area's tree (its governorate), as areas show it. */
+                within: string | null;
                 /** @description The area the owner asked for, until an admin sets one. */
                 requestedArea: string | null;
                 coordinates: components["schemas"]["Coordinates"];
