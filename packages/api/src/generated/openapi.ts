@@ -4,9796 +4,9742 @@
  */
 
 export interface paths {
-  "/v1/marketplaces": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List the countries Hagz operates in
-     * @description Names follow `Accept-Language` (`ar` or `en`, Arabic by default). Public.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Active marketplaces */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["Marketplace"][];
+    "/v1/marketplaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the countries Hagz operates in
+         * @description Names follow `Accept-Language` (`ar` or `en`, Arabic by default). Public.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description The database is unavailable; retry. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/marketplaces/{code}/locations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * A marketplace's location tree
-     * @description Every location, flat: build the tree from `parentId`. Names follow `Accept-Language`. Public.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description The marketplace's ISO 3166-1 alpha-2 code. */
-          code: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Locations */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["Location"][];
+            requestBody?: never;
+            responses: {
+                /** @description Active marketplaces */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Marketplace"][];
+                        };
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description The database is unavailable; retry. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/marketplaces/{code}/areas": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Areas a venue can be filed under
-     * @description The leaves of the location tree, matching `q` in either language. With a point, nearest first (areas without a centre last); without one, by name. Names follow `Accept-Language`. Public.
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Part of the name, in Arabic or English; spelling variants match. */
-          q?: string;
-          latitude?: number | null;
-          longitude?: number | null;
-          limit?: number;
+    "/v1/marketplaces/{code}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        header?: never;
-        path: {
-          /** @description The marketplace's ISO 3166-1 alpha-2 code. */
-          code: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Areas */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["Area"][];
+        /**
+         * A marketplace's location tree
+         * @description Every location, flat: build the tree from `parentId`. Names follow `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
             };
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description The database is unavailable; retry. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/marketplaces/{code}/areas/nearest": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The area to suggest for a point
-     * @description The area whose centre is nearest, if one is within 8 km; otherwise `area` is null and the owner picks one or asks for theirs. Public.
-     */
-    get: {
-      parameters: {
-        query?: {
-          latitude?: number | null;
-          longitude?: number | null;
-        };
-        header?: never;
-        path: {
-          /** @description The marketplace's ISO 3166-1 alpha-2 code. */
-          code: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The suggestion */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              area: components["schemas"]["Area"] & (Record<string, never> | null);
+            requestBody?: never;
+            responses: {
+                /** @description Locations */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Location"][];
+                        };
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description The database is unavailable; retry. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/marketplaces/{code}/amenities": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * A marketplace's amenity options
-     * @description The options venues can offer. Names follow `Accept-Language`. Public.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description The marketplace's ISO 3166-1 alpha-2 code. */
-          code: string;
+    "/v1/marketplaces/{code}/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Active amenity options */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["Amenity"][];
+        /**
+         * Areas a venue can be filed under
+         * @description The leaves of the location tree, matching `q` in either language. With a point, nearest first (areas without a centre last); without one, by name. Names follow `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Part of the name, in Arabic or English; spelling variants match. */
+                    q?: string;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
             };
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description The database is unavailable; retry. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/verifications": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a sign-up code over WhatsApp
-     * @description The same response whether or not the number has an account. Language follows `Accept-Language`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["SendVerificationCode"];
-        };
-      };
-      responses: {
-        /** @description Code sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationCodeSent"];
-          };
-        };
-        /** @description INVALID_PHONE_NUMBER: not a mobile number in international format. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: too many codes; see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/verifications/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Confirm a sign-up code */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ConfirmVerificationCode"];
-        };
-      };
-      responses: {
-        /** @description The phone is verified */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationConfirmed"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/sign-up": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Create the account and sign in
-     * @description Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CustomerSignUp"];
-        };
-      };
-      responses: {
-        /** @description Signed up and signed in */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CustomerAuthenticated"];
-          };
-        };
-        /** @description VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PHONE_ALREADY_REGISTERED: log in instead. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry with the same verificationToken. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/sessions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Sign in with phone and password
-     * @description With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["SignIn"];
-        };
-      };
-      responses: {
-        /** @description Password right; a two-factor code was sent */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TwoFactorChallenge"];
-          };
-        };
-        /** @description Signed in */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CustomerAuthenticated"];
-          };
-        };
-        /** @description INVALID_CREDENTIALS: the same for an unknown number and a wrong password. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/sessions/two-factor": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Finish a two-factor sign-in with the code */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CompleteTwoFactor"];
-        };
-      };
-      responses: {
-        /** @description Signed in */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CustomerAuthenticated"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description CHALLENGE_EXPIRED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/sessions/two-factor/resend": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send another two-factor code
-     * @description Returns a new `challengeToken`: the previous one belonged to the previous code.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ResendTwoFactor"];
-        };
-      };
-      responses: {
-        /** @description A new code was sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TwoFactorChallenge"];
-          };
-        };
-        /** @description CHALLENGE_EXPIRED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/sessions/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Exchange the refresh token for a new pair
-     * @description The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["RefreshSession"];
-        };
-      };
-      responses: {
-        /** @description A new access and refresh token */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Session"];
-          };
-        };
-        /** @description SESSION_ENDED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry with the same refresh token. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/sessions/current": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Sign out of this device
-     * @description The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Signed out */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/password-resets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a password reset code
-     * @description The same response whether or not the number has an account.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["RequestPasswordReset"];
-        };
-      };
-      responses: {
-        /** @description If the number has an account, a code was sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationCodeSent"];
-          };
-        };
-        /** @description INVALID_PHONE_NUMBER */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/password-resets/verify": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Check the reset code, before choosing the new password
-     * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["VerifyPasswordReset"];
-        };
-      };
-      responses: {
-        /** @description Verified */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["PasswordResetVerified"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/password-resets/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Set the new password
-     * @description Signs out every session; sign in again with the new password.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ConfirmPasswordReset"];
-        };
-      };
-      responses: {
-        /** @description Password changed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description RESET_TOKEN_INVALID: verify again. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/two-factor/codes": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Send a code to turn two-factor on or off */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Code sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationCodeSent"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/customer/two-factor": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Turn two-factor on or off */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ChangeTwoFactor"];
-        };
-      };
-      responses: {
-        /** @description The new setting */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TwoFactorStatus"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/verifications": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a sign-up code over WhatsApp
-     * @description The same response whether or not the number has an account. Language follows `Accept-Language`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["SendVerificationCode"];
-        };
-      };
-      responses: {
-        /** @description Code sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationCodeSent"];
-          };
-        };
-        /** @description INVALID_PHONE_NUMBER: not a mobile number in international format. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: too many codes; see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/verifications/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Confirm a sign-up code */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ConfirmVerificationCode"];
-        };
-      };
-      responses: {
-        /** @description The phone is verified */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationConfirmed"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/sign-up": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Create the account and sign in
-     * @description Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["StaffSignUp"];
-        };
-      };
-      responses: {
-        /** @description Signed up and signed in */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffAuthenticated"];
-          };
-        };
-        /** @description VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PHONE_ALREADY_REGISTERED: log in instead. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry with the same verificationToken. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/sessions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Sign in with phone and password
-     * @description With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["SignIn"];
-        };
-      };
-      responses: {
-        /** @description Password right; a two-factor code was sent */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TwoFactorChallenge"];
-          };
-        };
-        /** @description Signed in */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffAuthenticated"];
-          };
-        };
-        /** @description INVALID_CREDENTIALS: the same for an unknown number and a wrong password. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/sessions/two-factor": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Finish a two-factor sign-in with the code */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CompleteTwoFactor"];
-        };
-      };
-      responses: {
-        /** @description Signed in */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffAuthenticated"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description CHALLENGE_EXPIRED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/sessions/two-factor/resend": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send another two-factor code
-     * @description Returns a new `challengeToken`: the previous one belonged to the previous code.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ResendTwoFactor"];
-        };
-      };
-      responses: {
-        /** @description A new code was sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TwoFactorChallenge"];
-          };
-        };
-        /** @description CHALLENGE_EXPIRED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/sessions/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Exchange the refresh token for a new pair
-     * @description The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["RefreshSession"];
-        };
-      };
-      responses: {
-        /** @description A new access and refresh token */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Session"];
-          };
-        };
-        /** @description SESSION_ENDED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry with the same refresh token. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/sessions/current": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Sign out of this device
-     * @description The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Signed out */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/password-resets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a password reset code
-     * @description The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn members before the new password is set: a reset makes them read-only at every venue until a staff manager restores them.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["RequestPasswordReset"];
-        };
-      };
-      responses: {
-        /** @description If the number has an account, a code was sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationCodeSent"];
-          };
-        };
-        /** @description INVALID_PHONE_NUMBER */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/password-resets/verify": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Check the reset code, before choosing the new password
-     * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["VerifyPasswordReset"];
-        };
-      };
-      responses: {
-        /** @description Verified */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["PasswordResetVerified"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/password-resets/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Set the new password
-     * @description Signs out every session, and lowers every permission to at most `view` at each venue the member belongs to. The owner and members who manage staff are notified; the previous permissions are kept so they can be restored.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ConfirmPasswordReset"];
-        };
-      };
-      responses: {
-        /** @description Password changed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description RESET_TOKEN_INVALID: verify again. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The signed-in staff member
-     * @description Name, phone and language, for the app to greet and label them after a relaunch.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Their profile */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Staff"];
-          };
-        };
-        /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/two-factor/codes": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Send a code to turn two-factor on or off */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Code sent */
-        202: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VerificationCodeSent"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/staff/two-factor": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Turn two-factor on or off */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ChangeTwoFactor"];
-        };
-      };
-      responses: {
-        /** @description The new setting */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TwoFactorStatus"];
-          };
-        };
-        /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/sessions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Check email and password
-     * @description Always followed by a code from the authenticator app (set up first if `TOTP_SETUP`).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["AdminSignIn"];
-        };
-      };
-      responses: {
-        /** @description Password right; ask for a code */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminChallenge"];
-          };
-        };
-        /** @description INVALID_CREDENTIALS: the same for an unknown email and a wrong password. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/sessions/totp-setup": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Get a new authenticator secret
-     * @description Only for accounts without a confirmed authenticator. Asking again replaces the secret; the first code accepted from it confirms it.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["StartTotpSetup"];
-        };
-      };
-      responses: {
-        /** @description Show the URI as a QR code */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TotpSetup"];
-          };
-        };
-        /** @description CHALLENGE_EXPIRED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description TOTP_ALREADY_SET_UP */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/sessions/totp": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Finish signing in with an authenticator code
-     * @description Sets the session cookies. The session lasts 12 hours and isn't extended.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CompleteAdminSignIn"];
-        };
-      };
-      responses: {
-        /** @description Signed in */
-        201: {
-          headers: {
-            /** @description The access and refresh cookies (httpOnly; the web app never reads them). */
-            "Set-Cookie"?: string;
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminSignedIn"];
-          };
-        };
-        /** @description INVALID_CODE or TOTP_SETUP_REQUIRED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description CHALLENGE_EXPIRED: sign in again (each challenge works once). */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry with the same code if it's still current. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/sessions/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Renew the access cookie
-     * @description Uses the refresh cookie and rotates it. Send one refresh at a time. The session still ends 12 hours after sign-in.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description New cookies set */
-        204: {
-          headers: {
-            /** @description The access and refresh cookies (httpOnly; the web app never reads them). */
-            "Set-Cookie"?: string;
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description SESSION_ENDED: sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: retry. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/sessions/current": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Sign out
-     * @description Ends the session the refresh cookie belongs to and clears both cookies.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Signed out */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The signed-in admin */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The admin */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Admin"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Change your own name
-     * @description The email is the admin's sign-in and can't change here.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateAdminProfile"];
-        };
-      };
-      responses: {
-        /** @description The admin, renamed */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Admin"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/auth/admin/me/password": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Change your own password
-     * @description Needs the current password. Signs every other browser out (this one stays signed in), and a reset link another admin sent stops working.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ChangeAdminPassword"];
-        };
-      };
-      responses: {
-        /** @description Password changed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description WRONG_PASSWORD: the current password isn't right; or VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/me/sessions/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Sign out one of your other browsers
-     * @description One of the browsers listed on your own admin page. Not this one: sign out instead. It stops refreshing at once; a page already open there keeps working for up to the access token's 10 minutes.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Signed out */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SESSION_NOT_FOUND: not yours, or already signed out */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description CURRENT_SESSION: the browser asking */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/me/sessions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Sign out of every other browser
-     * @description This browser stays signed in. It stops refreshing at once; a page already open there keeps working for up to the access token's 10 minutes.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Signed out */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/invitations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Open admin invitations */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Not yet used, revoked or expired */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["AdminInvitation"][];
+            requestBody?: never;
+            responses: {
+                /** @description Areas */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Area"][];
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    /**
-     * Invite someone to become an admin
-     * @description Emails a link that works for 48 hours and replaces any earlier invitation to the same email.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["InviteAdmin"];
+    "/v1/marketplaces/{code}/areas/nearest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Invitation sent */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminInvitation"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_ALREADY_EXISTS */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description EMAIL_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/list": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Every admin
-     * @description Oldest first. Suspended and banned admins are included.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The admins */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["AdminListEntry"][];
+        /**
+         * The area to suggest for a point
+         * @description The area whose centre is nearest, if one is within 8 km; otherwise `area` is null and the owner picks one or asks for theirs. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    latitude?: number | null;
+                    longitude?: number | null;
+                };
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/list/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * One admin in full
-     * @description Who invited them, the invitations they've sent and the browsers they're signed in on.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The admin */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminDetails"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/list/{id}/authenticator": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Reset another admin's authenticator
-     * @description Forgets it and signs them out everywhere; their next sign-in sets up a new one. Not for your own account.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Reset */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description OWN_ADMIN_ACCOUNT */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/list/{id}/password-reset": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Email another admin a link to choose a new password
-     * @description The link works for 24 hours, replaces any earlier one, and signs them out everywhere once used. Nothing changes until then. Not for your own account.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Sent */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description OWN_ADMIN_ACCOUNT */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description EMAIL_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/password-reset": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Choose a new password from a reset link
-     * @description The token is in the link's fragment (`#token=`). Signs the admin out everywhere; they then sign in with the new password.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ResetAdminPassword"];
-        };
-      };
-      responses: {
-        /** @description Password changed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description PASSWORD_RESET_INVALID, or VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/invitations/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Revoke an invitation
-     * @description Its link stops working. Revoking one that's already revoked or expired is fine.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Revoked */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_ALREADY_ACCEPTED */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/admin/invitations/accept": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Create an admin account from an invitation
-     * @description The token is in the invitation link's fragment (`#token=`). Continue with sessions/totp-setup: the account can't sign in until its authenticator is set up.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["AcceptAdminInvitation"];
-        };
-      };
-      responses: {
-        /** @description Account created; set up the authenticator */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminChallenge"];
-          };
-        };
-        /** @description INVITATION_INVALID, or VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_ALREADY_EXISTS */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The venues I belong to, with my permissions at each */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description My venues */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["StaffVenue"][];
+            requestBody?: never;
+            responses: {
+                /** @description The suggestion */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            area: components["schemas"]["Area"] & (Record<string, never> | null);
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    /**
-     * Create a venue
-     * @description Creates a `DRAFT` with the caller as its `OWNER` (docs/onboarding.md, step 1). The name is stored in the caller's app language. The marketplace comes from the location, and the pin must fall inside it. One unfinished venue (`DRAFT`, `SUBMITTED` or `PROVISIONING`) per owner. Answers with the setup checklist.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateVenue"];
+    "/v1/marketplaces/{code}/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description The new draft and its checklist */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenueSetup"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `venueStatus`. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the country's border), or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/setup": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The venue's setup checklist
-     * @description Needs `venue: view`. Computed from the venue's data on every request (docs/onboarding.md, step 2). Items appear as their features ship.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The checklist */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenueSetup"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Everything the setup and edit screens show
-     * @description Needs `venue: view`.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The venue */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenueDetail"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Change the phone, tax number or location
-     * @description Needs `venue: manage`. Only what's sent changes. A new area must be in the venue's marketplace, with the pin inside it.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateVenue"];
-        };
-      };
-      responses: {
-        /** @description The venue after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenueDetail"];
-          };
-        };
-        /** @description INVALID_PHONE_NUMBER or VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area, or a pin outside the country's border) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/translations/{language}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Set the name, description and address in one language
-     * @description Needs `venue: manage`. The app writes the owner's language; Hagz adds the other one before the venue goes live.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          language: components["schemas"]["Language"];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["VenueTranslationInput"];
-        };
-      };
-      responses: {
-        /** @description The venue after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenueDetail"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/settings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Change how bookings are confirmed, paid for and refunded
-     * @description Needs `venue: manage`. Only what's sent changes; the result is checked as a whole. `DEPOSIT` needs `depositPercent` and `CUSTOM` needs `cancellationTiers`; switching away clears them.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateVenueSettings"];
-        };
-      };
-      responses: {
-        /** @description The venue after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenueDetail"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_SETTINGS (with the `field`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/amenities": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Set which amenities the venue has, and their prices
-     * @description Needs `venue: manage`. Replaces the whole set. Options come from the venue's marketplace; a retired one can be kept but not newly picked.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["SetVenueAmenities"];
-        };
-      };
-      responses: {
-        /** @description The venue after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenueDetail"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description AMENITY_NOT_AVAILABLE (with the `optionIds`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/photos": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The venue's photos, in order
-     * @description Needs `venue: view`. Includes uploads not confirmed yet (`PENDING`).
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Photos, the cover first */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["VenuePhoto"][];
+        /**
+         * A marketplace's amenity options
+         * @description The options venues can offer. Names follow `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    code: string;
+                };
+                cookie?: never;
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    /**
-     * Start uploading a photo
-     * @description Needs `venue: manage`. Answers with a signed request to send the file to (valid 15 minutes); upload it, then confirm. The app resizes photos before uploading.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["RequestPhotoUpload"];
-        };
-      };
-      responses: {
-        /** @description Where to upload */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["PhotoUpload"];
-          };
-        };
-        /** @description VALIDATION_FAILED: only JPEG, PNG or WebP, up to 10 MB. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PHOTO_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description STORAGE_UNAVAILABLE */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/photos/{photoId}/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirm an upload, putting the photo on the venue
-     * @description Needs `venue: manage`. Checks the stored file is the type and size that were declared.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          photoId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The photo, now ready */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenuePhoto"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or PHOTO_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UPLOAD_NOT_FOUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UPLOAD_MISMATCH: ask for a new upload. */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/photos/order": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Reorder the photos; the first is the cover
-     * @description Needs `venue: manage`. Lists every ready photo exactly once.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ReorderPhotos"];
-        };
-      };
-      responses: {
-        /** @description Photos in the new order */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["VenuePhoto"][];
+            requestBody?: never;
+            responses: {
+                /** @description Active amenity options */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Amenity"][];
+                        };
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_PHOTO_ORDER */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/photos/{photoId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove a photo
-     * @description Needs `venue: manage`.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          photoId: string;
+    "/v1/auth/customer/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Removed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or PHOTO_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/grounds": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The venue's grounds, in order
-     * @description Needs `venue: view`. Deleted grounds are left out.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Grounds */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["Ground"][];
+        get?: never;
+        put?: never;
+        /**
+         * Send a sign-up code over WhatsApp
+         * @description The same response whether or not the number has an account. Language follows `Accept-Language`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    /**
-     * Add a ground
-     * @description Needs `schedule: manage`. The name is stored in the caller's app language. Football comes in 5, 7 and 11-a-side; other sports are `STANDARD`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateGround"];
-        };
-      };
-      responses: {
-        /** @description The new ground */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Ground"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description GROUND_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/grounds/order": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Reorder the grounds
-     * @description Needs `schedule: manage`. Lists every ground exactly once.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["ReorderGrounds"];
-        };
-      };
-      responses: {
-        /** @description Grounds in the new order */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["Ground"][];
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SendVerificationCode"];
+                };
             };
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_GROUND_ORDER */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/grounds/{groundId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove a ground
-     * @description Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          groundId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Removed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    /**
-     * Change a ground, or pause or resume it
-     * @description Needs `schedule: manage`. Only what's sent changes; the result is checked as a whole. A new sport or size takes the ground off the layout if it no longer fits there.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          groundId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateGround"];
-        };
-      };
-      responses: {
-        /** @description The ground after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["Ground"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_GROUND (with the `field`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * A ground's weekly hours
-     * @description Needs `schedule: view`. Days left out are closed.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          groundId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The week */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["WeekSchedule"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    /**
-     * Set a ground's weekly hours
-     * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          groundId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["WeekSchedule"];
-        };
-      };
-      responses: {
-        /** @description The week after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["WeekSchedule"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SCHEDULE_TIER_WITHOUT_PRICE (with the `tier`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Copy a ground's weekly hours to others
-     * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          groundId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CopySchedule"];
-        };
-      };
-      responses: {
-        /** @description Copied */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SCHEDULE_TIER_WITHOUT_PRICE (with the `tier` and the `groundId`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/layout": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The venue layout
-     * @description Needs `venue: view`. Before the first save, a suggested empty grid (`saved: false`). `unplacedGroundIds` are the grounds still to place.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The layout */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenueLayoutView"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    /**
-     * Save the whole venue layout
-     * @description Needs `venue: manage`. Replaces the layout in one go. Ground footprints come from their sport and size; everything must be inside the grid without overlapping, and entrances on their side.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["VenueLayout"];
-        };
-      };
-      responses: {
-        /** @description The layout after saving */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenueLayoutView"];
-          };
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_LAYOUT, with a `reason`: OUT_OF_BOUNDS, OVERLAP (with the `items`), UNKNOWN_GROUND or DUPLICATE_GROUND (with the `groundId`), ENTRANCE_OUT_OF_RANGE or DUPLICATE_ENTRANCE. */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/submit": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send the venue for review
-     * @description Owner only. Every required setup item must be done. Locks the venue until an admin decides or the owner withdraws it.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The venue's setup after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenueSetup"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED, OWNER_ONLY or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT: only a draft can be sent (with `venueStatus`). */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SETUP_INCOMPLETE (with the `missing` item keys) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/withdraw": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Take the venue out of review, back to a draft
-     * @description Owner only.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The venue's setup after the change */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VenueSetup"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED, OWNER_ONLY or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT: only a venue in review (with `venueStatus`). */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SETUP_INCOMPLETE (with the `missing` item keys) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/pause": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Pause a live venue
-     * @description Needs `venue: manage`. Its page stays up with a notice; no new bookings, existing ones stand.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Done */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/resume": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Reopen a paused venue
-     * @description Needs `venue: manage`, and an active ground.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Done */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/members": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The venue's staff
-     * @description Needs `staff: view`.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Members, owner included */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["VenueMember"][];
+            responses: {
+                /** @description Code sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationCodeSent"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER: not a mobile number in international format. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: too many codes; see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/members/{staffId}/permissions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Set a member's permissions
-     * @description Needs `staff: manage`. Nobody can change their own permissions or the owner's, and only the owner can give more in an area than they have themselves.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          staffId: string;
+    "/v1/auth/customer/verifications/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["StaffPermissions"];
-        };
-      };
-      responses: {
-        /** @description The new permissions */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffPermissions"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or MEMBER_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/members/{staffId}/permissions/restore": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Give back what a password reset took away
-     * @description Needs `staff: manage`. Works while the member is `restorable`; the same limits as setting permissions apply.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          staffId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The restored permissions */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffPermissions"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or MEMBER_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description NOTHING_TO_RESTORE: their permissions changed since the reset. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/invitations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Invitations waiting for an answer
-     * @description Needs `staff: view`.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Open invitations, newest first */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["StaffInvitation"][];
+        get?: never;
+        put?: never;
+        /** Confirm a sign-up code */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    /**
-     * Invite someone to the staff
-     * @description Needs `staff: manage`, and a venue an admin has approved (`PROVISIONING`, `LIVE` or `MAINTENANCE`). Sends a WhatsApp message with a link that opens the dashboard app; if the number already has a staff account, the invitation also shows in their app. Works for 48 hours; inviting the same number again replaces the earlier invitation. Only the owner can give more in an area than they have themselves.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["InviteStaff"];
-        };
-      };
-      responses: {
-        /** @description Invitation sent */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffInvitation"];
-          };
-        };
-        /** @description INVALID_PHONE_NUMBER or VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND: not a venue you belong to. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ALREADY_A_MEMBER, or VENUE_STATUS_CONFLICT: not approved yet (with `venueStatus`). */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MESSAGING_UNAVAILABLE: retry later. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/venues/{venueId}/invitations/{invitationId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Withdraw an invitation
-     * @description Needs `staff: manage`. Its link stops working; withdrawing twice is fine.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          venueId: string;
-          invitationId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Withdrawn */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND or INVITATION_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_ALREADY_ACCEPTED */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/invitations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Invitations to my number, from any venue */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Open invitations, newest first */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["ReceivedStaffInvitation"][];
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmVerificationCode"];
+                };
             };
-          };
-        };
-        /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/invitations/code/{code}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * What an invitation link offers
-     * @description The screen the link opens. Only for the invited number.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description From the link; any case. */
-          code: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The invitation */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ReceivedStaffInvitation"];
-          };
-        };
-        /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_NOT_FOUND: no invitation to your number with that code or id. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
-        410: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/invitations/code/{code}/accept": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Join the venue from an invitation link */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description From the link; any case. */
-          code: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Joined: the venue, with my permissions there */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenue"];
-          };
-        };
-        /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_NOT_FOUND: no invitation to your number with that code or id. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
-        410: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/invitations/{invitationId}/accept": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Join the venue from my invitations */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          invitationId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Joined: the venue, with my permissions there */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["StaffVenue"];
-          };
-        };
-        /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_NOT_FOUND: no invitation to your number with that code or id. */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
-        410: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description RATE_LIMITED: see `retryAfter`. */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/staff/invitations/{invitationId}/decline": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Turn an invitation down
-     * @description Declining one that already expired or was withdrawn is fine.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          invitationId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Declined */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ACCOUNT_SUSPENDED */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVITATION_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Whether each part of the platform is running
-     * @description The server and worker (commit, start time, last seen; the worker from its heartbeat), and the round trip to Postgres and both Redis instances. Every check is capped, so a dead dependency shows as `DOWN` instead of holding the request.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The status right now */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["SystemStatus"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/status/history": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The last 24 hours, minute by minute
-     * @description One sample a minute, taken by the server: the three response times and whether the worker's heartbeat was there. A missing minute means no server was running. Oldest first.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The samples */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["SystemHistory"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down. */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/marketplaces": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Every marketplace, hidden ones included */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description By code */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["AdminMarketplace"][];
+            responses: {
+                /** @description The phone is verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationConfirmed"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    /**
-     * Add a marketplace
-     * @description It starts hidden from the apps; turn it on with `isActive` when it's ready.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateMarketplace"];
+    "/v1/auth/customer/sign-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Created */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminMarketplace"];
-          };
-        };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_EXISTS: that code is taken. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_BOUNDARY: the border's edges cross (`reason` says where). */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/marketplaces/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Edit a marketplace, or show or hide it
-     * @description Only the fields sent change. VAT and commission apply to bookings made afterwards. Marketplaces are never deleted; hide one with `isActive: false`.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateMarketplace"];
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminMarketplace"];
-          };
-        };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description INVALID_BOUNDARY: the border's edges cross (`reason` says where). */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/admin/marketplaces/{id}/locations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * A marketplace's locations
-     * @description Every location, flat: build the tree from `parentId`.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Locations */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["AdminLocation"][];
+        get?: never;
+        put?: never;
+        /**
+         * Create the account and sign in
+         * @description Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    /**
-     * Add a location
-     * @description At the top of the tree, or under `parentId`. The slug is made from the English name and never changes.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateLocation"];
-        };
-      };
-      responses: {
-        /** @description Created */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminLocation"];
-          };
-        };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_EXISTS: a sibling already has this slug (`slug`). */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description PARENT_NOT_FOUND: `parentId` isn't in this marketplace. */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/locations/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove a location
-     * @description Only while it has no locations under it and no venues in it.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Removed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_IN_USE: it has locations under it or venues in it. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    /**
-     * Rename a location or change its kind
-     * @description The slug stays as it was.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateLocation"];
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminLocation"];
-          };
-        };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/admin/marketplaces/{id}/amenities": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** A marketplace's amenity options, inactive ones included */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description By key */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["AdminAmenity"][];
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CustomerSignUp"];
+                };
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    /** Add an amenity option */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateAmenity"];
-        };
-      };
-      responses: {
-        /** @description Created */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminAmenity"];
-          };
-        };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description MARKETPLACE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description AMENITY_EXISTS: this marketplace already has that key. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/amenities/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove an amenity option
-     * @description Only while no venue offers it and no booking was charged for it; else turn it off.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Removed */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description AMENITY_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description AMENITY_IN_USE: venues offer it or bookings were charged for it. */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    /**
-     * Rename an amenity option, or turn it on or off
-     * @description Turned off, venues can't newly pick it; venues that offer it keep it.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["UpdateAmenity"];
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminAmenity"];
-          };
-        };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description AMENITY_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  "/v1/admin/venues": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Every venue, in any status
-     * @description Newest first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.
-     */
-    get: {
-      parameters: {
-        query?: {
-          status?: components["schemas"]["VenueStatus"];
-          /** @description Part of the name in either language, or the slug. */
-          q?: string;
-          /** @description `nextCursor` from the previous page. */
-          cursor?: string;
-          limit?: number;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description A page of venues */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["AdminVenue"][];
-              /** @description Null on the last page. */
-              nextCursor: string | null;
-              counts: {
-                DRAFT?: number;
-                SUBMITTED?: number;
-                PROVISIONING?: number;
-                LIVE?: number;
-                MAINTENANCE?: number;
-              };
+            responses: {
+                /** @description Signed up and signed in */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CustomerAuthenticated"];
+                    };
+                };
+                /** @description VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PHONE_ALREADY_REGISTERED: log in instead. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry with the same verificationToken. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
             };
-          };
         };
-        /** @description VALIDATION_FAILED: see `errors`. */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/review": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Venues waiting for review, oldest submission first */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The queue */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["ReviewVenue"][];
+    "/v1/auth/customer/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with phone and password
+         * @description With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** One venue, in any status */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description The venue */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AdminVenue"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/approve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Approve a venue in review
-     * @description Moves it to provisioning; the owner is told. A venue still waiting for the area its owner asked for needs one set first.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Done */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description AREA_NOT_SET (with the owner's `requestedArea`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/reject": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send a venue in review back to its owner
-     * @description Back to a draft, with a reason the owner sees on their checklist.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["RejectVenue"];
-        };
-      };
-      responses: {
-        /** @description Rejected */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/area": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Set a venue's area
-     * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace, and near the venue's pin.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["SetVenueArea"];
-        };
-      };
-      responses: {
-        /** @description Set */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/translations/{language}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Write the listing in one language
-     * @description Once approved: completes the language the owner didn't write.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-          language: components["schemas"]["Language"];
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["VenueTranslationInput"];
-        };
-      };
-      responses: {
-        /** @description Saved */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/tax-number-check": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Record the result of checking the venue's tax number */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CheckTaxNumber"];
-        };
-      };
-      responses: {
-        /** @description Recorded */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/go-live": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Take a provisioned venue live
-     * @description Needs the listing in Arabic and English (name, description, address) and an active ground. The owner is told.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Done */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description GO_LIVE_BLOCKED (with the `missing` pieces) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/pause": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Pause a live venue
-     * @description No new bookings until resumed.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Done */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/resume": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Reopen a paused venue
-     * @description Needs an active ground.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Done */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content?: never;
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/admin/venues/{id}/history": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Everything that happened to a venue, newest first */
-    get: {
-      parameters: {
-        query?: {
-          /** @description The last id of the previous page. */
-          cursor?: string;
-          limit?: number;
-        };
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description A page of events */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              data: components["schemas"]["VenueHistoryEvent"][];
-              /** Format: uuid */
-              next: string | null;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SignIn"];
+                };
             };
-          };
+            responses: {
+                /** @description Password right; a two-factor code was sent */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorChallenge"];
+                    };
+                };
+                /** @description Signed in */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CustomerAuthenticated"];
+                    };
+                };
+                /** @description INVALID_CREDENTIALS: the same for an unknown number and a wrong password. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
         };
-        /** @description VALIDATION_FAILED */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-        /** @description VENUE_NOT_FOUND */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/problem+json": components["schemas"]["Problem"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/v1/auth/customer/sessions/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finish a two-factor sign-in with the code */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CompleteTwoFactor"];
+                };
+            };
+            responses: {
+                /** @description Signed in */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CustomerAuthenticated"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CHALLENGE_EXPIRED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/sessions/two-factor/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send another two-factor code
+         * @description Returns a new `challengeToken`: the previous one belonged to the previous code.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ResendTwoFactor"];
+                };
+            };
+            responses: {
+                /** @description A new code was sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorChallenge"];
+                    };
+                };
+                /** @description CHALLENGE_EXPIRED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/sessions/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exchange the refresh token for a new pair
+         * @description The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RefreshSession"];
+                };
+            };
+            responses: {
+                /** @description A new access and refresh token */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Session"];
+                    };
+                };
+                /** @description SESSION_ENDED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry with the same refresh token. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Sign out of this device
+         * @description The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed out */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/password-resets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a password reset code
+         * @description The same response whether or not the number has an account.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RequestPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description If the number has an account, a code was sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationCodeSent"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/password-resets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the reset code, before choosing the new password
+         * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PasswordResetVerified"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/password-resets/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set the new password
+         * @description Signs out every session; sign in again with the new password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Password changed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description RESET_TOKEN_INVALID: verify again. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/two-factor/codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a code to turn two-factor on or off */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Code sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationCodeSent"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Turn two-factor on or off */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ChangeTwoFactor"];
+                };
+            };
+            responses: {
+                /** @description The new setting */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorStatus"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a sign-up code over WhatsApp
+         * @description The same response whether or not the number has an account. Language follows `Accept-Language`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SendVerificationCode"];
+                };
+            };
+            responses: {
+                /** @description Code sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationCodeSent"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER: not a mobile number in international format. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: too many codes; see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/verifications/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a sign-up code */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmVerificationCode"];
+                };
+            };
+            responses: {
+                /** @description The phone is verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationConfirmed"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED: ask for a new code. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/sign-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create the account and sign in
+         * @description Needs a `verificationToken` from confirming a code. Language follows `Accept-Language`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffSignUp"];
+                };
+            };
+            responses: {
+                /** @description Signed up and signed in */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffAuthenticated"];
+                    };
+                };
+                /** @description VERIFICATION_TOKEN_INVALID: verify the number again; or VALIDATION_FAILED. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PHONE_ALREADY_REGISTERED: log in instead. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry with the same verificationToken. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with phone and password
+         * @description With two-factor on, a right password returns 200 with a `challengeToken` and sends a code; finish with POST sessions/two-factor.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SignIn"];
+                };
+            };
+            responses: {
+                /** @description Password right; a two-factor code was sent */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorChallenge"];
+                    };
+                };
+                /** @description Signed in */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffAuthenticated"];
+                    };
+                };
+                /** @description INVALID_CREDENTIALS: the same for an unknown number and a wrong password. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ACCOUNT_BANNED when it's permanent */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/sessions/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finish a two-factor sign-in with the code */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CompleteTwoFactor"];
+                };
+            };
+            responses: {
+                /** @description Signed in */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffAuthenticated"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CHALLENGE_EXPIRED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/sessions/two-factor/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send another two-factor code
+         * @description Returns a new `challengeToken`: the previous one belonged to the previous code.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ResendTwoFactor"];
+                };
+            };
+            responses: {
+                /** @description A new code was sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorChallenge"];
+                    };
+                };
+                /** @description CHALLENGE_EXPIRED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/sessions/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Exchange the refresh token for a new pair
+         * @description The refresh token rotates: store the new one. Send one refresh at a time; for 30 s the previous token is still answered with the same new pair, so a lost response can be retried.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RefreshSession"];
+                };
+            };
+            responses: {
+                /** @description A new access and refresh token */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Session"];
+                    };
+                };
+                /** @description SESSION_ENDED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry with the same refresh token. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Sign out of this device
+         * @description The access token keeps working until it expires (at most 10 minutes); the refresh token stops at once.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed out */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/password-resets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a password reset code
+         * @description The same response whether or not the number has an account. Venue owners get no code: they reset through Hagz support, and get a WhatsApp message saying so (reply in that chat). Warn members before the new password is set: a reset makes them read-only at every venue until a staff manager restores them.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RequestPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description If the number has an account, a code was sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationCodeSent"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/password-resets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check the reset code, before choosing the new password
+         * @description With the code sent to the phone, or with a `verificationToken` from confirming a sign-up code for the same number (no second code needed). Returns a `resetToken` for setting the password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VerifyPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PasswordResetVerified"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED; VERIFICATION_TOKEN_INVALID or RESET_TOKEN_INVALID with a verification token. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description With a verification token only: ACCOUNT_SUSPENDED, or PASSWORD_RESET_THROUGH_SUPPORT for owners. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/password-resets/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set the new password
+         * @description Signs out every session, and lowers every permission to at most `view` at each venue the member belongs to. The owner and members who manage staff are notified; the previous permissions are kept so they can be restored.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Password changed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description RESET_TOKEN_INVALID: verify again. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in staff member
+         * @description Name, phone and language, for the app to greet and label them after a relaunch.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Staff"];
+                    };
+                };
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/two-factor/codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a code to turn two-factor on or off */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Code sent */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VerificationCodeSent"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. `codeSent` says whether the last code can still be entered. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE or MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/staff/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Turn two-factor on or off */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ChangeTwoFactor"];
+                };
+            };
+            responses: {
+                /** @description The new setting */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwoFactorStatus"];
+                    };
+                };
+                /** @description INVALID_CODE (with `attemptsLeft`) or CODE_EXPIRED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check email and password
+         * @description Always followed by a code from the authenticator app (set up first if `TOTP_SETUP`).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AdminSignIn"];
+                };
+            };
+            responses: {
+                /** @description Password right; ask for a code */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminChallenge"];
+                    };
+                };
+                /** @description INVALID_CREDENTIALS: the same for an unknown email and a wrong password. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/sessions/totp-setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a new authenticator secret
+         * @description Only for accounts without a confirmed authenticator. Asking again replaces the secret; the first code accepted from it confirms it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StartTotpSetup"];
+                };
+            };
+            responses: {
+                /** @description Show the URI as a QR code */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TotpSetup"];
+                    };
+                };
+                /** @description CHALLENGE_EXPIRED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description TOTP_ALREADY_SET_UP */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/sessions/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish signing in with an authenticator code
+         * @description Sets the session cookies. The session lasts 12 hours and isn't extended.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CompleteAdminSignIn"];
+                };
+            };
+            responses: {
+                /** @description Signed in */
+                201: {
+                    headers: {
+                        /** @description The access and refresh cookies (httpOnly; the web app never reads them). */
+                        "Set-Cookie"?: string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminSignedIn"];
+                    };
+                };
+                /** @description INVALID_CODE or TOTP_SETUP_REQUIRED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CHALLENGE_EXPIRED: sign in again (each challenge works once). */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry with the same code if it's still current. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/sessions/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Renew the access cookie
+         * @description Uses the refresh cookie and rotates it. Send one refresh at a time. The session still ends 12 hours after sign-in.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description New cookies set */
+                204: {
+                    headers: {
+                        /** @description The access and refresh cookies (httpOnly; the web app never reads them). */
+                        "Set-Cookie"?: string;
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description SESSION_ENDED: sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Sign out
+         * @description Ends the session the refresh cookie belongs to and clears both cookies.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed out */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in admin */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The admin */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Admin"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change your own name
+         * @description The email is the admin's sign-in and can't change here.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateAdminProfile"];
+                };
+            };
+            responses: {
+                /** @description The admin, renamed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Admin"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/auth/admin/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change your own password
+         * @description Needs the current password. Signs every other browser out (this one stays signed in), and a reset link another admin sent stops working.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ChangeAdminPassword"];
+                };
+            };
+            responses: {
+                /** @description Password changed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description WRONG_PASSWORD: the current password isn't right; or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/me/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Sign out one of your other browsers
+         * @description One of the browsers listed on your own admin page. Not this one: sign out instead. It stops refreshing at once; a page already open there keeps working for up to the access token's 10 minutes.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed out */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SESSION_NOT_FOUND: not yours, or already signed out */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CURRENT_SESSION: the browser asking */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/me/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Sign out of every other browser
+         * @description This browser stays signed in. It stops refreshing at once; a page already open there keeps working for up to the access token's 10 minutes.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed out */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open admin invitations */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Not yet used, revoked or expired */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminInvitation"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Invite someone to become an admin
+         * @description Emails a link that works for 48 hours and replaces any earlier invitation to the same email.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InviteAdmin"];
+                };
+            };
+            responses: {
+                /** @description Invitation sent */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminInvitation"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_ALREADY_EXISTS */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description EMAIL_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every admin
+         * @description Oldest first. Suspended and banned admins are included.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The admins */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminListEntry"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One admin in full
+         * @description Who invited them, the invitations they've sent and the browsers they're signed in on.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The admin */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminDetails"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}/authenticator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Reset another admin's authenticator
+         * @description Forgets it and signs them out everywhere; their next sign-in sets up a new one. Not for your own account.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reset */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWN_ADMIN_ACCOUNT */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email another admin a link to choose a new password
+         * @description The link works for 24 hours, replaces any earlier one, and signs them out everywhere once used. Nothing changes until then. Not for your own account.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sent */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWN_ADMIN_ACCOUNT */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description EMAIL_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Choose a new password from a reset link
+         * @description The token is in the link's fragment (`#token=`). Signs the admin out everywhere; they then sign in with the new password.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ResetAdminPassword"];
+                };
+            };
+            responses: {
+                /** @description Password changed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description PASSWORD_RESET_INVALID, or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/invitations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an invitation
+         * @description Its link stops working. Revoking one that's already revoked or expired is fine.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Revoked */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_ALREADY_ACCEPTED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/admin/invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an admin account from an invitation
+         * @description The token is in the invitation link's fragment (`#token=`). Continue with sessions/totp-setup: the account can't sign in until its authenticator is set up.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AcceptAdminInvitation"];
+                };
+            };
+            responses: {
+                /** @description Account created; set up the authenticator */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminChallenge"];
+                    };
+                };
+                /** @description INVITATION_INVALID, or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_ALREADY_EXISTS */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The venues I belong to, with my permissions at each */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description My venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["StaffVenue"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a venue
+         * @description Creates a `DRAFT` with the caller as its `OWNER` (docs/onboarding.md, step 1). The name is stored in the caller's app language. The marketplace comes from the location, and the pin must fall inside it. One unfinished venue (`DRAFT`, `SUBMITTED` or `PROVISIONING`) per owner. Answers with the setup checklist.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateVenue"];
+                };
+            };
+            responses: {
+                /** @description The new draft and its checklist */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSetup"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNFINISHED_VENUE_EXISTS: the caller already owns one, given as `venueId` and `venueStatus`. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND (no such area, or its marketplace isn't active), MARKETPLACE_NOT_FOUND (a requested area in a country Hagz isn't in), LOCATION_OUTSIDE_MARKETPLACE (the pin is outside the country's border), or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue's setup checklist
+         * @description Needs `venue: view`. Computed from the venue's data on every request (docs/onboarding.md, step 2). Items appear as their features ship.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The checklist */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSetup"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything the setup and edit screens show
+         * @description Needs `venue: view`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change the phone, tax number or location
+         * @description Needs `venue: manage`. Only what's sent changes. A new area must be in the venue's marketplace, with the pin inside it.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateVenue"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area, or a pin outside the country's border) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/translations/{language}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the name, description and address in one language
+         * @description Needs `venue: manage`. The app writes the owner's language; Hagz adds the other one before the venue goes live.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    language: components["schemas"]["Language"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VenueTranslationInput"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change how bookings are confirmed, paid for and refunded
+         * @description Needs `venue: manage`. Only what's sent changes; the result is checked as a whole. `DEPOSIT` needs `depositPercent` and `CUSTOM` needs `cancellationTiers`; switching away clears them.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateVenueSettings"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_SETTINGS (with the `field`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set which amenities the venue has, and their prices
+         * @description Needs `venue: manage`. Replaces the whole set. Options come from the venue's marketplace; a retired one can be kept but not newly picked.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetVenueAmenities"];
+                };
+            };
+            responses: {
+                /** @description The venue after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenueDetail"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AMENITY_NOT_AVAILABLE (with the `optionIds`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue's photos, in order
+         * @description Needs `venue: view`. Includes uploads not confirmed yet (`PENDING`).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Photos, the cover first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["VenuePhoto"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Start uploading a photo
+         * @description Needs `venue: manage`. Answers with a signed request to send the file to (valid 15 minutes); upload it, then confirm. The app resizes photos before uploading.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RequestPhotoUpload"];
+                };
+            };
+            responses: {
+                /** @description Where to upload */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PhotoUpload"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: only JPEG, PNG or WebP, up to 10 MB. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PHOTO_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description STORAGE_UNAVAILABLE */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/photos/{photoId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an upload, putting the photo on the venue
+         * @description Needs `venue: manage`. Checks the stored file is the type and size that were declared.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    photoId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The photo, now ready */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenuePhoto"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or PHOTO_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UPLOAD_NOT_FOUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UPLOAD_MISMATCH: ask for a new upload. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/photos/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder the photos; the first is the cover
+         * @description Needs `venue: manage`. Lists every ready photo exactly once.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReorderPhotos"];
+                };
+            };
+            responses: {
+                /** @description Photos in the new order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["VenuePhoto"][];
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_PHOTO_ORDER */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/photos/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a photo
+         * @description Needs `venue: manage`.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    photoId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or PHOTO_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue's grounds, in order
+         * @description Needs `venue: view`. Deleted grounds are left out.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Grounds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Ground"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add a ground
+         * @description Needs `schedule: manage`. The name is stored in the caller's app language. Football comes in 5, 7 and 11-a-side; other sports are `STANDARD`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateGround"];
+                };
+            };
+            responses: {
+                /** @description The new ground */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ground"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GROUND_LIMIT_REACHED, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder the grounds
+         * @description Needs `schedule: manage`. Lists every ground exactly once.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReorderGrounds"];
+                };
+            };
+            responses: {
+                /** @description Grounds in the new order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Ground"][];
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_GROUND_ORDER */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a ground
+         * @description Needs `schedule: manage`. Kept for booking history, gone from the venue and its layout.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Change a ground, or pause or resume it
+         * @description Needs `schedule: manage`. Only what's sent changes; the result is checked as a whole. A new sport or size takes the ground off the layout if it no longer fits there.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateGround"];
+                };
+            };
+            responses: {
+                /** @description The ground after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ground"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LAST_ACTIVE_GROUND, or VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_GROUND (with the `field`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A ground's weekly hours
+         * @description Needs `schedule: view`. Days left out are closed.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The week */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WeekSchedule"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        /**
+         * Set a ground's weekly hours
+         * @description Needs `schedule: manage`. Replaces the week. Each open hour is `BASE`, `PEAK` or `DISCOUNT`; the last two need the ground to have that price. Hours past midnight belong in the next day.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WeekSchedule"];
+                };
+            };
+            responses: {
+                /** @description The week after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WeekSchedule"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SCHEDULE_TIER_WITHOUT_PRICE (with the `tier`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/grounds/{groundId}/schedule/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a ground's weekly hours to others
+         * @description Needs `schedule: manage`. The hours and their tiers are copied; each ground keeps its own prices, so each must have the prices the copied tiers need.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CopySchedule"];
+                };
+            };
+            responses: {
+                /** @description Copied */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SCHEDULE_TIER_WITHOUT_PRICE (with the `tier` and the `groundId`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue layout
+         * @description Needs `venue: view`. Before the first save, a suggested empty grid (`saved: false`). `unplacedGroundIds` are the grounds still to place.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The layout */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueLayoutView"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        /**
+         * Save the whole venue layout
+         * @description Needs `venue: manage`. Replaces the layout in one go. Ground footprints come from their sport and size; everything must be inside the grid without overlapping, and entrances on their side.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VenueLayout"];
+                };
+            };
+            responses: {
+                /** @description The layout after saving */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueLayoutView"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`): in review nothing can change; while Hagz provisions the venue, the listing (name, description, address, location, photos) can't. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_LAYOUT, with a `reason`: OUT_OF_BOUNDS, OVERLAP (with the `items`), UNKNOWN_GROUND or DUPLICATE_GROUND (with the `groundId`), ENTRANCE_OUT_OF_RANGE or DUPLICATE_ENTRANCE. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send the venue for review
+         * @description Owner only. Every required setup item must be done. Locks the venue until an admin decides or the owner withdraws it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue's setup after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSetup"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED, OWNER_ONLY or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT: only a draft can be sent (with `venueStatus`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SETUP_INCOMPLETE (with the `missing` item keys) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take the venue out of review, back to a draft
+         * @description Owner only.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue's setup after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSetup"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED, OWNER_ONLY or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT: only a venue in review (with `venueStatus`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SETUP_INCOMPLETE (with the `missing` item keys) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause a live venue
+         * @description Needs `venue: manage`. Its page stays up with a notice; no new bookings, existing ones stand.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a paused venue
+         * @description Needs `venue: manage`, and an active ground.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The venue's staff
+         * @description Needs `staff: view`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Members, owner included */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["VenueMember"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/members/{staffId}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a member's permissions
+         * @description Needs `staff: manage`. Nobody can change their own permissions or the owner's, and only the owner can give more in an area than they have themselves.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    staffId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffPermissions"];
+                };
+            };
+            responses: {
+                /** @description The new permissions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffPermissions"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or MEMBER_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/members/{staffId}/permissions/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give back what a password reset took away
+         * @description Needs `staff: manage`. Works while the member is `restorable`; the same limits as setting permissions apply.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    staffId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The restored permissions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffPermissions"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED, CANNOT_CHANGE_OWN_PERMISSIONS, CANNOT_CHANGE_OWNER, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or MEMBER_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NOTHING_TO_RESTORE: their permissions changed since the reset. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invitations waiting for an answer
+         * @description Needs `staff: view`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Open invitations, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["StaffInvitation"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Invite someone to the staff
+         * @description Needs `staff: manage`, and a venue an admin has approved (`PROVISIONING`, `LIVE` or `MAINTENANCE`). Sends a WhatsApp message with a link that opens the dashboard app; if the number already has a staff account, the invitation also shows in their app. Works for 48 hours; inviting the same number again replaces the earlier invitation. Only the owner can give more in an area than they have themselves.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InviteStaff"];
+                };
+            };
+            responses: {
+                /** @description Invitation sent */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffInvitation"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER or VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED, or PERMISSION_ABOVE_YOUR_OWN (with the `areas`). */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ALREADY_A_MEMBER, or VENUE_STATUS_CONFLICT: not approved yet (with `venueStatus`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MESSAGING_UNAVAILABLE: retry later. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/invitations/{invitationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw an invitation
+         * @description Needs `staff: manage`. Its link stops working; withdrawing twice is fine.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    invitationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Withdrawn */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND or INVITATION_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_ALREADY_ACCEPTED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invitations to my number, from any venue */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Open invitations, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["ReceivedStaffInvitation"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/invitations/code/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What an invitation link offers
+         * @description The screen the link opens. Only for the invited number.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description From the link; any case. */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The invitation */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReceivedStaffInvitation"];
+                    };
+                };
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_NOT_FOUND: no invitation to your number with that code or id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/invitations/code/{code}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join the venue from an invitation link */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description From the link; any case. */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Joined: the venue, with my permissions there */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenue"];
+                    };
+                };
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_NOT_FOUND: no invitation to your number with that code or id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/invitations/{invitationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join the venue from my invitations */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    invitationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Joined: the venue, with my permissions there */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffVenue"];
+                    };
+                };
+                /** @description UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_NOT_FOUND: no invitation to your number with that code or id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ALREADY_A_MEMBER: already on this venue's team. `venue` has its `id` and `name`. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_EXPIRED: expired or withdrawn; ask for a new one. */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description RATE_LIMITED: see `retryAfter`. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/invitations/{invitationId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn an invitation down
+         * @description Declining one that already expired or was withdrawn is fine.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    invitationId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Declined */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVITATION_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether each part of the platform is running
+         * @description The server and worker (commit, start time, last seen; the worker from its heartbeat), and the round trip to Postgres and both Redis instances. Every check is capped, so a dead dependency shows as `DOWN` instead of holding the request.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The status right now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SystemStatus"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/status/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The last 24 hours, minute by minute
+         * @description One sample a minute, taken by the server: the three response times and whether the worker's heartbeat was there. A missing minute means no server was running. Oldest first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The samples */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SystemHistory"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/marketplaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every marketplace, hidden ones included */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description By code */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminMarketplace"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add a marketplace
+         * @description It starts hidden from the apps; turn it on with `isActive` when it's ready.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateMarketplace"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminMarketplace"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_EXISTS: that code is taken. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOUNDARY: the border's edges cross (`reason` says where). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/marketplaces/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a marketplace, or show or hide it
+         * @description Only the fields sent change. VAT and commission apply to bookings made afterwards. Marketplaces are never deleted; hide one with `isActive: false`.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateMarketplace"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminMarketplace"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_IN_USE: `code` or `currency` changed after it got locations, venues or amenities (`fields` lists which); MARKETPLACE_EXISTS: the new code is taken; LAST_LIVE_MARKETPLACE: `isActive: false` on the only live marketplace. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOUNDARY: the border's edges cross (`reason` says where). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/admin/marketplaces/{id}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A marketplace's locations
+         * @description Every location, flat: build the tree from `parentId`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Locations */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminLocation"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add a location
+         * @description At the top of the tree, or under `parentId`. The slug is made from the English name and never changes.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateLocation"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminLocation"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_EXISTS: a sibling already has this slug (`slug`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PARENT_NOT_FOUND: `parentId` isn't in this marketplace. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/locations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a location
+         * @description Only while it has no locations under it and no venues in it.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_IN_USE: it has locations under it or venues in it. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Rename a location or change its kind
+         * @description The slug stays as it was.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateLocation"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminLocation"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/admin/marketplaces/{id}/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A marketplace's amenity options, inactive ones included */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description By key */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminAmenity"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add an amenity option */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateAmenity"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminAmenity"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AMENITY_EXISTS: this marketplace already has that key. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/amenities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an amenity option
+         * @description Only while no venue offers it and no booking was charged for it; else turn it off.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AMENITY_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AMENITY_IN_USE: venues offer it or bookings were charged for it. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Rename an amenity option, or turn it on or off
+         * @description Turned off, venues can't newly pick it; venues that offer it keep it.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateAmenity"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminAmenity"];
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AMENITY_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/admin/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every venue, in any status
+         * @description Newest first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    status?: components["schemas"]["VenueStatus"];
+                    /** @description Part of the name in either language, or the slug. */
+                    q?: string;
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminVenue"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                            counts: {
+                                DRAFT?: number;
+                                SUBMITTED?: number;
+                                PROVISIONING?: number;
+                                LIVE?: number;
+                                MAINTENANCE?: number;
+                            };
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Venues waiting for review, oldest submission first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The queue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["ReviewVenue"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One venue, in any status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenue"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a venue in review
+         * @description Moves it to provisioning; the owner is told. A venue still waiting for the area its owner asked for needs one set first.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description AREA_NOT_SET (with the owner's `requestedArea`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a venue in review back to its owner
+         * @description Back to a draft, with a reason the owner sees on their checklist.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RejectVenue"];
+                };
+            };
+            responses: {
+                /** @description Rejected */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/area": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a venue's area
+         * @description Usually the one its owner asked for, once added under Locations; clears `requestedArea`. The area must be in the venue's marketplace, and near the venue's pin.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetVenueArea"];
+                };
+            };
+            responses: {
+                /** @description Set */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description LOCATION_NOT_FOUND, LOCATION_OUTSIDE_MARKETPLACE (another marketplace's area) or PIN_FAR_FROM_AREA (more than 15 km from the area's centre; with `areaId`, `distance` and `limit` in metres). */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/translations/{language}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write the listing in one language
+         * @description Once approved: completes the language the owner didn't write.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    language: components["schemas"]["Language"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VenueTranslationInput"];
+                };
+            };
+            responses: {
+                /** @description Saved */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/tax-number-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record the result of checking the venue's tax number */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CheckTaxNumber"];
+                };
+            };
+            responses: {
+                /** @description Recorded */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/go-live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take a provisioned venue live
+         * @description Needs the listing in Arabic and English (name, description, address) and an active ground. The owner is told.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GO_LIVE_BLOCKED (with the `missing` pieces) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause a live venue
+         * @description No new bookings until resumed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a paused venue
+         * @description Needs an active ground.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/venues/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything that happened to a venue, newest first */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The last id of the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of events */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["VenueHistoryEvent"][];
+                            /** Format: uuid */
+                            next: string | null;
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** @description A country Hagz operates in. */
-    Marketplace: {
-      /**
-       * @description ISO 3166-1 alpha-2.
-       * @example EG
-       */
-      code: string;
-      /**
-       * @description In the requested language.
-       * @example مصر
-       */
-      name: string;
-      /**
-       * @description ISO 4217.
-       * @example EGP
-       */
-      currency: string;
-      /**
-       * @description E.164 prefix.
-       * @example +20
-       */
-      dialCode: string;
-      /**
-       * @description IANA time zone.
-       * @example Africa/Cairo
-       */
-      timezone: string;
-    };
-    /** @description An error. Extra members depend on the code. */
-    Problem: {
-      type: string;
-      title: string;
-      status: number;
-      /** @example VALIDATION_FAILED */
-      code: string;
-      detail: string;
-      /** @description Quote it to support. */
-      requestId?: string;
-    } & {
-      [key: string]: unknown;
-    };
-    /** @description A place in a marketplace's tree; build the tree from `parentId`. */
-    Location: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      parentId: string | null;
-      locality: components["schemas"]["Locality"];
-      slug: string;
-      /** @description In the requested language. */
-      name: string;
-    };
-    /** @enum {string} */
-    Locality:
-      | "REGION"
-      | "EMIRATE"
-      | "GOVERNORATE"
-      | "MUNICIPALITY"
-      | "WILAYAT"
-      | "CITY"
-      | "DISTRICT"
-      | "AREA"
-      | "NEIGHBORHOOD";
-    Area: {
-      /** Format: uuid */
-      id: string;
-      /**
-       * @description In the requested language.
-       * @example Smouha
-       */
-      name: string;
-      /**
-       * @description The top of its tree (governorate or city); null for a top-level area.
-       * @example Alexandria
-       */
-      within: string | null;
-      /**
-       * @description Metres from the given point to the area's centre; null without either.
-       * @example 640
-       */
-      distance: number | null;
-    };
-    Amenity: {
-      /** Format: uuid */
-      id: string;
-      /** @example parking */
-      key: string;
-      /** @description In the requested language. */
-      name: string;
-      icon: components["schemas"]["AmenityIcon"];
-    };
-    /**
-     * @description Hagz's own icon name; each app draws it.
-     * @example parking
-     * @enum {string}
-     */
-    AmenityIcon:
-      | "parking"
-      | "bike_parking"
-      | "changing_rooms"
-      | "showers"
-      | "toilets"
-      | "lockers"
-      | "prayer_room"
-      | "seating"
-      | "covered"
-      | "air_conditioning"
-      | "floodlights"
-      | "wifi"
-      | "charging"
-      | "screen"
-      | "sound"
-      | "cafe"
-      | "restaurant"
-      | "snacks"
-      | "water"
-      | "ice_cream"
-      | "ball_rental"
-      | "kit_rental"
-      | "scoreboard"
-      | "video"
-      | "tournaments"
-      | "gym"
-      | "pool"
-      | "warm_up"
-      | "kids_area"
-      | "family"
-      | "accessible"
-      | "first_aid"
-      | "security"
-      | "cctv"
-      | "transport"
-      | "card_payment"
-      | "cash"
-      | "shop"
-      | "other";
-    /** @description Returned whether or not the number has an account. */
-    VerificationCodeSent: {
-      /**
-       * @description Seconds the code stays valid.
-       * @example 600
-       */
-      expiresIn: number;
-      /**
-       * @description Seconds before another code can be sent.
-       * @example 60
-       */
-      resendAfter: number;
-    };
-    SendVerificationCode: {
-      /**
-       * @description Mobile number with its country code.
-       * @example +20 100 123 4567
-       */
-      phone: string;
-    };
-    VerificationConfirmed: {
-      /** @description Single use. Proves the phone belongs to the caller. */
-      verificationToken: string;
-      /** @example 900 */
-      expiresIn: number;
-      /** @description Whether this number already has an account, so the app can offer sign-in instead of asking for a name and password. Only told to whoever has just proved they hold the number. */
-      accountExists: boolean;
-    };
-    ConfirmVerificationCode: {
-      /**
-       * @description Mobile number with its country code.
-       * @example +20 100 123 4567
-       */
-      phone: string;
-      /** @example 482913 */
-      code: string;
-    };
-    CustomerAuthenticated: {
-      customer: components["schemas"]["Customer"];
-      session: components["schemas"]["Session"];
-    };
-    Customer: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      /** @example +201001234567 */
-      phone: string;
-      /** @enum {string} */
-      language: "AR" | "EN";
-      /** @description Whether sign-in also asks for a code. */
-      twoFactorEnabled: boolean;
-    };
-    Session: {
-      accessToken: string;
-      /**
-       * @description Seconds.
-       * @example 600
-       */
-      accessTokenExpiresIn: number;
-      refreshToken: string;
-      /**
-       * @description Seconds; extended by every refresh.
-       * @example 5184000
-       */
-      refreshTokenExpiresIn: number;
-    };
-    CustomerSignUp: {
-      verificationToken: string;
-      /** @example Ahmed */
-      name: string;
-      password: string;
-      /**
-       * @description The device's IANA time zone.
-       * @example Africa/Cairo
-       */
-      timezone: string;
-    };
-    TwoFactorChallenge: {
-      /** @enum {boolean} */
-      twoFactorRequired: true;
-      /** @description Proves the password was right. Not an access token. */
-      challengeToken: string;
-      /** @example 600 */
-      expiresIn: number;
-      /** @example 60 */
-      resendAfter: number;
-    };
-    SignIn: {
-      /**
-       * @description Mobile number with its country code.
-       * @example +20 100 123 4567
-       */
-      phone: string;
-      password: string;
-    };
-    CompleteTwoFactor: {
-      challengeToken: string;
-      /** @example 482913 */
-      code: string;
-    };
-    ResendTwoFactor: {
-      challengeToken: string;
-    };
-    RefreshSession: {
-      refreshToken: string;
-    };
-    RequestPasswordReset: {
-      /**
-       * @description Mobile number with its country code.
-       * @example +20 100 123 4567
-       */
-      phone: string;
-    };
-    PasswordResetVerified: {
-      /** @description Single use. Sets the new password. */
-      resetToken: string;
-      /** @example 900 */
-      expiresIn: number;
-    };
-    VerifyPasswordReset:
-      | {
-          /**
-           * @description Mobile number with its country code.
-           * @example +20 100 123 4567
-           */
-          phone: string;
-          /** @example 482913 */
-          code: string;
-        }
-      | {
-          /** @description From confirming a sign-up code for the same number: proves it, so no reset code is needed. */
-          verificationToken: string;
+    schemas: {
+        /** @description A country Hagz operates in. */
+        Marketplace: {
+            /**
+             * @description ISO 3166-1 alpha-2.
+             * @example EG
+             */
+            code: string;
+            /**
+             * @description In the requested language.
+             * @example مصر
+             */
+            name: string;
+            /**
+             * @description ISO 4217.
+             * @example EGP
+             */
+            currency: string;
+            /**
+             * @description E.164 prefix.
+             * @example +20
+             */
+            dialCode: string;
+            /**
+             * @description IANA time zone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
         };
-    ConfirmPasswordReset: {
-      resetToken: string;
-      newPassword: string;
-    };
-    TwoFactorStatus: {
-      enabled: boolean;
-    };
-    /** @description Needs a code from POST two-factor/codes. */
-    ChangeTwoFactor: {
-      enabled: boolean;
-      /** @example 482913 */
-      code: string;
-    };
-    StaffAuthenticated: {
-      staff: components["schemas"]["Staff"];
-      session: components["schemas"]["Session"];
-    };
-    Staff: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      /** @example +201001234567 */
-      phone: string;
-      /** @enum {string} */
-      language: "AR" | "EN";
-      /** @description Whether sign-in also asks for a code. */
-      twoFactorEnabled: boolean;
-    };
-    StaffSignUp: {
-      verificationToken: string;
-      /** @example Ahmed */
-      name: string;
-      password: string;
-    };
-    AdminChallenge: {
-      /** @description Proves the password was right. Single use. Not an access token. */
-      challengeToken: string;
-      /**
-       * @description `TOTP`: ask for a code from the authenticator app. `TOTP_SETUP`: the account has no authenticator yet; start the setup, then ask for its first code.
-       * @enum {string}
-       */
-      next: "TOTP" | "TOTP_SETUP";
-      /** @example 600 */
-      expiresIn: number;
-    };
-    AdminSignIn: {
-      /**
-       * Format: email
-       * @example omar@hagz.app
-       */
-      email: string;
-      password: string;
-    };
-    TotpSetup: {
-      /** @description Base32, for typing in by hand. */
-      secret: string;
-      /** @description Show as a QR code for the authenticator app. */
-      otpauthUri: string;
-    };
-    StartTotpSetup: {
-      challengeToken: string;
-    };
-    AdminSignedIn: {
-      admin: components["schemas"]["Admin"];
-      /**
-       * @description Seconds until the session ends; it isn't extended.
-       * @example 43200
-       */
-      sessionExpiresIn: number;
-    };
-    Admin: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      email: string;
-    };
-    CompleteAdminSignIn: {
-      challengeToken: string;
-      /** @example 482913 */
-      code: string;
-    };
-    UpdateAdminProfile: {
-      name: string;
-    };
-    ChangeAdminPassword: {
-      currentPassword: string;
-      newPassword: string;
-    };
-    /** @description An invitation that hasn't been used or revoked. */
-    AdminInvitation: {
-      /** Format: uuid */
-      id: string;
-      email: string;
-      /** @description The inviting admin's name. */
-      invitedBy: string;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      expiresAt: string;
-    };
-    InviteAdmin: {
-      /**
-       * Format: email
-       * @example omar@hagz.app
-       */
-      email: string;
-    };
-    AdminListEntry: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      email: string;
-      /** @enum {string} */
-      status: "ACTIVE" | "SUSPENDED" | "BANNED";
-      /** @description False until the first sign-in finishes setting up the authenticator. */
-      authenticatorSetUp: boolean;
-      /** Format: date-time */
-      lastSignedInAt: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    AdminDetails: {
-      /** Format: uuid */
-      id: string;
-      name: string;
-      email: string;
-      /** @enum {string} */
-      status: "ACTIVE" | "SUSPENDED" | "BANNED";
-      /** @description False until the first sign-in finishes setting up the authenticator. */
-      authenticatorSetUp: boolean;
-      /** Format: date-time */
-      lastSignedInAt: string | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      authenticatorSetUpAt: string | null;
-      /** @description The inviting admin's name; null for the first admin. */
-      invitedBy: string | null;
-      /** @description Invitations they've sent, used or not. */
-      invitesSent: number;
-      /** @description Signed in now, most recently active first. */
-      devices: components["schemas"]["AdminDevice"][];
-    };
-    AdminDevice: {
-      /** Format: uuid */
-      id: string;
-      userAgent: string | null;
-      ipAddress: string | null;
-      /** Format: date-time */
-      signedInAt: string;
-      /** Format: date-time */
-      lastActiveAt: string;
-      /** @description The session making this request. */
-      current: boolean;
-    };
-    ResetAdminPassword: {
-      /** @description From the reset link. */
-      token: string;
-      password: string;
-    };
-    AcceptAdminInvitation: {
-      /** @description From the invitation link. */
-      token: string;
-      name: string;
-      password: string;
-    };
-    StaffVenue: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      /** @description In `Accept-Language`, else any language. */
-      name: string | null;
-      status: components["schemas"]["VenueStatus"];
-      /**
-       * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
-       * @example Maadi, Cairo
-       */
-      location: string | null;
-      /**
-       * Format: date-time
-       * @description When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created).
-       */
-      lastActivityAt: string;
-      role: components["schemas"]["VenueRole"];
-      /** @description What the signed-in member may do here; all `manage` for the owner. */
-      permissions: {
-        /**
-         * @description The calendar; creating, editing and cancelling bookings.
-         * @enum {string}
-         */
-        bookings: "none" | "view" | "manage";
-        /**
-         * @description The venue's customers and their history.
-         * @enum {string}
-         */
-        customers: "none" | "view" | "manage";
-        /**
-         * @description Grounds' weekly hours, prices and blocked slots.
-         * @enum {string}
-         */
-        schedule: "none" | "view" | "manage";
-        /**
-         * @description Recording cash and issuing refunds.
-         * @enum {string}
-         */
-        payments: "none" | "view" | "manage";
-        /**
-         * @description The ledger, payouts and earnings reports.
-         * @enum {string}
-         */
-        finance: "none" | "view" | "manage";
-        /**
-         * @description Inviting and removing staff, and changing their permissions.
-         * @enum {string}
-         */
-        staff: "none" | "view" | "manage";
-        /**
-         * @description Profile, layout, amenities, discounts and policies.
-         * @enum {string}
-         */
-        venue: "none" | "view" | "manage";
-      };
-    };
-    /** @enum {string} */
-    VenueStatus: "DRAFT" | "SUBMITTED" | "PROVISIONING" | "LIVE" | "MAINTENANCE";
-    /**
-     * @description Each venue has exactly one `OWNER`, who can do everything.
-     * @enum {string}
-     */
-    VenueRole: "OWNER" | "MEMBER";
-    VenueSetup: {
-      venue: {
-        /** Format: uuid */
-        id: string;
-        /** @description Permanent. Public once the venue is live. */
-        slug: string;
-        status: components["schemas"]["VenueStatus"];
-        /** @description In `Accept-Language`, else any language. */
-        name: string | null;
-      };
-      items: components["schemas"]["SetupItem"][];
-      /** @description Counts of required items, for the progress ring and the draft card. */
-      required: {
-        done: number;
-        total: number;
-      };
-      /** @description A draft with every required item done. */
-      canSubmit: boolean;
-      /** @description Why the last review sent this draft back; null otherwise. */
-      rejection: {
-        reason: string;
-        /** Format: date-time */
-        at: string;
-      } | null;
-    };
-    SetupItem: {
-      key: components["schemas"]["SetupItemKey"];
-      /** @description Needed before the venue can be sent for review. */
-      required: boolean;
-      state: components["schemas"]["SetupItemState"];
-      blockedBy: components["schemas"]["SetupItemKey"] & (string | null);
-    };
-    /** @enum {string} */
-    SetupItemKey:
-      | "DETAILS"
-      | "LOCATION"
-      | "PHOTOS"
-      | "GROUNDS"
-      | "SCHEDULES"
-      | "LAYOUT"
-      | "SETTINGS"
-      | "AMENITIES"
-      | "TAX_NUMBER";
-    /**
-     * @description `BLOCKED`: can't be done until `blockedBy` is.
-     * @enum {string}
-     */
-    SetupItemState: "DONE" | "MISSING" | "BLOCKED";
-    CreateVenue: {
-      /**
-       * @description In the owner's app language; the other language is added before going live.
-       * @example Champions Arena
-       */
-      name: string;
-      /** @description The pin. Must fall inside the marketplace. */
-      coordinates: {
-        latitude: number;
-        longitude: number;
-      };
-      /** @description Google's place id, when the owner picked a search result. */
-      placeId?: string;
-      /**
-       * Format: uuid
-       * @description The area the owner confirmed. Its marketplace becomes the venue's. Send this or `requestedArea`, not both.
-       */
-      locationId?: string;
-      /** @description An area Hagz doesn't cover yet, in the owner's words. An admin adds it and sets it on the venue while reviewing; the venue can't be approved before then. */
-      requestedArea?: {
-        /** @example Sheikh Zayed, Giza */
-        name: string;
-        /**
-         * @description ISO 3166-1 alpha-2.
-         * @example EG
-         */
-        marketplace: string;
-      };
-    };
-    StaffVenueDetail: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      status: components["schemas"]["VenueStatus"];
-      phone: string | null;
-      taxNumber: string | null;
-      marketplace: {
-        /**
-         * @description Whose amenity options apply.
-         * @example EG
-         */
-        code: string;
-        /**
-         * @description ISO 4217; prices are in its minor units.
-         * @example EGP
-         */
-        currency: string;
-      };
-      location: {
-        /**
-         * Format: uuid
-         * @description Null while Hagz adds `requestedArea`.
-         */
-        id: string | null;
-        /** @description The area, in the request's language. */
-        name: string | null;
-        /** @description The top of the area's tree (its governorate), as areas show it. */
-        within: string | null;
-        /** @description The area the owner asked for, until an admin sets one. */
-        requestedArea: string | null;
-        coordinates: components["schemas"]["Coordinates"];
-        placeId: string | null;
-      };
-      translations: components["schemas"]["VenueTranslation"][];
-      settings: components["schemas"]["VenueSettings"];
-      amenities: components["schemas"]["VenueAmenity"][];
-    };
-    /** @description A point in degrees (WGS 84). */
-    Coordinates: {
-      latitude: number;
-      longitude: number;
-    } | null;
-    VenueTranslation: {
-      name: string;
-      description: string | null;
-      address: string | null;
-      language: components["schemas"]["Language"];
-    };
-    /** @enum {string} */
-    Language: "EN" | "AR";
-    VenueSettings: {
-      autoConfirm: boolean;
-      minimumNotice: components["schemas"]["MinimumNotice"];
-      paymentMode: components["schemas"]["PaymentMode"];
-      depositPercent: number | null;
-      /**
-       * @description Null until the owner chooses one.
-       * @enum {string|null}
-       */
-      cancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM" | null;
-      /** @description The policy's tiers: the preset's, or the owner's own for `CUSTOM`. */
-      cancellationTiers: components["schemas"]["CancellationTier"][] | null;
-      /** @description Null: no loyalty rewards. */
-      loyalty: {
-        /** @description Bookings per free one. */
-        stamps: number;
-        /** @description Days the stamps last. */
-        windowDays: number;
-      } | null;
-    };
-    /** @description Minutes before kick-off that booking closes. */
-    MinimumNotice: 0 | 30 | 60 | 120 | 180 | 360 | 720 | 1440;
-    /**
-     * @description `MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online.
-     * @enum {string}
-     */
-    PaymentMode: "MANUAL" | "DEPOSIT" | "PLATFORM";
-    CancellationTier: {
-      hours: number;
-      refundPercent: number;
-    };
-    VenueAmenity: {
-      /** Format: uuid */
-      optionId: string;
-      /** @description Minor units; null when free. */
-      price: number | null;
-      pricing: components["schemas"]["AmenityPricing"];
-    };
-    /** @enum {string|null} */
-    AmenityPricing: "PER_HOUR" | "PER_BOOKING" | null;
-    UpdateVenue: {
-      /** @description Shown to players. International format; landlines are fine. */
-      phone?: string | null;
-      /** @description Set only if the venue charges VAT. */
-      taxNumber?: string | null;
-      /** @description A new pin and area, in the same marketplace. */
-      location?: {
-        coordinates: components["schemas"]["Coordinates"];
-        placeId: string | null;
-        /** Format: uuid */
-        locationId: string;
-      };
-    };
-    VenueTranslationInput: {
-      name: string;
-      description: string | null;
-      address: string | null;
-    };
-    UpdateVenueSettings: {
-      autoConfirm?: boolean;
-      minimumNotice?: components["schemas"]["MinimumNotice"];
-      paymentMode?: components["schemas"]["PaymentMode"];
-      depositPercent?: number | null;
-      cancellationPolicy?: components["schemas"]["CancellationPolicy"];
-      cancellationTiers?: components["schemas"]["CancellationTiers"];
-      loyalty?: components["schemas"]["Loyalty"];
-    };
-    /** @enum {string} */
-    CancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM";
-    CancellationTiers: components["schemas"]["CancellationTier"][] | null;
-    Loyalty: {
-      /** @description Bookings per free one. */
-      stamps: number;
-      /** @description Days the stamps last. */
-      windowDays: number;
-    } | null;
-    SetVenueAmenities: {
-      amenities: components["schemas"]["VenueAmenity"][];
-    };
-    VenuePhoto: {
-      /** Format: uuid */
-      id: string;
-      /** @description Where to load it from. */
-      url: string;
-      status: components["schemas"]["PhotoStatus"];
-      /** @description Order on the venue page; the first is the cover. */
-      position: number;
-    };
-    /**
-     * @description `PENDING` until the upload is confirmed; unconfirmed ones are removed after a day.
-     * @enum {string}
-     */
-    PhotoStatus: "PENDING" | "READY";
-    PhotoUpload: {
-      photo: components["schemas"]["VenuePhoto"];
-      /** @description Upload the file here, then confirm it. */
-      upload: {
-        url: string;
-        /** @enum {string} */
-        method: "PUT";
-        /** @description Send exactly these. */
-        headers: {
-          [key: string]: string;
+        /** @description An error. Extra members depend on the code. */
+        Problem: {
+            type: string;
+            title: string;
+            status: number;
+            /** @example VALIDATION_FAILED */
+            code: string;
+            detail: string;
+            /** @description Quote it to support. */
+            requestId?: string;
+        } & {
+            [key: string]: unknown;
         };
-        /** Format: date-time */
-        expiresAt: string;
-      };
-    };
-    RequestPhotoUpload: {
-      /** @enum {string} */
-      contentType: "image/jpeg" | "image/png" | "image/webp";
-      /** @description In bytes. */
-      size: number;
-    };
-    ReorderPhotos: {
-      /** @description Every ready photo, in the new order; the first becomes the cover. */
-      photoIds: string[];
-    };
-    Ground: {
-      /** Format: uuid */
-      id: string;
-      name: string | null;
-      sport: components["schemas"]["GroundSport"];
-      size: components["schemas"]["GroundSize"];
-      surface: components["schemas"]["GroundSurface"];
-      environment: components["schemas"]["GroundEnvironment"];
-      status: components["schemas"]["GroundStatus"];
-      position: number;
-      basePrice: number;
-      peakPrice: number | null;
-      discountPrice: number | null;
-      minimumSlots: number;
-      maximumSlots: number;
-      /** @description Open hours in its week; 0 until set. */
-      openHours: number;
-    };
-    /** @enum {string} */
-    GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
-    /**
-     * @description `STANDARD` for sports without size variants.
-     * @enum {string}
-     */
-    GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
-    /** @enum {string} */
-    GroundSurface:
-      "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "OTHER";
-    /**
-     * @description `COVERED`: a roof with open sides.
-     * @enum {string}
-     */
-    GroundEnvironment: "INDOOR" | "OUTDOOR" | "COVERED";
-    /**
-     * @description `MAINTENANCE`: temporarily unbookable.
-     * @enum {string}
-     */
-    GroundStatus: "ACTIVE" | "MAINTENANCE";
-    CreateGround: {
-      /** @example Pitch 1 */
-      name: string;
-      sport: components["schemas"]["GroundSport"];
-      size: components["schemas"]["GroundSize"];
-      surface: components["schemas"]["GroundSurface"];
-      environment: components["schemas"]["GroundEnvironment"];
-      /** @description Per hour, in minor units. */
-      basePrice: number;
-      /** @description Per hour, in minor units. */
-      peakPrice: number | null;
-      /** @description Per hour, in minor units. */
-      discountPrice: number | null;
-      /** @description Shortest booking, in hours. */
-      minimumSlots: number;
-      /** @description Longest booking, in hours. */
-      maximumSlots: number;
-    };
-    ReorderGrounds: {
-      groundIds: string[];
-    };
-    UpdateGround: {
-      /** @example Pitch 1 */
-      name?: string;
-      sport?: components["schemas"]["GroundSport"];
-      size?: components["schemas"]["GroundSize"];
-      surface?: components["schemas"]["GroundSurface"];
-      environment?: components["schemas"]["GroundEnvironment"];
-      /** @description Per hour, in minor units. */
-      basePrice?: number;
-      /** @description Per hour, in minor units. */
-      peakPrice?: number | null;
-      /** @description Per hour, in minor units. */
-      discountPrice?: number | null;
-      /** @description Shortest booking, in hours. */
-      minimumSlots?: number;
-      /** @description Longest booking, in hours. */
-      maximumSlots?: number;
-      status?: components["schemas"]["GroundStatus"];
-    };
-    WeekSchedule: {
-      /** @description Days left out are closed. */
-      days: components["schemas"]["ScheduleDay"][];
-    };
-    ScheduleDay: {
-      /** @description 0 is Sunday. */
-      dayOfWeek: number;
-      hours: components["schemas"]["ScheduleHour"][];
-    };
-    ScheduleHour: {
-      hour: number;
-      tier: components["schemas"]["PriceTier"];
-    };
-    /** @enum {string} */
-    PriceTier: "BASE" | "PEAK" | "DISCOUNT";
-    CopySchedule: {
-      groundIds: string[];
-    };
-    VenueLayoutView: {
-      columns: number;
-      rows: number;
-      grounds: components["schemas"]["PlacedGround"][];
-      facilities: components["schemas"]["PlacedFacility"][];
-      entrances: components["schemas"]["Entrance"][];
-      /** @description False until the first save: a suggested empty grid. */
-      saved: boolean;
-      /** @description Grounds not on the layout yet. */
-      unplacedGroundIds: string[];
-    };
-    /** @description Top-left cell; the footprint comes from the ground. */
-    PlacedGround: {
-      /** Format: uuid */
-      groundId: string;
-      x: number;
-      y: number;
-      orientation: components["schemas"]["Orientation"];
-    };
-    /**
-     * @description `VERTICAL` swaps the footprint's width and height.
-     * @enum {string}
-     */
-    Orientation: "HORIZONTAL" | "VERTICAL";
-    PlacedFacility: {
-      type: components["schemas"]["FacilityType"];
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-    /** @enum {string} */
-    FacilityType: "CAFE" | "TOILETS" | "CHANGING_ROOMS" | "PARKING" | "SEATING";
-    Entrance: {
-      side: components["schemas"]["EntranceSide"];
-      /** @description Cells from the side's start (left or top). */
-      offset: number;
-    };
-    /** @enum {string} */
-    EntranceSide: "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
-    VenueLayout: {
-      columns: number;
-      rows: number;
-      grounds: components["schemas"]["PlacedGround"][];
-      facilities: components["schemas"]["PlacedFacility"][];
-      entrances: components["schemas"]["Entrance"][];
-    };
-    VenueMember: {
-      /** Format: uuid */
-      staffId: string;
-      name: string;
-      /** @example +201001234567 */
-      phone: string | null;
-      role: components["schemas"]["VenueRole"];
-      permissions: components["schemas"]["StaffPermissions"];
-      /** @description True when a password reset made them read-only and nothing changed since: POST permissions/restore brings back what they had. */
-      restorable: boolean;
-    };
-    StaffPermissions: {
-      /**
-       * @description The calendar; creating, editing and cancelling bookings.
-       * @enum {string}
-       */
-      bookings: "none" | "view" | "manage";
-      /**
-       * @description The venue's customers and their history.
-       * @enum {string}
-       */
-      customers: "none" | "view" | "manage";
-      /**
-       * @description Grounds' weekly hours, prices and blocked slots.
-       * @enum {string}
-       */
-      schedule: "none" | "view" | "manage";
-      /**
-       * @description Recording cash and issuing refunds.
-       * @enum {string}
-       */
-      payments: "none" | "view" | "manage";
-      /**
-       * @description The ledger, payouts and earnings reports.
-       * @enum {string}
-       */
-      finance: "none" | "view" | "manage";
-      /**
-       * @description Inviting and removing staff, and changing their permissions.
-       * @enum {string}
-       */
-      staff: "none" | "view" | "manage";
-      /**
-       * @description Profile, layout, amenities, discounts and policies.
-       * @enum {string}
-       */
-      venue: "none" | "view" | "manage";
-    };
-    /** @description Sent, not yet accepted, declined or revoked. */
-    StaffInvitation: {
-      /** Format: uuid */
-      id: string;
-      /** @example +201001234567 */
-      phone: string;
-      permissions: components["schemas"]["StaffPermissions"];
-      invitedBy: string;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      expiresAt: string;
-    };
-    InviteStaff: {
-      /** @example +20 100 123 4567 */
-      phone: string;
-      /** @description Defaults to the venue's default permissions for new staff. */
-      permissions?: {
-        /**
-         * @description The calendar; creating, editing and cancelling bookings.
-         * @enum {string}
-         */
-        bookings: "none" | "view" | "manage";
-        /**
-         * @description The venue's customers and their history.
-         * @enum {string}
-         */
-        customers: "none" | "view" | "manage";
-        /**
-         * @description Grounds' weekly hours, prices and blocked slots.
-         * @enum {string}
-         */
-        schedule: "none" | "view" | "manage";
-        /**
-         * @description Recording cash and issuing refunds.
-         * @enum {string}
-         */
-        payments: "none" | "view" | "manage";
-        /**
-         * @description The ledger, payouts and earnings reports.
-         * @enum {string}
-         */
-        finance: "none" | "view" | "manage";
-        /**
-         * @description Inviting and removing staff, and changing their permissions.
-         * @enum {string}
-         */
-        staff: "none" | "view" | "manage";
-        /**
-         * @description Profile, layout, amenities, discounts and policies.
-         * @enum {string}
-         */
-        venue: "none" | "view" | "manage";
-      };
-    };
-    ReceivedStaffInvitation: {
-      /** Format: uuid */
-      id: string;
-      venue: {
-        /** Format: uuid */
-        id: string;
-        name: string | null;
-        /** @description Street address in `Accept-Language`, else any language. */
-        address: string | null;
-        /**
-         * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
-         * @example Zamalek, Cairo
-         */
-        location: string | null;
-        /** @description Grounds in use or under maintenance. */
-        groundCount: number;
-        team: {
-          size: number;
-          /**
-           * @description Up to two members, the owner first.
-           * @example [
-           *       "OS",
-           *       "MA"
-           *     ]
-           */
-          initials: string[];
+        /** @description A place in a marketplace's tree; build the tree from `parentId`. */
+        Location: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parentId: string | null;
+            locality: components["schemas"]["Locality"];
+            slug: string;
+            /** @description In the requested language. */
+            name: string;
         };
-      };
-      invitedBy: string;
-      /** @description What they'll be able to do there. */
-      permissions: {
+        /** @enum {string} */
+        Locality: "REGION" | "EMIRATE" | "GOVERNORATE" | "MUNICIPALITY" | "WILAYAT" | "CITY" | "DISTRICT" | "AREA" | "NEIGHBORHOOD";
+        Area: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description In the requested language.
+             * @example Smouha
+             */
+            name: string;
+            /**
+             * @description The top of its tree (governorate or city); null for a top-level area.
+             * @example Alexandria
+             */
+            within: string | null;
+            /**
+             * @description Metres from the given point to the area's centre; null without either.
+             * @example 640
+             */
+            distance: number | null;
+        };
+        Amenity: {
+            /** Format: uuid */
+            id: string;
+            /** @example parking */
+            key: string;
+            /** @description In the requested language. */
+            name: string;
+            icon: components["schemas"]["AmenityIcon"];
+        };
         /**
-         * @description The calendar; creating, editing and cancelling bookings.
+         * @description Hagz's own icon name; each app draws it.
+         * @example parking
          * @enum {string}
          */
-        bookings: "none" | "view" | "manage";
-        /**
-         * @description The venue's customers and their history.
-         * @enum {string}
-         */
-        customers: "none" | "view" | "manage";
-        /**
-         * @description Grounds' weekly hours, prices and blocked slots.
-         * @enum {string}
-         */
-        schedule: "none" | "view" | "manage";
-        /**
-         * @description Recording cash and issuing refunds.
-         * @enum {string}
-         */
-        payments: "none" | "view" | "manage";
-        /**
-         * @description The ledger, payouts and earnings reports.
-         * @enum {string}
-         */
-        finance: "none" | "view" | "manage";
-        /**
-         * @description Inviting and removing staff, and changing their permissions.
-         * @enum {string}
-         */
-        staff: "none" | "view" | "manage";
-        /**
-         * @description Profile, layout, amenities, discounts and policies.
-         * @enum {string}
-         */
-        venue: "none" | "view" | "manage";
-      };
-      /** Format: date-time */
-      expiresAt: string;
-    };
-    SystemStatus: {
-      /** Format: date-time */
-      checkedAt: string;
-      server: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description The deployed git commit; null when running locally (no deploy sets it). */
-        commit: string | null;
-        /**
-         * Format: date-time
-         * @description Null when the process is down.
-         */
-        startedAt: string | null;
-        /** Format: date-time */
-        lastSeenAt: string | null;
-      };
-      worker: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description The deployed git commit; null when running locally (no deploy sets it). */
-        commit: string | null;
-        /**
-         * Format: date-time
-         * @description Null when the process is down.
-         */
-        startedAt: string | null;
-        /** Format: date-time */
-        lastSeenAt: string | null;
-      };
-      database: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description Round trip of a trivial command; null when it didn't answer in time. */
-        latencyMs: number | null;
-      };
-      /** @description The Redis that holds jobs and rate limits. */
-      queue: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description Round trip of a trivial command; null when it didn't answer in time. */
-        latencyMs: number | null;
-      };
-      /** @description The Redis used as a cache (can evict keys). */
-      cache: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description Round trip of a trivial command; null when it didn't answer in time. */
-        latencyMs: number | null;
-      };
-    };
-    SystemHistory: {
-      /** @description Oldest first, up to the last 24 hours. */
-      samples: components["schemas"]["SystemSample"][];
-    };
-    SystemSample: {
-      /**
-       * Format: date-time
-       * @description The start of the minute it was taken in.
-       */
-      at: string;
-      /** @enum {string} */
-      worker: "UP" | "DOWN";
-      database: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description Round trip of a trivial command; null when it didn't answer in time. */
-        latencyMs: number | null;
-      };
-      queue: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description Round trip of a trivial command; null when it didn't answer in time. */
-        latencyMs: number | null;
-      };
-      cache: {
-        /** @enum {string} */
-        status: "UP" | "DOWN";
-        /** @description Round trip of a trivial command; null when it didn't answer in time. */
-        latencyMs: number | null;
-      };
-    };
-    AdminMarketplace: {
-      /** Format: uuid */
-      id: string;
-      /**
-       * @description ISO 3166-1 alpha-2.
-       * @example EG
-       */
-      code: string;
-      names: components["schemas"]["Names"];
-      /**
-       * @description ISO 4217.
-       * @example EGP
-       */
-      currency: string;
-      /**
-       * @description E.164 prefix.
-       * @example +20
-       */
-      dialCode: string;
-      /**
-       * @description IANA time zone.
-       * @example Africa/Cairo
-       */
-      timezone: string;
-      /**
-       * @description VAT in basis points (1400 is 14%).
-       * @example 1400
-       */
-      taxRate: number;
-      /**
-       * @description Hagz's commission in basis points.
-       * @example 1400
-       */
-      commissionRate: number;
-      /** @description Shown in the apps. New marketplaces start hidden. */
-      isActive: boolean;
-      /** @description Has a location, venue or amenity option. Its code and currency can no longer change. */
-      inUse: boolean;
-      locationCount: number;
-      venueCount: number;
-      amenityCount: number;
-      /** @description Has a border venue pins are checked against. Without one, any pin is taken. */
-      hasBoundary: boolean;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    /**
-     * @example {
-     *       "en": "Nasr City",
-     *       "ar": "مدينة نصر"
-     *     }
-     */
-    Names: {
-      en: string;
-      ar: string;
-    };
-    /** @description Created hidden; turn it on when it's ready. */
-    CreateMarketplace: {
-      /** @example EG */
-      code: string;
-      names: components["schemas"]["Names"];
-      /** @example EGP */
-      currency: string;
-      /** @example +20 */
-      dialCode: string;
-      /** @example Africa/Cairo */
-      timezone: string;
-      /**
-       * @description Basis points: 1400 is 14%.
-       * @example 1400
-       */
-      taxRate: number;
-      /**
-       * @description Basis points: 1400 is 14%.
-       * @example 1400
-       */
-      commissionRate: number;
-      /** @description Its border; null or left out for none (no pin check). */
-      boundary?:
-        | {
+        AmenityIcon: "parking" | "bike_parking" | "changing_rooms" | "showers" | "toilets" | "lockers" | "prayer_room" | "seating" | "covered" | "air_conditioning" | "floodlights" | "wifi" | "charging" | "screen" | "sound" | "cafe" | "restaurant" | "snacks" | "water" | "ice_cream" | "ball_rental" | "kit_rental" | "scoreboard" | "video" | "tournaments" | "gym" | "pool" | "warm_up" | "kids_area" | "family" | "accessible" | "first_aid" | "security" | "cctv" | "transport" | "card_payment" | "cash" | "shop" | "other";
+        /** @description Returned whether or not the number has an account. */
+        VerificationCodeSent: {
+            /**
+             * @description Seconds the code stays valid.
+             * @example 600
+             */
+            expiresIn: number;
+            /**
+             * @description Seconds before another code can be sent.
+             * @example 60
+             */
+            resendAfter: number;
+        };
+        SendVerificationCode: {
+            /**
+             * @description Mobile number with its country code.
+             * @example +20 100 123 4567
+             */
+            phone: string;
+        };
+        VerificationConfirmed: {
+            /** @description Single use. Proves the phone belongs to the caller. */
+            verificationToken: string;
+            /** @example 900 */
+            expiresIn: number;
+            /** @description Whether this number already has an account, so the app can offer sign-in instead of asking for a name and password. Only told to whoever has just proved they hold the number. */
+            accountExists: boolean;
+        };
+        ConfirmVerificationCode: {
+            /**
+             * @description Mobile number with its country code.
+             * @example +20 100 123 4567
+             */
+            phone: string;
+            /** @example 482913 */
+            code: string;
+        };
+        CustomerAuthenticated: {
+            customer: components["schemas"]["Customer"];
+            session: components["schemas"]["Session"];
+        };
+        Customer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @example +201001234567 */
+            phone: string;
             /** @enum {string} */
-            type: "Polygon";
-            coordinates: [number, number][][];
-          }
-        | {
+            language: "AR" | "EN";
+            /** @description Whether sign-in also asks for a code. */
+            twoFactorEnabled: boolean;
+        };
+        Session: {
+            accessToken: string;
+            /**
+             * @description Seconds.
+             * @example 600
+             */
+            accessTokenExpiresIn: number;
+            refreshToken: string;
+            /**
+             * @description Seconds; extended by every refresh.
+             * @example 5184000
+             */
+            refreshTokenExpiresIn: number;
+        };
+        CustomerSignUp: {
+            verificationToken: string;
+            /** @example Ahmed */
+            name: string;
+            password: string;
+            /**
+             * @description The device's IANA time zone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+        };
+        TwoFactorChallenge: {
+            /** @enum {boolean} */
+            twoFactorRequired: true;
+            /** @description Proves the password was right. Not an access token. */
+            challengeToken: string;
+            /** @example 600 */
+            expiresIn: number;
+            /** @example 60 */
+            resendAfter: number;
+        };
+        SignIn: {
+            /**
+             * @description Mobile number with its country code.
+             * @example +20 100 123 4567
+             */
+            phone: string;
+            password: string;
+        };
+        CompleteTwoFactor: {
+            challengeToken: string;
+            /** @example 482913 */
+            code: string;
+        };
+        ResendTwoFactor: {
+            challengeToken: string;
+        };
+        RefreshSession: {
+            refreshToken: string;
+        };
+        RequestPasswordReset: {
+            /**
+             * @description Mobile number with its country code.
+             * @example +20 100 123 4567
+             */
+            phone: string;
+        };
+        PasswordResetVerified: {
+            /** @description Single use. Sets the new password. */
+            resetToken: string;
+            /** @example 900 */
+            expiresIn: number;
+        };
+        VerifyPasswordReset: {
+            /**
+             * @description Mobile number with its country code.
+             * @example +20 100 123 4567
+             */
+            phone: string;
+            /** @example 482913 */
+            code: string;
+        } | {
+            /** @description From confirming a sign-up code for the same number: proves it, so no reset code is needed. */
+            verificationToken: string;
+        };
+        ConfirmPasswordReset: {
+            resetToken: string;
+            newPassword: string;
+        };
+        TwoFactorStatus: {
+            enabled: boolean;
+        };
+        /** @description Needs a code from POST two-factor/codes. */
+        ChangeTwoFactor: {
+            enabled: boolean;
+            /** @example 482913 */
+            code: string;
+        };
+        StaffAuthenticated: {
+            staff: components["schemas"]["Staff"];
+            session: components["schemas"]["Session"];
+        };
+        Staff: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @example +201001234567 */
+            phone: string;
             /** @enum {string} */
-            type: "MultiPolygon";
-            coordinates: [number, number][][][];
-          }
-        | null;
-    };
-    /** @description Only the fields sent change. `code` and `currency` are refused once it's in use. */
-    UpdateMarketplace: {
-      /** @example EG */
-      code?: string;
-      names?: components["schemas"]["Names"];
-      /** @example EGP */
-      currency?: string;
-      /** @example +20 */
-      dialCode?: string;
-      /** @example Africa/Cairo */
-      timezone?: string;
-      /**
-       * @description Basis points: 1400 is 14%.
-       * @example 1400
-       */
-      taxRate?: number;
-      /**
-       * @description Basis points: 1400 is 14%.
-       * @example 1400
-       */
-      commissionRate?: number;
-      /** @description Its border; null or left out for none (no pin check). */
-      boundary?:
-        | {
+            language: "AR" | "EN";
+            /** @description Whether sign-in also asks for a code. */
+            twoFactorEnabled: boolean;
+        };
+        StaffSignUp: {
+            verificationToken: string;
+            /** @example Ahmed */
+            name: string;
+            password: string;
+        };
+        AdminChallenge: {
+            /** @description Proves the password was right. Single use. Not an access token. */
+            challengeToken: string;
+            /**
+             * @description `TOTP`: ask for a code from the authenticator app. `TOTP_SETUP`: the account has no authenticator yet; start the setup, then ask for its first code.
+             * @enum {string}
+             */
+            next: "TOTP" | "TOTP_SETUP";
+            /** @example 600 */
+            expiresIn: number;
+        };
+        AdminSignIn: {
+            /**
+             * Format: email
+             * @example omar@hagz.app
+             */
+            email: string;
+            password: string;
+        };
+        TotpSetup: {
+            /** @description Base32, for typing in by hand. */
+            secret: string;
+            /** @description Show as a QR code for the authenticator app. */
+            otpauthUri: string;
+        };
+        StartTotpSetup: {
+            challengeToken: string;
+        };
+        AdminSignedIn: {
+            admin: components["schemas"]["Admin"];
+            /**
+             * @description Seconds until the session ends; it isn't extended.
+             * @example 43200
+             */
+            sessionExpiresIn: number;
+        };
+        Admin: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+        };
+        CompleteAdminSignIn: {
+            challengeToken: string;
+            /** @example 482913 */
+            code: string;
+        };
+        UpdateAdminProfile: {
+            name: string;
+        };
+        ChangeAdminPassword: {
+            currentPassword: string;
+            newPassword: string;
+        };
+        /** @description An invitation that hasn't been used or revoked. */
+        AdminInvitation: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            /** @description The inviting admin's name. */
+            invitedBy: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        InviteAdmin: {
+            /**
+             * Format: email
+             * @example omar@hagz.app
+             */
+            email: string;
+        };
+        AdminListEntry: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
             /** @enum {string} */
-            type: "Polygon";
-            coordinates: [number, number][][];
-          }
-        | {
+            status: "ACTIVE" | "SUSPENDED" | "BANNED";
+            /** @description False until the first sign-in finishes setting up the authenticator. */
+            authenticatorSetUp: boolean;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AdminDetails: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
             /** @enum {string} */
-            type: "MultiPolygon";
-            coordinates: [number, number][][][];
-          }
-        | null;
-      isActive?: boolean;
+            status: "ACTIVE" | "SUSPENDED" | "BANNED";
+            /** @description False until the first sign-in finishes setting up the authenticator. */
+            authenticatorSetUp: boolean;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            authenticatorSetUpAt: string | null;
+            /** @description The inviting admin's name; null for the first admin. */
+            invitedBy: string | null;
+            /** @description Invitations they've sent, used or not. */
+            invitesSent: number;
+            /** @description Signed in now, most recently active first. */
+            devices: components["schemas"]["AdminDevice"][];
+        };
+        AdminDevice: {
+            /** Format: uuid */
+            id: string;
+            userAgent: string | null;
+            ipAddress: string | null;
+            /** Format: date-time */
+            signedInAt: string;
+            /** Format: date-time */
+            lastActiveAt: string;
+            /** @description The session making this request. */
+            current: boolean;
+        };
+        ResetAdminPassword: {
+            /** @description From the reset link. */
+            token: string;
+            password: string;
+        };
+        AcceptAdminInvitation: {
+            /** @description From the invitation link. */
+            token: string;
+            name: string;
+            password: string;
+        };
+        StaffVenue: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            /** @description In `Accept-Language`, else any language. */
+            name: string | null;
+            status: components["schemas"]["VenueStatus"];
+            /**
+             * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
+             * @example Maadi, Cairo
+             */
+            location: string | null;
+            /**
+             * Format: date-time
+             * @description When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created).
+             */
+            lastActivityAt: string;
+            role: components["schemas"]["VenueRole"];
+            /** @description What the signed-in member may do here; all `manage` for the owner. */
+            permissions: {
+                /**
+                 * @description The calendar; creating, editing and cancelling bookings.
+                 * @enum {string}
+                 */
+                bookings: "none" | "view" | "manage";
+                /**
+                 * @description The venue's customers and their history.
+                 * @enum {string}
+                 */
+                customers: "none" | "view" | "manage";
+                /**
+                 * @description Grounds' weekly hours, prices and blocked slots.
+                 * @enum {string}
+                 */
+                schedule: "none" | "view" | "manage";
+                /**
+                 * @description Recording cash and issuing refunds.
+                 * @enum {string}
+                 */
+                payments: "none" | "view" | "manage";
+                /**
+                 * @description The ledger, payouts and earnings reports.
+                 * @enum {string}
+                 */
+                finance: "none" | "view" | "manage";
+                /**
+                 * @description Inviting and removing staff, and changing their permissions.
+                 * @enum {string}
+                 */
+                staff: "none" | "view" | "manage";
+                /**
+                 * @description Profile, layout, amenities, discounts and policies.
+                 * @enum {string}
+                 */
+                venue: "none" | "view" | "manage";
+            };
+        };
+        /** @enum {string} */
+        VenueStatus: "DRAFT" | "SUBMITTED" | "PROVISIONING" | "LIVE" | "MAINTENANCE";
+        /**
+         * @description Each venue has exactly one `OWNER`, who can do everything.
+         * @enum {string}
+         */
+        VenueRole: "OWNER" | "MEMBER";
+        VenueSetup: {
+            venue: {
+                /** Format: uuid */
+                id: string;
+                /** @description Permanent. Public once the venue is live. */
+                slug: string;
+                status: components["schemas"]["VenueStatus"];
+                /** @description In `Accept-Language`, else any language. */
+                name: string | null;
+            };
+            items: components["schemas"]["SetupItem"][];
+            /** @description Counts of required items, for the progress ring and the draft card. */
+            required: {
+                done: number;
+                total: number;
+            };
+            /** @description A draft with every required item done. */
+            canSubmit: boolean;
+            /** @description Why the last review sent this draft back; null otherwise. */
+            rejection: {
+                reason: string;
+                /** Format: date-time */
+                at: string;
+            } | null;
+        };
+        SetupItem: {
+            key: components["schemas"]["SetupItemKey"];
+            /** @description Needed before the venue can be sent for review. */
+            required: boolean;
+            state: components["schemas"]["SetupItemState"];
+            blockedBy: components["schemas"]["SetupItemKey"] & (string | null);
+        };
+        /** @enum {string} */
+        SetupItemKey: "DETAILS" | "LOCATION" | "PHOTOS" | "GROUNDS" | "SCHEDULES" | "LAYOUT" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
+        /**
+         * @description `BLOCKED`: can't be done until `blockedBy` is.
+         * @enum {string}
+         */
+        SetupItemState: "DONE" | "MISSING" | "BLOCKED";
+        CreateVenue: {
+            /**
+             * @description In the owner's app language; the other language is added before going live.
+             * @example Champions Arena
+             */
+            name: string;
+            /** @description The pin. Must fall inside the marketplace. */
+            coordinates: {
+                latitude: number;
+                longitude: number;
+            };
+            /** @description Google's place id, when the owner picked a search result. */
+            placeId?: string;
+            /**
+             * Format: uuid
+             * @description The area the owner confirmed. Its marketplace becomes the venue's. Send this or `requestedArea`, not both.
+             */
+            locationId?: string;
+            /** @description An area Hagz doesn't cover yet, in the owner's words. An admin adds it and sets it on the venue while reviewing; the venue can't be approved before then. */
+            requestedArea?: {
+                /** @example Sheikh Zayed, Giza */
+                name: string;
+                /**
+                 * @description ISO 3166-1 alpha-2.
+                 * @example EG
+                 */
+                marketplace: string;
+            };
+        };
+        StaffVenueDetail: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            status: components["schemas"]["VenueStatus"];
+            phone: string | null;
+            taxNumber: string | null;
+            marketplace: {
+                /**
+                 * @description Whose amenity options apply.
+                 * @example EG
+                 */
+                code: string;
+                /**
+                 * @description ISO 4217; prices are in its minor units.
+                 * @example EGP
+                 */
+                currency: string;
+            };
+            location: {
+                /**
+                 * Format: uuid
+                 * @description Null while Hagz adds `requestedArea`.
+                 */
+                id: string | null;
+                /** @description The area, in the request's language. */
+                name: string | null;
+                /** @description The top of the area's tree (its governorate), as areas show it. */
+                within: string | null;
+                /** @description The area the owner asked for, until an admin sets one. */
+                requestedArea: string | null;
+                coordinates: components["schemas"]["Coordinates"];
+                placeId: string | null;
+            };
+            translations: components["schemas"]["VenueTranslation"][];
+            settings: components["schemas"]["VenueSettings"];
+            amenities: components["schemas"]["VenueAmenity"][];
+        };
+        /** @description A point in degrees (WGS 84). */
+        Coordinates: {
+            latitude: number;
+            longitude: number;
+        } | null;
+        VenueTranslation: {
+            name: string;
+            description: string | null;
+            address: string | null;
+            language: components["schemas"]["Language"];
+        };
+        /** @enum {string} */
+        Language: "EN" | "AR";
+        VenueSettings: {
+            autoConfirm: boolean;
+            minimumNotice: components["schemas"]["MinimumNotice"];
+            paymentMode: components["schemas"]["PaymentMode"];
+            depositPercent: number | null;
+            /**
+             * @description Null until the owner chooses one.
+             * @enum {string|null}
+             */
+            cancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM" | null;
+            /** @description The policy's tiers: the preset's, or the owner's own for `CUSTOM`. */
+            cancellationTiers: components["schemas"]["CancellationTier"][] | null;
+            /** @description Null: no loyalty rewards. */
+            loyalty: {
+                /** @description Bookings per free one. */
+                stamps: number;
+                /** @description Days the stamps last. */
+                windowDays: number;
+            } | null;
+        };
+        /** @description Minutes before kick-off that booking closes. */
+        MinimumNotice: 0 | 30 | 60 | 120 | 180 | 360 | 720 | 1440;
+        /**
+         * @description `MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online.
+         * @enum {string}
+         */
+        PaymentMode: "MANUAL" | "DEPOSIT" | "PLATFORM";
+        CancellationTier: {
+            hours: number;
+            refundPercent: number;
+        };
+        VenueAmenity: {
+            /** Format: uuid */
+            optionId: string;
+            /** @description Minor units; null when free. */
+            price: number | null;
+            pricing: components["schemas"]["AmenityPricing"];
+        };
+        /** @enum {string|null} */
+        AmenityPricing: "PER_HOUR" | "PER_BOOKING" | null;
+        UpdateVenue: {
+            /** @description Shown to players. International format; landlines are fine. */
+            phone?: string | null;
+            /** @description Set only if the venue charges VAT. */
+            taxNumber?: string | null;
+            /** @description A new pin and area, in the same marketplace. */
+            location?: {
+                coordinates: components["schemas"]["Coordinates"];
+                placeId: string | null;
+                /** Format: uuid */
+                locationId: string;
+            };
+        };
+        VenueTranslationInput: {
+            name: string;
+            description: string | null;
+            address: string | null;
+        };
+        UpdateVenueSettings: {
+            autoConfirm?: boolean;
+            minimumNotice?: components["schemas"]["MinimumNotice"];
+            paymentMode?: components["schemas"]["PaymentMode"];
+            depositPercent?: number | null;
+            cancellationPolicy?: components["schemas"]["CancellationPolicy"];
+            cancellationTiers?: components["schemas"]["CancellationTiers"];
+            loyalty?: components["schemas"]["Loyalty"];
+        };
+        /** @enum {string} */
+        CancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM";
+        CancellationTiers: components["schemas"]["CancellationTier"][] | null;
+        Loyalty: {
+            /** @description Bookings per free one. */
+            stamps: number;
+            /** @description Days the stamps last. */
+            windowDays: number;
+        } | null;
+        SetVenueAmenities: {
+            amenities: components["schemas"]["VenueAmenity"][];
+        };
+        VenuePhoto: {
+            /** Format: uuid */
+            id: string;
+            /** @description Where to load it from. */
+            url: string;
+            status: components["schemas"]["PhotoStatus"];
+            /** @description Order on the venue page; the first is the cover. */
+            position: number;
+        };
+        /**
+         * @description `PENDING` until the upload is confirmed; unconfirmed ones are removed after a day.
+         * @enum {string}
+         */
+        PhotoStatus: "PENDING" | "READY";
+        PhotoUpload: {
+            photo: components["schemas"]["VenuePhoto"];
+            /** @description Upload the file here, then confirm it. */
+            upload: {
+                url: string;
+                /** @enum {string} */
+                method: "PUT";
+                /** @description Send exactly these. */
+                headers: {
+                    [key: string]: string;
+                };
+                /** Format: date-time */
+                expiresAt: string;
+            };
+        };
+        RequestPhotoUpload: {
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp";
+            /** @description In bytes. */
+            size: number;
+        };
+        ReorderPhotos: {
+            /** @description Every ready photo, in the new order; the first becomes the cover. */
+            photoIds: string[];
+        };
+        Ground: {
+            /** Format: uuid */
+            id: string;
+            name: string | null;
+            sport: components["schemas"]["GroundSport"];
+            size: components["schemas"]["GroundSize"];
+            surface: components["schemas"]["GroundSurface"];
+            environment: components["schemas"]["GroundEnvironment"];
+            status: components["schemas"]["GroundStatus"];
+            position: number;
+            basePrice: number;
+            peakPrice: number | null;
+            discountPrice: number | null;
+            minimumSlots: number;
+            maximumSlots: number;
+            /** @description Open hours in its week; 0 until set. */
+            openHours: number;
+        };
+        /** @enum {string} */
+        GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
+        /**
+         * @description `STANDARD` for sports without size variants.
+         * @enum {string}
+         */
+        GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
+        /** @enum {string} */
+        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "OTHER";
+        /**
+         * @description `COVERED`: a roof with open sides.
+         * @enum {string}
+         */
+        GroundEnvironment: "INDOOR" | "OUTDOOR" | "COVERED";
+        /**
+         * @description `MAINTENANCE`: temporarily unbookable.
+         * @enum {string}
+         */
+        GroundStatus: "ACTIVE" | "MAINTENANCE";
+        CreateGround: {
+            /** @example Pitch 1 */
+            name: string;
+            sport: components["schemas"]["GroundSport"];
+            size: components["schemas"]["GroundSize"];
+            surface: components["schemas"]["GroundSurface"];
+            environment: components["schemas"]["GroundEnvironment"];
+            /** @description Per hour, in minor units. */
+            basePrice: number;
+            /** @description Per hour, in minor units. */
+            peakPrice: number | null;
+            /** @description Per hour, in minor units. */
+            discountPrice: number | null;
+            /** @description Shortest booking, in hours. */
+            minimumSlots: number;
+            /** @description Longest booking, in hours. */
+            maximumSlots: number;
+        };
+        ReorderGrounds: {
+            groundIds: string[];
+        };
+        UpdateGround: {
+            /** @example Pitch 1 */
+            name?: string;
+            sport?: components["schemas"]["GroundSport"];
+            size?: components["schemas"]["GroundSize"];
+            surface?: components["schemas"]["GroundSurface"];
+            environment?: components["schemas"]["GroundEnvironment"];
+            /** @description Per hour, in minor units. */
+            basePrice?: number;
+            /** @description Per hour, in minor units. */
+            peakPrice?: number | null;
+            /** @description Per hour, in minor units. */
+            discountPrice?: number | null;
+            /** @description Shortest booking, in hours. */
+            minimumSlots?: number;
+            /** @description Longest booking, in hours. */
+            maximumSlots?: number;
+            status?: components["schemas"]["GroundStatus"];
+        };
+        WeekSchedule: {
+            /** @description Days left out are closed. */
+            days: components["schemas"]["ScheduleDay"][];
+        };
+        ScheduleDay: {
+            /** @description 0 is Sunday. */
+            dayOfWeek: number;
+            hours: components["schemas"]["ScheduleHour"][];
+        };
+        ScheduleHour: {
+            hour: number;
+            tier: components["schemas"]["PriceTier"];
+        };
+        /** @enum {string} */
+        PriceTier: "BASE" | "PEAK" | "DISCOUNT";
+        CopySchedule: {
+            groundIds: string[];
+        };
+        VenueLayoutView: {
+            columns: number;
+            rows: number;
+            grounds: components["schemas"]["PlacedGround"][];
+            facilities: components["schemas"]["PlacedFacility"][];
+            entrances: components["schemas"]["Entrance"][];
+            /** @description False until the first save: a suggested empty grid. */
+            saved: boolean;
+            /** @description Grounds not on the layout yet. */
+            unplacedGroundIds: string[];
+        };
+        /** @description Top-left cell; the footprint comes from the ground. */
+        PlacedGround: {
+            /** Format: uuid */
+            groundId: string;
+            x: number;
+            y: number;
+            orientation: components["schemas"]["Orientation"];
+        };
+        /**
+         * @description `VERTICAL` swaps the footprint's width and height.
+         * @enum {string}
+         */
+        Orientation: "HORIZONTAL" | "VERTICAL";
+        PlacedFacility: {
+            type: components["schemas"]["FacilityType"];
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        };
+        /** @enum {string} */
+        FacilityType: "CAFE" | "TOILETS" | "CHANGING_ROOMS" | "PARKING" | "SEATING";
+        Entrance: {
+            side: components["schemas"]["EntranceSide"];
+            /** @description Cells from the side's start (left or top). */
+            offset: number;
+        };
+        /** @enum {string} */
+        EntranceSide: "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
+        VenueLayout: {
+            columns: number;
+            rows: number;
+            grounds: components["schemas"]["PlacedGround"][];
+            facilities: components["schemas"]["PlacedFacility"][];
+            entrances: components["schemas"]["Entrance"][];
+        };
+        VenueMember: {
+            /** Format: uuid */
+            staffId: string;
+            name: string;
+            /** @example +201001234567 */
+            phone: string | null;
+            role: components["schemas"]["VenueRole"];
+            permissions: components["schemas"]["StaffPermissions"];
+            /** @description True when a password reset made them read-only and nothing changed since: POST permissions/restore brings back what they had. */
+            restorable: boolean;
+        };
+        StaffPermissions: {
+            /**
+             * @description The calendar; creating, editing and cancelling bookings.
+             * @enum {string}
+             */
+            bookings: "none" | "view" | "manage";
+            /**
+             * @description The venue's customers and their history.
+             * @enum {string}
+             */
+            customers: "none" | "view" | "manage";
+            /**
+             * @description Grounds' weekly hours, prices and blocked slots.
+             * @enum {string}
+             */
+            schedule: "none" | "view" | "manage";
+            /**
+             * @description Recording cash and issuing refunds.
+             * @enum {string}
+             */
+            payments: "none" | "view" | "manage";
+            /**
+             * @description The ledger, payouts and earnings reports.
+             * @enum {string}
+             */
+            finance: "none" | "view" | "manage";
+            /**
+             * @description Inviting and removing staff, and changing their permissions.
+             * @enum {string}
+             */
+            staff: "none" | "view" | "manage";
+            /**
+             * @description Profile, layout, amenities, discounts and policies.
+             * @enum {string}
+             */
+            venue: "none" | "view" | "manage";
+        };
+        /** @description Sent, not yet accepted, declined or revoked. */
+        StaffInvitation: {
+            /** Format: uuid */
+            id: string;
+            /** @example +201001234567 */
+            phone: string;
+            permissions: components["schemas"]["StaffPermissions"];
+            invitedBy: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        InviteStaff: {
+            /** @example +20 100 123 4567 */
+            phone: string;
+            /** @description Defaults to the venue's default permissions for new staff. */
+            permissions?: {
+                /**
+                 * @description The calendar; creating, editing and cancelling bookings.
+                 * @enum {string}
+                 */
+                bookings: "none" | "view" | "manage";
+                /**
+                 * @description The venue's customers and their history.
+                 * @enum {string}
+                 */
+                customers: "none" | "view" | "manage";
+                /**
+                 * @description Grounds' weekly hours, prices and blocked slots.
+                 * @enum {string}
+                 */
+                schedule: "none" | "view" | "manage";
+                /**
+                 * @description Recording cash and issuing refunds.
+                 * @enum {string}
+                 */
+                payments: "none" | "view" | "manage";
+                /**
+                 * @description The ledger, payouts and earnings reports.
+                 * @enum {string}
+                 */
+                finance: "none" | "view" | "manage";
+                /**
+                 * @description Inviting and removing staff, and changing their permissions.
+                 * @enum {string}
+                 */
+                staff: "none" | "view" | "manage";
+                /**
+                 * @description Profile, layout, amenities, discounts and policies.
+                 * @enum {string}
+                 */
+                venue: "none" | "view" | "manage";
+            };
+        };
+        ReceivedStaffInvitation: {
+            /** Format: uuid */
+            id: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                /** @description Street address in `Accept-Language`, else any language. */
+                address: string | null;
+                /**
+                 * @description Where the venue is: its area and the place above it, in `Accept-Language`, else any language.
+                 * @example Zamalek, Cairo
+                 */
+                location: string | null;
+                /** @description Grounds in use or under maintenance. */
+                groundCount: number;
+                team: {
+                    size: number;
+                    /**
+                     * @description Up to two members, the owner first.
+                     * @example [
+                     *       "OS",
+                     *       "MA"
+                     *     ]
+                     */
+                    initials: string[];
+                };
+            };
+            invitedBy: string;
+            /** @description What they'll be able to do there. */
+            permissions: {
+                /**
+                 * @description The calendar; creating, editing and cancelling bookings.
+                 * @enum {string}
+                 */
+                bookings: "none" | "view" | "manage";
+                /**
+                 * @description The venue's customers and their history.
+                 * @enum {string}
+                 */
+                customers: "none" | "view" | "manage";
+                /**
+                 * @description Grounds' weekly hours, prices and blocked slots.
+                 * @enum {string}
+                 */
+                schedule: "none" | "view" | "manage";
+                /**
+                 * @description Recording cash and issuing refunds.
+                 * @enum {string}
+                 */
+                payments: "none" | "view" | "manage";
+                /**
+                 * @description The ledger, payouts and earnings reports.
+                 * @enum {string}
+                 */
+                finance: "none" | "view" | "manage";
+                /**
+                 * @description Inviting and removing staff, and changing their permissions.
+                 * @enum {string}
+                 */
+                staff: "none" | "view" | "manage";
+                /**
+                 * @description Profile, layout, amenities, discounts and policies.
+                 * @enum {string}
+                 */
+                venue: "none" | "view" | "manage";
+            };
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        SystemStatus: {
+            /** Format: date-time */
+            checkedAt: string;
+            server: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description The deployed git commit; null when running locally (no deploy sets it). */
+                commit: string | null;
+                /**
+                 * Format: date-time
+                 * @description Null when the process is down.
+                 */
+                startedAt: string | null;
+                /** Format: date-time */
+                lastSeenAt: string | null;
+            };
+            worker: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description The deployed git commit; null when running locally (no deploy sets it). */
+                commit: string | null;
+                /**
+                 * Format: date-time
+                 * @description Null when the process is down.
+                 */
+                startedAt: string | null;
+                /** Format: date-time */
+                lastSeenAt: string | null;
+            };
+            database: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            /** @description The Redis that holds jobs and rate limits. */
+            queue: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            /** @description The Redis used as a cache (can evict keys). */
+            cache: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+        };
+        SystemHistory: {
+            /** @description Oldest first, up to the last 24 hours. */
+            samples: components["schemas"]["SystemSample"][];
+        };
+        SystemSample: {
+            /**
+             * Format: date-time
+             * @description The start of the minute it was taken in.
+             */
+            at: string;
+            /** @enum {string} */
+            worker: "UP" | "DOWN";
+            database: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            queue: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+            cache: {
+                /** @enum {string} */
+                status: "UP" | "DOWN";
+                /** @description Round trip of a trivial command; null when it didn't answer in time. */
+                latencyMs: number | null;
+            };
+        };
+        AdminMarketplace: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description ISO 3166-1 alpha-2.
+             * @example EG
+             */
+            code: string;
+            names: components["schemas"]["Names"];
+            /**
+             * @description ISO 4217.
+             * @example EGP
+             */
+            currency: string;
+            /**
+             * @description E.164 prefix.
+             * @example +20
+             */
+            dialCode: string;
+            /**
+             * @description IANA time zone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            /**
+             * @description VAT in basis points (1400 is 14%).
+             * @example 1400
+             */
+            taxRate: number;
+            /**
+             * @description Hagz's commission in basis points.
+             * @example 1400
+             */
+            commissionRate: number;
+            /** @description Shown in the apps. New marketplaces start hidden. */
+            isActive: boolean;
+            /** @description Has a location, venue or amenity option. Its code and currency can no longer change. */
+            inUse: boolean;
+            locationCount: number;
+            venueCount: number;
+            amenityCount: number;
+            /** @description Has a border venue pins are checked against. Without one, any pin is taken. */
+            hasBoundary: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /**
+         * @example {
+         *       "en": "Nasr City",
+         *       "ar": "مدينة نصر"
+         *     }
+         */
+        Names: {
+            en: string;
+            ar: string;
+        };
+        /** @description Created hidden; turn it on when it's ready. */
+        CreateMarketplace: {
+            /** @example EG */
+            code: string;
+            names: components["schemas"]["Names"];
+            /** @example EGP */
+            currency: string;
+            /** @example +20 */
+            dialCode: string;
+            /** @example Africa/Cairo */
+            timezone: string;
+            /**
+             * @description Basis points: 1400 is 14%.
+             * @example 1400
+             */
+            taxRate: number;
+            /**
+             * @description Basis points: 1400 is 14%.
+             * @example 1400
+             */
+            commissionRate: number;
+            /** @description Its border; null or left out for none (no pin check). */
+            boundary?: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: [
+                    number,
+                    number
+                ][][];
+            } | {
+                /** @enum {string} */
+                type: "MultiPolygon";
+                coordinates: [
+                    number,
+                    number
+                ][][][];
+            } | null;
+        };
+        /** @description Only the fields sent change. `code` and `currency` are refused once it's in use. */
+        UpdateMarketplace: {
+            /** @example EG */
+            code?: string;
+            names?: components["schemas"]["Names"];
+            /** @example EGP */
+            currency?: string;
+            /** @example +20 */
+            dialCode?: string;
+            /** @example Africa/Cairo */
+            timezone?: string;
+            /**
+             * @description Basis points: 1400 is 14%.
+             * @example 1400
+             */
+            taxRate?: number;
+            /**
+             * @description Basis points: 1400 is 14%.
+             * @example 1400
+             */
+            commissionRate?: number;
+            /** @description Its border; null or left out for none (no pin check). */
+            boundary?: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: [
+                    number,
+                    number
+                ][][];
+            } | {
+                /** @enum {string} */
+                type: "MultiPolygon";
+                coordinates: [
+                    number,
+                    number
+                ][][][];
+            } | null;
+            isActive?: boolean;
+        };
+        AdminLocation: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Null at the top of the tree.
+             */
+            parentId: string | null;
+            locality: components["schemas"]["Locality"];
+            /**
+             * @description From the English name when created, then fixed: it's part of public URLs.
+             * @example nasr-city
+             */
+            slug: string;
+            names: components["schemas"]["Names"];
+            /** @description Roughly the middle; a venue's pin suggests the nearest. Null: never suggested. */
+            center: {
+                latitude: number;
+                longitude: number;
+            } | null;
+            childCount: number;
+            venueCount: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateLocation: {
+            /**
+             * Format: uuid
+             * @description Null for the top of the tree.
+             */
+            parentId: string | null;
+            locality: components["schemas"]["Locality"];
+            names: components["schemas"]["Names"];
+            center?: components["schemas"]["Coordinates"];
+        };
+        /** @description The slug stays as it was. */
+        UpdateLocation: {
+            locality?: components["schemas"]["Locality"];
+            names?: components["schemas"]["Names"];
+            /** @description Null clears it. */
+            center?: {
+                latitude: number;
+                longitude: number;
+            } | null;
+        };
+        AdminAmenity: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Stable code, fixed once created.
+             * @example parking
+             */
+            key: string;
+            names: components["schemas"]["Names"];
+            icon: components["schemas"]["AmenityIcon"];
+            /** @description Inactive options can't be newly picked. */
+            isActive: boolean;
+            venueCount: number;
+        };
+        CreateAmenity: {
+            /** @example parking */
+            key: string;
+            names: components["schemas"]["Names"];
+            icon: components["schemas"]["AmenityIcon"];
+        };
+        UpdateAmenity: {
+            names?: components["schemas"]["Names"];
+            icon?: components["schemas"]["AmenityIcon"];
+            isActive?: boolean;
+        };
+        AdminVenue: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            names: {
+                en: string | null;
+                ar: string | null;
+            };
+            status: components["schemas"]["VenueStatus"];
+            marketplace: {
+                /** Format: uuid */
+                id: string;
+                /** @example EG */
+                code: string;
+            };
+            /** @example Nasr City, Cairo */
+            area: string | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
+            /** @description Null only if the venue has no owner, which shouldn't happen. */
+            owner: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @example +201001234567 */
+                phone: string | null;
+            } | null;
+            /** @description Grounds in use or under maintenance. */
+            groundCount: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ReviewVenue: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            names: {
+                en: string | null;
+                ar: string | null;
+            };
+            status: components["schemas"]["VenueStatus"];
+            marketplace: {
+                /** Format: uuid */
+                id: string;
+                /** @example EG */
+                code: string;
+            };
+            /** @example Nasr City, Cairo */
+            area: string | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
+            /** @description Null only if the venue has no owner, which shouldn't happen. */
+            owner: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @example +201001234567 */
+                phone: string | null;
+            } | null;
+            /** @description Grounds in use or under maintenance. */
+            groundCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When it was last sent for review.
+             */
+            submittedAt: string;
+        };
+        RejectVenue: {
+            /**
+             * @description Shown to the owner; say what to change.
+             * @example Add photos of the pitches themselves, not only the entrance.
+             */
+            reason: string;
+        };
+        /** @description Clears the owner's requested area. */
+        SetVenueArea: {
+            /** Format: uuid */
+            locationId: string;
+        };
+        /** @description The result of checking the venue's tax number. */
+        CheckTaxNumber: {
+            valid: boolean;
+            note: string | null;
+        };
+        VenueHistoryEvent: {
+            /** Format: uuid */
+            id: string;
+            /** @example VENUE_SETTINGS_CHANGED */
+            type: string;
+            actor: {
+                kind: components["schemas"]["ActorKind"];
+                /** Format: uuid */
+                id: string | null;
+                name: string | null;
+            };
+            /** @description The event's details: for edits, previous and new values. */
+            data?: unknown;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        ActorKind: "STAFF" | "ADMIN" | "SYSTEM";
     };
-    AdminLocation: {
-      /** Format: uuid */
-      id: string;
-      /**
-       * Format: uuid
-       * @description Null at the top of the tree.
-       */
-      parentId: string | null;
-      locality: components["schemas"]["Locality"];
-      /**
-       * @description From the English name when created, then fixed: it's part of public URLs.
-       * @example nasr-city
-       */
-      slug: string;
-      names: components["schemas"]["Names"];
-      /** @description Roughly the middle; a venue's pin suggests the nearest. Null: never suggested. */
-      center: {
-        latitude: number;
-        longitude: number;
-      } | null;
-      childCount: number;
-      venueCount: number;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    CreateLocation: {
-      /**
-       * Format: uuid
-       * @description Null for the top of the tree.
-       */
-      parentId: string | null;
-      locality: components["schemas"]["Locality"];
-      names: components["schemas"]["Names"];
-      center?: components["schemas"]["Coordinates"];
-    };
-    /** @description The slug stays as it was. */
-    UpdateLocation: {
-      locality?: components["schemas"]["Locality"];
-      names?: components["schemas"]["Names"];
-      /** @description Null clears it. */
-      center?: {
-        latitude: number;
-        longitude: number;
-      } | null;
-    };
-    AdminAmenity: {
-      /** Format: uuid */
-      id: string;
-      /**
-       * @description Stable code, fixed once created.
-       * @example parking
-       */
-      key: string;
-      names: components["schemas"]["Names"];
-      icon: components["schemas"]["AmenityIcon"];
-      /** @description Inactive options can't be newly picked. */
-      isActive: boolean;
-      venueCount: number;
-    };
-    CreateAmenity: {
-      /** @example parking */
-      key: string;
-      names: components["schemas"]["Names"];
-      icon: components["schemas"]["AmenityIcon"];
-    };
-    UpdateAmenity: {
-      names?: components["schemas"]["Names"];
-      icon?: components["schemas"]["AmenityIcon"];
-      isActive?: boolean;
-    };
-    AdminVenue: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      names: {
-        en: string | null;
-        ar: string | null;
-      };
-      status: components["schemas"]["VenueStatus"];
-      marketplace: {
-        /** Format: uuid */
-        id: string;
-        /** @example EG */
-        code: string;
-      };
-      /** @example Nasr City, Cairo */
-      area: string | null;
-      /**
-       * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
-       * @example Sheikh Zayed, Giza
-       */
-      requestedArea: string | null;
-      /** @description Null only if the venue has no owner, which shouldn't happen. */
-      owner: {
-        /** Format: uuid */
-        id: string;
-        name: string;
-        /** @example +201001234567 */
-        phone: string | null;
-      } | null;
-      /** @description Grounds in use or under maintenance. */
-      groundCount: number;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    ReviewVenue: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      names: {
-        en: string | null;
-        ar: string | null;
-      };
-      status: components["schemas"]["VenueStatus"];
-      marketplace: {
-        /** Format: uuid */
-        id: string;
-        /** @example EG */
-        code: string;
-      };
-      /** @example Nasr City, Cairo */
-      area: string | null;
-      /**
-       * @description An area the owner asked for because Hagz doesn't cover it; `area` is null until an admin adds it and sets it.
-       * @example Sheikh Zayed, Giza
-       */
-      requestedArea: string | null;
-      /** @description Null only if the venue has no owner, which shouldn't happen. */
-      owner: {
-        /** Format: uuid */
-        id: string;
-        name: string;
-        /** @example +201001234567 */
-        phone: string | null;
-      } | null;
-      /** @description Grounds in use or under maintenance. */
-      groundCount: number;
-      /** Format: date-time */
-      createdAt: string;
-      /**
-       * Format: date-time
-       * @description When it was last sent for review.
-       */
-      submittedAt: string;
-    };
-    RejectVenue: {
-      /**
-       * @description Shown to the owner; say what to change.
-       * @example Add photos of the pitches themselves, not only the entrance.
-       */
-      reason: string;
-    };
-    /** @description Clears the owner's requested area. */
-    SetVenueArea: {
-      /** Format: uuid */
-      locationId: string;
-    };
-    /** @description The result of checking the venue's tax number. */
-    CheckTaxNumber: {
-      valid: boolean;
-      note: string | null;
-    };
-    VenueHistoryEvent: {
-      /** Format: uuid */
-      id: string;
-      /** @example VENUE_SETTINGS_CHANGED */
-      type: string;
-      actor: {
-        kind: components["schemas"]["ActorKind"];
-        /** Format: uuid */
-        id: string | null;
-        name: string | null;
-      };
-      /** @description The event's details: for edits, previous and new values. */
-      data?: unknown;
-      /** Format: date-time */
-      createdAt: string;
-    };
-    /** @enum {string} */
-    ActorKind: "STAFF" | "ADMIN" | "SYSTEM";
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;
