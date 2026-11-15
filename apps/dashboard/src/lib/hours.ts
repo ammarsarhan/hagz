@@ -265,3 +265,13 @@ export const weekSummary = (t: TFunction, week: Week) => {
       : t("screens.setup.hours.daysOpen", { count: open.length });
   return same && first ? `${days} · ${rangeLabel(t, first)}` : days;
 };
+
+// Day names, from Sunday (0).
+type DayKey = "0" | "1" | "2" | "3" | "4" | "5" | "6";
+const keyOf = (dayOfWeek: number) => String(dayOfWeek) as DayKey;
+export const dayName = (t: TFunction, dayOfWeek: number) =>
+  t(`screens.setup.hours.days.${keyOf(dayOfWeek)}`);
+export const shortDayName = (t: TFunction, dayOfWeek: number) =>
+  t(`screens.setup.hours.shortDays.${keyOf(dayOfWeek)}`);
+export const dayLetter = (t: TFunction, dayOfWeek: number) =>
+  t(`screens.setup.hours.letters.${keyOf(dayOfWeek)}`);
