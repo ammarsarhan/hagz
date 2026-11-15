@@ -83,55 +83,8 @@ export const refundRows = (t: TFunction, tiers: readonly CancellationTier[]) => 
   return rows;
 };
 
-// One rule as typed on "Your own rules" (Figma 338:2).
-export interface TierDraft {
-  hours: string;
-  percent: string;
-}
-
-export const draftOf = (tier: CancellationTier): TierDraft => ({
-  hours: String(tier.hours),
-  percent: String(tier.refundPercent),
-});
-
 // The rule added under the last one: half its notice and half its refund, so it already fits.
 export const nextTier = (last: CancellationTier | undefined): CancellationTier => ({
   hours: Math.max(1, Math.floor((last?.hours ?? 2) / 2)),
   refundPercent: Math.floor((last?.refundPercent ?? 100) / 2),
 });
-
-export type TierErrors = { hours?: string; percent?: string }[];
-
-// The API's rules for custom tiers (CancellationTiers), checked here so each problem shows under
-// its own field: whole hours from 1 to 336 and 0 to 100 %, each rule needing less notice than the
-// one above and never giving back more.
-export const checkTiers = (
-  t: TFunction,
-  drafts: readonly TierDraft[],
-): { tiers: CancellationTier[]; errors: TierErrors } => {
-  const tiers = drafts.map((draft) => ({
-    hours: Number(draft.hours),
-    refundPercent: Number(draft.percent),
-  }));
-  const errors: TierErrors = tiers.map((tier, i) => {
-    const before = tiers[i - 1];
-    const found: TierErrors[number] = {};
-    const hoursValid =
-      drafts[i]?.hours !== "" && tier.hours >= 1 && tier.hours <= MAXIMUM_NOTICE_HOURS;
-    const percentValid = drafts[i]?.percent !== "" && tier.refundPercent <= 100;
-    if (!hoursValid) {
-      found.hours = t("screens.setup.settings.custom.hoursRange", { max: MAXIMUM_NOTICE_HOURS });
-    } else if (before && tier.hours >= before.hours) {
-      found.hours = t("screens.setup.settings.custom.lessNotice");
-    }
-    if (!percentValid) found.percent = t("screens.setup.settings.custom.percentRange");
-    else if (before && tier.refundPercent > before.refundPercent) {
-      found.percent = t("screens.setup.settings.custom.noMore");
-    }
-    return found;
-  });
-  return { tiers, errors };
-};
-
-export const hasErrors = (errors: TierErrors) =>
-  errors.some((error) => error.hours !== undefined || error.percent !== undefined);
