@@ -25,7 +25,7 @@ export function WeekChart({ week, onDay }: { week: Week; onDay: (day: number) =>
     <View>
       <View className="flex-row">
         {/* Every fourth hour down the side, level with its row. */}
-        <View className="w-9 pe-2" style={{ paddingTop: 24 }}>
+        <View className="w-9" style={{ paddingTop: 24 }}>
           {rows.map((hour) => (
             <View key={hour} style={{ height: CELL + GAP }}>
               {hour % 4 === 0 ? (
@@ -36,7 +36,7 @@ export function WeekChart({ week, onDay }: { week: Week; onDay: (day: number) =>
             </View>
           ))}
         </View>
-        <View className="flex-1 flex-row gap-[3px]">
+        <View className="ms-2 flex-1 flex-row gap-[3px]">
           {week.map((day, dayOfWeek) => (
             <Pressable
               key={dayOfWeek}
