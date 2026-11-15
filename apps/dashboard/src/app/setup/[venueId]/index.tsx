@@ -137,6 +137,7 @@ const SCREENS: Partial<Record<SetupItem["key"], string>> = {
   DETAILS: "details",
   LOCATION: "location",
   PHOTOS: "photos",
+  GROUNDS: "grounds",
   AMENITIES: "amenities",
   TAX_NUMBER: "tax",
 };
