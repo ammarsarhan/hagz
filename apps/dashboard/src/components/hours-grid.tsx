@@ -41,13 +41,16 @@ const GAP = 4;
 const ROW = CELL + GAP;
 const RADIUS = 6;
 const LABELS = 48;
-// The caption's line height, for placing a label against a row line.
-const LABEL_HEIGHT = 18;
+// A label's line box starts this far above its letters (13 px text on an 18 px line), so lifting
+// it by this much puts the letters level with the top of their cell.
+const LABEL_LIFT = 3;
 const HEADER = 26;
 // Holding this long turns a touch into a selection drag.
 const HOLD = 220;
 const NORMAL = "#dce5ff";
 const OUTLINE = 2.5;
+// Lighter than the ink-3 greys, so the outline marks the selection without weighing on it.
+const OUTLINE_COLOR = "#c4c8cf";
 // The outline gliding to the next cell, and fading in or out.
 const GLIDE = { duration: 140, easing: Easing.out(Easing.cubic) };
 const FADE = { duration: 120 };
@@ -55,20 +58,23 @@ const FADE = { duration: 120 };
 const DASH = [6, 4];
 const MARCH = 450;
 
+const SWATCH = { width: 22, height: 14 };
+
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const fillOf = (tier: Tier | null) =>
   tier === "PEAK" ? colors.primary : tier === "BASE" ? NORMAL : colors.white;
 
 // The discount fill: dashed lines at 45°, in the screen's space rather than each cell's, so the
-// stripes run on from one cell into the next.
+// stripes run on from one cell into the next. The tile is two dash lengths tall, so every dash is
+// whole.
 function Hatch({ id }: { id: string }) {
   return (
     <Defs>
       <Pattern
         id={id}
         width={6}
-        height={6}
+        height={9}
         patternUnits="userSpaceOnUse"
         patternTransform="rotate(45)"
       >
@@ -76,7 +82,7 @@ function Hatch({ id }: { id: string }) {
           x1={0}
           y1={0}
           x2={0}
-          y2={6}
+          y2={9}
           stroke={colors.primary}
           strokeWidth={1.4}
           strokeDasharray="2.5 2"
@@ -211,23 +217,17 @@ export function HoursGrid({
 
   return (
     <View className="flex-row">
-      {/* Every other hour down the side, centred on the line above its row. The two midnights at
-          the ends sit just inside the grid's top and bottom edges instead, so neither pokes out. */}
+      {/* Every other hour down the side, its letters level with the top of its cell. */}
       <View style={{ width: LABELS, height: HEADER + GRID_ROWS * ROW }}>
-        {Array.from({ length: GRID_ROWS / 2 + 1 }, (_, i) => {
-          const line = HEADER + i * 2 * ROW;
-          const top =
-            i === 0 ? HEADER : i === GRID_ROWS / 2 ? line - LABEL_HEIGHT : line - LABEL_HEIGHT / 2;
-          return (
-            <Text
-              key={i}
-              className="absolute text-caption text-ink-3"
-              style={{ start: 0, top, lineHeight: LABEL_HEIGHT }}
-            >
-              {hourLabel(t, GRID_START + i * 2)}
-            </Text>
-          );
-        })}
+        {Array.from({ length: GRID_ROWS / 2 }, (_, i) => (
+          <Text
+            key={i}
+            className="absolute text-caption text-ink-3"
+            style={{ start: 0, top: HEADER + i * 2 * ROW + GAP / 2 - LABEL_LIFT }}
+          >
+            {hourLabel(t, GRID_START + i * 2)}
+          </Text>
+        ))}
       </View>
       <View className="flex-1" onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
         <View className="flex-row" style={{ height: HEADER }}>
@@ -327,7 +327,7 @@ function SelectionOutline({
       animatedProps={props}
       rx={RADIUS + 2}
       fill="none"
-      stroke={colors.ink3}
+      stroke={OUTLINE_COLOR}
       strokeWidth={OUTLINE}
       // "1 0" is a solid line; switching between patterns keeps the same prop type.
       strokeDasharray={bulk ? DASH.join(" ") : "1 0"}
@@ -337,19 +337,23 @@ function SelectionOutline({
 
 // The key under the grid: what each fill means.
 export function TierSwatch({ tier }: { tier: Tier | null }) {
+  // A small piece of a cell, big enough for the discount's dashes to read as they do on the grid.
+  const closed = tier === null;
   return (
-    <Svg width={18} height={12}>
+    <Svg width={SWATCH.width} height={SWATCH.height}>
       <Hatch id="swatch" />
       <Rect
-        x={tier === null ? 0.5 : 0}
-        y={tier === null ? 0.5 : 0}
-        width={tier === null ? 17 : 18}
-        height={tier === null ? 11 : 12}
-        rx={3}
+        x={closed ? 0.5 : 0}
+        y={closed ? 0.5 : 0}
+        width={closed ? SWATCH.width - 1 : SWATCH.width}
+        height={closed ? SWATCH.height - 1 : SWATCH.height}
+        rx={4}
         fill={tier === "DISCOUNT" ? colors.blueTint : fillOf(tier)}
-        stroke={tier === null ? colors.border : undefined}
+        stroke={closed ? colors.border : undefined}
       />
-      {tier === "DISCOUNT" ? <Rect width={18} height={12} rx={3} fill="url(#swatch)" /> : null}
+      {tier === "DISCOUNT" ? (
+        <Rect width={SWATCH.width} height={SWATCH.height} rx={4} fill="url(#swatch)" />
+      ) : null}
     </Svg>
   );
 }
