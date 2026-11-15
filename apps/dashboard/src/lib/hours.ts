@@ -95,6 +95,71 @@ const dayFromRing = (ring: (Tier | null)[], absoluteStart: number, hours: number
   };
 };
 
+// ---------- The week as hours ----------
+
+// Every hour of the week with its tier, or null when closed, from Sunday 12 am (0) to Saturday
+// 11 pm (167): what the week grid paints. Unlike Week it takes any shape (two stretches in a day,
+// peak hours twice), which the API takes too.
+export type Ring = (Tier | null)[];
+
+export const ringFromApi = (days: ScheduleDay[]): Ring => ringOf(days);
+
+export const ringToApi = (ring: Ring): ScheduleDay[] => {
+  const days: ScheduleDay[] = [];
+  ring.forEach((tier, at) => {
+    if (tier === null) return;
+    const dayOfWeek = Math.floor(at / 24);
+    let day = days.find((d) => d.dayOfWeek === dayOfWeek);
+    if (!day) {
+      day = { dayOfWeek, hours: [] };
+      days.push(day);
+    }
+    day.hours.push({ hour: at % 24, tier });
+  });
+  return days;
+};
+
+export const sameRing = (a: Ring, b: Ring) => a.every((tier, at) => tier === b[at]);
+
+// The grid's days start at 6 am rather than midnight, so a late night sits under the evening it
+// belongs to: row 0 is 6 am, row 23 is 5 am the next morning. Each of the week's hours is in
+// exactly one cell.
+export const GRID_START = 6;
+export const GRID_ROWS = 24;
+export const hourOfCell = (day: number, row: number) => (day * 24 + GRID_START + row) % WEEK;
+
+// A rectangle of cells: days `fromDay`–`toDay`, rows `fromRow`–`toRow`, inclusive.
+export interface CellBlock {
+  fromDay: number;
+  toDay: number;
+  fromRow: number;
+  toRow: number;
+}
+
+export const blockBetween = (
+  a: { day: number; row: number },
+  b: { day: number; row: number },
+): CellBlock => ({
+  fromDay: Math.min(a.day, b.day),
+  toDay: Math.max(a.day, b.day),
+  fromRow: Math.min(a.row, b.row),
+  toRow: Math.max(a.row, b.row),
+});
+
+export const inBlock = (block: CellBlock, day: number, row: number) =>
+  day >= block.fromDay && day <= block.toDay && row >= block.fromRow && row <= block.toRow;
+
+export const blockHours = (block: CellBlock) =>
+  (block.toDay - block.fromDay + 1) * (block.toRow - block.fromRow + 1);
+
+export const paintBlock = (ring: Ring, block: CellBlock, tier: Tier | null): Ring => {
+  const next = [...ring];
+  for (let day = block.fromDay; day <= block.toDay; day += 1) {
+    for (let row = block.fromRow; row <= block.toRow; row += 1) next[hourOfCell(day, row)] = tier;
+  }
+  return next;
+};
+
 // ---------- To the API ----------
 
 export const tierAt = (day: DayHours, hour: number): Tier =>
@@ -264,6 +329,19 @@ export const weekSummary = (t: TFunction, week: Week) => {
       ? t("screens.setup.hours.everyDay")
       : t("screens.setup.hours.daysOpen", { count: open.length });
   return same && first ? `${days} · ${rangeLabel(t, first)}` : days;
+};
+
+// A block in words: "Thu to Fri · 7 pm – 1 am", "Thursday · 7 pm – 1 am".
+export const blockLabel = (t: TFunction, block: CellBlock) => {
+  const days =
+    block.fromDay === block.toDay
+      ? dayName(t, block.fromDay)
+      : t("screens.setup.hours.dayRange", {
+          from: shortDayName(t, block.fromDay),
+          to: shortDayName(t, block.toDay),
+        });
+  const hours = `${hourLabel(t, GRID_START + block.fromRow)} – ${hourLabel(t, GRID_START + block.toRow + 1)}`;
+  return `${days} · ${hours}`;
 };
 
 // Day names, from Sunday (0).
