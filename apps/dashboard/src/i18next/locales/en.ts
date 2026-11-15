@@ -274,6 +274,7 @@ const en = {
           autoConfirm: "Confirm automatically",
           autoConfirmBody: "Players are confirmed at once. Turn off to approve each one.",
           closes: "Booking closes",
+          closesBody: "How close to kick-off players can still book.",
           howPlayersPay: "How players pay",
           policy: "Cancellation policy",
           policyRequired: "Required before you send for review",
