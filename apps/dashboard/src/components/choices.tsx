@@ -71,6 +71,46 @@ export function CrossFade({
   );
 }
 
+// The round mark at the end of a one-of-several row (Figma "How players pay", 318:2, and
+// "Cancellation · 1 Pick a policy", 330:2): a grey ring when off; chosen, the ring turns blue and a
+// blue dot grows in it. Decorative: the row it sits in is the radio for screen readers.
+const MARK = 22;
+const DOT = 12;
+
+export function RadioMark({ selected }: { selected: boolean }) {
+  const progress = useSelection(selected);
+  const ring = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(progress.value, [0, 1], [colors.ink3, colors.primary]),
+  }));
+  const dot = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: 0.4 + 0.6 * progress.value }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          width: MARK,
+          height: MARK,
+          borderRadius: MARK / 2,
+          borderWidth: 1.5,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        ring,
+      ]}
+    >
+      <Animated.View
+        style={[
+          { width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: colors.primary },
+          dot,
+        ]}
+      />
+    </Animated.View>
+  );
+}
+
 // A rounded pill, 44 high. Pills wrap, so they suit lists whose labels vary in length (sizes,
 // surfaces).
 export function ChoicePill({
