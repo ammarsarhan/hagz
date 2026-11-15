@@ -8,12 +8,15 @@ import { Text } from "./text";
 export function SettingsRow({
   title,
   body,
+  bodyIcon,
   trailing,
   onPress,
   divider = true,
 }: {
   title: string;
   body?: string;
+  // A small sign before the grey line (the warning on a setting that's still required).
+  bodyIcon?: ReactNode;
   trailing?: ReactNode;
   // Without it the row isn't a button (a switch row handles its own taps).
   onPress?: () => void;
@@ -28,7 +31,12 @@ export function SettingsRow({
     >
       <View className="flex-1">
         <Text className="text-[15px] font-medium leading-[1.33]">{title}</Text>
-        {body ? <Text className="mt-0.5 text-caption text-ink-2">{body}</Text> : null}
+        {body ? (
+          <View className="mt-0.5 flex-row items-center gap-1">
+            {bodyIcon}
+            <Text className="flex-1 text-caption text-ink-2">{body}</Text>
+          </View>
+        ) : null}
       </View>
       {trailing}
     </Pressable>
