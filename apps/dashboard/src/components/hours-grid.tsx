@@ -31,7 +31,7 @@ const GAP = 4;
 const ROW = CELL + GAP;
 const RADIUS = 6;
 const LABELS = 48;
-// The caption's line height, for centring a label on a row line.
+// The caption's line height, for placing a label against a row line.
 const LABEL_HEIGHT = 18;
 const HEADER = 26;
 // Holding this long turns a touch into a selection drag.
@@ -201,23 +201,23 @@ export function HoursGrid({
 
   return (
     <View className="flex-row">
-      {/* Every other hour down the side, centred on the line above its row, and the closing
-          midnight under the last. Placed absolutely in a column a little taller than the grid,
-          so the first and last labels aren't cut by the edges. */}
-      <View style={{ width: LABELS, height: HEADER + GRID_ROWS * ROW + LABEL_HEIGHT / 2 }}>
-        {Array.from({ length: GRID_ROWS / 2 + 1 }, (_, i) => (
-          <Text
-            key={i}
-            className="absolute text-caption text-ink-3"
-            style={{
-              start: 0,
-              top: HEADER + i * 2 * ROW - LABEL_HEIGHT / 2,
-              lineHeight: LABEL_HEIGHT,
-            }}
-          >
-            {hourLabel(t, GRID_START + i * 2)}
-          </Text>
-        ))}
+      {/* Every other hour down the side, centred on the line above its row. The two midnights at
+          the ends sit just inside the grid's top and bottom edges instead, so neither pokes out. */}
+      <View style={{ width: LABELS, height: HEADER + GRID_ROWS * ROW }}>
+        {Array.from({ length: GRID_ROWS / 2 + 1 }, (_, i) => {
+          const line = HEADER + i * 2 * ROW;
+          const top =
+            i === 0 ? HEADER : i === GRID_ROWS / 2 ? line - LABEL_HEIGHT : line - LABEL_HEIGHT / 2;
+          return (
+            <Text
+              key={i}
+              className="absolute text-caption text-ink-3"
+              style={{ start: 0, top, lineHeight: LABEL_HEIGHT }}
+            >
+              {hourLabel(t, GRID_START + i * 2)}
+            </Text>
+          );
+        })}
       </View>
       <View className="flex-1" onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
         <View className="flex-row" style={{ height: HEADER }}>
