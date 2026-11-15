@@ -113,7 +113,10 @@ function GroundsList({
       subtitle={t("screens.setup.grounds.subtitle")}
       footer={<Button label={t("screens.setup.grounds.done")} onPress={() => router.back()} />}
     >
-      <View className="border-t border-border">
+      {/* As in iOS lists: the rows span the screen, so a swipe opens Delete at its very edge, while
+          the lines between them stay inset to the gutter, drawn apart from the rows' edges. */}
+      <View className="-mx-5">
+        <View className="mx-5 h-px bg-border" />
         {grounds.map((ground) => (
           <Row
             key={ground.id}
@@ -202,7 +205,7 @@ function Row({
         unstable_pressDelay={90}
         onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}
-        className={`flex-row items-center gap-3 border-b border-border py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
+        className={`flex-row items-center gap-3 px-5 py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
       >
         <View className="flex-1">
           <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
@@ -217,6 +220,8 @@ function Row({
             style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
           />
         </View>
+        {/* The line under it, inset like the content; it slides with the row. */}
+        <View className="absolute inset-x-5 bottom-0 h-px bg-border" />
       </Pressable>
     </ReanimatedSwipeable>
   );
