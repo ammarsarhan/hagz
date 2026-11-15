@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, TextInput, View } from "react-native";
 import { Button } from "@/components/button";
-import { FieldBox } from "@/components/field";
 import { FieldError } from "@/components/field-error";
 import { IconPlus } from "@/components/icons";
 import { StepScreen } from "@/components/step-screen";
@@ -90,8 +89,8 @@ export default function CustomRules() {
                 </Pressable>
               ) : null}
             </View>
-            <View className="flex-row items-center gap-2">
-              <Text className="w-32 text-subtitle">
+            <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1.5">
+              <Text className="text-subtitle">
                 {t("screens.setup.settings.custom.cancelAtLeast")}
               </Text>
               <UnitField
@@ -104,10 +103,8 @@ export default function CustomRules() {
               <Text className="text-subtitle">{t("screens.setup.settings.custom.before")}</Text>
             </View>
             {errors[i]?.hours ? <FieldError>{errors[i].hours}</FieldError> : null}
-            <View className="flex-row items-center gap-2 pt-2">
-              <Text className="w-32 text-subtitle">
-                {t("screens.setup.settings.custom.getBack")}
-              </Text>
+            <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1.5 pt-2.5">
+              <Text className="text-subtitle">{t("screens.setup.settings.custom.getBack")}</Text>
               <UnitField
                 label={t("screens.setup.settings.custom.getBack")}
                 value={draft.percent}
@@ -150,7 +147,10 @@ export default function CustomRules() {
   );
 }
 
-// A small number box with its unit after the digits ("24 hours", "100 %"), sized to what's in it.
+// A number set into the sentence ("Cancel at least [24 hours] before"): a small outlined box the
+// height of a line, its value at the sentence's own size and its unit in grey after it, so the rule
+// reads as words with a blank filled in rather than a form. Blue outline while typing, red with a
+// problem; the padding gives up the half pixel the thicker outline takes, so nothing moves.
 function UnitField({
   label,
   value,
@@ -165,11 +165,19 @@ function UnitField({
   onChangeText: (text: string) => void;
 }) {
   const [focused, setFocused] = useState(false);
+  const outline = error
+    ? "border-[1.5px] border-red px-[9.5px]"
+    : focused
+      ? "border-[1.5px] border-primary px-[9.5px]"
+      : "border border-border px-2.5";
   return (
-    <FieldBox focused={focused} error={error} ltr>
+    <View
+      className={`h-[34px] flex-row items-center gap-1 rounded-[9px] bg-white ${outline}`}
+      style={{ direction: "ltr" }}
+    >
       <TextInput
         accessibilityLabel={`${label}, ${unit}`}
-        className="h-full min-w-6 text-field text-ink"
+        className="h-full min-w-4 p-0 text-subtitle font-medium text-ink"
         value={value}
         onChangeText={(text) => onChangeText(text.replace(/\D/g, "").slice(0, 3))}
         keyboardType="number-pad"
@@ -180,7 +188,7 @@ function UnitField({
         onBlur={() => setFocused(false)}
         style={{ textAlign: "left", writingDirection: "ltr" }}
       />
-      <Text className="text-body text-ink-2">{unit}</Text>
-    </FieldBox>
+      <Text className="text-label text-ink-2">{unit}</Text>
+    </View>
   );
 }
