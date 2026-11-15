@@ -112,17 +112,20 @@ export function RadioMark({ selected }: { selected: boolean }) {
 }
 
 // A rounded pill, 44 high (36 when small, for a short row that must stay on one line). Pills
-// wrap, so they suit lists whose labels vary in length (sizes, surfaces).
+// wrap, so they suit lists whose labels vary in length (sizes, surfaces). With `fill`, the pills
+// share the row's width equally instead, labels centred (the hours' four marks).
 export function ChoicePill({
   label,
   selected,
   onPress,
   small = false,
+  fill = false,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   small?: boolean;
+  fill?: boolean;
 }) {
   const progress = useSelection(selected);
   const size = small ? "text-label" : "text-body";
@@ -132,7 +135,7 @@ export function ChoicePill({
       accessibilityState={{ selected }}
       accessibilityLabel={label}
       onPress={onPress}
-      className={`justify-center active:opacity-70 ${small ? "h-9 px-3.5" : "h-11 px-[18px]"}`}
+      className={`justify-center active:opacity-70 ${small ? "h-9" : "h-11"} ${fill ? "flex-1 items-center px-1" : small ? "px-3.5" : "px-[18px]"}`}
     >
       <SelectionBox progress={progress} radius={small ? 18 : 22} />
       <CrossFade
@@ -144,20 +147,20 @@ export function ChoicePill({
   );
 }
 
-// `spread` pushes a row that fits on one line out to both edges (the hours' four marks).
+// `fill` keeps the pills on one line, sharing its width, a hair apart (pass `fill` to each pill too).
 export function ChoicePills({
   children,
   small = false,
-  spread = false,
+  fill = false,
 }: {
   children: ReactNode;
   small?: boolean;
-  spread?: boolean;
+  fill?: boolean;
 }) {
   return (
     <View
       accessibilityRole="radiogroup"
-      className={`flex-row flex-wrap ${small ? "gap-2" : "gap-2.5"} ${spread ? "justify-between" : ""}`}
+      className={`flex-row ${fill ? "gap-1.5" : `flex-wrap ${small ? "gap-2" : "gap-2.5"}`}`}
     >
       {children}
     </View>
