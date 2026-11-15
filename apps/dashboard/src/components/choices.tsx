@@ -1,11 +1,78 @@
-import type { ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import Animated, {
+  Easing,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
+import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
 import { Text } from "./text";
 
-// Picking one of a few options (Figma "Grounds · Add", 352:2 and 353:2).
+// Picking one of a few options (Figma "Grounds · Add", 352:2 and 353:2). Choosing one eases its
+// outline and tint in and the last one's out, rather than snapping.
+const FADE = { duration: 180, easing: Easing.out(Easing.quad) };
+const SLIDE = { duration: 240, easing: Easing.out(Easing.cubic) };
 
-// A rounded pill, 44 high: grey outline when off, blue outline on a blue tint when chosen. Pills
-// wrap, so they suit lists whose labels vary in length (sizes, surfaces).
+// 0 when off, 1 when chosen, eased between.
+export function useSelection(selected: boolean) {
+  const progress = useSharedValue(selected ? 1 : 0);
+  useEffect(() => {
+    progress.value = withTiming(selected ? 1 : 0, FADE);
+  }, [progress, selected]);
+  return progress;
+}
+
+// The option's outline and fill, drawn behind its content: grey on white when off, blue on a blue
+// tint when chosen. Behind rather than on the pressable, so the pressable keeps its classes for
+// layout and the animated view takes styles only.
+export function SelectionBox({
+  progress,
+  radius,
+}: {
+  progress: SharedValue<number>;
+  radius: number;
+}) {
+  const style = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(progress.value, [0, 1], [colors.border, colors.primary]),
+    backgroundColor: interpolateColor(progress.value, [0, 1], [colors.white, colors.blueTint]),
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { borderWidth: 1, borderRadius: radius }, style]}
+    />
+  );
+}
+
+// Two versions of the same content, one fading into the other: a label or icon changing colour.
+// The "on" one sits over the "off" one, so the content keeps its size.
+export function CrossFade({
+  progress,
+  off,
+  on,
+}: {
+  progress: SharedValue<number>;
+  off: ReactNode;
+  on: ReactNode;
+}) {
+  const offStyle = useAnimatedStyle(() => ({ opacity: 1 - progress.value }));
+  const onStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
+  return (
+    <View>
+      <Animated.View style={offStyle}>{off}</Animated.View>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, onStyle]}>
+        {on}
+      </Animated.View>
+    </View>
+  );
+}
+
+// A rounded pill, 44 high. Pills wrap, so they suit lists whose labels vary in length (sizes,
+// surfaces).
 export function ChoicePill({
   label,
   selected,
@@ -15,14 +82,21 @@ export function ChoicePill({
   selected: boolean;
   onPress: () => void;
 }) {
+  const progress = useSelection(selected);
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
+      accessibilityLabel={label}
       onPress={onPress}
-      className={`h-11 justify-center rounded-full border px-[18px] active:opacity-70 ${selected ? "border-primary bg-blue-tint" : "border-border bg-white"}`}
+      className="h-11 justify-center px-[18px] active:opacity-70"
     >
-      <Text className={`text-body font-medium ${selected ? "text-primary" : ""}`}>{label}</Text>
+      <SelectionBox progress={progress} radius={22} />
+      <CrossFade
+        progress={progress}
+        off={<Text className="text-body font-medium">{label}</Text>}
+        on={<Text className="text-body font-medium text-primary">{label}</Text>}
+      />
     </Pressable>
   );
 }
@@ -35,8 +109,11 @@ export function ChoicePills({ children }: { children: ReactNode }) {
   );
 }
 
-// Three or so short options sharing one grey track, the chosen one raised in white. For a choice
-// whose options are a scale (outdoor, covered, indoor) rather than a list.
+// Three or so short options sharing one grey track, the chosen one on a raised white thumb that
+// slides to it. For a choice whose options are a scale (outdoor, covered, indoor) rather than a
+// list.
+const PAD = 3;
+
 export function Segmented<T extends string>({
   options,
   value,
@@ -48,26 +125,78 @@ export function Segmented<T extends string>({
   label: (option: T) => string;
   onChange: (option: T) => void;
 }) {
+  const [width, setWidth] = useState(0);
+  const segment = (width - PAD * 2) / options.length;
+  const index = Math.max(options.indexOf(value), 0);
+  const offset = useSharedValue(index);
+  useEffect(() => {
+    offset.value = withTiming(index, SLIDE);
+  }, [index, offset]);
+  const thumb = useAnimatedStyle(() => ({
+    // `start` follows the reading direction, so the thumb moves the other way in Arabic.
+    transform: [{ translateX: offset.value * segment * (isRTL ? -1 : 1) }],
+  }));
+
   return (
-    <View accessibilityRole="radiogroup" className="flex-row rounded-[12px] bg-chip p-[3px]">
-      {options.map((option) => {
-        const selected = option === value;
-        return (
-          <Pressable
-            key={option}
-            accessibilityRole="radio"
-            accessibilityState={{ selected }}
-            onPress={() => onChange(option)}
-            className={`h-[38px] flex-1 items-center justify-center rounded-[10px] ${selected ? "bg-white" : ""}`}
-            style={selected ? RAISED : undefined}
-          >
-            <Text className={`text-body font-medium ${selected ? "" : "text-ink-2"}`}>
-              {label(option)}
-            </Text>
-          </Pressable>
-        );
-      })}
+    <View
+      accessibilityRole="radiogroup"
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      className="flex-row rounded-[12px] bg-chip p-[3px]"
+    >
+      {width > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: "absolute",
+              top: PAD,
+              bottom: PAD,
+              start: PAD,
+              width: segment,
+              borderRadius: 10,
+              backgroundColor: colors.white,
+            },
+            RAISED,
+            thumb,
+          ]}
+        />
+      ) : null}
+      {options.map((option) => (
+        <Segment
+          key={option}
+          label={label(option)}
+          selected={option === value}
+          onPress={() => onChange(option)}
+        />
+      ))}
     </View>
+  );
+}
+
+function Segment({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const progress = useSelection(selected);
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      className="h-[38px] flex-1 items-center justify-center"
+    >
+      <CrossFade
+        progress={progress}
+        off={<Text className="text-body font-medium text-ink-2">{label}</Text>}
+        on={<Text className="text-body font-medium">{label}</Text>}
+      />
+    </Pressable>
   );
 }
 
