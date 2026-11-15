@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, TextInput, View } from "react-native";
 import { Button } from "@/components/button";
@@ -26,10 +26,19 @@ import {
 //
 // Problems show under their fields on Continue, and each goes as soon as its field is edited, as on
 // a ground's prices. Removing a rule isn't drawn in Figma: an underlined "Remove" on its label line.
+
+// A rule on screen: its fields as typed, and an id of its own that it keeps, so a rule's fields
+// (and the one being typed in) stay with that rule when one above it is removed.
+type Rule = TierDraft & { id: number };
+
 export default function CustomRules() {
   const { t } = useTranslation();
   const { venueId, customTiers, setCustomTiers } = useCancellationFlow();
-  const [drafts, setDrafts] = useState<TierDraft[]>(() => customTiers.map(draftOf));
+  const nextId = useRef(0);
+  const rule = (draft: TierDraft): Rule => ({ ...draft, id: nextId.current++ });
+  const [drafts, setDrafts] = useState<Rule[]>(() =>
+    customTiers.map((tier) => rule(draftOf(tier))),
+  );
   const [errors, setErrors] = useState<TierErrors>([]);
   const last = drafts[drafts.length - 1];
   const lastHours = last ? Number(last.hours) : NaN;
@@ -44,7 +53,7 @@ export default function CustomRules() {
 
   const add = () => {
     const { tiers } = checkTiers(t, drafts);
-    setDrafts([...drafts, draftOf(nextTier(tiers[tiers.length - 1]))]);
+    setDrafts([...drafts, rule(draftOf(nextTier(tiers[tiers.length - 1])))]);
   };
 
   const remove = (index: number) => {
@@ -68,9 +77,7 @@ export default function CustomRules() {
     >
       <View className="gap-3.5">
         {drafts.map((draft, i) => (
-          // Keyed by place: rules are only added at the end, and a removed one takes its fields
-          // with it.
-          <View key={i} className="border-b border-border pb-3.5">
+          <View key={draft.id} className="border-b border-border pb-3.5">
             <View className="flex-row items-center justify-between pb-2">
               <Text className="text-label font-medium text-ink-2">
                 {t("screens.setup.settings.custom.rule", { number: i + 1 })}
