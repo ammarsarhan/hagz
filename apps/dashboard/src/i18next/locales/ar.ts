@@ -300,7 +300,6 @@ const ar: ArabicTranslations = {
           autoConfirm: "التأكيد تلقائيًا",
           autoConfirmBody: "يُؤكَّد حجز اللاعبين فورًا. أوقفه لتوافق على كل حجز بنفسك.",
           closes: "يُغلق الحجز",
-          closesBody: "آخر وقت قبل بداية المباراة يمكن للاعبين الحجز فيه.",
           howPlayersPay: "طريقة الدفع",
           policy: "سياسة الإلغاء",
           policyRequired: "مطلوبة قبل الإرسال للمراجعة",

@@ -231,12 +231,8 @@ function NoticeSheet({
   const { t } = useTranslation();
   return (
     <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
-      <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
+      <Text accessibilityRole="header" className="mb-2 text-[22px] font-semibold leading-[1.27]">
         {t("screens.setup.settings.closes")}
-      </Text>
-      {/* What it means, under the title, as on the copy-hours sheet. */}
-      <Text className="mb-2 mt-3 text-subtitle text-ink-2">
-        {t("screens.setup.settings.closesBody")}
       </Text>
       <View accessibilityRole="radiogroup">
         {NOTICE_CHOICES.map((minutes, i) => (
