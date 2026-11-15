@@ -276,7 +276,9 @@ export default function CreateVenuePlace() {
     // The checklist is in hand already, so its screen opens with it rather than a spinner, and the
     // venues list is stale now that there's a draft on it.
     queryClient.setQueryData(queries.setup(result.data.venue.id).queryKey, result.data);
-    void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+    // Only the list: a prefix would mark the checklist just put in the cache stale too, and it
+    // would be fetched again the moment its screen opened.
+    void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey, exact: true });
     openSetup(result.data.venue.id);
   };
 
