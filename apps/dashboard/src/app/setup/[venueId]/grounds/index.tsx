@@ -1,17 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Fragment, useRef, useState } from "react";
+import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, View } from "react-native";
-import ReanimatedSwipeable, {
-  type SwipeableMethods,
-} from "react-native-gesture-handler/ReanimatedSwipeable";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { MAXIMUM_GROUNDS } from "@hagz/contracts";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
-import { IconChevronRight, IconPlus, IconTrash } from "@/components/icons";
+import { IconChevronRight, IconPlus } from "@/components/icons";
 import { SetupLoading } from "@/components/setup-loading";
 import { StepScreen } from "@/components/step-screen";
+import { SwipeRow, useSwipeRows } from "@/components/swipe-row";
 import { Text } from "@/components/text";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
@@ -53,21 +52,9 @@ function GroundsList({
   const hud = useHud();
   const queryClient = useQueryClient();
   const decimals = decimalsOf(currency);
-  // The row swiped open, if any. Like iOS, opening another closes it, and tapping a row while one
-  // is open just closes that one.
-  const open = useRef<SwipeableMethods | null>(null);
-
-  const opened = (row: SwipeableMethods | null) => {
-    if (open.current && open.current !== row) open.current.close();
-    open.current = row;
-  };
+  const rows = useSwipeRows();
   const tap = (ground: Ground) => {
-    if (open.current) {
-      open.current.close();
-      open.current = null;
-      return;
-    }
-    router.push(`/setup/${venueId}/grounds/${ground.id}`);
+    if (!rows.closeOpen()) router.push(`/setup/${venueId}/grounds/${ground.id}`);
   };
 
   // Asked first: the ground is kept on the server for booking history, but there's no bringing it
@@ -75,7 +62,7 @@ function GroundsList({
   const remove = (ground: Ground, row: SwipeableMethods | null) => {
     const close = () => {
       row?.close();
-      open.current = null;
+      rows.forget();
     };
     Alert.alert(
       t("screens.setup.grounds.deleteTitle", {
@@ -88,7 +75,7 @@ function GroundsList({
           text: t("screens.setup.grounds.deleteConfirm"),
           style: "destructive",
           onPress: () => {
-            open.current = null;
+            rows.forget();
             void (async () => {
               const key = queries.grounds(venueId).queryKey;
               queryClient.setQueryData(key, (list) => list?.filter((g) => g.id !== ground.id));
@@ -127,7 +114,7 @@ function GroundsList({
                 amount: formatAmount(ground.basePrice, decimals),
               })}
               onPress={() => tap(ground)}
-              onOpen={opened}
+              onOpen={rows.opened}
               onDelete={(row) => remove(ground, row)}
             />
             <View className="mx-5 h-px bg-border" />
@@ -165,66 +152,30 @@ function Row({
   onDelete: (row: SwipeableMethods | null) => void;
 }) {
   const { t } = useTranslation();
-  const swipe = useRef<SwipeableMethods>(null);
-  const [pressed, setPressed] = useState(false);
   const name = ground.name ?? t("screens.setup.grounds.unnamed");
   const line = groundLine(t, ground);
   const perHour = t("screens.setup.grounds.perHour");
-  const deleteLabel = t("screens.setup.grounds.delete");
   return (
-    <ReanimatedSwipeable
-      ref={swipe}
-      // Follows the finger one to one, as iOS's rows do, and stops at the button's width.
-      friction={1}
-      rightThreshold={40}
-      overshootRight={false}
-      // The row is solid white, so the button behind it only shows as the row slides away.
-      childrenContainerStyle={{ backgroundColor: colors.white }}
-      onSwipeableWillOpen={() => onOpen(swipe.current)}
-      // The platform's red, with a bin: the one place the staff app uses red outside errors, because
-      // a swipe action that isn't red doesn't read as iOS's Delete.
-      renderRightActions={() => (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={deleteLabel}
-          onPress={() => onDelete(swipe.current)}
-          className="w-20 items-center justify-center bg-red"
-        >
-          <IconTrash size={24} color={colors.white} strokeWidth={1.75} />
-        </Pressable>
-      )}
+    <SwipeRow
+      label={`${name}, ${line}, ${price}${perHour}`}
+      deleteLabel={t("screens.setup.grounds.delete")}
+      onPress={onPress}
+      onOpen={onOpen}
+      onDelete={onDelete}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${name}, ${line}, ${price}${perHour}`}
-        // VoiceOver can't swipe a row open, so Delete is one of its actions instead.
-        accessibilityActions={[{ name: "delete", label: deleteLabel }]}
-        onAccessibilityAction={({ nativeEvent }) => {
-          if (nativeEvent.actionName === "delete") onDelete(null);
-        }}
-        onPress={onPress}
-        // Pressed shows as a grey highlight, never as fading: a see-through row would show the red
-        // button behind it. Classes from state rather than a style function, which NativeWind drops
-        // next to className. The short delay keeps a swipe from lighting the row up at all.
-        unstable_pressDelay={90}
-        onPressIn={() => setPressed(true)}
-        onPressOut={() => setPressed(false)}
-        className={`flex-row items-center gap-3 px-5 py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
-      >
-        <View className="flex-1">
-          <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
-          <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">{line}</Text>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <Text className="text-body font-medium">{price}</Text>
-          <Text className="text-body text-ink-2">{perHour}</Text>
-          <IconChevronRight
-            size={18}
-            color={colors.ink3}
-            style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
-          />
-        </View>
-      </Pressable>
-    </ReanimatedSwipeable>
+      <View className="flex-1">
+        <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
+        <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">{line}</Text>
+      </View>
+      <View className="flex-row items-center gap-1">
+        <Text className="text-body font-medium">{price}</Text>
+        <Text className="text-body text-ink-2">{perHour}</Text>
+        <IconChevronRight
+          size={18}
+          color={colors.ink3}
+          style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+        />
+      </View>
+    </SwipeRow>
   );
 }
