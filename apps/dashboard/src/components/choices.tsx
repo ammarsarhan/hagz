@@ -144,11 +144,20 @@ export function ChoicePill({
   );
 }
 
-export function ChoicePills({ children, small = false }: { children: ReactNode; small?: boolean }) {
+// `spread` pushes a row that fits on one line out to both edges (the hours' four marks).
+export function ChoicePills({
+  children,
+  small = false,
+  spread = false,
+}: {
+  children: ReactNode;
+  small?: boolean;
+  spread?: boolean;
+}) {
   return (
     <View
       accessibilityRole="radiogroup"
-      className={`flex-row flex-wrap ${small ? "gap-2" : "gap-2.5"}`}
+      className={`flex-row flex-wrap ${small ? "gap-2" : "gap-2.5"} ${spread ? "justify-between" : ""}`}
     >
       {children}
     </View>
