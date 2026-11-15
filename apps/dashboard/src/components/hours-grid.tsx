@@ -78,6 +78,8 @@ const STRIPE_GAP = 6; // between lines, square to them
 const STRIPE_STEP = STRIPE_GAP * Math.SQRT2; // the same, along the x axis
 const DASH_ON = 2.5;
 const DASH_OFF = 2;
+// Faint, so discounted hours read as a texture on the tint rather than competing with peak's blue.
+const STRIPE_OPACITY = 0.5;
 
 function DiscountLines({
   id,
@@ -109,6 +111,7 @@ function DiscountLines({
         x2={c - y - height}
         y2={y + height}
         stroke={colors.primary}
+        strokeOpacity={STRIPE_OPACITY}
         strokeWidth={1.4}
         strokeDasharray={`${DASH_ON} ${DASH_OFF}`}
         // Where the dashes stand at this height, counted along the line from the top.
