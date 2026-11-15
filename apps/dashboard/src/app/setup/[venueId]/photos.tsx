@@ -31,7 +31,7 @@ import { api, reachable } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { preparePhoto, putPhoto } from "@/lib/photos";
-import { queries } from "@/lib/queries";
+import { afterVenueWrite, queries } from "@/lib/queries";
 
 // Setup item "Photos" (Figma "Photos · 1 Empty (grey)", 366:2, and "· 2 Added (grey, smaller
 // radius)", 367:2). At least three, up to twenty; the first is the cover, drawn full width above
@@ -110,8 +110,6 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
   const { slots, height } = layoutFor(tiles, width);
 
   const photosKey = queries.photos(venueId).queryKey;
-  // The checklist and the draft card count photos too.
-  const refresh = () => queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
 
   const upload = async (asset: ImagePicker.ImagePickerAsset) => {
     const key = `${asset.assetId ?? asset.uri}-${Date.now()}`;
@@ -137,8 +135,9 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
         }),
       );
       if (!confirmed.ok) throw confirmed.error;
-      // Into the grid before the tile goes, so it doesn't blink out and back.
-      await refresh();
+      // Into the grid before the tile goes, so it doesn't blink out and back. The checklist and the
+      // draft card count photos too, but once for the whole batch (openPicker), not per photo.
+      await queryClient.invalidateQueries({ queryKey: photosKey, exact: true });
     } catch (error) {
       console.warn(error);
       hud.show(hudMessage(error));
@@ -184,6 +183,7 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
     if (result.canceled) return;
     // One at a time keeps the order they were picked in and the phone's memory down.
     for (const asset of result.assets.slice(0, room)) await upload(asset);
+    void afterVenueWrite(queryClient, venueId);
   };
 
   const reorder = async (ids: string[]) => {
@@ -207,7 +207,9 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       hud.show(hudMessage(result.error));
       return;
     }
-    void refresh();
+    // The order is already on screen; only the draft card's "Last updated" moves. An order can't
+    // finish an item, so not the checklist.
+    void afterVenueWrite(queryClient, venueId, { checklist: false });
   };
 
   // A photo dropped at a point in the grid takes the place of the ready photo it landed on, or the
@@ -242,7 +244,10 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       }),
     );
     if (!result.ok) return hud.show(hudMessage(result.error));
-    void refresh();
+    // Out of the grid at once; the checklist (it may now be short of photos) and the draft card
+    // follow.
+    queryClient.setQueryData(photosKey, (list) => list?.filter((p) => p.id !== photo.id));
+    void afterVenueWrite(queryClient, venueId);
   };
 
   const makeCover = (photo: Photo) => {

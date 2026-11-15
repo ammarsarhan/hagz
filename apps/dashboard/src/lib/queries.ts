@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import { api } from "./api";
 import { send } from "./api-errors";
 import type { Coordinates } from "./places";
@@ -26,9 +26,8 @@ export const queries = {
     queryKey: ["staff", "invitations"],
     queryFn: async () => (await fetched(api.GET("/v1/staff/invitations"))).data,
   }),
-  // A venue's setup checklist. Refetched when an item is finished, so the progress ring and the
-  // "Send for review" button follow the work. A save should invalidate `venues` (a prefix of this
-  // key, so both refetch): the draft card's name and "Last updated" come from that list.
+  // A venue's setup checklist. Refetched when an item may have been finished, so the progress ring
+  // and the "Send for review" button follow the work (see afterVenueWrite).
   setup: (venueId: string) =>
     queryOptions({
       queryKey: ["staff", "venues", venueId, "setup"],
@@ -79,6 +78,28 @@ export const queries = {
         fetched(api.GET("/v1/staff/venues/{venueId}", { params: { path: { venueId } } })),
     }),
 };
+
+// After a write to one venue: refetch what it changed, and nothing else. Every key under a venue
+// starts with the list's key, so invalidating that prefix (as saves used to) refetched every read
+// of every venue still mounted anywhere in the stack, the answer a save had just put in the cache
+// included. Only the owner edits a draft, so this phone's own answers are trusted as they are.
+//
+// - The list, always: every write moves the venue's lastActivityAt (the draft card's "Last
+//   updated").
+// - The checklist, unless the write can't finish an item (a settings toggle, a photo reorder).
+// - `also`: exactly the other reads the write changed (grounds, a ground's schedule).
+//
+// Never the one the save's answer was just written into. Resolves when all of them are back.
+export const afterVenueWrite = (
+  queryClient: QueryClient,
+  venueId: string,
+  { checklist = true, also = [] }: { checklist?: boolean; also?: QueryKey[] } = {},
+) =>
+  Promise.all(
+    [queries.venues.queryKey, ...(checklist ? [queries.setup(venueId).queryKey] : []), ...also].map(
+      (queryKey) => queryClient.invalidateQueries({ queryKey, exact: true }),
+    ),
+  );
 
 // Reference data: the same for everyone and changed by admins only, so it's fetched once and kept
 // for the session rather than refetched behind every screen that needs it.

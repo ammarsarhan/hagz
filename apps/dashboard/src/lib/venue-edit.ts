@@ -5,13 +5,13 @@ import type { components } from "@hagz/api";
 import { useHud } from "@/components/hud";
 import { api } from "./api";
 import { hudMessage, send, type Result } from "./api-errors";
-import { queries } from "./queries";
+import { afterVenueWrite, queries } from "./queries";
 
 export type VenueDetail = components["schemas"]["StaffVenueDetail"];
 
 // Saving a setup item's screen: send its requests one after another, put the venue each answers with
-// in the cache, then go back to the checklist. Everything under the venue is refetched after, so the
-// checklist ticks the item and the draft card's "2m ago" moves (both read other keys).
+// in the cache, then go back to the checklist. The checklist and the venue list are refetched after,
+// so the item ticks and the draft card's "2m ago" moves; the venue itself isn't, it's the answer.
 //
 // A failure stops there and is handed back, for the screen to put under its field when it's the
 // person's to fix; anything else goes to the HUD.
@@ -37,7 +37,7 @@ export function useSaveVenue(venueId: string) {
         saved = result.data;
       }
       if (saved) queryClient.setQueryData(queries.venue(venueId).queryKey, saved);
-      void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+      void afterVenueWrite(queryClient, venueId);
       setSaving(false);
       router.back();
     },
@@ -78,8 +78,9 @@ export function useSaveSettings(venueId: string) {
         return false;
       }
       queryClient.setQueryData(key, result.data);
-      // The checklist's tick and the draft card's "Last updated" follow.
-      void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+      // The draft card's "Last updated" follows. Not the checklist: no setting here finishes an item
+      // (the policy, which does, is saved by the cancellation flow).
+      void afterVenueWrite(queryClient, venueId, { checklist: false });
       return true;
     },
     [hud, queryClient, venueId],

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,7 +20,20 @@ import { runningVenues, unfinishedVenue } from "@/lib/venues";
 
 // What can change on another phone while this screen is open: invitations sent or taken back, and
 // the draft (its name, area, "Last updated").
-const REFRESHED = [queries.venues.queryKey, queries.invitations.queryKey];
+// What first run shows and others can change: invitations (sent or taken back by an owner), and the
+// venue list and the draft's checklist (a review decision). Not the rest of the venue's reads: only
+// the owner edits a draft, and this phone's own saves keep those current.
+const REFRESHED: QueryFilters[] = [
+  { queryKey: queries.venues.queryKey, exact: true },
+  { queryKey: queries.invitations.queryKey, exact: true },
+  {
+    predicate: ({ queryKey }) =>
+      queryKey.length === 4 &&
+      queryKey[0] === "staff" &&
+      queryKey[1] === "venues" &&
+      queryKey[3] === "setup",
+  },
+];
 
 // Where signing in lands. Staff who belong to a venue go on to its tabs (venue/); staff who don't see
 // first run (Figma "D2 · First run, carousel option"): their invitations as a swipeable row of blue
