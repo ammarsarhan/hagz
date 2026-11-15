@@ -331,7 +331,7 @@ ALTER TABLE "VenueReview" ADD CONSTRAINT "VenueReview_rating_check"
   CHECK (rating BETWEEN 1 AND 5);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_deposit_check" CHECK ((("paymentMode" = 'DEPOSIT') = ("depositPercent" IS NOT NULL)) AND ("depositPercent" IS NULL OR "depositPercent" BETWEEN 1 AND 99));
+ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_deposit_check" CHECK ((("paymentMode" = 'DEPOSIT') = ("depositPercent" IS NOT NULL)) AND ("depositPercent" IS NULL OR "depositPercent" BETWEEN 20 AND 85));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueSettings" ADD CONSTRAINT "VenueSettings_window_check" CHECK ("paymentWindow" > 0);

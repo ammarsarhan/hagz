@@ -103,7 +103,7 @@ model VenueInvitation {
   @@index([phone])
 }
 
-// CHECKs: depositPercent 1–99, set exactly when DEPOSIT; paymentWindow > 0; cancellationTiers, an
+// CHECKs: depositPercent 20–85, set exactly when DEPOSIT; paymentWindow > 0; cancellationTiers, an
 // array, set exactly when CUSTOM; loyaltyStamps >= 2, loyaltyWindow > 0, both or neither;
 // regularHorizon 1–12, confirmationWindow and reminderLead 1–168, freedDiscountHours 1–48;
 // lapsedAfter 1–12, regularBookings >= 1, regularPeriod 1–26, fillAlertHours 1–72; staffHoldMinutes 5–60.
