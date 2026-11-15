@@ -18,7 +18,7 @@ import { colors } from "@/lib/colors";
 import { groundLine, type Ground } from "@/lib/grounds";
 import { isRTL } from "@/lib/language";
 import { decimalsOf, formatAmount } from "@/lib/money";
-import { queries } from "@/lib/queries";
+import { afterVenueWrite, queries } from "@/lib/queries";
 
 // Setup item "Grounds and prices" (Figma "Grounds · List", 351:2): every ground players can book,
 // in order, each with what it is and its normal price per hour. Tapping one edits it; swiping it
@@ -84,9 +84,19 @@ function GroundsList({
                   params: { path: { venueId, groundId: ground.id } },
                 }),
               );
-              if (!result.ok) hud.show(hudMessage(result.error));
-              // Either way, the list, the checklist and the draft card read the server again.
-              void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+              if (!result.ok) {
+                hud.show(hudMessage(result.error));
+                // Not deleted: the grounds come back as the server has them.
+                void afterVenueWrite(queryClient, venueId, { also: [key] });
+                return;
+              }
+              // Already out of the list; its week goes from the cache, and the checklist and the
+              // draft card follow.
+              queryClient.removeQueries({
+                queryKey: queries.schedule(venueId, ground.id).queryKey,
+                exact: true,
+              });
+              void afterVenueWrite(queryClient, venueId);
             })();
           },
         },
