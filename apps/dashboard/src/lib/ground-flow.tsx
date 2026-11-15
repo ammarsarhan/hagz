@@ -5,7 +5,7 @@ import { api } from "./api";
 import { hudMessage, send, type Result } from "./api-errors";
 import type { Ground, GroundEnvironment, GroundSize, GroundSport, GroundSurface } from "./grounds";
 import { minorOf } from "./money";
-import { queries } from "./queries";
+import { afterVenueWrite, queries } from "./queries";
 
 // Adding or editing a ground takes four screens (name, sport and size → surface and cover → prices
 // → booking length), and nothing is sent until the last one: a half-made ground would show up in
@@ -77,19 +77,24 @@ export function GroundFlowProvider({
     [],
   );
 
-  // Done: everything under the venue is refetched, so the list, the checklist's tick and the draft
-  // card's "Last updated" all follow.
+  // Done: back to the list once it has the ground as saved, so it doesn't land on the old list
+  // and change under them. The checklist's tick and the draft card's "Last updated" follow in the
+  // background: they're on screens further back.
   const settle = useCallback(
     async (result: Result<unknown>) => {
       if (!result.ok) {
         hud.show(hudMessage(result.error));
         return false;
       }
-      await queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+      void afterVenueWrite(queryClient, venueId);
+      await queryClient.invalidateQueries({
+        queryKey: queries.grounds(venueId).queryKey,
+        exact: true,
+      });
       finish();
       return true;
     },
-    [finish, hud, queryClient],
+    [finish, hud, queryClient, venueId],
   );
 
   const optional = (amount: string) => {
