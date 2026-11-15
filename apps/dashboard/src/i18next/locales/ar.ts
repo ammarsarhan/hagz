@@ -303,7 +303,6 @@ const ar: ArabicTranslations = {
           howPlayersPay: "طريقة الدفع",
           policy: "سياسة الإلغاء",
           policyRequired: "مطلوبة قبل الإرسال للمراجعة",
-          choosePolicy: "اختر سياسة",
           rewardRegulars: "كافئ اللاعبين الدائمين",
           rewardBody_ordinal_one: "كل حجز رقم {{count}} مجانًا، خلال {{days}} يومًا.",
           rewardBody_ordinal_two: "كل حجز رقم {{count}} مجانًا، خلال {{days}} يومًا.",

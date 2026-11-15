@@ -123,27 +123,18 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         </GroupHeading>
         <SettingsRow
           title={t("screens.setup.settings.policy")}
-          // Until one is chosen, the row says so and asks for it (a warning sign and ink Medium):
-          // it's the one setting review needs.
+          // Until one is chosen, its line says it's required, after a warning sign (ink: the staff
+          // app marks what's needed by icon and weight, not colour). It's the one setting review
+          // needs.
           body={
             policy
               ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
               : t("screens.setup.settings.policyRequired")
           }
-          trailing={
-            policy ? (
-              chevron
-            ) : (
-              <View className="flex-row items-center gap-1">
-                {/* Ink, not amber: the staff app marks what's needed by icon and weight. */}
-                <IconAlertTriangle size={16} color={colors.ink} strokeWidth={2} />
-                <Text className="text-body font-medium">
-                  {t("screens.setup.settings.choosePolicy")}
-                </Text>
-                {chevron}
-              </View>
-            )
+          bodyIcon={
+            policy ? undefined : <IconAlertTriangle size={14} color={colors.ink} strokeWidth={2} />
           }
+          trailing={chevron}
           onPress={() => router.push(`/setup/${venueId}/settings/cancellation`)}
         />
 

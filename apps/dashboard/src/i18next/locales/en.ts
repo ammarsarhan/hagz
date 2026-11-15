@@ -277,7 +277,6 @@ const en = {
           howPlayersPay: "How players pay",
           policy: "Cancellation policy",
           policyRequired: "Required before you send for review",
-          choosePolicy: "Choose a policy",
           rewardRegulars: "Reward regulars",
           rewardBody_ordinal_one: "Every {{count}}st booking free, within {{days}} days.",
           rewardBody_ordinal_two: "Every {{count}}nd booking free, within {{days}} days.",
