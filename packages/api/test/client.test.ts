@@ -387,7 +387,9 @@ describe("createApiClient", () => {
       });
 
       const request = api.GET("/v1/staff/venues");
-      await vi.waitFor(() => expect(server.refreshes()).toBe(1));
+      await vi.waitFor(() => {
+        expect(server.refreshes()).toBe(1);
+      });
       await auth.start(friend);
       answer.resolve(
         json(200, {
@@ -426,7 +428,9 @@ describe("createApiClient", () => {
       });
 
       const request = api.GET("/v1/staff/venues");
-      await vi.waitFor(() => expect(server.refreshes()).toBe(1));
+      await vi.waitFor(() => {
+        expect(server.refreshes()).toBe(1);
+      });
       await auth.start(friend);
       answer.resolve(problem(401, "SESSION_ENDED"));
       await request;
@@ -453,7 +457,9 @@ describe("createApiClient", () => {
       });
 
       const request = api.GET("/v1/staff/venues");
-      await vi.waitFor(() => expect(server.requests).toHaveLength(1));
+      await vi.waitFor(() => {
+        expect(server.requests).toHaveLength(1);
+      });
       await auth.start(friend);
       answer.resolve(problem(401, "SESSION_ENDED"));
       const { response } = await request;
@@ -476,7 +482,9 @@ describe("createApiClient", () => {
 
       await auth.start(friend);
 
-      await vi.waitFor(() => expect(server.requests).toHaveLength(1));
+      await vi.waitFor(() => {
+        expect(server.requests).toHaveLength(1);
+      });
       const ended = server.requests.at(-1);
       expect(ended?.method).toBe("DELETE");
       expect(new URL(ended?.url ?? "").pathname).toBe("/v1/auth/staff/sessions/current");
