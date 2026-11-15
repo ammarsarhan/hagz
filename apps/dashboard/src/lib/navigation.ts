@@ -9,6 +9,15 @@ export const holdNavigation = (hold: boolean) => {
   held = hold;
 };
 
+// Where a person signed in from an earlier launch goes instead of onboarding (set by lib/boot.ts).
+// Read, not taken, so onboarding mounting a second time still redirects; forgotten when they leave
+// to onboarding, so signing out later shows it.
+let signedInTarget: "/venue" | "/home" | null = null;
+export const setSignedInTarget = (target: "/venue" | "/home") => {
+  signedInTarget = target;
+};
+export const getSignedInTarget = () => signedInTarget;
+
 // Crossing the signed-in boundary (signing in, signing up, signing out) starts a fresh history:
 // nothing from the other side stays underneath to swipe back to.
 export const resetTo = (href: Href) => {
@@ -21,6 +30,7 @@ export const resetTo = (href: Href) => {
 // account, so the next one to sign in on this phone never sees it. In that order: cleared first,
 // the screens still showing would fetch again without a session on their way out.
 export const leaveToOnboarding = () => {
+  signedInTarget = null;
   resetTo("/");
   requestAnimationFrame(() => queryClient.clear());
 };

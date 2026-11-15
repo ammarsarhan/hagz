@@ -61,8 +61,9 @@ function HoursList({ venueId, grounds }: { venueId: string; grounds: Ground[] })
             >
               <View className="flex-1">
                 <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
+                {/* Not set yet: a quieter, smaller grey line. */}
                 <Text
-                  className={`mt-[3px] text-label leading-[1.43] ${ground.openHours === 0 ? "font-medium text-ink" : "text-ink-2"}`}
+                  className={`mt-[3px] text-ink-2 ${ground.openHours === 0 ? "text-caption" : "text-label leading-[1.43]"}`}
                 >
                   {summary}
                 </Text>

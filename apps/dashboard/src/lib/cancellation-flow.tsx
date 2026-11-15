@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { useHud } from "@/components/hud";
 import { api } from "./api";
 import { hudMessage, send } from "./api-errors";
-import { queries } from "./queries";
+import { afterVenueWrite, queries } from "./queries";
 import { sameTiers, tiersOf, type CancellationPolicy, type CancellationTier } from "./settings";
 import type { VenueDetail } from "./venue-edit";
 
@@ -82,7 +82,7 @@ export function CancellationFlowProvider({
     }
     queryClient.setQueryData(queries.venue(venue.id).queryKey, result.data);
     // The checklist ticks the item, and the draft card's "Last updated" moves.
-    void queryClient.invalidateQueries({ queryKey: queries.venues.queryKey });
+    void afterVenueWrite(queryClient, venue.id);
     finish();
   };
 

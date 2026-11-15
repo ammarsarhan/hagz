@@ -1,5 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Animated, View } from "react-native";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { Animated, ScrollView, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 // A screen's scrolling body that runs to the nav bar and the footer instead of stopping short of
@@ -14,11 +21,20 @@ const FADE = 28;
 // flush NavBar pads under itself.
 const NAV_GAP = 14;
 
+// For something inside that scrolls the page itself (the hours grid, while a drag reaches the
+// edge): moves the scroll by up to `dy`, kept within the content, and says how far it went; and
+// where the visible part sits in the window.
+export interface ScrollController {
+  scrollBy: (dy: number) => number;
+  visible: () => { top: number; bottom: number };
+}
+
 export function FadingScroll({
   children,
   scrollY,
   scrollEnabled = true,
   topFade = FADE,
+  controller,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
@@ -26,11 +42,36 @@ export function FadingScroll({
   scrollEnabled?: boolean;
   // A shorter top fade for content that's mostly pictures, where a full one washes out too much.
   topFade?: number;
+  controller?: RefObject<ScrollController | null>;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
   const size = useRef({ height: 0, content: 0, y: 0 });
   const [edges, setEdges] = useState({ top: false, bottom: false });
+  const frame = useRef<ComponentRef<typeof View>>(null);
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const windowTop = useRef(0);
+
+  useEffect(() => {
+    if (!controller) return;
+    controller.current = {
+      scrollBy: (dy) => {
+        const { height, content, y } = size.current;
+        const next = Math.min(Math.max(y + dy, 0), Math.max(content - height, 0));
+        if (next === y) return 0;
+        scroll.current?.scrollTo({ y: next, animated: false });
+        size.current.y = next;
+        return next - y;
+      },
+      visible: () => ({
+        top: windowTop.current,
+        bottom: windowTop.current + size.current.height,
+      }),
+    };
+    return () => {
+      controller.current = null;
+    };
+  }, [controller]);
 
   const measure = () => {
     const { height, content, y } = size.current;
@@ -40,8 +81,9 @@ export function FadingScroll({
   };
 
   return (
-    <View className="-mx-5 flex-1">
+    <View ref={frame} className="-mx-5 flex-1">
       <Animated.ScrollView
+        ref={scroll}
         showsVerticalScrollIndicator={false}
         scrollEnabled={scrollEnabled}
         // A form inside it: a tap on another field or a button works first time, keyboard up or not.
@@ -52,6 +94,9 @@ export function FadingScroll({
         onLayout={(event) => {
           size.current.height = event.nativeEvent.layout.height;
           measure();
+          frame.current?.measureInWindow((_, y) => {
+            windowTop.current = y;
+          });
         }}
         onContentSizeChange={(_, height) => {
           size.current.content = height;

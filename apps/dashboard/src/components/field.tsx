@@ -33,8 +33,7 @@ export function FieldBox({
   );
 }
 
-// A required field's label ends in an asterisk, in the label's own grey: the staff app has no red
-// for status (emphasis is weight), and the asterisk is a convention people read without colour.
+// A required field's label ends in a red asterisk (the user, 2026-11-15: the one red besides errors).
 // Screen readers hear "required" instead of "star".
 export function FieldLabel({
   children,
@@ -53,7 +52,7 @@ export function FieldLabel({
     >
       {children}
       {/* A thin space: the asterisk belongs to the word, not after it. */}
-      {required ? "\u2009*" : null}
+      {required ? <Text className="font-medium text-red">{"\u2009*"}</Text> : null}
     </Text>
   );
 }

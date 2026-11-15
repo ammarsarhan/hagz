@@ -1,9 +1,9 @@
 import { router } from "expo-router";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { CompactTitle, useCompactTitle } from "./compact-title";
-import { FadingScroll } from "./fading-scroll";
+import { FadingScroll, type ScrollController } from "./fading-scroll";
 import { GroupHeading } from "./group-heading";
 import { BackButton, NavBar } from "./nav";
 import { Screen } from "./screen";
@@ -18,6 +18,7 @@ export function StepScreen({
   footer,
   navEnd,
   scrollEnabled = true,
+  scroller,
   children,
 }: {
   title: string;
@@ -25,8 +26,10 @@ export function StepScreen({
   footer: ReactNode;
   // A button at the end of the nav bar (the opening hours' view switch).
   navEnd?: ReactNode;
-  // Off while a finger is dragging something inside (the hours dial).
+  // Off while a finger is dragging something inside (the hours grid).
   scrollEnabled?: boolean;
+  // Lets something inside scroll the page itself (the hours grid's drag at the edges).
+  scroller?: RefObject<ScrollController | null>;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -46,7 +49,7 @@ export function StepScreen({
         }
         end={navEnd}
       />
-      <FadingScroll scrollY={compact.scrollY} scrollEnabled={scrollEnabled}>
+      <FadingScroll scrollY={compact.scrollY} scrollEnabled={scrollEnabled} controller={scroller}>
         <Title subtitle={subtitle} onTitleLayout={compact.onTitleLayout}>
           {title}
         </Title>

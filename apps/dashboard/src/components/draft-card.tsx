@@ -67,8 +67,8 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
       onPress={onPress}
       className="overflow-hidden rounded-[20px] bg-ink active:opacity-90"
     >
-      <ProgressEdge fraction={total > 0 ? done / total : 0} />
-      {/* The cut corner, at the end side so Arabic mirrors it with the layout. */}
+      {/* The cut corner, at the end side so Arabic mirrors it with the layout. Before the
+          progress edge in the tree, so the edge is drawn over it rather than under. */}
       <View
         pointerEvents="none"
         className="absolute end-0 top-0"
@@ -80,6 +80,7 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
           height={DRAFT_CARD_ART_SIZE.height}
         />
       </View>
+      <ProgressEdge fraction={total > 0 ? done / total : 0} />
 
       <View className="px-5 pb-5 pt-[22px]">
         <Text className="text-caption font-medium text-on-ink-muted">
