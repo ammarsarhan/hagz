@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Switch, TextInput, View } from "react-native";
 import { Button } from "@/components/button";
@@ -14,6 +14,7 @@ import { IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
+import { SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
@@ -31,8 +32,9 @@ import {
 } from "@/lib/settings";
 import { useSaveSettings, type VenueDetail } from "@/lib/venue-edit";
 
-// Setup item "Payments and cancellations" (Figma "Payments · A Plain list", 326:2): a plain list
-// under headings, no Save button. Each change is saved as it's made; the two choices with more to
+// Setup item "Policy" (Figma "Payments · A Plain list", 326:2), laid out like the account screen's
+// groups (user, 2026-11-15): its headings and rows, each value on the grey line under its title. No
+// Save button. Each change is saved as it's made; the two choices with more to
 // them open sheets ("How players pay", 318:2, and when booking closes), and the cancellation policy
 // has screens of its own (settings/cancellation).
 export default function SetupSettings() {
@@ -53,6 +55,15 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
   const [paymentKey, setPaymentKey] = useState(0);
   const loyalty = settings.loyalty ?? DEFAULT_LOYALTY;
   const policy = settings.cancellationPolicy;
+  // As on the account screen.
+  const chevron = (
+    <IconChevronRight
+      size={18}
+      color={colors.unit}
+      strokeWidth={2}
+      style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+    />
+  );
 
   return (
     <Screen>
@@ -76,8 +87,8 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           {t("screens.setup.items.SETTINGS.title")}
         </Title>
 
-        <GroupHeading className="pb-0.5">{t("screens.setup.settings.bookings")}</GroupHeading>
-        <Row
+        <GroupHeading className="mb-1">{t("screens.setup.settings.bookings")}</GroupHeading>
+        <SettingsRow
           title={t("screens.setup.settings.autoConfirm")}
           body={t("screens.setup.settings.autoConfirmBody")}
           trailing={
@@ -85,46 +96,57 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
               accessibilityLabel={t("screens.setup.settings.autoConfirm")}
               value={settings.autoConfirm}
               onValueChange={(autoConfirm) => void save({ autoConfirm })}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              ios_backgroundColor={colors.border}
+              trackColor={{ true: colors.primary }}
             />
           }
         />
-        <Row
+        <SettingsRow
           title={t("screens.setup.settings.closes")}
-          trailing={<Value>{noticeLabel(t, settings.minimumNotice)}</Value>}
+          body={noticeLabel(t, settings.minimumNotice)}
+          trailing={chevron}
           onPress={() => setChoosingNotice(true)}
         />
 
-        <GroupHeading className="pb-0.5 pt-9">{t("screens.setup.settings.payments")}</GroupHeading>
-        <Row
+        <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.payments")}</GroupHeading>
+        <SettingsRow
           title={t("screens.setup.settings.howPlayersPay")}
-          trailing={<Value>{paymentLabel(t, settings.paymentMode, settings.depositPercent)}</Value>}
+          body={paymentLabel(t, settings.paymentMode, settings.depositPercent)}
+          trailing={chevron}
           onPress={() => {
             setPaymentKey((key) => key + 1);
             setPaying(true);
           }}
         />
 
-        <GroupHeading className="pb-0.5 pt-9">
+        <GroupHeading className="mb-1 mt-9">
           {t("screens.setup.settings.cancellations")}
         </GroupHeading>
-        <Row
+        <SettingsRow
           title={t("screens.setup.settings.policy")}
-          // Until one is chosen, the row says so: it's the one setting review needs.
-          body={policy ? undefined : t("screens.setup.settings.policyRequired")}
+          // Until one is chosen, the row says so and asks for it (ink, Medium, underlined): it's
+          // the one setting review needs.
+          body={
+            policy
+              ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
+              : t("screens.setup.settings.policyRequired")
+          }
           trailing={
-            <Value action={!policy}>
-              {policy
-                ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
-                : t("screens.setup.settings.choosePolicy")}
-            </Value>
+            policy ? (
+              chevron
+            ) : (
+              <View className="flex-row items-center gap-1">
+                <Text className="text-body font-medium underline">
+                  {t("screens.setup.settings.choosePolicy")}
+                </Text>
+                {chevron}
+              </View>
+            )
           }
           onPress={() => router.push(`/setup/${venueId}/settings/cancellation`)}
         />
 
-        <GroupHeading className="pb-0.5 pt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>
-        <Row
+        <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>
+        <SettingsRow
           title={t("screens.setup.settings.rewardRegulars")}
           body={t("screens.setup.settings.rewardBody", {
             count: loyalty.stamps,
@@ -136,8 +158,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
               accessibilityLabel={t("screens.setup.settings.rewardRegulars")}
               value={settings.loyalty !== null}
               onValueChange={(on) => void save({ loyalty: on ? DEFAULT_LOYALTY : null })}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              ios_backgroundColor={colors.border}
+              trackColor={{ true: colors.primary }}
             />
           }
         />
@@ -164,57 +185,6 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         }}
       />
     </Screen>
-  );
-}
-
-// One setting over a hairline: a 16 Medium title, an optional grey line under it, and its switch
-// or value at the end. A row with a value opens its choices.
-function Row({
-  title,
-  body,
-  trailing,
-  onPress,
-}: {
-  title: string;
-  body?: string;
-  trailing: ReactNode;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole={onPress ? "button" : undefined}
-      disabled={!onPress}
-      onPress={onPress}
-      className="flex-row items-center gap-3 border-b border-border py-[15px] active:opacity-60"
-    >
-      <View className="flex-1">
-        <Text className="text-subtitle font-medium">{title}</Text>
-        {body ? (
-          <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">{body}</Text>
-        ) : null}
-      </View>
-      {trailing}
-    </Pressable>
-  );
-}
-
-// What a row is set to, in grey, with a chevron. Something still to do is an action instead: ink,
-// Medium, underlined ("Choose a policy"), as the staff app shows what needs doing without colour.
-function Value({ children, action = false }: { children: string; action?: boolean }) {
-  return (
-    <View className="flex-row items-center gap-1">
-      <Text
-        className={`text-body ${action ? "font-medium underline" : "text-ink-2"}`}
-        numberOfLines={1}
-      >
-        {children}
-      </Text>
-      <IconChevronRight
-        size={18}
-        color={colors.ink3}
-        style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
-      />
-    </View>
   );
 }
 
