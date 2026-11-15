@@ -2,6 +2,7 @@
 // the package index would bundle all 6,000. Add an icon here before using it.
 export { default as IconAlertCircle } from "@tabler/icons-react-native/IconAlertCircle";
 export { default as IconAlertCircleFilled } from "@tabler/icons-react-native/IconAlertCircleFilled";
+export { default as IconAlertTriangle } from "@tabler/icons-react-native/IconAlertTriangle";
 export { default as IconCircleCheck } from "@tabler/icons-react-native/IconCircleCheck";
 export { default as IconCircleCheckFilled } from "@tabler/icons-react-native/IconCircleCheckFilled";
 export { default as IconCurrentLocation } from "@tabler/icons-react-native/IconCurrentLocation";

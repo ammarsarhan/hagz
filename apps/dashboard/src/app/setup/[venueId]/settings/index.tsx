@@ -10,7 +10,7 @@ import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, FieldLabel, inputClass } from "@/components/field";
 import { GroupHeading } from "@/components/group-heading";
-import { IconChevronRight } from "@/components/icons";
+import { IconAlertTriangle, IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
@@ -123,8 +123,8 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         </GroupHeading>
         <SettingsRow
           title={t("screens.setup.settings.policy")}
-          // Until one is chosen, the row says so and asks for it (ink, Medium, underlined): it's
-          // the one setting review needs.
+          // Until one is chosen, the row says so and asks for it (a warning sign and ink Medium):
+          // it's the one setting review needs.
           body={
             policy
               ? t(`screens.setup.settings.cancellation.policies.${policy}.title`)
@@ -135,7 +135,9 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
               chevron
             ) : (
               <View className="flex-row items-center gap-1">
-                <Text className="text-body font-medium underline">
+                {/* Ink, not amber: the staff app marks what's needed by icon and weight. */}
+                <IconAlertTriangle size={16} color={colors.ink} strokeWidth={2} />
+                <Text className="text-body font-medium">
                   {t("screens.setup.settings.choosePolicy")}
                 </Text>
                 {chevron}
