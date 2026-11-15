@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
+import { GroupHeading } from "./group-heading";
 import { Text } from "./text";
 
 // The account screen's rows, as approved in Figma ("D4 · Account, round 2"): a medium 15 title, an
@@ -34,7 +35,7 @@ export function SettingsRow({
   );
 }
 
-// The heading over a group of rows: smaller than the name above it, larger than the rows.
+// The heading over a group of rows (GroupHeading), spaced for the account screen.
 export function SettingsHeading({
   children,
   first = false,
@@ -42,12 +43,5 @@ export function SettingsHeading({
   children: string;
   first?: boolean;
 }) {
-  return (
-    <Text
-      accessibilityRole="header"
-      className={`mb-1 text-[18px] font-semibold leading-[1.33] ${first ? "mt-8" : "mt-7"}`}
-    >
-      {children}
-    </Text>
-  );
+  return <GroupHeading className={`mb-1 ${first ? "mt-8" : "mt-7"}`}>{children}</GroupHeading>;
 }
