@@ -15,6 +15,4 @@ export const colors = {
   // Animated backgrounds (a chosen option's tint, from white), which classes can't tween.
   white: "#ffffff",
   blueTint: "#eef1fe",
-  // A pressed row's highlight.
-  chip: "#f2f3f5",
 } as const;

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, View } from "react-native";
 import ReanimatedSwipeable, {
@@ -161,6 +161,7 @@ function Row({
 }) {
   const { t } = useTranslation();
   const swipe = useRef<SwipeableMethods>(null);
+  const [pressed, setPressed] = useState(false);
   const name = ground.name ?? t("screens.setup.grounds.unnamed");
   const line = groundLine(t, ground);
   const perHour = t("screens.setup.grounds.perHour");
@@ -172,6 +173,8 @@ function Row({
       friction={1}
       rightThreshold={40}
       overshootRight={false}
+      // The row is solid white, so the button behind it only shows as the row slides away.
+      childrenContainerStyle={{ backgroundColor: colors.white }}
       onSwipeableWillOpen={() => onOpen(swipe.current)}
       // The platform's red, with a bin: the one place the staff app uses red outside errors, because
       // a swipe action that isn't red doesn't read as iOS's Delete.
@@ -196,11 +199,12 @@ function Row({
         }}
         onPress={onPress}
         // Pressed shows as a grey highlight, never as fading: a see-through row would show the red
-        // button behind it the moment a swipe begins. The short delay keeps a swipe from lighting
-        // the row up at all.
+        // button behind it. Classes from state rather than a style function, which NativeWind drops
+        // next to className. The short delay keeps a swipe from lighting the row up at all.
         unstable_pressDelay={90}
-        style={({ pressed }) => ({ backgroundColor: pressed ? colors.chip : colors.white })}
-        className="flex-row items-center gap-3 border-b border-border px-5 py-[15px]"
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}
+        className={`flex-row items-center gap-3 border-b border-border px-5 py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
       >
         <View className="flex-1">
           <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
