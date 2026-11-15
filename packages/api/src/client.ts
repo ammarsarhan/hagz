@@ -84,6 +84,12 @@ export const createApiClient = (options: ApiClientOptions) => {
   // Bumped whenever the session changes, so a request that failed with an old token can tell that
   // someone else already refreshed and just retry, instead of refreshing a second time.
   let generation = 0;
+  // Bumped only when whose session it is changes (signing in, out, or the server ending it), not
+  // when a refresh rotates the same session's tokens. Anything still running for the previous
+  // session (a request, a refresh) sees it moved on and leaves the new one alone: no retrying a
+  // request as someone else, no saving the old account's tokens over the new, no ending the new
+  // session because the old one ended.
+  let identity = 0;
   // Every request that finds its token expired waits on the same refresh: refresh tokens rotate, so
   // two parallel refreshes would each present the same token, and outside the server's 30 s grace
   // window that looks like theft and revokes the session.
@@ -94,9 +100,11 @@ export const createApiClient = (options: ApiClientOptions) => {
     return current ?? null;
   };
 
-  const save = async (session: StoredSession | null) => {
+  // `rotated`: the same session with new tokens (a refresh). Anything else is a change of session.
+  const save = async (session: StoredSession | null, rotated = false) => {
     current = session;
     generation += 1;
+    if (!rotated) identity += 1;
     if (bearer) await (session ? bearer.store.save(session) : bearer.store.clear());
   };
 
@@ -126,6 +134,7 @@ export const createApiClient = (options: ApiClientOptions) => {
   const refreshOnce = async (): Promise<Refreshed> => {
     const session = await load();
     if (bearer && !session) return { ok: false };
+    const owner = identity;
 
     const request = await withHeaders(
       new Request(baseUrl + refreshPaths[options.audience], {
@@ -139,10 +148,12 @@ export const createApiClient = (options: ApiClientOptions) => {
     request.headers.delete("Authorization");
 
     const response = await baseFetch(request);
+    // Signed in or out while this was on its way: its answer belongs to a session that's gone.
+    if (identity !== owner) return { ok: false };
     if (response.ok) {
       if (bearer) {
         const next = (await response.json()) as Session;
-        await save({ accessToken: next.accessToken, refreshToken: next.refreshToken });
+        await save({ accessToken: next.accessToken, refreshToken: next.refreshToken }, true);
       } else {
         // The new cookies are already set; only the generation needs to move on.
         generation += 1;
@@ -169,8 +180,12 @@ export const createApiClient = (options: ApiClientOptions) => {
     // Kept before sending, because sending uses up the body.
     const retry = input.clone();
     const sentAt = generation;
+    const owner = identity;
     const response = await baseFetch(await withHeaders(input));
     if (response.status !== 401) return response;
+    // Sent for a session that's since been replaced or ended: its 401 says nothing about the
+    // current one, and retrying it would send it as someone else.
+    if (identity !== owner) return response;
     const code = await problemCode(response);
     // The token is still good but the session isn't (the account is gone): sign in again.
     if (code === "SESSION_ENDED") await endSession();
@@ -183,6 +198,8 @@ export const createApiClient = (options: ApiClientOptions) => {
     // The refresh's error says more than TOKEN_EXPIRED (SESSION_ENDED, SERVICE_UNAVAILABLE). Each
     // waiter gets its own copy, since a body can be read only once.
     if (!refreshed.ok) return refreshed.response?.clone() ?? response;
+    // Signed in or out while waiting on the refresh: not retried as the new session.
+    if (identity !== owner) return response;
     return baseFetch(await withHeaders(retry));
   };
 

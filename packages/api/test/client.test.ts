@@ -358,4 +358,110 @@ describe("createApiClient", () => {
 
     expect(fetch).toHaveBeenCalledOnce();
   });
+
+  describe("when the signed-in account changes while something is still running", () => {
+    const friend = {
+      accessToken: "friend-access",
+      accessTokenExpiresIn: 600,
+      refreshToken: "friend-refresh",
+      refreshTokenExpiresIn: 5_184_000,
+    };
+    const friendStored = { accessToken: "friend-access", refreshToken: "friend-refresh" };
+    // A promise and the function that settles it, for holding a response back.
+    const deferred = <T>() => {
+      let resolve: (value: T) => void = () => undefined;
+      const promise = new Promise<T>((settle) => (resolve = settle));
+      return { promise, resolve };
+    };
+
+    it("doesn't save a refresh that comes back after someone else signed in", async () => {
+      const answer = deferred<Response>();
+      const server = fakeApi({ refresh: () => answer.promise });
+      server.expire();
+      const { store, current } = memoryStore(signedIn);
+      const { api, auth } = createApiClient({
+        baseUrl: BASE,
+        audience: "staff",
+        store,
+        fetch: server.fetch,
+      });
+
+      const request = api.GET("/v1/staff/venues");
+      await vi.waitFor(() => expect(server.refreshes()).toBe(1));
+      await auth.start(friend);
+      answer.resolve(
+        json(200, {
+          accessToken: "access-2",
+          accessTokenExpiresIn: 600,
+          refreshToken: "refresh-2",
+          refreshTokenExpiresIn: 5_184_000,
+        }),
+      );
+      const { response } = await request;
+
+      expect(current()).toEqual(friendStored);
+      expect(response.status).toBe(401);
+      // Not retried as the new account.
+      expect(
+        server.requests.filter(
+          (sent) =>
+            new URL(sent.url).pathname === "/v1/staff/venues" &&
+            sent.headers.get("Authorization") === "Bearer friend-access",
+        ),
+      ).toHaveLength(0);
+    });
+
+    it("doesn't end the new session when the old one's refresh is refused", async () => {
+      const answer = deferred<Response>();
+      const server = fakeApi({ refresh: () => answer.promise });
+      server.expire();
+      const { store, current } = memoryStore(signedIn);
+      const onSessionEnded = vi.fn();
+      const { api, auth } = createApiClient({
+        baseUrl: BASE,
+        audience: "staff",
+        store,
+        onSessionEnded,
+        fetch: server.fetch,
+      });
+
+      const request = api.GET("/v1/staff/venues");
+      await vi.waitFor(() => expect(server.refreshes()).toBe(1));
+      await auth.start(friend);
+      answer.resolve(problem(401, "SESSION_ENDED"));
+      await request;
+
+      expect(current()).toEqual(friendStored);
+      expect(onSessionEnded).not.toHaveBeenCalled();
+    });
+
+    it("doesn't act on an old request's 401 after someone else signed in", async () => {
+      const answer = deferred<Response>();
+      // Only the venues request is held back; ending the old session answers at once.
+      const server = fakeApi({
+        signedIn: (request) =>
+          request.method === "GET" ? answer.promise : Promise.resolve(json(200, {})),
+      });
+      const { store, current } = memoryStore(signedIn);
+      const onSessionEnded = vi.fn();
+      const { api, auth } = createApiClient({
+        baseUrl: BASE,
+        audience: "staff",
+        store,
+        onSessionEnded,
+        fetch: server.fetch,
+      });
+
+      const request = api.GET("/v1/staff/venues");
+      await vi.waitFor(() => expect(server.requests).toHaveLength(1));
+      await auth.start(friend);
+      answer.resolve(problem(401, "SESSION_ENDED"));
+      const { response } = await request;
+
+      expect(response.status).toBe(401);
+      expect(current()).toEqual(friendStored);
+      expect(onSessionEnded).not.toHaveBeenCalled();
+      expect(server.refreshes()).toBe(0);
+    });
+  });
 });
