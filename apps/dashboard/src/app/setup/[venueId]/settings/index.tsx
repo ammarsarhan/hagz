@@ -96,9 +96,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           onPress={() => setChoosingNotice(true)}
         />
 
-        <GroupHeading className="pb-0.5 pt-[22px]">
-          {t("screens.setup.settings.payments")}
-        </GroupHeading>
+        <GroupHeading className="pb-0.5 pt-9">{t("screens.setup.settings.payments")}</GroupHeading>
         <Row
           title={t("screens.setup.settings.howPlayersPay")}
           trailing={<Value>{paymentLabel(t, settings.paymentMode, settings.depositPercent)}</Value>}
@@ -108,7 +106,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           }}
         />
 
-        <GroupHeading className="pb-0.5 pt-[22px]">
+        <GroupHeading className="pb-0.5 pt-9">
           {t("screens.setup.settings.cancellations")}
         </GroupHeading>
         <Row
@@ -125,9 +123,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           onPress={() => router.push(`/setup/${venueId}/settings/cancellation`)}
         />
 
-        <GroupHeading className="pb-0.5 pt-[22px]">
-          {t("screens.setup.settings.loyalty")}
-        </GroupHeading>
+        <GroupHeading className="pb-0.5 pt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>
         <Row
           title={t("screens.setup.settings.rewardRegulars")}
           body={t("screens.setup.settings.rewardBody", {
