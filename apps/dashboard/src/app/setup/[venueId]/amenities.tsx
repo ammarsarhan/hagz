@@ -11,6 +11,7 @@ import { Segmented } from "@/components/choices";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, FieldLabel, inputClass } from "@/components/field";
+import { IconTrash } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
@@ -314,17 +315,27 @@ function PriceSheet({
         </View>
       </Collapse>
 
-      <View className="mt-6 gap-1">
-        <Button
-          label={t("common.actions.save")}
-          disabled={!valid}
-          onPress={() => onSave(paid ? { price: minor, pricing } : { price: null, pricing: null })}
-        />
-        <Button
-          label={t("screens.setup.amenities.remove", { amenity: amenity.name })}
-          variant="ghost"
-          onPress={onRemove}
-        />
+      {/* As in the photo sheet: take it off (grey, with a bin) beside saving. */}
+      <View className="mt-6 flex-row gap-3">
+        <View className="flex-1">
+          <Button
+            label={t("screens.setup.amenities.remove")}
+            compact
+            variant="secondary"
+            icon={<IconTrash size={17} color={colors.ink} strokeWidth={2} />}
+            onPress={onRemove}
+          />
+        </View>
+        <View className="flex-1">
+          <Button
+            label={t("common.actions.save")}
+            compact
+            disabled={!valid}
+            onPress={() =>
+              onSave(paid ? { price: minor, pricing } : { price: null, pricing: null })
+            }
+          />
+        </View>
       </View>
     </Sheet>
   );

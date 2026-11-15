@@ -283,7 +283,7 @@ const ar: ArabicTranslations = {
           perBooking: "بالحجز",
           perHourPrice: "{{amount}} {{currency}}/ساعة",
           perBookingPrice: "{{amount}} {{currency}}",
-          remove: "احذف {{amenity}}",
+          remove: "احذف",
         },
         tax: {
           subtitle:

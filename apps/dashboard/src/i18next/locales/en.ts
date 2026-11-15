@@ -257,7 +257,7 @@ const en = {
           perBooking: "Per booking",
           perHourPrice: "{{currency}} {{amount}}/hr",
           perBookingPrice: "{{currency}} {{amount}}",
-          remove: "Remove {{amenity}}",
+          remove: "Remove",
         },
         tax: {
           subtitle:
