@@ -339,7 +339,7 @@ const en = {
           shorter: "Shorter",
           longer: "Longer",
           addGround: "Add ground",
-          remove: "Remove ground",
+          removeShort: "Remove",
           removeTitle: "Remove {{name}}?",
           removeBody: "Players won't see it any more. Its past bookings are kept.",
           removeConfirm: "Remove",

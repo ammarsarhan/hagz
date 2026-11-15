@@ -17,6 +17,7 @@ import {
   IconBallFootball,
   IconBallTennis,
   IconBallVolleyball,
+  IconTrash,
 } from "@/components/icons";
 import { SectionHeading, StepScreen } from "@/components/step-screen";
 import { Text } from "@/components/text";
@@ -45,6 +46,7 @@ export default function GroundBasics() {
   }>();
   const { ground, draft, update, remove, saving } = useGroundFlow();
   const sizes = SIZES_BY_SPORT[draft.sport].filter((size) => size !== "STANDARD");
+  const next = () => router.push(`/setup/${venueId}/grounds/${groundId}/surface`);
   const rows = Array.from({ length: Math.ceil(SPORTS.length / COLUMNS) }, (_, row) =>
     SPORTS.slice(row * COLUMNS, row * COLUMNS + COLUMNS),
   );
@@ -54,21 +56,34 @@ export default function GroundBasics() {
       title={t(ground ? "screens.setup.grounds.editTitle" : "screens.setup.grounds.addTitle")}
       subtitle={t("screens.setup.grounds.addSubtitle")}
       footer={
-        <View className="gap-1">
+        ground ? (
+          // Editing, like the photo sheet: remove (grey, with a bin, since the staff app has no red)
+          // beside the way on, half the width each.
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Button
+                label={t("screens.setup.grounds.removeShort")}
+                variant="secondary"
+                icon={<IconTrash size={17} color={colors.ink} strokeWidth={2} />}
+                loading={saving}
+                onPress={remove}
+              />
+            </View>
+            <View className="flex-1">
+              <Button
+                label={t("common.actions.continue")}
+                disabled={draft.name.trim() === ""}
+                onPress={next}
+              />
+            </View>
+          </View>
+        ) : (
           <Button
             label={t("common.actions.continue")}
             disabled={draft.name.trim() === ""}
-            onPress={() => router.push(`/setup/${venueId}/grounds/${groundId}/surface`)}
+            onPress={next}
           />
-          {ground ? (
-            <Button
-              label={t("screens.setup.grounds.remove")}
-              variant="ghost"
-              loading={saving}
-              onPress={remove}
-            />
-          ) : null}
-        </View>
+        )
       }
     >
       <Field

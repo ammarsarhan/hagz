@@ -368,7 +368,7 @@ const ar: ArabicTranslations = {
           shorter: "أقصر",
           longer: "أطول",
           addGround: "أضف الملعب",
-          remove: "احذف الملعب",
+          removeShort: "احذف",
           removeTitle: "حذف {{name}}؟",
           removeBody: "لن يراه اللاعبون بعد الآن. تبقى حجوزاته السابقة محفوظة.",
           removeConfirm: "احذف",
