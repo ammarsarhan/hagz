@@ -471,6 +471,13 @@ const en = {
         hours: {
           title: "Opening hours",
           listSubtitle: "Each ground has its own week. Tap one to set its hours.",
+          gridSubtitle: "{{name}}. Tap an hour, or hold and drag to pick several.",
+          gridLabel: "The week's hours",
+          dayRange: "{{from}} to {{to}}",
+          selected_one: "{{count}} hour selected. Mark it as:",
+          selected_other: "{{count}} hours selected. Mark them as:",
+          apply: "Apply",
+          clearSelection: "Clear selection",
           notSet: "Not set",
           done: "Done",
           weekSubtitle: "{{name}}. Pick a day to see it; tap the dial to change it.",
