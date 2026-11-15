@@ -11,7 +11,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Defs, Line, Pattern, Rect } from "react-native-svg";
+import Svg, { ClipPath, Defs, G, Line, Rect } from "react-native-svg";
 import { colors } from "@/lib/colors";
 import {
   GRID_ROWS,
@@ -70,30 +70,61 @@ const AnimatedRect = Animated.createAnimatedComponent(Rect);
 const fillOf = (tier: Tier | null) =>
   tier === "PEAK" ? colors.primary : tier === "BASE" ? NORMAL : colors.white;
 
-// The discount fill: dashed lines at 45°, in the screen's space rather than each cell's, so the
-// stripes run on from one cell into the next. The tile is two dash lengths tall, so every dash is
-// whole.
-function Hatch({ id }: { id: string }) {
+// The discount fill: dashed lines at 45°, drawn as real lines clipped to the cell rather than as an
+// SVG pattern (react-native-svg clips each pattern tile's edge, which cut the dashes into dots).
+// Lines and dashes are both measured from the drawing's origin, not the cell, so the stripes and
+// their dashes run on from one cell into the next.
+const STRIPE_GAP = 6; // between lines, square to them
+const STRIPE_STEP = STRIPE_GAP * Math.SQRT2; // the same, along the x axis
+const DASH_ON = 2.5;
+const DASH_OFF = 2;
+
+function DiscountLines({
+  id,
+  x,
+  y,
+  width,
+  height,
+  radius,
+}: {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  radius: number;
+}) {
+  // Lines run "/": the points with x + y = c. These are the ones crossing the cell.
+  const lines = [];
+  for (
+    let c = Math.ceil((x + y) / STRIPE_STEP) * STRIPE_STEP;
+    c < x + width + y + height;
+    c += STRIPE_STEP
+  ) {
+    lines.push(
+      <Line
+        key={c}
+        x1={c - y}
+        y1={y}
+        x2={c - y - height}
+        y2={y + height}
+        stroke={colors.primary}
+        strokeWidth={1.4}
+        strokeDasharray={`${DASH_ON} ${DASH_OFF}`}
+        // Where the dashes stand at this height, counted along the line from the top.
+        strokeDashoffset={(y * Math.SQRT2) % (DASH_ON + DASH_OFF)}
+      />,
+    );
+  }
   return (
-    <Defs>
-      <Pattern
-        id={id}
-        width={6}
-        height={9}
-        patternUnits="userSpaceOnUse"
-        patternTransform="rotate(45)"
-      >
-        <Line
-          x1={0}
-          y1={0}
-          x2={0}
-          y2={9}
-          stroke={colors.primary}
-          strokeWidth={1.4}
-          strokeDasharray="2.5 2"
-        />
-      </Pattern>
-    </Defs>
+    <G>
+      <Defs>
+        <ClipPath id={id}>
+          <Rect x={x} y={y} width={width} height={height} rx={radius} />
+        </ClipPath>
+      </Defs>
+      <G clipPath={`url(#${id})`}>{lines}</G>
+    </G>
   );
 }
 
@@ -260,14 +291,14 @@ export function HoursGrid({
       );
       if (tier === "DISCOUNT") {
         cells.push(
-          <Rect
+          <DiscountLines
             key={`${key}h`}
+            id={`discount-${day}-${row}`}
             x={x}
             y={y}
             width={w}
             height={CELL}
-            rx={RADIUS}
-            fill="url(#discount)"
+            radius={RADIUS}
           />,
         );
       }
@@ -319,7 +350,6 @@ export function HoursGrid({
           >
             {width > 0 ? (
               <Svg width={width} height={GRID_ROWS * ROW}>
-                <Hatch id="discount" />
                 {cells}
                 <SelectionOutline outline={outline} />
               </Svg>
@@ -410,7 +440,6 @@ export function TierSwatch({ tier }: { tier: Tier | null }) {
   const closed = tier === null;
   return (
     <Svg width={SWATCH.width} height={SWATCH.height}>
-      <Hatch id="swatch" />
       <Rect
         x={closed ? 0.5 : 0}
         y={closed ? 0.5 : 0}
@@ -421,7 +450,14 @@ export function TierSwatch({ tier }: { tier: Tier | null }) {
         stroke={closed ? colors.border : undefined}
       />
       {tier === "DISCOUNT" ? (
-        <Rect width={SWATCH.width} height={SWATCH.height} rx={4} fill="url(#swatch)" />
+        <DiscountLines
+          id="swatch-discount"
+          x={0}
+          y={0}
+          width={SWATCH.width}
+          height={SWATCH.height}
+          radius={4}
+        />
       ) : null}
     </Svg>
   );
