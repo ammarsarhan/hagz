@@ -20,6 +20,10 @@ export const PAYMENT_MODES = ["MANUAL", "DEPOSIT", "PLATFORM"] as const;
 
 // What turning loyalty on starts with (Figma 326:2's "Every 6th booking free, within 60 days").
 export const DEFAULT_LOYALTY = { stamps: 6, windowDays: 60 };
+// The API's limits on which booking is free (Loyalty.stamps), and the windows offered for how long
+// bookings count: a few round lengths rather than any day from 1 to 365.
+export const LOYALTY_STAMPS = { min: 2, max: 20 };
+export const LOYALTY_WINDOWS = [30, 60, 90, 180, 365] as const;
 
 // The API's limits on a custom rule (CancellationTier).
 export const MAXIMUM_NOTICE_HOURS = 336;
