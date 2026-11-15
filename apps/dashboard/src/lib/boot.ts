@@ -1,6 +1,6 @@
 import * as SplashScreen from "expo-splash-screen";
 import { auth } from "./api";
-import { holdNavigation } from "./navigation";
+import { holdNavigation, setSignedInTarget } from "./navigation";
 import { landing } from "./session";
 
 // The splash screen stays up until the app knows where to open: onboarding, or (signed in from an
@@ -10,28 +10,18 @@ void SplashScreen.preventAutoHideAsync();
 // Fades out over the first screen, as most apps open, rather than cutting to it.
 SplashScreen.setOptions({ fade: true, duration: 250 });
 
-let signedInTarget: "/venue" | "/home" | null = null;
-
 export const boot = async () => {
   holdNavigation(true);
   try {
     if (!(await auth.isSignedIn())) return;
     const target = await landing();
     // The saved session may have ended (revoked, or its account gone) while loading: onboarding.
-    if (await auth.isSignedIn()) signedInTarget = target;
+    if (await auth.isSignedIn()) setSignedInTarget(target);
   } finally {
     // Before the navigator draws, not after: screens (an invitation link opened from cold) navigate
     // from their first effects, which run before the root layout's.
     holdNavigation(false);
   }
-};
-
-// For onboarding, once: where a signed-in person goes instead. Cleared, so signing out later and
-// coming back to onboarding shows it.
-export const takeSignedInTarget = () => {
-  const target = signedInTarget;
-  signedInTarget = null;
-  return target;
 };
 
 // After the first screen has drawn, so there's no blank frame between the splash and it. `then`
