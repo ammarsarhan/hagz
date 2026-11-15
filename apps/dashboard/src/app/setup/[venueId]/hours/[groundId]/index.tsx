@@ -1,15 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { Button } from "@/components/button";
 import { ChoicePill, ChoicePills } from "@/components/choices";
 import { GridKey, HoursGrid } from "@/components/hours-grid";
@@ -227,21 +221,17 @@ function MarkPanel({
     <View>
       <View className="flex-row items-start gap-3">
         <View className="flex-1">
-          <Changing text={blockLabel(t, selection)}>
-            {(text) => (
-              <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
-                {text}
-              </Text>
-            )}
-          </Changing>
-          <Changing text={t("screens.setup.hours.selected", { count: blockHours(selection) })}>
-            {(text) => <Text className="mt-1.5 text-label leading-[1.43] text-ink-2">{text}</Text>}
-          </Changing>
+          <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
+            {blockLabel(t, selection)}
+          </Text>
+          <Text className="mt-1.5 text-label leading-[1.43] text-ink-2">
+            {t("screens.setup.hours.selected", { count: blockHours(selection) })}
+          </Text>
         </View>
         <CloseButton label={t("screens.setup.hours.clearSelection")} onPress={onClose} />
       </View>
       <View className="mt-4">
-        <ChoicePills small>
+        <ChoicePills small spread>
           {marks.map((mark) => (
             <ChoicePill
               small
@@ -267,28 +257,6 @@ function MarkPanel({
       </View>
     </View>
   );
-}
-
-// Text that eases into each new value instead of snapping: it settles up from a few points lower,
-// fading up from half. Quick, as it changes with every cell a drag crosses.
-const SETTLE = { duration: 180, easing: Easing.out(Easing.cubic) };
-
-function Changing({ text, children }: { text: string; children: (text: string) => ReactNode }) {
-  const progress = useSharedValue(1);
-  const first = useRef(true);
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    progress.value = 0;
-    progress.value = withTiming(1, SETTLE);
-  }, [text, progress]);
-  const style = useAnimatedStyle(() => ({
-    opacity: 0.5 + 0.5 * progress.value,
-    transform: [{ translateY: (1 - progress.value) * 4 }],
-  }));
-  return <Animated.View style={style}>{children(text)}</Animated.View>;
 }
 
 // Copying a ground's week to others (Figma 357:2): a one-time copy, not a link; each keeps its own
