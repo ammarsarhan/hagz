@@ -271,7 +271,7 @@ const en = {
           payments: "Payments",
           cancellations: "Cancellations",
           loyalty: "Loyalty",
-          autoConfirm: "Confirm bookings automatically",
+          autoConfirm: "Confirm automatically",
           autoConfirmBody: "Players are confirmed at once. Turn off to approve each one.",
           closes: "Booking closes",
           howPlayersPay: "How players pay",

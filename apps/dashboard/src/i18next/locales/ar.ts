@@ -297,7 +297,7 @@ const ar: ArabicTranslations = {
           payments: "المدفوعات",
           cancellations: "الإلغاء",
           loyalty: "الولاء",
-          autoConfirm: "تأكيد الحجوزات تلقائيًا",
+          autoConfirm: "التأكيد تلقائيًا",
           autoConfirmBody: "يُؤكَّد حجز اللاعبين فورًا. أوقفه لتوافق على كل حجز بنفسك.",
           closes: "يُغلق الحجز",
           howPlayersPay: "طريقة الدفع",
