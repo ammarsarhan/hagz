@@ -208,8 +208,23 @@ export const createApiClient = (options: ApiClientOptions) => {
   const auth = {
     // After sign-up, sign-in or completing two-factor: the response's `session`. (Admin sessions
     // are cookies the API sets itself, so admins never call this.)
-    start: (session: Session) =>
-      save({ accessToken: session.accessToken, refreshToken: session.refreshToken }),
+    // A session still stored from before (which signing in shouldn't find: onboarding only shows
+    // signed out) is ended on the server too, best effort, in the background and with its access
+    // token only: refreshing it here would be the very race the identity check prevents.
+    start: async (session: Session) => {
+      const previous = bearer ? await load().catch(() => null) : null;
+      await save({ accessToken: session.accessToken, refreshToken: session.refreshToken });
+      if (previous && previous.refreshToken !== session.refreshToken) {
+        // In the background: signing in doesn't wait on it. Offline, its refresh token expires on
+        // its own, and nothing holds it any more.
+        void baseFetch(
+          new Request(baseUrl + signOutPaths[options.audience], {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${previous.accessToken}` },
+          }),
+        ).catch(() => undefined);
+      }
+    },
 
     isSignedIn: async () => (await load()) !== null,
 

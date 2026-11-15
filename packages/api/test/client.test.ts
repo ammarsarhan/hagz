@@ -463,5 +463,41 @@ describe("createApiClient", () => {
       expect(onSessionEnded).not.toHaveBeenCalled();
       expect(server.refreshes()).toBe(0);
     });
+
+    it("ends a session still stored from before on the server, with its own token", async () => {
+      const server = fakeApi();
+      const { store, current } = memoryStore(signedIn);
+      const { auth } = createApiClient({
+        baseUrl: BASE,
+        audience: "staff",
+        store,
+        fetch: server.fetch,
+      });
+
+      await auth.start(friend);
+
+      await vi.waitFor(() => expect(server.requests).toHaveLength(1));
+      const ended = server.requests.at(-1);
+      expect(ended?.method).toBe("DELETE");
+      expect(new URL(ended?.url ?? "").pathname).toBe("/v1/auth/staff/sessions/current");
+      expect(ended?.headers.get("Authorization")).toBe("Bearer access-1");
+      expect(current()).toEqual(friendStored);
+      // Its access token only: never refreshed to end it.
+      expect(server.refreshes()).toBe(0);
+    });
+
+    it("doesn't ask the server to end anything when nothing was stored", async () => {
+      const server = fakeApi();
+      const { auth } = createApiClient({
+        baseUrl: BASE,
+        audience: "staff",
+        store: memoryStore().store,
+        fetch: server.fetch,
+      });
+
+      await auth.start(friend);
+
+      expect(server.requests).toHaveLength(0);
+    });
   });
 });
