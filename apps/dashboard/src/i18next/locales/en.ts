@@ -530,7 +530,7 @@ const en = {
             body: "Arrange your grounds the way they sit on the ground",
           },
           SETTINGS: {
-            title: "Payments and cancellations",
+            title: "Policy",
             body: "Choose how players pay and your refund rules",
           },
           AMENITIES: {

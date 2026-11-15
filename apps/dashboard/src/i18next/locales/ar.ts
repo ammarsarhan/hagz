@@ -570,7 +570,7 @@ const ar: ArabicTranslations = {
             body: "رتّب ملاعبك كما هي على أرض الواقع",
           },
           SETTINGS: {
-            title: "الدفع والإلغاء",
+            title: "السياسة",
             body: "اختر طريقة دفع اللاعبين وقواعد الاسترداد",
           },
           AMENITIES: {
