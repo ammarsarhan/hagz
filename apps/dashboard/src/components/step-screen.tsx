@@ -15,11 +15,17 @@ export function StepScreen({
   title,
   subtitle,
   footer,
+  navEnd,
+  scrollEnabled = true,
   children,
 }: {
   title: string;
   subtitle: string;
   footer: ReactNode;
+  // A button at the end of the nav bar (the opening hours' view switch).
+  navEnd?: ReactNode;
+  // Off while a finger is dragging something inside (the hours dial).
+  scrollEnabled?: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -37,8 +43,9 @@ export function StepScreen({
             style={compact.style}
           />
         }
+        end={navEnd}
       />
-      <FadingScroll scrollY={compact.scrollY}>
+      <FadingScroll scrollY={compact.scrollY} scrollEnabled={scrollEnabled}>
         <Title subtitle={subtitle} onTitleLayout={compact.onTitleLayout}>
           {title}
         </Title>

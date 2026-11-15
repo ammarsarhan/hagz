@@ -73,3 +73,6 @@ export { default as IconBallBasketball } from "@tabler/icons-react-native/IconBa
 export { default as IconBallTennis } from "@tabler/icons-react-native/IconBallTennis";
 export { default as IconBallVolleyball } from "@tabler/icons-react-native/IconBallVolleyball";
 export { default as IconMinus } from "@tabler/icons-react-native/IconMinus";
+// Opening hours: switching between the dial and the week chart, and the copy sheet's checkboxes.
+export { default as IconCheck } from "@tabler/icons-react-native/IconCheck";
+export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayoutGrid";
