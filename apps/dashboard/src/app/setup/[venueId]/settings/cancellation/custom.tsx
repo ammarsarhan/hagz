@@ -221,7 +221,7 @@ export default function CustomRules() {
 }
 
 function Swatch({ color }: { color: string }) {
-  return <View className="size-3 rounded-[3px]" style={{ backgroundColor: color }} />;
+  return <View className="me-0.5 size-3 rounded-[3px]" style={{ backgroundColor: color }} />;
 }
 
 // One rule on two wheels, notice and refund, each applied when it comes to rest: the sentence under
