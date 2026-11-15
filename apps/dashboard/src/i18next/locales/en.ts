@@ -322,7 +322,7 @@ const en = {
                 body: "Players pay everything online when they book.",
               },
             },
-            depositValue: "{{percent}}% deposit online",
+            depositRow: "{{percent}}% of the price, paid online when they book",
             deposit: "Deposit",
             depositHint: "Of the booking's price, paid online when they book.",
             depositRange: "Between 1 and 99%",

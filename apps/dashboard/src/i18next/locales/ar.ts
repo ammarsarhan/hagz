@@ -352,7 +352,7 @@ const ar: ArabicTranslations = {
                 body: "يدفع اللاعبون المبلغ كاملًا أونلاين عند الحجز.",
               },
             },
-            depositValue: "عربون {{percent}}% أونلاين",
+            depositRow: "{{percent}}% من السعر، يُدفع أونلاين عند الحجز",
             deposit: "العربون",
             depositHint: "من سعر الحجز، يُدفع أونلاين عند الحجز.",
             depositRange: "من 1 إلى 99%",

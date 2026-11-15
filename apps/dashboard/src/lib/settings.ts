@@ -36,10 +36,11 @@ export const noticeLabel = (t: TFunction, minutes: MinimumNotice) => {
   return t("screens.setup.settings.notice.hours", { count: minutes / 60 });
 };
 
-export const paymentLabel = (t: TFunction, mode: PaymentMode, depositPercent: number | null) =>
-  mode === "DEPOSIT" && depositPercent !== null
-    ? t("screens.setup.settings.payment.depositValue", { percent: depositPercent })
-    : t(`screens.setup.settings.payment.modes.${mode}.title`);
+export const paymentLabel = (t: TFunction, mode: PaymentMode) =>
+  t(`screens.setup.settings.payment.modes.${mode}.title`);
+
+// What choosing "Deposit online" starts with when the venue has no share saved.
+export const DEFAULT_DEPOSIT_PERCENT = 20;
 
 // A policy's rules: the preset's, or the owner's own.
 export const tiersOf = (
