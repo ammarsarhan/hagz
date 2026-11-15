@@ -43,6 +43,17 @@ describe("shortErrorMessage", () => {
     expect(shortErrorMessage(problem("RATE_LIMITED"), "en")).toBe("Wait a moment");
   });
 
+  it("gives a pin too far from its area the API's limit, in km", () => {
+    const far = { ...problem("PIN_FAR_FROM_AREA"), areaId: "a", distance: 23_400, limit: 15_000 };
+    expect(shortErrorMessage(far, "en")).toBe("Pin is over 15 km from the area");
+    expect(shortErrorMessage(far, "ar")).toBe("الدبوس أبعد من 15 كم عن المنطقة");
+    expect(errorMessage(far, "en")).toBe(
+      "The pin is more than 15 km from this area. Move it or pick another area.",
+    );
+    // No limit to fill in: the generic line rather than a "{km}".
+    expect(shortErrorMessage(problem("PIN_FAR_FROM_AREA"), "en")).toBe("Something went wrong");
+  });
+
   it("says something went wrong for anything else, and offline when there was no answer", () => {
     expect(shortErrorMessage(problem("SOMETHING_NEW"), "en")).toBe("Something went wrong");
     expect(shortErrorMessage(new TypeError("Network request failed"), "en")).toBe("You're offline");
