@@ -185,8 +185,9 @@ function AmenitiesForm({
   );
 }
 
-// Off: grey outline, ink. On and free: blue outline. On with a charge: dashed blue on a blue tint,
-// with the price after the name.
+// Off: grey outline, ink. On and free: blue outline. On with a charge: dashed blue on a blue tint.
+// The price isn't written on the pill (the border says it costs extra; its sheet says how much), but
+// screen readers still hear it.
 function Pill({
   option,
   chosen,
@@ -213,7 +214,6 @@ function Pill({
     >
       <AmenityIcon name={option.icon} size={20} color={chosen ? colors.primary : colors.ink} />
       <Text className={`text-body font-medium ${chosen ? "text-primary" : ""}`}>{option.name}</Text>
-      {price ? <Text className="text-caption font-medium text-primary">{price}</Text> : null}
     </Pressable>
   );
 }
