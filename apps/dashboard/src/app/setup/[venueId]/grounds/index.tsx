@@ -113,9 +113,7 @@ function GroundsList({
       subtitle={t("screens.setup.grounds.subtitle")}
       footer={<Button label={t("screens.setup.grounds.done")} onPress={() => router.back()} />}
     >
-      {/* Edge to edge, like an iOS list: the lines and the swipe run to the screen's sides, and only
-          the rows' contents keep the gutter. */}
-      <View className="-mx-5 border-t border-border">
+      <View className="border-t border-border">
         {grounds.map((ground) => (
           <Row
             key={ground.id}
@@ -204,7 +202,7 @@ function Row({
         unstable_pressDelay={90}
         onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}
-        className={`flex-row items-center gap-3 border-b border-border px-5 py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
+        className={`flex-row items-center gap-3 border-b border-border py-[15px] ${pressed ? "bg-chip" : "bg-white"}`}
       >
         <View className="flex-1">
           <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
