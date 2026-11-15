@@ -148,7 +148,7 @@ export default function CustomRules() {
 }
 
 // A number set into the sentence ("Cancel at least [24 hours] before"): a small outlined box the
-// height of a line, its value at the sentence's own size and its unit in grey after it, so the rule
+// height of a line, its value and unit at body size, the unit in grey, so the rule
 // reads as words with a blank filled in rather than a form. Blue outline while typing, red with a
 // problem; the padding gives up the half pixel the thicker outline takes, so nothing moves.
 function UnitField({
@@ -177,7 +177,7 @@ function UnitField({
     >
       <TextInput
         accessibilityLabel={`${label}, ${unit}`}
-        className="h-full min-w-4 p-0 text-subtitle font-medium text-ink"
+        className="min-w-3 p-0 font-normal text-ink"
         value={value}
         onChangeText={(text) => onChangeText(text.replace(/\D/g, "").slice(0, 3))}
         keyboardType="number-pad"
@@ -186,9 +186,16 @@ function UnitField({
         selectionColor={colors.primary}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{ textAlign: "left", writingDirection: "ltr" }}
+        // Size without a line height: iOS draws a single-line input's text high when it has
+        // one, so it's left out and the input is centred in the box instead.
+        style={{
+          fontSize: 15,
+          textAlign: "left",
+          writingDirection: "ltr",
+          includeFontPadding: false,
+        }}
       />
-      <Text className="text-label text-ink-2">{unit}</Text>
+      <Text className="text-body text-ink-2">{unit}</Text>
     </View>
   );
 }
