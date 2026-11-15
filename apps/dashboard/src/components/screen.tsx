@@ -54,8 +54,13 @@ export function Screen({
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <StatusBar style="dark" />
+      {/* Only while the keyboard is up. A Pressable that takes the touch is the JS responder, and a
+          scroll view under a responder won't scroll (RN's RCTScrollViewComponentView checks its
+          ancestors): a drag on anything that isn't its own button (text, the photo tiles) went
+          nowhere. Disabled, it never asks for the touch. */}
       <Pressable
         accessible={false}
+        disabled={keyboard === 0}
         onPress={Keyboard.dismiss}
         style={{ flex: 1, direction: isRTL ? "rtl" : "ltr" }}
       >

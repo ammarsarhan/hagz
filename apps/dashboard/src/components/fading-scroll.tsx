@@ -18,11 +18,14 @@ export function FadingScroll({
   children,
   scrollY,
   scrollEnabled = true,
+  topFade = FADE,
 }: {
   children: ReactNode;
   scrollY?: Animated.Value;
   // Off while something inside is being dragged (photos into order), so the drag doesn't scroll.
   scrollEnabled?: boolean;
+  // A shorter top fade for content that's mostly pictures, where a full one washes out too much.
+  topFade?: number;
 }) {
   const own = useRef(new Animated.Value(0)).current;
   const offset = scrollY ?? own;
@@ -64,13 +67,13 @@ export function FadingScroll({
       >
         {children}
       </Animated.ScrollView>
-      <Fade edge="top" shown={edges.top} />
-      <Fade edge="bottom" shown={edges.bottom} />
+      <Fade edge="top" shown={edges.top} height={topFade} />
+      <Fade edge="bottom" shown={edges.bottom} height={FADE} />
     </View>
   );
 }
 
-function Fade({ edge, shown }: { edge: "top" | "bottom"; shown: boolean }) {
+function Fade({ edge, shown, height }: { edge: "top" | "bottom"; shown: boolean; height: number }) {
   const opacity = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(opacity, {
@@ -84,7 +87,7 @@ function Fade({ edge, shown }: { edge: "top" | "bottom"; shown: boolean }) {
   return (
     <Animated.View
       pointerEvents="none"
-      style={{ position: "absolute", left: 0, right: 0, height: FADE, [edge]: 0, opacity }}
+      style={{ position: "absolute", left: 0, right: 0, height, [edge]: 0, opacity }}
     >
       <Svg width="100%" height="100%">
         <Defs>

@@ -2,6 +2,7 @@
 // the package index would bundle all 6,000. Add an icon here before using it.
 export { default as IconAlertCircle } from "@tabler/icons-react-native/IconAlertCircle";
 export { default as IconAlertCircleFilled } from "@tabler/icons-react-native/IconAlertCircleFilled";
+export { default as IconAlertTriangle } from "@tabler/icons-react-native/IconAlertTriangle";
 export { default as IconCircleCheck } from "@tabler/icons-react-native/IconCircleCheck";
 export { default as IconCircleCheckFilled } from "@tabler/icons-react-native/IconCircleCheckFilled";
 export { default as IconCurrentLocation } from "@tabler/icons-react-native/IconCurrentLocation";
@@ -67,3 +68,12 @@ export { default as IconWifi } from "@tabler/icons-react-native/IconWifi";
 export { default as IconCamera } from "@tabler/icons-react-native/IconCamera";
 export { default as IconPhoto } from "@tabler/icons-react-native/IconPhoto";
 export { default as IconPhotoPlus } from "@tabler/icons-react-native/IconPhotoPlus";
+export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";
+// Grounds (sports; football's ball is with the amenities) and the booking-length stepper.
+export { default as IconBallBasketball } from "@tabler/icons-react-native/IconBallBasketball";
+export { default as IconBallTennis } from "@tabler/icons-react-native/IconBallTennis";
+export { default as IconBallVolleyball } from "@tabler/icons-react-native/IconBallVolleyball";
+export { default as IconMinus } from "@tabler/icons-react-native/IconMinus";
+// Opening hours: switching between the dial and the week chart, and the copy sheet's checkboxes.
+export { default as IconCheck } from "@tabler/icons-react-native/IconCheck";
+export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayoutGrid";

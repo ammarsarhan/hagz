@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -19,7 +20,7 @@ import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
-import { IconCamera, IconPhoto, IconPhotoPlus, IconPlus } from "@/components/icons";
+import { IconCamera, IconPhoto, IconPhotoPlus, IconPlus, IconTrash } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
@@ -92,6 +93,9 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
   const width = screen - 40;
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [choosingSource, setChoosingSource] = useState(false);
+  // The source tapped in the sheet, opened once the sheet has gone: iOS won't present the system
+  // picker while another modal (the sheet) is still on screen, and does nothing instead.
+  const [source, setSource] = useState<"library" | "camera" | null>(null);
   const [chosen, setChosen] = useState<Photo | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -143,8 +147,21 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
     }
   };
 
-  const pick = async (source: "library" | "camera") => {
+  const choose = (picked: "library" | "camera") => {
+    setSource(picked);
     setChoosingSource(false);
+  };
+
+  const pick = async (source: "library" | "camera") => {
+    try {
+      await openPicker(source);
+    } catch (error) {
+      console.warn(error);
+      hud.show(t("screens.setup.photos.pickerFailed"));
+    }
+  };
+
+  const openPicker = async (source: "library" | "camera") => {
     if (source === "camera") {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) return hud.show(t("screens.setup.photos.cameraBlocked"));
@@ -264,7 +281,7 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
           />
         }
       />
-      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging}>
+      <FadingScroll scrollY={compact.scrollY} scrollEnabled={!dragging} topFade={16}>
         <Title
           subtitle={t(empty ? "screens.setup.photos.emptyBody" : "screens.setup.photos.body")}
           onTitleLayout={compact.onTitleLayout}
@@ -316,6 +333,11 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       <Sheet
         visible={choosingSource}
         onClose={() => setChoosingSource(false)}
+        onHidden={() => {
+          if (!source) return;
+          setSource(null);
+          void pick(source);
+        }}
         closeLabel={t("components.shared.nav.close")}
       >
         <Text accessibilityRole="header" className="mb-2 text-[22px] font-semibold leading-[1.27]">
@@ -324,41 +346,75 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
         <SheetRow
           icon={<IconPhoto size={22} color={colors.ink} strokeWidth={1.75} />}
           label={t("screens.setup.photos.library")}
-          onPress={() => void pick("library")}
+          onPress={() => choose("library")}
         />
         <SheetRow
           icon={<IconCamera size={22} color={colors.ink} strokeWidth={1.75} />}
           label={t("screens.setup.photos.camera")}
-          onPress={() => void pick("camera")}
+          onPress={() => choose("camera")}
           last
         />
       </Sheet>
 
       {chosen ? (
+        // After a reference the user sent (a wallpaper preview): the title on the close button's
+        // row, the picture large with its chip in the corner, and the two actions side by side.
         <Sheet
           visible={actionsOpen}
           onClose={() => setActionsOpen(false)}
           onHidden={() => setChosen(null)}
           closeLabel={t("components.shared.nav.close")}
+          header={
+            <View className="flex-row items-center gap-2">
+              <IconPhoto size={20} color={colors.ink} strokeWidth={1.75} />
+              <Text accessibilityRole="header" className="text-subtitle font-semibold">
+                {t("screens.setup.photos.photoNumber", {
+                  number: ready.findIndex((photo) => photo.id === chosen.id) + 1,
+                })}
+              </Text>
+            </View>
+          }
         >
-          <Image
-            source={{ uri: reachable(chosen.url) }}
-            contentFit="cover"
-            style={{ height: 180, borderRadius: 8, marginBottom: 16 }}
-          />
-          <View className="gap-1">
-            {ready[0]?.id !== chosen.id ? (
-              <Button
-                label={t("screens.setup.photos.makeCover")}
-                variant="secondary"
-                onPress={() => makeCover(chosen)}
-              />
-            ) : null}
-            <Button
-              label={t("screens.setup.photos.remove")}
-              variant="ghost"
-              onPress={() => void remove(chosen)}
+          <View className="mb-4 mt-5">
+            <Image
+              source={{ uri: reachable(chosen.url) }}
+              contentFit="cover"
+              style={{ aspectRatio: 4 / 3, borderRadius: 16, backgroundColor: colors.border }}
             />
+            {ready[0]?.id === chosen.id ? (
+              <View className="absolute bottom-3 start-3 rounded-full bg-ink px-3 py-1.5">
+                <Text className="text-label font-semibold text-white">
+                  {t("screens.setup.photos.cover")}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              {/* Destructive without red (the staff app has none): grey, with a bin. */}
+              <Button
+                label={t("screens.setup.photos.removeShort")}
+                compact
+                variant="secondary"
+                icon={<IconTrash size={17} color={colors.ink} strokeWidth={2} />}
+                onPress={() => void remove(chosen)}
+              />
+            </View>
+            <View className="flex-1">
+              {ready[0]?.id === chosen.id ? (
+                <Button
+                  label={t("screens.setup.photos.done")}
+                  compact
+                  onPress={() => setActionsOpen(false)}
+                />
+              ) : (
+                <Button
+                  label={t("screens.setup.photos.setCover")}
+                  compact
+                  onPress={() => makeCover(chosen)}
+                />
+              )}
+            </View>
           </View>
         </Sheet>
       ) : null}
@@ -389,21 +445,40 @@ function SheetRow({
   );
 }
 
-// A tile glides to its new place when the order changes.
+// A tile glides to its new place when the order changes. It moves by transform (no layout pass per
+// frame), and the glide restarts only when its place really changes: keyed on the numbers, since
+// the grid rebuilds its slot objects on every render, and a drop causes several renders in a row.
+const GLIDE = { duration: 260, easing: Easing.out(Easing.cubic) };
+
 const useSlotStyle = (slot: Slot | undefined) => {
-  const x = useSharedValue(slot?.x ?? 0);
-  const y = useSharedValue(slot?.y ?? 0);
-  const width = useSharedValue(slot?.width ?? 0);
-  const height = useSharedValue(slot?.height ?? 0);
+  const sx = slot?.x ?? 0;
+  const sy = slot?.y ?? 0;
+  const sw = slot?.width ?? 0;
+  const sh = slot?.height ?? 0;
+  const x = useSharedValue(sx);
+  const y = useSharedValue(sy);
+  const width = useSharedValue(sw);
+  const height = useSharedValue(sh);
+  // Where it's headed: a dropped tile heads back here when the order didn't change.
+  const targetX = useSharedValue(sx);
+  const targetY = useSharedValue(sy);
   useEffect(() => {
-    if (!slot) return;
-    const timing = { duration: 220 };
-    x.value = withTiming(slot.x, timing);
-    y.value = withTiming(slot.y, timing);
-    width.value = withTiming(slot.width, timing);
-    height.value = withTiming(slot.height, timing);
-  }, [slot, x, y, width, height]);
-  return { x, y, width, height };
+    targetX.value = sx;
+    targetY.value = sy;
+    x.value = withTiming(sx, GLIDE);
+    y.value = withTiming(sy, GLIDE);
+    width.value = withTiming(sw, GLIDE);
+    height.value = withTiming(sh, GLIDE);
+  }, [sx, sy, sw, sh, x, y, width, height, targetX, targetY]);
+  const box = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: width.value,
+    height: height.value,
+    transform: [{ translateX: x.value }, { translateY: y.value }],
+  }));
+  return { x, y, width, height, targetX, targetY, box };
 };
 
 function PhotoTile({
@@ -455,24 +530,34 @@ function PhotoTile({
         place.x.value + touchX.value + event.translationX,
         place.y.value + touchY.value + event.translationY,
       );
+      // The drag becomes the tile's position, so it carries on from where it was let go instead
+      // of springing back first: home if the order stays, or (a frame later, once the new order
+      // arrives) on to its new place.
+      place.x.value = place.x.value + dx.value;
+      place.y.value = place.y.value + dy.value;
+      dx.value = 0;
+      dy.value = 0;
+      place.x.value = withTiming(place.targetX.value, GLIDE);
+      place.y.value = withTiming(place.targetY.value, GLIDE);
     })
     .onFinalize(() => {
-      dx.value = withTiming(0, { duration: 180 });
-      dy.value = withTiming(0, { duration: 180 });
+      // A drag that never got going (or was cancelled) just settles back.
+      dx.value = withTiming(0, GLIDE);
+      dy.value = withTiming(0, GLIDE);
       lifted.value = withTiming(0, { duration: 180 });
     });
   const tap = Gesture.Tap().onEnd(() => runOnJS(onPress)());
 
   const style = useAnimatedStyle(() => ({
     position: "absolute",
-    left: place.x.value,
-    top: place.y.value,
+    left: 0,
+    top: 0,
     width: place.width.value,
     height: place.height.value,
     zIndex: lifted.value > 0 ? 10 : 1,
     transform: [
-      { translateX: dx.value },
-      { translateY: dy.value },
+      { translateX: place.x.value + dx.value },
+      { translateY: place.y.value + dy.value },
       { scale: 1 + (LIFT - 1) * lifted.value },
     ],
     shadowOpacity: 0.18 * lifted.value,
@@ -508,15 +593,9 @@ function PhotoTile({
 // A photo on its way up: the picked image, dimmed, with how much has gone.
 function UploadTile({ upload, slot }: { upload: Upload; slot: Slot | undefined }) {
   const place = useSlotStyle(slot);
-  const style = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: place.x.value,
-    top: place.y.value,
-    width: place.width.value,
-    height: place.height.value,
-  }));
+
   return (
-    <Animated.View style={style}>
+    <Animated.View style={place.box}>
       <Image
         source={{ uri: upload.uri }}
         contentFit="cover"
@@ -534,15 +613,9 @@ function UploadTile({ upload, slot }: { upload: Upload; slot: Slot | undefined }
 function AddTile({ slot, onPress }: { slot: Slot | undefined; onPress: () => void }) {
   const { t } = useTranslation();
   const place = useSlotStyle(slot);
-  const style = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: place.x.value,
-    top: place.y.value,
-    width: place.width.value,
-    height: place.height.value,
-  }));
+
   return (
-    <Animated.View style={style}>
+    <Animated.View style={place.box}>
       <Pressable
         accessibilityRole="button"
         onPress={onPress}
