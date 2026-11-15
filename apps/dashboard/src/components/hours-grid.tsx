@@ -20,9 +20,8 @@ import { isRTL } from "@/lib/language";
 import { Text } from "./text";
 
 // A ground's week as a grid you paint (Figma "E1 · Paint the week", 470:11): a column per day and
-// a cell per hour, from 6 am down to 5 am the next morning, so each late night sits under its
-// evening. Normal hours light blue, peak solid blue, discount dashed diagonally on the light tint,
-// closed white with a hairline.
+// a cell per hour, from 12 am down to the next midnight. Normal hours light blue, peak solid blue,
+// discount dashed diagonally on the light tint, closed white with a hairline.
 //
 // Tapping a cell selects it; holding one and dragging selects the block between it and the finger
 // (a hold first, so a plain drag still scrolls the page). The selection is outlined in grey and
@@ -31,7 +30,9 @@ const CELL = 22;
 const GAP = 4;
 const ROW = CELL + GAP;
 const RADIUS = 6;
-const LABELS = 44;
+const LABELS = 48;
+// The caption's line height, for centring a label on a row line.
+const LABEL_HEIGHT = 18;
 const HEADER = 26;
 // Holding this long turns a touch into a selection drag.
 const HOLD = 220;
@@ -136,7 +137,6 @@ export function HoursGrid({
   // The tap only counts once the hold has failed, i.e. the finger lifted before it.
   const gesture = Gesture.Exclusive(pan, tap);
 
-  // Columns run 6 am to 6 am, so a day's open hours are read from its cells, not its calendar day.
   const openDays = new Set<number>();
   const cells = [];
   for (let day = 0; day < 7; day += 1) {
@@ -201,16 +201,22 @@ export function HoursGrid({
 
   return (
     <View className="flex-row">
-      {/* Every other hour down the side, level with the top of its row. */}
-      <View style={{ width: LABELS, paddingTop: HEADER }}>
-        {Array.from({ length: GRID_ROWS }, (_, row) => (
-          <View key={row} style={{ height: ROW }}>
-            {row % 2 === 0 ? (
-              <Text className="text-caption leading-[14px] text-ink-3" numberOfLines={1}>
-                {hourLabel(t, GRID_START + row)}
-              </Text>
-            ) : null}
-          </View>
+      {/* Every other hour down the side, centred on the line above its row, and the closing
+          midnight under the last. Placed absolutely in a column a little taller than the grid,
+          so the first and last labels aren't cut by the edges. */}
+      <View style={{ width: LABELS, height: HEADER + GRID_ROWS * ROW + LABEL_HEIGHT / 2 }}>
+        {Array.from({ length: GRID_ROWS / 2 + 1 }, (_, i) => (
+          <Text
+            key={i}
+            className="absolute text-caption text-ink-3"
+            style={{
+              start: 0,
+              top: HEADER + i * 2 * ROW - LABEL_HEIGHT / 2,
+              lineHeight: LABEL_HEIGHT,
+            }}
+          >
+            {hourLabel(t, GRID_START + i * 2)}
+          </Text>
         ))}
       </View>
       <View className="flex-1" onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
