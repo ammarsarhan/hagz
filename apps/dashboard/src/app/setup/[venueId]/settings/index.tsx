@@ -164,12 +164,13 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
   );
 }
 
-// A group's heading: 22 Semi Bold, as on the account screen.
+// A group's heading: 18 Semi Bold, the account screen's group headings (SettingsHeading). Smaller
+// than Figma's 22 (user, 2026-11-15), so the groups don't compete with the page title.
 function Heading({ children, first = false }: { children: string; first?: boolean }) {
   return (
     <Text
       accessibilityRole="header"
-      className={`pb-0.5 text-[22px] font-semibold leading-[1.27] ${first ? "" : "pt-[22px]"}`}
+      className={`pb-0.5 text-[18px] font-semibold leading-[1.33] ${first ? "" : "pt-[22px]"}`}
     >
       {children}
     </Text>
