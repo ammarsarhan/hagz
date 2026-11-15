@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { CompactTitle, useCompactTitle } from "./compact-title";
 import { FadingScroll } from "./fading-scroll";
+import { GroupHeading } from "./group-heading";
 import { BackButton, NavBar } from "./nav";
 import { Screen } from "./screen";
 import { Text } from "./text";
@@ -55,8 +56,8 @@ export function StepScreen({
   );
 }
 
-// A heading within a step, clearly under the screen's 28 title and above its 16 rows: 20 Semi
-// Bold ("Sport", "Booking duration"), with an optional grey line under it saying what it's for. 26
+// A heading within a step ("Sport", "Surface"), the app's group heading (GroupHeading), with an
+// optional grey line under it saying what it's for. 26
 // above and 12 below; under a field, which keeps 16 below itself, it adds only the rest.
 export function SectionHeading({
   children,
@@ -69,12 +70,7 @@ export function SectionHeading({
 }) {
   return (
     <View className={`mb-3 ${afterField ? "mt-2.5" : "mt-[26px]"}`}>
-      <Text
-        accessibilityRole="header"
-        className="text-[20px] font-semibold leading-[1.3] tracking-[-0.2px]"
-      >
-        {children}
-      </Text>
+      <GroupHeading>{children}</GroupHeading>
       {description ? (
         <Text className="mt-1 text-label leading-[1.43] text-ink-2">{description}</Text>
       ) : null}
