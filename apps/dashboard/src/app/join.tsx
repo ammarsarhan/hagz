@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryFilters } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
@@ -13,7 +13,7 @@ import { queries } from "@/lib/queries";
 import { useRefreshWhenShown } from "@/lib/use-refresh";
 
 // Invitations can be sent or taken back from another phone while this screen is open.
-const REFRESHED = [queries.invitations.queryKey];
+const REFRESHED: QueryFilters[] = [{ queryKey: queries.invitations.queryKey, exact: true }];
 
 // "Join or create a venue", from the Account tab, for staff already on a venue's team: the same
 // invitations and start tiles as first run, under a back button. Joining goes back to the tabs.

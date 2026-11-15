@@ -1,4 +1,4 @@
-import { type QueryKey, useQueryClient } from "@tanstack/react-query";
+import { type QueryFilters, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef } from "react";
 import { AppState } from "react-native";
@@ -9,15 +9,16 @@ import { AppState } from "react-native";
 // from the app returning to the foreground. Not on first showing, which has just fetched them.
 //
 // Pass one array made outside the component: a new one each render would count as the screen coming
-// back. Keys are matched as prefixes, so the venue list takes the checklists under it along.
-export function useRefreshWhenShown(queryKeys: readonly QueryKey[]) {
+// back. Each entry is a query filter: say `exact: true` for one key, since a bare key is a prefix
+// and the venue list's key prefixes every read of every venue.
+export function useRefreshWhenShown(filters: readonly QueryFilters[]) {
   const queryClient = useQueryClient();
   const shown = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       const refresh = () => {
-        for (const queryKey of queryKeys) void queryClient.invalidateQueries({ queryKey });
+        for (const filter of filters) void queryClient.invalidateQueries(filter);
       };
       if (shown.current) refresh();
       shown.current = true;
@@ -26,6 +27,6 @@ export function useRefreshWhenShown(queryKeys: readonly QueryKey[]) {
         if (state === "active") refresh();
       });
       return () => listener.remove();
-    }, [queryClient, queryKeys]),
+    }, [queryClient, filters]),
   );
 }
