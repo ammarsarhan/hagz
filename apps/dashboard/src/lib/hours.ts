@@ -27,8 +27,6 @@ export type Week = DayHours[]; // 7, from Sunday
 const WEEK = 7 * 24;
 export const CLOSED: DayHours = { open: null, peak: null, discount: null };
 export const length = (range: Range) => range.end - range.start;
-const contains = (range: Range | null, hour: number) =>
-  range !== null && hour >= range.start && hour < range.end;
 
 // ---------- From the API ----------
 
@@ -160,130 +158,6 @@ export const paintBlock = (ring: Ring, block: CellBlock, tier: Tier | null): Rin
   return next;
 };
 
-// ---------- To the API ----------
-
-export const tierAt = (day: DayHours, hour: number): Tier =>
-  contains(day.peak, hour) ? "PEAK" : contains(day.discount, hour) ? "DISCOUNT" : "BASE";
-
-export const weekToApi = (week: Week): ScheduleDay[] => {
-  const byDay = new Map<number, Map<number, Tier>>();
-  week.forEach((day, dayOfWeek) => {
-    if (!day.open) return;
-    for (let hour = day.open.start; hour < day.open.end; hour += 1) {
-      const absolute = (dayOfWeek * 24 + hour) % WEEK;
-      const calendarDay = Math.floor(absolute / 24);
-      const hours = byDay.get(calendarDay) ?? new Map<number, Tier>();
-      hours.set(absolute % 24, tierAt(day, hour));
-      byDay.set(calendarDay, hours);
-    }
-  });
-  return [...byDay].map(([dayOfWeek, hours]) => ({
-    dayOfWeek,
-    hours: [...hours].map(([hour, tier]) => ({ hour, tier })),
-  }));
-};
-
-// ---------- Editing one day ----------
-
-// How far a day can reach without running into its neighbours: from where yesterday's late night
-// ends, to where tomorrow opens (plus its midnight).
-export const limitsOf = (week: Week, dayOfWeek: number) => {
-  const before = week[(dayOfWeek + 6) % 7]?.open;
-  const after = week[(dayOfWeek + 1) % 7]?.open;
-  return {
-    min: before && before.end > 24 ? before.end - 24 : 0,
-    max: after ? 24 + after.start : 48,
-  };
-};
-
-// Keeps peak and discount inside the open hours, dropping one that no longer fits.
-const within = (range: Range | null, open: Range | null): Range | null => {
-  if (!range || !open) return null;
-  const start = Math.max(range.start, open.start);
-  const end = Math.min(range.end, open.end);
-  return start < end ? { start, end } : null;
-};
-
-// What's left of `range` once `taken` is cut out of it: the longer side, or nothing.
-const without = (range: Range | null, taken: Range | null): Range | null => {
-  if (!range || !taken || range.end <= taken.start || taken.end <= range.start) return range;
-  const before = { start: range.start, end: Math.max(range.start, taken.start) };
-  const after = { start: Math.min(range.end, taken.end), end: range.end };
-  const longer = length(before) >= length(after) ? before : after;
-  return length(longer) > 0 ? longer : null;
-};
-
-export const withOpen = (day: DayHours, open: Range): DayHours => ({
-  open,
-  peak: within(day.peak, open),
-  discount: within(day.discount, open),
-});
-
-export const withPeak = (day: DayHours, peak: Range | null): DayHours => ({
-  ...day,
-  peak,
-  discount: without(day.discount, peak),
-});
-
-export const withDiscount = (day: DayHours, discount: Range | null): DayHours => ({
-  ...day,
-  discount,
-  peak: without(day.peak, discount),
-});
-
-// A handle dragged to a clock hour (0–23). Returns the new range, or null when the move isn't
-// allowed (shorter than an hour, past a neighbour, or out of the open hours).
-export const moveOpen = (
-  open: Range,
-  edge: "start" | "end",
-  clock: number,
-  limits: { min: number; max: number },
-): Range | null => {
-  const span = (from: number, to: number) => {
-    const hours = (((to - from) % 24) + 24) % 24;
-    // Handles meeting: round the clock if it was nearly there, otherwise not allowed.
-    return hours === 0 ? (length(open) >= 23 ? 24 : 0) : hours;
-  };
-  const next =
-    edge === "start"
-      ? { start: clock, end: clock + span(clock, open.end % 24) }
-      : { start: open.start, end: open.start + span(open.start, clock) };
-  if (length(next) < 1 || next.start < limits.min || next.end > limits.max) return null;
-  return next;
-};
-
-export const moveInside = (
-  range: Range,
-  edge: "start" | "end",
-  clock: number,
-  open: Range,
-): Range | null => {
-  // The clock hour, as an hour of this day inside the open hours.
-  const hour =
-    edge === "start"
-      ? clock >= open.start
-        ? clock
-        : clock + 24
-      : clock > open.start
-        ? clock
-        : clock + 24;
-  const next =
-    edge === "start" ? { start: hour, end: range.end } : { start: range.start, end: hour };
-  if (next.start < open.start || next.end > open.end || length(next) < 1) return null;
-  return next;
-};
-
-// Where a new peak or discount stretch starts: the last three open hours for peak, the first two
-// for discount.
-export const defaultPeak = (open: Range): Range => ({
-  start: Math.max(open.start, open.end - 3),
-  end: open.end,
-});
-export const defaultDiscount = (open: Range): Range => ({
-  start: open.start,
-  end: Math.min(open.end, open.start + 2),
-});
-
 // ---------- Words ----------
 
 // "4 pm", "12 am"; in Arabic "4 م". Western digits in both.
@@ -297,22 +171,6 @@ export const rangeLabel = (t: TFunction, range: Range) =>
   length(range) === 24
     ? t("screens.setup.hours.allDay")
     : `${hourLabel(t, range.start)} – ${hourLabel(t, range.end)}`;
-
-// The normal hours: what's open but neither peak nor discount, as ranges.
-export const normalRanges = (day: DayHours): Range[] => {
-  if (!day.open) return [];
-  const ranges: Range[] = [];
-  let from: number | null = null;
-  for (let hour = day.open.start; hour <= day.open.end; hour += 1) {
-    const normal = hour < day.open.end && tierAt(day, hour) === "BASE";
-    if (normal && from === null) from = hour;
-    if (!normal && from !== null) {
-      ranges.push({ start: from, end: hour });
-      from = null;
-    }
-  }
-  return ranges;
-};
 
 // A week in a few words, for the list of grounds: "Every day · 4 pm – 2 am", "5 days open", or null
 // when nothing's set.
@@ -351,5 +209,3 @@ export const dayName = (t: TFunction, dayOfWeek: number) =>
   t(`screens.setup.hours.days.${keyOf(dayOfWeek)}`);
 export const shortDayName = (t: TFunction, dayOfWeek: number) =>
   t(`screens.setup.hours.shortDays.${keyOf(dayOfWeek)}`);
-export const dayLetter = (t: TFunction, dayOfWeek: number) =>
-  t(`screens.setup.hours.letters.${keyOf(dayOfWeek)}`);
