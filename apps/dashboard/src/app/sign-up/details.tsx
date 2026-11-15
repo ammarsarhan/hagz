@@ -10,11 +10,11 @@ import { PasswordField } from "@/components/password-field";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { api, auth } from "@/lib/api";
+import { api } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useTranslation } from "react-i18next";
-import { enterApp } from "@/lib/session";
+import { enterWithSession } from "@/lib/session";
 
 const MIN_PASSWORD = 8;
 
@@ -52,8 +52,7 @@ export default function SignUpDetails() {
     }
     // Busy until first run is ready, so the button doesn't flick back first.
     setLoading(true);
-    await auth.start(result.data.session);
-    await enterApp();
+    await enterWithSession(result.data.session);
   };
 
   return (

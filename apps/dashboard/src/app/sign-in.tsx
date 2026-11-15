@@ -13,11 +13,11 @@ import { Screen } from "@/components/screen";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
-import { api, auth } from "@/lib/api";
+import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
 import { useTranslation } from "react-i18next";
 import { displayPhone, isCompletePhone, isolate, toE164 } from "@/lib/phone";
-import { enterApp } from "@/lib/session";
+import { enterWithSession } from "@/lib/session";
 
 type Challenge = components["schemas"]["TwoFactorChallenge"];
 
@@ -63,8 +63,7 @@ export default function SignIn() {
     }
     // Busy until the next screen is ready, so the button doesn't flick back first.
     setLoading(true);
-    await auth.start(result.data.session);
-    await enterApp();
+    await enterWithSession(result.data.session);
   };
 
   return (
@@ -175,8 +174,7 @@ function TwoFactorSheet({
       return;
     }
     setVerifying(true);
-    await auth.start(result.data.session);
-    await enterApp();
+    await enterWithSession(result.data.session);
   };
 
   const resend = async () => {

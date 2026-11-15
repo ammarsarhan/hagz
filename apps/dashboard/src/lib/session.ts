@@ -1,3 +1,4 @@
+import type { Session } from "@hagz/api";
 import { auth } from "./api";
 import { leaveToOnboarding, resetTo } from "./navigation";
 import { queries } from "./queries";
@@ -25,6 +26,14 @@ export const landing = async (): Promise<"/venue" | "/home"> => {
 
 // Just signed in or up, or opened a link while signed in: straight to where they belong.
 export const enterApp = async () => resetTo(await landing());
+
+// Signed in or up with a new session: nothing fetched before it is kept (it may be another
+// account's), then in. The cache is cleared first, so the landing fetches this account's reads.
+export const enterWithSession = async (session: Session) => {
+  queryClient.clear();
+  await auth.start(session);
+  await enterApp();
+};
 
 // Signing out ends the session, goes to onboarding with nothing signed-in underneath, and forgets
 // everything fetched for that account (see leaveToOnboarding).
