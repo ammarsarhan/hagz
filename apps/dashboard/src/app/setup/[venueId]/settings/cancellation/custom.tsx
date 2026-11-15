@@ -1,7 +1,8 @@
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, TextInput, View } from "react-native";
+import { Alert, Pressable, TextInput, View } from "react-native";
 import { Button } from "@/components/button";
 import { FieldError } from "@/components/field-error";
 import { IconPlus } from "@/components/icons";
@@ -24,7 +25,8 @@ import {
 // most notice to the least. Less notice than the last rule gets nothing back, said under the list.
 //
 // Problems show under their fields on Continue, and each goes as soon as its field is edited, as on
-// a ground's prices. Removing a rule isn't drawn in Figma: an underlined "Remove" on its label line.
+// a ground's prices. Removing a rule isn't drawn in Figma: hold the rule (user, 2026-11-15), with a
+// line under the list saying so.
 
 // A rule on screen: its fields as typed, and an id of its own that it keeps, so a rule's fields
 // (and the one being typed in) stay with that rule when one above it is removed.
@@ -60,6 +62,18 @@ export default function CustomRules() {
     setErrors(errors.filter((_, i) => i !== index));
   };
 
+  const confirmRemove = (index: number) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(t("screens.setup.settings.custom.removeTitle", { number: index + 1 }), undefined, [
+      { text: t("screens.setup.settings.custom.cancel"), style: "cancel" },
+      {
+        text: t("screens.setup.settings.custom.remove"),
+        style: "destructive",
+        onPress: () => remove(index),
+      },
+    ]);
+  };
+
   const next = () => {
     const checked = checkTiers(t, drafts);
     setErrors(checked.errors);
@@ -74,21 +88,26 @@ export default function CustomRules() {
       subtitle={t("screens.setup.settings.custom.subtitle")}
       footer={<Button label={t("common.actions.continue")} onPress={next} />}
     >
-      <View className="gap-3.5">
+      <View>
         {drafts.map((draft, i) => (
-          <View key={draft.id} className="border-b border-border pb-3.5">
-            <View className="flex-row items-center justify-between pb-2">
-              <Text className="text-label font-medium text-ink-2">
-                {t("screens.setup.settings.custom.rule", { number: i + 1 })}
-              </Text>
-              {drafts.length > 1 ? (
-                <Pressable accessibilityRole="button" hitSlop={8} onPress={() => remove(i)}>
-                  <Text className="text-label font-medium underline">
-                    {t("screens.setup.settings.custom.remove")}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
+          // Holding a rule offers to remove it (the last one can't go): no button on every rule.
+          <Pressable
+            key={draft.id}
+            onLongPress={drafts.length > 1 ? () => confirmRemove(i) : undefined}
+            delayLongPress={450}
+            accessibilityActions={
+              drafts.length > 1
+                ? [{ name: "remove", label: t("screens.setup.settings.custom.remove") }]
+                : undefined
+            }
+            onAccessibilityAction={({ nativeEvent }) => {
+              if (nativeEvent.actionName === "remove") confirmRemove(i);
+            }}
+            className="border-b border-border py-5"
+          >
+            <Text className="pb-3 text-label font-medium text-ink-2">
+              {t("screens.setup.settings.custom.rule", { number: i + 1 })}
+            </Text>
             <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1.5">
               <Text className="text-subtitle">
                 {t("screens.setup.settings.custom.cancelAtLeast")}
@@ -114,7 +133,7 @@ export default function CustomRules() {
               />
             </View>
             {errors[i]?.percent ? <FieldError>{errors[i].percent}</FieldError> : null}
-          </View>
+          </Pressable>
         ))}
       </View>
 
@@ -142,6 +161,11 @@ export default function CustomRules() {
             {t("screens.setup.settings.custom.noRefund")}
           </Text>
         </View>
+      ) : null}
+      {drafts.length > 1 ? (
+        <Text className="mt-1 text-caption text-ink-3">
+          {t("screens.setup.settings.custom.holdHint")}
+        </Text>
       ) : null}
     </StepScreen>
   );
