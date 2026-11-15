@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, View } from "react-native";
 import ReanimatedSwipeable, {
@@ -114,21 +114,24 @@ function GroundsList({
       footer={<Button label={t("screens.setup.grounds.done")} onPress={() => router.back()} />}
     >
       {/* As in iOS lists: the rows span the screen, so a swipe opens Delete at its very edge, while
-          the lines between them stay inset to the gutter, drawn apart from the rows' edges. */}
+          the lines between them stay inset to the gutter. The lines sit between the rows rather
+          than in them, so they stay put as a row slides and Delete fills the space between two. */}
       <View className="-mx-5">
         <View className="mx-5 h-px bg-border" />
         {grounds.map((ground) => (
-          <Row
-            key={ground.id}
-            ground={ground}
-            price={t("screens.setup.grounds.price", {
-              currency,
-              amount: formatAmount(ground.basePrice, decimals),
-            })}
-            onPress={() => tap(ground)}
-            onOpen={opened}
-            onDelete={(row) => remove(ground, row)}
-          />
+          <Fragment key={ground.id}>
+            <Row
+              ground={ground}
+              price={t("screens.setup.grounds.price", {
+                currency,
+                amount: formatAmount(ground.basePrice, decimals),
+              })}
+              onPress={() => tap(ground)}
+              onOpen={opened}
+              onDelete={(row) => remove(ground, row)}
+            />
+            <View className="mx-5 h-px bg-border" />
+          </Fragment>
         ))}
       </View>
       {grounds.length < MAXIMUM_GROUNDS ? (
@@ -220,8 +223,6 @@ function Row({
             style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
           />
         </View>
-        {/* The line under it, inset like the content; it slides with the row. */}
-        <View className="absolute inset-x-5 bottom-0 h-px bg-border" />
       </Pressable>
     </ReanimatedSwipeable>
   );
