@@ -353,9 +353,9 @@ const ar: ArabicTranslations = {
               },
             },
             depositRow: "{{percent}}% من السعر، يُدفع أونلاين عند الحجز",
-            deposit: "العربون",
+            deposit: "عربون الحجز",
             depositHint: "من سعر الحجز، يُدفع أونلاين عند الحجز.",
-            depositRange: "من 1 إلى 99%",
+            depositRange: "من {{min}}% إلى {{max}}%",
             payoutNote:
               "تبدأ المدفوعات الأونلاين بعد إضافة حساب لاستلام أموالك. يمكنك إعداده بعد المراجعة.",
             done: "تم",

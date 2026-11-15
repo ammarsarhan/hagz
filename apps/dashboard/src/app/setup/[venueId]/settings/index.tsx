@@ -30,6 +30,7 @@ import { isRTL } from "@/lib/language";
 import { queries } from "@/lib/queries";
 import {
   DEFAULT_DEPOSIT_PERCENT,
+  DEPOSIT_PERCENT,
   DEFAULT_LOYALTY,
   LOYALTY_STAMPS,
   LOYALTY_WINDOWS,
@@ -352,7 +353,7 @@ function DepositSheet({
   const [percent, setPercent] = useState(String(saved));
   const [focused, setFocused] = useState(false);
   const value = Number(percent);
-  const valid = percent !== "" && value >= 1 && value <= 99;
+  const valid = percent !== "" && value >= DEPOSIT_PERCENT.min && value <= DEPOSIT_PERCENT.max;
 
   return (
     <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
@@ -378,7 +379,7 @@ function DepositSheet({
       </FieldBox>
       <Text className="mt-1.5 text-label leading-[1.43] text-ink-2">
         {percent !== "" && !valid
-          ? t("screens.setup.settings.payment.depositRange")
+          ? t("screens.setup.settings.payment.depositRange", DEPOSIT_PERCENT)
           : t("screens.setup.settings.payment.depositHint")}
       </Text>
       <View className="mt-6">

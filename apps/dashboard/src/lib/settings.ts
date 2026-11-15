@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import {
   CANCELLATION_PRESETS,
+  DEPOSIT_PERCENT,
   MAXIMUM_CANCELLATION_TIERS,
   NOTICE_CHOICES,
   type CancellationPolicy,
@@ -12,7 +13,7 @@ import {
 // The words and rules behind the "Payments and cancellations" screens (app/setup/[venueId]/settings).
 // The values themselves (notice choices, presets, tier limits) come from @hagz/contracts, so the
 // app and the API agree on them.
-export { MAXIMUM_CANCELLATION_TIERS, NOTICE_CHOICES };
+export { DEPOSIT_PERCENT, MAXIMUM_CANCELLATION_TIERS, NOTICE_CHOICES };
 export type { CancellationPolicy, CancellationTier, MinimumNotice, PaymentMode };
 
 export const POLICIES = ["FLEXIBLE", "MODERATE", "STRICT", "CUSTOM"] as const;
@@ -39,8 +40,8 @@ export const noticeLabel = (t: TFunction, minutes: MinimumNotice) => {
 export const paymentLabel = (t: TFunction, mode: PaymentMode) =>
   t(`screens.setup.settings.payment.modes.${mode}.title`);
 
-// What choosing "Deposit online" starts with when the venue has no share saved.
-export const DEFAULT_DEPOSIT_PERCENT = 20;
+// What choosing "Deposit online" starts with when the venue has no share saved: the least allowed.
+export const DEFAULT_DEPOSIT_PERCENT = DEPOSIT_PERCENT.min;
 
 // A policy's rules: the preset's, or the owner's own.
 export const tiersOf = (

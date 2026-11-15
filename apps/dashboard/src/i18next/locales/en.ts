@@ -323,9 +323,9 @@ const en = {
               },
             },
             depositRow: "{{percent}}% of the price, paid online when they book",
-            deposit: "Deposit",
+            deposit: "Booking deposit",
             depositHint: "Of the booking's price, paid online when they book.",
-            depositRange: "Between 1 and 99%",
+            depositRange: "Between {{min}}% and {{max}}%",
             payoutNote:
               "Online payments go live once you've added a payout account. You can set that up after review.",
             done: "Done",
