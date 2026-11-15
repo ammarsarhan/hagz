@@ -138,10 +138,11 @@ function GroundsList({
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push(`/setup/${venueId}/grounds/new`)}
-          className="flex-row items-center gap-2 self-start py-[18px] active:opacity-60"
+          hitSlop={8}
+          className="flex-row items-center gap-1.5 self-start py-4 active:opacity-60"
         >
-          <IconPlus size={24} color={colors.primary} strokeWidth={1.75} />
-          <Text className="text-subtitle font-medium text-primary">
+          <IconPlus size={20} color={colors.primary} strokeWidth={2} />
+          <Text className="text-body font-medium text-primary">
             {t("screens.setup.grounds.add")}
           </Text>
         </Pressable>
