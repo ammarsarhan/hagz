@@ -1,4 +1,5 @@
-import { ActivityIndicator, Keyboard, Pressable } from "react-native";
+import type { ReactNode } from "react";
+import { ActivityIndicator, Keyboard, Pressable, View } from "react-native";
 import { colors } from "@/lib/colors";
 import { Text } from "./text";
 
@@ -23,6 +24,11 @@ interface ButtonProps {
   // Waiting on the server: a spinner replaces the label, the button keeps its size and colour and
   // can't be pressed again.
   loading?: boolean;
+  // An icon before the label (the bin on "Remove").
+  icon?: ReactNode;
+  // Smaller, for pills that sit side by side in a sheet (the photo sheet's Remove / Set as cover):
+  // 48 high with a 15pt label, instead of the screen's main 56 / 17.
+  compact?: boolean;
 }
 
 export function Button({
@@ -31,6 +37,8 @@ export function Button({
   variant = "primary",
   disabled = false,
   loading = false,
+  icon,
+  compact = false,
 }: ButtonProps) {
   const style = disabled ? { box: "bg-field", label: "text-ink-3" } : variants[variant];
   return (
@@ -43,14 +51,21 @@ export function Button({
         Keyboard.dismiss();
         onPress?.();
       }}
-      className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${style.box}`}
+      className={`${compact ? "h-12 px-4" : "h-14 px-6"} items-center justify-center rounded-full active:opacity-80 ${style.box}`}
     >
       {loading ? (
         <ActivityIndicator
           color={variant === "primary" || variant === "ink" ? colors.onPrimary : colors.ink}
         />
       ) : (
-        <Text className={`text-center text-button font-semibold ${style.label}`}>{label}</Text>
+        <View className="flex-row items-center gap-2">
+          {icon}
+          <Text
+            className={`text-center ${compact ? "text-body" : "text-button"} font-semibold ${style.label}`}
+          >
+            {label}
+          </Text>
+        </View>
       )}
     </Pressable>
   );

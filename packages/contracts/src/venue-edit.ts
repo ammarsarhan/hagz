@@ -20,6 +20,11 @@ export const PaymentMode = z.enum(["MANUAL", "DEPOSIT", "PLATFORM"]).meta({
     "`PLATFORM`: everything online.",
 });
 
+// The share of the price a deposit takes (user, 2026-11-15): enough to hold the booking, not so
+// much that it's really full payment.
+export const DEPOSIT_PERCENT = { min: 20, max: 85 } as const;
+const DepositPercent = z.int().min(DEPOSIT_PERCENT.min).max(DEPOSIT_PERCENT.max);
+
 export const CancellationPolicy = z.enum(["FLEXIBLE", "MODERATE", "STRICT", "CUSTOM"]).meta({
   id: "CancellationPolicy",
 });
@@ -83,7 +88,7 @@ export const VenueSettingsView = z
     autoConfirm: z.boolean(),
     minimumNotice: MinimumNotice,
     paymentMode: PaymentMode,
-    depositPercent: z.int().min(1).max(99).nullable(),
+    depositPercent: DepositPercent.nullable(),
     cancellationPolicy: CancellationPolicy.nullable().meta({
       description: "Null until the owner chooses one.",
     }),
@@ -101,7 +106,7 @@ export const UpdateVenueSettings = z
     autoConfirm: z.boolean(),
     minimumNotice: MinimumNotice,
     paymentMode: PaymentMode,
-    depositPercent: z.int().min(1).max(99).nullable(),
+    depositPercent: DepositPercent.nullable(),
     cancellationPolicy: CancellationPolicy,
     cancellationTiers: CancellationTiers.nullable(),
     loyalty: Loyalty.nullable(),

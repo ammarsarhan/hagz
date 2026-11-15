@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
+import { GroupHeading } from "./group-heading";
 import { Text } from "./text";
 
 // The account screen's rows, as approved in Figma ("D4 · Account, round 2"): a medium 15 title, an
@@ -7,12 +8,15 @@ import { Text } from "./text";
 export function SettingsRow({
   title,
   body,
+  bodyIcon,
   trailing,
   onPress,
   divider = true,
 }: {
   title: string;
   body?: string;
+  // A small sign before the grey line (the warning on a setting that's still required).
+  bodyIcon?: ReactNode;
   trailing?: ReactNode;
   // Without it the row isn't a button (a switch row handles its own taps).
   onPress?: () => void;
@@ -27,14 +31,19 @@ export function SettingsRow({
     >
       <View className="flex-1">
         <Text className="text-[15px] font-medium leading-[1.33]">{title}</Text>
-        {body ? <Text className="mt-0.5 text-caption text-ink-2">{body}</Text> : null}
+        {body ? (
+          <View className="mt-0.5 flex-row items-center gap-1">
+            {bodyIcon}
+            <Text className="flex-1 text-caption text-ink-2">{body}</Text>
+          </View>
+        ) : null}
       </View>
       {trailing}
     </Pressable>
   );
 }
 
-// The heading over a group of rows: smaller than the name above it, larger than the rows.
+// The heading over a group of rows (GroupHeading), spaced for the account screen.
 export function SettingsHeading({
   children,
   first = false,
@@ -42,12 +51,5 @@ export function SettingsHeading({
   children: string;
   first?: boolean;
 }) {
-  return (
-    <Text
-      accessibilityRole="header"
-      className={`mb-1 text-[18px] font-semibold leading-[1.33] ${first ? "mt-8" : "mt-7"}`}
-    >
-      {children}
-    </Text>
-  );
+  return <GroupHeading className={`mb-1 ${first ? "mt-8" : "mt-7"}`}>{children}</GroupHeading>;
 }

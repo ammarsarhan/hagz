@@ -1,14 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Switch, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { AmenityIcon } from "@/components/amenity-icon";
 import { Button } from "@/components/button";
+import { Collapse } from "@/components/collapse";
+import { Segmented } from "@/components/choices";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, FieldLabel, inputClass } from "@/components/field";
+import { IconTrash } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
@@ -18,6 +21,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { amountOf, cleanAmount, decimalsOf } from "@/lib/money";
 import { queries, reference } from "@/lib/queries";
 import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 
@@ -30,22 +34,8 @@ type Amenity = components["schemas"]["Amenity"];
 type Pricing = components["schemas"]["AmenityPricing"];
 type Offered = { price: number | null; pricing: Pricing | null };
 
-// How many decimals the currency's minor unit has (EGP 2, KWD 3), from the phone's own currency
-// data; 2 if it doesn't know the code.
-const decimalsOf = (currency: string) => {
-  try {
-    return (
-      new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions()
-        .maximumFractionDigits ?? 2
-    );
-  } catch {
-    return 2;
-  }
-};
-
-// 15000 → "150", 1550 → "15.5": no trailing zeros, since prices are mostly whole.
-const amountOf = (minor: number, decimals: number) =>
-  String(Number((minor / 10 ** decimals).toFixed(decimals)));
+const PRICINGS = ["PER_HOUR", "PER_BOOKING"] as const;
+type Charge = (typeof PRICINGS)[number];
 
 export default function SetupAmenities() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
@@ -97,19 +87,20 @@ function AmenitiesForm({
       ? null
       : t(pricing === "PER_HOUR" ? "screens.setup.amenities.perHourPrice" : "screens.setup.amenities.perBookingPrice", { currency, amount: amountOf(price, decimals) }); // prettier-ignore
 
+  // Nothing to save until the list differs from the venue's.
+  const changed =
+    offered.size !== venue.amenities.length ||
+    venue.amenities.some((was) => {
+      const now = offered.get(was.optionId);
+      return now?.price !== was.price || now.pricing !== was.pricing;
+    });
+
   const submit = () => {
     const amenities = [...offered].map(([optionId, { price, pricing }]) => ({
       optionId,
       price,
       pricing,
     }));
-    const unchanged =
-      amenities.length === venue.amenities.length &&
-      venue.amenities.every((was) => {
-        const now = offered.get(was.optionId);
-        return now?.price === was.price && now.pricing === was.pricing;
-      });
-    if (unchanged) return router.back();
     void save([
       () =>
         send(
@@ -122,7 +113,16 @@ function AmenitiesForm({
   };
 
   return (
-    <Screen footer={<Button label={t("common.actions.save")} loading={saving} onPress={submit} />}>
+    <Screen
+      footer={
+        <Button
+          label={t("common.actions.save")}
+          disabled={!changed}
+          loading={saving}
+          onPress={submit}
+        />
+      }
+    >
       <NavBar
         flush
         start={
@@ -195,8 +195,9 @@ function AmenitiesForm({
   );
 }
 
-// Off: grey outline, ink. On and free: blue outline. On with a charge: dashed blue on a blue tint,
-// with the price after the name.
+// Off: grey outline, ink. On and free: blue outline. On with a charge: dashed blue on a blue tint.
+// The price isn't written on the pill (the border says it costs extra; its sheet says how much), but
+// screen readers still hear it.
 function Pill({
   option,
   chosen,
@@ -223,7 +224,6 @@ function Pill({
     >
       <AmenityIcon name={option.icon} size={20} color={chosen ? colors.primary : colors.ink} />
       <Text className={`text-body font-medium ${chosen ? "text-primary" : ""}`}>{option.name}</Text>
-      {price ? <Text className="text-caption font-medium text-primary">{price}</Text> : null}
     </Pressable>
   );
 }
@@ -254,10 +254,14 @@ function PriceSheet({
   const [amount, setAmount] = useState(
     offered.price === null ? "" : amountOf(offered.price, decimals),
   );
-  const [pricing, setPricing] = useState<Pricing>(offered.pricing ?? "PER_HOUR");
+  const [pricing, setPricing] = useState<Charge>(offered.pricing ?? "PER_HOUR");
   const [focused, setFocused] = useState(false);
+  const input = useRef<ComponentRef<typeof TextInput>>(null);
   const minor = Math.round(Number(amount) * 10 ** decimals);
   const valid = !paid || (Number.isFinite(minor) && minor >= 1);
+  const changed = paid
+    ? minor !== offered.price || pricing !== offered.pricing
+    : offered.price !== null;
 
   return (
     <Sheet
@@ -278,76 +282,73 @@ function PriceSheet({
         </View>
         <Switch
           value={paid}
-          onValueChange={setPaid}
+          onValueChange={(next) => {
+            setPaid(next);
+            // The fields open under the switch; typing the price is the next thing to do.
+            if (next) input.current?.focus();
+            else input.current?.blur();
+          }}
           trackColor={{ true: colors.primary, false: colors.border }}
           ios_backgroundColor={colors.border}
         />
       </View>
 
-      {paid ? (
-        <>
-          <FieldLabel required>{t("screens.setup.amenities.price")}</FieldLabel>
-          <FieldBox focused={focused} error={false} ltr>
-            <Text className="text-[16px] text-unit">{currency}</Text>
-            <TextInput
-              className={inputClass}
-              value={amount}
-              onChangeText={(text) => {
-                // Digits and one decimal point, to the currency's precision.
-                const cleaned = text.replace(/[^0-9.]/g, "");
-                const [whole = "", fraction] = cleaned.split(".");
-                setAmount(
-                  fraction === undefined || decimals === 0
-                    ? whole
-                    : `${whole}.${fraction.slice(0, decimals)}`,
-                );
-              }}
-              keyboardType={decimals > 0 ? "decimal-pad" : "number-pad"}
-              placeholder="0"
-              placeholderTextColor={colors.ink3}
-              selectionColor={colors.primary}
-              autoFocus={offered.price === null}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              style={{ textAlign: "left", writingDirection: "ltr" }}
-            />
-          </FieldBox>
-          {/* Per hour or per booking: two halves of one grey track, the chosen one raised. */}
-          <View className="mt-3 flex-row rounded-[12px] bg-chip p-1">
-            {(["PER_HOUR", "PER_BOOKING"] as const).map((option) => (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: pricing === option }}
-                onPress={() => setPricing(option)}
-                className={`h-10 flex-1 items-center justify-center rounded-[9px] ${pricing === option ? "bg-white" : ""}`}
-              >
-                <Text
-                  className={`text-label font-medium ${pricing === option ? "" : "text-ink-2"}`}
-                >
-                  {t(
-                    option === "PER_HOUR"
-                      ? "screens.setup.amenities.perHour"
-                      : "screens.setup.amenities.perBooking",
-                  )}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </>
-      ) : null}
+      <Collapse open={paid}>
+        <FieldLabel required>{t("screens.setup.amenities.price")}</FieldLabel>
+        <FieldBox focused={focused} error={false} ltr>
+          <Text className="text-[16px] text-unit">{currency}</Text>
+          <TextInput
+            className={inputClass}
+            value={amount}
+            onChangeText={(text) => setAmount(cleanAmount(text, decimals))}
+            keyboardType={decimals > 0 ? "decimal-pad" : "number-pad"}
+            placeholder="0"
+            placeholderTextColor={colors.ink3}
+            selectionColor={colors.primary}
+            ref={input}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            style={{ textAlign: "left", writingDirection: "ltr" }}
+          />
+        </FieldBox>
+        {/* Per hour or per booking: the same sliding track as a ground's cover. */}
+        <View className="mt-3">
+          <Segmented
+            options={PRICINGS}
+            value={pricing}
+            label={(option) =>
+              t(
+                option === "PER_HOUR"
+                  ? "screens.setup.amenities.perHour"
+                  : "screens.setup.amenities.perBooking",
+              )
+            }
+            onChange={setPricing}
+          />
+        </View>
+      </Collapse>
 
-      <View className="mt-6 gap-1">
-        <Button
-          label={t("common.actions.save")}
-          disabled={!valid}
-          onPress={() => onSave(paid ? { price: minor, pricing } : { price: null, pricing: null })}
-        />
-        <Button
-          label={t("screens.setup.amenities.remove", { amenity: amenity.name })}
-          variant="ghost"
-          onPress={onRemove}
-        />
+      {/* As in the photo sheet: take it off (grey, with a bin) beside saving. */}
+      <View className="mt-6 flex-row gap-3">
+        <View className="flex-1">
+          <Button
+            label={t("screens.setup.amenities.remove")}
+            compact
+            variant="secondary"
+            icon={<IconTrash size={17} color={colors.ink} strokeWidth={2} />}
+            onPress={onRemove}
+          />
+        </View>
+        <View className="flex-1">
+          <Button
+            label={t("common.actions.save")}
+            compact
+            disabled={!valid || !changed}
+            onPress={() =>
+              onSave(paid ? { price: minor, pricing } : { price: null, pricing: null })
+            }
+          />
+        </View>
       </View>
     </Sheet>
   );

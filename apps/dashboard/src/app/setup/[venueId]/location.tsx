@@ -73,9 +73,10 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
   const requested = !area && !moved && current.requestedArea ? current.requestedArea : null;
   const label = area ?? (requested ? { name: requested, within: t("screens.createVenue.place.requestedNote") } : null); // prettier-ignore
 
+  // Unmoved, the pin only changes if a different area was picked.
+  const changed = moved || (area !== null && area.id !== current.id);
+
   const submit = () => {
-    const sameArea = area?.id === current.id;
-    if (!moved && (sameArea || !area)) return router.back();
     if (!area) return;
     void save([
       () =>
@@ -146,7 +147,7 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         />
         <Button
           label={t("common.actions.save")}
-          disabled={moved && !area}
+          disabled={!changed || !area}
           loading={saving}
           onPress={submit}
         />
