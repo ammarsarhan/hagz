@@ -46,6 +46,11 @@ const MODES: Mode[] = ["OPEN", "PEAK", "DISCOUNT"];
 // A closed day opened with nothing to copy from.
 const EVENING: Range = { start: 16, end: 24 };
 
+const sameRange = (a: Range | null, b: Range | null) =>
+  a === b || (a !== null && b !== null && a.start === b.start && a.end === b.end);
+const sameDay = (a: DayHours, b: DayHours) =>
+  sameRange(a.open, b.open) && sameRange(a.peak, b.peak) && sameRange(a.discount, b.discount);
+
 export default function DayHoursScreen() {
   const {
     venueId = "",
@@ -83,7 +88,8 @@ function DayEditor({
   const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
-  const [hours, setHours] = useState<DayHours>(() => week[dayOfWeek] ?? CLOSED);
+  const saved = week[dayOfWeek] ?? CLOSED;
+  const [hours, setHours] = useState<DayHours>(saved);
   const [mode, setMode] = useState<Mode>("OPEN");
   const [dragging, setDragging] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -166,6 +172,7 @@ function DayEditor({
       footer={
         <Button
           label={t("screens.setup.hours.save")}
+          disabled={sameDay(hours, saved)}
           loading={saving}
           onPress={() => void save()}
         />
