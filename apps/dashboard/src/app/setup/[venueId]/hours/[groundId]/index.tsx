@@ -13,6 +13,7 @@ import Animated, {
 import { Button } from "@/components/button";
 import { ChoicePill, ChoicePills } from "@/components/choices";
 import { GridKey, HoursGrid } from "@/components/hours-grid";
+import type { ScrollController } from "@/components/fading-scroll";
 import { useHud } from "@/components/hud";
 import { IconCheck, IconCopy } from "@/components/icons";
 import { CloseButton, RoundButton } from "@/components/nav";
@@ -88,6 +89,7 @@ function WeekScreen({
   const [dragging, setDragging] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
+  const scroller = useRef<ScrollController | null>(null);
   const name = ground.name ?? t("screens.setup.grounds.unnamed");
   const changed = !sameRing(ring, saved);
 
@@ -131,6 +133,7 @@ function WeekScreen({
       title={t("screens.setup.hours.title")}
       subtitle={t("screens.setup.hours.gridSubtitle", { name })}
       scrollEnabled={!dragging}
+      scroller={scroller}
       navEnd={
         canCopy ? (
           <RoundButton
@@ -167,6 +170,7 @@ function WeekScreen({
         selection={selection}
         onSelect={setSelection}
         onDragChange={setDragging}
+        scroller={scroller}
       />
       <GridKey />
 

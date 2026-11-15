@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -26,6 +26,7 @@ import {
   type Tier,
 } from "@/lib/hours";
 import { isRTL } from "@/lib/language";
+import type { ScrollController } from "./fading-scroll";
 import { Text } from "./text";
 
 // A ground's week as a grid you paint (Figma "E1 · Paint the week", 470:11): a column per day and
@@ -57,6 +58,10 @@ const FADE = { duration: 120 };
 // The dashes round a block: their pattern, and one pattern's length run round in this long.
 const DASH = [6, 4];
 const MARCH = 450;
+// A drag this close to the top or bottom of the visible page (or past it, over the footer)
+// scrolls the page, faster the further in, up to this many points a frame.
+const EDGE = 56;
+const MAX_SCROLL = 12;
 
 const SWATCH = { width: 22, height: 14 };
 
@@ -97,12 +102,15 @@ export function HoursGrid({
   selection,
   onSelect,
   onDragChange,
+  scroller,
 }: {
   ring: Ring;
   selection: CellBlock | null;
   onSelect: (block: CellBlock | null) => void;
   // On while a finger is dragging a selection, so the page doesn't scroll under it.
   onDragChange: (dragging: boolean) => void;
+  // The page's scroll, for scrolling it when a drag reaches its edge.
+  scroller?: RefObject<ScrollController | null>;
 }) {
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
@@ -118,30 +126,91 @@ export function HoursGrid({
     };
   };
 
-  // Where the drag started, and the cell under the finger now.
-  const drag = useRef<{ anchor: { day: number; row: number }; key: string } | null>(null);
+  // The drag: where it started, the cell it's on, the finger (in the grid, and its height in the
+  // window), how far the page has scrolled since the finger last moved, and the frame loop that
+  // scrolls the page while the finger is held at an edge.
+  const drag = useRef<{
+    anchor: { day: number; row: number };
+    key: string;
+    x: number;
+    y: number;
+    windowY: number;
+    scrolled: number;
+    frame: number | null;
+  } | null>(null);
+  // The frame loop outlives the render it started in, so it reads these fresh.
+  const latest = useRef({ cellAt, onSelect });
+  latest.current = { cellAt, onSelect };
+
+  const follow = () => {
+    const current = drag.current;
+    if (!current) return;
+    const cell = latest.current.cellAt(current.x, current.y + current.scrolled);
+    const key = `${cell.day}:${cell.row}`;
+    if (key === current.key) return;
+    current.key = key;
+    void Haptics.selectionAsync();
+    latest.current.onSelect(blockBetween(current.anchor, cell));
+  };
+
+  // Each frame: at an edge, scroll the page under the finger, and select what it's now over.
+  const edgeScroll = () => {
+    const current = drag.current;
+    const page = scroller?.current;
+    if (!current || !page) return;
+    const { top, bottom } = page.visible();
+    const into =
+      current.windowY > bottom - EDGE
+        ? current.windowY - (bottom - EDGE)
+        : current.windowY < top + EDGE
+          ? current.windowY - (top + EDGE)
+          : 0;
+    if (into !== 0) {
+      const speed = Math.max(-1, Math.min(1, into / EDGE)) * MAX_SCROLL;
+      const moved = page.scrollBy(speed);
+      if (moved !== 0) {
+        current.scrolled += moved;
+        follow();
+      }
+    }
+    current.frame = requestAnimationFrame(edgeScroll);
+  };
+
   const pan = Gesture.Pan()
     .runOnJS(true)
     .activateAfterLongPress(HOLD)
     .onStart((event) => {
       const anchor = cellAt(event.x, event.y);
-      drag.current = { anchor, key: `${anchor.day}:${anchor.row}` };
+      drag.current = {
+        anchor,
+        key: `${anchor.day}:${anchor.row}`,
+        x: event.x,
+        y: event.y,
+        windowY: event.absoluteY,
+        scrolled: 0,
+        frame: null,
+      };
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onDragChange(true);
       onSelect(blockBetween(anchor, anchor));
+      drag.current.frame = requestAnimationFrame(edgeScroll);
     })
     .onUpdate((event) => {
       const current = drag.current;
       if (!current) return;
-      const cell = cellAt(event.x, event.y);
-      const key = `${cell.day}:${cell.row}`;
-      if (key === current.key) return;
-      current.key = key;
-      void Haptics.selectionAsync();
-      onSelect(blockBetween(current.anchor, cell));
+      // The event's position already counts any scrolling so far.
+      current.x = event.x;
+      current.y = event.y;
+      current.windowY = event.absoluteY;
+      current.scrolled = 0;
+      follow();
     })
     .onFinalize(() => {
-      if (drag.current) onDragChange(false);
+      const current = drag.current;
+      if (current) {
+        if (current.frame !== null) cancelAnimationFrame(current.frame);
+        onDragChange(false);
+      }
       drag.current = null;
     });
   const tap = Gesture.Tap()
