@@ -14,7 +14,7 @@ import {
 import { Collapse } from "@/components/collapse";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
-import { FieldBox, FieldLabel, inputClass } from "@/components/field";
+import { FieldBox, inputClass } from "@/components/field";
 import { GroupHeading } from "@/components/group-heading";
 import { IconAlertTriangle, IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
@@ -29,6 +29,7 @@ import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { queries } from "@/lib/queries";
 import {
+  DEFAULT_DEPOSIT_PERCENT,
   DEFAULT_LOYALTY,
   LOYALTY_STAMPS,
   LOYALTY_WINDOWS,
@@ -62,6 +63,8 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
   const [paying, setPaying] = useState(false);
   // A fresh "How players pay" sheet each time, starting from what's saved.
   const [paymentKey, setPaymentKey] = useState(0);
+  const [depositing, setDepositing] = useState(false);
+  const [depositKey, setDepositKey] = useState(0);
   const [rewarding, setRewarding] = useState(false);
   const [loyaltyKey, setLoyaltyKey] = useState(0);
   const loyalty = settings.loyalty ?? DEFAULT_LOYALTY;
@@ -121,13 +124,27 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.payments")}</GroupHeading>
         <SettingsRow
           title={t("screens.setup.settings.howPlayersPay")}
-          body={paymentLabel(t, settings.paymentMode, settings.depositPercent)}
+          body={paymentLabel(t, settings.paymentMode)}
           trailing={chevron}
           onPress={() => {
             setPaymentKey((key) => key + 1);
             setPaying(true);
           }}
         />
+        {/* The deposit's share, under the choice while players pay one, like loyalty's terms. */}
+        <Collapse open={settings.paymentMode === "DEPOSIT"}>
+          <SettingsRow
+            title={t("screens.setup.settings.payment.deposit")}
+            body={t("screens.setup.settings.payment.depositRow", {
+              percent: settings.depositPercent ?? DEFAULT_DEPOSIT_PERCENT,
+            })}
+            trailing={chevron}
+            onPress={() => {
+              setDepositKey((key) => key + 1);
+              setDepositing(true);
+            }}
+          />
+        </Collapse>
 
         <GroupHeading className="mb-1 mt-9">
           {t("screens.setup.settings.cancellations")}
@@ -201,6 +218,16 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           void save(change);
         }}
       />
+      <DepositSheet
+        key={`deposit-${depositKey}`}
+        visible={depositing}
+        percent={settings.depositPercent ?? DEFAULT_DEPOSIT_PERCENT}
+        onClose={() => setDepositing(false)}
+        onSave={(depositPercent) => {
+          setDepositing(false);
+          void save({ depositPercent });
+        }}
+      />
       <LoyaltySheet
         key={`loyalty-${loyaltyKey}`}
         visible={rewarding}
@@ -270,12 +297,6 @@ function PaymentSheet({
 }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState(savedMode);
-  const [percent, setPercent] = useState(depositPercent === null ? "" : String(depositPercent));
-  const [focused, setFocused] = useState(false);
-  const deposit = Number(percent);
-  const depositValid = percent !== "" && deposit >= 1 && deposit <= 99;
-  const valid = mode !== "DEPOSIT" || depositValid;
-  const changed = mode !== savedMode || (mode === "DEPOSIT" && deposit !== depositPercent);
 
   return (
     <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
@@ -287,37 +308,12 @@ function PaymentSheet({
       </Text>
       <View accessibilityRole="radiogroup" className="gap-2.5">
         {PAYMENT_MODES.map((option) => (
-          <View key={option}>
-            <PaymentCard mode={option} selected={option === mode} onPress={() => setMode(option)} />
-            {option === "DEPOSIT" ? (
-              <Collapse open={mode === "DEPOSIT"}>
-                <View className="px-1 pt-3">
-                  <FieldLabel required>{t("screens.setup.settings.payment.deposit")}</FieldLabel>
-                  <FieldBox focused={focused} error={false} ltr>
-                    <TextInput
-                      accessibilityLabel={t("screens.setup.settings.payment.deposit")}
-                      className={inputClass}
-                      value={percent}
-                      onChangeText={(text) => setPercent(text.replace(/\D/g, "").slice(0, 2))}
-                      keyboardType="number-pad"
-                      placeholder="20"
-                      placeholderTextColor={colors.ink3}
-                      selectionColor={colors.primary}
-                      onFocus={() => setFocused(true)}
-                      onBlur={() => setFocused(false)}
-                      style={{ textAlign: "left", writingDirection: "ltr" }}
-                    />
-                    <Text className="text-body text-ink-2">%</Text>
-                  </FieldBox>
-                  <Text className="mt-1.5 text-label leading-[1.43] text-ink-2">
-                    {percent !== "" && !depositValid
-                      ? t("screens.setup.settings.payment.depositRange")
-                      : t("screens.setup.settings.payment.depositHint")}
-                  </Text>
-                </View>
-              </Collapse>
-            ) : null}
-          </View>
+          <PaymentCard
+            key={option}
+            mode={option}
+            selected={option === mode}
+            onPress={() => setMode(option)}
+          />
         ))}
       </View>
       <Text className="px-1 pb-[18px] pt-3.5 text-caption text-ink-2">
@@ -325,11 +321,73 @@ function PaymentSheet({
       </Text>
       <Button
         label={t("screens.setup.settings.payment.done")}
-        disabled={!valid || !changed}
+        disabled={mode === savedMode}
         onPress={() =>
-          onSave({ paymentMode: mode, depositPercent: mode === "DEPOSIT" ? deposit : null })
+          onSave({
+            paymentMode: mode,
+            // A deposit needs its share: the one saved, or a starting one to change on the
+            // Deposit row.
+            depositPercent: mode === "DEPOSIT" ? (depositPercent ?? DEFAULT_DEPOSIT_PERCENT) : null,
+          })
         }
       />
+    </Sheet>
+  );
+}
+
+// The deposit's share of the price (not drawn in Figma), opened from the Deposit row that shows
+// under "How players pay" while players pay a deposit. Done saves, grey until it changes.
+function DepositSheet({
+  visible,
+  percent: saved,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  percent: number;
+  onClose: () => void;
+  onSave: (percent: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [percent, setPercent] = useState(String(saved));
+  const [focused, setFocused] = useState(false);
+  const value = Number(percent);
+  const valid = percent !== "" && value >= 1 && value <= 99;
+
+  return (
+    <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
+      <Text accessibilityRole="header" className="mb-4 text-[22px] font-semibold leading-[1.27]">
+        {t("screens.setup.settings.payment.deposit")}
+      </Text>
+      <FieldBox focused={focused} error={false} ltr>
+        <TextInput
+          accessibilityLabel={t("screens.setup.settings.payment.deposit")}
+          className={inputClass}
+          value={percent}
+          onChangeText={(text) => setPercent(text.replace(/\D/g, "").slice(0, 2))}
+          keyboardType="number-pad"
+          placeholder={String(DEFAULT_DEPOSIT_PERCENT)}
+          placeholderTextColor={colors.ink3}
+          selectionColor={colors.primary}
+          autoFocus
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{ textAlign: "left", writingDirection: "ltr" }}
+        />
+        <Text className="text-body text-ink-2">%</Text>
+      </FieldBox>
+      <Text className="mt-1.5 text-label leading-[1.43] text-ink-2">
+        {percent !== "" && !valid
+          ? t("screens.setup.settings.payment.depositRange")
+          : t("screens.setup.settings.payment.depositHint")}
+      </Text>
+      <View className="mt-6">
+        <Button
+          label={t("screens.setup.settings.payment.done")}
+          disabled={!valid || value === saved}
+          onPress={() => onSave(value)}
+        />
+      </View>
     </Sheet>
   );
 }
