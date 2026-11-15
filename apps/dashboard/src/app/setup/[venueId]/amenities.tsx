@@ -6,6 +6,7 @@ import { Pressable, Switch, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { AmenityIcon } from "@/components/amenity-icon";
 import { Button } from "@/components/button";
+import { Segmented } from "@/components/choices";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, FieldLabel, inputClass } from "@/components/field";
@@ -30,6 +31,9 @@ import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 type Amenity = components["schemas"]["Amenity"];
 type Pricing = components["schemas"]["AmenityPricing"];
 type Offered = { price: number | null; pricing: Pricing | null };
+
+const PRICINGS = ["PER_HOUR", "PER_BOOKING"] as const;
+type Charge = (typeof PRICINGS)[number];
 
 export default function SetupAmenities() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
@@ -238,7 +242,7 @@ function PriceSheet({
   const [amount, setAmount] = useState(
     offered.price === null ? "" : amountOf(offered.price, decimals),
   );
-  const [pricing, setPricing] = useState<Pricing>(offered.pricing ?? "PER_HOUR");
+  const [pricing, setPricing] = useState<Charge>(offered.pricing ?? "PER_HOUR");
   const [focused, setFocused] = useState(false);
   const minor = Math.round(Number(amount) * 10 ** decimals);
   const valid = !paid || (Number.isFinite(minor) && minor >= 1);
@@ -287,27 +291,20 @@ function PriceSheet({
               style={{ textAlign: "left", writingDirection: "ltr" }}
             />
           </FieldBox>
-          {/* Per hour or per booking: two halves of one grey track, the chosen one raised. */}
-          <View className="mt-3 flex-row rounded-[12px] bg-chip p-1">
-            {(["PER_HOUR", "PER_BOOKING"] as const).map((option) => (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: pricing === option }}
-                onPress={() => setPricing(option)}
-                className={`h-10 flex-1 items-center justify-center rounded-[9px] ${pricing === option ? "bg-white" : ""}`}
-              >
-                <Text
-                  className={`text-label font-medium ${pricing === option ? "" : "text-ink-2"}`}
-                >
-                  {t(
-                    option === "PER_HOUR"
-                      ? "screens.setup.amenities.perHour"
-                      : "screens.setup.amenities.perBooking",
-                  )}
-                </Text>
-              </Pressable>
-            ))}
+          {/* Per hour or per booking: the same sliding track as a ground's cover. */}
+          <View className="mt-3">
+            <Segmented
+              options={PRICINGS}
+              value={pricing}
+              label={(option) =>
+                t(
+                  option === "PER_HOUR"
+                    ? "screens.setup.amenities.perHour"
+                    : "screens.setup.amenities.perBooking",
+                )
+              }
+              onChange={setPricing}
+            />
           </View>
         </>
       ) : null}
