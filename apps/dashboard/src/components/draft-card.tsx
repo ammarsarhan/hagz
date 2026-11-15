@@ -1,9 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { SvgXml } from "react-native-svg";
 import type { components } from "@hagz/api";
 import { DRAFT_CARD_ART, DRAFT_CARD_ART_SIZE } from "@/assets/map-art";
+import { colors } from "@/lib/colors";
 import { queries } from "@/lib/queries";
 import { isRTL } from "@/lib/language";
 import { useNow } from "@/lib/use-now";
@@ -58,12 +67,7 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
       onPress={onPress}
       className="overflow-hidden rounded-[20px] bg-ink active:opacity-90"
     >
-      <View className="h-[5px] flex-row bg-ink-track">
-        <View
-          className="h-full bg-primary-soft"
-          style={{ width: total > 0 ? `${(done / total) * 100}%` : 0 }}
-        />
-      </View>
+      <ProgressEdge fraction={total > 0 ? done / total : 0} />
       {/* The cut corner, at the end side so Arabic mirrors it with the layout. */}
       <View
         pointerEvents="none"
@@ -104,5 +108,34 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
         ) : null}
       </View>
     </Pressable>
+  );
+}
+
+// The progress line along the card's top edge. It fills from empty when the card first shows, then
+// glides to each new value (an item finished in setup), so the progress reads as movement rather
+// than a fixed bar. Measured in points from the track's width: Reanimated animates numbers, not
+// percentages.
+const FILL_DELAY = 150;
+const FILL_DURATION = 700;
+
+function ProgressEdge({ fraction }: { fraction: number }) {
+  const [track, setTrack] = useState(0);
+  const width = useSharedValue(0);
+  useEffect(() => {
+    if (track === 0) return;
+    width.value = withDelay(
+      FILL_DELAY,
+      withTiming(fraction * track, { duration: FILL_DURATION, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [fraction, track, width]);
+  const fill = useAnimatedStyle(() => ({ width: width.value }));
+  return (
+    <View
+      className="h-[5px] flex-row bg-ink-track"
+      onLayout={(event) => setTrack(event.nativeEvent.layout.width)}
+    >
+      {/* Styled by props: NativeWind's classes don't reach Reanimated's view. */}
+      <Animated.View style={[{ height: "100%", backgroundColor: colors.primarySoft }, fill]} />
+    </View>
   );
 }

@@ -1712,8 +1712,8 @@
               "integer",
               "null"
             ],
-            "minimum": 1,
-            "maximum": 99
+            "minimum": 20,
+            "maximum": 85
           },
           "cancellationPolicy": {
             "type": [
@@ -1986,8 +1986,8 @@
               "integer",
               "null"
             ],
-            "minimum": 1,
-            "maximum": 99
+            "minimum": 20,
+            "maximum": 85
           },
           "cancellationPolicy": {
             "$ref": "#/components/schemas/CancellationPolicy"

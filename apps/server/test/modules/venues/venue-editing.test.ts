@@ -331,6 +331,16 @@ describe("settings", () => {
     expect(await problem(res)).toMatchObject({ code: "INVALID_SETTINGS", field: "depositPercent" });
   });
 
+  it("keep a deposit between 20 and 85 percent", async () => {
+    const { owner, path } = await aDraft();
+    const deposit = (depositPercent: number) =>
+      call(owner.id, "PATCH", `${path}/settings`, { paymentMode: "DEPOSIT", depositPercent });
+    expect((await detailOf(await deposit(20))).settings.depositPercent).toBe(20);
+    expect((await detailOf(await deposit(85))).settings.depositPercent).toBe(85);
+    expect((await deposit(19)).status).toBe(400);
+    expect((await deposit(86)).status).toBe(400);
+  });
+
   it("only offer the fixed notice choices", async () => {
     const { owner, path } = await aDraft();
     const ok = await call(owner.id, "PATCH", `${path}/settings`, { minimumNotice: 180 });

@@ -7,6 +7,7 @@ import {
   type Environment,
 } from "@hagz/contracts";
 import type { ExpoConfig } from "expo/config";
+import { withXcodeProject, type ConfigPlugin } from "expo/config-plugins";
 
 // Built once per environment (APP_ENV), so staging and production install side by side. Links Hagz
 // sends (@hagz/contracts links.ts) are https URLs on the web app's domain (WEB_URL): iOS and Android
@@ -32,6 +33,24 @@ if (process.env.EAS_BUILD === "true") {
     );
   }
 }
+
+// Xcode's user script sandboxing (on in the generated project) stops React Native's bundling script
+// writing the Mac's address into a device build (ip.txt, how the dev client finds Metro), so a build
+// for a plugged-in iPhone fails while a simulator build passes. Off for the app's own targets.
+const withoutScriptSandboxing: ConfigPlugin = (expo) =>
+  withXcodeProject(expo, (project) => {
+    // Entries are build configurations, plus "<id>_comment" strings alongside them.
+    const configurations = project.modResults.pbxXCBuildConfigurationSection() as Record<
+      string,
+      { buildSettings?: Record<string, string> } | string
+    >;
+    for (const entry of Object.values(configurations)) {
+      if (typeof entry !== "string" && entry.buildSettings) {
+        entry.buildSettings.ENABLE_USER_SCRIPT_SANDBOXING = "NO";
+      }
+    }
+    return project;
+  });
 
 const config: ExpoConfig = {
   name: appNameFor("dashboard", env),
@@ -112,4 +131,4 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+export default withoutScriptSandboxing(config);

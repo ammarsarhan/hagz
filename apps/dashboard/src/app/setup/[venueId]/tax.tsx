@@ -36,7 +36,6 @@ function TaxForm({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
   const next = typed || null;
 
   const submit = () => {
-    if (next === venue.taxNumber) return router.back();
     void save([
       () =>
         send(
@@ -53,7 +52,7 @@ function TaxForm({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
       footer={
         <Button
           label={t("common.actions.save")}
-          disabled={next !== null && !TAX_NUMBER.test(next)}
+          disabled={next === venue.taxNumber || (next !== null && !TAX_NUMBER.test(next))}
           loading={saving}
           onPress={submit}
         />

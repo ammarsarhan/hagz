@@ -68,7 +68,6 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
   const phoneChanged = nextPhone !== venue.phone;
 
   const submit = () => {
-    if (!translationChanged && !phoneChanged) return router.back();
     void save(
       [
         ...(translationChanged
@@ -108,7 +107,7 @@ function DetailsForm({ venueId, venue }: { venueId: string; venue: VenueDetail }
       footer={
         <Button
           label={t("common.actions.save")}
-          disabled={text.name.length < NAME.min}
+          disabled={text.name.length < NAME.min || (!translationChanged && !phoneChanged)}
           loading={saving}
           onPress={submit}
         />
