@@ -9,6 +9,7 @@ import { Collapse } from "@/components/collapse";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
 import { FieldBox, FieldLabel, inputClass } from "@/components/field";
+import { GroupHeading } from "@/components/group-heading";
 import { IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
@@ -75,7 +76,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           {t("screens.setup.items.SETTINGS.title")}
         </Title>
 
-        <Heading first>{t("screens.setup.settings.bookings")}</Heading>
+        <GroupHeading className="pb-0.5">{t("screens.setup.settings.bookings")}</GroupHeading>
         <Row
           title={t("screens.setup.settings.autoConfirm")}
           body={t("screens.setup.settings.autoConfirmBody")}
@@ -95,7 +96,9 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           onPress={() => setChoosingNotice(true)}
         />
 
-        <Heading>{t("screens.setup.settings.payments")}</Heading>
+        <GroupHeading className="pb-0.5 pt-[22px]">
+          {t("screens.setup.settings.payments")}
+        </GroupHeading>
         <Row
           title={t("screens.setup.settings.howPlayersPay")}
           trailing={<Value>{paymentLabel(t, settings.paymentMode, settings.depositPercent)}</Value>}
@@ -105,7 +108,9 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           }}
         />
 
-        <Heading>{t("screens.setup.settings.cancellations")}</Heading>
+        <GroupHeading className="pb-0.5 pt-[22px]">
+          {t("screens.setup.settings.cancellations")}
+        </GroupHeading>
         <Row
           title={t("screens.setup.settings.policy")}
           // Until one is chosen, the row says so: it's the one setting review needs.
@@ -120,7 +125,9 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
           onPress={() => router.push(`/setup/${venueId}/settings/cancellation`)}
         />
 
-        <Heading>{t("screens.setup.settings.loyalty")}</Heading>
+        <GroupHeading className="pb-0.5 pt-[22px]">
+          {t("screens.setup.settings.loyalty")}
+        </GroupHeading>
         <Row
           title={t("screens.setup.settings.rewardRegulars")}
           body={t("screens.setup.settings.rewardBody", {
@@ -161,19 +168,6 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         }}
       />
     </Screen>
-  );
-}
-
-// A group's heading: 18 Semi Bold, the account screen's group headings (SettingsHeading). Smaller
-// than Figma's 22 (user, 2026-11-15), so the groups don't compete with the page title.
-function Heading({ children, first = false }: { children: string; first?: boolean }) {
-  return (
-    <Text
-      accessibilityRole="header"
-      className={`pb-0.5 text-[18px] font-semibold leading-[1.33] ${first ? "" : "pt-[22px]"}`}
-    >
-      {children}
-    </Text>
   );
 }
 
