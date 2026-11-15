@@ -7,6 +7,7 @@ import Svg, { Circle } from "react-native-svg";
 import { Button } from "@/components/button";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
+import { GroupHeading } from "@/components/group-heading";
 import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
@@ -158,12 +159,7 @@ function Group({
   if (items.length === 0) return null;
   return (
     <>
-      <Text
-        accessibilityRole="header"
-        className="mb-1 mt-7 text-[22px] font-semibold leading-[1.27]"
-      >
-        {heading}
-      </Text>
+      <GroupHeading className="mb-1 mt-7">{heading}</GroupHeading>
       {items.map((item, index) => (
         <Item
           key={item.key}
