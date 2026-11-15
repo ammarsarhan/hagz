@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Switch, TextInput, View } from "react-native";
 import { Button } from "@/components/button";
-import { RadioMark, SelectionBox, useSelection } from "@/components/choices";
+import {
+  ChoicePill,
+  ChoicePills,
+  RadioMark,
+  SelectionBox,
+  useSelection,
+} from "@/components/choices";
 import { Collapse } from "@/components/collapse";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -16,6 +22,7 @@ import { Screen } from "@/components/screen";
 import { SetupLoading } from "@/components/setup-loading";
 import { SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
+import { Stepper } from "@/components/stepper";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { colors } from "@/lib/colors";
@@ -23,6 +30,8 @@ import { isRTL } from "@/lib/language";
 import { queries } from "@/lib/queries";
 import {
   DEFAULT_LOYALTY,
+  LOYALTY_STAMPS,
+  LOYALTY_WINDOWS,
   NOTICE_CHOICES,
   PAYMENT_MODES,
   noticeLabel,
@@ -53,6 +62,8 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
   const [paying, setPaying] = useState(false);
   // A fresh "How players pay" sheet each time, starting from what's saved.
   const [paymentKey, setPaymentKey] = useState(0);
+  const [rewarding, setRewarding] = useState(false);
+  const [loyaltyKey, setLoyaltyKey] = useState(0);
   const loyalty = settings.loyalty ?? DEFAULT_LOYALTY;
   const policy = settings.cancellationPolicy;
   // As on the account screen.
@@ -141,11 +152,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         <GroupHeading className="mb-1 mt-9">{t("screens.setup.settings.loyalty")}</GroupHeading>
         <SettingsRow
           title={t("screens.setup.settings.rewardRegulars")}
-          body={t("screens.setup.settings.rewardBody", {
-            count: loyalty.stamps,
-            days: loyalty.windowDays,
-            ordinal: true,
-          })}
+          body={t("screens.setup.settings.rewardRegularsBody")}
           trailing={
             <Switch
               accessibilityLabel={t("screens.setup.settings.rewardRegulars")}
@@ -155,6 +162,22 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
             />
           }
         />
+        {/* Its terms, under the switch while it's on, as iOS settings show a switch's options. */}
+        <Collapse open={settings.loyalty !== null}>
+          <SettingsRow
+            title={t("screens.setup.settings.reward")}
+            body={t("screens.setup.settings.rewardBody", {
+              count: loyalty.stamps,
+              days: loyalty.windowDays,
+              ordinal: true,
+            })}
+            trailing={chevron}
+            onPress={() => {
+              setLoyaltyKey((key) => key + 1);
+              setRewarding(true);
+            }}
+          />
+        </Collapse>
       </FadingScroll>
 
       <NoticeSheet
@@ -175,6 +198,16 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         onSave={(change) => {
           setPaying(false);
           void save(change);
+        }}
+      />
+      <LoyaltySheet
+        key={loyaltyKey}
+        visible={rewarding}
+        loyalty={loyalty}
+        onClose={() => setRewarding(false)}
+        onSave={(next) => {
+          setRewarding(false);
+          void save({ loyalty: next });
         }}
       />
     </Screen>
@@ -329,5 +362,80 @@ function PaymentCard({
       </View>
       <RadioMark selected={selected} />
     </Pressable>
+  );
+}
+
+// The loyalty reward's terms (not drawn in Figma): which booking in a row is free, on a stepper as
+// a ground's booking length is, and how long bookings count, as pills of a few round lengths (any
+// day from 1 to 365 would be a long way to step). Done saves, grey until something changes.
+function LoyaltySheet({
+  visible,
+  loyalty,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  loyalty: { stamps: number; windowDays: number };
+  onClose: () => void;
+  onSave: (next: { stamps: number; windowDays: number }) => void;
+}) {
+  const { t } = useTranslation();
+  const [stamps, setStamps] = useState(loyalty.stamps);
+  const [windowDays, setWindowDays] = useState(loyalty.windowDays);
+  // A window set some other way (the API takes any) stays choosable.
+  const windows = [...new Set<number>([...LOYALTY_WINDOWS, loyalty.windowDays])].sort(
+    (a, b) => a - b,
+  );
+  const changed = stamps !== loyalty.stamps || windowDays !== loyalty.windowDays;
+
+  return (
+    <Sheet visible={visible} onClose={onClose} closeLabel={t("components.shared.nav.close")}>
+      <Text accessibilityRole="header" className="mb-2 text-[22px] font-semibold leading-[1.27]">
+        {t("screens.setup.settings.rewardRegulars")}
+      </Text>
+      <SettingsRow
+        title={t("screens.setup.settings.loyaltySheet.nth")}
+        body={t("screens.setup.settings.loyaltySheet.nthBody")}
+        trailing={
+          <Stepper
+            value={stamps}
+            min={LOYALTY_STAMPS.min}
+            max={LOYALTY_STAMPS.max}
+            format={(count) =>
+              t("screens.setup.settings.loyaltySheet.nthValue", { count, ordinal: true })
+            }
+            label={t("screens.setup.settings.loyaltySheet.nth")}
+            decreaseLabel={t("screens.setup.settings.loyaltySheet.earlier")}
+            increaseLabel={t("screens.setup.settings.loyaltySheet.later")}
+            onChange={setStamps}
+          />
+        }
+      />
+      <View className="mb-3 mt-4">
+        <Text className="text-[15px] font-medium leading-[1.33]">
+          {t("screens.setup.settings.loyaltySheet.window")}
+        </Text>
+        <Text className="mt-0.5 text-caption text-ink-2">
+          {t("screens.setup.settings.loyaltySheet.windowBody")}
+        </Text>
+      </View>
+      <ChoicePills>
+        {windows.map((days) => (
+          <ChoicePill
+            key={days}
+            label={t("screens.setup.settings.loyaltySheet.days", { count: days })}
+            selected={days === windowDays}
+            onPress={() => setWindowDays(days)}
+          />
+        ))}
+      </ChoicePills>
+      <View className="mt-6">
+        <Button
+          label={t("screens.setup.settings.loyaltySheet.done")}
+          disabled={!changed}
+          onPress={() => onSave({ stamps, windowDays })}
+        />
+      </View>
+    </Sheet>
   );
 }
