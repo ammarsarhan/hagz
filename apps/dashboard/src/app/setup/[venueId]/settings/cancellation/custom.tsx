@@ -206,8 +206,11 @@ export default function CustomRules() {
           tier={tiers[editing]}
           above={tiers[editing - 1]}
           below={tiers[editing + 1]}
-          onChange={(tier) =>
-            setRules(rules.map((rule, i) => (i === editing ? { ...rule, ...tier } : rule)))
+          // Merged into the rule as it is now, not as this render saw it.
+          onChange={(patch) =>
+            setRules((current) =>
+              current.map((rule, i) => (i === editing ? { ...rule, ...patch } : rule)),
+            )
           }
           onClose={() => setSheetOpen(false)}
           onHidden={() => setEditing(null)}
@@ -221,8 +224,8 @@ function Swatch({ color }: { color: string }) {
   return <View className="size-3 rounded-[3px]" style={{ backgroundColor: color }} />;
 }
 
-// One rule on two wheels, notice and refund, applied as they turn: the sentence under the title says
-// what it now means. Each wheel offers only what keeps the rule between its neighbours.
+// One rule on two wheels, notice and refund, each applied when it comes to rest: the sentence under
+// the title says what it now means. Each wheel offers only what keeps the rule between its neighbours.
 function RuleSheet({
   visible,
   number,
@@ -238,11 +241,13 @@ function RuleSheet({
   tier: CancellationTier;
   above: CancellationTier | undefined;
   below: CancellationTier | undefined;
-  onChange: (tier: CancellationTier) => void;
+  onChange: (patch: Partial<CancellationTier>) => void;
   onClose: () => void;
   onHidden: () => void;
 }) {
   const { t } = useTranslation();
+  // What the wheels are on, for the sentence; each wheel also hands its value to the screen.
+  const [draft, setDraft] = useState(tier);
   const hoursLabel = (count: number) => t("screens.setup.settings.custom.hoursValue", { count });
 
   // Notice between the rule below (exclusive) and the one above (exclusive), with the rule's own
@@ -276,12 +281,12 @@ function RuleSheet({
         {t("screens.setup.settings.custom.rule", { number })}
       </Text>
       <Text className="mt-2 text-subtitle text-ink-2">
-        {tier.refundPercent > 0
+        {draft.refundPercent > 0
           ? t("screens.setup.settings.custom.sheetBody", {
-              hours: hoursLabel(tier.hours),
-              percent: tier.refundPercent,
+              hours: hoursLabel(draft.hours),
+              percent: draft.refundPercent,
             })
-          : t("screens.setup.settings.custom.sheetBodyNone", { hours: hoursLabel(tier.hours) })}
+          : t("screens.setup.settings.custom.sheetBodyNone", { hours: hoursLabel(draft.hours) })}
       </Text>
 
       <View className="mt-5 flex-row">
@@ -298,13 +303,19 @@ function RuleSheet({
           label={t("screens.setup.settings.custom.notice")}
           items={hours}
           value={tier.hours}
-          onChange={(h) => onChange({ ...tier, hours: h })}
+          onChange={(hours) => {
+            setDraft((current) => ({ ...current, hours }));
+            onChange({ hours });
+          }}
         />
         <Wheel
           label={t("screens.setup.settings.custom.refund")}
           items={percents}
           value={tier.refundPercent}
-          onChange={(p) => onChange({ ...tier, refundPercent: p })}
+          onChange={(refundPercent) => {
+            setDraft((current) => ({ ...current, refundPercent }));
+            onChange({ refundPercent });
+          }}
         />
       </View>
 

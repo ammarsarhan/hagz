@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
-import { useRef } from "react";
-import { Pressable, View } from "react-native";
+import { useRef, useState } from "react";
+import { Pressable, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import Animated, {
   interpolate,
   runOnJS,
@@ -15,10 +15,11 @@ import { Text } from "./text";
 
 // An iOS-style wheel (Figma "Pick a number (wheel sheet)", 451:2): the choices scroll past a grey
 // band, snapping to one at a time, the chosen one larger and the rest fading away from it. Drawn
-// here rather than with the native picker, which would need a new native build. It reports each
-// choice as it passes the band (with a tick), so what it changes updates while it turns.
+// here rather than with the native picker, which would need a new native build.
 //
-// Mount it with the value it starts on (a `key` per opening): it doesn't follow `value` afterwards.
+// It ticks as each choice passes the band, but reports a choice only once it comes to rest, so the
+// screen behind isn't redrawn on every row of a fling. It starts on the value it's mounted with and
+// then leads itself: give it a `key` per opening rather than steering it with `value`.
 const ROW = 40;
 const VISIBLE = 5;
 
@@ -38,44 +39,61 @@ export function Wheel<T>({
   onChange: (value: T) => void;
   label: string;
 }) {
-  const start = Math.max(
-    items.findIndex((item) => item.value === value),
-    0,
+  // Where it starts, worked out once: a starting offset that changed with each choice would make
+  // iOS jump the wheel mid-spin.
+  const [start] = useState(() =>
+    Math.max(
+      items.findIndex((item) => item.value === value),
+      0,
+    ),
   );
   const ref = useAnimatedRef<Animated.ScrollView>();
   const offset = useSharedValue(start * ROW);
-  const index = useRef(start);
+  // The choice last reported, and the latest callback and items (a turn can outlive a render).
+  const reported = useRef(start);
+  const latest = useRef({ items, onChange });
+  latest.current = { items, onChange };
+  const [, redraw] = useState(0);
 
-  const settle = (next: number) => {
-    const clamped = Math.min(Math.max(next, 0), items.length - 1);
-    if (clamped === index.current) return;
-    index.current = clamped;
-    void Haptics.selectionAsync();
-    const item = items[clamped];
-    if (item) onChange(item.value);
+  const clamp = (i: number) => Math.min(Math.max(i, 0), latest.current.items.length - 1);
+  const tick = () => void Haptics.selectionAsync();
+  const report = (i: number) => {
+    const index = clamp(i);
+    if (index === reported.current) return;
+    reported.current = index;
+    redraw((n) => n + 1);
+    const item = latest.current.items[index];
+    if (item) latest.current.onChange(item.value);
   };
 
   const onScroll = useAnimatedScrollHandler((event) => {
     offset.value = event.contentOffset.y;
   });
+  // A tick for every row that crosses the band, as the native wheel does.
   useAnimatedReaction(
     () => Math.round(offset.value / ROW),
     (now, before) => {
-      if (now !== before) runOnJS(settle)(now);
+      if (before !== null && now !== before) runOnJS(tick)();
     },
   );
 
-  const go = (to: number) => ref.current?.scrollTo({ y: to * ROW, animated: true });
+  const rest = (event: NativeSyntheticEvent<NativeScrollEvent>) =>
+    report(Math.round(event.nativeEvent.contentOffset.y / ROW));
+  const go = (i: number) => {
+    const index = clamp(i);
+    ref.current?.scrollTo({ y: index * ROW, animated: true });
+    report(index);
+  };
 
   return (
     <View
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={{ text: items[index.current]?.label }}
+      accessibilityValue={{ text: items[reported.current]?.label }}
       accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
       onAccessibilityAction={({ nativeEvent }) =>
-        go(index.current + (nativeEvent.actionName === "increment" ? 1 : -1))
+        go(reported.current + (nativeEvent.actionName === "increment" ? 1 : -1))
       }
       style={{ height: ROW * VISIBLE }}
       className="flex-1"
@@ -88,6 +106,14 @@ export function Wheel<T>({
         snapToInterval={ROW}
         decelerationRate="fast"
         contentOffset={{ x: 0, y: start * ROW }}
+        // Android has no contentOffset: put it in place once it's laid out.
+        onLayout={() => ref.current?.scrollTo({ y: start * ROW, animated: false })}
+        // At rest after a fling (and its snap), or let go without one.
+        onMomentumScrollEnd={rest}
+        onScrollEndDrag={(event) => {
+          const velocity = event.nativeEvent.velocity?.y ?? 0;
+          if (Math.abs(velocity) < 0.05) rest(event);
+        }}
         contentContainerStyle={{ paddingVertical: ROW * Math.floor(VISIBLE / 2) }}
       >
         {items.map((item, i) => (
