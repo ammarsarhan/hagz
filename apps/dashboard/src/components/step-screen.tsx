@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { View } from "react-native";
 import { CompactTitle, useCompactTitle } from "./compact-title";
 import { FadingScroll } from "./fading-scroll";
 import { BackButton, NavBar } from "./nav";
@@ -47,21 +48,29 @@ export function StepScreen({
   );
 }
 
-// A section's heading within a step (Figma: 22 Semi Bold, 26 above and 12 below). Under a field,
-// which keeps 16 below itself, it adds only the rest.
+// A heading within a step, clearly under the screen's 28 title and above its 16 rows: 20 Semi
+// Bold ("Sport", "Booking duration"), with an optional grey line under it saying what it's for. 26
+// above and 12 below; under a field, which keeps 16 below itself, it adds only the rest.
 export function SectionHeading({
   children,
+  description,
   afterField = false,
 }: {
   children: string;
+  description?: string;
   afterField?: boolean;
 }) {
   return (
-    <Text
-      accessibilityRole="header"
-      className={`mb-3 ${afterField ? "mt-2.5" : "mt-[26px]"} text-[22px] font-semibold leading-[1.27] tracking-[-0.3px]`}
-    >
-      {children}
-    </Text>
+    <View className={`mb-3 ${afterField ? "mt-2.5" : "mt-[26px]"}`}>
+      <Text
+        accessibilityRole="header"
+        className="text-[20px] font-semibold leading-[1.3] tracking-[-0.2px]"
+      >
+        {children}
+      </Text>
+      {description ? (
+        <Text className="mt-1 text-label leading-[1.43] text-ink-2">{description}</Text>
+      ) : null}
+    </View>
   );
 }

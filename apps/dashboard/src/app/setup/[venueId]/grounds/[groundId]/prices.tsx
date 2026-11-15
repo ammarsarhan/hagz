@@ -64,7 +64,7 @@ export default function GroundPrices() {
             const found = check(draft);
             setErrors(found);
             if (Object.keys(found).length === 0) {
-              router.push(`/setup/${venueId}/grounds/${groundId}/length`);
+              router.push(`/setup/${venueId}/grounds/${groundId}/settings`);
             }
           }}
         />

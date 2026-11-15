@@ -4,7 +4,13 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { SIZES_BY_SPORT } from "@hagz/contracts";
 import { Button } from "@/components/button";
-import { ChoicePill, ChoicePills } from "@/components/choices";
+import {
+  ChoicePill,
+  ChoicePills,
+  CrossFade,
+  SelectionBox,
+  useSelection,
+} from "@/components/choices";
 import { Field } from "@/components/field";
 import {
   IconBallBasketball,
@@ -74,7 +80,9 @@ export default function GroundBasics() {
         returnKeyType="done"
       />
 
-      <SectionHeading afterField>{t("screens.setup.grounds.sport")}</SectionHeading>
+      <SectionHeading afterField description={t("screens.setup.grounds.sportBody")}>
+        {t("screens.setup.grounds.sport")}
+      </SectionHeading>
       <View accessibilityRole="radiogroup" className="gap-2.5">
         {rows.map((row) => (
           <View key={row.join()} className="flex-row gap-2.5">
@@ -99,7 +107,9 @@ export default function GroundBasics() {
 
       {sizes.length > 0 ? (
         <>
-          <SectionHeading>{t("screens.setup.grounds.size")}</SectionHeading>
+          <SectionHeading description={t("screens.setup.grounds.sizeBody")}>
+            {t("screens.setup.grounds.size")}
+          </SectionHeading>
           <ChoicePills>
             {sizes.map((size) => (
               <ChoicePill
@@ -116,7 +126,8 @@ export default function GroundBasics() {
   );
 }
 
-// A sport: its ball over its name, in a tile three to a row. Chosen = blue outline on a blue tint.
+// A sport: its ball over its name, in a tile three to a row. Chosen = blue outline on a blue tint,
+// with the ball and the name turning blue too, all eased in together.
 function SportTile({
   sport,
   selected,
@@ -127,18 +138,38 @@ function SportTile({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  const progress = useSelection(selected);
   const Ball = ICONS[sport];
+  const name = t(`screens.setup.grounds.sports.${sport}`);
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
+      accessibilityLabel={name}
       onPress={onPress}
-      className={`h-[84px] flex-1 justify-between rounded-[16px] border p-3.5 active:opacity-70 ${selected ? "border-primary bg-blue-tint" : "border-border bg-white"}`}
+      className="h-[84px] flex-1 justify-between p-3.5 active:opacity-70"
     >
-      <Ball size={24} color={selected ? colors.primary : colors.ink} />
-      <Text className="text-body font-medium" numberOfLines={1}>
-        {t(`screens.setup.grounds.sports.${sport}`)}
-      </Text>
+      <SelectionBox progress={progress} radius={16} />
+      <View className="items-start">
+        <CrossFade
+          progress={progress}
+          off={<Ball size={24} color={colors.ink} />}
+          on={<Ball size={24} color={colors.primary} />}
+        />
+      </View>
+      <CrossFade
+        progress={progress}
+        off={
+          <Text className="text-body font-medium" numberOfLines={1}>
+            {name}
+          </Text>
+        }
+        on={
+          <Text className="text-body font-medium text-primary" numberOfLines={1}>
+            {name}
+          </Text>
+        }
+      />
     </Pressable>
   );
 }

@@ -3,13 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
 import { ChoicePill, ChoicePills, Segmented } from "@/components/choices";
 import { SectionHeading, StepScreen } from "@/components/step-screen";
-import { Text } from "@/components/text";
 import { useGroundFlow } from "@/lib/ground-flow";
 import { ENVIRONMENTS, SURFACES } from "@/lib/grounds";
 
 // Adding a ground, 2 of 4 (Figma "Grounds · Add 2 Surface and cover", 353:2): what players filter
 // by. Surfaces are a list, so they wrap as pills; outdoor → covered → indoor is a scale, so it's
-// one segmented control, with a line under it saying what the chosen one means.
+// one segmented control. Each heading has its line under it; Cover's says what the chosen one means.
 export default function GroundSurface() {
   const { t } = useTranslation();
   const { venueId = "", groundId = "new" } = useLocalSearchParams<{
@@ -29,7 +28,9 @@ export default function GroundSurface() {
         />
       }
     >
-      <SectionHeading>{t("screens.setup.grounds.surface")}</SectionHeading>
+      <SectionHeading description={t("screens.setup.grounds.surfaceBody")}>
+        {t("screens.setup.grounds.surface")}
+      </SectionHeading>
       <ChoicePills>
         {SURFACES.map((surface) => (
           <ChoicePill
@@ -41,16 +42,17 @@ export default function GroundSurface() {
         ))}
       </ChoicePills>
 
-      <SectionHeading>{t("screens.setup.grounds.cover")}</SectionHeading>
+      <SectionHeading
+        description={t(`screens.setup.grounds.environmentHints.${draft.environment}`)}
+      >
+        {t("screens.setup.grounds.cover")}
+      </SectionHeading>
       <Segmented
         options={ENVIRONMENTS}
         value={draft.environment}
         label={(environment) => t(`screens.setup.grounds.environments.${environment}`)}
         onChange={(environment) => update({ environment })}
       />
-      <Text className="mt-[27px] text-label leading-[1.43] text-ink-2">
-        {t(`screens.setup.grounds.environmentHints.${draft.environment}`)}
-      </Text>
     </StepScreen>
   );
 }
