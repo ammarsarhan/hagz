@@ -18,6 +18,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { amountOf, cleanAmount, decimalsOf } from "@/lib/money";
 import { queries, reference } from "@/lib/queries";
 import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 
@@ -29,23 +30,6 @@ import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 type Amenity = components["schemas"]["Amenity"];
 type Pricing = components["schemas"]["AmenityPricing"];
 type Offered = { price: number | null; pricing: Pricing | null };
-
-// How many decimals the currency's minor unit has (EGP 2, KWD 3), from the phone's own currency
-// data; 2 if it doesn't know the code.
-const decimalsOf = (currency: string) => {
-  try {
-    return (
-      new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions()
-        .maximumFractionDigits ?? 2
-    );
-  } catch {
-    return 2;
-  }
-};
-
-// 15000 → "150", 1550 → "15.5": no trailing zeros, since prices are mostly whole.
-const amountOf = (minor: number, decimals: number) =>
-  String(Number((minor / 10 ** decimals).toFixed(decimals)));
 
 export default function SetupAmenities() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
@@ -292,16 +276,7 @@ function PriceSheet({
             <TextInput
               className={inputClass}
               value={amount}
-              onChangeText={(text) => {
-                // Digits and one decimal point, to the currency's precision.
-                const cleaned = text.replace(/[^0-9.]/g, "");
-                const [whole = "", fraction] = cleaned.split(".");
-                setAmount(
-                  fraction === undefined || decimals === 0
-                    ? whole
-                    : `${whole}.${fraction.slice(0, decimals)}`,
-                );
-              }}
+              onChangeText={(text) => setAmount(cleanAmount(text, decimals))}
               keyboardType={decimals > 0 ? "decimal-pad" : "number-pad"}
               placeholder="0"
               placeholderTextColor={colors.ink3}
