@@ -1,7 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
-import { Alert } from "react-native";
 import { useHud } from "@/components/hud";
 import { api } from "./api";
 import { hudMessage, send, type Result } from "./api-errors";
@@ -38,7 +36,6 @@ interface GroundFlow {
   update: (change: Partial<GroundDraft>) => void;
   save: () => Promise<void>;
   saving: boolean;
-  remove: () => void;
 }
 
 const Context = createContext<GroundFlow | null>(null);
@@ -67,7 +64,6 @@ export function GroundFlowProvider({
   finish: () => void;
   children: ReactNode;
 }) {
-  const { t } = useTranslation();
   const hud = useHud();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(initial);
@@ -139,39 +135,8 @@ export function GroundFlowProvider({
     if (!(await settle(result))) setSaving(false);
   }, [decimals, draft, finish, ground, settle, venueId]);
 
-  // Kept for booking history on the server, gone from the venue. Asked first: it can't be undone
-  // from the app.
-  const remove = useCallback(() => {
-    if (!ground) return;
-    const name = ground.name ?? t("screens.setup.grounds.unnamed");
-    Alert.alert(
-      t("screens.setup.grounds.removeTitle", { name }),
-      t("screens.setup.grounds.removeBody"),
-      [
-        { text: t("screens.setup.grounds.cancel"), style: "cancel" },
-        {
-          text: t("screens.setup.grounds.removeConfirm"),
-          style: "destructive",
-          onPress: () => {
-            void (async () => {
-              setSaving(true);
-              const result = await send(
-                api.DELETE("/v1/staff/venues/{venueId}/grounds/{groundId}", {
-                  params: { path: { venueId, groundId: ground.id } },
-                }),
-              );
-              if (!(await settle(result))) setSaving(false);
-            })();
-          },
-        },
-      ],
-    );
-  }, [ground, settle, t, venueId]);
-
   return (
-    <Context.Provider
-      value={{ venueId, ground, currency, decimals, draft, update, save, saving, remove }}
-    >
+    <Context.Provider value={{ venueId, ground, currency, decimals, draft, update, save, saving }}>
       {children}
     </Context.Provider>
   );
