@@ -8,7 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Animated, View } from "react-native";
+import { Animated, Platform, View } from "react-native";
+import { FullWindowOverlay } from "react-native-screens";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { IconAlertCircleFilled } from "./icons";
@@ -120,17 +121,28 @@ export function HudProvider({ children }: { children: ReactNode }) {
         <ShowingContext.Provider value={showing}>
           {children}
           {current && topSheet === null ? (
-            <Hud
-              key={current.key}
-              message={current.message}
-              bottom={screenBottom + GAP}
-              onHidden={onHidden}
-            />
+            <OverModals>
+              <Hud
+                key={current.key}
+                message={current.message}
+                bottom={screenBottom + GAP}
+                onHidden={onHidden}
+              />
+            </OverModals>
           ) : null}
         </ShowingContext.Provider>
       </AnchorsContext.Provider>
     </HudContext.Provider>
   );
+}
+
+// On iOS a screen presented as a modal (the map's fullScreenModal) is a view controller of its own,
+// drawn over the root's views, so a HUD drawn by the root would sit behind it. FullWindowOverlay
+// puts it in the window itself, over every presented screen. It's mounted only while a HUD shows,
+// so it's always added after (above) whatever is presented. Android's modal screens are ordinary
+// views under the root, so there the HUD already sits on top.
+function OverModals({ children }: { children: ReactNode }) {
+  return Platform.OS === "ios" ? <FullWindowOverlay>{children}</FullWindowOverlay> : children;
 }
 
 function Hud({
