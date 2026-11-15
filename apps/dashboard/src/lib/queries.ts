@@ -57,6 +57,19 @@ export const queries = {
           )
         ).data,
     }),
+  // A ground's weekly hours, as the API stores them (lib/hours.ts reads them as days).
+  schedule: (venueId: string, groundId: string) =>
+    queryOptions({
+      queryKey: ["staff", "venues", venueId, "grounds", groundId, "schedule"],
+      queryFn: async () =>
+        (
+          await fetched(
+            api.GET("/v1/staff/venues/{venueId}/grounds/{groundId}/schedule", {
+              params: { path: { venueId, groundId } },
+            }),
+          )
+        ).days,
+    }),
   // Everything a setup item's screen edits, in one read. Each save answers with the venue as it now
   // is, which goes straight back in here (lib/venue-edit.ts).
   venue: (venueId: string) =>
