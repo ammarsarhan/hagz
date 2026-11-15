@@ -10,10 +10,25 @@ void SplashScreen.preventAutoHideAsync();
 // Fades out over the first screen, as most apps open, rather than cutting to it.
 SplashScreen.setOptions({ fade: true, duration: 250 });
 
+// Whether a session is stored. Reading the Keychain can fail now and then (iOS, mostly on
+// development builds): a failure is tried once more, and a second one forgets whatever is stored,
+// so onboarding showing always means signed out, never "couldn't tell" with a session still there.
+const hasStoredSession = async () => {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await auth.isSignedIn();
+    } catch {
+      // Tried again below, or forgotten.
+    }
+  }
+  await auth.forget().catch(() => undefined);
+  return false;
+};
+
 export const boot = async () => {
   holdNavigation(true);
   try {
-    if (!(await auth.isSignedIn())) return;
+    if (!(await hasStoredSession())) return;
     const target = await landing();
     // The saved session may have ended (revoked, or its account gone) while loading: onboarding.
     if (await auth.isSignedIn()) setSignedInTarget(target);
