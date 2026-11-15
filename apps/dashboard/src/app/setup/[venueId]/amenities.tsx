@@ -87,19 +87,20 @@ function AmenitiesForm({
       ? null
       : t(pricing === "PER_HOUR" ? "screens.setup.amenities.perHourPrice" : "screens.setup.amenities.perBookingPrice", { currency, amount: amountOf(price, decimals) }); // prettier-ignore
 
+  // Nothing to save until the list differs from the venue's.
+  const changed =
+    offered.size !== venue.amenities.length ||
+    venue.amenities.some((was) => {
+      const now = offered.get(was.optionId);
+      return now?.price !== was.price || now.pricing !== was.pricing;
+    });
+
   const submit = () => {
     const amenities = [...offered].map(([optionId, { price, pricing }]) => ({
       optionId,
       price,
       pricing,
     }));
-    const unchanged =
-      amenities.length === venue.amenities.length &&
-      venue.amenities.every((was) => {
-        const now = offered.get(was.optionId);
-        return now?.price === was.price && now.pricing === was.pricing;
-      });
-    if (unchanged) return router.back();
     void save([
       () =>
         send(
@@ -112,7 +113,16 @@ function AmenitiesForm({
   };
 
   return (
-    <Screen footer={<Button label={t("common.actions.save")} loading={saving} onPress={submit} />}>
+    <Screen
+      footer={
+        <Button
+          label={t("common.actions.save")}
+          disabled={!changed}
+          loading={saving}
+          onPress={submit}
+        />
+      }
+    >
       <NavBar
         flush
         start={
@@ -249,6 +259,9 @@ function PriceSheet({
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   const minor = Math.round(Number(amount) * 10 ** decimals);
   const valid = !paid || (Number.isFinite(minor) && minor >= 1);
+  const changed = paid
+    ? minor !== offered.price || pricing !== offered.pricing
+    : offered.price !== null;
 
   return (
     <Sheet
@@ -330,7 +343,7 @@ function PriceSheet({
           <Button
             label={t("common.actions.save")}
             compact
-            disabled={!valid}
+            disabled={!valid || !changed}
             onPress={() =>
               onSave(paid ? { price: minor, pricing } : { price: null, pricing: null })
             }
