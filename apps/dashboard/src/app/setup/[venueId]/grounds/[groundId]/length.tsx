@@ -13,7 +13,7 @@ import { useGroundFlow } from "@/lib/ground-flow";
 // pass the longest. Its button sends the whole ground (lib/ground-flow.tsx).
 export default function GroundLength() {
   const { t } = useTranslation();
-  const { ground, draft, update, save, saving } = useGroundFlow();
+  const { ground, draft, update, changed, save, saving } = useGroundFlow();
   const hours = (count: number) => t("screens.setup.grounds.hours", { count });
 
   return (
@@ -23,6 +23,7 @@ export default function GroundLength() {
       footer={
         <Button
           label={t(ground ? "common.actions.save" : "screens.setup.grounds.addGround")}
+          disabled={!changed}
           loading={saving}
           onPress={() => void save()}
         />

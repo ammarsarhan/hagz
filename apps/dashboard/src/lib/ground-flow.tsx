@@ -34,6 +34,9 @@ interface GroundFlow {
   decimals: number;
   draft: GroundDraft;
   update: (change: Partial<GroundDraft>) => void;
+  // Editing: whether the draft differs from the ground, which is all Save sends. Always true while
+  // adding one.
+  changed: boolean;
   save: () => Promise<void>;
   saving: boolean;
 }
@@ -89,35 +92,33 @@ export function GroundFlowProvider({
     [finish, hud, queryClient],
   );
 
-  const save = useCallback(async () => {
-    const optional = (amount: string) => {
-      const minor = minorOf(amount, decimals);
-      return Number.isNaN(minor) ? null : minor;
-    };
-    const fields = {
-      name: draft.name.trim(),
-      sport: draft.sport,
-      size: draft.size,
-      surface: draft.surface,
-      environment: draft.environment,
-      basePrice: minorOf(draft.basePrice, decimals),
-      peakPrice: optional(draft.peakPrice),
-      discountPrice: optional(draft.discountPrice),
-      minimumSlots: draft.minimumSlots,
-      maximumSlots: draft.maximumSlots,
-    };
+  const optional = (amount: string) => {
+    const minor = minorOf(amount, decimals);
+    return Number.isNaN(minor) ? null : minor;
+  };
+  const fields = {
+    name: draft.name.trim(),
+    sport: draft.sport,
+    size: draft.size,
+    surface: draft.surface,
+    environment: draft.environment,
+    basePrice: minorOf(draft.basePrice, decimals),
+    peakPrice: optional(draft.peakPrice),
+    discountPrice: optional(draft.discountPrice),
+    minimumSlots: draft.minimumSlots,
+    maximumSlots: draft.maximumSlots,
+  };
+  // Editing sends only what changed (the API checks the result as a whole).
+  const change = ground
+    ? Object.fromEntries(
+        Object.entries(fields).filter(
+          ([key, value]) => (ground as unknown as Record<string, unknown>)[key] !== value,
+        ),
+      )
+    : null;
+  const changed = change === null || Object.keys(change).length > 0;
 
-    // Editing sends only what changed (the API checks the result as a whole); nothing changed is
-    // simply done.
-    const change = ground
-      ? Object.fromEntries(
-          Object.entries(fields).filter(
-            ([key, value]) => (ground as unknown as Record<string, unknown>)[key] !== value,
-          ),
-        )
-      : null;
-    if (change && Object.keys(change).length === 0) return finish();
-
+  const save = async () => {
     setSaving(true);
     const result = ground
       ? await send(
@@ -133,10 +134,12 @@ export function GroundFlowProvider({
           }),
         );
     if (!(await settle(result))) setSaving(false);
-  }, [decimals, draft, finish, ground, settle, venueId]);
+  };
 
   return (
-    <Context.Provider value={{ venueId, ground, currency, decimals, draft, update, save, saving }}>
+    <Context.Provider
+      value={{ venueId, ground, currency, decimals, draft, update, changed, save, saving }}
+    >
       {children}
     </Context.Provider>
   );
