@@ -153,8 +153,8 @@ export default function CustomRules() {
               >
                 <Swatch color={swatchOf(tier.refundPercent)} />
                 <View className="flex-1">
-                  <Text className="text-subtitle font-medium leading-[1.31]">{when(index)}</Text>
-                  <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">{back}</Text>
+                  <Text className="text-body font-medium leading-[1.33]">{when(index)}</Text>
+                  <Text className="mt-0.5 text-caption leading-[1.38] text-ink-2">{back}</Text>
                 </View>
                 <IconChevronRight
                   size={18}
@@ -172,10 +172,10 @@ export default function CustomRules() {
             <View className="flex-row items-center gap-3 px-5 py-[15px]">
               <Swatch color={colors.border} />
               <View className="flex-1">
-                <Text className="text-subtitle font-medium leading-[1.31] text-ink-2">
+                <Text className="text-body font-medium leading-[1.33] text-ink-2">
                   {t("screens.setup.settings.custom.rest", { count: last.hours })}
                 </Text>
-                <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
+                <Text className="mt-0.5 text-caption leading-[1.38] text-ink-2">
                   {t("screens.setup.settings.custom.noRefund")}
                 </Text>
               </View>
