@@ -9,7 +9,7 @@ import ReanimatedSwipeable, {
 import { MAXIMUM_GROUNDS } from "@hagz/contracts";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
-import { IconChevronRight, IconPlus } from "@/components/icons";
+import { IconChevronRight, IconPlus, IconTrash } from "@/components/icons";
 import { SetupLoading } from "@/components/setup-loading";
 import { StepScreen } from "@/components/step-screen";
 import { Text } from "@/components/text";
@@ -113,7 +113,9 @@ function GroundsList({
       subtitle={t("screens.setup.grounds.subtitle")}
       footer={<Button label={t("screens.setup.grounds.done")} onPress={() => router.back()} />}
     >
-      <View className="border-t border-border">
+      {/* Edge to edge, like an iOS list: the lines and the swipe run to the screen's sides, and only
+          the rows' contents keep the gutter. */}
+      <View className="-mx-5 border-t border-border">
         {grounds.map((ground) => (
           <Row
             key={ground.id}
@@ -166,20 +168,21 @@ function Row({
   return (
     <ReanimatedSwipeable
       ref={swipe}
-      friction={2}
+      // Follows the finger one to one, as iOS's rows do, and stops at the button's width.
+      friction={1}
       rightThreshold={40}
       overshootRight={false}
       onSwipeableWillOpen={() => onOpen(swipe.current)}
-      // The platform's red Delete: the one place the staff app uses red outside errors, because a
-      // swipe action that isn't red doesn't read as iOS's.
+      // The platform's red, with a bin: the one place the staff app uses red outside errors, because
+      // a swipe action that isn't red doesn't read as iOS's Delete.
       renderRightActions={() => (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={deleteLabel}
           onPress={() => onDelete(swipe.current)}
-          className="w-[88px] items-center justify-center bg-red active:opacity-80"
+          className="w-20 items-center justify-center bg-red"
         >
-          <Text className="text-body font-medium text-white">{deleteLabel}</Text>
+          <IconTrash size={24} color={colors.white} strokeWidth={1.75} />
         </Pressable>
       )}
     >
@@ -192,7 +195,12 @@ function Row({
           if (nativeEvent.actionName === "delete") onDelete(null);
         }}
         onPress={onPress}
-        className="flex-row items-center gap-3 border-b border-border bg-white py-[15px] active:opacity-60"
+        // Pressed shows as a grey highlight, never as fading: a see-through row would show the red
+        // button behind it the moment a swipe begins. The short delay keeps a swipe from lighting
+        // the row up at all.
+        unstable_pressDelay={90}
+        style={({ pressed }) => ({ backgroundColor: pressed ? colors.chip : colors.white })}
+        className="flex-row items-center gap-3 border-b border-border px-5 py-[15px]"
       >
         <View className="flex-1">
           <Text className="text-subtitle font-medium leading-[1.31]">{name}</Text>
