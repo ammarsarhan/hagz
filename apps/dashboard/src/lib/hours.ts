@@ -119,10 +119,10 @@ export const ringToApi = (ring: Ring): ScheduleDay[] => {
 
 export const sameRing = (a: Ring, b: Ring) => a.every((tier, at) => tier === b[at]);
 
-// The grid's days start at 6 am rather than midnight, so a late night sits under the evening it
-// belongs to: row 0 is 6 am, row 23 is 5 am the next morning. Each of the week's hours is in
+// The grid's days run midnight to midnight (the user, 2026-11-15): row 0 is 12 am, row 23 is
+// 11 pm, and a late night carries on at the top of the next day. Each of the week's hours is in
 // exactly one cell.
-export const GRID_START = 6;
+export const GRID_START = 0;
 export const GRID_ROWS = 24;
 export const hourOfCell = (day: number, row: number) => (day * 24 + GRID_START + row) % WEEK;
 
