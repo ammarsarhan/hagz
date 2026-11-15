@@ -1,14 +1,23 @@
 import * as Haptics from "expo-haptics";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedProps,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import Svg, { Defs, Line, Pattern, Rect } from "react-native-svg";
 import { colors } from "@/lib/colors";
 import {
   GRID_ROWS,
   GRID_START,
   blockBetween,
+  blockHours,
   hourLabel,
   hourOfCell,
   shortDayName,
@@ -24,8 +33,9 @@ import { Text } from "./text";
 // discount dashed diagonally on the light tint, closed white with a hairline.
 //
 // Tapping a cell selects it; holding one and dragging selects the block between it and the finger
-// (a hold first, so a plain drag still scrolls the page). The selection is outlined in grey and
-// handed up to be marked ("E2 · Mark a selection", 470:181).
+// (a hold first, so a plain drag still scrolls the page). The selection is outlined in grey, solid
+// round one cell and dashed, the dashes running round, round several, and handed up to be marked
+// ("E2 · Mark a selection", 470:181).
 const CELL = 22;
 const GAP = 4;
 const ROW = CELL + GAP;
@@ -37,6 +47,15 @@ const HEADER = 26;
 // Holding this long turns a touch into a selection drag.
 const HOLD = 220;
 const NORMAL = "#dce5ff";
+const OUTLINE = 2.5;
+// The outline gliding to the next cell, and fading in or out.
+const GLIDE = { duration: 140, easing: Easing.out(Easing.cubic) };
+const FADE = { duration: 120 };
+// The dashes round a block: their pattern, and one pattern's length run round in this long.
+const DASH = [6, 4];
+const MARCH = 450;
+
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const fillOf = (tier: Tier | null) =>
   tier === "PEAK" ? colors.primary : tier === "BASE" ? NORMAL : colors.white;
@@ -181,22 +200,13 @@ export function HoursGrid({
   }
 
   const outline = selection
-    ? (() => {
-        const left = Math.min(xOf(selection.fromDay), xOf(selection.toDay));
-        const days = selection.toDay - selection.fromDay + 1;
-        return (
-          <Rect
-            x={left + 0.25}
-            y={selection.fromRow * ROW + 0.25}
-            width={days * column - 0.5}
-            height={(selection.toRow - selection.fromRow + 1) * ROW - 0.5}
-            rx={RADIUS + 2}
-            fill="none"
-            stroke={colors.ink3}
-            strokeWidth={2.5}
-          />
-        );
-      })()
+    ? {
+        x: Math.min(xOf(selection.fromDay), xOf(selection.toDay)) + OUTLINE / 2,
+        y: selection.fromRow * ROW + OUTLINE / 2,
+        width: (selection.toDay - selection.fromDay + 1) * column - OUTLINE,
+        height: (selection.toRow - selection.fromRow + 1) * ROW - OUTLINE,
+        bulk: blockHours(selection) > 1,
+      }
     : null;
 
   return (
@@ -242,13 +252,86 @@ export function HoursGrid({
               <Svg width={width} height={GRID_ROWS * ROW}>
                 <Hatch id="discount" />
                 {cells}
-                {outline}
+                <SelectionOutline outline={outline} />
               </Svg>
             ) : null}
           </View>
         </GestureDetector>
       </View>
     </View>
+  );
+}
+
+// The selection's outline. It glides to each new block rather than jumping, so a drag feels like
+// one movement; it fades in on the first cell and out when let go. Round one cell it's a solid
+// line; round several the line breaks into dashes that run round it, so a bulk edit reads as one.
+function SelectionOutline({
+  outline,
+}: {
+  outline: { x: number; y: number; width: number; height: number; bulk: boolean } | null;
+}) {
+  const x = useSharedValue(outline?.x ?? 0);
+  const y = useSharedValue(outline?.y ?? 0);
+  const width = useSharedValue(outline?.width ?? 0);
+  const height = useSharedValue(outline?.height ?? 0);
+  const opacity = useSharedValue(outline ? 1 : 0);
+  const offset = useSharedValue(0);
+  const shown = useRef(outline !== null);
+  const bulk = outline?.bulk ?? false;
+
+  useEffect(() => {
+    if (!outline) {
+      opacity.value = withTiming(0, FADE);
+      shown.current = false;
+      return;
+    }
+    if (shown.current) {
+      x.value = withTiming(outline.x, GLIDE);
+      y.value = withTiming(outline.y, GLIDE);
+      width.value = withTiming(outline.width, GLIDE);
+      height.value = withTiming(outline.height, GLIDE);
+    } else {
+      // Appearing: straight onto the cell, not gliding over from the last selection.
+      x.value = outline.x;
+      y.value = outline.y;
+      width.value = outline.width;
+      height.value = outline.height;
+      opacity.value = withTiming(1, FADE);
+      shown.current = true;
+    }
+  }, [outline?.x, outline?.y, outline?.width, outline?.height, outline === null]);
+
+  useEffect(() => {
+    if (!bulk) {
+      cancelAnimation(offset);
+      offset.value = 0;
+      return;
+    }
+    const period = DASH.reduce((sum, part) => sum + part, 0);
+    offset.value = 0;
+    offset.value = withRepeat(withTiming(-period, { duration: MARCH, easing: Easing.linear }), -1);
+    return () => cancelAnimation(offset);
+  }, [bulk, offset]);
+
+  const props = useAnimatedProps(() => ({
+    x: x.value,
+    y: y.value,
+    width: width.value,
+    height: height.value,
+    opacity: opacity.value,
+    strokeDashoffset: offset.value,
+  }));
+
+  return (
+    <AnimatedRect
+      animatedProps={props}
+      rx={RADIUS + 2}
+      fill="none"
+      stroke={colors.ink3}
+      strokeWidth={OUTLINE}
+      // "1 0" is a solid line; switching between patterns keeps the same prop type.
+      strokeDasharray={bulk ? DASH.join(" ") : "1 0"}
+    />
   );
 }
 
