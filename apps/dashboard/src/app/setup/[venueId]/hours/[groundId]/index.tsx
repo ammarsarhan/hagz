@@ -231,10 +231,11 @@ function MarkPanel({
         <CloseButton label={t("screens.setup.hours.clearSelection")} onPress={onClose} />
       </View>
       <View className="mt-4">
-        <ChoicePills small spread>
+        <ChoicePills small fill>
           {marks.map((mark) => (
             <ChoicePill
               small
+              fill
               key={mark}
               label={label(mark)}
               selected={chosen === mark}
