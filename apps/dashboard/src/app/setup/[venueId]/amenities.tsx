@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Switch, TextInput, View } from "react-native";
 import type { components } from "@hagz/api";
 import { AmenityIcon } from "@/components/amenity-icon";
 import { Button } from "@/components/button";
+import { Collapse } from "@/components/collapse";
 import { Segmented } from "@/components/choices";
 import { CompactTitle, useCompactTitle } from "@/components/compact-title";
 import { FadingScroll } from "@/components/fading-scroll";
@@ -244,6 +245,7 @@ function PriceSheet({
   );
   const [pricing, setPricing] = useState<Charge>(offered.pricing ?? "PER_HOUR");
   const [focused, setFocused] = useState(false);
+  const input = useRef<ComponentRef<typeof TextInput>>(null);
   const minor = Math.round(Number(amount) * 10 ** decimals);
   const valid = !paid || (Number.isFinite(minor) && minor >= 1);
 
@@ -266,48 +268,51 @@ function PriceSheet({
         </View>
         <Switch
           value={paid}
-          onValueChange={setPaid}
+          onValueChange={(next) => {
+            setPaid(next);
+            // The fields open under the switch; typing the price is the next thing to do.
+            if (next) input.current?.focus();
+            else input.current?.blur();
+          }}
           trackColor={{ true: colors.primary, false: colors.border }}
           ios_backgroundColor={colors.border}
         />
       </View>
 
-      {paid ? (
-        <>
-          <FieldLabel required>{t("screens.setup.amenities.price")}</FieldLabel>
-          <FieldBox focused={focused} error={false} ltr>
-            <Text className="text-[16px] text-unit">{currency}</Text>
-            <TextInput
-              className={inputClass}
-              value={amount}
-              onChangeText={(text) => setAmount(cleanAmount(text, decimals))}
-              keyboardType={decimals > 0 ? "decimal-pad" : "number-pad"}
-              placeholder="0"
-              placeholderTextColor={colors.ink3}
-              selectionColor={colors.primary}
-              autoFocus={offered.price === null}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              style={{ textAlign: "left", writingDirection: "ltr" }}
-            />
-          </FieldBox>
-          {/* Per hour or per booking: the same sliding track as a ground's cover. */}
-          <View className="mt-3">
-            <Segmented
-              options={PRICINGS}
-              value={pricing}
-              label={(option) =>
-                t(
-                  option === "PER_HOUR"
-                    ? "screens.setup.amenities.perHour"
-                    : "screens.setup.amenities.perBooking",
-                )
-              }
-              onChange={setPricing}
-            />
-          </View>
-        </>
-      ) : null}
+      <Collapse open={paid}>
+        <FieldLabel required>{t("screens.setup.amenities.price")}</FieldLabel>
+        <FieldBox focused={focused} error={false} ltr>
+          <Text className="text-[16px] text-unit">{currency}</Text>
+          <TextInput
+            className={inputClass}
+            value={amount}
+            onChangeText={(text) => setAmount(cleanAmount(text, decimals))}
+            keyboardType={decimals > 0 ? "decimal-pad" : "number-pad"}
+            placeholder="0"
+            placeholderTextColor={colors.ink3}
+            selectionColor={colors.primary}
+            ref={input}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            style={{ textAlign: "left", writingDirection: "ltr" }}
+          />
+        </FieldBox>
+        {/* Per hour or per booking: the same sliding track as a ground's cover. */}
+        <View className="mt-3">
+          <Segmented
+            options={PRICINGS}
+            value={pricing}
+            label={(option) =>
+              t(
+                option === "PER_HOUR"
+                  ? "screens.setup.amenities.perHour"
+                  : "screens.setup.amenities.perBooking",
+              )
+            }
+            onChange={setPricing}
+          />
+        </View>
+      </Collapse>
 
       <View className="mt-6 gap-1">
         <Button
