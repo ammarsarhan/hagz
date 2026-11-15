@@ -8,7 +8,7 @@ import { ONBOARDING_ART } from "@/assets/onboarding-art";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
 import { useTranslation } from "react-i18next";
-import { takeSignedInTarget } from "@/lib/boot";
+import { getSignedInTarget } from "@/lib/navigation";
 import { isRTL } from "@/lib/language";
 
 // Staff onboarding: three blue slides (a problem in two words, the fix in one), swiped or advancing
@@ -26,7 +26,7 @@ const direction = isRTL ? "rtl" : "ltr";
 // Signed in from an earlier launch: straight to their venue or first run, on the first frame, so
 // onboarding is never seen on the way (lib/boot.ts decided where while the splash was up).
 export default function Index() {
-  const [signedIn] = useState(takeSignedInTarget);
+  const signedIn = getSignedInTarget();
   if (signedIn) return <Redirect href={signedIn} />;
   return <Onboarding />;
 }
