@@ -11,7 +11,7 @@ import { SvgXml } from "react-native-svg";
 import { LOCATION_ART, LOCATION_ART_SIZE } from "@/assets/map-art";
 import { AreaPicker, type Area } from "@/components/area-picker";
 import { Button } from "@/components/button";
-import { useHud } from "@/components/hud";
+import { useHud, useHudAnchor } from "@/components/hud";
 import { IconChevronLeft, IconMapPin, IconSearch, IconX } from "@/components/icons";
 import { CloseButton, NavBar } from "@/components/nav";
 import { PlaceSearch } from "@/components/place-search";
@@ -99,6 +99,9 @@ export default function CreateVenuePlace() {
   const [requestedArea, setRequestedArea] = useState<string | null>(null);
   // How tall the bottom card is, so the map's middle (and the pin) sits above it.
   const [cardHeight, setCardHeight] = useState(0);
+  // No Screen here to say where the HUD goes: it sits on the card, once the location prompt (a
+  // Screen, which says for itself) is out of the way.
+  useHudAnchor(permission === "done" ? cardHeight : null);
 
   const country = place?.country ?? FALLBACK_COUNTRY;
   const marketplaces = useQuery(reference.marketplaces);

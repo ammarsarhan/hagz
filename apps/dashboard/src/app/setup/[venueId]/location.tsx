@@ -8,6 +8,7 @@ import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AreaPicker, type Area } from "@/components/area-picker";
 import { Button } from "@/components/button";
+import { useHudAnchor } from "@/components/hud";
 import { IconX } from "@/components/icons";
 import { SetupLoading } from "@/components/setup-loading";
 import { Text } from "@/components/text";
@@ -52,6 +53,8 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
   const [picked, setPicked] = useState<Area | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [cardHeight, setCardHeight] = useState(0);
+  // No Screen here to say where the HUD goes (a failed save shows one): it sits on the card.
+  useHudAnchor(cardHeight);
   const country = venue.marketplace.code;
 
   // Once the pin has moved and nothing was picked, the nearest area is the suggestion.

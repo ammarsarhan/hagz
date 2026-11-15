@@ -1,3 +1,4 @@
+import { useFocusEffect } from "expo-router";
 import {
   createContext,
   useCallback,
@@ -59,8 +60,17 @@ const useAnchors = () => {
   return anchors;
 };
 
-// For Screen: report this screen's lowest edge while it's the one in view.
-export const useScreenHudAnchor = () => useAnchors().setScreenAnchor;
+// For Screen, and screens that lay out their own bottom (the maps' cards): while this screen is in
+// view, the HUD sits `bottom` above the phone's bottom edge. Null leaves it to whatever is covering
+// this screen and reports its own (the map's location prompt is a Screen of its own).
+export const useHudAnchor = (bottom: number | null) => {
+  const { setScreenAnchor } = useAnchors();
+  useFocusEffect(
+    useCallback(() => {
+      if (bottom !== null) setScreenAnchor(bottom);
+    }, [bottom, setScreenAnchor]),
+  );
+};
 
 // For Sheet: while open, the HUD shows inside it, above its panel (`bottom` from the screen's bottom).
 let sheets = 0;
