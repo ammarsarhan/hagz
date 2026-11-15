@@ -190,7 +190,8 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         }}
       />
       <PaymentSheet
-        key={paymentKey}
+        // Siblings share one key space: each sheet's name keeps them apart.
+        key={`payment-${paymentKey}`}
         visible={paying}
         mode={settings.paymentMode}
         depositPercent={settings.depositPercent}
@@ -201,7 +202,7 @@ function SettingsList({ venueId, venue }: { venueId: string; venue: VenueDetail 
         }}
       />
       <LoyaltySheet
-        key={loyaltyKey}
+        key={`loyalty-${loyaltyKey}`}
         visible={rewarding}
         loyalty={loyalty}
         onClose={() => setRewarding(false)}
