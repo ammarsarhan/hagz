@@ -68,3 +68,8 @@ export { default as IconCamera } from "@tabler/icons-react-native/IconCamera";
 export { default as IconPhoto } from "@tabler/icons-react-native/IconPhoto";
 export { default as IconPhotoPlus } from "@tabler/icons-react-native/IconPhotoPlus";
 export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";
+// Grounds (sports; football's ball is with the amenities) and the booking-length stepper.
+export { default as IconBallBasketball } from "@tabler/icons-react-native/IconBallBasketball";
+export { default as IconBallTennis } from "@tabler/icons-react-native/IconBallTennis";
+export { default as IconBallVolleyball } from "@tabler/icons-react-native/IconBallVolleyball";
+export { default as IconMinus } from "@tabler/icons-react-native/IconMinus";
