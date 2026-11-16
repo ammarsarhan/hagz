@@ -292,7 +292,7 @@ export function CenterField({
             rel="noreferrer"
             className="shrink-0 text-label font-medium text-primary hover:underline"
           >
-            Check on map
+            View
           </a>
         ) : null
       }
