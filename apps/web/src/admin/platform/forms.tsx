@@ -290,7 +290,7 @@ export function CenterField({
             href={mapsLink(center)}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 text-label font-medium text-primary hover:underline"
+            className="shrink-0 text-label font-medium text-ink-2 hover:text-ink hover:underline"
           >
             View
           </a>
