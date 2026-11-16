@@ -19,7 +19,8 @@ import { lockMarketplace, namesOf, translationRows, upsertNames } from "./names"
 //
 // Its border (Marketplace.boundary) is what venue pins are checked against (venues' pin-checks.ts).
 // It's PostGIS, which Prisma can't read or write, so it goes through SQL, and the list only says
-// whether there is one: a border is thousands of points nobody needs in a table.
+// whether there is one: a border is thousands of points nobody needs in a table. It's read on its
+// own (marketplaceBoundary), as the GeoJSON an admin can download, edit and upload again.
 
 export const marketplaceNotFound = () =>
   new AppError({ code: "MARKETPLACE_NOT_FOUND", status: 404, detail: "No such marketplace." });
@@ -65,6 +66,22 @@ const setBoundary = async (tx: Tx, id: string, boundary: Boundary | null) => {
     UPDATE "Marketplace"
     SET boundary = ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${geojson}), 4326))::geography
     WHERE id = ${id}::uuid`;
+};
+
+const boundaryNotSet = () =>
+  new AppError({
+    code: "BOUNDARY_NOT_SET",
+    status: 404,
+    detail: "This marketplace has no border yet.",
+  });
+
+// The border as GeoJSON: always a MultiPolygon, since that's how it's stored.
+export const marketplaceBoundary = async (id: string): Promise<Boundary> => {
+  const [row] = await prisma.$queryRaw<{ geojson: string | null }[]>`
+    SELECT ST_AsGeoJSON(boundary::geometry) AS geojson FROM "Marketplace" WHERE id = ${id}::uuid`;
+  if (!row) throw marketplaceNotFound();
+  if (row.geojson === null) throw boundaryNotSet();
+  return JSON.parse(row.geojson) as Boundary;
 };
 
 const present = (m: Row, hasBoundary: boolean): AdminMarketplace => {

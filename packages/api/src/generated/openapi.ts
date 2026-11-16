@@ -6809,6 +6809,74 @@ export interface paths {
         };
         trace?: never;
     };
+    "/v1/admin/marketplaces/{id}/boundary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A marketplace's border, as GeoJSON
+         * @description The shape venue pins are checked against, to download and keep or edit. Always a MultiPolygon; send it back as `boundary` to replace it.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The border */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Boundary"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND, or BOUNDARY_NOT_SET: it has none. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/marketplaces/{id}/locations": {
         parameters: {
             query?: never;
@@ -9567,6 +9635,22 @@ export interface components {
                 ][][][];
             } | null;
             isActive?: boolean;
+        };
+        /** @description The country's border: venue pins must fall inside it. GeoJSON Polygon or MultiPolygon. */
+        Boundary: {
+            /** @enum {string} */
+            type: "Polygon";
+            coordinates: [
+                number,
+                number
+            ][][];
+        } | {
+            /** @enum {string} */
+            type: "MultiPolygon";
+            coordinates: [
+                number,
+                number
+            ][][][];
         };
         AdminLocation: {
             /** Format: uuid */

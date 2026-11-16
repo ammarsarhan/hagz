@@ -1,8 +1,10 @@
+import { randomUUID } from "node:crypto";
 import {
   AdminAmenity,
   AdminLocation,
   AdminMarketplace,
   Amenity,
+  Boundary,
   list,
   Location,
 } from "@hagz/contracts";
@@ -167,6 +169,29 @@ describe("admin marketplaces", () => {
     expect(AdminMarketplace.parse(cleared.body).hasBoundary).toBe(false);
     const { body } = await request("GET", "/admin/marketplaces");
     expect(list(AdminMarketplace).parse(body).data[0]?.hasBoundary).toBe(false);
+  });
+
+  it("hand their border back as GeoJSON that can be uploaded again", async () => {
+    const { id } = await createMarketplace();
+    const none = await request("GET", `/admin/marketplaces/${id}/boundary`);
+    expect(none.status).toBe(404);
+    expect(none.body.code).toBe("BOUNDARY_NOT_SET");
+
+    const square = box({ south: 22, west: 25, north: 31.7, east: 35 });
+    await request("PATCH", `/admin/marketplaces/${id}`, { boundary: square });
+    const { status, body } = await request("GET", `/admin/marketplaces/${id}/boundary`);
+    expect(status).toBe(200);
+    // Stored as a MultiPolygon, so it comes back as one, with the same points.
+    expect(Boundary.parse(body)).toEqual({
+      type: "MultiPolygon",
+      coordinates: [square.coordinates],
+    });
+    expect((await request("PATCH", `/admin/marketplaces/${id}`, { boundary: body })).status).toBe(
+      200,
+    );
+
+    const missing = await request("GET", `/admin/marketplaces/${randomUUID()}/boundary`);
+    expect(missing.body.code).toBe("MARKETPLACE_NOT_FOUND");
   });
 
   it("refuse a border that isn't a shape", async () => {
