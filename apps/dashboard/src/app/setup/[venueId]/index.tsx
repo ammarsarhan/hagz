@@ -141,6 +141,7 @@ const SCREENS: Partial<Record<SetupItem["key"], string>> = {
   GROUNDS: "grounds",
   AMENITIES: "amenities",
   SCHEDULES: "hours",
+  LAYOUT: "layout",
   SETTINGS: "settings",
   TAX_NUMBER: "tax",
 };
