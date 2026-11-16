@@ -148,7 +148,7 @@ describe("the venue layout", () => {
 
   it("saves the whole layout and reads it back", async () => {
     const draft = await aDraft();
-    const { owner, path, venueId, five, seven } = draft;
+    const { owner, path, venueId, seven } = draft;
     const res = await call(owner.id, "PUT", `${path}/layout`, plan(ids(draft)));
     expect(res.status).toBe(200);
     const view = VenueLayoutView.parse(await res.json());
@@ -175,7 +175,7 @@ describe("the venue layout", () => {
 
   it("names what's wrong with a layout it refuses", async () => {
     const draft = await aDraft();
-    const { owner, path, five, seven } = draft;
+    const { owner, path, five } = draft;
     const overlapping = {
       ...plan(ids(draft)),
       amenities: [{ optionId: draft.cafe, x: 2, y: 2, width: 1, height: 1 }],
@@ -234,7 +234,7 @@ describe("the venue layout", () => {
 
   it("completes the checklist once every ground is placed", async () => {
     const draft = await aDraft();
-    const { owner, path, five, seven } = draft;
+    const { owner, path } = draft;
     const layoutItem = async () =>
       VenueSetup.parse(await (await call(owner.id, "GET", `${path}/setup`)).json()).items.find(
         (item) => item.key === "LAYOUT",
@@ -246,7 +246,7 @@ describe("the venue layout", () => {
 
   it("can't change while the venue is in review", async () => {
     const draft = await aDraft();
-    const { owner, path, venueId, five, seven } = draft;
+    const { owner, path, venueId } = draft;
     await prisma.venue.update({ where: { id: venueId }, data: { status: "SUBMITTED" } });
     expect((await call(owner.id, "PUT", `${path}/layout`, plan(ids(draft)))).status).toBe(409);
   });
