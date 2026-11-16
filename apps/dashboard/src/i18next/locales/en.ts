@@ -262,7 +262,7 @@ const en = {
         layout: {
           placed_one: "{{placed}} of {{count}} ground placed",
           placed_other: "{{placed}} of {{count}} grounds placed",
-          notPlaced: "Not placed yet",
+          tray: "Add to the layout",
           entrance: "Entrance",
           preview: "Preview",
           zoomIn: "Zoom in",

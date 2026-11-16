@@ -293,7 +293,7 @@ const ar: ArabicTranslations = {
           placed_few: "وُضع {{placed}} من {{count}} ملاعب",
           placed_many: "وُضع {{placed}} من {{count}} ملعبًا",
           placed_other: "وُضع {{placed}} من {{count}} ملعب",
-          notPlaced: "لم توضع بعد",
+          tray: "أضف إلى المخطط",
           entrance: "المدخل",
           preview: "معاينة",
           zoomIn: "تكبير",

@@ -88,7 +88,7 @@ export function AddAmenityDialog({
         />
         <IconPicker value={icon} onChange={setIcon} />
         <Toggle
-          label="Placeable"
+          label="Venue asset"
           hint={PLACEABLE_HINT}
           checked={placeable}
           onChange={setPlaceable}

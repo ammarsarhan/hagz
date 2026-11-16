@@ -534,9 +534,9 @@ export function Toggle({
 
 // --- Amenity ---
 
-// What "Placeable" means, in the add dialog and the edit panel alike.
+// What "Venue asset" means, in the add dialog and the edit panel alike.
 export const PLACEABLE_HINT =
-  "Owners can draw it on their venue's layout, like parking or a café. Turned off, it comes off every layout.";
+  "Owners can add it to their venue's layout as many times as they need, like parking or a café. Turned off, it comes off every layout.";
 
 // Edit amenity, in a side panel over the table.
 export function EditAmenityPanel({
@@ -642,7 +642,7 @@ export function EditAmenityPanel({
             onChange={(isActive) => setForm({ ...form, isActive })}
           />
           <Toggle
-            label="Placeable"
+            label="Venue asset"
             hint={PLACEABLE_HINT}
             checked={form.placeable}
             onChange={(placeable) => setForm({ ...form, placeable })}

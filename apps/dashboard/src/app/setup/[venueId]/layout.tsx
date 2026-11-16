@@ -180,12 +180,9 @@ function LayoutView({
   const unplaced = grounds.filter((ground) => !onLayout.has(ground.id));
   // The venue's amenities that can go on the layout. They stay in the tray once placed: a venue
   // can have two car parks.
-  // Like the grounds, each leaves the tray once it's on the layout; another of it is added from
-  // its action bar (Add another).
-  const placedOptions = new Set(plan.amenities.map((placed) => placed.optionId));
-  const placeable = layout.placeableOptionIds
-    .filter((id) => !placedOptions.has(id))
-    .flatMap((id) => amenitiesById.get(id) ?? []);
+  // The venue's assets (its amenities that go on the layout) stay in the tray: a venue can have as
+  // many car parks or cafés as it likes. Grounds go on once, and leave it once placed.
+  const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
   const needsEntrance = plan.entrances.length === 0;
   const trayEmpty = unplaced.length === 0 && placeable.length === 0 && !needsEntrance;
 
@@ -614,9 +611,9 @@ function LayoutView({
         )}
       </View>
 
-      {/* What's still to place: grounds not on the layout, the venue's amenities, entrances. Tap
-          one to put it in the middle of the view, then drag it into place. It fades out for the
-          preview. */}
+      {/* What can go on the layout: grounds not on it yet, the venue's assets (as many of each as
+          it likes) and an entrance. Tap one to put it in the middle of the view, or drag it into
+          place. It fades out for the preview. */}
       <Animated.View
         pointerEvents={previewing ? "none" : "auto"}
         className="absolute inset-x-3 rounded-[24px] bg-white py-[18px] pl-[18px]"
@@ -632,7 +629,7 @@ function LayoutView({
           trayFade,
         ]}
       >
-        <Text className="pb-3 text-[16px] font-medium">{t("screens.setup.layout.notPlaced")}</Text>
+        <Text className="pb-3 text-[16px] font-medium">{t("screens.setup.layout.tray")}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
