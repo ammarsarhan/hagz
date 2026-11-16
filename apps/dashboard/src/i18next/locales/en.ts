@@ -259,6 +259,16 @@ const en = {
           addressPlaceholder: "Building, street and district",
           phone: "Phone players can call",
         },
+        layout: {
+          placed_one: "{{placed}} of {{count}} ground placed",
+          placed_other: "{{placed}} of {{count}} grounds placed",
+          notPlaced: "Not placed yet",
+          entrance: "Entrance",
+          preview: "Preview",
+          zoomIn: "Zoom in",
+          zoomOut: "Zoom out",
+          list: "List",
+        },
         location: {
           body: "Players are sent to this pin. Move the map to adjust it, or change the area it's listed under.",
           changeArea: "Change area",
