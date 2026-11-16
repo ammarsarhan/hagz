@@ -11,6 +11,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,11 +42,12 @@ import {
   type GhostState,
   type Trouble,
 } from "@/components/layout-canvas";
+import { LayoutList, type ListedItem } from "@/components/layout-list";
 import { SetupLoading } from "@/components/setup-loading";
 import { Text } from "@/components/text";
 import { FloatingButton, floatShadow } from "@/components/venue-map";
 import { colors } from "@/lib/colors";
-import type { Ground } from "@/lib/grounds";
+import { kindOf, type Ground } from "@/lib/grounds";
 import { CELL, clashes, fitsIn, footprintOf, roomFor, type Rect, type Tile } from "@/lib/layout";
 import { useLayoutEditor } from "@/lib/layout-editor";
 import { queries, reference } from "@/lib/queries";
@@ -60,6 +62,8 @@ type Amenity = components["schemas"]["Amenity"];
 
 // The tray: its padding, title and one row of 64-high chips.
 const TRAY_HEIGHT = 132;
+// Gliding to something picked from the list.
+const GLIDE = { duration: 320 };
 
 export default function SetupLayout() {
   const { venueId = "" } = useLocalSearchParams<{ venueId: string }>();
@@ -107,6 +111,7 @@ function LayoutView({
   // What's being dragged out of the tray: where it would land lives on the UI thread, what it is
   // here.
   const ghostState = useSharedValue<GhostState>(NO_GHOST);
+  const [listOpen, setListOpen] = useState(false);
   const [lifted, setLifted] = useState<{ key: string; art: React.ReactNode; name: string } | null>(
     null,
   );
@@ -293,19 +298,73 @@ function LayoutView({
     if (kind === "e") change({ ...plan, entrances: plan.entrances.filter((_, i) => i !== index) });
   };
 
+  // Glides the map so a rect sits in the middle of the view, at the zoom it's at.
+  const focusOn = (rect: Rect) => {
+    const s = camera.scale.value * CELL;
+    camera.x.value = withTiming(middle.x - (rect.x + rect.width / 2) * s, GLIDE);
+    camera.y.value = withTiming(middle.y - (rect.y + rect.height / 2) * s, GLIDE);
+  };
+
+  // The list sheet's rows: what's on the layout, by kind.
+  const listed: { title: string; items: ListedItem[] }[] = [
+    {
+      title: t("screens.setup.layout.grounds"),
+      items: plan.grounds.flatMap((placed) => {
+        const ground = groundsById.get(placed.groundId);
+        if (!ground) return [];
+        return [
+          {
+            key: `g:${placed.groundId}`,
+            icon: <PitchArt width={44} height={22} inset={3} line={1.1} radius={4} />,
+            name: nameOf(ground),
+            detail: kindOf(t, ground),
+          },
+        ];
+      }),
+    },
+    {
+      title: t("screens.setup.layout.amenities"),
+      items: plan.amenities.flatMap((placed, index) => {
+        const amenity = amenitiesById.get(placed.optionId);
+        if (!amenity) return [];
+        return [
+          {
+            key: `a:${String(index)}`,
+            icon: <AmenityIcon name={amenity.icon} size={24} color={colors.ink} />,
+            name: amenity.name,
+            detail: t("screens.setup.layout.size", {
+              width: placed.width,
+              height: placed.height,
+            }),
+          },
+        ];
+      }),
+    },
+    {
+      title: t("screens.setup.layout.entrances"),
+      items: plan.entrances.map((entrance, index) => ({
+        key: `e:${String(index)}`,
+        icon: <IconDoor size={24} color={colors.ink} strokeWidth={1.75} />,
+        name: t("screens.setup.layout.entrance"),
+        detail: t(`screens.setup.layout.sides.${entrance.side}`),
+      })),
+    },
+  ];
+
   // The selected thing's rect in cells, to hang its actions under.
-  const selectedRect = ((): Rect | null => {
-    if (!selected) return null;
-    const tile = tiles.find((candidate) => candidate.key === selected);
+  // Where something is, in cells, by its key; an entrance is a cell-long line on its edge.
+  function rectOf(key: string): Rect | null {
+    const tile = tiles.find((candidate) => candidate.key === key);
     if (tile) return tile.rect;
-    const entrance = plan.entrances[Number(split(selected)[1])];
-    if (!entrance || split(selected)[0] !== "e") return null;
+    const entrance = plan.entrances[Number(split(key)[1])];
+    if (!entrance || split(key)[0] !== "e") return null;
     const along = entrance.offset;
     const horizontal = entrance.side === "TOP" || entrance.side === "BOTTOM";
     const x = horizontal ? along : entrance.side === "LEFT" ? 0 : plan.columns;
     const y = horizontal ? (entrance.side === "TOP" ? 0 : plan.rows) : along;
     return { x, y, width: horizontal ? 1 : 0, height: horizontal ? 0 : 1 };
-  })();
+  }
+  const selectedRect = selected ? rectOf(selected) : null;
   const [kind, id] = selected ? split(selected) : [null, null];
   const selectedAmenity = kind === "a" ? plan.amenities[Number(id)] : undefined;
 
@@ -413,7 +472,7 @@ function LayoutView({
             <IconMinus size={24} color={colors.ink} strokeWidth={1.75} />
           </ZoomButton>
         </View>
-        <FloatingButton label={t("screens.setup.layout.list")} onPress={comingNext}>
+        <FloatingButton label={t("screens.setup.layout.list")} onPress={() => setListOpen(true)}>
           <IconList size={24} color={colors.ink} strokeWidth={1.75} />
         </FloatingButton>
       </View>
@@ -510,6 +569,18 @@ function LayoutView({
           </TrayItem>
         </ScrollView>
       </View>
+
+      <LayoutList
+        visible={listOpen}
+        groups={listed}
+        onClose={() => setListOpen(false)}
+        onPick={(key) => {
+          setListOpen(false);
+          setSelected(key);
+          const rect = rectOf(key);
+          if (rect) focusOn(rect);
+        }}
+      />
     </View>
   );
 }

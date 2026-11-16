@@ -276,6 +276,17 @@ const en = {
           and: " and ",
           outside: "That goes past the edge of the venue",
           noRoom: "There's no room left for it",
+          listTitle: "On the layout",
+          listEmpty: "Nothing's on the layout yet. Tap something in the tray to place it.",
+          grounds: "Grounds",
+          amenities: "Amenities",
+          entrances: "Entrances",
+          sides: {
+            TOP: "Top edge",
+            RIGHT: "Right edge",
+            BOTTOM: "Bottom edge",
+            LEFT: "Left edge",
+          },
         },
         location: {
           body: "Players are sent to this pin. Move the map to adjust it, or change the area it's listed under.",
