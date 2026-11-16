@@ -36,7 +36,10 @@ type Amenity = components["schemas"]["Amenity"];
 // one big SVG: an SVG's bitmap grows with its size times the zoom, and would run to hundreds of MB.
 
 const ZOOM = { duration: 220 };
-const BACK = { duration: 160 };
+// Gliding into place on a drop, or back where it came from.
+const GLIDE = { duration: 200 };
+// Easing between cells while sizing, and an entrance between cells as it's dragged.
+const STEP = { duration: 120 };
 // How much of the venue must stay on screen while it's dragged about.
 const KEEP = 60;
 const MAX_AMENITY = 4;
@@ -114,6 +117,10 @@ export const NO_GHOST: GhostState = {
 
 export interface Ghost {
   state: SharedValue<GhostState>;
+  // Its top-left corner under the finger, in points on the map: it follows smoothly, while
+  // `state` says which cells it would land on.
+  gx: SharedValue<number>;
+  gy: SharedValue<number>;
   // What it looks like, drawn at its size, and its name for the dashed outline.
   art: ReactNode;
   name: string;
@@ -214,6 +221,9 @@ export function LayoutCanvas({
 
   // The venue's edges as they're dragged; reset once the new size has come back down as props.
   const edges = useSharedValue<Grow>(NO_GROWTH);
+  // An edge is being dragged, so the venue eases between sizes. Off when the resize lands: the
+  // grid's start may have moved with the map, and easing then would slide it.
+  const easing = useSharedValue(false);
   // A resize that moved the left or top edge shifts every cell: the map moves by as much, before
   // the new layout paints, so nothing on screen jumps.
   const shifting = useRef<Grow | null>(null);
@@ -222,21 +232,25 @@ export function LayoutCanvas({
     if (!done) return;
     shifting.current = null;
     const step = CELL * camera.scale.value;
+    easing.value = false;
     camera.x.value -= done.left * step;
     camera.y.value -= done.top * step;
     edges.value = NO_GROWTH;
-  }, [layout, camera, edges]);
+  }, [layout, camera, edges, easing]);
   const resizeVenue = (grow: Grow) => {
     shifting.current = grow;
     editing.onSizing(null);
     editing.onResizeVenue(grow);
   };
-  const sheet = useAnimatedStyle(() => ({
-    left: -edges.value.left * CELL,
-    top: -edges.value.top * CELL,
-    width: (layout.columns + edges.value.left + edges.value.right) * CELL,
-    height: (layout.rows + edges.value.top + edges.value.bottom) * CELL,
-  }));
+  const sheet = useAnimatedStyle(() => {
+    const ease = (to: number) => (easing.value ? withTiming(to, STEP) : to);
+    return {
+      left: ease(-edges.value.left * CELL),
+      top: ease(-edges.value.top * CELL),
+      width: ease((layout.columns + edges.value.left + edges.value.right) * CELL),
+      height: ease((layout.rows + edges.value.top + edges.value.bottom) * CELL),
+    };
+  });
   // How far each edge can go: out to the API's limit, in until it meets something placed (a tile,
   // or an entrance on the edges it runs along) or leaves a single cell.
   const used = usedArea(layout, editing.tiles);
@@ -288,6 +302,7 @@ export function LayoutCanvas({
                   rows={layout.rows}
                   used={used}
                   edges={edges}
+                  easing={easing}
                   camera={camera}
                   onSizing={editing.onSizing}
                   onEnd={resizeVenue}
@@ -402,6 +417,11 @@ function EditableTile({
   const said = useSharedValue("");
   // A corner is being dragged: the tile itself doesn't move.
   const sizing = useSharedValue(false);
+  // Being dragged: it follows the finger (fx, fy, in points) while dx and dy say the cells it
+  // would land on, shaded grey under it.
+  const moving = useSharedValue(false);
+  const fx = useSharedValue(0);
+  const fy = useSharedValue(0);
 
   // A new rect from above (the drop landed): the offsets are in it now.
   useEffect(() => {
@@ -461,11 +481,18 @@ function EditableTile({
     .onBegin(() => {
       camera.busy.value = true;
     })
+    .onStart(() => {
+      if (sizing.value) return;
+      fx.value = 0;
+      fy.value = 0;
+      moving.value = true;
+    })
     .onUpdate((event) => {
       if (sizing.value) return;
-      const step = CELL * camera.scale.value;
-      const x = Math.round(event.translationX / step);
-      const y = Math.round(event.translationY / step);
+      fx.value = event.translationX / camera.scale.value;
+      fy.value = event.translationY / camera.scale.value;
+      const x = Math.round(fx.value / CELL);
+      const y = Math.round(fy.value / CELL);
       if (x === dx.value && y === dy.value) return;
       dx.value = x;
       dy.value = y;
@@ -473,6 +500,8 @@ function EditableTile({
     })
     .onEnd(() => {
       if (sizing.value) return;
+      // From here it glides from the finger to where it lands (or back).
+      moving.value = false;
       const moved = dx.value !== 0 || dy.value !== 0;
       if (settle() && moved) {
         const at = current();
@@ -483,14 +512,39 @@ function EditableTile({
       camera.busy.value = false;
     });
 
+  // Dragged, it's under the finger; otherwise it eases to its cells. A drop moves the cells from
+  // the offset into the rect without changing where they are, so the glide just carries on.
   const box = useAnimatedStyle(() => {
     const at = current();
+    const width = withTiming(at.width * CELL, STEP);
+    const height = withTiming(at.height * CELL, STEP);
+    const zIndex = selected ? 2 : 1;
+    if (moving.value) {
+      return {
+        left: base.value.x * CELL + fx.value,
+        top: base.value.y * CELL + fy.value,
+        width,
+        height,
+        zIndex,
+      };
+    }
     return {
-      left: at.x * CELL,
-      top: at.y * CELL,
+      left: withTiming(at.x * CELL, GLIDE),
+      top: withTiming(at.y * CELL, GLIDE),
+      width,
+      height,
+      zIndex,
+    };
+  });
+  // The cells it would land on, grey under it while it's dragged somewhere it fits.
+  const landing = useAnimatedStyle(() => {
+    const at = current();
+    return {
+      opacity: moving.value && !blocked.value ? 1 : 0,
+      left: at.x * CELL - (base.value.x * CELL + fx.value),
+      top: at.y * CELL - (base.value.y * CELL + fy.value),
       width: at.width * CELL,
       height: at.height * CELL,
-      zIndex: selected ? 2 : 1,
     };
   });
   const art = useAnimatedStyle(() => ({ opacity: blocked.value ? 0 : 1 }));
@@ -503,6 +557,11 @@ function EditableTile({
         accessibilityLabel={name}
         style={[{ position: "absolute" }, box]}
       >
+        <Animated.View
+          pointerEvents="none"
+          className="rounded-[6px] bg-ink/10"
+          style={[{ position: "absolute" }, landing]}
+        />
         <Animated.View style={[{ flex: 1 }, art]}>
           {children({ width: rect.width * CELL, height: rect.height * CELL })}
         </Animated.View>
@@ -551,11 +610,18 @@ function EditableTile({
 
 // What's being dragged out of the tray, where it would land: drawn as itself where it fits, as a
 // dashed outline with its name where it doesn't (Figma 378:2), and not at all over the tray.
-function TrayGhost({ state, art, name }: Ghost) {
+function TrayGhost({ state, gx, gy, art, name }: Ghost) {
   const box = useAnimatedStyle(() => ({
     opacity: state.value.shown ? 1 : 0,
-    left: state.value.x * CELL,
-    top: state.value.y * CELL,
+    left: gx.value,
+    top: gy.value,
+    width: state.value.width * CELL,
+    height: state.value.height * CELL,
+  }));
+  const landing = useAnimatedStyle(() => ({
+    opacity: state.value.shown && !state.value.blocked ? 1 : 0,
+    left: state.value.x * CELL - gx.value,
+    top: state.value.y * CELL - gy.value,
     width: state.value.width * CELL,
     height: state.value.height * CELL,
   }));
@@ -563,6 +629,10 @@ function TrayGhost({ state, art, name }: Ghost) {
   const dashed = useAnimatedStyle(() => ({ opacity: state.value.blocked ? 1 : 0 }));
   return (
     <Animated.View pointerEvents="none" style={[{ position: "absolute", zIndex: 4 }, box]}>
+      <Animated.View
+        className="rounded-[6px] bg-ink/10"
+        style={[{ position: "absolute" }, landing]}
+      />
       <Animated.View style={[{ flex: 1 }, drawn]}>{art}</Animated.View>
       <Animated.View
         className="absolute inset-0 items-center justify-center rounded-[6px] border border-dashed border-ink bg-white"
@@ -790,7 +860,7 @@ function EntranceTag({
 
   const place = useAnimatedStyle(() => {
     const centre = entranceCentre(at.value.side, at.value.offset, columns, rows);
-    return { left: centre.x - 60, top: centre.y - 12 };
+    return { left: withTiming(centre.x - 60, STEP), top: withTiming(centre.y - 12, STEP) };
   });
   const arrow = useAnimatedStyle(() => ({
     transform: [{ rotate: ARROW_TURN[at.value.side] ?? "0deg" }],
@@ -978,6 +1048,7 @@ function VenueEdge({
   rows,
   used,
   edges,
+  easing,
   camera,
   onSizing,
   onEnd,
@@ -987,6 +1058,7 @@ function VenueEdge({
   rows: number;
   used: Used;
   edges: SharedValue<Grow>;
+  easing: SharedValue<boolean>;
   camera: Camera;
   onSizing: (size: { columns: number; rows: number } | null) => void;
   onEnd: (grow: Grow) => void;
@@ -1007,6 +1079,7 @@ function VenueEdge({
     .hitSlop(16)
     .onBegin(() => {
       camera.busy.value = true;
+      easing.value = true;
     })
     .onUpdate((event) => {
       const step = CELL * camera.scale.value;
@@ -1023,7 +1096,10 @@ function VenueEdge({
     .onEnd(() => {
       const grow = edges.value;
       if (grow[side] !== 0) runOnJS(onEnd)(grow);
-      else runOnJS(onSizing)(null);
+      else {
+        easing.value = false;
+        runOnJS(onSizing)(null);
+      }
     })
     .onFinalize(() => {
       camera.busy.value = false;
@@ -1038,14 +1114,15 @@ function VenueEdge({
     const y = side === "top" ? top : side === "bottom" ? top + height : top + height / 2;
     const w = across ? EDGE_SHORT : EDGE_LONG;
     const h = across ? EDGE_LONG : EDGE_SHORT;
-    return { left: x - w / 2, top: y - h / 2, width: w, height: h };
+    const ease = (to: number) => (easing.value ? withTiming(to, STEP) : to);
+    return { left: ease(x - w / 2), top: ease(y - h / 2), width: w, height: h };
   });
 
   return (
     <GestureDetector gesture={drag}>
       <Animated.View
         accessibilityRole="adjustable"
-        className="rounded-full border-2 border-primary bg-white"
+        className="rounded-full border-2 border-ink-3 bg-white"
         style={[{ position: "absolute", zIndex: 3 }, place]}
       />
     </GestureDetector>

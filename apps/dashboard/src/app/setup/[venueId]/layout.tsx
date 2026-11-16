@@ -113,6 +113,8 @@ function LayoutView({
   // What's being dragged out of the tray: where it would land lives on the UI thread, what it is
   // here.
   const ghostState = useSharedValue<GhostState>(NO_GHOST);
+  const ghostX = useSharedValue(0);
+  const ghostY = useSharedValue(0);
   const [listOpen, setListOpen] = useState(false);
   // Showing the layout as players will see it: nothing to edit, no tray.
   const [previewing, setPreviewing] = useState(false);
@@ -246,6 +248,8 @@ function LayoutView({
   const drag = {
     camera,
     ghost: ghostState,
+    gx: ghostX,
+    gy: ghostY,
     tiles,
     columns: plan.columns,
     rows: plan.rows,
@@ -399,7 +403,13 @@ function LayoutView({
         screen={screen}
         ghost={
           lifted
-            ? ({ state: ghostState, art: lifted.art, name: lifted.name } satisfies Ghost)
+            ? ({
+                state: ghostState,
+                gx: ghostX,
+                gy: ghostY,
+                art: lifted.art,
+                name: lifted.name,
+              } satisfies Ghost)
             : null
         }
         editing={{
@@ -635,6 +645,9 @@ function LayoutView({
   );
 }
 
+// Something let go over the map gliding into its cells before it's placed.
+const LAND = { duration: 200 };
+
 // An amenity starts at two cells by two; its corners size it from there.
 const NEW_AMENITY = { width: 2, height: 2 };
 
@@ -649,6 +662,8 @@ function TrayItem({
   lifted,
   camera,
   ghost,
+  gx,
+  gy,
   tiles,
   columns,
   rows,
@@ -666,6 +681,8 @@ function TrayItem({
   lifted: boolean;
   camera: Camera;
   ghost: SharedValue<GhostState>;
+  gx: SharedValue<number>;
+  gy: SharedValue<number>;
   tiles: Tile[];
   columns: number;
   rows: number;
@@ -678,6 +695,8 @@ function TrayItem({
   children: React.ReactNode;
 }) {
   const said = useSharedValue("");
+  // Let go where it fits: it glides into its cells, and only then is it placed.
+  const gliding = useSharedValue(false);
   const width = size?.width ?? 1;
   const height = size?.height ?? 1;
   const tap = Gesture.Tap().onEnd(() => {
@@ -697,9 +716,11 @@ function TrayItem({
         ghost.value = { ...ghost.value, shown: false };
         return;
       }
-      const step = CELL * camera.scale.value;
-      const x = Math.round((event.absoluteX - camera.x.value) / step - width / 2);
-      const y = Math.round((event.absoluteY - camera.y.value) / step - height / 2);
+      // Its middle under the finger, in points on the map; the cells it would land on, nearest.
+      gx.value = (event.absoluteX - camera.x.value) / camera.scale.value - (width * CELL) / 2;
+      gy.value = (event.absoluteY - camera.y.value) / camera.scale.value - (height * CELL) / 2;
+      const x = Math.round(gx.value / CELL);
+      const y = Math.round(gy.value / CELL);
       const rect = { x, y, width, height };
       const outside = !fitsIn(rect, columns, rows);
       const hits = outside ? [] : clashes(rect, tiles, "").map((tile) => tile.name);
@@ -713,12 +734,21 @@ function TrayItem({
     })
     .onEnd(() => {
       const landed = ghost.value;
-      if (landed.shown && !landed.blocked) runOnJS(onDrop)(landed.x, landed.y);
+      if (!landed.shown || landed.blocked) return;
+      gliding.value = true;
+      gy.value = withTiming(landed.y * CELL, LAND);
+      gx.value = withTiming(landed.x * CELL, LAND, () => {
+        gliding.value = false;
+        ghost.value = { ...ghost.value, shown: false };
+        runOnJS(onDrop)(landed.x, landed.y);
+        runOnJS(onLand)();
+      });
     })
     .onFinalize(() => {
-      ghost.value = { ...ghost.value, shown: false };
       camera.busy.value = false;
       said.value = "";
+      if (gliding.value) return;
+      ghost.value = { ...ghost.value, shown: false };
       runOnJS(onLand)();
     });
 
