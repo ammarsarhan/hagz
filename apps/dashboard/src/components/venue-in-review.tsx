@@ -11,7 +11,6 @@ import { language } from "@/lib/language";
 import { afterVenueWrite, queries } from "@/lib/queries";
 import { FadingScroll } from "./fading-scroll";
 import { Button } from "./button";
-import { GroupHeading } from "./group-heading";
 import { useHud } from "./hud";
 import { IconCheck } from "./icons";
 import { CloseButton, NavBar } from "./nav";
@@ -23,7 +22,7 @@ import { Title } from "./title";
 type VenueSetup = components["schemas"]["VenueSetup"];
 
 // A venue sent for review (Figma "Setup · In review", 363:2): where it is in the review as three
-// steps, what waits on it, and the way back to editing (Withdraw, which asks first). Nothing can change while it's in review
+// steps, and the way back to editing (Withdraw, which asks first). Nothing can change while it's in review
 // (the API refuses), so the checklist gives way to this until it's approved, sent back or
 // withdrawn.
 export function VenueInReview({
@@ -59,11 +58,7 @@ export function VenueInReview({
   return (
     <Screen
       footer={
-        <Button
-          label={t("screens.setup.review.withdraw")}
-          variant="secondary"
-          onPress={() => setConfirming(true)}
-        />
+        <Button label={t("screens.setup.review.withdraw")} onPress={() => setConfirming(true)} />
       }
     >
       <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />} />
@@ -88,16 +83,6 @@ export function VenueInReview({
             last
           />
         </View>
-
-        <GroupHeading className="mb-1 mt-8">{t("screens.setup.review.whileYouWait")}</GroupHeading>
-        <Waiting
-          title={t("screens.setup.review.inviteStaff")}
-          detail={t("screens.setup.review.inviteStaffBody", { name })}
-        />
-        <Waiting
-          title={t("screens.setup.review.yourSetup")}
-          detail={t("screens.setup.review.yourSetupBody")}
-        />
       </FadingScroll>
 
       <Sheet
@@ -113,7 +98,6 @@ export function VenueInReview({
         </Text>
         <Button
           label={t("screens.setup.review.withdraw")}
-          variant="secondary"
           loading={withdrawing}
           onPress={() => void withdraw()}
         />
@@ -169,16 +153,6 @@ function Step({
           <Text className={`text-label ${pending ? "text-ink-3" : "text-ink-2"}`}>{detail}</Text>
         ) : null}
       </View>
-    </View>
-  );
-}
-
-// Something that waits on the review: shown, but pale, since there's nothing to do with it yet.
-function Waiting({ title, detail }: { title: string; detail: string }) {
-  return (
-    <View className="border-b border-border py-3.5">
-      <Text className="text-subtitle text-ink-2">{title}</Text>
-      <Text className="mt-0.5 text-label text-ink-3">{detail}</Text>
     </View>
   );
 }

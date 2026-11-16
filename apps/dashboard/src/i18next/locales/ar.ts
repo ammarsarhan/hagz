@@ -266,11 +266,6 @@ const ar: ArabicTranslations = {
           checkingBody: "غالبًا خلال يوم",
           live: "يصبح ملعبك متاحًا",
           liveBody: "يجدك اللاعبون ويحجزون",
-          whileYouWait: "أثناء الانتظار",
-          inviteStaff: "ادعُ فريقك",
-          inviteStaffBody: "بعد الموافقة على {{name}}",
-          yourSetup: "إعداداتك",
-          yourSetupBody: "مقفلة أثناء المراجعة. اسحبه من المراجعة للتعديل.",
           withdraw: "اسحب من المراجعة",
           withdrawTitle: "سحب من المراجعة؟",
           withdrawBody:

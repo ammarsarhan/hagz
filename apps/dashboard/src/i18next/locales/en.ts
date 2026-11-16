@@ -244,11 +244,6 @@ const en = {
           checkingBody: "Usually within a day",
           live: "You go live",
           liveBody: "Players can find and book you",
-          whileYouWait: "While you wait",
-          inviteStaff: "Invite your staff",
-          inviteStaffBody: "Once we approve {{name}}",
-          yourSetup: "Your setup",
-          yourSetupBody: "Locked while we review. Withdraw to make changes.",
           withdraw: "Withdraw from review",
           withdrawTitle: "Withdraw from review?",
           withdrawBody:
