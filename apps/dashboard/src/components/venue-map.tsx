@@ -1,8 +1,9 @@
-import { useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, View, type LayoutChangeEvent } from "react-native";
 import type MapView from "react-native-maps";
 import type { Region } from "react-native-maps";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SvgXml } from "react-native-svg";
 import { MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
 import { colors } from "@/lib/colors";
@@ -123,18 +124,34 @@ export function PinOverlay({
           className="h-1 w-2.5 rounded-full bg-ink/30"
           style={{ position: "absolute", top: -1, left: -5 }}
         />
-        {hint ? (
-          <View
-            className="items-center"
-            style={{ position: "absolute", top: 13, left: -160, width: 320 }}
-          >
-            <View className="rounded-hud bg-ink px-3.5 py-2">
-              <Text className="text-center text-caption font-medium text-white">{hint}</Text>
-            </View>
-          </View>
-        ) : null}
+        <PinHint hint={hint} />
       </View>
     </View>
+  );
+}
+
+// The line under the pin, see-through so the map shows behind it. It fades in and out rather than
+// popping, keeping its last words while it fades away.
+const HINT_FADE = { duration: 200 };
+
+function PinHint({ hint }: { hint: string | null }) {
+  const [shown, setShown] = useState(hint);
+  const opacity = useSharedValue(hint ? 1 : 0);
+  useEffect(() => {
+    if (hint) setShown(hint);
+    opacity.value = withTiming(hint ? 1 : 0, HINT_FADE);
+  }, [hint, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  if (!shown) return null;
+  return (
+    <Animated.View
+      className="items-center"
+      style={[{ position: "absolute", top: 13, left: -160, width: 320 }, style]}
+    >
+      <View className="rounded-hud bg-ink/75 px-3.5 py-2">
+        <Text className="text-center text-caption font-medium text-white">{shown}</Text>
+      </View>
+    </Animated.View>
   );
 }
 
