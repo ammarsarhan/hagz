@@ -10,9 +10,10 @@ import { AreaPicker, type Area } from "@/components/area-picker";
 import { Button } from "@/components/button";
 import { useHudAnchor } from "@/components/hud";
 import { IconX } from "@/components/icons";
+import { RequestAreaSheet } from "@/components/request-area-sheet";
 import { SetupLoading } from "@/components/setup-loading";
 import { Text } from "@/components/text";
-import { AreaCard, cardShadow, FloatingButton, PinOverlay } from "@/components/venue-map";
+import { AreaCard, CardLink, cardShadow, FloatingButton, PinOverlay } from "@/components/venue-map";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
@@ -26,9 +27,10 @@ import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 // listed under in the card below. Moving the pin suggests the area nearest it again, unless one was
 // picked by hand.
 //
-// An area can only be requested when the venue is added: here the API takes supported areas only
-// (UpdateVenue), so the picker offers no request, and a venue still waiting on its requested area
-// keeps it until an area is chosen.
+// A draft can ask for an area Hagz doesn't cover yet, as when it was added: by typing its name in
+// the picker, or from Request coverage under the card. A listed venue can't (UpdateVenue): it must
+// stay findable under an area, so it picks from the list only. A venue still waiting on its
+// requested area keeps it until an area is chosen.
 const CLOSE = { latitudeDelta: 0.004, longitudeDelta: 0.004 };
 
 export default function SetupLocation() {
@@ -51,36 +53,51 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
   const [pin, setPin] = useState(start);
   const [moved, setMoved] = useState(false);
   const [picked, setPicked] = useState<Area | null>(null);
+  // An area asked for here, by name; it replaces any picked, and picking one replaces it.
+  const [asked, setAsked] = useState<string | null>(null);
   const [choosing, setChoosing] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const [cardHeight, setCardHeight] = useState(0);
   // No Screen here to say where the HUD goes (a failed save shows one): it sits on the card.
   useHudAnchor(cardHeight);
   const country = venue.marketplace.code;
+  const draft = venue.status === "DRAFT";
 
-  // Once the pin has moved and nothing was picked, the nearest area is the suggestion.
+  // Once the pin has moved and nothing was picked or asked for, the nearest area is the suggestion.
   const nearest = useQuery({
     ...areas.nearest(country, pin),
-    enabled: moved && !picked,
+    enabled: moved && !picked && !asked,
   });
   const current = venue.location;
-  const area: { id: string; name: string; within: string } | null = picked
-    ? { id: picked.id, name: picked.name, within: picked.within ?? "" }
-    : moved
-      ? nearest.data
-        ? { id: nearest.data.id, name: nearest.data.name, within: nearest.data.within ?? "" }
-        : null
-      : current.id && current.name
-        ? { id: current.id, name: current.name, within: current.within ?? "" }
-        : null;
+  const area: { id: string; name: string; within: string } | null = asked
+    ? null
+    : picked
+      ? { id: picked.id, name: picked.name, within: picked.within ?? "" }
+      : moved
+        ? nearest.data
+          ? { id: nearest.data.id, name: nearest.data.name, within: nearest.data.within ?? "" }
+          : null
+        : current.id && current.name
+          ? { id: current.id, name: current.name, within: current.within ?? "" }
+          : null;
   // Still waiting on an area the owner asked for, and nothing chosen in its place.
-  const requested = !area && !moved && current.requestedArea ? current.requestedArea : null;
+  const requested =
+    asked ?? (!area && !moved && current.requestedArea ? current.requestedArea : null);
   const label = area ?? (requested ? { name: requested, within: t("screens.createVenue.place.requestedNote") } : null); // prettier-ignore
 
-  // Unmoved, the pin only changes if a different area was picked.
-  const changed = moved || (area !== null && area.id !== current.id);
+  // Unmoved, the pin only changes if a different area was picked or asked for.
+  const changed =
+    moved ||
+    (asked !== null && asked !== current.requestedArea) ||
+    (area !== null && area.id !== current.id);
+
+  const ask = (name: string) => {
+    setAsked(name);
+    setPicked(null);
+  };
 
   const submit = () => {
-    if (!area) return;
+    if (!area && !asked) return;
     void save([
       () =>
         send(
@@ -91,7 +108,7 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
                 coordinates: pin,
                 // Google's place for the old pin doesn't describe a new one.
                 placeId: moved ? null : current.placeId,
-                locationId: area.id,
+                ...(asked ? { requestedArea: asked } : { locationId: area?.id }),
               },
             },
           }),
@@ -144,13 +161,24 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         </Text>
         <AreaCard
           label={label}
-          loading={moved && !picked && nearest.isPending}
+          loading={moved && !picked && !asked && nearest.isPending}
           change={t("screens.setup.location.changeArea")}
           onChange={() => setChoosing(true)}
         />
+        {draft ? (
+          <CardLink
+            label={t(
+              asked
+                ? "screens.createVenue.place.changeRequest"
+                : "screens.createVenue.place.requestCoverage",
+            )}
+            onPress={() => setRequesting(true)}
+            paired
+          />
+        ) : null}
         <Button
           label={t("common.actions.save")}
-          disabled={!changed || !area}
+          disabled={!changed || (!area && !asked)}
           loading={saving}
           onPress={submit}
         />
@@ -161,12 +189,26 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         country={country}
         near={pin}
         selectedId={area?.id ?? null}
-        requested={null}
-        allowRequest={false}
+        requested={asked}
+        allowRequest={draft}
         onClose={() => setChoosing(false)}
         onPick={(chosen) => {
           setPicked(chosen);
+          setAsked(null);
           setChoosing(false);
+        }}
+        onRequest={(name) => {
+          ask(name);
+          setChoosing(false);
+        }}
+      />
+      <RequestAreaSheet
+        visible={requesting}
+        requested={asked}
+        onClose={() => setRequesting(false)}
+        onRequest={(name) => {
+          ask(name);
+          setRequesting(false);
         }}
       />
     </View>

@@ -131,13 +131,22 @@ export function AreaCard({
 }
 
 // The quiet blue action under what a map's card shows ("Choose a different area").
-export function CardLink({ label, onPress }: { label: string; onPress: () => void }) {
+// `paired`: a second link straight under another, sharing its spacing rather than doubling it.
+export function CardLink({
+  label,
+  onPress,
+  paired = false,
+}: {
+  label: string;
+  onPress: () => void;
+  paired?: boolean;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       hitSlop={8}
-      className="items-center pb-[18px] pt-4 active:opacity-60"
+      className={`items-center pb-[18px] active:opacity-60 ${paired ? "" : "pt-4"}`}
     >
       <Text className="text-body font-medium text-primary">{label}</Text>
     </Pressable>
