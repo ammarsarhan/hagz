@@ -181,6 +181,22 @@ const en = {
           notListed: "Not listed?",
           noAreaCalled: "No area called \u201C{{query}}\u201D yet.",
           distanceKm: "{{km}} km",
+          areaTooFar: "\u201C{{query}}\u201D is more than {{km}} km from your pin.",
+          noAreaNear: "Hagz doesn't cover any area within {{km}} km of the pin yet.",
+          noAreaNearRequest:
+            "Hagz doesn't cover any area within {{km}} km of your pin yet. Type your area's name to request it.",
+          outsideCountryTitle: "Hagz isn't in this country yet",
+          outsideCountryBody:
+            "Venues here can't be listed yet. If the pin is in the wrong place, go back and move it.",
+          areaNoneBody: "Players browse venues by area.",
+          noCoverage: "There are no areas under Hagz's coverage within {{km}} km of your pin.",
+          requestCoverage: "Request coverage",
+          changeRequest: "Change the area name",
+          requestTitle: "Request coverage",
+          requestBody:
+            "Name the area your venue is in. Hagz adds it, at your pin, when your venue is submitted.",
+          requestPlaceholder: "Area name, e.g. Sheikh Zayed",
+          requestDone: "Request",
           requestedNote: "New area, added on submission",
           requestedBody:
             "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",
@@ -198,7 +214,6 @@ const en = {
           searchUnavailable: "Search isn't available. Drop a pin on the map instead.",
           locationDenied: "Location is off for Hagz",
           locationFailed: "Couldn't find where you are",
-          outsideMarketplaces: "Hagz isn't in that country yet",
         },
       },
       setup: {

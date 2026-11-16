@@ -125,14 +125,21 @@ export function AreaCard({
         )}
       </Pressable>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={onChange}
-        hitSlop={8}
-        className="items-center pb-[18px] pt-4 active:opacity-60"
-      >
-        <Text className="text-body font-medium text-primary">{change}</Text>
-      </Pressable>
+      <CardLink label={change} onPress={onChange} />
     </>
+  );
+}
+
+// The quiet blue action under what a map's card shows ("Choose a different area").
+export function CardLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      hitSlop={8}
+      className="items-center pb-[18px] pt-4 active:opacity-60"
+    >
+      <Text className="text-body font-medium text-primary">{label}</Text>
+    </Pressable>
   );
 }

@@ -206,6 +206,22 @@ const ar: ArabicTranslations = {
           notListed: "غير موجودة؟",
           noAreaCalled: "لا توجد منطقة باسم \u201C{{query}}\u201D بعد.",
           distanceKm: "{{km}} كم",
+          areaTooFar: "\u201C{{query}}\u201D أبعد من {{km}} كم عن الدبوس.",
+          noAreaNear: "حجز لا تغطي أي منطقة على بُعد {{km}} كم من الدبوس بعد.",
+          noAreaNearRequest:
+            "حجز لا تغطي أي منطقة على بُعد {{km}} كم من الدبوس بعد. اكتب اسم منطقتك لتطلب إضافتها.",
+          outsideCountryTitle: "حجز لا تعمل في هذه الدولة بعد",
+          outsideCountryBody:
+            "لا يمكن إضافة ملاعب هنا بعد. إن كان الدبوس في غير مكانه، ارجع وحرّكه.",
+          areaNoneBody: "يتصفح اللاعبون الملاعب حسب المنطقة.",
+          noCoverage: "لا توجد مناطق ضمن تغطية حجز على بُعد {{km}} كم من الدبوس.",
+          requestCoverage: "اطلب التغطية",
+          changeRequest: "غيّر اسم المنطقة",
+          requestTitle: "اطلب التغطية",
+          requestBody:
+            "اكتب اسم المنطقة التي يقع فيها ملعبك. ستضيفها حجز عند موضع الدبوس حين ترسل ملعبك.",
+          requestPlaceholder: "اسم المنطقة، مثل الشيخ زايد",
+          requestDone: "اطلب",
           requestedNote: "منطقة جديدة، تُضاف عند الإرسال",
           requestedBody: "حجز لا تغطي هذه المنطقة بعد. سنضيفها عند إرسال ملعبك.",
           areaSearchPlaceholder: "ابحث عن منطقة",
@@ -222,7 +238,6 @@ const ar: ArabicTranslations = {
           searchUnavailable: "البحث غير متاح. ضع دبوسًا على الخريطة بدلًا من ذلك.",
           locationDenied: "الموقع غير مفعّل لحجز",
           locationFailed: "تعذّر تحديد موقعك",
-          outsideMarketplaces: "حجز لا تعمل في هذه الدولة بعد",
         },
       },
       setup: {

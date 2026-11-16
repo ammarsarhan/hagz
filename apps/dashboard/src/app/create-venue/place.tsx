@@ -1,3 +1,4 @@
+import { PIN_NEAR_AREA_METRES } from "@hagz/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ExpoLocation from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
@@ -9,14 +10,16 @@ import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import { LOCATION_ART, LOCATION_ART_SIZE } from "@/assets/map-art";
-import { AreaPicker, type Area } from "@/components/area-picker";
+import { AreaPicker, withinReach, type Area } from "@/components/area-picker";
 import { Button } from "@/components/button";
-import { useHud } from "@/components/hud";
+import { useHud, useHudAnchor } from "@/components/hud";
 import { IconChevronLeft, IconMapPin, IconSearch, IconX } from "@/components/icons";
 import { CloseButton, NavBar } from "@/components/nav";
 import { PlaceSearch } from "@/components/place-search";
+import { RequestAreaSheet } from "@/components/request-area-sheet";
 import {
   AreaCard,
+  CardLink,
   cardShadow,
   FloatingButton,
   floatShadow,
@@ -31,6 +34,7 @@ import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { addressAt, type Coordinates, type Place } from "@/lib/places";
 import { areas, queries, reference } from "@/lib/queries";
+import { contactSupport, hasSupport } from "@/lib/support";
 
 // Adding a venue, step 3 (Figma "Venue creation · 3 Find your venue", 282:2, "· 5 Adjust the pin",
 // 283:2 and "Confirm the area · B", 295:2): one full-screen map the owner never leaves, with the
@@ -47,6 +51,12 @@ import { areas, queries, reference } from "@/lib/queries";
 // full-screen prompt stands in front of the map first: the map opening on the owner, who's usually
 // standing in their venue, saves most of them the search.
 type Stage = "find" | "pin" | "area";
+// Whether Hagz can list a venue where the pin is, which the area step says before anything else:
+//   country   the pin's country isn't one Hagz is in, so nothing can be listed there
+//   outside   no area Hagz covers is in reach of the pin (PIN_NEAR_AREA_METRES), so suggesting the
+//             nearest one would only be turned away; the owner can request theirs instead
+//   covered   areas are in reach, and the nearest is suggested when one is close
+type Coverage = "checking" | "country" | "outside" | "covered";
 // checking  asking the phone, under a white cover so the map doesn't flash before the prompt
 // ask       the prompt, whose button brings up the system's own question
 // blocked   the prompt, after the owner said no for good: only Settings can turn it back on
@@ -85,6 +95,7 @@ export default function CreateVenuePlace() {
   const [permission, setPermission] = useState<Permission>("checking");
   const [searching, setSearching] = useState(false);
   const [choosingArea, setChoosingArea] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const [creating, setCreating] = useState(false);
   // The point under the pin: the middle of the map, wherever it has been moved to.
   const [pin, setPin] = useState<Coordinates>(START);
@@ -99,15 +110,35 @@ export default function CreateVenuePlace() {
   const [requestedArea, setRequestedArea] = useState<string | null>(null);
   // How tall the bottom card is, so the map's middle (and the pin) sits above it.
   const [cardHeight, setCardHeight] = useState(0);
+  // No Screen here to say where the HUD goes: it sits on the card, once the location prompt (a
+  // Screen, which says for itself) is out of the way.
+  useHudAnchor(permission === "done" ? cardHeight : null);
 
   const country = place?.country ?? FALLBACK_COUNTRY;
   const marketplaces = useQuery(reference.marketplaces);
+  // Until the list arrives, the country is taken as covered and the API has the last word.
+  const inMarketplace =
+    !marketplaces.data || marketplaces.data.some((marketplace) => marketplace.code === country);
   // The area whose centre is nearest the pin, which the owner confirms or changes. Not Google's
   // address: in Egypt it names police districts, so a pin in Smouha would come back "Sidi Gaber".
   const nearest = useQuery({
     ...areas.nearest(country, pin),
-    enabled: stage === "area",
+    enabled: stage === "area" && inMarketplace,
   });
+  // Whether any area is in reach at all: the picker's own first page (nearest first), so opening
+  // it afterwards is already loaded. A failed look leaves it to the API rather than blocking.
+  const reach = useQuery({
+    ...areas.search(country, "", pin),
+    enabled: stage === "area" && inMarketplace,
+    select: (found) => found.some(withinReach),
+  });
+  const coverage: Coverage = !inMarketplace
+    ? "country"
+    : reach.isError || reach.data === true
+      ? "covered"
+      : reach.data === false
+        ? "outside"
+        : "checking";
   const area = requestedArea ? null : (chosenArea ?? nearest.data ?? null);
   const label = requestedArea
     ? { name: requestedArea, within: t("screens.createVenue.place.requestedNote") }
@@ -229,16 +260,6 @@ export default function CreateVenuePlace() {
     router.back();
   };
 
-  const toArea = () => {
-    const active = marketplaces.data?.some((marketplace) => marketplace.code === country);
-    // Somewhere Hagz hasn't opened yet: say so here rather than as a 422 after the last step.
-    if (marketplaces.data && !active) {
-      hud.show(t("screens.createVenue.place.outsideMarketplaces"));
-      return;
-    }
-    setStage("area");
-  };
-
   // The checklist takes the flow's place rather than stacking on top of it: there's no going back
   // to the map once the draft exists, and closing the checklist lands on first run.
   const openSetup = (venueId: string) => {
@@ -304,6 +325,10 @@ export default function CreateVenuePlace() {
           if (details?.isGesture === false) return;
           setPlaced(true);
           setNudged(true);
+          // A new spot gets the area nearest it: one picked or requested for the old spot may not
+          // be in reach any more.
+          setChosenArea(null);
+          setRequestedArea(null);
           // Moving the map by hand at the first step is a way of saying "it's here".
           if (stage === "find") setStage("pin");
         }}
@@ -376,9 +401,11 @@ export default function CreateVenuePlace() {
           <AreaStep
             label={label}
             requested={requestedArea !== null}
-            loading={nearest.isPending}
+            coverage={coverage}
+            loading={coverage === "checking" || nearest.isPending}
             creating={creating}
             onChange={() => setChoosingArea(true)}
+            onRequest={() => setRequesting(true)}
             onConfirm={() => void create()}
           />
         ) : (
@@ -395,7 +422,7 @@ export default function CreateVenuePlace() {
             }
             action={t("common.actions.continue")}
             disabled={stage === "find" ? !placed : locating}
-            onPress={() => (stage === "find" ? setStage("pin") : toArea())}
+            onPress={() => setStage(stage === "find" ? "pin" : "area")}
           />
         )}
       </View>
@@ -437,6 +464,15 @@ export default function CreateVenuePlace() {
         onRequest={(name) => {
           setRequestedArea(name);
           setChoosingArea(false);
+        }}
+      />
+      <RequestAreaSheet
+        visible={requesting}
+        requested={requestedArea}
+        onClose={() => setRequesting(false)}
+        onRequest={(name) => {
+          setRequestedArea(name);
+          setRequesting(false);
         }}
       />
     </View>
@@ -520,54 +556,96 @@ function Step({
 }) {
   return (
     <>
-      <Text accessibilityRole="header" className="px-1 text-title font-semibold tracking-[-0.4px]">
-        {title}
-      </Text>
-      <Text className="mb-5 mt-1.5 px-1 text-subtitle text-ink-2">{body}</Text>
+      <Heading title={title} body={body} />
       <Button label={action} disabled={disabled} onPress={onPress} />
     </>
   );
 }
 
-// The last card: the area we matched, to confirm or change. With no match (an address Google
-// writes differently, or a part of town we haven't seeded) it asks instead of guessing, and an area
-// the owner asked for says Hagz will add it.
+// The last card: the area we matched, to confirm or change. With no match close by it asks instead
+// of guessing, and an area the owner asked for says Hagz will add it. Before any of that, a pin Hagz
+// can't list says so: out of the country (nothing to do but move it, or ask support), or with no
+// area in reach, where a short note stands in the area's place and coverage is requested by name
+// (RequestAreaSheet), which Hagz adds when the venue is submitted.
 function AreaStep({
   label,
   requested,
+  coverage,
   loading,
   creating,
   onChange,
+  onRequest,
   onConfirm,
 }: {
   label: { name: string; within: string } | null;
   requested: boolean;
+  coverage: Coverage;
   loading: boolean;
   creating: boolean;
   onChange: () => void;
+  onRequest: () => void;
   onConfirm: () => void;
 }) {
   const { t } = useTranslation();
+  // Nothing in reach: the picker would be empty, so changing a request asks for the name again.
+  const outside = coverage === "outside";
+
+  if (coverage === "country") {
+    return (
+      <>
+        <Heading
+          title={t("screens.createVenue.place.outsideCountryTitle")}
+          body={t("screens.createVenue.place.outsideCountryBody")}
+        />
+        {hasSupport ? (
+          <Button label={t("common.actions.contactSupport")} onPress={contactSupport} />
+        ) : null}
+      </>
+    );
+  }
+
+  if (outside && !label) {
+    return (
+      <>
+        <Heading
+          title={t("screens.createVenue.place.areaUnknownTitle")}
+          body={t("screens.createVenue.place.areaNoneBody")}
+        />
+        <View className="rounded-[16px] border border-border p-4">
+          <Text className="text-body text-ink-2">
+            {t("screens.createVenue.place.noCoverage", { km: PIN_NEAR_AREA_METRES / 1000 })}
+          </Text>
+        </View>
+        <CardLink label={t("screens.createVenue.place.requestCoverage")} onPress={onRequest} />
+        <Button label={t("screens.createVenue.place.create")} disabled onPress={onConfirm} />
+      </>
+    );
+  }
+
   return (
     <>
-      <Text accessibilityRole="header" className="px-1 text-title font-semibold tracking-[-0.4px]">
-        {label
-          ? t("screens.createVenue.place.areaTitle", { area: label.name })
-          : t("screens.createVenue.place.areaUnknownTitle")}
-      </Text>
-      <Text className="mb-5 mt-1.5 px-1 text-subtitle text-ink-2">
-        {t(
+      <Heading
+        title={
+          label
+            ? t("screens.createVenue.place.areaTitle", { area: label.name })
+            : t("screens.createVenue.place.areaUnknownTitle")
+        }
+        body={t(
           requested
             ? "screens.createVenue.place.requestedBody"
             : "screens.createVenue.place.areaBody",
         )}
-      </Text>
+      />
 
       <AreaCard
         label={label}
         loading={loading}
-        change={t("screens.createVenue.place.differentArea")}
-        onChange={onChange}
+        change={t(
+          outside
+            ? "screens.createVenue.place.changeRequest"
+            : "screens.createVenue.place.differentArea",
+        )}
+        onChange={outside ? onRequest : onChange}
       />
 
       <Button
@@ -576,6 +654,18 @@ function AreaStep({
         loading={creating}
         onPress={onConfirm}
       />
+    </>
+  );
+}
+
+// A card's title and the line under it.
+function Heading({ title, body }: { title: string; body: string }) {
+  return (
+    <>
+      <Text accessibilityRole="header" className="px-1 text-title font-semibold tracking-[-0.4px]">
+        {title}
+      </Text>
+      <Text className="mb-5 mt-1.5 px-1 text-subtitle text-ink-2">{body}</Text>
     </>
   );
 }
