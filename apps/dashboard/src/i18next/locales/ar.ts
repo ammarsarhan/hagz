@@ -301,6 +301,8 @@ const ar: ArabicTranslations = {
           list: "القائمة",
           rotate: "تدوير",
           remove: "أزله من المخطط",
+          addAnother: "أضف واحدًا آخر",
+          allPlaced: "كل شيء على المخطط.",
           done: "تم",
           size: "{{width}} × {{height}}",
           overlaps: "يتداخل مع {{names}}",

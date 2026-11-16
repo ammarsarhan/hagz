@@ -270,6 +270,8 @@ const en = {
           list: "List",
           rotate: "Turn",
           remove: "Take it off the layout",
+          addAnother: "Add another",
+          allPlaced: "Everything's on the layout.",
           done: "Done",
           size: "{{width}} × {{height}}",
           overlaps: "Overlaps {{names}}",

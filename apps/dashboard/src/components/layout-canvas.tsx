@@ -47,6 +47,11 @@ type Amenity = components["schemas"]["Amenity"];
 // one big SVG: an SVG's bitmap grows with its size times the zoom, and would run to hundreds of MB.
 
 const ZOOM = { duration: 220 };
+// What's drawn over what: tiles (the selected one over the rest), the venue's outline over all of
+// them, the entrances and edge handles on the outline, and anything being brought in from the tray
+// over everything.
+const Z = { tile: 1, selected: 2, outline: 3, edge: 4, ghost: 5 } as const;
+
 // Something new on the layout fades in rather than popping.
 const APPEAR = FadeIn.duration(200);
 // Gliding into place on a drop, or back where it came from.
@@ -175,6 +180,7 @@ export function LayoutCanvas({
   screen,
   editing,
   ghost,
+  entranceGhost,
 }: {
   layout: VenueLayout;
   grounds: Map<string, Ground>;
@@ -183,6 +189,8 @@ export function LayoutCanvas({
   screen: { width: number; height: number };
   editing: Editing;
   ghost: Ghost | null;
+  // An entrance being dragged out of the tray: the edge cell it would go on.
+  entranceGhost: SharedValue<EntranceSpot> | null;
 }) {
   const { t } = useTranslation();
   const width = layout.columns * CELL;
@@ -297,18 +305,13 @@ export function LayoutCanvas({
             world,
           ]}
         >
-          {/* The venue: white under the grid's lines, its outline over them. */}
+          {/* The venue: white under the grid's lines; its outline is over the tiles (below). */}
           <Animated.View
             pointerEvents="none"
             className="bg-white"
             style={[{ position: "absolute" }, sheet]}
           />
           <Grid columns={layout.columns} rows={layout.rows} minScale={camera.min} screen={screen} />
-          <Animated.View
-            pointerEvents="none"
-            className="rounded-[4px] border border-ink"
-            style={[{ position: "absolute" }, sheet]}
-          />
           {!editing.readOnly && editing.selected === null
             ? EDGES.map((side) => (
                 <VenueEdge
@@ -387,7 +390,17 @@ export function LayoutCanvas({
               />
             ))}
             {ghost ? <TrayGhost {...ghost} /> : null}
+            {entranceGhost ? (
+              <EntranceGhost state={entranceGhost} columns={layout.columns} rows={layout.rows} />
+            ) : null}
           </LayoutAnimationConfig>
+          {/* The venue's outline over every tile, so one against the edge never hides it; the
+              entrances and the edge handles sit on top of it. */}
+          <Animated.View
+            pointerEvents="none"
+            className="rounded-[4px] border border-ink"
+            style={[{ position: "absolute", zIndex: Z.outline }, sheet]}
+          />
         </Animated.View>
       </View>
     </GestureDetector>
@@ -560,7 +573,7 @@ function EditableTile({
     const at = current();
     const width = withTiming(at.width * CELL, STEP);
     const height = withTiming(at.height * CELL, STEP);
-    const zIndex = selected ? 2 : 1;
+    const zIndex = selected ? Z.selected : Z.tile;
     if (moving.value) {
       return {
         left: base.value.x * CELL + fx.value,
@@ -686,7 +699,7 @@ function TrayGhost({ state, gx, gy, art, name }: Ghost) {
   const drawn = useAnimatedStyle(() => ({ opacity: state.value.blocked ? 0 : 0.85 }));
   const dashed = useAnimatedStyle(() => ({ opacity: state.value.blocked ? 1 : 0 }));
   return (
-    <Animated.View pointerEvents="none" style={[{ position: "absolute", zIndex: 4 }, box]}>
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", zIndex: Z.ghost }, box]}>
       <Animated.View
         className="rounded-[6px] bg-ink/10"
         style={[{ position: "absolute" }, landing]}
@@ -843,7 +856,35 @@ export function AmenityArt({
 }
 
 // The side an entrance is on, as a number the UI thread can do sums with, and back.
-const SIDES: EntranceSide[] = ["TOP", "RIGHT", "BOTTOM", "LEFT"];
+export const SIDES: EntranceSide[] = ["TOP", "RIGHT", "BOTTOM", "LEFT"];
+
+// An entrance's place as the UI thread works it out: a side (an index into SIDES) and a cell.
+export interface EntranceSpot {
+  shown: boolean;
+  side: number;
+  offset: number;
+}
+export const NO_ENTRANCE: EntranceSpot = { shown: false, side: 2, offset: 0 };
+
+// The free edge cell nearest a point on the map (in points), or null when the nearest side's cell
+// is taken: the side whose line is closest, and the cell beside the point along it.
+export const nearestEdge = (
+  x: number,
+  y: number,
+  columns: number,
+  rows: number,
+  taken: string[],
+) => {
+  "worklet";
+  const width = columns * CELL;
+  const height = rows * CELL;
+  const distances = [Math.abs(y), Math.abs(x - width), Math.abs(y - height), Math.abs(x)];
+  const side = distances.indexOf(Math.min(...distances));
+  const length = side === 0 || side === 2 ? columns : rows;
+  const along = side === 0 || side === 2 ? x : y;
+  const offset = Math.min(length - 1, Math.max(0, Math.floor(along / CELL)));
+  return taken.includes(`${String(side)}:${String(offset)}`) ? null : { side, offset };
+};
 // The arrow points out through the side the entrance is on.
 const ARROW_TURN = ["180deg", "-90deg", "0deg", "90deg"];
 
@@ -907,18 +948,9 @@ function EntranceTag({
       const start = entranceCentre(SIDES.indexOf(side), offset, columns, rows);
       const x = start.x + event.translationX / camera.scale.value;
       const y = start.y + event.translationY / camera.scale.value;
-      // The nearest side, and the cell along it.
-      const width = columns * CELL;
-      const height = rows * CELL;
-      const distances = [Math.abs(y), Math.abs(x - width), Math.abs(y - height), Math.abs(x)];
-      const nearest = distances.indexOf(Math.min(...distances));
-      const length = nearest === 0 || nearest === 2 ? columns : rows;
-      const along = nearest === 0 || nearest === 2 ? x : y;
-      const cell = Math.min(length - 1, Math.max(0, Math.floor(along / CELL)));
-      if (taken.includes(`${String(nearest)}:${String(cell)}`)) return;
-      if (nearest !== at.value.side || cell !== at.value.offset) {
-        at.value = { side: nearest, offset: cell };
-      }
+      const spot = nearestEdge(x, y, columns, rows, taken);
+      if (!spot) return;
+      if (spot.side !== at.value.side || spot.offset !== at.value.offset) at.value = spot;
     })
     .onEnd(() => {
       const moved = at.value.side !== SIDES.indexOf(side) || at.value.offset !== offset;
@@ -942,7 +974,7 @@ function EntranceTag({
       <Animated.View
         entering={APPEAR}
         className="items-center justify-center"
-        style={[{ position: "absolute", width: 120, height: 24, zIndex: 3 }, place]}
+        style={[{ position: "absolute", width: 120, height: 24, zIndex: Z.edge }, place]}
         pointerEvents="box-none"
       >
         <View
@@ -1063,6 +1095,46 @@ export function PitchArt({
         }
       />
     </View>
+  );
+}
+
+// An entrance being dragged out of the tray, on the edge cell it would go on, faded a little.
+function EntranceGhost({
+  state,
+  columns,
+  rows,
+}: {
+  state: SharedValue<EntranceSpot>;
+  columns: number;
+  rows: number;
+}) {
+  const { t } = useTranslation();
+  const place = useAnimatedStyle(() => {
+    const centre = entranceCentre(state.value.side, state.value.offset, columns, rows);
+    return {
+      opacity: state.value.shown ? 0.85 : 0,
+      left: withTiming(centre.x - 60, STEP),
+      top: withTiming(centre.y - 12, STEP),
+    };
+  });
+  const arrow = useAnimatedStyle(() => ({
+    transform: [{ rotate: ARROW_TURN[state.value.side] ?? "0deg" }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      className="items-center justify-center"
+      style={[{ position: "absolute", width: 120, height: 24, zIndex: Z.ghost }, place]}
+    >
+      <View className="h-6 flex-row items-center gap-1 rounded-full bg-ink pl-1 pr-2">
+        <Animated.View style={arrow}>
+          <IconArrowDown size={14} color={colors.white} strokeWidth={2} />
+        </Animated.View>
+        <Text className="text-[11px] font-medium text-white">
+          {t("screens.setup.layout.entrance")}
+        </Text>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -1195,7 +1267,7 @@ function VenueEdge({
       <Animated.View
         accessibilityRole="adjustable"
         className="rounded-full border-2 border-ink-3 bg-white"
-        style={[{ position: "absolute", zIndex: 3 }, place]}
+        style={[{ position: "absolute", zIndex: Z.edge }, place]}
       />
     </GestureDetector>
   );

@@ -1,5 +1,5 @@
 import type { components } from "@hagz/api";
-import type { VenueLayoutView } from "@hagz/contracts";
+import type { EntranceSide, VenueLayoutView } from "@hagz/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -20,6 +20,7 @@ import { useHud } from "@/components/hud";
 import {
   IconCheck,
   IconChevronLeft,
+  IconCopy,
   IconDoor,
   IconEye,
   IconEyeOff,
@@ -39,6 +40,10 @@ import {
   useCamera,
   zoomAround,
   type Camera,
+  nearestEdge,
+  NO_ENTRANCE,
+  SIDES,
+  type EntranceSpot,
   type Ghost,
   type GhostState,
   type Grow,
@@ -126,6 +131,9 @@ function LayoutView({
   const ghostX = useSharedValue(0);
   const ghostY = useSharedValue(0);
   const [listOpen, setListOpen] = useState(false);
+  // An entrance being dragged out of the tray: the edge cell it would go on.
+  const entranceSpot = useSharedValue<EntranceSpot>(NO_ENTRANCE);
+  const [entranceLifted, setEntranceLifted] = useState(false);
   // Showing the layout as players will see it: nothing to edit, no tray.
   const [previewing, setPreviewing] = useState(false);
   // The venue's size while one of its edges is being dragged.
@@ -172,7 +180,14 @@ function LayoutView({
   const unplaced = grounds.filter((ground) => !onLayout.has(ground.id));
   // The venue's amenities that can go on the layout. They stay in the tray once placed: a venue
   // can have two car parks.
-  const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
+  // Like the grounds, each leaves the tray once it's on the layout; another of it is added from
+  // its action bar (Add another).
+  const placedOptions = new Set(plan.amenities.map((placed) => placed.optionId));
+  const placeable = layout.placeableOptionIds
+    .filter((id) => !placedOptions.has(id))
+    .flatMap((id) => amenitiesById.get(id) ?? []);
+  const needsEntrance = plan.entrances.length === 0;
+  const trayEmpty = unplaced.length === 0 && placeable.length === 0 && !needsEntrance;
 
   const middle = { x: screen.width / 2, y: (area.top + screen.height - area.bottom) / 2 };
   // The cell in the middle of what's on screen, where new things go.
@@ -230,12 +245,15 @@ function LayoutView({
   };
 
   // A new entrance goes on the bottom edge, as near its middle as is free, then the other sides.
-  const placeEntrance = () => {
+  // Or, for another beside one already there, on its side as near it as is free.
+  const placeEntrance = (near?: { side: EntranceSide; offset: number }) => {
     const taken = new Set(plan.entrances.map((e) => `${e.side}:${String(e.offset)}`));
-    for (const side of ["BOTTOM", "TOP", "LEFT", "RIGHT"] as const) {
+    const sides: EntranceSide[] = ["BOTTOM", "TOP", "LEFT", "RIGHT"];
+    for (const side of near ? [near.side, ...sides.filter((s) => s !== near.side)] : sides) {
       const length = side === "TOP" || side === "BOTTOM" ? plan.columns : plan.rows;
+      const target = near && side === near.side ? near.offset : (length - 1) / 2;
       const offsets = Array.from({ length }, (_, i) => i).sort(
-        (a, b) => Math.abs(a - (length - 1) / 2) - Math.abs(b - (length - 1) / 2),
+        (a, b) => Math.abs(a - target) - Math.abs(b - target),
       );
       const offset = offsets.find((o) => !taken.has(`${side}:${String(o)}`));
       if (offset === undefined) continue;
@@ -244,6 +262,26 @@ function LayoutView({
       return;
     }
     hud.show(t("screens.setup.layout.noRoom"));
+  };
+
+  // Another of a placed amenity, the same size, in the free spot nearest it.
+  const addAnotherAmenity = (index: number) => {
+    const original = plan.amenities[index];
+    if (!original) return;
+    const near = {
+      x: original.x + original.width / 2,
+      y: original.y + original.height / 2,
+    };
+    const spot = roomFor(original, tiles, plan.columns, plan.rows, near);
+    if (!spot) return hud.show(t("screens.setup.layout.noRoom"));
+    change({ ...plan, amenities: [...plan.amenities, { ...original, ...spot }] });
+    setSelected(`a:${String(plan.amenities.length)}`);
+  };
+
+  // An entrance dragged out of the tray onto an edge cell (the drag has checked it's free).
+  const dropEntrance = (side: EntranceSide, offset: number) => {
+    change({ ...plan, entrances: [...plan.entrances, { side, offset }] });
+    setSelected(`e:${String(plan.entrances.length)}`);
   };
 
   // Dropped from the tray onto a free spot (the drag has checked it): there it goes, selected.
@@ -445,6 +483,7 @@ function LayoutView({
               } satisfies Ghost)
             : null
         }
+        entranceGhost={entranceLifted ? entranceSpot : null}
         editing={{
           readOnly: previewing,
           onSizing: setSizing,
@@ -476,6 +515,18 @@ function LayoutView({
                 height: selectedAmenity.height,
               })}
             </Text>
+          ) : null}
+          {kind === "a" || kind === "e" ? (
+            <ActionButton
+              label={t("screens.setup.layout.addAnother")}
+              onPress={() => {
+                if (kind === "a") return addAnotherAmenity(Number(id));
+                const entrance = plan.entrances[Number(id)];
+                if (entrance) placeEntrance(entrance);
+              }}
+            >
+              <IconCopy size={22} color={colors.white} strokeWidth={1.75} />
+            </ActionButton>
           ) : null}
           <ActionButton label={t("screens.setup.layout.remove")} onPress={() => remove(selected)}>
             <IconTrash size={24} color={colors.white} strokeWidth={1.75} />
@@ -643,21 +694,39 @@ function LayoutView({
               </TrayItem>
             );
           })}
-          {/* An entrance goes on an edge rather than in a cell: it's placed with a tap. */}
-          <TrayItem
-            label={t("screens.setup.layout.entrance")}
-            size={null}
-            lifted={false}
-            onTap={placeEntrance}
-            onLift={() => undefined}
-            onDrop={() => undefined}
-            {...drag}
-          >
-            <Chip
-              icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
+          {/* An entrance goes on an edge rather than in a cell: dragged out, it snaps to the
+              nearest edge cell. */}
+          {needsEntrance ? (
+            <EntranceTrayItem
               label={t("screens.setup.layout.entrance")}
-            />
-          </TrayItem>
+              camera={camera}
+              spot={entranceSpot}
+              columns={plan.columns}
+              rows={plan.rows}
+              taken={plan.entrances.map(
+                (e) => `${String(SIDES.indexOf(e.side))}:${String(e.offset)}`,
+              )}
+              trayTop={trayTop}
+              lifted={entranceLifted}
+              onTap={() => placeEntrance()}
+              onLift={() => setEntranceLifted(true)}
+              onDrop={(side, offset) => {
+                const named = SIDES[side];
+                if (named) dropEntrance(named, offset);
+              }}
+              onLand={() => setEntranceLifted(false)}
+            >
+              <Chip
+                icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
+                label={t("screens.setup.layout.entrance")}
+              />
+            </EntranceTrayItem>
+          ) : null}
+          {trayEmpty ? (
+            <Text className="self-center text-body text-ink-2">
+              {t("screens.setup.layout.allPlaced")}
+            </Text>
+          ) : null}
         </ScrollView>
       </Animated.View>
 
@@ -791,6 +860,81 @@ function TrayItem({
         accessibilityLabel={label}
         onAccessibilityTap={onTap}
         // Picked up: blue, like the frame's chip.
+        className={`rounded-[16px] border ${lifted ? "border-primary bg-blue-tint" : "border-border bg-white"}`}
+      >
+        {children}
+      </View>
+    </GestureDetector>
+  );
+}
+
+// The Entrance chip: tap it and it goes on the bottom edge; drag it up out of the tray and it snaps
+// to the free edge cell nearest the finger, shown as its tag, and goes there when let go.
+function EntranceTrayItem({
+  label,
+  camera,
+  spot,
+  columns,
+  rows,
+  taken,
+  trayTop,
+  lifted,
+  onTap,
+  onLift,
+  onDrop,
+  onLand,
+  children,
+}: {
+  label: string;
+  camera: Camera;
+  spot: SharedValue<EntranceSpot>;
+  columns: number;
+  rows: number;
+  taken: string[];
+  trayTop: number;
+  lifted: boolean;
+  onTap: () => void;
+  onLift: () => void;
+  onDrop: (side: number, offset: number) => void;
+  onLand: () => void;
+  children: React.ReactNode;
+}) {
+  const tap = Gesture.Tap().onEnd(() => {
+    runOnJS(onTap)();
+  });
+  const drag = Gesture.Pan()
+    .activeOffsetY([-12, 12])
+    .failOffsetX([-12, 12])
+    .onStart(() => {
+      camera.busy.value = true;
+      runOnJS(onLift)();
+    })
+    .onUpdate((event) => {
+      if (event.absoluteY > trayTop) {
+        spot.value = { ...spot.value, shown: false };
+        return;
+      }
+      const x = (event.absoluteX - camera.x.value) / camera.scale.value;
+      const y = (event.absoluteY - camera.y.value) / camera.scale.value;
+      const at = nearestEdge(x, y, columns, rows, taken);
+      if (at) spot.value = { shown: true, ...at };
+    })
+    .onEnd(() => {
+      const at = spot.value;
+      if (at.shown) runOnJS(onDrop)(at.side, at.offset);
+    })
+    .onFinalize(() => {
+      camera.busy.value = false;
+      spot.value = { ...spot.value, shown: false };
+      runOnJS(onLand)();
+    });
+  return (
+    <GestureDetector gesture={Gesture.Race(drag, tap)}>
+      <View
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onAccessibilityTap={onTap}
         className={`rounded-[16px] border ${lifted ? "border-primary bg-blue-tint" : "border-border bg-white"}`}
       >
         {children}
