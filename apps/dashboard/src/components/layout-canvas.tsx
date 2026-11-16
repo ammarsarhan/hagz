@@ -91,6 +91,33 @@ export const zoomAround = (camera: Camera, factor: number, focus: { x: number; y
 // edge. Null once it's clear.
 export type Trouble = { outside: true } | { outside: false; names: string[] } | null;
 
+// Something being dragged out of the tray: where it would land (in cells), whether it's over the
+// map at all, and whether it would fit there.
+export interface GhostState {
+  shown: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  blocked: boolean;
+}
+
+export const NO_GHOST: GhostState = {
+  shown: false,
+  x: 0,
+  y: 0,
+  width: 1,
+  height: 1,
+  blocked: false,
+};
+
+export interface Ghost {
+  state: SharedValue<GhostState>;
+  // What it looks like, drawn at its size, and its name for the dashed outline.
+  art: ReactNode;
+  name: string;
+}
+
 export interface Editing {
   tiles: Tile[];
   selected: string | null;
@@ -108,6 +135,7 @@ export function LayoutCanvas({
   camera,
   screen,
   editing,
+  ghost,
 }: {
   layout: VenueLayout;
   grounds: Map<string, Ground>;
@@ -115,6 +143,7 @@ export function LayoutCanvas({
   camera: Camera;
   screen: { width: number; height: number };
   editing: Editing;
+  ghost: Ghost | null;
 }) {
   const { t } = useTranslation();
   const width = layout.columns * CELL;
@@ -249,6 +278,7 @@ export function LayoutCanvas({
               onMove={editing.onMoveEntrance}
             />
           ))}
+          {ghost ? <TrayGhost {...ghost} /> : null}
         </Animated.View>
       </View>
     </GestureDetector>
@@ -445,6 +475,33 @@ function EditableTile({
   );
 }
 
+// What's being dragged out of the tray, where it would land: drawn as itself where it fits, as a
+// dashed outline with its name where it doesn't (Figma 378:2), and not at all over the tray.
+function TrayGhost({ state, art, name }: Ghost) {
+  const box = useAnimatedStyle(() => ({
+    opacity: state.value.shown ? 1 : 0,
+    left: state.value.x * CELL,
+    top: state.value.y * CELL,
+    width: state.value.width * CELL,
+    height: state.value.height * CELL,
+  }));
+  const drawn = useAnimatedStyle(() => ({ opacity: state.value.blocked ? 0 : 0.85 }));
+  const dashed = useAnimatedStyle(() => ({ opacity: state.value.blocked ? 1 : 0 }));
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", zIndex: 4 }, box]}>
+      <Animated.View style={[{ flex: 1 }, drawn]}>{art}</Animated.View>
+      <Animated.View
+        className="absolute inset-0 items-center justify-center rounded-[6px] border border-dashed border-ink bg-white"
+        style={dashed}
+      >
+        <Text className="text-[12px] font-semibold" numberOfLines={1}>
+          {name}
+        </Text>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 // The corners of a selected amenity (Figma 377:2): `x` and `y` say which edges each one moves.
 const CORNERS = [
   { name: "top-left", x: -1, y: -1 },
@@ -522,7 +579,15 @@ function Corner({
   );
 }
 
-function GroundArt({ name, width, height }: { name: string; width: number; height: number }) {
+export function GroundArt({
+  name,
+  width,
+  height,
+}: {
+  name: string;
+  width: number;
+  height: number;
+}) {
   return (
     <View style={{ width, height }}>
       <PitchArt width={width} height={height} />
@@ -539,7 +604,7 @@ function GroundArt({ name, width, height }: { name: string; width: number; heigh
 
 // A grey tile with the amenity's icon, and its name when there's room for it (three cells by two,
 // like the frames' café).
-function AmenityArt({
+export function AmenityArt({
   amenity,
   columns,
   rows,

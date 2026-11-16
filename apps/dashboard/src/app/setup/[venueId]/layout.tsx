@@ -5,8 +5,14 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { Pressable, useWindowDimensions, View } from "react-native";
+import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AmenityIcon } from "@/components/amenity-icon";
 import { useHud } from "@/components/hud";
@@ -22,12 +28,17 @@ import {
   IconTrash,
 } from "@/components/icons";
 import {
+  AmenityArt,
   fitCamera,
+  GroundArt,
   LayoutCanvas,
+  NO_GHOST,
   PitchArt,
   useCamera,
   zoomAround,
   type Camera,
+  type Ghost,
+  type GhostState,
   type Trouble,
 } from "@/components/layout-canvas";
 import { SetupLoading } from "@/components/setup-loading";
@@ -93,6 +104,12 @@ function LayoutView({
   const camera = useCamera(fitCamera(layout, screen, area));
   const { plan, change } = useLayoutEditor(venueId, layout);
   const [selected, setSelected] = useState<string | null>(null);
+  // What's being dragged out of the tray: where it would land lives on the UI thread, what it is
+  // here.
+  const ghostState = useSharedValue<GhostState>(NO_GHOST);
+  const [lifted, setLifted] = useState<{ key: string; art: React.ReactNode; name: string } | null>(
+    null,
+  );
 
   const groundsById = useMemo(() => new Map(grounds.map((g) => [g.id, g])), [grounds]);
   const amenitiesById = useMemo(() => new Map(options.map((o) => [o.id, o])), [options]);
@@ -170,10 +187,7 @@ function LayoutView({
   };
 
   const placeAmenity = (amenity: Amenity) => {
-    for (const size of [
-      { width: 2, height: 2 },
-      { width: 1, height: 1 },
-    ]) {
+    for (const size of [NEW_AMENITY, { width: 1, height: 1 }]) {
       const spot = roomFor(size, tiles, plan.columns, plan.rows, middleCell());
       if (!spot) continue;
       change({
@@ -201,6 +215,33 @@ function LayoutView({
       return;
     }
     hud.show(t("screens.setup.layout.noRoom"));
+  };
+
+  // Dropped from the tray onto a free spot (the drag has checked it): there it goes, selected.
+  const dropGround = (ground: Ground, x: number, y: number) => {
+    change({
+      ...plan,
+      grounds: [...plan.grounds, { groundId: ground.id, x, y, orientation: "HORIZONTAL" }],
+    });
+    setSelected(`g:${ground.id}`);
+  };
+  const dropAmenity = (amenity: Amenity, x: number, y: number) => {
+    change({
+      ...plan,
+      amenities: [...plan.amenities, { optionId: amenity.id, x, y, ...NEW_AMENITY }],
+    });
+    setSelected(`a:${String(plan.amenities.length)}`);
+  };
+  const trayTop = screen.height - insets.bottom - TRAY_HEIGHT;
+  const drag = {
+    camera,
+    ghost: ghostState,
+    tiles,
+    columns: plan.columns,
+    rows: plan.rows,
+    trayTop,
+    onTrouble: trouble,
+    onLand: () => setLifted(null),
   };
 
   const move = (key: string, x: number, y: number) => {
@@ -277,6 +318,11 @@ function LayoutView({
         amenities={amenitiesById}
         camera={camera}
         screen={screen}
+        ghost={
+          lifted
+            ? ({ state: ghostState, art: lifted.art, name: lifted.name } satisfies Ghost)
+            : null
+        }
         editing={{
           tiles,
           selected,
@@ -391,25 +437,183 @@ function LayoutView({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 10, paddingRight: 18 }}
         >
-          {unplaced.map((ground) => (
-            <GroundChip key={ground.id} ground={ground} onPress={() => placeGround(ground)} />
-          ))}
-          {placeable.map((amenity) => (
-            <Chip
-              key={amenity.id}
-              icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
-              label={amenity.name}
-              onPress={() => placeAmenity(amenity)}
-            />
-          ))}
-          <Chip
-            icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
+          {unplaced.map((ground) => {
+            const key = `g:${ground.id}`;
+            const size = footprintOf(ground, "HORIZONTAL");
+            return (
+              <TrayItem
+                key={key}
+                label={nameOf(ground)}
+                size={size}
+                lifted={lifted?.key === key}
+                onTap={() => placeGround(ground)}
+                onLift={() =>
+                  setLifted({
+                    key,
+                    name: nameOf(ground),
+                    art: (
+                      <GroundArt
+                        name={nameOf(ground)}
+                        width={size.width * CELL}
+                        height={size.height * CELL}
+                      />
+                    ),
+                  })
+                }
+                onDrop={(x, y) => dropGround(ground, x, y)}
+                {...drag}
+              >
+                <GroundChip ground={ground} />
+              </TrayItem>
+            );
+          })}
+          {placeable.map((amenity) => {
+            const key = `a:${amenity.id}`;
+            return (
+              <TrayItem
+                key={key}
+                label={amenity.name}
+                size={NEW_AMENITY}
+                lifted={lifted?.key === key}
+                onTap={() => placeAmenity(amenity)}
+                onLift={() =>
+                  setLifted({
+                    key,
+                    name: amenity.name,
+                    art: <AmenityArt amenity={amenity} columns={2} rows={2} />,
+                  })
+                }
+                onDrop={(x, y) => dropAmenity(amenity, x, y)}
+                {...drag}
+              >
+                <Chip
+                  icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
+                  label={amenity.name}
+                />
+              </TrayItem>
+            );
+          })}
+          {/* An entrance goes on an edge rather than in a cell: it's placed with a tap. */}
+          <TrayItem
             label={t("screens.setup.layout.entrance")}
-            onPress={placeEntrance}
-          />
+            size={null}
+            lifted={false}
+            onTap={placeEntrance}
+            onLift={() => undefined}
+            onDrop={() => undefined}
+            {...drag}
+          >
+            <Chip
+              icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
+              label={t("screens.setup.layout.entrance")}
+            />
+          </TrayItem>
         </ScrollView>
       </View>
     </View>
+  );
+}
+
+// An amenity starts at two cells by two; its corners size it from there.
+const NEW_AMENITY = { width: 2, height: 2 };
+
+// One thing in the tray. Tap it and it goes in the middle of the view; drag it up out of the tray
+// (Figma 378:2) and it follows the finger over the map a cell at a time, drawn where it would land:
+// as itself where it fits, dashed with the HUD saying why where it doesn't. Let go somewhere it
+// fits and it's placed there. A sideways swipe still scrolls the tray: the drag starts only when
+// the finger heads up or down first.
+function TrayItem({
+  label,
+  size,
+  lifted,
+  camera,
+  ghost,
+  tiles,
+  columns,
+  rows,
+  trayTop,
+  onTap,
+  onLift,
+  onDrop,
+  onTrouble,
+  onLand,
+  children,
+}: {
+  label: string;
+  // Its size in cells, or null when it can't be dragged (an entrance).
+  size: { width: number; height: number } | null;
+  lifted: boolean;
+  camera: Camera;
+  ghost: SharedValue<GhostState>;
+  tiles: Tile[];
+  columns: number;
+  rows: number;
+  trayTop: number;
+  onTap: () => void;
+  onLift: () => void;
+  onDrop: (x: number, y: number) => void;
+  onTrouble: (trouble: Trouble) => void;
+  onLand: () => void;
+  children: React.ReactNode;
+}) {
+  const said = useSharedValue("");
+  const width = size?.width ?? 1;
+  const height = size?.height ?? 1;
+  const tap = Gesture.Tap().onEnd(() => {
+    runOnJS(onTap)();
+  });
+  const drag = Gesture.Pan()
+    .enabled(size !== null)
+    .activeOffsetY([-12, 12])
+    .failOffsetX([-12, 12])
+    .onStart(() => {
+      camera.busy.value = true;
+      runOnJS(onLift)();
+    })
+    .onUpdate((event) => {
+      // Back over the tray: nowhere to land.
+      if (event.absoluteY > trayTop) {
+        ghost.value = { ...ghost.value, shown: false };
+        return;
+      }
+      const step = CELL * camera.scale.value;
+      const x = Math.round((event.absoluteX - camera.x.value) / step - width / 2);
+      const y = Math.round((event.absoluteY - camera.y.value) / step - height / 2);
+      const rect = { x, y, width, height };
+      const outside = !fitsIn(rect, columns, rows);
+      const hits = outside ? [] : clashes(rect, tiles, "").map((tile) => tile.name);
+      ghost.value = { shown: true, ...rect, blocked: outside || hits.length > 0 };
+      const words = outside ? "outside" : hits.join("|");
+      if (words === said.value) return;
+      said.value = words;
+      runOnJS(onTrouble)(
+        outside ? { outside: true } : hits.length ? { outside: false, names: hits } : null,
+      );
+    })
+    .onEnd(() => {
+      const landed = ghost.value;
+      if (landed.shown && !landed.blocked) runOnJS(onDrop)(landed.x, landed.y);
+    })
+    .onFinalize(() => {
+      ghost.value = { ...ghost.value, shown: false };
+      camera.busy.value = false;
+      said.value = "";
+      runOnJS(onLand)();
+    });
+
+  return (
+    <GestureDetector gesture={Gesture.Race(drag, tap)}>
+      <View
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onAccessibilityTap={onTap}
+        // Picked up: blue, like the frame's chip.
+        className={`rounded-[16px] border ${lifted ? "border-primary bg-blue-tint" : "border-border bg-white"}`}
+      >
+        {children}
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -516,18 +720,14 @@ function ZoomButton({
 }
 
 // A ground waiting for its place: a small pitch, its name, and what it is ("5-a-side").
-function GroundChip({ ground, onPress }: { ground: Ground; onPress: () => void }) {
+function GroundChip({ ground }: { ground: Ground }) {
   const { t } = useTranslation();
   const kind =
     ground.size === "STANDARD"
       ? t(`screens.setup.grounds.sports.${ground.sport}`)
       : t(`screens.setup.grounds.sizes.${ground.size}`);
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className="h-16 flex-row items-center gap-2.5 rounded-[16px] border border-border bg-white pl-3 pr-3.5 active:opacity-70"
-    >
+    <View className="h-16 flex-row items-center gap-2.5 pl-3 pr-3.5">
       <PitchArt width={44} height={22} inset={3} line={1.1} radius={4} />
       <View>
         <Text className="text-[15px] font-medium" numberOfLines={1}>
@@ -535,29 +735,17 @@ function GroundChip({ ground, onPress }: { ground: Ground; onPress: () => void }
         </Text>
         <Text className="text-[13px] text-ink-2">{kind}</Text>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
-function Chip({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-}) {
+function Chip({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className="h-16 flex-row items-center gap-2.5 rounded-[16px] border border-border bg-white pl-3 pr-3.5 active:opacity-70"
-    >
+    <View className="h-16 flex-row items-center gap-2.5 pl-3 pr-3.5">
       {icon}
       <Text className="text-[15px] font-medium" numberOfLines={1}>
         {label}
       </Text>
-    </Pressable>
+    </View>
   );
 }
