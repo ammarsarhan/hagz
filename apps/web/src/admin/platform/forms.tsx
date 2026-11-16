@@ -13,7 +13,8 @@ import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
 import { Tag } from "@/admin/data-table";
 import { PanelSection, ReadOnlyRow, SidePanel } from "@/admin/side-panel";
-import { send } from "@/admin/errors";
+import { message, send } from "@/admin/errors";
+import { useHud } from "@/admin/hud";
 import { Field, SelectField } from "@/admin/field";
 import { Flag } from "@/admin/flag";
 import { kindOrder } from "./countries";
@@ -179,7 +180,7 @@ export function EditMarketplacePanel({
           />
         </PanelSection>
         <PanelSection title="Border">
-          <BorderField has={marketplace.hasBoundary} change={border} onChange={setBorder} />
+          <BorderField marketplace={marketplace} change={border} onChange={setBorder} />
         </PanelSection>
       </form>
     </SidePanel>
@@ -188,19 +189,42 @@ export function EditMarketplacePanel({
 
 type BorderChange = { boundary: Boundary; file: string } | null;
 
-// The country's border, which venue pins must fall inside. The API only says whether there is one,
-// so this shows that, takes a GeoJSON file to replace it, and can remove it.
+// The country's border, which venue pins must fall inside. The list only says whether there is one,
+// so this shows that, downloads the saved one as GeoJSON (to keep, or edit and upload again), takes
+// a GeoJSON file to replace it, and can remove it.
 function BorderField({
-  has,
+  marketplace,
   change,
   onChange,
 }: {
-  has: boolean;
+  marketplace: AdminMarketplace;
   change: BorderChange | undefined;
   onChange: (change: BorderChange | undefined) => void;
 }) {
+  const has = marketplace.hasBoundary;
+  const hud = useHud();
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
+  const [downloading, setDownloading] = useState(false);
+
+  const download = async () => {
+    setDownloading(true);
+    const result = await send(
+      api.GET("/v1/admin/marketplaces/{id}/boundary", { params: { path: { id: marketplace.id } } }),
+    );
+    setDownloading(false);
+    if (!result.ok) return hud(message(result.error));
+    const file = new Blob([JSON.stringify(result.data)], { type: "application/geo+json" });
+    // Attached while it's clicked, and the URL let go only after the download has started.
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${marketplace.code.toLowerCase()}-border.geojson`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
   const load = async (file: File) => {
     try {
       onChange({ boundary: readBoundary(await file.text()), file: file.name });
@@ -230,6 +254,16 @@ function BorderField({
           <span className="text-caption text-ink-2">{status.line}</span>
         </span>
         <span className="flex gap-2">
+          {has ? (
+            <Button
+              variant="ghost"
+              size="small"
+              loading={downloading}
+              onClick={() => void download()}
+            >
+              Download
+            </Button>
+          ) : null}
           {change !== undefined ? (
             <Button variant="ghost" size="small" onClick={() => onChange(undefined)}>
               Undo
