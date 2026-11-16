@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import { Pressable, SectionList, useWindowDimensions, View } from "react-native";
 import { GroupHeading } from "./group-heading";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
 
 // Everything on the venue layout as a list, from the layout's list button (not drawn in Figma; the
-// app's usual sheet): grounds, then amenities, then entrances. Picking one closes the sheet, and the
-// layout glides to it and selects it, which is quicker than hunting for it on a big venue.
+// app's usual sheet): grounds, then amenities, then entrances, each under a title that stays put
+// while its rows scroll. Picking one closes the sheet, and the layout glides to it and selects it,
+// which is quicker than hunting for it on a big venue.
 
 export interface ListedItem {
   key: string;
@@ -41,29 +42,37 @@ export function LayoutList({
           {t("screens.setup.layout.listEmpty")}
         </Text>
       ) : (
-        <ScrollView style={{ maxHeight: screen.height * 0.55 }}>
-          {shown.map((group) => (
-            <View key={group.title}>
-              <GroupHeading className="mb-1 mt-5">{group.title}</GroupHeading>
-              {group.items.map((item, index) => (
-                <Pressable
-                  key={item.key}
-                  accessibilityRole="button"
-                  onPress={() => onPick(item.key)}
-                  className={`flex-row items-center gap-3.5 py-3.5 active:opacity-60 ${
-                    index === group.items.length - 1 ? "" : "border-b border-border"
-                  }`}
-                >
-                  <View className="w-11 items-center">{item.icon}</View>
-                  <Text className="flex-1 text-subtitle font-medium" numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text className="text-label text-ink-2">{item.detail}</Text>
-                </Pressable>
-              ))}
+        <SectionList
+          className="mt-3"
+          style={{ maxHeight: screen.height * 0.55 }}
+          sections={shown.map((group) => ({ title: group.title, data: group.items }))}
+          keyExtractor={(item) => item.key}
+          // Each group's title stays at the top while its rows go under it.
+          stickySectionHeadersEnabled
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 12 }}
+          renderSectionHeader={({ section }) => (
+            // White, so the rows scrolling up pass under it.
+            <View className="bg-white pb-1.5 pt-4">
+              <GroupHeading>{section.title}</GroupHeading>
             </View>
-          ))}
-        </ScrollView>
+          )}
+          renderItem={({ item, index, section }) => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => onPick(item.key)}
+              className={`flex-row items-center gap-3.5 py-3.5 active:opacity-60 ${
+                index === section.data.length - 1 ? "" : "border-b border-border"
+              }`}
+            >
+              <View className="w-11 items-center">{item.icon}</View>
+              <Text className="flex-1 text-subtitle font-medium" numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text className="text-label text-ink-2">{item.detail}</Text>
+            </Pressable>
+          )}
+        />
       )}
     </Sheet>
   );
