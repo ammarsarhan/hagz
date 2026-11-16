@@ -10,18 +10,20 @@ import { colors } from "@/lib/colors";
 import { language } from "@/lib/language";
 import { afterVenueWrite, queries } from "@/lib/queries";
 import { FadingScroll } from "./fading-scroll";
+import { Button } from "./button";
 import { GroupHeading } from "./group-heading";
 import { useHud } from "./hud";
 import { IconCheck } from "./icons";
 import { CloseButton, NavBar } from "./nav";
 import { Screen } from "./screen";
+import { Sheet } from "./sheet";
 import { Text } from "./text";
 import { Title } from "./title";
 
 type VenueSetup = components["schemas"]["VenueSetup"];
 
 // A venue sent for review (Figma "Setup · In review", 363:2): where it is in the review as three
-// steps, what waits on it, and the way back to editing. Nothing can change while it's in review
+// steps, what waits on it, and the way back to editing (Withdraw, which asks first). Nothing can change while it's in review
 // (the API refuses), so the checklist gives way to this until it's approved, sent back or
 // withdrawn.
 export function VenueInReview({
@@ -37,6 +39,8 @@ export function VenueInReview({
   const hud = useHud();
   const queryClient = useQueryClient();
   const [withdrawing, setWithdrawing] = useState(false);
+  // Withdrawing asks first: it ends the review, and sending again starts a new one.
+  const [confirming, setConfirming] = useState(false);
   const name = setup.venue.name ?? t("screens.setup.untitled");
 
   // Back to a draft: the screen becomes the checklist again, everything editable.
@@ -47,12 +51,21 @@ export function VenueInReview({
     );
     setWithdrawing(false);
     if (!result.ok) return hud.show(hudMessage(result.error));
+    setConfirming(false);
     queryClient.setQueryData(queries.setup(venueId).queryKey, result.data);
     void afterVenueWrite(queryClient, venueId, { checklist: false });
   };
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Button
+          label={t("screens.setup.review.withdraw")}
+          variant="secondary"
+          onPress={() => setConfirming(true)}
+        />
+      }
+    >
       <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />} />
       <FadingScroll>
         <Title subtitle={t("screens.setup.review.inReview")}>{name}</Title>
@@ -85,21 +98,35 @@ export function VenueInReview({
           title={t("screens.setup.review.yourSetup")}
           detail={t("screens.setup.review.yourSetupBody")}
         />
+      </FadingScroll>
 
+      <Sheet
+        visible={confirming}
+        onClose={() => setConfirming(false)}
+        closeLabel={t("components.shared.nav.close")}
+      >
+        <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
+          {t("screens.setup.review.withdrawTitle")}
+        </Text>
+        <Text className="mb-6 mt-1.5 text-body text-ink-2">
+          {t("screens.setup.review.withdrawBody")}
+        </Text>
+        <Button
+          label={t("screens.setup.review.withdraw")}
+          variant="secondary"
+          loading={withdrawing}
+          onPress={() => void withdraw()}
+        />
         <Pressable
           accessibilityRole="button"
-          onPress={() => void withdraw()}
-          disabled={withdrawing}
-          hitSlop={10}
-          className="mt-6 items-center self-center active:opacity-60"
+          onPress={() => setConfirming(false)}
+          className="items-center py-4 active:opacity-60"
         >
-          <Text
-            className={`text-subtitle font-medium underline ${withdrawing ? "text-ink-3" : "text-ink"}`}
-          >
-            {t("screens.setup.review.withdraw")}
+          <Text className="text-subtitle font-medium">
+            {t("screens.setup.review.keepInReview")}
           </Text>
         </Pressable>
-      </FadingScroll>
+      </Sheet>
     </Screen>
   );
 }

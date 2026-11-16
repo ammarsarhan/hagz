@@ -250,6 +250,10 @@ const en = {
           yourSetup: "Your setup",
           yourSetupBody: "Locked while we review. Withdraw to make changes.",
           withdraw: "Withdraw from review",
+          withdrawTitle: "Withdraw from review?",
+          withdrawBody:
+            "Your venue goes back to being a draft, so you can make changes. Send it again when it's ready; we'll review it from the start.",
+          keepInReview: "Keep it in review",
           today: "Today, {{time}}",
           yesterday: "Yesterday, {{time}}",
           on: "{{date}}, {{time}}",

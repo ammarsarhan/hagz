@@ -272,6 +272,10 @@ const ar: ArabicTranslations = {
           yourSetup: "إعداداتك",
           yourSetupBody: "مقفلة أثناء المراجعة. اسحبه من المراجعة للتعديل.",
           withdraw: "اسحب من المراجعة",
+          withdrawTitle: "سحب من المراجعة؟",
+          withdrawBody:
+            "يعود ملعبك مسودة لتتمكن من تعديله. أرسله مجددًا حين يكون جاهزًا، وسنراجعه من البداية.",
+          keepInReview: "أبقه قيد المراجعة",
           today: "اليوم، {{time}}",
           yesterday: "أمس، {{time}}",
           on: "{{date}}، {{time}}",
