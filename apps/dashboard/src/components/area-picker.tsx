@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
-import { Button } from "./button";
 import { isRTL } from "@/lib/language";
 import type { Coordinates } from "@/lib/places";
 import { areas } from "@/lib/queries";
@@ -24,6 +23,7 @@ import { SheetHud } from "./hud";
 import { IconCircleCheckFilled, IconSearch } from "./icons";
 import { CloseButton } from "./nav";
 import { Text } from "./text";
+import { CardLink } from "./venue-map";
 
 export type Area = components["schemas"]["Area"];
 
@@ -222,11 +222,9 @@ export function AreaPicker({
                   </Text>
                 </Pressable>
               ) : allowRequest && onRequestCoverage ? (
-                <View className="pt-6">
-                  <Button
+                <View className="pt-2">
+                  <CardLink
                     label={t("screens.createVenue.place.requestCoverage")}
-                    variant="secondary"
-                    compact
                     onPress={() => {
                       Keyboard.dismiss();
                       onRequestCoverage();
