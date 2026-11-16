@@ -1051,7 +1051,8 @@ export const nearestEdge = (
 const ARROW_TURN = ["180deg", "-90deg", "0deg", "90deg"];
 
 // Where an entrance's tag is centred: the middle of its cell on its side.
-// While an edge is dragged (`grow`), an entrance on it rides along with it.
+// While an edge is dragged (`grow`), an entrance on it rides along with it, and one on an edge it
+// cuts into is pushed along to stay on the venue.
 const entranceCentre = (
   side: number,
   offset: number,
@@ -1060,11 +1061,20 @@ const entranceCentre = (
   grow: Grow = NO_GROWTH,
 ) => {
   "worklet";
+  // Kept on the venue as it is now: an edge coming in pushes it along.
   const along = (offset + 0.5) * CELL;
-  if (side === 0) return { x: along, y: -grow.top * CELL };
-  if (side === 1) return { x: (columns + grow.right) * CELL, y: along };
-  if (side === 2) return { x: along, y: (rows + grow.bottom) * CELL };
-  return { x: -grow.left * CELL, y: along };
+  const across = Math.min(
+    (columns + grow.right) * CELL - CELL / 2,
+    Math.max(-grow.left * CELL + CELL / 2, along),
+  );
+  const down = Math.min(
+    (rows + grow.bottom) * CELL - CELL / 2,
+    Math.max(-grow.top * CELL + CELL / 2, along),
+  );
+  if (side === 0) return { x: across, y: -grow.top * CELL };
+  if (side === 1) return { x: (columns + grow.right) * CELL, y: down };
+  if (side === 2) return { x: across, y: (rows + grow.bottom) * CELL };
+  return { x: -grow.left * CELL, y: down };
 };
 
 // A black tag centred on the venue's edge. Selected, it can be dragged along the edges: it goes to
@@ -1333,8 +1343,8 @@ function EntranceGhost({
 const EDGES = ["left", "top", "right", "bottom"] as const;
 type Edge = (typeof EDGES)[number];
 
-// The cells something placed reaches to, which an edge can't be dragged in past: tiles, and
-// entrances along the edges that run that way (one on the top edge holds the left and right edges).
+// The cells the tiles reach to, which an edge can't be dragged in past. Entrances don't hold an
+// edge: they're markers on the venue's edge, and an edge coming in pushes them along with it.
 interface Used {
   left: number;
   top: number;
@@ -1352,15 +1362,6 @@ const usedArea = (layout: VenueLayout, tiles: Tile[]): Used => {
     top = Math.min(top, tile.rect.y);
     right = Math.max(right, tile.rect.x + tile.rect.width);
     bottom = Math.max(bottom, tile.rect.y + tile.rect.height);
-  }
-  for (const entrance of layout.entrances) {
-    if (entrance.side === "TOP" || entrance.side === "BOTTOM") {
-      left = Math.min(left, entrance.offset);
-      right = Math.max(right, entrance.offset + 1);
-    } else {
-      top = Math.min(top, entrance.offset);
-      bottom = Math.max(bottom, entrance.offset + 1);
-    }
   }
   // Nothing placed: an edge can come in until one cell is left.
   return {

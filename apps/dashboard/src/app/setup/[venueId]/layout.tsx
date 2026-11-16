@@ -315,16 +315,32 @@ function LayoutView({
 
   // An edge moved: the grid grows or shrinks on that side. Moving the left or top edge moves the
   // grid's start, so everything placed shifts by as much to stay where it is.
+  // An entrance an edge came in past is pushed along to stay on the venue; if that lands it on
+  // another entrance, it goes to the nearest free cell on its side.
   const resizeVenue = (grow: Grow) => {
+    const columns = plan.columns + grow.left + grow.right;
+    const rows = plan.rows + grow.top + grow.bottom;
+    const taken = new Set<string>();
+    const entrances = plan.entrances.flatMap((e) => {
+      const horizontal = e.side === "TOP" || e.side === "BOTTOM";
+      const length = horizontal ? columns : rows;
+      const wanted = Math.min(
+        length - 1,
+        Math.max(0, e.offset + (horizontal ? grow.left : grow.top)),
+      );
+      const offset = Array.from({ length }, (_, i) => i)
+        .sort((a, b) => Math.abs(a - wanted) - Math.abs(b - wanted))
+        .find((o) => !taken.has(`${e.side}:${String(o)}`));
+      if (offset === undefined) return [];
+      taken.add(`${e.side}:${String(offset)}`);
+      return [{ side: e.side, offset }];
+    });
     change({
-      columns: plan.columns + grow.left + grow.right,
-      rows: plan.rows + grow.top + grow.bottom,
+      columns,
+      rows,
       grounds: plan.grounds.map((g) => ({ ...g, x: g.x + grow.left, y: g.y + grow.top })),
       amenities: plan.amenities.map((a) => ({ ...a, x: a.x + grow.left, y: a.y + grow.top })),
-      entrances: plan.entrances.map((e) => ({
-        ...e,
-        offset: e.offset + (e.side === "TOP" || e.side === "BOTTOM" ? grow.left : grow.top),
-      })),
+      entrances,
     });
   };
 
