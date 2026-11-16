@@ -393,6 +393,8 @@ export function LayoutCanvas({
                 selected={editing.selected === `e:${String(index)}`}
                 readOnly={editing.readOnly}
                 camera={camera}
+                edges={edges}
+                easing={easing}
                 onSelect={editing.onSelect}
                 onMove={editing.onMoveEntrance}
               />
@@ -1049,13 +1051,20 @@ export const nearestEdge = (
 const ARROW_TURN = ["180deg", "-90deg", "0deg", "90deg"];
 
 // Where an entrance's tag is centred: the middle of its cell on its side.
-const entranceCentre = (side: number, offset: number, columns: number, rows: number) => {
+// While an edge is dragged (`grow`), an entrance on it rides along with it.
+const entranceCentre = (
+  side: number,
+  offset: number,
+  columns: number,
+  rows: number,
+  grow: Grow = NO_GROWTH,
+) => {
   "worklet";
   const along = (offset + 0.5) * CELL;
-  if (side === 0) return { x: along, y: 0 };
-  if (side === 1) return { x: columns * CELL, y: along };
-  if (side === 2) return { x: along, y: rows * CELL };
-  return { x: 0, y: along };
+  if (side === 0) return { x: along, y: -grow.top * CELL };
+  if (side === 1) return { x: (columns + grow.right) * CELL, y: along };
+  if (side === 2) return { x: along, y: (rows + grow.bottom) * CELL };
+  return { x: -grow.left * CELL, y: along };
 };
 
 // A black tag centred on the venue's edge. Selected, it can be dragged along the edges: it goes to
@@ -1070,6 +1079,8 @@ function EntranceTag({
   selected,
   readOnly,
   camera,
+  edges,
+  easing,
   onSelect,
   onMove,
 }: {
@@ -1082,11 +1093,16 @@ function EntranceTag({
   selected: boolean;
   readOnly: boolean;
   camera: Camera;
+  // The venue's edges as they're dragged, and whether they're easing (see LayoutCanvas).
+  edges: SharedValue<Grow>;
+  easing: SharedValue<boolean>;
   onSelect: (key: string | null) => void;
   onMove: (index: number, side: EntranceSide, offset: number) => void;
 }) {
   const { t } = useTranslation();
   const at = useSharedValue({ side: SIDES.indexOf(side), offset });
+  // Being dragged along the edge: it eases from cell to cell.
+  const dragging = useSharedValue(false);
   useEffect(() => {
     at.value = { side: SIDES.indexOf(side), offset };
   }, [side, offset, at]);
@@ -1103,6 +1119,7 @@ function EntranceTag({
     .enabled(selected && !readOnly)
     .onBegin(() => {
       camera.busy.value = true;
+      dragging.value = true;
     })
     .onUpdate((event) => {
       const start = entranceCentre(SIDES.indexOf(side), offset, columns, rows);
@@ -1119,11 +1136,15 @@ function EntranceTag({
     })
     .onFinalize(() => {
       camera.busy.value = false;
+      dragging.value = false;
     });
 
+  // It eases while it's dragged or its edge is; otherwise it's simply where it is, so the moment a
+  // resize lands (the grid's start moving with the map) it doesn't slide.
   const place = useAnimatedStyle(() => {
-    const centre = entranceCentre(at.value.side, at.value.offset, columns, rows);
-    return { left: withTiming(centre.x - 60, STEP), top: withTiming(centre.y - 12, STEP) };
+    const centre = entranceCentre(at.value.side, at.value.offset, columns, rows, edges.value);
+    const ease = (to: number) => (dragging.value || easing.value ? withTiming(to, STEP) : to);
+    return { left: ease(centre.x - 60), top: ease(centre.y - 12) };
   });
   const arrow = useAnimatedStyle(() => ({
     transform: [{ rotate: ARROW_TURN[at.value.side] ?? "0deg" }],

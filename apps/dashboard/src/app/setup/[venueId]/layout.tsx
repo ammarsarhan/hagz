@@ -77,8 +77,8 @@ type Amenity = components["schemas"]["Amenity"];
 // A selected ground can be turned, a selected amenity sized by its corners, and either taken off.
 // Every change saves behind it (lib/layout-editor.ts).
 
-// The tray: its padding, title and one row of 64-high chips.
-const TRAY_HEIGHT = 132;
+// The tray: its padding, title and one row of 56-high chips.
+const TRAY_HEIGHT = 124;
 // Gliding to something picked from the list.
 const GLIDE = { duration: 320 };
 
@@ -1058,7 +1058,7 @@ function GroundChip({ ground }: { ground: Ground }) {
       ? t(`screens.setup.grounds.sports.${ground.sport}`)
       : t(`screens.setup.grounds.sizes.${ground.size}`);
   return (
-    <View className="h-16 flex-row items-center gap-2.5 pl-3 pr-3.5">
+    <View className="h-14 flex-row items-center gap-2.5 pl-3 pr-3.5">
       <PitchArt width={44} height={22} inset={3} line={1.1} radius={4} />
       <View>
         <Text className="text-[15px] font-medium" numberOfLines={1}>
@@ -1072,7 +1072,7 @@ function GroundChip({ ground }: { ground: Ground }) {
 
 function Chip({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <View className="h-16 flex-row items-center gap-2.5 pl-3 pr-3.5">
+    <View className="h-14 flex-row items-center gap-2.5 pl-3 pr-3.5">
       {icon}
       <Text className="text-[15px] font-medium" numberOfLines={1}>
         {label}
