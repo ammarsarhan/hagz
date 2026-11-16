@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
@@ -12,13 +12,16 @@ import { useHud } from "@/components/hud";
 import { IconChevronRight } from "@/components/icons";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
+import { Sheet } from "@/components/sheet";
+import { VenueInReview } from "@/components/venue-in-review";
 import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import type { components } from "@hagz/api";
-import { hudMessage } from "@/lib/api-errors";
+import { api } from "@/lib/api";
+import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
-import { queries } from "@/lib/queries";
+import { afterVenueWrite, queries } from "@/lib/queries";
 
 // A draft venue's setup checklist (Figma "Venue creation · 7 Setup checklist (draft flow)", 285:2):
 // everything left to do before it can be sent for review, in any order, each item saved as it's
@@ -39,6 +42,10 @@ export default function VenueSetupScreen() {
   const hud = useHud();
   const setup = useQuery(queries.setup(venueId));
   const compact = useCompactTitle();
+  const queryClient = useQueryClient();
+  // Send for review asks first (Figma 362:2): it locks the venue until Hagz decides.
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const failed = setup.isError;
   useEffect(() => {
@@ -67,6 +74,24 @@ export default function VenueSetupScreen() {
     );
   }
 
+  // In review: nothing here can change, so the screen is where the review is (Figma 363:2).
+  if (setup.data.venue.status === "SUBMITTED") {
+    return <VenueInReview venueId={venueId} setup={setup.data} onClose={leave} />;
+  }
+
+  // Sent, the screen turns into the in-review view from the answer.
+  const submit = async () => {
+    setSending(true);
+    const result = await send(
+      api.POST("/v1/staff/venues/{venueId}/submit", { params: { path: { venueId } } }),
+    );
+    setSending(false);
+    if (!result.ok) return hud.show(hudMessage(result.error));
+    setConfirming(false);
+    queryClient.setQueryData(queries.setup(venueId).queryKey, result.data);
+    void afterVenueWrite(queryClient, venueId, { checklist: false });
+  };
+
   const { venue, items, required, canSubmit } = setup.data;
   const name = venue.name ?? t("screens.setup.untitled");
   // What to do next: the first required item that can actually be done now.
@@ -79,7 +104,7 @@ export default function VenueSetupScreen() {
           label={t("screens.setup.send")}
           variant={canSubmit ? "primary" : "secondary"}
           disabled={!canSubmit}
-          onPress={() => hud.show(t("common.comingNext"))}
+          onPress={() => setConfirming(true)}
         />
       }
     >
@@ -129,6 +154,27 @@ export default function VenueSetupScreen() {
           items={items.filter((i) => !i.required)}
         />
       </FadingScroll>
+
+      <Sheet
+        visible={confirming}
+        onClose={() => setConfirming(false)}
+        closeLabel={t("components.shared.nav.close")}
+      >
+        <Text accessibilityRole="header" className="text-[22px] font-semibold leading-[1.27]">
+          {t("screens.setup.review.confirmTitle")}
+        </Text>
+        <Text className="mb-6 mt-1.5 text-body text-ink-2">
+          {t("screens.setup.review.confirmBody")}
+        </Text>
+        <Button label={t("screens.setup.send")} loading={sending} onPress={() => void submit()} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setConfirming(false)}
+          className="items-center py-4 active:opacity-60"
+        >
+          <Text className="text-subtitle font-medium">{t("screens.setup.review.notYet")}</Text>
+        </Pressable>
+      </Sheet>
     </Screen>
   );
 }

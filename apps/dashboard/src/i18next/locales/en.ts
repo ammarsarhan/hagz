@@ -133,6 +133,7 @@ const en = {
           inReview: "In review · {{ago}}",
           continue: "Continue setup",
           review: "Review & submit",
+          viewReview: "View review",
           sendWhenDone: "Send for review when it's ready",
           agoNow: "Just now",
           ago: {
@@ -231,6 +232,28 @@ const en = {
         required: "Required",
         optional: "Optional",
         send: "Send for review",
+        review: {
+          confirmTitle: "Send for review?",
+          confirmBody:
+            "We'll check your details and photos, usually within a day, and message you on WhatsApp. While we review, your venue is locked; withdraw from review to make changes.",
+          notYet: "Not yet",
+          inReview:
+            "In review. We'll message you on WhatsApp when it's approved, or if anything needs changing.",
+          sent: "Sent for review",
+          checking: "We check your listing",
+          checkingBody: "Usually within a day",
+          live: "You go live",
+          liveBody: "Players can find and book you",
+          whileYouWait: "While you wait",
+          inviteStaff: "Invite your staff",
+          inviteStaffBody: "Once we approve {{name}}",
+          yourSetup: "Your setup",
+          yourSetupBody: "Locked while we review. Withdraw to make changes.",
+          withdraw: "Withdraw from review",
+          today: "Today, {{time}}",
+          yesterday: "Yesterday, {{time}}",
+          on: "{{date}}, {{time}}",
+        },
         photos: {
           emptyBody:
             "Add at least 3. The first one is the cover players see first, so pick your best pitch shot.",

@@ -158,6 +158,7 @@ const ar: ArabicTranslations = {
           inReview: "قيد المراجعة · {{ago}}",
           continue: "أكمل الإعداد",
           review: "مراجعة وإرسال",
+          viewReview: "عرض المراجعة",
           sendWhenDone: "أرسله للمراجعة حين يكتمل",
           agoNow: "الآن",
           ago: {
@@ -254,6 +255,27 @@ const ar: ArabicTranslations = {
         required: "مطلوب",
         optional: "اختياري",
         send: "أرسل للمراجعة",
+        review: {
+          confirmTitle: "إرسال للمراجعة؟",
+          confirmBody:
+            "سنراجع بياناتك وصورك، غالبًا خلال يوم، ونراسلك على واتساب. أثناء المراجعة يُقفل ملعبك؛ اسحبه من المراجعة لتعديله.",
+          notYet: "ليس الآن",
+          inReview: "قيد المراجعة. سنراسلك على واتساب عند الموافقة، أو إن احتاج شيء إلى تعديل.",
+          sent: "أُرسل للمراجعة",
+          checking: "نراجع ملعبك",
+          checkingBody: "غالبًا خلال يوم",
+          live: "يصبح ملعبك متاحًا",
+          liveBody: "يجدك اللاعبون ويحجزون",
+          whileYouWait: "أثناء الانتظار",
+          inviteStaff: "ادعُ فريقك",
+          inviteStaffBody: "بعد الموافقة على {{name}}",
+          yourSetup: "إعداداتك",
+          yourSetupBody: "مقفلة أثناء المراجعة. اسحبه من المراجعة للتعديل.",
+          withdraw: "اسحب من المراجعة",
+          today: "اليوم، {{time}}",
+          yesterday: "أمس، {{time}}",
+          on: "{{date}}، {{time}}",
+        },
         photos: {
           emptyBody:
             "أضف 3 صور على الأقل. الأولى هي الغلاف الذي يراه اللاعبون أولًا، فاختر أفضل لقطة لملعبك.",
