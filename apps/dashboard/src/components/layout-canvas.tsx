@@ -26,7 +26,7 @@ import {
   type Tile,
 } from "@/lib/layout";
 import { AmenityIcon } from "./amenity-icon";
-import { IconArrowDown, IconArrowsDiagonal2 } from "./icons";
+import { IconArrowDown } from "./icons";
 import { Text } from "./text";
 
 type Amenity = components["schemas"]["Amenity"];
@@ -36,10 +36,11 @@ type Amenity = components["schemas"]["Amenity"];
 // pitches with their names, its amenities as grey tiles, and its entrances as black tags on the
 // edge. Drag the map to move it, pinch to zoom.
 //
-// Tap a tile to select it; drag a selected one to move it, a cell at a time; drag a selected
-// amenity's corners to size it (1–4 cells each way); drag a selected entrance along the edge. While
-// something's moved where it can't go it shows as a dashed outline and says what's in the way
-// (onTrouble), and dropped there it goes back. Tap the empty map to let go.
+// Tap a tile to select it (or another, to switch); drag a selected one to move it, or its corner
+// chevron to size it; drag a selected entrance along the edge. A tile being moved or sized stops at
+// the grid's edge and against anything else, sliding along it where it can, so it's never anywhere
+// it can't go. Something dragged in from the tray can be, though: it shows as a dashed outline and
+// says what's in the way. Tap the empty map to let go.
 //
 // Everything sits in one "world" view, a cell CELL points at zoom 1, which the gestures move and
 // scale; nothing inside re-renders while they do. The grid lines are thin plain views rather than
@@ -161,7 +162,6 @@ export interface Editing {
   onMove: (key: string, x: number, y: number) => void;
   onResize: (key: string, rect: Rect) => void;
   onMoveEntrance: (index: number, side: EntranceSide, offset: number) => void;
-  onTrouble: (trouble: Trouble) => void;
   // The venue's size while an edge is dragged (null once it's let go), and the edges' final move.
   onSizing: (size: { columns: number; rows: number } | null) => void;
   onResizeVenue: (grow: Grow) => void;
@@ -279,7 +279,6 @@ export function LayoutCanvas({
     rows: layout.rows,
     camera,
     onSelect: editing.onSelect,
-    onTrouble: editing.onTrouble,
   };
 
   return (
@@ -410,7 +409,6 @@ function EditableTile({
   rows,
   camera,
   onSelect,
-  onTrouble,
   onDrop,
   onResize,
   range,
@@ -426,7 +424,6 @@ function EditableTile({
   rows: number;
   camera: Camera;
   onSelect: (key: string | null) => void;
-  onTrouble: (trouble: Trouble) => void;
   onDrop: (key: string, x: number, y: number) => void;
   onResize?: (key: string, rect: Rect) => void;
   // How far its grip can size it, as it lies.
@@ -443,8 +440,6 @@ function EditableTile({
   const dw = useSharedValue(0);
   const dh = useSharedValue(0);
   const blocked = useSharedValue(false);
-  // What was last said about it, so the HUD only hears about changes.
-  const said = useSharedValue("");
   // A corner is being dragged: the tile itself doesn't move.
   const sizing = useSharedValue(false);
   // Being dragged: it follows the finger (fx, fy, in points) while dx and dy say the cells it
@@ -472,23 +467,9 @@ function EditableTile({
       height: base.value.height + dh.value,
     };
   };
-  const check = () => {
-    "worklet";
-    const at = current();
-    const outside = !fitsIn(at, columns, rows);
-    const hits = outside ? [] : clashes(at, tiles, tileKey).map((tile) => tile.name);
-    blocked.value = outside || hits.length > 0;
-    const words = outside ? "outside" : hits.join("|");
-    if (words === said.value) return;
-    said.value = words;
-    runOnJS(onTrouble)(
-      outside ? { outside: true } : hits.length ? { outside: false, names: hits } : null,
-    );
-  };
   const settle = () => {
     "worklet";
     camera.busy.value = false;
-    said.value = "";
     if (blocked.value) {
       // Back where it was.
       dx.value = 0;
@@ -519,14 +500,45 @@ function EditableTile({
     })
     .onUpdate((event) => {
       if (sizing.value) return;
-      fx.value = event.translationX / camera.scale.value;
-      fy.value = event.translationY / camera.scale.value;
-      const x = Math.round(fx.value / CELL);
-      const y = Math.round(fy.value / CELL);
-      if (x === dx.value && y === dy.value) return;
-      dx.value = x;
-      dy.value = y;
-      check();
+      const at = base.value;
+      // Never past the grid's edge.
+      let x = Math.min(
+        (columns - at.x - at.width) * CELL,
+        Math.max(-at.x * CELL, event.translationX / camera.scale.value),
+      );
+      let y = Math.min(
+        (rows - at.y - at.height) * CELL,
+        Math.max(-at.y * CELL, event.translationY / camera.scale.value),
+      );
+      // Never onto something else: it stops against it, and slides along it if it can.
+      const hits = (ox: number, oy: number) =>
+        clashes(
+          { x: at.x + ox / CELL, y: at.y + oy / CELL, width: at.width, height: at.height },
+          tiles,
+          tileKey,
+        ).length > 0;
+      if (hits(x, y)) {
+        if (!hits(x, fy.value)) y = fy.value;
+        else if (!hits(fx.value, y)) x = fx.value;
+        else {
+          x = fx.value;
+          y = fy.value;
+        }
+      }
+      fx.value = x;
+      fy.value = y;
+      // The cells it would land on: the nearest, or the last it could if those are taken.
+      const cellX = Math.round(x / CELL);
+      const cellY = Math.round(y / CELL);
+      const landing = {
+        x: at.x + cellX,
+        y: at.y + cellY,
+        width: at.width,
+        height: at.height,
+      };
+      if (clashes(landing, tiles, tileKey).length > 0) return;
+      dx.value = cellX;
+      dy.value = cellY;
     })
     .onEnd(() => {
       if (sizing.value) return;
@@ -620,7 +632,11 @@ function EditableTile({
             dw={dw}
             dh={dh}
             sizing={sizing}
-            check={check}
+            fits={(width, height) => {
+              "worklet";
+              const at = { x: rect.x, y: rect.y, width, height };
+              return fitsIn(at, columns, rows) && clashes(at, tiles, tileKey).length === 0;
+            }}
             onSize={setLiveSize}
             onEnd={() => {
               "worklet";
@@ -635,7 +651,12 @@ function EditableTile({
           <View
             pointerEvents="none"
             className="rounded-full bg-ink px-2 py-0.5"
-            style={{ position: "absolute", right: -GRIP / 2, top: "100%", marginTop: GRIP / 2 + 6 }}
+            style={{
+              position: "absolute",
+              right: -CHEVRON_OUT,
+              top: "100%",
+              marginTop: CHEVRON_OUT + 8,
+            }}
           >
             <Text className="text-[11px] font-medium text-white">{liveSize}</Text>
           </View>
@@ -686,7 +707,10 @@ function TrayGhost({ state, gx, gy, art, name }: Ghost) {
 // The grip on a selected tile's bottom-right corner (⇲): drag it to size the tile a cell at a time,
 // within `range` (a ground's sport's sizes as it lies; an amenity anything from one cell). It's
 // bigger than a corner dot, so it's easy to take hold of, and shows the size it's at while it moves.
-const GRIP = 22;
+const GRIP = 14;
+const CHEVRON_STROKE = 3;
+// How far the chevron sits outside the corner, clear of the selection outline.
+const CHEVRON_OUT = 5;
 
 function Grip({
   rect,
@@ -695,7 +719,7 @@ function Grip({
   dw,
   dh,
   sizing,
-  check,
+  fits,
   onSize,
   onEnd,
 }: {
@@ -705,12 +729,15 @@ function Grip({
   dw: SharedValue<number>;
   dh: SharedValue<number>;
   sizing: SharedValue<boolean>;
-  check: () => void;
+  // Whether it can be this size where it stands: inside the grid, on nothing else.
+  fits: (width: number, height: number) => boolean;
   onSize: (size: string | null) => void;
   onEnd: () => void;
 }) {
   const stretch = Gesture.Pan()
-    .hitSlop(12)
+    // Easy to take hold of from inside the tile; only a little way out, so a tap on the tile next
+    // door still reaches it.
+    .hitSlop({ left: 18, top: 18, right: 6, bottom: 6 })
     .onBegin(() => {
       sizing.value = true;
       camera.busy.value = true;
@@ -725,11 +752,18 @@ function Grip({
         range.height[1],
         Math.max(range.height[0], rect.height + Math.round(event.translationY / step)),
       );
-      if (width - rect.width === dw.value && height - rect.height === dh.value) return;
-      dw.value = width - rect.width;
-      dh.value = height - rect.height;
-      check();
-      runOnJS(onSize)(`${String(width)} × ${String(height)}`);
+      // It stops growing at the grid's edge or against something else, either way on its own.
+      let w = width;
+      let h = height;
+      if (!fits(w, h)) {
+        if (fits(w, rect.height + dh.value)) h = rect.height + dh.value;
+        else if (fits(rect.width + dw.value, h)) w = rect.width + dw.value;
+        else return;
+      }
+      if (w - rect.width === dw.value && h - rect.height === dh.value) return;
+      dw.value = w - rect.width;
+      dh.value = h - rect.height;
+      runOnJS(onSize)(`${String(w)} × ${String(h)}`);
     })
     .onEnd(() => {
       onEnd();
@@ -739,20 +773,23 @@ function Grip({
       camera.busy.value = false;
       runOnJS(onSize)(null);
     });
+  // A chevron at 45°, its point on the tile's corner and pointing out of it (⌟): two strokes along
+  // the bottom and right edges, the way a window's size grip reads.
   return (
     <GestureDetector gesture={stretch}>
       <View
-        className="items-center justify-center rounded-[7px] border-2 border-primary bg-white"
         style={{
           position: "absolute",
           width: GRIP,
           height: GRIP,
-          right: -GRIP / 2,
-          bottom: -GRIP / 2,
+          right: -CHEVRON_OUT,
+          bottom: -CHEVRON_OUT,
+          borderRightWidth: CHEVRON_STROKE,
+          borderBottomWidth: CHEVRON_STROKE,
+          borderColor: colors.primary,
+          borderBottomRightRadius: 3,
         }}
-      >
-        <IconArrowsDiagonal2 size={12} color={colors.primary} strokeWidth={2.25} />
-      </View>
+      />
     </GestureDetector>
   );
 }

@@ -459,7 +459,6 @@ function LayoutView({
               ...plan,
               entrances: plan.entrances.map((e, i) => (i === index ? { side, offset } : e)),
             }),
-          onTrouble: trouble,
         }}
       />
 
@@ -842,6 +841,8 @@ function Actions({
   });
   return (
     <Animated.View
+      // Only its buttons take touches: a tap on the tile it covers goes through to that tile.
+      pointerEvents="box-none"
       className="absolute h-10 flex-row items-center gap-0.5 rounded-full bg-ink px-1.5"
       style={[
         {

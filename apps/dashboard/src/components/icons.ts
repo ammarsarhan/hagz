@@ -80,7 +80,6 @@ export { default as IconCheck } from "@tabler/icons-react-native/IconCheck";
 export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayoutGrid";
 // The venue layout: the entrance marker and the list of what's placed.
 export { default as IconArrowDown } from "@tabler/icons-react-native/IconArrowDown";
-export { default as IconArrowsDiagonal2 } from "@tabler/icons-react-native/IconArrowsDiagonal2";
 export { default as IconDoor } from "@tabler/icons-react-native/IconDoor";
 export { default as IconList } from "@tabler/icons-react-native/IconList";
 export { default as IconRotate } from "@tabler/icons-react-native/IconRotate";
