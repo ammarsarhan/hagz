@@ -13,13 +13,15 @@ model VenueLayout {
 }
 
 // A tile at its top-left cell. Ground footprints come from sport and size (in code), swapped when
-// VERTICAL; owners size the rest. CHECKs: x, y >= 0; GROUND has groundId and orientation and no
-// size; others have neither and a size of 1–4 × 1–4.
+// VERTICAL; owners size amenities. CHECKs: x, y >= 0; GROUND has groundId and orientation and no
+// size; AMENITY has optionId and a size of 1–4 × 1–4. An amenity tile is one the venue offers (its
+// VenueAmenity), so dropping the amenity drops its tiles; it may be placed more than once.
 model VenueLayoutItem {
   id          String             @id @default(uuid(7)) @db.Uuid
   venueId     String             @db.Uuid
   type        LayoutItemType
   groundId    String?            @db.Uuid
+  optionId    String?            @db.Uuid
   x           Int
   y           Int
   orientation GroundOrientation?
@@ -28,9 +30,11 @@ model VenueLayoutItem {
   createdAt   DateTime           @default(now()) @db.Timestamptz
   updatedAt   DateTime           @updatedAt @db.Timestamptz
 
-  layout VenueLayout @relation(fields: [venueId], references: [venueId], onDelete: Cascade)
-  ground Ground?     @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+  layout  VenueLayout   @relation(fields: [venueId], references: [venueId], onDelete: Cascade)
+  ground  Ground?       @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Cascade)
+  amenity VenueAmenity? @relation(fields: [venueId, optionId], references: [venueId, optionId], onDelete: Cascade)
 
   @@unique([groundId, venueId]) // Each ground placed at most once.
   @@index([venueId])
+  @@index([optionId])
 }

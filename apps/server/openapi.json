@@ -204,13 +204,18 @@
           },
           "icon": {
             "$ref": "#/components/schemas/AmenityIcon"
+          },
+          "placeable": {
+            "type": "boolean",
+            "description": "Venues can place it on their layout."
           }
         },
         "required": [
           "id",
           "key",
           "name",
-          "icon"
+          "icon",
+          "placeable"
         ]
       },
       "AmenityIcon": {
@@ -2558,10 +2563,10 @@
             },
             "maxItems": 100
           },
-          "facilities": {
+          "amenities": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PlacedFacility"
+              "$ref": "#/components/schemas/PlacedAmenity"
             },
             "maxItems": 50
           },
@@ -2583,16 +2588,25 @@
               "format": "uuid"
             },
             "description": "Grounds not on the layout yet."
+          },
+          "placeableOptionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The venue's amenities that can go on the layout, placed or not."
           }
         },
         "required": [
           "columns",
           "rows",
           "grounds",
-          "facilities",
+          "amenities",
           "entrances",
           "saved",
-          "unplacedGroundIds"
+          "unplacedGroundIds",
+          "placeableOptionIds"
         ]
       },
       "PlacedGround": {
@@ -2632,11 +2646,13 @@
         ],
         "description": "`VERTICAL` swaps the footprint's width and height."
       },
-      "PlacedFacility": {
+      "PlacedAmenity": {
         "type": "object",
         "properties": {
-          "type": {
-            "$ref": "#/components/schemas/FacilityType"
+          "optionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "One of the venue's amenities whose option is placeable. It can go down more than once."
           },
           "x": {
             "type": "integer",
@@ -2660,21 +2676,11 @@
           }
         },
         "required": [
-          "type",
+          "optionId",
           "x",
           "y",
           "width",
           "height"
-        ]
-      },
-      "FacilityType": {
-        "type": "string",
-        "enum": [
-          "CAFE",
-          "TOILETS",
-          "CHANGING_ROOMS",
-          "PARKING",
-          "SEATING"
         ]
       },
       "Entrance": {
@@ -2724,10 +2730,10 @@
             },
             "maxItems": 100
           },
-          "facilities": {
+          "amenities": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PlacedFacility"
+              "$ref": "#/components/schemas/PlacedAmenity"
             },
             "maxItems": 50
           },
@@ -2743,7 +2749,7 @@
           "columns",
           "rows",
           "grounds",
-          "facilities",
+          "amenities",
           "entrances"
         ]
       },
@@ -3973,6 +3979,10 @@
             "type": "boolean",
             "description": "Inactive options can't be newly picked."
           },
+          "placeable": {
+            "type": "boolean",
+            "description": "Venues can place it on their layout. Turning it off takes it off every layout."
+          },
           "venueCount": {
             "type": "integer"
           }
@@ -3983,6 +3993,7 @@
           "names",
           "icon",
           "isActive",
+          "placeable",
           "venueCount"
         ]
       },
@@ -3999,6 +4010,11 @@
           },
           "icon": {
             "$ref": "#/components/schemas/AmenityIcon"
+          },
+          "placeable": {
+            "type": "boolean",
+            "default": false,
+            "description": "Venues can place it on their layout."
           }
         },
         "required": [
@@ -4017,6 +4033,9 @@
             "$ref": "#/components/schemas/AmenityIcon"
           },
           "isActive": {
+            "type": "boolean"
+          },
+          "placeable": {
             "type": "boolean"
           }
         }

@@ -9,7 +9,8 @@ import {
 import { AppError } from "@/platform/errors/app-error";
 
 // The venue layout (PR 2.5): a grid of about 10 m cells with grounds at fixed footprints and
-// facilities sized 1–4 cells, all inside the grid and never overlapping (docs: venue layout design).
+// placeable amenities sized 1–4 cells, all inside the grid and never overlapping (docs: venue
+// layout design).
 
 export type Orientation = "HORIZONTAL" | "VERTICAL";
 
@@ -53,11 +54,13 @@ export const invalidLayout = (
   new AppError({ code: "INVALID_LAYOUT", status: 422, detail, extensions: { reason, ...extra } });
 
 // Checks a whole layout before it's saved: every tile inside the grid, nothing overlapping, each of
-// the venue's grounds at most once, and entrances on their side. `grounds` are the venue's
-// grounds that can be placed (not deleted).
+// the venue's grounds at most once, amenities only ones the venue offers that can be placed, and
+// entrances on their side. `grounds` are the venue's grounds that can be placed (not deleted);
+// `amenities` the option ids of its placeable amenities.
 export const validateLayout = (
   layout: VenueLayout,
   grounds: Map<string, { sport: GroundSport; size: GroundSize }>,
+  amenities: Set<string>,
 ) => {
   const seen = new Set<string>();
   const tiles: { label: string; rect: Rect }[] = [];
@@ -83,8 +86,15 @@ export const validateLayout = (
       },
     });
   }
-  layout.facilities.forEach((facility, i) => {
-    tiles.push({ label: `facility:${i}`, rect: facility });
+  layout.amenities.forEach((amenity, i) => {
+    if (!amenities.has(amenity.optionId)) {
+      throw invalidLayout(
+        "UNKNOWN_AMENITY",
+        "That amenity isn't one this venue offers, or it can't go on a layout.",
+        { optionId: amenity.optionId },
+      );
+    }
+    tiles.push({ label: `amenity:${String(i)}`, rect: amenity });
   });
 
   for (const tile of tiles) {

@@ -128,11 +128,7 @@ enum SlotStatus {
 // Layouts
 enum LayoutItemType {
   GROUND
-  CAFE
-  TOILETS
-  CHANGING_ROOMS
-  PARKING
-  SEATING
+  AMENITY // One of the venue's amenities whose option is placeable.
 }
 
 enum GroundOrientation {

@@ -435,6 +435,45 @@ describe("admin amenities", () => {
     expect(off.body).toMatchObject({ icon: "bike_parking", isActive: false });
   });
 
+  it("can go on venue layouts, and leave every one when that's turned off", async () => {
+    const { id } = await createMarketplace();
+    expect(AdminAmenity.parse((await addAmenity(id, "wifi")).body).placeable).toBe(false);
+    const parking = AdminAmenity.parse(
+      (
+        await request("POST", `/admin/marketplaces/${id}/amenities`, {
+          key: "parking",
+          names: { en: "Parking", ar: "موقف سيارات" },
+          icon: "parking",
+          placeable: true,
+        })
+      ).body,
+    );
+    expect(parking.placeable).toBe(true);
+
+    // A venue with parking drawn on its layout.
+    const venue = await createVenue(id);
+    await prisma.venueAmenity.create({
+      data: { venueId: venue.id, optionId: parking.id, marketplaceId: id },
+    });
+    await prisma.venueLayout.create({
+      data: {
+        venueId: venue.id,
+        columns: 16,
+        rows: 19,
+        items: {
+          create: { type: "AMENITY", optionId: parking.id, x: 0, y: 0, width: 2, height: 2 },
+        },
+      },
+    });
+
+    const off = await request("PATCH", `/admin/amenities/${parking.id}`, { placeable: false });
+    expect(off.status).toBe(200);
+    expect(off.body).toMatchObject({ placeable: false, isActive: true });
+    expect(await prisma.venueLayoutItem.count({ where: { venueId: venue.id } })).toBe(0);
+    // The venue still offers it; it just isn't drawn.
+    expect(await prisma.venueAmenity.count({ where: { venueId: venue.id } })).toBe(1);
+  });
+
   it("delete only while no venue offers them", async () => {
     const { id } = await createMarketplace();
     const parking = AdminAmenity.parse((await addAmenity(id, "parking")).body);
@@ -498,7 +537,7 @@ describe("public reference data", () => {
       ).json(),
     ).data;
     expect(amenities).toEqual([
-      { id: parking.id, key: "parking", name: "Parking", icon: "parking" },
+      { id: parking.id, key: "parking", name: "Parking", icon: "parking", placeable: false },
     ]);
   });
 

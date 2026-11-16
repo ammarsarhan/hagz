@@ -9,6 +9,9 @@ const grounds = new Map<string, { sport: GroundSport; size: GroundSize }>([
   ["b", seven],
 ]);
 
+// The venue's placeable amenities, by option id.
+const amenities = new Set(["cafe", "parking"]);
+
 const layout = (overrides: Partial<VenueLayout> = {}): VenueLayout => ({
   columns: 16,
   rows: 19,
@@ -16,7 +19,7 @@ const layout = (overrides: Partial<VenueLayout> = {}): VenueLayout => ({
     { groundId: "a", x: 1, y: 1, orientation: "HORIZONTAL" },
     { groundId: "b", x: 1, y: 5, orientation: "HORIZONTAL" },
   ],
-  facilities: [{ type: "CAFE", x: 9, y: 5, width: 3, height: 2 }],
+  amenities: [{ optionId: "cafe", x: 9, y: 5, width: 3, height: 2 }],
   entrances: [{ side: "BOTTOM", offset: 8 }],
   ...overrides,
 });
@@ -39,10 +42,10 @@ describe("footprints", () => {
 });
 
 describe("validating a layout", () => {
-  it("accepts grounds, facilities and entrances that fit", () => {
+  it("accepts grounds, amenities and entrances that fit", () => {
     expect(
       reason(() => {
-        validateLayout(layout(), grounds);
+        validateLayout(layout(), grounds, amenities);
       }),
     ).toBeNull();
   });
@@ -50,32 +53,32 @@ describe("validating a layout", () => {
   it("keeps everything inside the grid, so shrinking can't cut tiles off", () => {
     expect(
       reason(() => {
-        validateLayout(layout({ columns: 6 }), grounds);
+        validateLayout(layout({ columns: 6 }), grounds, amenities);
       }),
     ).toBe("OUT_OF_BOUNDS");
     const turned = layout({
       grounds: [{ groundId: "b", x: 0, y: 14, orientation: "VERTICAL" }],
-      facilities: [],
+      amenities: [],
     });
     expect(
       reason(() => {
-        validateLayout(turned, grounds);
+        validateLayout(turned, grounds, amenities);
       }),
     ).toBe("OUT_OF_BOUNDS");
   });
 
-  it("refuses overlaps, between grounds and facilities alike", () => {
-    const onTop = layout({ facilities: [{ type: "CAFE", x: 2, y: 6, width: 1, height: 1 }] });
+  it("refuses overlaps, between grounds and amenities alike", () => {
+    const onTop = layout({ amenities: [{ optionId: "cafe", x: 2, y: 6, width: 1, height: 1 }] });
     expect(
       reason(() => {
-        validateLayout(onTop, grounds);
+        validateLayout(onTop, grounds, amenities);
       }),
     ).toBe("OVERLAP");
     // Touching edges is fine.
-    const beside = layout({ facilities: [{ type: "CAFE", x: 7, y: 5, width: 2, height: 2 }] });
+    const beside = layout({ amenities: [{ optionId: "cafe", x: 7, y: 5, width: 2, height: 2 }] });
     expect(
       reason(() => {
-        validateLayout(beside, grounds);
+        validateLayout(beside, grounds, amenities);
       }),
     ).toBeNull();
   });
@@ -86,7 +89,7 @@ describe("validating a layout", () => {
     });
     expect(
       reason(() => {
-        validateLayout(stranger, grounds);
+        validateLayout(stranger, grounds, amenities);
       }),
     ).toBe("UNKNOWN_GROUND");
     const twice = layout({
@@ -94,20 +97,41 @@ describe("validating a layout", () => {
         { groundId: "a", x: 0, y: 0, orientation: "HORIZONTAL" },
         { groundId: "a", x: 0, y: 10, orientation: "HORIZONTAL" },
       ],
-      facilities: [],
+      amenities: [],
     });
     expect(
       reason(() => {
-        validateLayout(twice, grounds);
+        validateLayout(twice, grounds, amenities);
       }),
     ).toBe("DUPLICATE_GROUND");
+  });
+
+  it("only places the venue's placeable amenities, as often as it likes", () => {
+    const wifi = layout({ amenities: [{ optionId: "wifi", x: 9, y: 5, width: 1, height: 1 }] });
+    expect(
+      reason(() => {
+        validateLayout(wifi, grounds, amenities);
+      }),
+    ).toBe("UNKNOWN_AMENITY");
+    // Two car parks.
+    const twice = layout({
+      amenities: [
+        { optionId: "parking", x: 9, y: 5, width: 2, height: 2 },
+        { optionId: "parking", x: 12, y: 5, width: 2, height: 2 },
+      ],
+    });
+    expect(
+      reason(() => {
+        validateLayout(twice, grounds, amenities);
+      }),
+    ).toBeNull();
   });
 
   it("keeps entrances on their side, one per spot", () => {
     const past = layout({ entrances: [{ side: "LEFT", offset: 19 }] });
     expect(
       reason(() => {
-        validateLayout(past, grounds);
+        validateLayout(past, grounds, amenities);
       }),
     ).toBe("ENTRANCE_OUT_OF_RANGE");
     const same = layout({
@@ -118,7 +142,7 @@ describe("validating a layout", () => {
     });
     expect(
       reason(() => {
-        validateLayout(same, grounds);
+        validateLayout(same, grounds, amenities);
       }),
     ).toBe("DUPLICATE_ENTRANCE");
   });

@@ -8420,6 +8420,8 @@ export interface components {
             /** @description In the requested language. */
             name: string;
             icon: components["schemas"]["AmenityIcon"];
+            /** @description Venues can place it on their layout. */
+            placeable: boolean;
         };
         /**
          * @description Hagz's own icon name; each app draws it.
@@ -9132,12 +9134,14 @@ export interface components {
             columns: number;
             rows: number;
             grounds: components["schemas"]["PlacedGround"][];
-            facilities: components["schemas"]["PlacedFacility"][];
+            amenities: components["schemas"]["PlacedAmenity"][];
             entrances: components["schemas"]["Entrance"][];
             /** @description False until the first save: a suggested empty grid. */
             saved: boolean;
             /** @description Grounds not on the layout yet. */
             unplacedGroundIds: string[];
+            /** @description The venue's amenities that can go on the layout, placed or not. */
+            placeableOptionIds: string[];
         };
         /** @description Top-left cell; the footprint comes from the ground. */
         PlacedGround: {
@@ -9152,15 +9156,17 @@ export interface components {
          * @enum {string}
          */
         Orientation: "HORIZONTAL" | "VERTICAL";
-        PlacedFacility: {
-            type: components["schemas"]["FacilityType"];
+        PlacedAmenity: {
+            /**
+             * Format: uuid
+             * @description One of the venue's amenities whose option is placeable. It can go down more than once.
+             */
+            optionId: string;
             x: number;
             y: number;
             width: number;
             height: number;
         };
-        /** @enum {string} */
-        FacilityType: "CAFE" | "TOILETS" | "CHANGING_ROOMS" | "PARKING" | "SEATING";
         Entrance: {
             side: components["schemas"]["EntranceSide"];
             /** @description Cells from the side's start (left or top). */
@@ -9172,7 +9178,7 @@ export interface components {
             columns: number;
             rows: number;
             grounds: components["schemas"]["PlacedGround"][];
-            facilities: components["schemas"]["PlacedFacility"][];
+            amenities: components["schemas"]["PlacedAmenity"][];
             entrances: components["schemas"]["Entrance"][];
         };
         VenueMember: {
@@ -9619,6 +9625,8 @@ export interface components {
             icon: components["schemas"]["AmenityIcon"];
             /** @description Inactive options can't be newly picked. */
             isActive: boolean;
+            /** @description Venues can place it on their layout. Turning it off takes it off every layout. */
+            placeable: boolean;
             venueCount: number;
         };
         CreateAmenity: {
@@ -9626,11 +9634,17 @@ export interface components {
             key: string;
             names: components["schemas"]["Names"];
             icon: components["schemas"]["AmenityIcon"];
+            /**
+             * @description Venues can place it on their layout.
+             * @default false
+             */
+            placeable: boolean;
         };
         UpdateAmenity: {
             names?: components["schemas"]["Names"];
             icon?: components["schemas"]["AmenityIcon"];
             isActive?: boolean;
+            placeable?: boolean;
         };
         AdminVenue: {
             /** Format: uuid */

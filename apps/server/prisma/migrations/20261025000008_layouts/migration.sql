@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "LayoutItemType" AS ENUM ('GROUND', 'CAFE', 'TOILETS', 'CHANGING_ROOMS', 'PARKING', 'SEATING');
+CREATE TYPE "LayoutItemType" AS ENUM ('GROUND', 'AMENITY');
 
 -- CreateEnum
 CREATE TYPE "GroundOrientation" AS ENUM ('HORIZONTAL', 'VERTICAL');
@@ -22,6 +22,7 @@ CREATE TABLE "VenueLayoutItem" (
     "venueId" UUID NOT NULL,
     "type" "LayoutItemType" NOT NULL,
     "groundId" UUID,
+    "optionId" UUID,
     "x" INTEGER NOT NULL,
     "y" INTEGER NOT NULL,
     "orientation" "GroundOrientation",
@@ -37,6 +38,9 @@ CREATE TABLE "VenueLayoutItem" (
 CREATE INDEX "VenueLayoutItem_venueId_idx" ON "VenueLayoutItem"("venueId");
 
 -- CreateIndex
+CREATE INDEX "VenueLayoutItem_optionId_idx" ON "VenueLayoutItem"("optionId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "VenueLayoutItem_groundId_venueId_key" ON "VenueLayoutItem"("groundId", "venueId");
 
 -- AddForeignKey
@@ -47,6 +51,9 @@ ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_venueId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_groundId_venueId_fkey" FOREIGN KEY ("groundId", "venueId") REFERENCES "Ground"("id", "venueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_venueId_optionId_fkey" FOREIGN KEY ("venueId", "optionId") REFERENCES "VenueAmenity"("venueId", "optionId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueLayout" ADD CONSTRAINT "VenueLayout_size_check"
@@ -59,7 +66,8 @@ ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_position_check"
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_kind_check"
   CHECK (
-    (type = 'GROUND' AND "groundId" IS NOT NULL AND orientation IS NOT NULL AND width IS NULL AND height IS NULL)
-    OR (type <> 'GROUND' AND "groundId" IS NULL AND orientation IS NULL AND width IS NOT NULL AND height IS NOT NULL
-        AND width BETWEEN 1 AND 4 AND height BETWEEN 1 AND 4)
+    (type = 'GROUND' AND "groundId" IS NOT NULL AND "optionId" IS NULL AND orientation IS NOT NULL
+        AND width IS NULL AND height IS NULL)
+    OR (type = 'AMENITY' AND "optionId" IS NOT NULL AND "groundId" IS NULL AND orientation IS NULL
+        AND width IS NOT NULL AND height IS NOT NULL AND width BETWEEN 1 AND 4 AND height BETWEEN 1 AND 4)
   );

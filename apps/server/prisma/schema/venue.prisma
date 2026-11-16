@@ -147,8 +147,9 @@ model VenueAmenity {
   price         Int? // Minor units.
   pricing       AmenityPricing?
 
-  venue  Venue         @relation(fields: [venueId, marketplaceId], references: [id, marketplaceId], onDelete: Cascade)
-  option AmenityOption @relation(fields: [optionId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  venue  Venue             @relation(fields: [venueId, marketplaceId], references: [id, marketplaceId], onDelete: Cascade)
+  option AmenityOption     @relation(fields: [optionId, marketplaceId], references: [id, marketplaceId], onDelete: Restrict)
+  tiles  VenueLayoutItem[]
 
   @@id([venueId, optionId])
   @@index([optionId])
