@@ -121,17 +121,17 @@ export default function CreateVenuePlace() {
   // Until the list arrives, the country is taken as covered and the API has the last word.
   const inMarketplace =
     !marketplaces.data || marketplaces.data.some((marketplace) => marketplace.code === country);
+  // Looked up while the pin is being placed, once the map has settled, so the area step opens on
+  // its answer rather than a spinner that turns into a different card.
+  const lookUp = (stage === "area" || (stage === "pin" && !locating)) && inMarketplace;
   // The area whose centre is nearest the pin, which the owner confirms or changes. Not Google's
   // address: in Egypt it names police districts, so a pin in Smouha would come back "Sidi Gaber".
-  const nearest = useQuery({
-    ...areas.nearest(country, pin),
-    enabled: stage === "area" && inMarketplace,
-  });
+  const nearest = useQuery({ ...areas.nearest(country, pin), enabled: lookUp });
   // Whether any area is in reach at all: the picker's own first page (nearest first), so opening
   // it afterwards is already loaded. A failed look leaves it to the API rather than blocking.
   const reach = useQuery({
     ...areas.search(country, "", pin),
-    enabled: stage === "area" && inMarketplace,
+    enabled: lookUp,
     select: (found) => found.some(withinReach),
   });
   const coverage: Coverage = !inMarketplace
@@ -141,6 +141,15 @@ export default function CreateVenuePlace() {
       : reach.data === false
         ? "outside"
         : "checking";
+  // Enough is known to draw the area step: whether there's coverage, and if so the nearest area.
+  const areaKnown = coverage !== "checking" && (coverage !== "covered" || !nearest.isPending);
+  // Continue was tapped before that: the button waits, then the step opens.
+  const [advancing, setAdvancing] = useState(false);
+  useEffect(() => {
+    if (!advancing || !areaKnown) return;
+    setAdvancing(false);
+    setStage("area");
+  }, [advancing, areaKnown]);
   const area = requestedArea ? null : (chosenArea ?? nearest.data ?? null);
   const label = requestedArea
     ? { name: requestedArea, within: t("screens.createVenue.place.requestedNote") }
@@ -270,6 +279,8 @@ export default function CreateVenuePlace() {
   };
 
   const back = () => {
+    // A Continue still waiting on the area lookup doesn't carry on once they've gone back.
+    setAdvancing(false);
     if (stage === "area") return setStage("pin");
     if (stage === "pin") return setStage("find");
     router.back();
@@ -443,7 +454,12 @@ export default function CreateVenuePlace() {
             }
             action={t("common.actions.continue")}
             disabled={stage === "find" ? !placed : locating}
-            onPress={() => setStage(stage === "find" ? "pin" : "area")}
+            loading={advancing}
+            onPress={() => {
+              if (stage === "find") return setStage("pin");
+              if (areaKnown) setStage("area");
+              else setAdvancing(true);
+            }}
           />
         )}
       </View>
@@ -576,18 +592,20 @@ function Step({
   body,
   action,
   disabled,
+  loading = false,
   onPress,
 }: {
   title: string;
   body: string;
   action: string;
   disabled: boolean;
+  loading?: boolean;
   onPress: () => void;
 }) {
   return (
     <>
       <Heading title={title} body={body} />
-      <Button label={action} disabled={disabled} onPress={onPress} />
+      <Button label={action} disabled={disabled} loading={loading} onPress={onPress} />
     </>
   );
 }
