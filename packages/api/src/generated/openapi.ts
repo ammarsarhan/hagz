@@ -8867,6 +8867,11 @@ export interface components {
                 status: components["schemas"]["VenueStatus"];
                 /** @description In `Accept-Language`, else any language. */
                 name: string | null;
+                /**
+                 * Format: date-time
+                 * @description When it was sent for review, while it's in review; null otherwise.
+                 */
+                submittedAt: string | null;
             };
             items: components["schemas"]["SetupItem"][];
             /** @description Counts of required items, for the progress ring and the draft card. */

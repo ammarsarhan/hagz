@@ -1320,13 +1320,22 @@
                   "null"
                 ],
                 "description": "In `Accept-Language`, else any language."
+              },
+              "submittedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When it was sent for review, while it's in review; null otherwise."
               }
             },
             "required": [
               "id",
               "slug",
               "status",
-              "name"
+              "name",
+              "submittedAt"
             ]
           },
           "items": {
