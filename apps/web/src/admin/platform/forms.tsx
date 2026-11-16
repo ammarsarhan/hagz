@@ -290,7 +290,7 @@ function EditButtons({
 }
 
 // An on/off switch with its label and a line under it.
-function Toggle({
+export function Toggle({
   label,
   hint,
   checked,
@@ -338,6 +338,10 @@ function Toggle({
 
 // --- Amenity ---
 
+// What "On venue layouts" means, in the add dialog and the edit panel alike.
+export const PLACEABLE_HINT =
+  "Owners can draw it on their venue's layout, like parking or a café. Turned off, it comes off every layout.";
+
 // Edit amenity, in a side panel over the table.
 export function EditAmenityPanel({
   marketplace,
@@ -355,6 +359,7 @@ export function EditAmenityPanel({
     ar: amenity.names.ar,
     icon: amenity.icon,
     isActive: amenity.isActive,
+    placeable: amenity.placeable,
   };
   const [form, setForm] = useState(initial);
   // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
@@ -365,7 +370,8 @@ export function EditAmenityPanel({
     form.en !== initial.en ||
     form.ar !== initial.ar ||
     form.icon !== initial.icon ||
-    form.isActive !== initial.isActive;
+    form.isActive !== initial.isActive ||
+    form.placeable !== initial.placeable;
   const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
 
   const submit = () => {
@@ -378,6 +384,7 @@ export function EditAmenityPanel({
             names: { en: form.en.trim(), ar: form.ar.trim() },
             icon: form.icon,
             isActive: form.isActive,
+            placeable: form.placeable,
           },
         }),
       ),
@@ -437,6 +444,12 @@ export function EditAmenityPanel({
             hint="Turned off, venues can't newly pick it. Venues that offer it keep it."
             checked={form.isActive}
             onChange={(isActive) => setForm({ ...form, isActive })}
+          />
+          <Toggle
+            label="On venue layouts"
+            hint={PLACEABLE_HINT}
+            checked={form.placeable}
+            onChange={(placeable) => setForm({ ...form, placeable })}
           />
         </PanelSection>
         <PanelSection title="Code">
