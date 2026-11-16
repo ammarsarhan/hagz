@@ -338,7 +338,7 @@ export function Toggle({
 
 // --- Amenity ---
 
-// What "On venue layouts" means, in the add dialog and the edit panel alike.
+// What "Placeable" means, in the add dialog and the edit panel alike.
 export const PLACEABLE_HINT =
   "Owners can draw it on their venue's layout, like parking or a café. Turned off, it comes off every layout.";
 
@@ -440,13 +440,13 @@ export function EditAmenityPanel({
         </PanelSection>
         <PanelSection title="Availability">
           <Toggle
-            label="On for venues"
+            label="Visible"
             hint="Turned off, venues can't newly pick it. Venues that offer it keep it."
             checked={form.isActive}
             onChange={(isActive) => setForm({ ...form, isActive })}
           />
           <Toggle
-            label="On venue layouts"
+            label="Placeable"
             hint={PLACEABLE_HINT}
             checked={form.placeable}
             onChange={(placeable) => setForm({ ...form, placeable })}
