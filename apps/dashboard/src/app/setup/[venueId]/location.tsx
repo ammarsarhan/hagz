@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AreaPicker, type Area } from "@/components/area-picker";
+import { AreaPicker, withinReach, type Area } from "@/components/area-picker";
 import { Button } from "@/components/button";
 import { useHudAnchor } from "@/components/hud";
 import { IconX } from "@/components/icons";
@@ -28,7 +28,8 @@ import { useSaveVenue, type VenueDetail } from "@/lib/venue-edit";
 // picked by hand.
 //
 // A draft can ask for an area Hagz doesn't cover yet, as when it was added: by typing its name in
-// the picker, or from Request coverage under the card. A listed venue can't (UpdateVenue): it must
+// the picker, from Request coverage at the end of the picker's list, or, when no area is in reach
+// of the pin, from Request coverage under the card. A listed venue can't (UpdateVenue): it must
 // stay findable under an area, so it picks from the list only. A venue still waiting on its
 // requested area keeps it until an area is chosen.
 const CLOSE = { latitudeDelta: 0.004, longitudeDelta: 0.004 };
@@ -57,6 +58,7 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
   const [asked, setAsked] = useState<string | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [requestNext, setRequestNext] = useState(false);
   const [cardHeight, setCardHeight] = useState(0);
   // No Screen here to say where the HUD goes (a failed save shows one): it sits on the card.
   useHudAnchor(cardHeight);
@@ -68,6 +70,13 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
     ...areas.nearest(country, pin),
     enabled: moved && !picked && !asked,
   });
+  // Whether any area is in reach of the pin: the picker's own first page, nearest first, so it's
+  // already loaded when the picker opens. Only a draft can request, so only a draft asks.
+  const outside = useQuery({
+    ...areas.search(country, "", pin),
+    enabled: draft,
+    select: (found) => !found.some(withinReach),
+  }).data;
   const current = venue.location;
   const area: { id: string; name: string; within: string } | null = asked
     ? null
@@ -165,7 +174,7 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
           change={t("screens.setup.location.changeArea")}
           onChange={() => setChoosing(true)}
         />
-        {draft ? (
+        {draft && outside ? (
           <CardLink
             label={t(
               asked
@@ -200,6 +209,15 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         onRequest={(name) => {
           ask(name);
           setChoosing(false);
+        }}
+        onRequestCoverage={() => {
+          setRequestNext(true);
+          setChoosing(false);
+        }}
+        onHidden={() => {
+          if (!requestNext) return;
+          setRequestNext(false);
+          setRequesting(true);
         }}
       />
       <RequestAreaSheet
