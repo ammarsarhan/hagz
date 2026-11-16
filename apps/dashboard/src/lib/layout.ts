@@ -1,19 +1,40 @@
-import { FOOTPRINTS, type Orientation } from "@hagz/contracts";
+import { FOOTPRINT_RANGES, FOOTPRINTS, type Orientation } from "@hagz/contracts";
 import type { Ground } from "./grounds";
 
 // The venue layout's geometry (Figma "Layout", 376:2–378:2). A cell is 22 pt at zoom 1, which is
 // how the frames draw a 16 × 19 venue across a phone: a 5-a-side pitch (4 × 2 cells) is 88 × 44.
 export const CELL = 22;
 
-// A ground's size in cells, as placed: footprints are landscape, and VERTICAL turns them.
-export const footprintOf = (
+type Size = { width: number; height: number };
+type Range = readonly [number, number];
+
+// A size as it lies on the grid: grounds are stored landscape (length × breadth), and VERTICAL
+// turns them. Turning twice is the way back, so this also takes a lying size back to landscape.
+export const oriented = (size: Size, orientation: Orientation): Size => {
+  "worklet";
+  return orientation === "VERTICAL"
+    ? { width: size.height, height: size.width }
+    : { width: size.width, height: size.height };
+};
+
+// The size a ground is placed at to start with (its sport's default), landscape.
+export const defaultFootprint = (ground: Pick<Ground, "sport" | "size">): Size =>
+  FOOTPRINTS[ground.sport][ground.size] ?? { width: 1, height: 1 };
+
+// A ground's default size as it lies.
+export const footprintOf = (ground: Pick<Ground, "sport" | "size">, orientation: Orientation) =>
+  oriented(defaultFootprint(ground), orientation);
+
+// How far a ground can be sized as it lies (FOOTPRINT_RANGES, turned with it).
+export const footprintRange = (
   ground: Pick<Ground, "sport" | "size">,
   orientation: Orientation,
-): { width: number; height: number } => {
-  const landscape = FOOTPRINTS[ground.sport][ground.size] ?? { width: 1, height: 1 };
-  return orientation === "VERTICAL"
-    ? { width: landscape.height, height: landscape.width }
-    : landscape;
+): { width: Range; height: Range } => {
+  const range = FOOTPRINT_RANGES[ground.sport][ground.size] ?? {
+    width: [1, 1] as const,
+    height: [1, 1] as const,
+  };
+  return orientation === "VERTICAL" ? { width: range.height, height: range.width } : range;
 };
 
 // --- Placing things ---

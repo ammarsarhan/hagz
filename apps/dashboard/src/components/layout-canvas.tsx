@@ -1,10 +1,12 @@
 import type { components } from "@hagz/api";
 import type { EntranceSide, VenueLayout } from "@hagz/contracts";
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+  FadeIn,
+  LayoutAnimationConfig,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -14,9 +16,17 @@ import Animated, {
 import { colors } from "@/lib/colors";
 import type { Ground } from "@/lib/grounds";
 import { MAXIMUM_LAYOUT_CELLS } from "@hagz/contracts";
-import { CELL, clashes, fitsIn, footprintOf, type Rect, type Tile } from "@/lib/layout";
+import {
+  CELL,
+  clashes,
+  fitsIn,
+  footprintRange,
+  oriented,
+  type Rect,
+  type Tile,
+} from "@/lib/layout";
 import { AmenityIcon } from "./amenity-icon";
-import { IconArrowDown } from "./icons";
+import { IconArrowDown, IconArrowsDiagonal2 } from "./icons";
 import { Text } from "./text";
 
 type Amenity = components["schemas"]["Amenity"];
@@ -36,13 +46,20 @@ type Amenity = components["schemas"]["Amenity"];
 // one big SVG: an SVG's bitmap grows with its size times the zoom, and would run to hundreds of MB.
 
 const ZOOM = { duration: 220 };
+// Something new on the layout fades in rather than popping.
+const APPEAR = FadeIn.duration(200);
 // Gliding into place on a drop, or back where it came from.
 const GLIDE = { duration: 200 };
 // Easing between cells while sizing, and an entrance between cells as it's dragged.
 const STEP = { duration: 120 };
 // How much of the venue must stay on screen while it's dragged about.
 const KEEP = 60;
-const MAX_AMENITY = 4;
+type SizeRange = { width: readonly [number, number]; height: readonly [number, number] };
+// An amenity can be any size from a cell; the grid's edges and what's around it stop it growing.
+const ANY_SIZE: SizeRange = {
+  width: [1, MAXIMUM_LAYOUT_CELLS],
+  height: [1, MAXIMUM_LAYOUT_CELLS],
+};
 
 export interface Camera {
   scale: SharedValue<number>;
@@ -309,61 +326,69 @@ export function LayoutCanvas({
                 />
               ))
             : null}
-          {layout.grounds.map((placed) => {
-            const ground = grounds.get(placed.groundId);
-            if (!ground) return null;
-            const key = `g:${placed.groundId}`;
-            const name = ground.name ?? t("screens.setup.grounds.unnamed");
-            return (
-              <EditableTile
-                key={key}
-                tileKey={key}
-                name={name}
-                rect={{ x: placed.x, y: placed.y, ...footprintOf(ground, placed.orientation) }}
-                selected={editing.selected === key}
-                onDrop={editing.onMove}
-                {...shared}
-              >
-                {(size) => <GroundArt name={name} width={size.width} height={size.height} />}
-              </EditableTile>
-            );
-          })}
-          {layout.amenities.map((placed, index) => {
-            const amenity = amenities.get(placed.optionId);
-            if (!amenity) return null;
-            const key = `a:${String(index)}`;
-            return (
-              <EditableTile
-                key={key}
-                tileKey={key}
-                name={amenity.name}
-                rect={placed}
-                selected={editing.selected === key}
-                onDrop={editing.onMove}
-                onResize={editing.onResize}
-                {...shared}
-              >
-                {() => <AmenityArt amenity={amenity} columns={placed.width} rows={placed.height} />}
-              </EditableTile>
-            );
-          })}
-          {layout.entrances.map((entrance, index) => (
-            <EntranceTag
-              key={`e:${String(index)}`}
-              index={index}
-              side={entrance.side}
-              offset={entrance.offset}
-              columns={layout.columns}
-              rows={layout.rows}
-              others={layout.entrances.filter((_, other) => other !== index)}
-              selected={editing.selected === `e:${String(index)}`}
-              readOnly={editing.readOnly}
-              camera={camera}
-              onSelect={editing.onSelect}
-              onMove={editing.onMoveEntrance}
-            />
-          ))}
-          {ghost ? <TrayGhost {...ghost} /> : null}
+          {/* What's there when the screen opens just appears; anything added after fades in. */}
+          <LayoutAnimationConfig skipEntering>
+            {layout.grounds.map((placed) => {
+              const ground = grounds.get(placed.groundId);
+              if (!ground) return null;
+              const key = `g:${placed.groundId}`;
+              const name = ground.name ?? t("screens.setup.grounds.unnamed");
+              return (
+                <EditableTile
+                  key={key}
+                  tileKey={key}
+                  name={name}
+                  rect={{ x: placed.x, y: placed.y, ...oriented(placed, placed.orientation) }}
+                  selected={editing.selected === key}
+                  onDrop={editing.onMove}
+                  onResize={editing.onResize}
+                  range={footprintRange(ground, placed.orientation)}
+                  {...shared}
+                >
+                  {(size) => <GroundArt name={name} width={size.width} height={size.height} />}
+                </EditableTile>
+              );
+            })}
+            {layout.amenities.map((placed, index) => {
+              const amenity = amenities.get(placed.optionId);
+              if (!amenity) return null;
+              const key = `a:${String(index)}`;
+              return (
+                <EditableTile
+                  key={key}
+                  tileKey={key}
+                  name={amenity.name}
+                  rect={placed}
+                  selected={editing.selected === key}
+                  onDrop={editing.onMove}
+                  onResize={editing.onResize}
+                  range={ANY_SIZE}
+                  {...shared}
+                >
+                  {() => (
+                    <AmenityArt amenity={amenity} columns={placed.width} rows={placed.height} />
+                  )}
+                </EditableTile>
+              );
+            })}
+            {layout.entrances.map((entrance, index) => (
+              <EntranceTag
+                key={`e:${String(index)}`}
+                index={index}
+                side={entrance.side}
+                offset={entrance.offset}
+                columns={layout.columns}
+                rows={layout.rows}
+                others={layout.entrances.filter((_, other) => other !== index)}
+                selected={editing.selected === `e:${String(index)}`}
+                readOnly={editing.readOnly}
+                camera={camera}
+                onSelect={editing.onSelect}
+                onMove={editing.onMoveEntrance}
+              />
+            ))}
+            {ghost ? <TrayGhost {...ghost} /> : null}
+          </LayoutAnimationConfig>
         </Animated.View>
       </View>
     </GestureDetector>
@@ -388,6 +413,7 @@ function EditableTile({
   onTrouble,
   onDrop,
   onResize,
+  range,
   children,
 }: {
   tileKey: string;
@@ -403,8 +429,12 @@ function EditableTile({
   onTrouble: (trouble: Trouble) => void;
   onDrop: (key: string, x: number, y: number) => void;
   onResize?: (key: string, rect: Rect) => void;
+  // How far its grip can size it, as it lies.
+  range?: SizeRange;
   children: (size: { width: number; height: number }) => ReactNode;
 }) {
+  // The size it's at while its grip is dragged ("5 × 3").
+  const [liveSize, setLiveSize] = useState<string | null>(null);
   // Where it stands (from above) and how far it's been moved or stretched, in cells. Both live on
   // the UI thread and change together when a drop lands, so it never shows the move twice.
   const base = useSharedValue(rect);
@@ -555,6 +585,7 @@ function EditableTile({
       <Animated.View
         accessibilityRole="button"
         accessibilityLabel={name}
+        entering={APPEAR}
         style={[{ position: "absolute" }, box]}
       >
         <Animated.View
@@ -581,28 +612,34 @@ function EditableTile({
             className="absolute inset-0 rounded-[6px] border-2 border-primary"
           />
         ) : null}
-        {selected && onResize
-          ? CORNERS.map((corner) => (
-              <Corner
-                key={corner.name}
-                corner={corner}
-                rect={rect}
-                camera={camera}
-                dx={dx}
-                dy={dy}
-                dw={dw}
-                dh={dh}
-                sizing={sizing}
-                check={check}
-                onEnd={() => {
-                  "worklet";
-                  const changed = dw.value !== 0 || dh.value !== 0;
-                  const at = current();
-                  if (settle() && changed) runOnJS(onResize)(tileKey, at);
-                }}
-              />
-            ))
-          : null}
+        {selected && onResize && range ? (
+          <Grip
+            rect={rect}
+            range={range}
+            camera={camera}
+            dw={dw}
+            dh={dh}
+            sizing={sizing}
+            check={check}
+            onSize={setLiveSize}
+            onEnd={() => {
+              "worklet";
+              const changed = dw.value !== 0 || dh.value !== 0;
+              const at = current();
+              if (settle() && changed) runOnJS(onResize)(tileKey, at);
+            }}
+          />
+        ) : null}
+        {/* The size it's at while the grip is dragged, just past the grip. */}
+        {liveSize ? (
+          <View
+            pointerEvents="none"
+            className="rounded-full bg-ink px-2 py-0.5"
+            style={{ position: "absolute", right: -GRIP / 2, top: "100%", marginTop: GRIP / 2 + 6 }}
+          >
+            <Text className="text-[11px] font-medium text-white">{liveSize}</Text>
+          </View>
+        ) : null}
       </Animated.View>
     </GestureDetector>
   );
@@ -646,57 +683,53 @@ function TrayGhost({ state, gx, gy, art, name }: Ghost) {
   );
 }
 
-// The corners of a selected amenity (Figma 377:2): `x` and `y` say which edges each one moves.
-const CORNERS = [
-  { name: "top-left", x: -1, y: -1 },
-  { name: "top-right", x: 1, y: -1 },
-  { name: "bottom-left", x: -1, y: 1 },
-  { name: "bottom-right", x: 1, y: 1 },
-] as const;
-const HANDLE = 10;
+// The grip on a selected tile's bottom-right corner (⇲): drag it to size the tile a cell at a time,
+// within `range` (a ground's sport's sizes as it lies; an amenity anything from one cell). It's
+// bigger than a corner dot, so it's easy to take hold of, and shows the size it's at while it moves.
+const GRIP = 22;
 
-function Corner({
-  corner,
+function Grip({
   rect,
+  range,
   camera,
-  dx,
-  dy,
   dw,
   dh,
   sizing,
   check,
+  onSize,
   onEnd,
 }: {
-  corner: (typeof CORNERS)[number];
   rect: Rect;
+  range: SizeRange;
   camera: Camera;
-  dx: SharedValue<number>;
-  dy: SharedValue<number>;
   dw: SharedValue<number>;
   dh: SharedValue<number>;
   sizing: SharedValue<boolean>;
   check: () => void;
+  onSize: (size: string | null) => void;
   onEnd: () => void;
 }) {
   const stretch = Gesture.Pan()
-    // A 10-point dot is hard to hit: it answers a little way around it too.
-    .hitSlop(14)
+    .hitSlop(12)
     .onBegin(() => {
       sizing.value = true;
       camera.busy.value = true;
     })
     .onUpdate((event) => {
       const step = CELL * camera.scale.value;
-      const along = Math.round(event.translationX / step) * corner.x;
-      const down = Math.round(event.translationY / step) * corner.y;
-      const width = Math.min(MAX_AMENITY, Math.max(1, rect.width + along));
-      const height = Math.min(MAX_AMENITY, Math.max(1, rect.height + down));
+      const width = Math.min(
+        range.width[1],
+        Math.max(range.width[0], rect.width + Math.round(event.translationX / step)),
+      );
+      const height = Math.min(
+        range.height[1],
+        Math.max(range.height[0], rect.height + Math.round(event.translationY / step)),
+      );
+      if (width - rect.width === dw.value && height - rect.height === dh.value) return;
       dw.value = width - rect.width;
       dh.value = height - rect.height;
-      // A left or top corner moves that edge, so the tile's start moves with it.
-      dx.value = corner.x < 0 ? rect.width - width : 0;
-      dy.value = corner.y < 0 ? rect.height - height : 0;
       check();
+      runOnJS(onSize)(`${String(width)} × ${String(height)}`);
     })
     .onEnd(() => {
       onEnd();
@@ -704,21 +737,22 @@ function Corner({
     .onFinalize(() => {
       sizing.value = false;
       camera.busy.value = false;
+      runOnJS(onSize)(null);
     });
   return (
     <GestureDetector gesture={stretch}>
       <View
-        className="rounded-full border-2 border-primary bg-white"
+        className="items-center justify-center rounded-[7px] border-2 border-primary bg-white"
         style={{
           position: "absolute",
-          width: HANDLE,
-          height: HANDLE,
-          left: corner.x < 0 ? -HANDLE / 2 : undefined,
-          right: corner.x > 0 ? -HANDLE / 2 : undefined,
-          top: corner.y < 0 ? -HANDLE / 2 : undefined,
-          bottom: corner.y > 0 ? -HANDLE / 2 : undefined,
+          width: GRIP,
+          height: GRIP,
+          right: -GRIP / 2,
+          bottom: -GRIP / 2,
         }}
-      />
+      >
+        <IconArrowsDiagonal2 size={12} color={colors.primary} strokeWidth={2.25} />
+      </View>
     </GestureDetector>
   );
 }
@@ -869,6 +903,7 @@ function EntranceTag({
   return (
     <GestureDetector gesture={Gesture.Race(move, tap)}>
       <Animated.View
+        entering={APPEAR}
         className="items-center justify-center"
         style={[{ position: "absolute", width: 120, height: 24, zIndex: 3 }, place]}
         pointerEvents="box-none"

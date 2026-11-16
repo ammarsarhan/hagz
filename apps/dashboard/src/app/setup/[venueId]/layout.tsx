@@ -50,7 +50,17 @@ import { Text } from "@/components/text";
 import { FloatingButton, floatShadow } from "@/components/venue-map";
 import { colors } from "@/lib/colors";
 import { kindOf, type Ground } from "@/lib/grounds";
-import { CELL, clashes, fitsIn, footprintOf, roomFor, type Rect, type Tile } from "@/lib/layout";
+import {
+  CELL,
+  clashes,
+  defaultFootprint,
+  fitsIn,
+  footprintOf,
+  oriented,
+  roomFor,
+  type Rect,
+  type Tile,
+} from "@/lib/layout";
 import { useLayoutEditor } from "@/lib/layout-editor";
 import { queries, reference } from "@/lib/queries";
 
@@ -137,7 +147,8 @@ function LayoutView({
       ...plan.grounds.flatMap((placed) => {
         const ground = groundsById.get(placed.groundId);
         if (!ground) return [];
-        const size = footprintOf(ground, placed.orientation);
+        // Its own size, as it lies.
+        const size = oriented(placed, placed.orientation);
         return [
           {
             key: `g:${placed.groundId}`,
@@ -193,7 +204,10 @@ function LayoutView({
       if (!spot) continue;
       change({
         ...plan,
-        grounds: [...plan.grounds, { groundId: ground.id, ...spot, orientation }],
+        grounds: [
+          ...plan.grounds,
+          { groundId: ground.id, ...spot, orientation, ...defaultFootprint(ground) },
+        ],
       });
       setSelected(`g:${ground.id}`);
       return;
@@ -236,7 +250,10 @@ function LayoutView({
   const dropGround = (ground: Ground, x: number, y: number) => {
     change({
       ...plan,
-      grounds: [...plan.grounds, { groundId: ground.id, x, y, orientation: "HORIZONTAL" }],
+      grounds: [
+        ...plan.grounds,
+        { groundId: ground.id, x, y, orientation: "HORIZONTAL", ...defaultFootprint(ground) },
+      ],
     });
     setSelected(`g:${ground.id}`);
   };
@@ -292,8 +309,20 @@ function LayoutView({
     }
   };
 
+  // Sized by its grip: an amenity takes the new rect; a ground its new length and breadth (stored
+  // landscape, so a VERTICAL one turns back), and its top-left stays put.
   const resize = (key: string, rect: Rect) => {
-    const index = Number(split(key)[1]);
+    const [kind, id] = split(key);
+    if (kind === "g") {
+      change({
+        ...plan,
+        grounds: plan.grounds.map((g) =>
+          g.groundId === id ? { ...g, ...oriented(rect, g.orientation) } : g,
+        ),
+      });
+      return;
+    }
+    const index = Number(id);
     change({
       ...plan,
       amenities: plan.amenities.map((a, i) => (i === index ? { ...a, ...rect } : a)),
@@ -306,7 +335,8 @@ function LayoutView({
     const ground = groundsById.get(groundId);
     if (!placed || !ground) return;
     const orientation = placed.orientation === "HORIZONTAL" ? "VERTICAL" : "HORIZONTAL";
-    const rect = { x: placed.x, y: placed.y, ...footprintOf(ground, orientation) };
+    // Its own length and breadth, turned.
+    const rect = { x: placed.x, y: placed.y, ...oriented(placed, orientation) };
     if (!fitsIn(rect, plan.columns, plan.rows)) return trouble({ outside: true });
     const hits = clashes(rect, tiles, `g:${groundId}`);
     if (hits.length) return trouble({ outside: false, names: hits.map((h) => h.name) });
