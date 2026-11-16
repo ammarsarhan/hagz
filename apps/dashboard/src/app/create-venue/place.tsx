@@ -148,10 +148,23 @@ export default function CreateVenuePlace() {
       ? { name: area.name, within: area.within ?? "" }
       : null;
 
-  const moveTo = useCallback((coordinates: Coordinates) => {
-    setPin(coordinates);
-    map.current?.animateToRegion({ ...coordinates, ...CLOSE }, 400);
+  // Google Maps ignores a move asked for before it has loaded, which the first time the SDK starts
+  // can be after the owner's position has come back: the map stayed on Cairo while the pin was on
+  // them. A move asked for too early is kept and made once the map says it's ready.
+  const mapReady = useRef(false);
+  const pendingRegion = useRef<Region | null>(null);
+  const showRegion = useCallback((region: Region) => {
+    if (mapReady.current) map.current?.animateToRegion(region, 400);
+    else pendingRegion.current = region;
   }, []);
+
+  const moveTo = useCallback(
+    (coordinates: Coordinates) => {
+      setPin(coordinates);
+      showRegion({ ...coordinates, ...CLOSE });
+    },
+    [showRegion],
+  );
 
   // Start the map on the owner. Being where they stand counts as placing it: they can go straight
   // on to checking the pin.
@@ -166,12 +179,12 @@ export default function CreateVenuePlace() {
       };
       setPin(coordinates);
       setPlaced(true);
-      map.current?.animateToRegion({ ...coordinates, ...NEARBY }, 400);
+      showRegion({ ...coordinates, ...NEARBY });
     } catch (error) {
       console.warn(error);
       hud.show(t("screens.createVenue.place.locationFailed"));
     }
-  }, [hud, t]);
+  }, [hud, t, showRegion]);
 
   // Whether the prompt is needed at all. With permission already given there's nothing to ask.
   const checkPermission = useCallback(async () => {
@@ -322,6 +335,12 @@ export default function CreateVenuePlace() {
         zoomEnabled={stage !== "area"}
         rotateEnabled={false}
         pitchEnabled={false}
+        onMapReady={() => {
+          mapReady.current = true;
+          const region = pendingRegion.current;
+          pendingRegion.current = null;
+          if (region) map.current?.animateToRegion(region, 0);
+        }}
         onRegionChangeComplete={(region, details) => {
           setPin({ latitude: region.latitude, longitude: region.longitude });
           if (details?.isGesture === false) return;
