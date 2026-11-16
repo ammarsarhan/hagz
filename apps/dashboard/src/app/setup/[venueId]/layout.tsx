@@ -3,19 +3,23 @@ import type { VenueLayoutView } from "@hagz/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AmenityIcon } from "@/components/amenity-icon";
 import { useHud } from "@/components/hud";
 import {
+  IconCheck,
   IconChevronLeft,
   IconDoor,
   IconEye,
   IconList,
   IconMinus,
   IconPlus,
+  IconRotate,
+  IconTrash,
 } from "@/components/icons";
 import {
   fitCamera,
@@ -23,20 +27,25 @@ import {
   PitchArt,
   useCamera,
   zoomAround,
+  type Camera,
+  type Trouble,
 } from "@/components/layout-canvas";
 import { SetupLoading } from "@/components/setup-loading";
 import { Text } from "@/components/text";
 import { FloatingButton, floatShadow } from "@/components/venue-map";
 import { colors } from "@/lib/colors";
 import type { Ground } from "@/lib/grounds";
+import { CELL, clashes, fitsIn, footprintOf, roomFor, type Rect, type Tile } from "@/lib/layout";
+import { useLayoutEditor } from "@/lib/layout-editor";
 import { queries, reference } from "@/lib/queries";
 
 type Amenity = components["schemas"]["Amenity"];
 
 // Setup item "Layout" (Figma "Layout", 376:2–378:2): the venue drawn to scale, full screen, with the
-// grounds and amenities on it and what's still to place in a tray at the bottom. This first cut
-// shows the saved layout (or the empty grid a new one starts as) and moves around it; placing,
-// moving and sizing things come next.
+// grounds and amenities on it and what's still to place in a tray at the bottom. Tap something in
+// the tray to put it in the middle of the view; tap a tile to select it and drag it into place.
+// A selected ground can be turned, a selected amenity sized by its corners, and either taken off.
+// Every change saves behind it (lib/layout-editor.ts).
 
 // The tray: its padding, title and one row of 64-high chips.
 const TRAY_HEIGHT = 132;
@@ -54,14 +63,23 @@ export default function SetupLayout() {
   if (!grounds.data) return <SetupLoading query={grounds} />;
   if (!venue.data) return <SetupLoading query={venue} />;
   if (!options.data) return <SetupLoading query={options} />;
-  return <LayoutView layout={layout.data} grounds={grounds.data} options={options.data} />;
+  return (
+    <LayoutView
+      venueId={venueId}
+      layout={layout.data}
+      grounds={grounds.data}
+      options={options.data}
+    />
+  );
 }
 
 function LayoutView({
+  venueId,
   layout,
   grounds,
   options,
 }: {
+  venueId: string;
   layout: VenueLayoutView;
   grounds: Ground[];
   options: Amenity[];
@@ -73,28 +91,230 @@ function LayoutView({
   // What the header and the tray leave of the screen, which the venue is first fitted into.
   const area = { top: insets.top + 8 + 44 + 14, bottom: insets.bottom + TRAY_HEIGHT + 16 };
   const camera = useCamera(fitCamera(layout, screen, area));
+  const { plan, change } = useLayoutEditor(venueId, layout);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const groundsById = useMemo(() => new Map(grounds.map((g) => [g.id, g])), [grounds]);
   const amenitiesById = useMemo(() => new Map(options.map((o) => [o.id, o])), [options]);
-  const unplaced = layout.unplacedGroundIds.flatMap((id) => groundsById.get(id) ?? []);
+  const nameOf = (ground: Ground) => ground.name ?? t("screens.setup.grounds.unnamed");
+
+  // What's on the layout, as rectangles with names, for placing and for saying what's in the way.
+  const tiles = useMemo<Tile[]>(
+    () => [
+      ...plan.grounds.flatMap((placed) => {
+        const ground = groundsById.get(placed.groundId);
+        if (!ground) return [];
+        const size = footprintOf(ground, placed.orientation);
+        return [
+          {
+            key: `g:${placed.groundId}`,
+            name: nameOf(ground),
+            rect: { x: placed.x, y: placed.y, ...size },
+          },
+        ];
+      }),
+      ...plan.amenities.map((placed, index) => ({
+        key: `a:${String(index)}`,
+        name: amenitiesById.get(placed.optionId)?.name ?? "",
+        rect: placed,
+      })),
+    ],
+    // nameOf only reads t, which the grounds' names follow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plan, groundsById, amenitiesById],
+  );
+
+  const onLayout = new Set(plan.grounds.map((placed) => placed.groundId));
+  const unplaced = grounds.filter((ground) => !onLayout.has(ground.id));
   // The venue's amenities that can go on the layout. They stay in the tray once placed: a venue
   // can have two car parks.
   const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
-  const total = layout.grounds.length + layout.unplacedGroundIds.length;
 
   const comingNext = () => hud.show(t("common.comingNext"));
   const middle = { x: screen.width / 2, y: (area.top + screen.height - area.bottom) / 2 };
+  // The cell in the middle of what's on screen, where new things go.
+  const middleCell = () => ({
+    x: (middle.x - camera.x.value) / (CELL * camera.scale.value),
+    y: (middle.y - camera.y.value) / (CELL * camera.scale.value),
+  });
+
+  const trouble = (found: Trouble) => {
+    if (!found) return;
+    hud.show(
+      found.outside
+        ? t("screens.setup.layout.outside")
+        : t("screens.setup.layout.overlaps", {
+            names: listOf(found.names, t("screens.setup.layout.and")),
+          }),
+    );
+  };
+
+  const placeGround = (ground: Ground) => {
+    for (const orientation of ["HORIZONTAL", "VERTICAL"] as const) {
+      const spot = roomFor(
+        footprintOf(ground, orientation),
+        tiles,
+        plan.columns,
+        plan.rows,
+        middleCell(),
+      );
+      if (!spot) continue;
+      change({
+        ...plan,
+        grounds: [...plan.grounds, { groundId: ground.id, ...spot, orientation }],
+      });
+      setSelected(`g:${ground.id}`);
+      return;
+    }
+    hud.show(t("screens.setup.layout.noRoom"));
+  };
+
+  const placeAmenity = (amenity: Amenity) => {
+    for (const size of [
+      { width: 2, height: 2 },
+      { width: 1, height: 1 },
+    ]) {
+      const spot = roomFor(size, tiles, plan.columns, plan.rows, middleCell());
+      if (!spot) continue;
+      change({
+        ...plan,
+        amenities: [...plan.amenities, { optionId: amenity.id, ...spot, ...size }],
+      });
+      setSelected(`a:${String(plan.amenities.length)}`);
+      return;
+    }
+    hud.show(t("screens.setup.layout.noRoom"));
+  };
+
+  // A new entrance goes on the bottom edge, as near its middle as is free, then the other sides.
+  const placeEntrance = () => {
+    const taken = new Set(plan.entrances.map((e) => `${e.side}:${String(e.offset)}`));
+    for (const side of ["BOTTOM", "TOP", "LEFT", "RIGHT"] as const) {
+      const length = side === "TOP" || side === "BOTTOM" ? plan.columns : plan.rows;
+      const offsets = Array.from({ length }, (_, i) => i).sort(
+        (a, b) => Math.abs(a - (length - 1) / 2) - Math.abs(b - (length - 1) / 2),
+      );
+      const offset = offsets.find((o) => !taken.has(`${side}:${String(o)}`));
+      if (offset === undefined) continue;
+      change({ ...plan, entrances: [...plan.entrances, { side, offset }] });
+      setSelected(`e:${String(plan.entrances.length)}`);
+      return;
+    }
+    hud.show(t("screens.setup.layout.noRoom"));
+  };
+
+  const move = (key: string, x: number, y: number) => {
+    const [kind, id] = split(key);
+    if (kind === "g") {
+      change({
+        ...plan,
+        grounds: plan.grounds.map((g) => (g.groundId === id ? { ...g, x, y } : g)),
+      });
+    } else {
+      const index = Number(id);
+      change({
+        ...plan,
+        amenities: plan.amenities.map((a, i) => (i === index ? { ...a, x, y } : a)),
+      });
+    }
+  };
+
+  const resize = (key: string, rect: Rect) => {
+    const index = Number(split(key)[1]);
+    change({
+      ...plan,
+      amenities: plan.amenities.map((a, i) => (i === index ? { ...a, ...rect } : a)),
+    });
+  };
+
+  // Turned where it stands; refused, saying why, if that doesn't fit.
+  const rotate = (groundId: string) => {
+    const placed = plan.grounds.find((g) => g.groundId === groundId);
+    const ground = groundsById.get(groundId);
+    if (!placed || !ground) return;
+    const orientation = placed.orientation === "HORIZONTAL" ? "VERTICAL" : "HORIZONTAL";
+    const rect = { x: placed.x, y: placed.y, ...footprintOf(ground, orientation) };
+    if (!fitsIn(rect, plan.columns, plan.rows)) return trouble({ outside: true });
+    const hits = clashes(rect, tiles, `g:${groundId}`);
+    if (hits.length) return trouble({ outside: false, names: hits.map((h) => h.name) });
+    change({
+      ...plan,
+      grounds: plan.grounds.map((g) => (g.groundId === groundId ? { ...g, orientation } : g)),
+    });
+  };
+
+  const remove = (key: string) => {
+    const [kind, id] = split(key);
+    const index = Number(id);
+    setSelected(null);
+    if (kind === "g") change({ ...plan, grounds: plan.grounds.filter((g) => g.groundId !== id) });
+    if (kind === "a") change({ ...plan, amenities: plan.amenities.filter((_, i) => i !== index) });
+    if (kind === "e") change({ ...plan, entrances: plan.entrances.filter((_, i) => i !== index) });
+  };
+
+  // The selected thing's rect in cells, to hang its actions under.
+  const selectedRect = ((): Rect | null => {
+    if (!selected) return null;
+    const tile = tiles.find((candidate) => candidate.key === selected);
+    if (tile) return tile.rect;
+    const entrance = plan.entrances[Number(split(selected)[1])];
+    if (!entrance || split(selected)[0] !== "e") return null;
+    const along = entrance.offset;
+    const horizontal = entrance.side === "TOP" || entrance.side === "BOTTOM";
+    const x = horizontal ? along : entrance.side === "LEFT" ? 0 : plan.columns;
+    const y = horizontal ? (entrance.side === "TOP" ? 0 : plan.rows) : along;
+    return { x, y, width: horizontal ? 1 : 0, height: horizontal ? 0 : 1 };
+  })();
+  const [kind, id] = selected ? split(selected) : [null, null];
+  const selectedAmenity = kind === "a" ? plan.amenities[Number(id)] : undefined;
 
   return (
     <View className="flex-1 bg-field">
       <StatusBar style="dark" />
       <LayoutCanvas
-        layout={layout}
+        layout={plan}
         grounds={groundsById}
         amenities={amenitiesById}
         camera={camera}
         screen={screen}
+        editing={{
+          tiles,
+          selected,
+          onSelect: setSelected,
+          onMove: move,
+          onResize: resize,
+          onMoveEntrance: (index, side, offset) =>
+            change({
+              ...plan,
+              entrances: plan.entrances.map((e, i) => (i === index ? { side, offset } : e)),
+            }),
+          onTrouble: trouble,
+        }}
       />
+
+      {selected && selectedRect ? (
+        <Actions camera={camera} rect={selectedRect} screen={screen} area={area}>
+          {kind === "g" && id ? (
+            <ActionButton label={t("screens.setup.layout.rotate")} onPress={() => rotate(id)}>
+              <IconRotate size={24} color={colors.white} strokeWidth={1.75} />
+            </ActionButton>
+          ) : null}
+          {selectedAmenity ? (
+            <Text className="px-2.5 text-[15px] font-medium text-white">
+              {t("screens.setup.layout.size", {
+                width: selectedAmenity.width,
+                height: selectedAmenity.height,
+              })}
+            </Text>
+          ) : null}
+          <ActionButton label={t("screens.setup.layout.remove")} onPress={() => remove(selected)}>
+            <IconTrash size={24} color={colors.white} strokeWidth={1.75} />
+          </ActionButton>
+          <ActionButton label={t("screens.setup.layout.done")} onPress={() => setSelected(null)}>
+            <IconCheck size={24} color={colors.white} strokeWidth={2} />
+          </ActionButton>
+        </Actions>
+      ) : null}
 
       {/* Back, what this is and how far along, and a preview of what players see. */}
       <View
@@ -112,7 +332,10 @@ function LayoutView({
             {t("screens.setup.items.LAYOUT.title")}
           </Text>
           <Text className="text-[12px] leading-[15px] text-ink-2">
-            {t("screens.setup.layout.placed", { placed: layout.grounds.length, count: total })}
+            {t("screens.setup.layout.placed", {
+              placed: plan.grounds.length,
+              count: grounds.length,
+            })}
           </Text>
         </View>
         <FloatingButton label={t("screens.setup.layout.preview")} onPress={comingNext}>
@@ -149,7 +372,8 @@ function LayoutView({
         </FloatingButton>
       </View>
 
-      {/* What's still to place: grounds not on the layout, the venue's amenities, entrances. */}
+      {/* What's still to place: grounds not on the layout, the venue's amenities, entrances. Tap
+          one to put it in the middle of the view, then drag it into place. */}
       <View
         className="absolute inset-x-3 rounded-[24px] bg-white py-[18px] pl-[18px]"
         style={{
@@ -168,22 +392,103 @@ function LayoutView({
           contentContainerStyle={{ gap: 10, paddingRight: 18 }}
         >
           {unplaced.map((ground) => (
-            <GroundChip key={ground.id} ground={ground} />
+            <GroundChip key={ground.id} ground={ground} onPress={() => placeGround(ground)} />
           ))}
           {placeable.map((amenity) => (
             <Chip
               key={amenity.id}
               icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
               label={amenity.name}
+              onPress={() => placeAmenity(amenity)}
             />
           ))}
           <Chip
             icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
             label={t("screens.setup.layout.entrance")}
+            onPress={placeEntrance}
           />
         </ScrollView>
       </View>
     </View>
+  );
+}
+
+// "g:<groundId>", "a:<index>" or "e:<index>": what kind of thing, and which.
+const split = (key: string) => {
+  const at = key.indexOf(":");
+  return [key.slice(0, at), key.slice(at + 1)] as const;
+};
+
+// "Pitch 4 and Café", "Pitch 1, Pitch 2 and Café".
+const listOf = (names: string[], and: string) =>
+  names.length <= 1
+    ? (names[0] ?? "")
+    : `${names.slice(0, -1).join(", ")}${and}${names[names.length - 1] ?? ""}`;
+
+// The black bar of actions under what's selected (Figma 376:2, 377:2). It follows the map as it
+// moves and zooms, goes above the thing when there's no room under it, and hides while something
+// is being dragged.
+function Actions({
+  camera,
+  rect,
+  screen,
+  area,
+  children,
+}: {
+  camera: Camera;
+  rect: Rect;
+  screen: { width: number; height: number };
+  area: { top: number; bottom: number };
+  children: React.ReactNode;
+}) {
+  const style = useAnimatedStyle(() => {
+    const s = camera.scale.value * CELL;
+    const left = camera.x.value + rect.x * s;
+    const below = camera.y.value + (rect.y + rect.height) * s + 12;
+    const above = camera.y.value + rect.y * s - 12 - 40;
+    const top = below + 40 > screen.height - area.bottom ? above : below;
+    return {
+      left: Math.min(Math.max(12, left), screen.width - 12 - 170),
+      top: Math.max(area.top, top),
+      opacity: camera.busy.value ? 0 : 1,
+    };
+  });
+  return (
+    <Animated.View
+      className="absolute h-10 flex-row items-center gap-0.5 rounded-full bg-ink px-1.5"
+      style={[
+        {
+          shadowColor: colors.ink,
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 6 },
+        },
+        style,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+function ActionButton({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      className="size-10 items-center justify-center active:opacity-60"
+    >
+      {children}
+    </Pressable>
   );
 }
 
@@ -211,14 +516,18 @@ function ZoomButton({
 }
 
 // A ground waiting for its place: a small pitch, its name, and what it is ("5-a-side").
-function GroundChip({ ground }: { ground: Ground }) {
+function GroundChip({ ground, onPress }: { ground: Ground; onPress: () => void }) {
   const { t } = useTranslation();
   const kind =
     ground.size === "STANDARD"
       ? t(`screens.setup.grounds.sports.${ground.sport}`)
       : t(`screens.setup.grounds.sizes.${ground.size}`);
   return (
-    <View className="h-16 flex-row items-center gap-2.5 rounded-[16px] border border-border bg-white pl-3 pr-3.5">
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className="h-16 flex-row items-center gap-2.5 rounded-[16px] border border-border bg-white pl-3 pr-3.5 active:opacity-70"
+    >
       <PitchArt width={44} height={22} inset={3} line={1.1} radius={4} />
       <View>
         <Text className="text-[15px] font-medium" numberOfLines={1}>
@@ -226,17 +535,29 @@ function GroundChip({ ground }: { ground: Ground }) {
         </Text>
         <Text className="text-[13px] text-ink-2">{kind}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
-function Chip({ icon, label }: { icon: React.ReactNode; label: string }) {
+function Chip({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <View className="h-16 flex-row items-center gap-2.5 rounded-[16px] border border-border bg-white pl-3 pr-3.5">
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className="h-16 flex-row items-center gap-2.5 rounded-[16px] border border-border bg-white pl-3 pr-3.5 active:opacity-70"
+    >
       {icon}
       <Text className="text-[15px] font-medium" numberOfLines={1}>
         {label}
       </Text>
-    </View>
+    </Pressable>
   );
 }

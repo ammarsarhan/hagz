@@ -82,3 +82,4 @@ export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayout
 export { default as IconArrowDown } from "@tabler/icons-react-native/IconArrowDown";
 export { default as IconDoor } from "@tabler/icons-react-native/IconDoor";
 export { default as IconList } from "@tabler/icons-react-native/IconList";
+export { default as IconRotate } from "@tabler/icons-react-native/IconRotate";
