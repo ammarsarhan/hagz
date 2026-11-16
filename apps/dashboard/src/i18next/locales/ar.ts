@@ -157,6 +157,7 @@ const ar: ArabicTranslations = {
           heading: "ملعبك",
           inReview: "قيد المراجعة · {{ago}}",
           continue: "أكمل الإعداد",
+          review: "مراجعة وإرسال",
           sendWhenDone: "أرسله للمراجعة حين يكتمل",
           agoNow: "الآن",
           ago: {

@@ -132,6 +132,7 @@ const en = {
           heading: "Your venue",
           inReview: "In review · {{ago}}",
           continue: "Continue setup",
+          review: "Review & submit",
           sendWhenDone: "Send for review when it's ready",
           agoNow: "Just now",
           ago: {
