@@ -185,6 +185,13 @@ const en = {
           noAreaNear: "Hagz doesn't cover any area within {{km}} km of the pin yet.",
           noAreaNearRequest:
             "Hagz doesn't cover any area within {{km}} km of your pin yet. Type your area's name to request it.",
+          outOfCoverageTitle: "Hagz isn't here yet",
+          outOfCoverageBody:
+            "There's no area we cover within {{km}} km of your pin. Request yours, and Hagz adds it when your venue is submitted.",
+          requestYourArea: "Request your area",
+          outsideCountryTitle: "Hagz isn't in this country yet",
+          outsideCountryBody:
+            "Venues here can't be listed yet. If the pin is in the wrong place, go back and move it.",
           requestedNote: "New area, added on submission",
           requestedBody:
             "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",
@@ -202,7 +209,6 @@ const en = {
           searchUnavailable: "Search isn't available. Drop a pin on the map instead.",
           locationDenied: "Location is off for Hagz",
           locationFailed: "Couldn't find where you are",
-          outsideMarketplaces: "Hagz isn't in that country yet",
         },
       },
       setup: {
