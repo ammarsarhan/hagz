@@ -210,13 +210,18 @@ const ar: ArabicTranslations = {
           noAreaNear: "حجز لا تغطي أي منطقة على بُعد {{km}} كم من الدبوس بعد.",
           noAreaNearRequest:
             "حجز لا تغطي أي منطقة على بُعد {{km}} كم من الدبوس بعد. اكتب اسم منطقتك لتطلب إضافتها.",
-          outOfCoverageTitle: "حجز ليست هنا بعد",
-          outOfCoverageBody:
-            "لا توجد منطقة نغطيها على بُعد {{km}} كم من الدبوس. اطلب منطقتك، وستضيفها حجز عند إرسال ملعبك.",
-          requestYourArea: "اطلب منطقتك",
           outsideCountryTitle: "حجز لا تعمل في هذه الدولة بعد",
           outsideCountryBody:
             "لا يمكن إضافة ملاعب هنا بعد. إن كان الدبوس في غير مكانه، ارجع وحرّكه.",
+          areaNoneBody: "يتصفح اللاعبون الملاعب حسب المنطقة.",
+          noCoverage: "لا توجد مناطق ضمن تغطية حجز على بُعد {{km}} كم من الدبوس.",
+          requestCoverage: "اطلب التغطية",
+          changeRequest: "غيّر اسم المنطقة",
+          requestTitle: "اطلب التغطية",
+          requestBody:
+            "اكتب اسم المنطقة التي يقع فيها ملعبك. ستضيفها حجز عند موضع الدبوس حين ترسل ملعبك.",
+          requestPlaceholder: "اسم المنطقة، مثل الشيخ زايد",
+          requestDone: "اطلب",
           requestedNote: "منطقة جديدة، تُضاف عند الإرسال",
           requestedBody: "حجز لا تغطي هذه المنطقة بعد. سنضيفها عند إرسال ملعبك.",
           areaSearchPlaceholder: "ابحث عن منطقة",

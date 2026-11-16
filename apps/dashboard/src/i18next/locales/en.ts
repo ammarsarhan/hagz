@@ -185,13 +185,18 @@ const en = {
           noAreaNear: "Hagz doesn't cover any area within {{km}} km of the pin yet.",
           noAreaNearRequest:
             "Hagz doesn't cover any area within {{km}} km of your pin yet. Type your area's name to request it.",
-          outOfCoverageTitle: "Hagz isn't here yet",
-          outOfCoverageBody:
-            "There's no area we cover within {{km}} km of your pin. Request yours, and Hagz adds it when your venue is submitted.",
-          requestYourArea: "Request your area",
           outsideCountryTitle: "Hagz isn't in this country yet",
           outsideCountryBody:
             "Venues here can't be listed yet. If the pin is in the wrong place, go back and move it.",
+          areaNoneBody: "Players browse venues by area.",
+          noCoverage: "There are no areas under Hagz's coverage within {{km}} km of your pin.",
+          requestCoverage: "Request coverage",
+          changeRequest: "Change the area name",
+          requestTitle: "Request coverage",
+          requestBody:
+            "Name the area your venue is in. Hagz adds it, at your pin, when your venue is submitted.",
+          requestPlaceholder: "Area name, e.g. Sheikh Zayed",
+          requestDone: "Request",
           requestedNote: "New area, added on submission",
           requestedBody:
             "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",

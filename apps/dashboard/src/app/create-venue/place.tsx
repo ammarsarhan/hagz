@@ -16,8 +16,10 @@ import { useHud, useHudAnchor } from "@/components/hud";
 import { IconChevronLeft, IconMapPin, IconSearch, IconX } from "@/components/icons";
 import { CloseButton, NavBar } from "@/components/nav";
 import { PlaceSearch } from "@/components/place-search";
+import { RequestAreaSheet } from "@/components/request-area-sheet";
 import {
   AreaCard,
+  CardLink,
   cardShadow,
   FloatingButton,
   floatShadow,
@@ -93,6 +95,7 @@ export default function CreateVenuePlace() {
   const [permission, setPermission] = useState<Permission>("checking");
   const [searching, setSearching] = useState(false);
   const [choosingArea, setChoosingArea] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const [creating, setCreating] = useState(false);
   // The point under the pin: the middle of the map, wherever it has been moved to.
   const [pin, setPin] = useState<Coordinates>(START);
@@ -402,6 +405,7 @@ export default function CreateVenuePlace() {
             loading={coverage === "checking" || nearest.isPending}
             creating={creating}
             onChange={() => setChoosingArea(true)}
+            onRequest={() => setRequesting(true)}
             onConfirm={() => void create()}
           />
         ) : (
@@ -460,6 +464,15 @@ export default function CreateVenuePlace() {
         onRequest={(name) => {
           setRequestedArea(name);
           setChoosingArea(false);
+        }}
+      />
+      <RequestAreaSheet
+        visible={requesting}
+        requested={requestedArea}
+        onClose={() => setRequesting(false)}
+        onRequest={(name) => {
+          setRequestedArea(name);
+          setRequesting(false);
         }}
       />
     </View>
@@ -552,7 +565,8 @@ function Step({
 // The last card: the area we matched, to confirm or change. With no match close by it asks instead
 // of guessing, and an area the owner asked for says Hagz will add it. Before any of that, a pin Hagz
 // can't list says so: out of the country (nothing to do but move it, or ask support), or with no
-// area in reach (request one, which Hagz adds when the venue is submitted).
+// area in reach, where a short note stands in the area's place and coverage is requested by name
+// (RequestAreaSheet), which Hagz adds when the venue is submitted.
 function AreaStep({
   label,
   requested,
@@ -560,6 +574,7 @@ function AreaStep({
   loading,
   creating,
   onChange,
+  onRequest,
   onConfirm,
 }: {
   label: { name: string; within: string } | null;
@@ -568,9 +583,12 @@ function AreaStep({
   loading: boolean;
   creating: boolean;
   onChange: () => void;
+  onRequest: () => void;
   onConfirm: () => void;
 }) {
   const { t } = useTranslation();
+  // Nothing in reach: the picker would be empty, so changing a request asks for the name again.
+  const outside = coverage === "outside";
 
   if (coverage === "country") {
     return (
@@ -586,16 +604,20 @@ function AreaStep({
     );
   }
 
-  if (coverage === "outside" && !label) {
+  if (outside && !label) {
     return (
       <>
         <Heading
-          title={t("screens.createVenue.place.outOfCoverageTitle")}
-          body={t("screens.createVenue.place.outOfCoverageBody", {
-            km: PIN_NEAR_AREA_METRES / 1000,
-          })}
+          title={t("screens.createVenue.place.areaUnknownTitle")}
+          body={t("screens.createVenue.place.areaNoneBody")}
         />
-        <Button label={t("screens.createVenue.place.requestYourArea")} onPress={onChange} />
+        <View className="rounded-[16px] border border-border p-4">
+          <Text className="text-body text-ink-2">
+            {t("screens.createVenue.place.noCoverage", { km: PIN_NEAR_AREA_METRES / 1000 })}
+          </Text>
+        </View>
+        <CardLink label={t("screens.createVenue.place.requestCoverage")} onPress={onRequest} />
+        <Button label={t("screens.createVenue.place.create")} disabled onPress={onConfirm} />
       </>
     );
   }
@@ -618,8 +640,12 @@ function AreaStep({
       <AreaCard
         label={label}
         loading={loading}
-        change={t("screens.createVenue.place.differentArea")}
-        onChange={onChange}
+        change={t(
+          outside
+            ? "screens.createVenue.place.changeRequest"
+            : "screens.createVenue.place.differentArea",
+        )}
+        onChange={outside ? onRequest : onChange}
       />
 
       <Button
