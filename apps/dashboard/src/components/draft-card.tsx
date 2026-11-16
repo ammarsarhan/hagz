@@ -53,7 +53,15 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
   const total = required?.total ?? 0;
   // Every required item done: what's left is to look it over and send it.
   const ready = total > 0 && done >= total;
-  const action = t(ready ? "screens.firstRun.draft.review" : "screens.firstRun.draft.continue");
+  // Sent: the card opens where the review is.
+  const inReview = venue.status !== "DRAFT";
+  const action = t(
+    inReview
+      ? "screens.firstRun.draft.viewReview"
+      : ready
+        ? "screens.firstRun.draft.review"
+        : "screens.firstRun.draft.continue",
+  );
   // Redrawn as the time passes, so it doesn't stay on "30 minutes ago" while first run is left open.
   const now = useNow((time) => sinceLastActivity(venue.lastActivityAt, time).changesAt);
   const since = sinceLastActivity(venue.lastActivityAt, now);
@@ -105,7 +113,7 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
         <View className="mt-6 h-14 items-center justify-center rounded-full bg-white">
           <Text className="text-button font-semibold">{action}</Text>
         </View>
-        {required && !ready ? (
+        {required && !ready && !inReview ? (
           <Text className="mt-3.5 text-center text-caption text-on-ink-muted">
             {t("screens.firstRun.draft.sendWhenDone")}
           </Text>
