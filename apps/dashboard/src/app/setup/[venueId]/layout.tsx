@@ -655,7 +655,6 @@ function LayoutView({
                     art: (
                       <GroundArt
                         name={nameOf(ground)}
-                        sport={ground.sport}
                         width={size.width * CELL}
                         height={size.height * CELL}
                       />

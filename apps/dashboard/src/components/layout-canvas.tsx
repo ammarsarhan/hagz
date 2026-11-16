@@ -15,7 +15,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { colors } from "@/lib/colors";
-import type { Ground, GroundSport } from "@/lib/grounds";
+import type { Ground } from "@/lib/grounds";
 import { MAXIMUM_LAYOUT_CELLS } from "@hagz/contracts";
 import {
   CELL,
@@ -27,7 +27,6 @@ import {
   type Tile,
 } from "@/lib/layout";
 import { AmenityIcon } from "./amenity-icon";
-import { SPORT_ICONS } from "./sport-icons";
 import { IconArrowDown } from "./icons";
 import { Text } from "./text";
 
@@ -350,13 +349,7 @@ export function LayoutCanvas({
                   {...shared}
                 >
                   {(size, live) => (
-                    <GroundArt
-                      name={name}
-                      sport={ground.sport}
-                      width={size.width}
-                      height={size.height}
-                      live={live}
-                    />
+                    <GroundArt name={name} width={size.width} height={size.height} live={live} />
                   )}
                 </EditableTile>
               );
@@ -828,58 +821,54 @@ function Grip({
   );
 }
 
+// A pitch with its name, always: the name runs along the pitch's longer side, turned to read up an
+// upright one, and is cut short with "…" only if it's longer than the pitch itself. It turns and
+// fits as the pitch is sized (`live`).
 export function GroundArt({
   name,
-  sport,
   width,
   height,
   live,
 }: {
   name: string;
-  sport: GroundSport;
   // Its size at rest, and as it's being sized (on the UI thread) when it is.
   width: number;
   height: number;
   live?: SharedValue<Size>;
 }) {
-  const fit = useLabelFit(live, { width, height }, (w, h, label) => {
-    "worklet";
-    return label + 2 * GROUND_PAD_X <= w && GROUND_CHIP + 2 * GROUND_PAD_Y <= h;
+  const still = { width, height };
+  // A box as long as the pitch and as deep as it, centred and turned with it: the name sits in it.
+  const along = useAnimatedStyle(() => {
+    const size = live ? live.value : still;
+    const upright = size.height > size.width;
+    const long = Math.max(size.width, size.height);
+    const short = Math.min(size.width, size.height);
+    return {
+      width: long,
+      height: short,
+      left: (size.width - long) / 2,
+      top: (size.height - short) / 2,
+      transform: [{ rotate: upright ? "-90deg" : "0deg" }],
+    };
   });
-  const ball = useIconScale(live, { width, height }, BALL, 4);
-  const Ball = SPORT_ICONS[sport];
+  const room = useAnimatedStyle(() => {
+    const size = live ? live.value : still;
+    return { maxWidth: Math.max(0, Math.max(size.width, size.height) - 2 * GROUND_PAD) };
+  });
   return (
     <View style={{ flex: 1 }}>
       <PitchArt width={width} height={height} fill />
       <Animated.View
         pointerEvents="none"
-        className="absolute inset-0 items-center justify-center"
-        style={fit.shown}
+        className="items-center justify-center"
+        style={[{ position: "absolute" }, along]}
       >
-        <View className="rounded-[8px] bg-white px-[7px] py-[2px]">
+        <Animated.View className="rounded-[8px] bg-white px-[7px] py-[2px]" style={room}>
           <Text className="text-[12px] font-medium" numberOfLines={1}>
             {name}
           </Text>
-        </View>
-      </Animated.View>
-      {/* Too small for its name: its sport's ball instead. */}
-      <Animated.View
-        pointerEvents="none"
-        className="absolute inset-0 items-center justify-center"
-        style={fit.hidden}
-      >
-        <Animated.View
-          className="items-center justify-center rounded-full bg-white"
-          style={[{ width: BALL, height: BALL }, ball]}
-        >
-          <Ball size={14} color={colors.ink} strokeWidth={1.75} />
         </Animated.View>
       </Animated.View>
-      <Measure onLayout={fit.measure}>
-        <View className="px-[7px] py-[2px]">
-          <Text className="text-[12px] font-medium">{name}</Text>
-        </View>
-      </Measure>
     </View>
   );
 }
@@ -937,14 +926,10 @@ export function AmenityArt({
 
 type Size = { width: number; height: number };
 
-// A name shows only with room around it; otherwise it fades out for an icon. For a ground the room
-// is inside the pitch's white outline (5 in) with 4 to spare; for an amenity, 8 either side and a
-// little above and below its icon and name (the frames' 3 × 2 café just has it).
-const GROUND_PAD_X = 9;
-const GROUND_PAD_Y = 4;
-// The name chip's height: a 12-point line and 2 above and below.
-const GROUND_CHIP = 19;
-const BALL = 22;
+// A ground's name stays inside the pitch's white outline (5 in) with 4 to spare at its ends.
+const GROUND_PAD = 9;
+// An amenity's name shows only with room around it, 8 either side and a little above and below
+// its icon and name (the frames' 3 × 2 café just has it); otherwise it fades out for the icon.
 const AMENITY_ICON = 24;
 const AMENITY_PAD_X = 8;
 const AMENITY_PAD_Y = 2;
