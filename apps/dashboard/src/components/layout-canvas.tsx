@@ -821,9 +821,10 @@ function Grip({
   );
 }
 
-// A pitch with its name, always: the name runs along the pitch's longer side, turned to read up an
-// upright one, and is cut short with "…" only if it's longer than the pitch itself. It turns and
-// fits as the pitch is sized (`live`).
+// A pitch with its name, always. Across the pitch when it fits there; turned to read down the
+// pitch (top to bottom) when it only fits that way; across and cut short with "…" when it fits
+// neither. Worked out on the UI thread from the pitch's live size, so it turns and fits as the
+// pitch is sized; the name's own width is measured once, off screen.
 export function GroundArt({
   name,
   width,
@@ -837,23 +838,38 @@ export function GroundArt({
   live?: SharedValue<Size>;
 }) {
   const still = { width, height };
-  // A box as long as the pitch and as deep as it, centred and turned with it: the name sits in it.
-  const along = useAnimatedStyle(() => {
+  const label = useSharedValue(0);
+  const turned = () => {
+    "worklet";
     const size = live ? live.value : still;
-    const upright = size.height > size.width;
-    const long = Math.max(size.width, size.height);
-    const short = Math.min(size.width, size.height);
+    const across = label.value + 2 * GROUND_PAD <= size.width;
+    const down = label.value + 2 * GROUND_PAD <= size.height && GROUND_CHIP <= size.width;
+    return label.value > 0 && !across && down;
+  };
+  // A box the name sits in, centred on the pitch: the pitch itself, or turned a quarter with it.
+  const box = useAnimatedStyle(() => {
+    const size = live ? live.value : still;
+    if (!turned()) {
+      return {
+        width: size.width,
+        height: size.height,
+        left: 0,
+        top: 0,
+        transform: [{ rotate: "0deg" }],
+      };
+    }
     return {
-      width: long,
-      height: short,
-      left: (size.width - long) / 2,
-      top: (size.height - short) / 2,
-      transform: [{ rotate: upright ? "-90deg" : "0deg" }],
+      width: size.height,
+      height: size.width,
+      left: (size.width - size.height) / 2,
+      top: (size.height - size.width) / 2,
+      transform: [{ rotate: "90deg" }],
     };
   });
   const room = useAnimatedStyle(() => {
     const size = live ? live.value : still;
-    return { maxWidth: Math.max(0, Math.max(size.width, size.height) - 2 * GROUND_PAD) };
+    const length = turned() ? size.height : size.width;
+    return { maxWidth: Math.max(0, length - 2 * GROUND_PAD) };
   });
   return (
     <View style={{ flex: 1 }}>
@@ -861,7 +877,7 @@ export function GroundArt({
       <Animated.View
         pointerEvents="none"
         className="items-center justify-center"
-        style={[{ position: "absolute" }, along]}
+        style={[{ position: "absolute" }, box]}
       >
         <Animated.View className="rounded-[8px] bg-white px-[7px] py-[2px]" style={room}>
           <Text className="text-[12px] font-medium" numberOfLines={1}>
@@ -869,6 +885,15 @@ export function GroundArt({
           </Text>
         </Animated.View>
       </Animated.View>
+      <Measure
+        onLayout={(event) => {
+          label.value = event.nativeEvent.layout.width;
+        }}
+      >
+        <View className="px-[7px] py-[2px]">
+          <Text className="text-[12px] font-medium">{name}</Text>
+        </View>
+      </Measure>
     </View>
   );
 }
@@ -926,8 +951,10 @@ export function AmenityArt({
 
 type Size = { width: number; height: number };
 
-// A ground's name stays inside the pitch's white outline (5 in) with 4 to spare at its ends.
+// A ground's name stays inside the pitch's white outline (5 in) with 4 to spare at its ends, and
+// is only turned if the pitch is wide enough for its chip (a 12-point line, 2 above and below).
 const GROUND_PAD = 9;
+const GROUND_CHIP = 19;
 // An amenity's name shows only with room around it, 8 either side and a little above and below
 // its icon and name (the frames' 3 × 2 café just has it); otherwise it fades out for the icon.
 const AMENITY_ICON = 24;
