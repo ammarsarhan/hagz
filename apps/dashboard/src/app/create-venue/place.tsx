@@ -96,6 +96,8 @@ export default function CreateVenuePlace() {
   const [searching, setSearching] = useState(false);
   const [choosingArea, setChoosingArea] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  // Request coverage was tapped in the area picker: the name sheet opens once the picker has gone.
+  const [requestNext, setRequestNext] = useState(false);
   const [creating, setCreating] = useState(false);
   // The point under the pin: the middle of the map, wherever it has been moved to.
   const [pin, setPin] = useState<Coordinates>(START);
@@ -464,6 +466,15 @@ export default function CreateVenuePlace() {
         onRequest={(name) => {
           setRequestedArea(name);
           setChoosingArea(false);
+        }}
+        onRequestCoverage={() => {
+          setRequestNext(true);
+          setChoosingArea(false);
+        }}
+        onHidden={() => {
+          if (!requestNext) return;
+          setRequestNext(false);
+          setRequesting(true);
         }}
       />
       <RequestAreaSheet

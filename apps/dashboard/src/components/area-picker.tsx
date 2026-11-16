@@ -1,19 +1,21 @@
 import type { components } from "@hagz/api";
 import { PIN_NEAR_AREA_METRES } from "@hagz/contracts";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
   Keyboard,
   Modal,
+  Platform,
   Pressable,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
+import { Button } from "./button";
 import { isRTL } from "@/lib/language";
 import type { Coordinates } from "@/lib/places";
 import { areas } from "@/lib/queries";
@@ -33,6 +35,8 @@ export type Area = components["schemas"]["Area"];
 // every area by name, in Arabic or English, nearest first. The API does both (only the page shown is
 // fetched, never the whole tree). Anything typed can also be asked for: an area Hagz doesn't cover
 // yet, which it adds when the venue is submitted (docs/onboarding.md), unless `allowRequest` is off.
+// The list ends on Request coverage (`onRequestCoverage`), for an owner who'd rather not search
+// first; the screen asks for the name in its own sheet once this one has gone (`onHidden`).
 //
 // Only areas the pin could be listed under are offered: the API turns away one whose centre is more
 // than PIN_NEAR_AREA_METRES from the pin (PIN_FAR_FROM_AREA). An area without a centre has no
@@ -54,6 +58,8 @@ export function AreaPicker({
   onClose,
   onPick,
   onRequest,
+  onRequestCoverage,
+  onHidden,
 }: {
   visible: boolean;
   // The pin's country, whose areas these are.
@@ -67,6 +73,9 @@ export function AreaPicker({
   onClose: () => void;
   onPick: (area: Area) => void;
   onRequest?: (name: string) => void;
+  onRequestCoverage?: () => void;
+  // Once the sheet has gone: iOS won't present another modal while this one is still leaving.
+  onHidden?: () => void;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -80,6 +89,15 @@ export function AreaPicker({
     if (!visible) return;
     setQuery("");
     setSearched("");
+  }, [visible]);
+
+  // iOS says when the Modal is really gone (onDismiss below); Android presents over a leaving one.
+  const wasVisible = useRef(visible);
+  const hidden = useRef(onHidden);
+  hidden.current = onHidden;
+  useEffect(() => {
+    if (wasVisible.current && !visible && Platform.OS !== "ios") hidden.current?.();
+    wasVisible.current = visible;
   }, [visible]);
 
   useEffect(() => {
@@ -109,6 +127,7 @@ export function AreaPicker({
       visible={visible}
       animationType="slide"
       onRequestClose={onClose}
+      onDismiss={Platform.OS === "ios" ? () => hidden.current?.() : undefined}
       statusBarTranslucent
     >
       <View className="flex-1 bg-scrim" style={{ direction: isRTL ? "rtl" : "ltr" }}>
@@ -202,6 +221,18 @@ export function AreaPicker({
                     </Text>
                   </Text>
                 </Pressable>
+              ) : allowRequest && onRequestCoverage ? (
+                <View className="pt-6">
+                  <Button
+                    label={t("screens.createVenue.place.requestCoverage")}
+                    variant="secondary"
+                    compact
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      onRequestCoverage();
+                    }}
+                  />
+                </View>
               ) : undefined
             }
             renderItem={({ item }) => (
