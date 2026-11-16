@@ -22,6 +22,7 @@ import {
   IconChevronLeft,
   IconDoor,
   IconEye,
+  IconEyeOff,
   IconList,
   IconMinus,
   IconPlus,
@@ -40,6 +41,7 @@ import {
   type Camera,
   type Ghost,
   type GhostState,
+  type Grow,
   type Trouble,
 } from "@/components/layout-canvas";
 import { LayoutList, type ListedItem } from "@/components/layout-list";
@@ -112,6 +114,10 @@ function LayoutView({
   // here.
   const ghostState = useSharedValue<GhostState>(NO_GHOST);
   const [listOpen, setListOpen] = useState(false);
+  // Showing the layout as players will see it: nothing to edit, no tray.
+  const [previewing, setPreviewing] = useState(false);
+  // The venue's size while one of its edges is being dragged.
+  const [sizing, setSizing] = useState<{ columns: number; rows: number } | null>(null);
   const [lifted, setLifted] = useState<{ key: string; art: React.ReactNode; name: string } | null>(
     null,
   );
@@ -152,7 +158,6 @@ function LayoutView({
   // can have two car parks.
   const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
 
-  const comingNext = () => hud.show(t("common.comingNext"));
   const middle = { x: screen.width / 2, y: (area.top + screen.height - area.bottom) / 2 };
   // The cell in the middle of what's on screen, where new things go.
   const middleCell = () => ({
@@ -247,6 +252,21 @@ function LayoutView({
     trayTop,
     onTrouble: trouble,
     onLand: () => setLifted(null),
+  };
+
+  // An edge moved: the grid grows or shrinks on that side. Moving the left or top edge moves the
+  // grid's start, so everything placed shifts by as much to stay where it is.
+  const resizeVenue = (grow: Grow) => {
+    change({
+      columns: plan.columns + grow.left + grow.right,
+      rows: plan.rows + grow.top + grow.bottom,
+      grounds: plan.grounds.map((g) => ({ ...g, x: g.x + grow.left, y: g.y + grow.top })),
+      amenities: plan.amenities.map((a) => ({ ...a, x: a.x + grow.left, y: a.y + grow.top })),
+      entrances: plan.entrances.map((e) => ({
+        ...e,
+        offset: e.offset + (e.side === "TOP" || e.side === "BOTTOM" ? grow.left : grow.top),
+      })),
+    });
   };
 
   const move = (key: string, x: number, y: number) => {
@@ -383,6 +403,9 @@ function LayoutView({
             : null
         }
         editing={{
+          readOnly: previewing,
+          onSizing: setSizing,
+          onResizeVenue: resizeVenue,
           tiles,
           selected,
           onSelect: setSelected,
@@ -397,7 +420,7 @@ function LayoutView({
         }}
       />
 
-      {selected && selectedRect ? (
+      {selected && selectedRect && !previewing ? (
         <Actions camera={camera} rect={selectedRect} screen={screen} area={area}>
           {kind === "g" && id ? (
             <ActionButton label={t("screens.setup.layout.rotate")} onPress={() => rotate(id)}>
@@ -437,14 +460,33 @@ function LayoutView({
             {t("screens.setup.items.LAYOUT.title")}
           </Text>
           <Text className="text-[12px] leading-[15px] text-ink-2">
-            {t("screens.setup.layout.placed", {
-              placed: plan.grounds.length,
-              count: grounds.length,
-            })}
+            {sizing
+              ? t("screens.setup.layout.sizing", {
+                  ...sizing,
+                  // A cell is about 10 m.
+                  width: sizing.columns * 10,
+                  length: sizing.rows * 10,
+                })
+              : previewing
+                ? t("screens.setup.layout.previewing")
+                : t("screens.setup.layout.placed", {
+                    placed: plan.grounds.length,
+                    count: grounds.length,
+                  })}
           </Text>
         </View>
-        <FloatingButton label={t("screens.setup.layout.preview")} onPress={comingNext}>
-          <IconEye size={24} color={colors.ink} strokeWidth={1.75} />
+        <FloatingButton
+          label={t(previewing ? "screens.setup.layout.editLayout" : "screens.setup.layout.preview")}
+          onPress={() => {
+            setSelected(null);
+            setPreviewing(!previewing);
+          }}
+        >
+          {previewing ? (
+            <IconEyeOff size={24} color={colors.ink} strokeWidth={1.75} />
+          ) : (
+            <IconEye size={24} color={colors.ink} strokeWidth={1.75} />
+          )}
         </FloatingButton>
       </View>
 
@@ -472,103 +514,111 @@ function LayoutView({
             <IconMinus size={24} color={colors.ink} strokeWidth={1.75} />
           </ZoomButton>
         </View>
-        <FloatingButton label={t("screens.setup.layout.list")} onPress={() => setListOpen(true)}>
-          <IconList size={24} color={colors.ink} strokeWidth={1.75} />
-        </FloatingButton>
+        {previewing ? null : (
+          <FloatingButton label={t("screens.setup.layout.list")} onPress={() => setListOpen(true)}>
+            <IconList size={24} color={colors.ink} strokeWidth={1.75} />
+          </FloatingButton>
+        )}
       </View>
 
-      {/* What's still to place: grounds not on the layout, the venue's amenities, entrances. Tap
+      {previewing ? null : (
+        <>
+          {/* What's still to place: grounds not on the layout, the venue's amenities, entrances. Tap
           one to put it in the middle of the view, then drag it into place. */}
-      <View
-        className="absolute inset-x-3 rounded-[24px] bg-white py-[18px] pl-[18px]"
-        style={{
-          bottom: insets.bottom,
-          height: TRAY_HEIGHT,
-          shadowColor: colors.ink,
-          shadowOpacity: 0.14,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: 8 },
-        }}
-      >
-        <Text className="pb-3 text-[16px] font-medium">{t("screens.setup.layout.notPlaced")}</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 10, paddingRight: 18 }}
-        >
-          {unplaced.map((ground) => {
-            const key = `g:${ground.id}`;
-            const size = footprintOf(ground, "HORIZONTAL");
-            return (
+          <View
+            className="absolute inset-x-3 rounded-[24px] bg-white py-[18px] pl-[18px]"
+            style={{
+              bottom: insets.bottom,
+              height: TRAY_HEIGHT,
+              shadowColor: colors.ink,
+              shadowOpacity: 0.14,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 8 },
+            }}
+          >
+            <Text className="pb-3 text-[16px] font-medium">
+              {t("screens.setup.layout.notPlaced")}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingRight: 18 }}
+            >
+              {unplaced.map((ground) => {
+                const key = `g:${ground.id}`;
+                const size = footprintOf(ground, "HORIZONTAL");
+                return (
+                  <TrayItem
+                    key={key}
+                    label={nameOf(ground)}
+                    size={size}
+                    lifted={lifted?.key === key}
+                    onTap={() => placeGround(ground)}
+                    onLift={() =>
+                      setLifted({
+                        key,
+                        name: nameOf(ground),
+                        art: (
+                          <GroundArt
+                            name={nameOf(ground)}
+                            width={size.width * CELL}
+                            height={size.height * CELL}
+                          />
+                        ),
+                      })
+                    }
+                    onDrop={(x, y) => dropGround(ground, x, y)}
+                    {...drag}
+                  >
+                    <GroundChip ground={ground} />
+                  </TrayItem>
+                );
+              })}
+              {placeable.map((amenity) => {
+                const key = `a:${amenity.id}`;
+                return (
+                  <TrayItem
+                    key={key}
+                    label={amenity.name}
+                    size={NEW_AMENITY}
+                    lifted={lifted?.key === key}
+                    onTap={() => placeAmenity(amenity)}
+                    onLift={() =>
+                      setLifted({
+                        key,
+                        name: amenity.name,
+                        art: <AmenityArt amenity={amenity} columns={2} rows={2} />,
+                      })
+                    }
+                    onDrop={(x, y) => dropAmenity(amenity, x, y)}
+                    {...drag}
+                  >
+                    <Chip
+                      icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
+                      label={amenity.name}
+                    />
+                  </TrayItem>
+                );
+              })}
+              {/* An entrance goes on an edge rather than in a cell: it's placed with a tap. */}
               <TrayItem
-                key={key}
-                label={nameOf(ground)}
-                size={size}
-                lifted={lifted?.key === key}
-                onTap={() => placeGround(ground)}
-                onLift={() =>
-                  setLifted({
-                    key,
-                    name: nameOf(ground),
-                    art: (
-                      <GroundArt
-                        name={nameOf(ground)}
-                        width={size.width * CELL}
-                        height={size.height * CELL}
-                      />
-                    ),
-                  })
-                }
-                onDrop={(x, y) => dropGround(ground, x, y)}
-                {...drag}
-              >
-                <GroundChip ground={ground} />
-              </TrayItem>
-            );
-          })}
-          {placeable.map((amenity) => {
-            const key = `a:${amenity.id}`;
-            return (
-              <TrayItem
-                key={key}
-                label={amenity.name}
-                size={NEW_AMENITY}
-                lifted={lifted?.key === key}
-                onTap={() => placeAmenity(amenity)}
-                onLift={() =>
-                  setLifted({
-                    key,
-                    name: amenity.name,
-                    art: <AmenityArt amenity={amenity} columns={2} rows={2} />,
-                  })
-                }
-                onDrop={(x, y) => dropAmenity(amenity, x, y)}
+                label={t("screens.setup.layout.entrance")}
+                size={null}
+                lifted={false}
+                onTap={placeEntrance}
+                onLift={() => undefined}
+                onDrop={() => undefined}
                 {...drag}
               >
                 <Chip
-                  icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
-                  label={amenity.name}
+                  icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
+                  label={t("screens.setup.layout.entrance")}
                 />
               </TrayItem>
-            );
-          })}
-          {/* An entrance goes on an edge rather than in a cell: it's placed with a tap. */}
-          <TrayItem
-            label={t("screens.setup.layout.entrance")}
-            size={null}
-            lifted={false}
-            onTap={placeEntrance}
-            onLift={() => undefined}
-            onDrop={() => undefined}
-            {...drag}
-          >
-            <Chip
-              icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
-              label={t("screens.setup.layout.entrance")}
-            />
-          </TrayItem>
-        </ScrollView>
-      </View>
+            </ScrollView>
+          </View>
+        </>
+      )}
 
       <LayoutList
         visible={listOpen}

@@ -1,6 +1,6 @@
 import type { components } from "@hagz/api";
 import type { EntranceSide, VenueLayout } from "@hagz/contracts";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { colors } from "@/lib/colors";
 import type { Ground } from "@/lib/grounds";
+import { MAXIMUM_LAYOUT_CELLS } from "@hagz/contracts";
 import { CELL, clashes, fitsIn, footprintOf, type Rect, type Tile } from "@/lib/layout";
 import { AmenityIcon } from "./amenity-icon";
 import { IconArrowDown } from "./icons";
@@ -118,7 +119,18 @@ export interface Ghost {
   name: string;
 }
 
+// How far each of the venue's edges has been dragged out (in cells; in is negative).
+export interface Grow {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+const NO_GROWTH: Grow = { left: 0, top: 0, right: 0, bottom: 0 };
+
 export interface Editing {
+  // The preview: nothing can be selected, moved or sized.
+  readOnly: boolean;
   tiles: Tile[];
   selected: string | null;
   onSelect: (key: string | null) => void;
@@ -126,6 +138,9 @@ export interface Editing {
   onResize: (key: string, rect: Rect) => void;
   onMoveEntrance: (index: number, side: EntranceSide, offset: number) => void;
   onTrouble: (trouble: Trouble) => void;
+  // The venue's size while an edge is dragged (null once it's let go), and the edges' final move.
+  onSizing: (size: { columns: number; rows: number } | null) => void;
+  onResizeVenue: (grow: Grow) => void;
 }
 
 export function LayoutCanvas({
@@ -197,7 +212,37 @@ export function LayoutCanvas({
     ],
   }));
 
+  // The venue's edges as they're dragged; reset once the new size has come back down as props.
+  const edges = useSharedValue<Grow>(NO_GROWTH);
+  // A resize that moved the left or top edge shifts every cell: the map moves by as much, before
+  // the new layout paints, so nothing on screen jumps.
+  const shifting = useRef<Grow | null>(null);
+  useLayoutEffect(() => {
+    const done = shifting.current;
+    if (!done) return;
+    shifting.current = null;
+    const step = CELL * camera.scale.value;
+    camera.x.value -= done.left * step;
+    camera.y.value -= done.top * step;
+    edges.value = NO_GROWTH;
+  }, [layout, camera, edges]);
+  const resizeVenue = (grow: Grow) => {
+    shifting.current = grow;
+    editing.onSizing(null);
+    editing.onResizeVenue(grow);
+  };
+  const sheet = useAnimatedStyle(() => ({
+    left: -edges.value.left * CELL,
+    top: -edges.value.top * CELL,
+    width: (layout.columns + edges.value.left + edges.value.right) * CELL,
+    height: (layout.rows + edges.value.top + edges.value.bottom) * CELL,
+  }));
+  // How far each edge can go: out to the API's limit, in until it meets something placed (a tile,
+  // or an entrance on the edges it runs along) or leaves a single cell.
+  const used = usedArea(layout, editing.tiles);
+
   const shared = {
+    readOnly: editing.readOnly,
     tiles: editing.tiles,
     columns: layout.columns,
     rows: layout.rows,
@@ -222,9 +267,33 @@ export function LayoutCanvas({
             world,
           ]}
         >
+          {/* The venue: white under the grid's lines, its outline over them. */}
+          <Animated.View
+            pointerEvents="none"
+            className="bg-white"
+            style={[{ position: "absolute" }, sheet]}
+          />
           <Grid columns={layout.columns} rows={layout.rows} minScale={camera.min} screen={screen} />
-          {/* The venue's outline over the grid, as the frames draw it. */}
-          <View pointerEvents="none" className="absolute inset-0 rounded-[4px] border border-ink" />
+          <Animated.View
+            pointerEvents="none"
+            className="rounded-[4px] border border-ink"
+            style={[{ position: "absolute" }, sheet]}
+          />
+          {!editing.readOnly && editing.selected === null
+            ? EDGES.map((side) => (
+                <VenueEdge
+                  key={side}
+                  side={side}
+                  columns={layout.columns}
+                  rows={layout.rows}
+                  used={used}
+                  edges={edges}
+                  camera={camera}
+                  onSizing={editing.onSizing}
+                  onEnd={resizeVenue}
+                />
+              ))
+            : null}
           {layout.grounds.map((placed) => {
             const ground = grounds.get(placed.groundId);
             if (!ground) return null;
@@ -273,6 +342,7 @@ export function LayoutCanvas({
               rows={layout.rows}
               others={layout.entrances.filter((_, other) => other !== index)}
               selected={editing.selected === `e:${String(index)}`}
+              readOnly={editing.readOnly}
               camera={camera}
               onSelect={editing.onSelect}
               onMove={editing.onMoveEntrance}
@@ -294,6 +364,7 @@ function EditableTile({
   name,
   rect,
   selected,
+  readOnly,
   tiles,
   columns,
   rows,
@@ -308,6 +379,7 @@ function EditableTile({
   name: string;
   rect: Rect;
   selected: boolean;
+  readOnly: boolean;
   tiles: Tile[];
   columns: number;
   rows: number;
@@ -379,11 +451,13 @@ function EditableTile({
     return true;
   };
 
-  const tap = Gesture.Tap().onEnd(() => {
-    runOnJS(onSelect)(tileKey);
-  });
+  const tap = Gesture.Tap()
+    .enabled(!readOnly)
+    .onEnd(() => {
+      runOnJS(onSelect)(tileKey);
+    });
   const move = Gesture.Pan()
-    .enabled(selected)
+    .enabled(selected && !readOnly)
     .onBegin(() => {
       camera.busy.value = true;
     })
@@ -652,6 +726,7 @@ function EntranceTag({
   rows,
   others,
   selected,
+  readOnly,
   camera,
   onSelect,
   onMove,
@@ -663,6 +738,7 @@ function EntranceTag({
   rows: number;
   others: { side: EntranceSide; offset: number }[];
   selected: boolean;
+  readOnly: boolean;
   camera: Camera;
   onSelect: (key: string | null) => void;
   onMove: (index: number, side: EntranceSide, offset: number) => void;
@@ -676,11 +752,13 @@ function EntranceTag({
     (other) => `${String(SIDES.indexOf(other.side))}:${String(other.offset)}`,
   );
 
-  const tap = Gesture.Tap().onEnd(() => {
-    runOnJS(onSelect)(`e:${String(index)}`);
-  });
+  const tap = Gesture.Tap()
+    .enabled(!readOnly)
+    .onEnd(() => {
+      runOnJS(onSelect)(`e:${String(index)}`);
+    });
   const move = Gesture.Pan()
-    .enabled(selected)
+    .enabled(selected && !readOnly)
     .onBegin(() => {
       camera.busy.value = true;
     })
@@ -742,8 +820,8 @@ function EntranceTag({
   );
 }
 
-// The grid: white over the venue, the field grey around it, lines every cell across both, reaching
-// far enough out to fill the screen at the furthest zoom.
+// The grid's lines, every cell, over the venue and the field grey around it, reaching far enough out
+// to fill the screen at the furthest zoom.
 function Grid({
   columns,
   rows,
@@ -761,10 +839,6 @@ function Grid({
   const down = (rows + reach * 2) * CELL;
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0 }}>
-      <View
-        className="bg-white"
-        style={{ position: "absolute", width: columns * CELL, height: rows * CELL }}
-      />
       {Array.from({ length: columns + reach * 2 + 1 }, (_, i) => (
         <View
           key={`c${String(i)}`}
@@ -847,5 +921,133 @@ export function PitchArt({
         }
       />
     </View>
+  );
+}
+
+// --- The venue's edges ---
+
+const EDGES = ["left", "top", "right", "bottom"] as const;
+type Edge = (typeof EDGES)[number];
+
+// The cells something placed reaches to, which an edge can't be dragged in past: tiles, and
+// entrances along the edges that run that way (one on the top edge holds the left and right edges).
+interface Used {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const usedArea = (layout: VenueLayout, tiles: Tile[]): Used => {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  for (const tile of tiles) {
+    left = Math.min(left, tile.rect.x);
+    top = Math.min(top, tile.rect.y);
+    right = Math.max(right, tile.rect.x + tile.rect.width);
+    bottom = Math.max(bottom, tile.rect.y + tile.rect.height);
+  }
+  for (const entrance of layout.entrances) {
+    if (entrance.side === "TOP" || entrance.side === "BOTTOM") {
+      left = Math.min(left, entrance.offset);
+      right = Math.max(right, entrance.offset + 1);
+    } else {
+      top = Math.min(top, entrance.offset);
+      bottom = Math.max(bottom, entrance.offset + 1);
+    }
+  }
+  // Nothing placed: an edge can come in until one cell is left.
+  return {
+    left: Number.isFinite(left) ? left : layout.columns - 1,
+    top: Number.isFinite(top) ? top : layout.rows - 1,
+    right: Number.isFinite(right) ? right : 1,
+    bottom: Number.isFinite(bottom) ? bottom : 1,
+  };
+};
+
+const EDGE_LONG = 28;
+const EDGE_SHORT = 8;
+
+// A pill on the middle of one of the venue's edges: drag it out to make the venue bigger, in to
+// make it smaller, a cell at a time.
+function VenueEdge({
+  side,
+  columns,
+  rows,
+  used,
+  edges,
+  camera,
+  onSizing,
+  onEnd,
+}: {
+  side: Edge;
+  columns: number;
+  rows: number;
+  used: Used;
+  edges: SharedValue<Grow>;
+  camera: Camera;
+  onSizing: (size: { columns: number; rows: number } | null) => void;
+  onEnd: (grow: Grow) => void;
+}) {
+  const across = side === "left" || side === "right";
+  // How far this edge may move: out to the limit, in to what's placed.
+  const most = across ? MAXIMUM_LAYOUT_CELLS - columns : MAXIMUM_LAYOUT_CELLS - rows;
+  const least =
+    side === "left"
+      ? -used.left
+      : side === "right"
+        ? used.right - columns
+        : side === "top"
+          ? -used.top
+          : used.bottom - rows;
+
+  const drag = Gesture.Pan()
+    .hitSlop(16)
+    .onBegin(() => {
+      camera.busy.value = true;
+    })
+    .onUpdate((event) => {
+      const step = CELL * camera.scale.value;
+      const moved = across ? event.translationX : event.translationY;
+      const outwards = side === "left" || side === "top" ? -moved : moved;
+      const cells = Math.min(most, Math.max(least, Math.round(outwards / step)));
+      if (cells === edges.value[side]) return;
+      edges.value = { ...NO_GROWTH, [side]: cells };
+      runOnJS(onSizing)({
+        columns: columns + (across ? cells : 0),
+        rows: rows + (across ? 0 : cells),
+      });
+    })
+    .onEnd(() => {
+      const grow = edges.value;
+      if (grow[side] !== 0) runOnJS(onEnd)(grow);
+      else runOnJS(onSizing)(null);
+    })
+    .onFinalize(() => {
+      camera.busy.value = false;
+    });
+
+  const place = useAnimatedStyle(() => {
+    const left = -edges.value.left * CELL;
+    const top = -edges.value.top * CELL;
+    const width = (columns + edges.value.left + edges.value.right) * CELL;
+    const height = (rows + edges.value.top + edges.value.bottom) * CELL;
+    const x = side === "left" ? left : side === "right" ? left + width : left + width / 2;
+    const y = side === "top" ? top : side === "bottom" ? top + height : top + height / 2;
+    const w = across ? EDGE_SHORT : EDGE_LONG;
+    const h = across ? EDGE_LONG : EDGE_SHORT;
+    return { left: x - w / 2, top: y - h / 2, width: w, height: h };
+  });
+
+  return (
+    <GestureDetector gesture={drag}>
+      <Animated.View
+        accessibilityRole="adjustable"
+        className="rounded-full border-2 border-primary bg-white"
+        style={[{ position: "absolute", zIndex: 3 }, place]}
+      />
+    </GestureDetector>
   );
 }
