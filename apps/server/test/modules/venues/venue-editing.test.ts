@@ -220,6 +220,65 @@ describe("location", () => {
     });
   });
 
+  it("asks for an area Hagz doesn't cover yet while the venue is a draft", async () => {
+    const { owner, path, venueId, maadi } = await aDraft();
+    const venue = await detailOf(
+      await call(owner.id, "PATCH", path, {
+        location: { coordinates: ZAMALEK, placeId: null, requestedArea: "  Zamalek West " },
+      }),
+    );
+    expect(venue.location).toMatchObject({
+      id: null,
+      requestedArea: "Zamalek West",
+      coordinates: ZAMALEK,
+    });
+    const [event] = await eventsOf(venueId, "VENUE_LOCATION_CHANGED");
+    expect(event?.data).toMatchObject({
+      previous: { locationId: maadi.id, requestedArea: null },
+      next: { locationId: null, requestedArea: "Zamalek West" },
+    });
+  });
+
+  it("won't ask for an area once the venue is listed, so it stays findable", async () => {
+    const { owner, path, venueId, maadi } = await aDraft();
+    await prisma.venue.update({ where: { id: venueId }, data: { status: "LIVE" } });
+    const res = await call(owner.id, "PATCH", path, {
+      location: { coordinates: MAADI, placeId: null, requestedArea: "Maadi South" },
+    });
+    expect(res.status).toBe(409);
+    expect(await problem(res)).toMatchObject({
+      code: "VENUE_STATUS_CONFLICT",
+      venueStatus: "LIVE",
+    });
+    expect(await prisma.venue.findUniqueOrThrow({ where: { id: venueId } })).toMatchObject({
+      locationId: maadi.id,
+      requestedArea: null,
+    });
+  });
+
+  it("takes an area from the list or a request, exactly one", async () => {
+    const { owner, path, zamalek } = await aDraft();
+    for (const area of [{}, { locationId: zamalek.id, requestedArea: "Zamalek West" }]) {
+      const res = await call(owner.id, "PATCH", path, {
+        location: { coordinates: ZAMALEK, placeId: null, ...area },
+      });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("can't ask for an area outside the border", async () => {
+    const { owner, path } = await aDraft();
+    const res = await call(owner.id, "PATCH", path, {
+      location: {
+        coordinates: { latitude: 25.2, longitude: 55.27 },
+        placeId: null,
+        requestedArea: "Downtown",
+      },
+    });
+    expect(res.status).toBe(422);
+    expect(await problem(res)).toMatchObject({ code: "LOCATION_OUTSIDE_MARKETPLACE" });
+  });
+
   it("can't move the pin far from the area's centre", async () => {
     const { owner, path, zamalek } = await aDraft();
     await setCentre(zamalek.id, { latitude: 30.0609, longitude: 31.2197 });

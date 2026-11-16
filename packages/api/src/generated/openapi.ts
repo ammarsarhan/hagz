@@ -8956,8 +8956,16 @@ export interface components {
             location?: {
                 coordinates: components["schemas"]["Coordinates"];
                 placeId: string | null;
-                /** Format: uuid */
-                locationId: string;
+                /**
+                 * Format: uuid
+                 * @description An area from the list. Send this or `requestedArea`, not both.
+                 */
+                locationId?: string;
+                /**
+                 * @description An area Hagz doesn't cover yet, in the owner's words, in the venue's marketplace. Drafts only: a listed venue keeps an area players can find it under.
+                 * @example Sheikh Zayed, Giza
+                 */
+                requestedArea?: string;
             };
         };
         VenueTranslationInput: {

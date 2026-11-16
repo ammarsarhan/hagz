@@ -1928,13 +1928,20 @@
               },
               "locationId": {
                 "type": "string",
-                "format": "uuid"
+                "format": "uuid",
+                "description": "An area from the list. Send this or `requestedArea`, not both."
+              },
+              "requestedArea": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 80,
+                "example": "Sheikh Zayed, Giza",
+                "description": "An area Hagz doesn't cover yet, in the owner's words, in the venue's marketplace. Drafts only: a listed venue keeps an area players can find it under."
               }
             },
             "required": [
               "coordinates",
-              "placeId",
-              "locationId"
+              "placeId"
             ],
             "description": "A new pin and area, in the same marketplace."
           }
