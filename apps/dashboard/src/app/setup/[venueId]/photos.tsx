@@ -508,6 +508,15 @@ const useSlotStyle = (slot: Slot | undefined) => {
   }));
 };
 
+// A picture of this shape just big enough to fill the cover, the largest place it can take.
+const pictureFor = (aspect: number, gridWidth: number) => {
+  "worklet";
+  const cover = slotAt(0, gridWidth);
+  return aspect > cover.width / cover.height
+    ? { width: cover.height * aspect, height: cover.height }
+    : { width: cover.width, height: cover.width / aspect };
+};
+
 // Moves `id` to `to`, the rest keeping their order around it.
 const moved = (ids: string[], id: string, to: number) => {
   "worklet";
@@ -614,6 +623,8 @@ function PhotoTile({
   // Above the others from the lift until it has landed, so it never passes under the photos it
   // glides over on the way to its place.
   const onTop = useSharedValue(0);
+  // The picture's own width over height, known once it has loaded.
+  const aspect = useSharedValue(4 / 3);
 
   // To its place whenever the order on screen moves it, during a drag included. The carried photo
   // follows the finger instead, and is sent to its place when it's let go.
@@ -702,6 +713,25 @@ function PhotoTile({
   const chip = useAnimatedStyle(() => ({
     opacity: withTiming(order.value[0] === id ? 1 : 0, { duration: 150 }),
   }));
+  // The picture is laid out once, at its own shape and big enough to fill the cover, and scaled
+  // to fill the tile: expo-image reloads (and downscales again) whenever its view changes size, so
+  // a picture sized with the tile would reload on every frame of a glide into or out of the cover.
+  // Scaling a picture of its own shape to cover the tile is what contentFit "cover" does, so it
+  // looks the same at rest as it did, and grows without a jump.
+  const pictureSize = useAnimatedStyle(() => {
+    const size = pictureFor(aspect.value, gridWidth.value);
+    return { position: "absolute", left: 0, top: 0, width: size.width, height: size.height };
+  });
+  const pictureFit = useAnimatedStyle(() => {
+    const size = pictureFor(aspect.value, gridWidth.value);
+    return {
+      transform: [
+        { translateX: (width.value - size.width) / 2 },
+        { translateY: (height.value - size.height) / 2 },
+        { scale: Math.max(width.value / size.width, height.value / size.height) },
+      ],
+    };
+  });
 
   return (
     <GestureDetector gesture={Gesture.Race(drag, tap)}>
@@ -722,12 +752,21 @@ function PhotoTile({
           },
         ]}
       >
-        <Image
-          source={{ uri: reachable(photo.url) }}
-          contentFit="cover"
-          transition={150}
-          style={{ flex: 1, borderRadius: 8, backgroundColor: colors.border }}
-        />
+        {/* Clipped here rather than on the tile, which would clip its shadow too. */}
+        <View style={{ flex: 1, borderRadius: 8, overflow: "hidden" }}>
+          <Animated.View style={[pictureSize, pictureFit]}>
+            <Image
+              source={{ uri: reachable(photo.url) }}
+              contentFit="cover"
+              transition={150}
+              onLoad={(event) => {
+                const { width: w, height: h } = event.source;
+                if (w > 0 && h > 0) aspect.value = w / h;
+              }}
+              style={{ flex: 1 }}
+            />
+          </Animated.View>
+        </View>
         <Animated.View
           pointerEvents="none"
           style={chip}
