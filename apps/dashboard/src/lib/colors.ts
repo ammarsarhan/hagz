@@ -12,6 +12,7 @@ export const colors = {
   red: "#d92d20",
   green: "#067647",
   border: "#ebebeb",
+  field: "#f4f5f7",
   // Animated backgrounds (a chosen option's tint, from white), which classes can't tween.
   white: "#ffffff",
   blueTint: "#eef1fe",
