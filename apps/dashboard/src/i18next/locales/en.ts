@@ -447,6 +447,7 @@ const en = {
             HARD_COURT: "Hard court",
             HARD_WOOD: "Wooden floor",
             CLAY: "Clay",
+            SAND: "Sand",
             OTHER: "Other",
           },
           environments: { OUTDOOR: "Outdoor", COVERED: "Covered", INDOOR: "Indoor" },

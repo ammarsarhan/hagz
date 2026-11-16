@@ -10,7 +10,7 @@ export const GroundSize = z
   .enum(["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE", "STANDARD"])
   .meta({ id: "GroundSize", description: "`STANDARD` for sports without size variants." });
 export const GroundSurface = z
-  .enum(["NATURAL_GRASS", "ARTIFICIAL_TURF", "HARD_WOOD", "HARD_COURT", "CLAY", "OTHER"])
+  .enum(["NATURAL_GRASS", "ARTIFICIAL_TURF", "HARD_WOOD", "HARD_COURT", "CLAY", "SAND", "OTHER"])
   .meta({ id: "GroundSurface" });
 export const GroundEnvironment = z
   .enum(["INDOOR", "OUTDOOR", "COVERED"])
@@ -35,6 +35,21 @@ export const SIZES_BY_SPORT = {
 
 export const sizeFitsSport = (sport: Sport, size: Size) =>
   (SIZES_BY_SPORT[sport] as readonly Size[]).includes(size);
+
+type Surface = z.infer<typeof GroundSurface>;
+
+// Which surfaces each sport is played on, in the order the app offers them (user, 2026-11-16).
+// Other is always there for whatever doesn't fit; sand is for beach football and volleyball.
+export const SURFACES_BY_SPORT = {
+  FOOTBALL: ["ARTIFICIAL_TURF", "NATURAL_GRASS", "HARD_COURT", "SAND", "OTHER"],
+  PADEL: ["ARTIFICIAL_TURF", "HARD_COURT", "OTHER"],
+  TENNIS: ["HARD_COURT", "CLAY", "NATURAL_GRASS", "ARTIFICIAL_TURF", "OTHER"],
+  BASKETBALL: ["HARD_COURT", "HARD_WOOD", "OTHER"],
+  VOLLEYBALL: ["HARD_WOOD", "HARD_COURT", "SAND", "OTHER"],
+} as const satisfies Record<Sport, readonly Surface[]>;
+
+export const surfaceFitsSport = (sport: Sport, surface: Surface) =>
+  (SURFACES_BY_SPORT[sport] as readonly Surface[]).includes(surface);
 
 // A ground's footprint on the layout grid (about 10 m a cell), landscape; VERTICAL swaps them.
 // Fixed per sport and size so owners never size grounds (decided 2026-10-24).
@@ -82,6 +97,10 @@ export const CreateGround = z
   .refine((ground) => sizeFitsSport(ground.sport, ground.size), {
     message: "That size doesn't exist for that sport.",
     path: ["size"],
+  })
+  .refine((ground) => surfaceFitsSport(ground.sport, ground.surface), {
+    message: "That sport isn't played on that surface.",
+    path: ["surface"],
   })
   .refine((ground) => ground.minimumSlots <= ground.maximumSlots, {
     message: "The shortest booking can't be longer than the longest.",

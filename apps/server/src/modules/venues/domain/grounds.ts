@@ -1,5 +1,6 @@
 import {
   sizeFitsSport,
+  surfaceFitsSport,
   type CreateGround,
   type PriceTier,
   type ScheduleDay,
@@ -13,8 +14,9 @@ export type GroundFields = Omit<CreateGround, "name">;
 export const invalidGround = (field: string, detail: string) =>
   new AppError({ code: "INVALID_GROUND", status: 422, detail, extensions: { field } });
 
-// Applies a partial change and checks what results: a size the sport comes in, a shortest booking
-// no longer than the longest, and no price removed while the week still uses its tier.
+// Applies a partial change and checks what results: a size the sport comes in, a surface it's played
+// on (when either changes, so a ground saved before that rule can still be renamed), a shortest
+// booking no longer than the longest, and no price removed while the week still uses its tier.
 export const mergeGround = (
   current: GroundFields,
   change: Omit<UpdateGround, "name" | "status">,
@@ -23,6 +25,10 @@ export const mergeGround = (
   const next = { ...current, ...stripUndefined(change) };
   if (!sizeFitsSport(next.sport, next.size)) {
     throw invalidGround("size", "That size doesn't exist for that sport.");
+  }
+  const surfaceTouched = change.sport !== undefined || change.surface !== undefined;
+  if (surfaceTouched && !surfaceFitsSport(next.sport, next.surface)) {
+    throw invalidGround("surface", "That sport isn't played on that surface.");
   }
   if (next.minimumSlots > next.maximumSlots) {
     throw invalidGround("minimumSlots", "The shortest booking can't be longer than the longest.");

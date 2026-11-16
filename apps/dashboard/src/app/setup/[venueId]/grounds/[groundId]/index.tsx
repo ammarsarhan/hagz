@@ -2,7 +2,7 @@ import type { Icon } from "@tabler/icons-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
-import { SIZES_BY_SPORT } from "@hagz/contracts";
+import { SIZES_BY_SPORT, SURFACES_BY_SPORT, surfaceFitsSport } from "@hagz/contracts";
 import { Button } from "@/components/button";
 import {
   ChoicePill,
@@ -82,8 +82,15 @@ export default function GroundBasics() {
                 sport={sport}
                 selected={draft.sport === sport}
                 onPress={() =>
-                  // A new sport starts at its first size: 5-a-side, or the one standard court.
-                  update({ sport, size: SIZES_BY_SPORT[sport][0] })
+                  // A new sport starts at its first size (5-a-side, or the one standard court), and
+                  // keeps its surface only if the sport is played on it.
+                  update({
+                    sport,
+                    size: SIZES_BY_SPORT[sport][0],
+                    surface: surfaceFitsSport(sport, draft.surface)
+                      ? draft.surface
+                      : SURFACES_BY_SPORT[sport][0],
+                  })
                 }
               />
             ))}

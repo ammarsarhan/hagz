@@ -131,6 +131,27 @@ describe("adding grounds", () => {
     expect(padel.sport).toBe("PADEL");
   });
 
+  it("keep surfaces to the sport", async () => {
+    const { owner, path } = await aDraft();
+    // Basketball isn't played on grass; sand is for beach football and volleyball.
+    const grass = { ...PITCH, sport: "BASKETBALL", size: "STANDARD", surface: "NATURAL_GRASS" };
+    expect((await call(owner.id, "POST", `${path}/grounds`, grass)).status).toBe(400);
+    const beach = await addGround(owner.id, path, {
+      sport: "VOLLEYBALL",
+      size: "STANDARD",
+      surface: "SAND",
+    });
+    expect(beach.surface).toBe("SAND");
+
+    // A change that leaves the sport on the wrong surface is refused, whichever field moved.
+    const pitch = await addGround(owner.id, path);
+    for (const change of [{ surface: "CLAY" }, { sport: "BASKETBALL", size: "STANDARD" }]) {
+      const res = await call(owner.id, "PATCH", `${path}/grounds/${pitch.id}`, change);
+      expect(res.status).toBe(422);
+      expect(await problem(res)).toMatchObject({ code: "INVALID_GROUND", field: "surface" });
+    }
+  });
+
   it("are for members who manage the schedule", async () => {
     const { owner, path, venueId } = await aDraft();
     const listingEditor = await createStaff({ phone: "+201009990000" });

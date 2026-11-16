@@ -9129,7 +9129,7 @@ export interface components {
          */
         GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
         /** @enum {string} */
-        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "OTHER";
+        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "SAND" | "OTHER";
         /**
          * @description `COVERED`: a roof with open sides.
          * @enum {string}

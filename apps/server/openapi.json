@@ -2294,6 +2294,7 @@
           "HARD_WOOD",
           "HARD_COURT",
           "CLAY",
+          "SAND",
           "OTHER"
         ]
       },

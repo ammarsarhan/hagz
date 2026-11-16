@@ -97,6 +97,7 @@ enum GroundSurface {
   HARD_WOOD
   HARD_COURT
   CLAY
+  SAND // Beach football and volleyball.
   OTHER
 }
 

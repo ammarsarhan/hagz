@@ -484,6 +484,7 @@ const ar: ArabicTranslations = {
             HARD_COURT: "أرضية صلبة",
             HARD_WOOD: "أرضية خشبية",
             CLAY: "أرضية ترابية",
+            SAND: "رمل",
             OTHER: "أخرى",
           },
           environments: { OUTDOOR: "مكشوف", COVERED: "مسقوف", INDOOR: "مغلق" },
