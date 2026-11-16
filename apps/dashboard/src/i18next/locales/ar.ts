@@ -214,8 +214,9 @@ const ar: ArabicTranslations = {
           outsideCountryTitle: "حجز لا تعمل في هذه الدولة بعد",
           outsideCountryBody:
             "لا يمكن إضافة ملاعب هنا بعد. إن كان الدبوس في غير مكانه، ارجع وحرّكه.",
-          areaNoneBody: "يتصفح اللاعبون الملاعب حسب المنطقة.",
-          noCoverage: "لا توجد مناطق ضمن تغطية حجز على بُعد {{km}} كم من الدبوس.",
+          noCoverageTitle: "حجز غير متاحة في هذه المنطقة بعد",
+          noCoverageBody:
+            "لا توجد منطقة نغطيها على بُعد {{km}} كم من الدبوس. اكتب اسم منطقتك وسنضيفها عند إرسال ملعبك.",
           requestCoverage: "اطلب التغطية",
           changeRequest: "غيّر اسم المنطقة",
           requestTitle: "اطلب التغطية",

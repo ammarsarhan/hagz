@@ -189,8 +189,9 @@ const en = {
           outsideCountryTitle: "Hagz isn't in this country yet",
           outsideCountryBody:
             "Venues here can't be listed yet. If the pin is in the wrong place, go back and move it.",
-          areaNoneBody: "Players browse venues by area.",
-          noCoverage: "There are no areas under Hagz's coverage within {{km}} km of your pin.",
+          noCoverageTitle: "Hagz isn't in this area yet",
+          noCoverageBody:
+            "None of the areas we cover is within {{km}} km of your pin. Name your area and we'll add it when your venue is submitted.",
           requestCoverage: "Request coverage",
           changeRequest: "Change the area name",
           requestTitle: "Request coverage",

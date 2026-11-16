@@ -634,20 +634,15 @@ function AreaStep({
     );
   }
 
+  // Nothing in reach: say so plainly, and make asking for the area the one thing to do.
   if (outside && !label) {
     return (
       <>
         <Heading
-          title={t("screens.createVenue.place.areaUnknownTitle")}
-          body={t("screens.createVenue.place.areaNoneBody")}
+          title={t("screens.createVenue.place.noCoverageTitle")}
+          body={t("screens.createVenue.place.noCoverageBody", { km: PIN_NEAR_AREA_METRES / 1000 })}
         />
-        <View className="rounded-[16px] border border-border p-4">
-          <Text className="text-body text-ink-2">
-            {t("screens.createVenue.place.noCoverage", { km: PIN_NEAR_AREA_METRES / 1000 })}
-          </Text>
-        </View>
-        <CardLink label={t("screens.createVenue.place.requestCoverage")} onPress={onRequest} />
-        <Button label={t("screens.createVenue.place.create")} disabled onPress={onConfirm} />
+        <Button label={t("screens.createVenue.place.requestCoverage")} onPress={onRequest} />
       </>
     );
   }
