@@ -1,4 +1,11 @@
-import type { GroundSize, GroundSport, VenueLayout } from "@hagz/contracts";
+import {
+  footprintAllowed,
+  FOOTPRINT_RANGES,
+  FOOTPRINTS,
+  type GroundSize,
+  type GroundSport,
+  type VenueLayout,
+} from "@hagz/contracts";
 import { describe, expect, it } from "vitest";
 import { defaultSize, footprintOf, validateLayout } from "@/modules/venues/domain/layout";
 
@@ -16,8 +23,8 @@ const layout = (overrides: Partial<VenueLayout> = {}): VenueLayout => ({
   columns: 16,
   rows: 19,
   grounds: [
-    { groundId: "a", x: 1, y: 1, orientation: "HORIZONTAL" },
-    { groundId: "b", x: 1, y: 5, orientation: "HORIZONTAL" },
+    { groundId: "a", x: 1, y: 1, orientation: "HORIZONTAL", width: 4, height: 2 },
+    { groundId: "b", x: 1, y: 5, orientation: "HORIZONTAL", width: 6, height: 4 },
   ],
   amenities: [{ optionId: "cafe", x: 9, y: 5, width: 3, height: 2 }],
   entrances: [{ side: "BOTTOM", offset: 8 }],
@@ -57,7 +64,7 @@ describe("validating a layout", () => {
       }),
     ).toBe("OUT_OF_BOUNDS");
     const turned = layout({
-      grounds: [{ groundId: "b", x: 0, y: 14, orientation: "VERTICAL" }],
+      grounds: [{ groundId: "b", x: 0, y: 14, orientation: "VERTICAL", width: 6, height: 4 }],
       amenities: [],
     });
     expect(
@@ -85,7 +92,7 @@ describe("validating a layout", () => {
 
   it("only places the venue's grounds, once each", () => {
     const stranger = layout({
-      grounds: [{ groundId: "z", x: 0, y: 0, orientation: "HORIZONTAL" }],
+      grounds: [{ groundId: "z", x: 0, y: 0, orientation: "HORIZONTAL", width: 4, height: 2 }],
     });
     expect(
       reason(() => {
@@ -94,8 +101,8 @@ describe("validating a layout", () => {
     ).toBe("UNKNOWN_GROUND");
     const twice = layout({
       grounds: [
-        { groundId: "a", x: 0, y: 0, orientation: "HORIZONTAL" },
-        { groundId: "a", x: 0, y: 10, orientation: "HORIZONTAL" },
+        { groundId: "a", x: 0, y: 0, orientation: "HORIZONTAL", width: 4, height: 2 },
+        { groundId: "a", x: 0, y: 10, orientation: "HORIZONTAL", width: 4, height: 2 },
       ],
       amenities: [],
     });
@@ -145,6 +152,24 @@ describe("validating a layout", () => {
         validateLayout(same, grounds, amenities);
       }),
     ).toBe("DUPLICATE_ENTRANCE");
+  });
+});
+
+describe("ground size ranges", () => {
+  it("include each default, and never let football sizes meet", () => {
+    for (const [sport, sizes] of Object.entries(FOOTPRINT_RANGES)) {
+      for (const [size, range] of Object.entries(sizes)) {
+        const base = FOOTPRINTS[sport as GroundSport][size as GroundSize];
+        expect(base && footprintAllowed(sport as GroundSport, size as GroundSize, base)).toBe(true);
+        expect(range.width[0]).toBeLessThanOrEqual(range.width[1]);
+      }
+    }
+    const area = (size: GroundSize, end: 0 | 1) => {
+      const range = FOOTPRINT_RANGES.FOOTBALL[size];
+      return range ? range.width[end] * range.height[end] : 0;
+    };
+    expect(area("FIVE_A_SIDE", 1)).toBeLessThan(area("SEVEN_A_SIDE", 0));
+    expect(area("SEVEN_A_SIDE", 1)).toBeLessThan(area("ELEVEN_A_SIDE", 0));
   });
 });
 

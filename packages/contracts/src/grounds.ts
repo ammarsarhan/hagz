@@ -51,8 +51,10 @@ export const SURFACES_BY_SPORT = {
 export const surfaceFitsSport = (sport: Sport, surface: Surface) =>
   (SURFACES_BY_SPORT[sport] as readonly Surface[]).includes(surface);
 
-// A ground's footprint on the layout grid (about 10 m a cell), landscape; VERTICAL swaps them.
-// Fixed per sport and size so owners never size grounds (decided 2026-10-24).
+// A ground's footprint on the layout grid (about 10 m a cell), landscape (length × breadth, run-off
+// included); VERTICAL swaps them. Each starts at its default (FOOTPRINTS) and can be sized within a
+// range taken from real measurements (FOOTPRINT_RANGES; user, 2026-11-16), so owners match their
+// ground without making a 5-a-side as big as a 7-a-side.
 export const FOOTPRINTS: Record<Sport, Partial<Record<Size, { width: number; height: number }>>> = {
   FOOTBALL: {
     FIVE_A_SIDE: { width: 4, height: 2 },
@@ -63,6 +65,49 @@ export const FOOTPRINTS: Record<Sport, Partial<Record<Size, { width: number; hei
   TENNIS: { STANDARD: { width: 4, height: 2 } },
   BASKETBALL: { STANDARD: { width: 3, height: 2 } },
   VOLLEYBALL: { STANDARD: { width: 2, height: 1 } },
+};
+
+type Range = readonly [number, number];
+
+// The sizes each ground can take, in cells, [smallest, largest] each way:
+//   5-a-side football  25–40 × 15–25 m     3–4 × 2
+//   7-a-side football  50–65 × 30–45 m     5–6 × 3–4
+//   11-a-side football 90–120 × 60–80 m    9–12 × 6–8
+//   padel              20 × 10 m (the rules) 2 × 1
+//   tennis             ~36 × 18 m with run-off 3–4 × 2
+//   basketball         28 × 15 m + run-off 3 × 2
+//   volleyball         18 × 9 m + free zone 2–3 × 1–2
+// The football ranges never meet: the largest 5-a-side (8 cells) is smaller than the smallest
+// 7-a-side (15), and the largest 7-a-side (24) than the smallest 11-a-side (54).
+export const FOOTPRINT_RANGES: Record<
+  Sport,
+  Partial<Record<Size, { width: Range; height: Range }>>
+> = {
+  FOOTBALL: {
+    FIVE_A_SIDE: { width: [3, 4], height: [2, 2] },
+    SEVEN_A_SIDE: { width: [5, 6], height: [3, 4] },
+    ELEVEN_A_SIDE: { width: [9, 12], height: [6, 8] },
+  },
+  PADEL: { STANDARD: { width: [2, 2], height: [1, 1] } },
+  TENNIS: { STANDARD: { width: [3, 4], height: [2, 2] } },
+  BASKETBALL: { STANDARD: { width: [3, 3], height: [2, 2] } },
+  VOLLEYBALL: { STANDARD: { width: [2, 3], height: [1, 2] } },
+};
+
+// Whether a ground of this sport and size can be this big (landscape, in cells).
+export const footprintAllowed = (
+  sport: Sport,
+  size: Size,
+  footprint: { width: number; height: number },
+) => {
+  const range = FOOTPRINT_RANGES[sport][size];
+  return (
+    range !== undefined &&
+    footprint.width >= range.width[0] &&
+    footprint.width <= range.width[1] &&
+    footprint.height >= range.height[0] &&
+    footprint.height <= range.height[1]
+  );
 };
 
 export const MAXIMUM_GROUNDS = 100;

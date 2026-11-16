@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 // The venue layout (PR 2.5): a grid of about 10 m cells, sized by the owner (up to 60 × 60), with
-// grounds at fixed footprints, the venue's placeable amenities (parking, a café) sized 1–4 cells,
-// and entrances on the edges.
+// grounds sized within their sport's range (FOOTPRINT_RANGES), the venue's placeable amenities
+// (parking, a café) at any size that fits, and entrances on the edges.
 
 export const MAXIMUM_LAYOUT_CELLS = 60;
 // The size a new layout starts at (the designs' grid), grown to fit the largest ground.
@@ -20,9 +20,20 @@ const cell = z
   .min(0)
   .max(MAXIMUM_LAYOUT_CELLS - 1);
 
+const extent = z.int().min(1).max(MAXIMUM_LAYOUT_CELLS);
+
 export const PlacedGround = z
-  .object({ groundId: z.uuid(), x: cell, y: cell, orientation: Orientation })
-  .meta({ id: "PlacedGround", description: "Top-left cell; the footprint comes from the ground." });
+  .object({
+    groundId: z.uuid(),
+    x: cell,
+    y: cell,
+    orientation: Orientation,
+    width: extent.meta({
+      description: "Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES.",
+    }),
+    height: extent.meta({ description: "Breadth in cells, as if HORIZONTAL." }),
+  })
+  .meta({ id: "PlacedGround", description: "Top-left cell, and the ground's size on the grid." });
 
 export const PlacedAmenity = z
   .object({
@@ -32,8 +43,8 @@ export const PlacedAmenity = z
     }),
     x: cell,
     y: cell,
-    width: z.int().min(1).max(4),
-    height: z.int().min(1).max(4),
+    width: extent.meta({ description: "Any size that fits on the grid without overlapping." }),
+    height: extent,
   })
   .meta({ id: "PlacedAmenity" });
 

@@ -111,8 +111,8 @@ const plan = ({
   columns: 16,
   rows: 19,
   grounds: [
-    { groundId: five, x: 1, y: 1, orientation: "HORIZONTAL" },
-    { groundId: seven, x: 1, y: 5, orientation: "HORIZONTAL" },
+    { groundId: five, x: 1, y: 1, orientation: "HORIZONTAL", width: 4, height: 2 },
+    { groundId: seven, x: 1, y: 5, orientation: "HORIZONTAL", width: 6, height: 4 },
   ],
   amenities: [
     { optionId: cafe, x: 9, y: 5, width: 3, height: 2 },
@@ -199,6 +199,31 @@ describe("the venue layout", () => {
       reason: "UNKNOWN_GROUND",
       groundId: other.seven.id,
     });
+  });
+
+  it("sizes grounds within their kind's range, and amenities as they like", async () => {
+    const draft = await aDraft();
+    const base = plan(ids(draft));
+    // A 5-a-side as big as a 7-a-side, or a 7-a-side as small as a 5-a-side: no.
+    for (const [index, width, height] of [
+      [0, 5, 3],
+      [1, 4, 2],
+    ] as const) {
+      const grounds = base.grounds.map((g, i) => (i === index ? { ...g, width, height } : g));
+      const res = await call(draft.owner.id, "PUT", `${draft.path}/layout`, { ...base, grounds });
+      expect(res.status).toBe(422);
+      expect(await problem(res)).toMatchObject({ reason: "GROUND_SIZE" });
+    }
+    // A smaller 5-a-side and a car park bigger than the old four-cell limit: yes.
+    const res = await call(draft.owner.id, "PUT", `${draft.path}/layout`, {
+      ...base,
+      grounds: base.grounds.map((g, i) => (i === 0 ? { ...g, width: 3 } : g)),
+      amenities: [{ optionId: draft.parking, x: 1, y: 11, width: 9, height: 6 }],
+    });
+    expect(res.status).toBe(200);
+    const view = VenueLayoutView.parse(await res.json());
+    expect(view.grounds[0]).toMatchObject({ width: 3, height: 2 });
+    expect(view.amenities[0]).toMatchObject({ width: 9, height: 6 });
   });
 
   it("places only amenities the venue offers that can go on a layout", async () => {

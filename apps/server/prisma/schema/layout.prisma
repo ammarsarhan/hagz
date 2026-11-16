@@ -12,9 +12,9 @@ model VenueLayout {
   items VenueLayoutItem[]
 }
 
-// A tile at its top-left cell. Ground footprints come from sport and size (in code), swapped when
-// VERTICAL; owners size amenities. CHECKs: x, y >= 0; GROUND has groundId and orientation and no
-// size; AMENITY has optionId and a size of 1–4 × 1–4. An amenity tile is one the venue offers (its
+// A tile at its top-left cell and its size in cells. A ground's size is its length × breadth (within
+// its sport's range, in code), swapped when VERTICAL; an amenity's is any size that fits. CHECKs:
+// x, y >= 0 and width, height >= 1; GROUND has groundId and orientation; AMENITY has optionId. An amenity tile is one the venue offers (its
 // VenueAmenity), so dropping the amenity drops its tiles; it may be placed more than once.
 model VenueLayoutItem {
   id          String             @id @default(uuid(7)) @db.Uuid
@@ -25,8 +25,8 @@ model VenueLayoutItem {
   x           Int
   y           Int
   orientation GroundOrientation?
-  width       Int?
-  height      Int?
+  width       Int
+  height      Int
   createdAt   DateTime           @default(now()) @db.Timestamptz
   updatedAt   DateTime           @updatedAt @db.Timestamptz
 

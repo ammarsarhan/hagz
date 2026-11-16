@@ -26,8 +26,8 @@ CREATE TABLE "VenueLayoutItem" (
     "x" INTEGER NOT NULL,
     "y" INTEGER NOT NULL,
     "orientation" "GroundOrientation",
-    "width" INTEGER,
-    "height" INTEGER,
+    "width" INTEGER NOT NULL,
+    "height" INTEGER NOT NULL,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -61,13 +61,11 @@ ALTER TABLE "VenueLayout" ADD CONSTRAINT "VenueLayout_size_check"
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_position_check"
-  CHECK (x >= 0 AND y >= 0);
+  CHECK (x >= 0 AND y >= 0 AND width >= 1 AND height >= 1);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "VenueLayoutItem" ADD CONSTRAINT "VenueLayoutItem_kind_check"
   CHECK (
-    (type = 'GROUND' AND "groundId" IS NOT NULL AND "optionId" IS NULL AND orientation IS NOT NULL
-        AND width IS NULL AND height IS NULL)
-    OR (type = 'AMENITY' AND "optionId" IS NOT NULL AND "groundId" IS NULL AND orientation IS NULL
-        AND width IS NOT NULL AND height IS NOT NULL AND width BETWEEN 1 AND 4 AND height BETWEEN 1 AND 4)
+    (type = 'GROUND' AND "groundId" IS NOT NULL AND "optionId" IS NULL AND orientation IS NOT NULL)
+    OR (type = 'AMENITY' AND "optionId" IS NOT NULL AND "groundId" IS NULL AND orientation IS NULL)
   );

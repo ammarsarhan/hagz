@@ -9211,13 +9211,17 @@ export interface components {
             /** @description The venue's amenities that can go on the layout, placed or not. */
             placeableOptionIds: string[];
         };
-        /** @description Top-left cell; the footprint comes from the ground. */
+        /** @description Top-left cell, and the ground's size on the grid. */
         PlacedGround: {
             /** Format: uuid */
             groundId: string;
             x: number;
             y: number;
             orientation: components["schemas"]["Orientation"];
+            /** @description Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES. */
+            width: number;
+            /** @description Breadth in cells, as if HORIZONTAL. */
+            height: number;
         };
         /**
          * @description `VERTICAL` swaps the footprint's width and height.
@@ -9232,6 +9236,7 @@ export interface components {
             optionId: string;
             x: number;
             y: number;
+            /** @description Any size that fits on the grid without overlapping. */
             width: number;
             height: number;
         };

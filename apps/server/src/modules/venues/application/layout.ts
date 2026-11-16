@@ -64,14 +64,16 @@ const read = async (db: Tx | typeof prisma, venueId: string): Promise<VenueLayou
         x: item.x,
         y: item.y,
         orientation: item.orientation ?? "HORIZONTAL",
+        width: item.width,
+        height: item.height,
       });
     } else if (item.type === "AMENITY" && item.optionId && drawable.has(item.optionId)) {
       amenities.push({
         optionId: item.optionId,
         x: item.x,
         y: item.y,
-        width: item.width ?? 1,
-        height: item.height ?? 1,
+        width: item.width,
+        height: item.height,
       });
     }
   }
@@ -116,6 +118,8 @@ export const saveLayout = async (actor: VenueAccess, input: VenueLayout) => {
           x: ground.x,
           y: ground.y,
           orientation: ground.orientation,
+          width: ground.width,
+          height: ground.height,
         })),
         ...input.amenities.map((amenity) => ({
           venueId: actor.venueId,

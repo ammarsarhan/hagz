@@ -2629,15 +2629,29 @@
           },
           "orientation": {
             "$ref": "#/components/schemas/Orientation"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Breadth in cells, as if HORIZONTAL."
           }
         },
         "required": [
           "groundId",
           "x",
           "y",
-          "orientation"
+          "orientation",
+          "width",
+          "height"
         ],
-        "description": "Top-left cell; the footprint comes from the ground."
+        "description": "Top-left cell, and the ground's size on the grid."
       },
       "Orientation": {
         "type": "string",
@@ -2668,12 +2682,13 @@
           "width": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 4
+            "maximum": 60,
+            "description": "Any size that fits on the grid without overlapping."
           },
           "height": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 4
+            "maximum": 60
           }
         },
         "required": [
