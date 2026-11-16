@@ -58,14 +58,18 @@ export function VenueInReview({
   return (
     <Screen
       footer={
-        <Button label={t("screens.setup.review.withdraw")} onPress={() => setConfirming(true)} />
+        <Button
+          label={t("screens.setup.review.withdraw")}
+          variant="soft"
+          onPress={() => setConfirming(true)}
+        />
       }
     >
       <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />} />
       <FadingScroll>
         <Title subtitle={t("screens.setup.review.inReview")}>{name}</Title>
 
-        <View className="mt-2">
+        <View className="mt-4">
           <Step
             state="done"
             title={t("screens.setup.review.sent")}
@@ -98,6 +102,7 @@ export function VenueInReview({
         </Text>
         <Button
           label={t("screens.setup.review.withdraw")}
+          variant="soft"
           loading={withdrawing}
           onPress={() => void withdraw()}
         />
@@ -143,9 +148,9 @@ function Step({
         ) : (
           <View className="size-[22px] rounded-full border-[1.5px] border-hairline" />
         )}
-        {last ? null : <View className="w-px flex-1 bg-hairline" style={{ minHeight: 20 }} />}
+        {last ? null : <View className="my-1 w-px flex-1 bg-hairline" style={{ minHeight: 28 }} />}
       </View>
-      <View className={`flex-1 ${last ? "" : "pb-4"}`}>
+      <View className={`flex-1 ${last ? "" : "pb-7"}`}>
         <Text className={`text-subtitle leading-[1.375] ${pending ? "text-ink-2" : "font-medium"}`}>
           {title}
         </Text>

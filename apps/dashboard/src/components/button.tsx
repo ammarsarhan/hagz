@@ -8,6 +8,8 @@ import { Text } from "./text";
 const variants = {
   primary: { box: "bg-primary", label: "text-on-primary" },
   secondary: { box: "bg-chip", label: "text-ink" },
+  // Blue, but quiet: an action that goes back a step rather than on (Withdraw from review).
+  soft: { box: "bg-blue-tint", label: "text-primary" },
   ghost: { box: "bg-transparent", label: "text-ink" },
   // Black: confirming something that isn't the screen's main action (sign out).
   ink: { box: "bg-ink", label: "text-white" },
@@ -55,7 +57,13 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === "primary" || variant === "ink" ? colors.onPrimary : colors.ink}
+          color={
+            variant === "primary" || variant === "ink"
+              ? colors.onPrimary
+              : variant === "soft"
+                ? colors.primary
+                : colors.ink
+          }
         />
       ) : (
         <View className="flex-row items-center gap-2">
