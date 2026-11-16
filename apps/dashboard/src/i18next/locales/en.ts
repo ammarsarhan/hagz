@@ -181,6 +181,10 @@ const en = {
           notListed: "Not listed?",
           noAreaCalled: "No area called \u201C{{query}}\u201D yet.",
           distanceKm: "{{km}} km",
+          areaTooFar: "\u201C{{query}}\u201D is more than {{km}} km from your pin.",
+          noAreaNear: "Hagz doesn't cover any area within {{km}} km of the pin yet.",
+          noAreaNearRequest:
+            "Hagz doesn't cover any area within {{km}} km of your pin yet. Type your area's name to request it.",
           requestedNote: "New area, added on submission",
           requestedBody:
             "Hagz doesn't cover this area yet. We'll add it when your venue is submitted.",

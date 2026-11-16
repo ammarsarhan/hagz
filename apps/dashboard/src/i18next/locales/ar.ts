@@ -206,6 +206,10 @@ const ar: ArabicTranslations = {
           notListed: "غير موجودة؟",
           noAreaCalled: "لا توجد منطقة باسم \u201C{{query}}\u201D بعد.",
           distanceKm: "{{km}} كم",
+          areaTooFar: "\u201C{{query}}\u201D أبعد من {{km}} كم عن الدبوس.",
+          noAreaNear: "حجز لا تغطي أي منطقة على بُعد {{km}} كم من الدبوس بعد.",
+          noAreaNearRequest:
+            "حجز لا تغطي أي منطقة على بُعد {{km}} كم من الدبوس بعد. اكتب اسم منطقتك لتطلب إضافتها.",
           requestedNote: "منطقة جديدة، تُضاف عند الإرسال",
           requestedBody: "حجز لا تغطي هذه المنطقة بعد. سنضيفها عند إرسال ملعبك.",
           areaSearchPlaceholder: "ابحث عن منطقة",
