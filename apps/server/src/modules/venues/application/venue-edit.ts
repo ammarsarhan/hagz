@@ -357,14 +357,19 @@ export const setAmenities = async (
 
     const next = [...input.amenities].sort((a, b) => a.optionId.localeCompare(b.optionId));
     if (JSON.stringify(previous) === JSON.stringify(next)) return;
-    await tx.venueAmenity.deleteMany({ where: { venueId: actor.venueId } });
-    await tx.venueAmenity.createMany({
-      data: next.map((amenity) => ({
-        venueId: actor.venueId,
-        marketplaceId: venue.marketplaceId,
-        ...amenity,
-      })),
+    // Row by row rather than all replaced: an amenity on the layout has tiles that go with its row,
+    // so only the ones dropped are deleted, and a kept one only has its price changed.
+    const keep = new Set(wanted);
+    await tx.venueAmenity.deleteMany({
+      where: { venueId: actor.venueId, optionId: { notIn: [...keep] } },
     });
+    for (const amenity of next) {
+      await tx.venueAmenity.upsert({
+        where: { venueId_optionId: { venueId: actor.venueId, optionId: amenity.optionId } },
+        create: { venueId: actor.venueId, marketplaceId: venue.marketplaceId, ...amenity },
+        update: { price: amenity.price, pricing: amenity.pricing },
+      });
+    }
     await event(tx, actor.venueId, actor.staffId, VENUE_AMENITIES_CHANGED, { previous, next });
   });
   return venueDetail(actor.venueId, display);
