@@ -179,6 +179,7 @@ const en = {
           chooseAreaBodyListed: "Pick the area your venue is in.",
           requestArea: "Request \u201C{{area}}\u201D",
           nearYourPin: "Near your pin",
+          zoomIn: "Zoom in to place the pin exactly",
           notListed: "Not listed?",
           noAreaCalled: "No area called \u201C{{query}}\u201D yet.",
           distanceKm: "{{km}} km",

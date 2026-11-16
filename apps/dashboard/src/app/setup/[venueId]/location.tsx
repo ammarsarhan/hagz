@@ -13,7 +13,15 @@ import { IconX } from "@/components/icons";
 import { RequestAreaSheet } from "@/components/request-area-sheet";
 import { SetupLoading } from "@/components/setup-loading";
 import { Text } from "@/components/text";
-import { AreaCard, CardLink, cardShadow, FloatingButton, PinOverlay } from "@/components/venue-map";
+import {
+  AreaCard,
+  CardLink,
+  cardShadow,
+  FloatingButton,
+  PinOverlay,
+  PLACING_DELTA,
+  usePinReader,
+} from "@/components/venue-map";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
@@ -60,6 +68,9 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
   const [requesting, setRequesting] = useState(false);
   const [requestNext, setRequestNext] = useState(false);
   const [cardHeight, setCardHeight] = useState(0);
+  // Too far out to move the pin precisely: it asks to be zoomed in on before saving.
+  const [zoomedOut, setZoomedOut] = useState(false);
+  const pinReader = usePinReader(map, insets.top, cardHeight);
   // No Screen here to say where the HUD goes (a failed save shows one): it sits on the card.
   useHudAnchor(cardHeight);
   const country = venue.marketplace.code;
@@ -68,13 +79,13 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
   // Once the pin has moved and nothing was picked or asked for, the nearest area is the suggestion.
   const nearest = useQuery({
     ...areas.nearest(country, pin),
-    enabled: moved && !picked && !asked,
+    enabled: moved && !picked && !asked && !zoomedOut,
   });
   // Whether any area is in reach of the pin: the picker's own first page, nearest first, so it's
   // already loaded when the picker opens. Only a draft can request, so only a draft asks.
   const outside = useQuery({
     ...areas.search(country, "", pin),
-    enabled: draft,
+    enabled: draft && !zoomedOut,
     select: (found) => !found.some(withinReach),
   }).data;
   const current = venue.location;
@@ -133,7 +144,9 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFill}
         initialRegion={{ ...start, ...CLOSE }}
-        mapPadding={{ top: 0, right: 0, bottom: cardHeight, left: 0 }}
+        // The pin's point sits between the status bar and the card, where usePinReader reads it.
+        mapPadding={{ top: insets.top, right: 0, bottom: cardHeight, left: 0 }}
+        onLayout={pinReader.onLayout}
         showsUserLocation
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -142,11 +155,19 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         onRegionChangeComplete={(region, details) => {
           // The map settling on its first region (or the card resizing it) isn't the owner moving it.
           if (details?.isGesture === false) return;
-          setPin({ latitude: region.latitude, longitude: region.longitude });
+          setZoomedOut(region.latitudeDelta > PLACING_DELTA);
           setMoved(true);
+          void pinReader.read(region).then((at) => {
+            if (at) setPin(at);
+          });
         }}
       />
-      <PinOverlay bottom={cardHeight} top={insets.top} visible hint={null} />
+      <PinOverlay
+        bottom={cardHeight}
+        top={insets.top}
+        visible
+        hint={zoomedOut ? t("screens.createVenue.place.zoomIn") : null}
+      />
 
       <View className="absolute inset-x-5 flex-row" style={{ top: insets.top + 8 }}>
         <FloatingButton label={t("components.shared.nav.close")} onPress={() => router.back()}>
@@ -187,7 +208,7 @@ function LocationMap({ venueId, venue }: { venueId: string; venue: VenueDetail }
         ) : null}
         <Button
           label={t("common.actions.save")}
-          disabled={!changed || (!area && !asked)}
+          disabled={!changed || (!area && !asked) || zoomedOut}
           loading={saving}
           onPress={submit}
         />

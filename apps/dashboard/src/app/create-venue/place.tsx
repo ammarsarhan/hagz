@@ -24,6 +24,8 @@ import {
   FloatingButton,
   floatShadow,
   PinOverlay,
+  PLACING_DELTA,
+  usePinReader,
 } from "@/components/venue-map";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
@@ -112,6 +114,10 @@ export default function CreateVenuePlace() {
   const [requestedArea, setRequestedArea] = useState<string | null>(null);
   // How tall the bottom card is, so the map's middle (and the pin) sits above it.
   const [cardHeight, setCardHeight] = useState(0);
+  // Too far out to place a pin precisely: it asks to be zoomed in on first. The first view (all of
+  // Cairo) is.
+  const [zoomedOut, setZoomedOut] = useState(START.latitudeDelta > PLACING_DELTA);
+  const pinReader = usePinReader(map, insets.top, cardHeight);
   // No Screen here to say where the HUD goes: it sits on the card, once the location prompt (a
   // Screen, which says for itself) is out of the way.
   useHudAnchor(permission === "done" ? cardHeight : null);
@@ -123,7 +129,8 @@ export default function CreateVenuePlace() {
     !marketplaces.data || marketplaces.data.some((marketplace) => marketplace.code === country);
   // Looked up while the pin is being placed, once the map has settled, so the area step opens on
   // its answer rather than a spinner that turns into a different card.
-  const lookUp = (stage === "area" || (stage === "pin" && !locating)) && inMarketplace;
+  const lookUp =
+    (stage === "area" || (stage === "pin" && !locating && !zoomedOut)) && inMarketplace;
   // The area whose centre is nearest the pin, which the owner confirms or changes. Not Google's
   // address: in Egypt it names police districts, so a pin in Smouha would come back "Sidi Gaber".
   const nearest = useQuery({ ...areas.nearest(country, pin), enabled: lookUp });
@@ -337,8 +344,10 @@ export default function CreateVenuePlace() {
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFill}
         initialRegion={START}
-        // The card covers the bottom, so the map's middle — and the pin — sits above it.
-        mapPadding={{ top: 0, right: 0, bottom: cardHeight, left: 0 }}
+        // The status bar and the card cover the edges, so the map's middle — and the pin's point —
+        // sits between them, where moves land and usePinReader reads it.
+        mapPadding={{ top: insets.top, right: 0, bottom: cardHeight, left: 0 }}
+        onLayout={pinReader.onLayout}
         showsUserLocation
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -353,7 +362,10 @@ export default function CreateVenuePlace() {
           if (region) map.current?.animateToRegion(region, 0);
         }}
         onRegionChangeComplete={(region, details) => {
-          setPin({ latitude: region.latitude, longitude: region.longitude });
+          setZoomedOut(region.latitudeDelta > PLACING_DELTA);
+          void pinReader.read(region).then((at) => {
+            if (at) setPin(at);
+          });
           if (details?.isGesture === false) return;
           setPlaced(true);
           setNudged(true);
@@ -370,7 +382,15 @@ export default function CreateVenuePlace() {
         bottom={cardHeight}
         top={insets.top}
         visible={stage !== "find"}
-        hint={stage === "pin" && !nudged ? t("screens.createVenue.place.movePin") : null}
+        hint={
+          stage !== "pin"
+            ? null
+            : zoomedOut
+              ? t("screens.createVenue.place.zoomIn")
+              : nudged
+                ? null
+                : t("screens.createVenue.place.movePin")
+        }
       />
 
       {/* The controls float over the map: back, and what the map is showing. */}
@@ -453,7 +473,7 @@ export default function CreateVenuePlace() {
                 : t("screens.createVenue.place.pinBody")
             }
             action={t("common.actions.continue")}
-            disabled={stage === "find" ? !placed : locating}
+            disabled={stage === "find" ? !placed : locating || zoomedOut}
             loading={advancing}
             onPress={() => {
               if (stage === "find") return setStage("pin");
