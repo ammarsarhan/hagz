@@ -201,6 +201,7 @@ const ar: ArabicTranslations = {
           chooseArea: "اختر المنطقة",
           chooseAreaBody:
             "اختر المنطقة التي يقع فيها ملعبك. غير موجودة؟ اكتب اسمها واطلب إضافتها، وستضيفها حجز عند إرسال ملعبك.",
+          chooseAreaBodyListed: "اختر المنطقة التي يقع فيها ملعبك.",
           requestArea: "اطلب \u201C{{area}}\u201D",
           nearYourPin: "بالقرب من الدبوس",
           notListed: "غير موجودة؟",

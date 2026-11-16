@@ -126,7 +126,11 @@ export function AreaPicker({
             {t("screens.createVenue.place.chooseArea")}
           </Text>
           <Text className="mb-4 mt-1.5 text-body text-ink-2">
-            {t("screens.createVenue.place.chooseAreaBody")}
+            {t(
+              allowRequest
+                ? "screens.createVenue.place.chooseAreaBody"
+                : "screens.createVenue.place.chooseAreaBodyListed",
+            )}
           </Text>
 
           <FieldBox focused={focused} error={false}>

@@ -176,6 +176,7 @@ const en = {
           chooseArea: "Choose an area",
           chooseAreaBody:
             "Pick the area your venue is in. Not listed? Type its name and request it, and Hagz adds it when your venue is submitted.",
+          chooseAreaBodyListed: "Pick the area your venue is in.",
           requestArea: "Request \u201C{{area}}\u201D",
           nearYourPin: "Near your pin",
           notListed: "Not listed?",
