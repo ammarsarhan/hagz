@@ -12,12 +12,7 @@ import {
   useSelection,
 } from "@/components/choices";
 import { Field } from "@/components/field";
-import {
-  IconBallBasketball,
-  IconBallFootball,
-  IconBallTennis,
-  IconBallVolleyball,
-} from "@/components/icons";
+import { SPORT_ICONS } from "@/components/sport-icons";
 import { SectionHeading, StepScreen } from "@/components/step-screen";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
@@ -27,14 +22,6 @@ import { SPORTS, type GroundSport } from "@/lib/grounds";
 // Adding a ground, 1 of 4 (Figma "Grounds · Add 1 Name, sport and size", 352:2). The sport and size
 // fix its footprint on the layout, so they come first. Only football comes in sizes; the others
 // are one standard court, and the size row goes away for them.
-const ICONS: Record<GroundSport, Icon> = {
-  FOOTBALL: IconBallFootball,
-  // Tabler has no padel ball; a padel ball is a tennis ball.
-  PADEL: IconBallTennis,
-  TENNIS: IconBallTennis,
-  BASKETBALL: IconBallBasketball,
-  VOLLEYBALL: IconBallVolleyball,
-};
 const COLUMNS = 3;
 
 export default function GroundBasics() {
@@ -136,7 +123,7 @@ function SportTile({
 }) {
   const { t } = useTranslation();
   const progress = useSelection(selected);
-  const Ball = ICONS[sport];
+  const Ball = SPORT_ICONS[sport];
   const name = t(`screens.setup.grounds.sports.${sport}`);
   return (
     <Pressable

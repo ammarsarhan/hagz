@@ -655,6 +655,7 @@ function LayoutView({
                     art: (
                       <GroundArt
                         name={nameOf(ground)}
+                        sport={ground.sport}
                         width={size.width * CELL}
                         height={size.height * CELL}
                       />
@@ -681,7 +682,13 @@ function LayoutView({
                   setLifted({
                     key,
                     name: amenity.name,
-                    art: <AmenityArt amenity={amenity} columns={2} rows={2} />,
+                    art: (
+                      <AmenityArt
+                        amenity={amenity}
+                        width={NEW_AMENITY.width * CELL}
+                        height={NEW_AMENITY.height * CELL}
+                      />
+                    ),
                   })
                 }
                 onDrop={(x, y) => dropAmenity(amenity, x, y)}

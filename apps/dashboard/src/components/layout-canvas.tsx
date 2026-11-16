@@ -2,19 +2,20 @@ import type { components } from "@hagz/api";
 import type { EntranceSide, VenueLayout } from "@hagz/contracts";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { Pressable, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
   LayoutAnimationConfig,
   runOnJS,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import { colors } from "@/lib/colors";
-import type { Ground } from "@/lib/grounds";
+import type { Ground, GroundSport } from "@/lib/grounds";
 import { MAXIMUM_LAYOUT_CELLS } from "@hagz/contracts";
 import {
   CELL,
@@ -26,6 +27,7 @@ import {
   type Tile,
 } from "@/lib/layout";
 import { AmenityIcon } from "./amenity-icon";
+import { SPORT_ICONS } from "./sport-icons";
 import { IconArrowDown } from "./icons";
 import { Text } from "./text";
 
@@ -347,7 +349,15 @@ export function LayoutCanvas({
                   range={footprintRange(ground, placed.orientation)}
                   {...shared}
                 >
-                  {(size) => <GroundArt name={name} width={size.width} height={size.height} />}
+                  {(size, live) => (
+                    <GroundArt
+                      name={name}
+                      sport={ground.sport}
+                      width={size.width}
+                      height={size.height}
+                      live={live}
+                    />
+                  )}
                 </EditableTile>
               );
             })}
@@ -367,8 +377,13 @@ export function LayoutCanvas({
                   range={ANY_SIZE}
                   {...shared}
                 >
-                  {() => (
-                    <AmenityArt amenity={amenity} columns={placed.width} rows={placed.height} />
+                  {(size, live) => (
+                    <AmenityArt
+                      amenity={amenity}
+                      width={size.width}
+                      height={size.height}
+                      live={live}
+                    />
                   )}
                 </EditableTile>
               );
@@ -441,7 +456,8 @@ function EditableTile({
   onResize?: (key: string, rect: Rect) => void;
   // How far its grip can size it, as it lies.
   range?: SizeRange;
-  children: (size: { width: number; height: number }) => ReactNode;
+  // What it looks like: given its size at rest and, live, as it's being sized.
+  children: (size: Size, live: SharedValue<Size>) => ReactNode;
 }) {
   // The size it's at while its grip is dragged ("5 × 3").
   const [liveSize, setLiveSize] = useState<string | null>(null);
@@ -480,6 +496,11 @@ function EditableTile({
       height: base.value.height + dh.value,
     };
   };
+  // Its size in points right now, sizing included, for what's drawn inside it.
+  const live = useDerivedValue(() => {
+    const at = current();
+    return { width: at.width * CELL, height: at.height * CELL };
+  });
   const settle = () => {
     "worklet";
     camera.busy.value = false;
@@ -619,7 +640,7 @@ function EditableTile({
           style={[{ position: "absolute" }, landing]}
         />
         <Animated.View style={[{ flex: 1 }, art]}>
-          {children({ width: rect.width * CELL, height: rect.height * CELL })}
+          {children({ width: rect.width * CELL, height: rect.height * CELL }, live)}
         </Animated.View>
         {/* Where it can't go: a dashed outline with its name (Figma 378:2). */}
         <Animated.View
@@ -809,48 +830,175 @@ function Grip({
 
 export function GroundArt({
   name,
+  sport,
   width,
   height,
+  live,
 }: {
   name: string;
+  sport: GroundSport;
+  // Its size at rest, and as it's being sized (on the UI thread) when it is.
   width: number;
   height: number;
+  live?: SharedValue<Size>;
 }) {
+  const fit = useLabelFit(live, { width, height }, (w, h, label) => {
+    "worklet";
+    return label + 2 * GROUND_PAD_X <= w && GROUND_CHIP + 2 * GROUND_PAD_Y <= h;
+  });
+  const ball = useIconScale(live, { width, height }, BALL, 4);
+  const Ball = SPORT_ICONS[sport];
   return (
-    <View style={{ width, height }}>
-      <PitchArt width={width} height={height} />
-      <View className="absolute inset-0 items-center justify-center">
-        <View className="max-w-full rounded-[8px] bg-white px-[7px] py-[2px]">
+    <View style={{ flex: 1 }}>
+      <PitchArt width={width} height={height} fill />
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 items-center justify-center"
+        style={fit.shown}
+      >
+        <View className="rounded-[8px] bg-white px-[7px] py-[2px]">
           <Text className="text-[12px] font-medium" numberOfLines={1}>
             {name}
           </Text>
         </View>
-      </View>
+      </Animated.View>
+      {/* Too small for its name: its sport's ball instead. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 items-center justify-center"
+        style={fit.hidden}
+      >
+        <Animated.View
+          className="items-center justify-center rounded-full bg-white"
+          style={[{ width: BALL, height: BALL }, ball]}
+        >
+          <Ball size={14} color={colors.ink} strokeWidth={1.75} />
+        </Animated.View>
+      </Animated.View>
+      <Measure onLayout={fit.measure}>
+        <View className="px-[7px] py-[2px]">
+          <Text className="text-[12px] font-medium">{name}</Text>
+        </View>
+      </Measure>
     </View>
   );
 }
 
-// A grey tile with the amenity's icon, and its name when there's room for it (three cells by two,
-// like the frames' café).
+// A grey tile with the amenity's icon and its name, or just the icon when the name wouldn't fit
+// with room around it.
 export function AmenityArt({
   amenity,
-  columns,
-  rows,
+  width,
+  height,
+  live,
 }: {
   amenity: Amenity;
-  columns: number;
-  rows: number;
+  width: number;
+  height: number;
+  live?: SharedValue<Size>;
 }) {
-  const named = columns >= 3 && rows >= 2;
-  const roomy = columns >= 2 && rows >= 2;
+  const fit = useLabelFit(live, { width, height }, (w, h, label) => {
+    "worklet";
+    return (
+      Math.max(label, AMENITY_ICON) + 2 * AMENITY_PAD_X <= w &&
+      AMENITY_STACK + 2 * AMENITY_PAD_Y <= h
+    );
+  });
+  const icon = useIconScale(live, { width, height }, AMENITY_ICON, 4);
   return (
-    <View className="flex-1 items-center justify-center gap-0.5 overflow-hidden rounded-[6px] border border-chip-line bg-chip">
-      <AmenityIcon name={amenity.icon} size={roomy ? 24 : 14} color={colors.ink2} />
-      {named ? (
+    <View className="flex-1 overflow-hidden rounded-[6px] border border-chip-line bg-chip">
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 items-center justify-center gap-0.5"
+        style={fit.shown}
+      >
+        <AmenityIcon name={amenity.icon} size={AMENITY_ICON} color={colors.ink2} />
         <Text className="text-[11px] font-medium text-ink-2" numberOfLines={1}>
           {amenity.name}
         </Text>
-      ) : null}
+      </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 items-center justify-center"
+        style={fit.hidden}
+      >
+        <Animated.View style={icon}>
+          <AmenityIcon name={amenity.icon} size={AMENITY_ICON} color={colors.ink2} />
+        </Animated.View>
+      </Animated.View>
+      <Measure onLayout={fit.measure}>
+        <Text className="text-[11px] font-medium">{amenity.name}</Text>
+      </Measure>
+    </View>
+  );
+}
+
+// --- Labels that fit ---
+
+type Size = { width: number; height: number };
+
+// A name shows only with room around it; otherwise it fades out for an icon. For a ground the room
+// is inside the pitch's white outline (5 in) with 4 to spare; for an amenity, 8 either side and a
+// little above and below its icon and name (the frames' 3 × 2 café just has it).
+const GROUND_PAD_X = 9;
+const GROUND_PAD_Y = 4;
+// The name chip's height: a 12-point line and 2 above and below.
+const GROUND_CHIP = 19;
+const BALL = 22;
+const AMENITY_ICON = 24;
+const AMENITY_PAD_X = 8;
+const AMENITY_PAD_Y = 2;
+// The icon, a 2-point gap and an 11-point line.
+const AMENITY_STACK = 40;
+const FADE = { duration: 150 };
+
+// Whether a name fits, worked out on the UI thread from the tile's live size as it's sized, so the
+// name and the icon cross-fade as it goes rather than the name wrapping or being squeezed. The
+// name's own width is measured once, off screen (Measure).
+function useLabelFit(
+  live: SharedValue<Size> | undefined,
+  still: Size,
+  fits: (width: number, height: number, label: number) => boolean,
+) {
+  const label = useSharedValue(0);
+  const room = () => {
+    "worklet";
+    const size = live ? live.value : still;
+    return label.value > 0 && fits(size.width, size.height, label.value);
+  };
+  const shown = useAnimatedStyle(() => ({ opacity: withTiming(room() ? 1 : 0, FADE) }));
+  const hidden = useAnimatedStyle(() => ({ opacity: withTiming(room() ? 0 : 1, FADE) }));
+  const measure = (event: LayoutChangeEvent) => {
+    label.value = event.nativeEvent.layout.width;
+  };
+  return { shown, hidden, measure };
+}
+
+// An icon shown on its own shrinks with the tile, keeping `pad` clear around it.
+function useIconScale(live: SharedValue<Size> | undefined, still: Size, size: number, pad: number) {
+  return useAnimatedStyle(() => {
+    const now = live ? live.value : still;
+    const room = Math.min(now.width, now.height) - 2 * pad;
+    return { transform: [{ scale: Math.max(0.4, Math.min(1, room / size)) }] };
+  });
+}
+
+// Lays its child out at its natural width, unseen, to measure it: wide enough never to wrap.
+function Measure({
+  onLayout,
+  children,
+}: {
+  onLayout: (event: LayoutChangeEvent) => void;
+  children: ReactNode;
+}) {
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: "absolute", left: 0, top: 0, width: 1000, opacity: 0 }}
+    >
+      <View style={{ alignSelf: "flex-start" }} onLayout={onLayout}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -1051,16 +1199,23 @@ export function PitchArt({
   inset = 5,
   line = 1.4,
   radius = 6,
+  fill = false,
 }: {
+  // Its shape: which way the halfway line runs, and its size unless it fills its parent.
   width: number;
   height: number;
   inset?: number;
   line?: number;
   radius?: number;
+  // Fills whatever it's in, so it follows a tile being sized.
+  fill?: boolean;
 }) {
   const across = width >= height;
   return (
-    <View className="bg-pitch" style={{ width, height, borderRadius: radius }}>
+    <View
+      className="bg-pitch"
+      style={[{ borderRadius: radius }, fill ? { flex: 1 } : { width, height }]}
+    >
       <View
         style={{
           position: "absolute",
@@ -1078,7 +1233,8 @@ export function PitchArt({
           across
             ? {
                 position: "absolute",
-                left: width / 2 - line / 2,
+                left: "50%",
+                marginLeft: -line / 2,
                 top: inset,
                 bottom: inset,
                 width: line,
@@ -1086,7 +1242,8 @@ export function PitchArt({
               }
             : {
                 position: "absolute",
-                top: height / 2 - line / 2,
+                top: "50%",
+                marginTop: -line / 2,
                 left: inset,
                 right: inset,
                 height: line,
