@@ -49,6 +49,9 @@ export const VenueMember = z
         "True when a password reset made them read-only and nothing changed since: POST " +
         "permissions/restore brings back what they had.",
     }),
+    status: z.enum(["ACTIVE", "SUSPENDED", "BANNED"]).meta({
+      description: "Their staff account's. A suspended member can't sign in anywhere.",
+    }),
   })
   .meta({ id: "VenueMember" });
 
