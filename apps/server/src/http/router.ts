@@ -1,4 +1,9 @@
-import { adminAuthRoutes, customerAuthRoutes, staffAuthRoutes } from "@/modules/identity";
+import {
+  adminAuthRoutes,
+  customerAuthRoutes,
+  staffAuthRoutes,
+  supportAdminRoutes,
+} from "@/modules/identity";
 import { locationsRoutes, platformAdminRoutes } from "@/modules/locations";
 import { systemRoutes } from "@/modules/system";
 import { venuesAdminRoutes, venuesStaffRoutes } from "@/modules/venues";
@@ -39,6 +44,7 @@ router.route("/v1", venuesStaffRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
 router.route("/v1", venuesAdminRoutes);
+router.route("/v1", supportAdminRoutes);
 
 // Photos stored on disk in development are uploaded to and read from here (http/dev-storage.ts).
 if (localDisk) router.route("/v1/dev/storage", devStorage(localDisk));
