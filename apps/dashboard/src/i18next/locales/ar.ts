@@ -256,6 +256,7 @@ const ar: ArabicTranslations = {
         optional: "اختياري",
         send: "أرسل للمراجعة",
         review: {
+          submittedTitle: "تم إرسال {{venue}}!",
           confirmTitle: "إرسال للمراجعة؟",
           confirmBody:
             "سنراجع بياناتك وصورك، غالبًا خلال يوم، ونراسلك على واتساب. أثناء المراجعة يُقفل ملعبك؛ اسحبه من المراجعة لتعديله.",

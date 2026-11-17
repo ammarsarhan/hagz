@@ -233,6 +233,7 @@ const en = {
         optional: "Optional",
         send: "Send for review",
         review: {
+          submittedTitle: "{{venue}} has been submitted!",
           confirmTitle: "Send for review?",
           confirmBody:
             "We'll check your details and photos, usually within a day, and message you on WhatsApp. While we review, your venue is locked; withdraw from review to make changes.",

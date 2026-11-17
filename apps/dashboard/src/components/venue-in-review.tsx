@@ -134,9 +134,12 @@ function Step({
   last?: boolean;
 }) {
   const pending = state === "next";
+  // The mark and the title share a row, centred on each other, so the mark sits on the title's line
+  // whatever the line height does (iOS puts a tall line's extra space above the text). The detail
+  // and the line down to the next step go under it.
   return (
-    <View className="flex-row gap-3.5">
-      <View className="items-center" style={{ width: 22 }}>
+    <View>
+      <View className="flex-row items-center gap-3.5">
         {state === "done" ? (
           <View className="size-[22px] items-center justify-center rounded-full bg-ink">
             <IconCheck size={14} color={colors.white} strokeWidth={3} />
