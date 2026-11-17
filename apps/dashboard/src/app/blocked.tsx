@@ -2,7 +2,6 @@ import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BackHandler, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import { BLOCKED_ART, BLOCKED_ART_SIZE } from "@/assets/blocked-art";
 import { Button } from "@/components/button";
@@ -12,12 +11,12 @@ import { contactSupport, hasSupport } from "@/lib/support";
 
 // A suspended (temporary) or banned (permanent) account, after the right password: no way back
 // in from here, only support. Its illustration (an account card with a pause or block badge), title
-// and why sit centred on the whole screen; Back to sign in is pinned to the bottom, last.
+// and why sit centred in the safe area above the buttons; Back to sign in is pinned to the bottom,
+// last, where every screen's footer puts it.
 export default function Blocked() {
   const { t } = useTranslation();
   const { kind } = useLocalSearchParams<{ kind: "suspended" | "banned" }>();
   const copy = kind === "banned" ? "banned" : "suspended";
-  const insets = useSafeAreaInsets();
 
   // Only the button leaves: no swipe back on iOS, and Android's back button does nothing here.
   useFocusEffect(
@@ -28,15 +27,23 @@ export default function Blocked() {
   );
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <>
+          {hasSupport ? (
+            <Button label={t("common.actions.contactSupport")} onPress={contactSupport} />
+          ) : null}
+          <Button
+            label={t("common.actions.backToSignIn")}
+            variant={hasSupport ? "ghost" : "secondary"}
+            onPress={() => router.dismissTo("/sign-in")}
+          />
+        </>
+      }
+    >
       <Stack.Screen options={{ gestureEnabled: false }} />
-      {/* Centred on the whole screen: not the space above the buttons, which sit over its bottom,
-          nor the safe area, which is taller at the top (status bar) than the bottom (home
-          indicator), so the block moves up by half the difference. */}
-      <View
-        className="flex-1 items-center justify-center"
-        style={{ transform: [{ translateY: (insets.bottom - insets.top) / 2 }] }}
-      >
+      {/* Centred in what's left of the safe area once the buttons are pinned below it. */}
+      <View className="flex-1 items-center justify-center">
         <View
           className="mb-6 w-44"
           style={{ aspectRatio: BLOCKED_ART_SIZE.width / BLOCKED_ART_SIZE.height }}
@@ -52,17 +59,6 @@ export default function Blocked() {
         <Text className="text-center text-subtitle text-ink-2">
           {t(`screens.blocked.${copy}.body`)}
         </Text>
-      </View>
-      {/* Where Screen's footer puts buttons: 12 above the home indicator, Back to sign in last. */}
-      <View className="absolute inset-x-5 bottom-3 gap-2.5">
-        {hasSupport ? (
-          <Button label={t("common.actions.contactSupport")} onPress={contactSupport} />
-        ) : null}
-        <Button
-          label={t("common.actions.backToSignIn")}
-          variant={hasSupport ? "ghost" : "secondary"}
-          onPress={() => router.dismissTo("/sign-in")}
-        />
       </View>
     </Screen>
   );
