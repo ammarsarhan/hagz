@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { StaffPermissions } from "./permissions";
 
-const VenueRole = z.enum(["OWNER", "MEMBER"]).meta({
+export const VenueRole = z.enum(["OWNER", "MEMBER"]).meta({
   id: "VenueRole",
   description: "Each venue has exactly one `OWNER`, who can do everything.",
 });
