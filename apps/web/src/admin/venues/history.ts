@@ -100,6 +100,10 @@ const labels: Record<string, string> = {
   STAFF_INVITATION_REVOKED: "Invitation revoked",
   STAFF_INVITATION_DECLINED: "Invitation declined",
   STAFF_JOINED: "Staff joined",
+  STAFF_REMOVED: "Removed from staff",
+  OWNERSHIP_TRANSFERRED: "Ownership transferred",
+  STAFF_SUSPENDED: "Account suspended",
+  STAFF_REACTIVATED: "Account reactivated",
   STAFF_PERMISSIONS_CHANGED: "Permissions changed",
   STAFF_RESTRICTED_AFTER_PASSWORD_RESET: "Restricted after password reset",
 };

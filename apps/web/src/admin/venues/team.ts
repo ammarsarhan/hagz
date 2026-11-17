@@ -46,7 +46,7 @@ export function useVenueTeam(venueId: string) {
     void load();
   }, [load]);
 
-  return { data, error };
+  return { data, error, reload: () => void load() };
 }
 
 // The dashboard's areas in the order the staff app lists them, with what each covers.

@@ -1,11 +1,15 @@
 "use client";
 
+import { IconTrash } from "@tabler/icons-react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { useParams } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { api } from "@/admin/api";
 import { day, expiresIn } from "@/admin/admins/model";
 import { Initial } from "@/admin/admins/panels";
-import { DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
+import { ConfirmDialog } from "@/admin/dialog";
+import { send } from "@/admin/errors";
 import {
   accessSummary,
   useVenueTeam,
@@ -17,8 +21,8 @@ import { MemberPanel, TeamInvitationPanel } from "@/admin/venues/team-panels";
 // A venue's Team tab, laid out like the Account page: the staff (the owner first) on top, then the
 // invitations still open below a hairline, each a titled section with its own search over a table
 // in the Admins page's design, numbered from 1. Members come first: fewer, and what an admin looks
-// for. Clicking a row opens it in a side panel: a member's role and permissions, or an
-// invitation's. Looking only; the venue's own staff manage their team in the dashboard app.
+// for. Clicking a row opens it in a side panel: a member's role and permissions with what support
+// can do for them, or an invitation's with Revoke (also in its row's ⋯).
 
 // Each row's place in the table as it's shown (after the search), counting from 1.
 const indexColumn = {
@@ -44,6 +48,7 @@ const memberColumns = memberHelper.columns([
         <Initial name={row.original.name} />
         <span className="truncate text-ink">{row.original.name}</span>
         {row.original.role === "OWNER" ? <Tag>Owner</Tag> : null}
+        {row.original.status === "SUSPENDED" ? <Tag>Suspended</Tag> : null}
       </div>
     ),
   }),
@@ -78,6 +83,23 @@ const memberWidths = { index: "3.5rem", phone: "22%", access: "34%" };
 const invitationFeatures = tableFeatures({});
 const invitationHelper = createColumnHelper<typeof invitationFeatures, StaffInvitation>();
 
+// Columns are module-level (TanStack needs them stable), so the page's revoke reaches the row menu
+// through context instead of a closure.
+const RevokeContext = createContext<((invitation: StaffInvitation) => void) | null>(null);
+
+function InvitationMenu({ invitation }: { invitation: StaffInvitation }) {
+  const revoke = useContext(RevokeContext);
+  if (!revoke) return null;
+  return (
+    <RowMenu
+      label={`Actions for the invitation to ${invitation.phone}`}
+      items={[
+        { label: "Revoke", icon: IconTrash, tone: "danger", onSelect: () => revoke(invitation) },
+      ]}
+    />
+  );
+}
+
 const invitationColumns = invitationHelper.columns([
   invitationHelper.display(indexColumn),
   invitationHelper.display({
@@ -100,9 +122,20 @@ const invitationColumns = invitationHelper.columns([
     header: "Expires",
     cell: ({ row }) => <span className="text-ink-2">{expiresIn(row.original.expiresAt)}</span>,
   }),
+  invitationHelper.display({
+    id: "menu",
+    header: "",
+    cell: ({ row }) => <InvitationMenu invitation={row.original} />,
+  }),
 ]);
 
-const invitationWidths = { index: "3.5rem", invitedBy: "26%", sent: "16%", expires: "16%" };
+const invitationWidths = {
+  index: "3.5rem",
+  invitedBy: "26%",
+  sent: "16%",
+  expires: "16%",
+  menu: "3.5rem",
+};
 
 // --- Page ---
 
@@ -117,7 +150,9 @@ type Selected = { kind: "member"; id: string } | { kind: "invitation"; id: strin
 
 export default function VenueTeam() {
   const { venueId } = useParams<{ venueId: string }>();
-  const { data, error } = useVenueTeam(venueId);
+  const { data, error, reload } = useVenueTeam(venueId);
+  // The invitation being revoked, asked first.
+  const [revoking, setRevoking] = useState<StaffInvitation>();
   const [memberQuery, setMemberQuery] = useState("");
   const [invitationQuery, setInvitationQuery] = useState("");
   const [selected, setSelected] = useState<Selected>();
@@ -193,24 +228,28 @@ export default function VenueTeam() {
           />
         }
       >
-        <DataTable
-          table={invitationTable}
-          widths={invitationWidths}
-          onRowClick={(row) => setSelected({ kind: "invitation", id: row.original.id })}
-          loading={!data && !error}
-          empty={
-            error ??
-            (invitationQuery.trim()
-              ? `No invitation matches “${invitationQuery}”.`
-              : "No open invitations.")
-          }
-        />
+        <RevokeContext.Provider value={setRevoking}>
+          <DataTable
+            table={invitationTable}
+            widths={invitationWidths}
+            onRowClick={(row) => setSelected({ kind: "invitation", id: row.original.id })}
+            loading={!data && !error}
+            empty={
+              error ??
+              (invitationQuery.trim()
+                ? `No invitation matches “${invitationQuery}”.`
+                : "No open invitations.")
+            }
+          />
+        </RevokeContext.Provider>
       </Section>
 
       {selectedMember ? (
         <MemberPanel
           key={selectedMember.staffId}
+          venueId={venueId}
           member={selectedMember}
+          onChanged={reload}
           onClose={() => setSelected(undefined)}
         />
       ) : null}
@@ -218,7 +257,24 @@ export default function VenueTeam() {
         <TeamInvitationPanel
           key={selectedInvitation.id}
           invitation={selectedInvitation}
+          onRevoke={() => setRevoking(selectedInvitation)}
           onClose={() => setSelected(undefined)}
+        />
+      ) : null}
+      {revoking ? (
+        <ConfirmDialog
+          title={`Revoke the invitation to ${revoking.phone}?`}
+          description="Its code stops working. The venue can invite them again later."
+          confirmLabel="Revoke"
+          request={() =>
+            send(
+              api.DELETE("/v1/admin/venues/{id}/invitations/{invitationId}", {
+                params: { path: { id: venueId, invitationId: revoking.id } },
+              }),
+            )
+          }
+          onClose={() => setRevoking(undefined)}
+          onDone={reload}
         />
       ) : null}
     </>
