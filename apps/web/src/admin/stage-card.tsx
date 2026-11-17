@@ -80,7 +80,7 @@ export function StageCard({
       >
         <div inert={!open} className="overflow-hidden">
           <div
-            className={`border-t border-border p-5 transition-opacity duration-200 ease-out motion-reduce:transition-none ${
+            className={`border-t border-border px-[3.875rem] py-5 transition-opacity duration-200 ease-out motion-reduce:transition-none ${
               open ? "opacity-100" : "opacity-0"
             }`}
           >
