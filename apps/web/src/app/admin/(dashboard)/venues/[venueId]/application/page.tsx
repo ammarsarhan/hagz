@@ -49,8 +49,6 @@ export default function VenueApplicationPage() {
   const { venue, reload: reloadVenue } = useCurrentVenue();
   const { data, error, reload } = useVenueOverview(venueId);
   const [action, setAction] = useState<Action>();
-  const [checklistOpen, setChecklistOpen] = useState(false);
-  const checklistId = useId();
   const close = () => setAction(undefined);
   const changed = () => {
     reload();
@@ -108,22 +106,9 @@ export default function VenueApplicationPage() {
               <Checklist overview={data} />
             </>
           ) : (
-            <>
-              <button
-                type="button"
-                aria-expanded={checklistOpen}
-                aria-controls={checklistId}
-                onClick={() => setChecklistOpen((open) => !open)}
-                className="cursor-pointer text-label font-medium text-ink underline underline-offset-2"
-              >
-                {checklistOpen ? "Hide the checklist" : "Show the checklist"}
-              </button>
-              <Reveal id={checklistId} open={checklistOpen}>
-                <div className="pt-2">
-                  <Checklist overview={data} />
-                </div>
-              </Reveal>
-            </>
+            <ChecklistToggle>
+              <Checklist overview={data} />
+            </ChecklistToggle>
           )}
         </JourneyStep>
 
@@ -175,13 +160,16 @@ export default function VenueApplicationPage() {
           }
         >
           {venue.status === "PROVISIONING" ? (
-            <div className="rounded-card border border-border p-5">
-              <GoingLive
+            <>
+              <ChecklistToggle>
+                <GoLiveChecklist overview={data} />
+              </ChecklistToggle>
+              <GoLiveActions
                 overview={data}
                 onCheckTax={() => setAction("tax")}
                 onGoLive={() => setAction("go-live")}
               />
-            </div>
+            </>
           ) : null}
         </JourneyStep>
 
@@ -264,8 +252,66 @@ function Checklist({ overview }: { overview: VenueOverview }) {
   );
 }
 
-// What going live needs while it's provisioning, with the tax number's check and Go live.
-function GoingLive({
+// A finished or reference checklist, folded away under "Show the checklist" (Setup finished, and
+// what going live needs while provisioning).
+function ChecklistToggle({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((was) => !was)}
+        className="cursor-pointer text-label font-medium text-ink underline underline-offset-2"
+      >
+        {open ? "Hide the checklist" : "Show the checklist"}
+      </button>
+      <Reveal id={id} open={open}>
+        <div className="pt-2">{children}</div>
+      </Reveal>
+    </>
+  );
+}
+
+// What going live needs while it's provisioning, and the tax number with its check.
+function GoLiveChecklist({ overview }: { overview: VenueOverview }) {
+  const { goLive, taxNumber } = overview;
+  return (
+    <div>
+      {GO_LIVE_NEEDS.map((need) => (
+        <DetailRow
+          key={need}
+          label={goLiveLabel[need]}
+          value={goLive.includes(need) ? <Muted>Missing</Muted> : "Done"}
+        />
+      ))}
+      <DetailRow
+        label="Tax number"
+        value={
+          taxNumber.value === null ? (
+            <Muted>None</Muted>
+          ) : (
+            <span className="flex items-center gap-2">
+              <span className="tabular-nums">{taxNumber.value}</span>
+              {taxNumber.check ? (
+                <Tag tone={taxNumber.check.valid ? "on" : "neutral"}>
+                  {taxNumber.check.valid ? "Valid" : "Not valid"}
+                </Tag>
+              ) : (
+                <Muted>Not checked</Muted>
+              )}
+            </span>
+          )
+        }
+      />
+    </div>
+  );
+}
+
+// Checking the tax number and going live, always in view while it's provisioning.
+function GoLiveActions({
   overview,
   onCheckTax,
   onGoLive,
@@ -276,58 +322,28 @@ function GoingLive({
 }) {
   const { goLive, taxNumber } = overview;
   return (
-    <>
-      <div>
-        {GO_LIVE_NEEDS.map((need) => (
-          <DetailRow
-            key={need}
-            label={goLiveLabel[need]}
-            value={goLive.includes(need) ? <Muted>Missing</Muted> : "Done"}
-          />
-        ))}
-        <DetailRow
-          label="Tax number"
-          value={
-            taxNumber.value === null ? (
-              <Muted>None</Muted>
-            ) : (
-              <span className="flex items-center gap-2">
-                <span className="tabular-nums">{taxNumber.value}</span>
-                {taxNumber.check ? (
-                  <Tag tone={taxNumber.check.valid ? "on" : "neutral"}>
-                    {taxNumber.check.valid ? "Valid" : "Not valid"}
-                  </Tag>
-                ) : (
-                  <Muted>Not checked</Muted>
-                )}
-              </span>
-            )
-          }
-        />
-      </div>
-      <Actions>
-        {taxNumber.value === null ? null : (
-          <AccessAction
-            title="Check tax number"
-            description="Record whether the number is real and theirs, with a note if it isn't."
-            action="Check"
-            onClick={onCheckTax}
-          />
-        )}
+    <div className="mt-6 flex flex-col gap-6">
+      {taxNumber.value === null ? null : (
         <AccessAction
-          title="Go live"
-          description={
-            goLive.length > 0
-              ? `Not yet: missing ${goLive.map((gap) => goLiveLabel[gap].toLowerCase()).join(", ")}.`
-              : "Players can find and book it from now on. The owner is told."
-          }
-          action="Go live"
-          primary
-          disabled={goLive.length > 0}
-          onClick={onGoLive}
+          title="Check tax number"
+          description="Record whether the number is real and theirs, with a note if it isn't."
+          action="Check"
+          onClick={onCheckTax}
         />
-      </Actions>
-    </>
+      )}
+      <AccessAction
+        title="Go live"
+        description={
+          goLive.length > 0
+            ? `Not yet: missing ${goLive.map((gap) => goLiveLabel[gap].toLowerCase()).join(", ")}.`
+            : "Players can find and book it from now on. The owner is told."
+        }
+        action="Go live"
+        primary
+        disabled={goLive.length > 0}
+        onClick={onGoLive}
+      />
+    </div>
   );
 }
 
@@ -375,11 +391,6 @@ function Facts({ venueId, venue }: { venueId: string; venue: AdminVenue }) {
       </dl>
     </aside>
   );
-}
-
-// The action rows under a card's facts, or on their own at the top of one.
-function Actions({ children }: { children: ReactNode }) {
-  return <div className="mt-6 flex flex-col gap-6 first:mt-0">{children}</div>;
 }
 
 function Muted({ children }: { children: ReactNode }) {
