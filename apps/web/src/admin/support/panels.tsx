@@ -15,7 +15,7 @@ import { venueHref } from "@/admin/venues/sections";
 import { statusLabel, type AccountStatus, type CustomerAccount, type StaffAccount } from "./model";
 
 // The Support page's side panels, opened by clicking a row: a staff member, with their venues and
-// suspend or reactivate; or a customer. Closing slides the panel out first, and onClose (which
+// suspend, reactivate or ban; or a customer. Closing slides the panel out first, and onClose (which
 // removes it) runs once it's gone.
 
 function Status({ status }: { status: AccountStatus }) {
@@ -57,7 +57,8 @@ export function StaffAccountPanel({
   onClose: () => void;
 }) {
   const [open, setOpen] = useState(true);
-  const [action, setAction] = useState<"suspend" | "reactivate">();
+  const [action, setAction] = useState<"suspend" | "reactivate" | "ban">();
+  const ownsAVenue = staff.venues.some((venue) => venue.role === "OWNER");
   const close = () => setAction(undefined);
   return (
     <SidePanel
@@ -102,21 +103,37 @@ export function StaffAccountPanel({
 
         <PanelSection title="Support">
           {staff.status === "BANNED" ? (
-            <p className="text-label text-ink-2">This account was closed for good.</p>
-          ) : staff.status === "SUSPENDED" ? (
-            <AccessAction
-              title="Reactivate account"
-              description="They can sign in again, to every venue they're on."
-              action="Reactivate"
-              onClick={() => setAction("reactivate")}
-            />
+            <p className="text-label text-ink-2">This account was banned for good.</p>
           ) : (
-            <AccessAction
-              title="Suspend account"
-              description="Signs them out everywhere and keeps them out of every venue they're on until it's reactivated."
-              action="Suspend"
-              onClick={() => setAction("suspend")}
-            />
+            <div className="flex flex-col gap-6">
+              {staff.status === "SUSPENDED" ? (
+                <AccessAction
+                  title="Reactivate account"
+                  description="They can sign in again, to every venue they're on."
+                  action="Reactivate"
+                  onClick={() => setAction("reactivate")}
+                />
+              ) : (
+                <AccessAction
+                  title="Suspend account"
+                  description="Signs them out everywhere and keeps them out of every venue they're on until it's reactivated."
+                  action="Suspend"
+                  onClick={() => setAction("suspend")}
+                />
+              )}
+              {ownsAVenue ? (
+                <p className="text-label text-ink-2">
+                  They own a venue. Make another member its owner before banning them.
+                </p>
+              ) : (
+                <AccessAction
+                  title="Ban account"
+                  description="For good: they can never sign in again. Use it for abuse or fraud, not a pause."
+                  action="Ban"
+                  onClick={() => setAction("ban")}
+                />
+              )}
+            </div>
           )}
         </PanelSection>
       </div>
@@ -136,6 +153,23 @@ export function StaffAccountPanel({
           }
           onClose={close}
           onDone={() => onStatus("SUSPENDED")}
+        />
+      ) : null}
+      {action === "ban" ? (
+        <ReasonDialog
+          title={`Ban ${staff.name}'s account for good?`}
+          description="They're signed out everywhere now and can never sign in again. This can't be undone."
+          confirmLabel="Ban"
+          request={(reason) =>
+            send(
+              api.POST("/v1/admin/staff/{staffId}/ban", {
+                params: { path: { staffId: staff.id } },
+                body: { reason },
+              }),
+            )
+          }
+          onClose={close}
+          onDone={() => onStatus("BANNED")}
         />
       ) : null}
       {action === "reactivate" ? (

@@ -88,6 +88,8 @@ The venue's staff run their own team in the dashboard app; admins step in from t
 - **Remove a member** (`POST /admin/venues/{id}/members/{staffId}/remove`): never the owner (`409 OWNER_CANT_BE_REMOVED`; transfer first). The membership goes; their account and their name on past events stay. They're notified (`STAFF_REMOVED`) and lose access at once, since venue routes read the membership on every request.
 - **Revoke an invitation** (`DELETE /admin/venues/{id}/invitations/{invitationId}`): the same as the staff's revoke, with the admin recorded.
 - **Suspend or reactivate a staff account** (`POST /admin/staff/{staffId}/suspend`, `/reactivate`): account-wide. Suspending revokes every session (and push token) and keeps them out of every venue at once (`403 ACCOUNT_SUSPENDED`); reactivating lets them sign in afresh. With no account-level log yet, it's recorded on every venue they're a member of (`STAFF_SUSPENDED`, `STAFF_REACTIVATED`). A banned account can't be either (`409 ACCOUNT_BANNED`).
+- **Ban a staff account** (`POST /admin/staff/{staffId}/ban`): for good, with no way back; signed out and kept out as with suspending, recorded as `STAFF_BANNED`. Refused while they own a venue (`409 OWNS_A_VENUE`, with `venueIds`), which would be left with an owner who can never sign in: transfer it first.
+- **Deleting an account** isn't an admin action. `deletedAt` and the nullable phone are in the schema for in-app deletion (plan 8.2), which anonymizes and keeps bookings and money records.
 
 ## Edits after going live
 

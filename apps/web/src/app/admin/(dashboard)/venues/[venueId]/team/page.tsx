@@ -48,7 +48,9 @@ const memberColumns = memberHelper.columns([
         <Initial name={row.original.name} />
         <span className="truncate text-ink">{row.original.name}</span>
         {row.original.role === "OWNER" ? <Tag>Owner</Tag> : null}
-        {row.original.status === "SUSPENDED" ? <Tag>Suspended</Tag> : null}
+        {row.original.status === "ACTIVE" ? null : (
+          <Tag>{row.original.status === "SUSPENDED" ? "Suspended" : "Banned"}</Tag>
+        )}
       </div>
     ),
   }),

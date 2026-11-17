@@ -104,6 +104,7 @@ const labels: Record<string, string> = {
   OWNERSHIP_TRANSFERRED: "Ownership transferred",
   STAFF_SUSPENDED: "Account suspended",
   STAFF_REACTIVATED: "Account reactivated",
+  STAFF_BANNED: "Account banned",
   STAFF_PERMISSIONS_CHANGED: "Permissions changed",
   STAFF_RESTRICTED_AFTER_PASSWORD_RESET: "Restricted after password reset",
 };

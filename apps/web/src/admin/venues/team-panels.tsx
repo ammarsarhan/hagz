@@ -19,11 +19,11 @@ import { AREAS, levelLabel, type StaffInvitation, type VenueMember } from "./tea
 // venue's own staff run their team in the dashboard app; what's here is support for when they
 // can't. Closing slides the panel out first, and onClose (which removes it) runs once it's gone.
 
-type MemberAction = "owner" | "remove" | "suspend" | "reactivate";
+type MemberAction = "owner" | "remove" | "suspend" | "reactivate" | "ban";
 
 // A member with what support can do for them, each asked first in a modal over the panel: make them
-// the owner, take them off the staff (never the owner), or suspend their account everywhere (or
-// reactivate it). Everything but reactivating asks for a reason, kept on the venue's History.
+// the owner, take them off the staff (never the owner), suspend their account everywhere (or
+// reactivate it), or ban it for good (not while they own a venue; the API checks their others). Everything but reactivating asks for a reason, kept on the venue's History.
 export function MemberPanel({
   venueId,
   member,
@@ -62,7 +62,7 @@ export function MemberPanel({
                 member.status === "ACTIVE" ? (
                   "Active"
                 ) : (
-                  <Tag>{suspended ? "Suspended" : "Closed"}</Tag>
+                  <Tag>{suspended ? "Suspended" : "Banned"}</Tag>
                 )
               }
             />
@@ -107,21 +107,37 @@ export function MemberPanel({
               </>
             )}
             {banned ? (
-              <p className="text-label text-ink-2">Their account was closed for good.</p>
-            ) : suspended ? (
-              <AccessAction
-                title="Reactivate account"
-                description="They can sign in again, to every venue they're on."
-                action="Reactivate"
-                onClick={() => setAction("reactivate")}
-              />
+              <p className="text-label text-ink-2">Their account was banned for good.</p>
             ) : (
-              <AccessAction
-                title="Suspend account"
-                description="Signs them out everywhere and keeps them out of every venue they're on until it's reactivated."
-                action="Suspend"
-                onClick={() => setAction("suspend")}
-              />
+              <>
+                {suspended ? (
+                  <AccessAction
+                    title="Reactivate account"
+                    description="They can sign in again, to every venue they're on."
+                    action="Reactivate"
+                    onClick={() => setAction("reactivate")}
+                  />
+                ) : (
+                  <AccessAction
+                    title="Suspend account"
+                    description="Signs them out everywhere and keeps them out of every venue they're on until it's reactivated."
+                    action="Suspend"
+                    onClick={() => setAction("suspend")}
+                  />
+                )}
+                {owner ? (
+                  <p className="text-label text-ink-2">
+                    They own this venue. Make another member the owner before banning them.
+                  </p>
+                ) : (
+                  <AccessAction
+                    title="Ban account"
+                    description="For good: they can never sign in again. Use it for abuse or fraud, not a pause."
+                    action="Ban"
+                    onClick={() => setAction("ban")}
+                  />
+                )}
+              </>
             )}
           </div>
         </PanelSection>
@@ -170,6 +186,23 @@ export function MemberPanel({
           request={(reason) =>
             send(
               api.POST("/v1/admin/staff/{staffId}/suspend", {
+                params: { path: { staffId: member.staffId } },
+                body: { reason },
+              }),
+            )
+          }
+          onClose={close}
+          onDone={onChanged}
+        />
+      ) : null}
+      {action === "ban" ? (
+        <ReasonDialog
+          title={`Ban ${member.name}'s account for good?`}
+          description="They're signed out everywhere now and can never sign in again. This can't be undone."
+          confirmLabel="Ban"
+          request={(reason) =>
+            send(
+              api.POST("/v1/admin/staff/{staffId}/ban", {
                 params: { path: { staffId: member.staffId } },
                 body: { reason },
               }),
