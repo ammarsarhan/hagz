@@ -355,20 +355,21 @@ describe("GET /admin/venues/{id}/location", () => {
 });
 
 describe("GET /admin/venues/{id}/amenities", () => {
-  it("reads what the venue offers with names and prices, by English name", async () => {
+  it("reads what the venue offers with names, prices and layout tiles, by English name", async () => {
     const venue = await addVenue({ en: "Arena" });
-    const option = (key: string, en: string, isActive = true) =>
+    const option = (key: string, en: string, isActive = true, placeable = false) =>
       prisma.amenityOption.create({
         data: {
           marketplaceId,
           key,
           icon: key,
           isActive,
+          placeable,
           translations: { create: [{ language: "EN", name: en }] },
         },
       });
     const showers = await option("showers", "Showers");
-    const parking = await option("parking", "Parking", false);
+    const parking = await option("parking", "Parking", false, true);
     await prisma.venueAmenity.createMany({
       data: [
         { venueId: venue.id, marketplaceId, optionId: showers.id, price: null, pricing: null },
@@ -380,6 +381,19 @@ describe("GET /admin/venues/{id}/amenities", () => {
           pricing: "PER_BOOKING",
         },
       ],
+    });
+    // Parking drawn twice on the layout.
+    await prisma.venueLayout.create({ data: { venueId: venue.id, columns: 10, rows: 10 } });
+    await prisma.venueLayoutItem.createMany({
+      data: [0, 3].map((x) => ({
+        venueId: venue.id,
+        type: "AMENITY" as const,
+        optionId: parking.id,
+        x,
+        y: 0,
+        width: 2,
+        height: 2,
+      })),
     });
     const res = await get(`/${venue.id}/amenities`);
     expect(res.status).toBe(200);
@@ -394,6 +408,8 @@ describe("GET /admin/venues/{id}/amenities", () => {
           isActive: false,
           price: 5000,
           pricing: "PER_BOOKING",
+          placeable: true,
+          tiles: 2,
         },
         {
           optionId: showers.id,
@@ -403,6 +419,8 @@ describe("GET /admin/venues/{id}/amenities", () => {
           isActive: true,
           price: null,
           pricing: null,
+          placeable: false,
+          tiles: 0,
         },
       ],
     });

@@ -177,8 +177,8 @@ export const adminVenueLocation = async (id: string): Promise<AdminVenueLocation
   };
 };
 
-// A venue's Amenities section: what it offers, with each option's name and icon and the price the
-// venue charges, by English name. The currency is the marketplace's.
+// A venue's Amenities section: what it offers, with each option's name and icon, the price the venue
+// charges and whether it's drawn on the layout, by English name. The currency is the marketplace's.
 export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmenities> => {
   const venue = await prisma.venue.findUnique({
     where: { id },
@@ -188,12 +188,14 @@ export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmeniti
         select: {
           price: true,
           pricing: true,
+          _count: { select: { tiles: true } },
           option: {
             select: {
               id: true,
               key: true,
               icon: true,
               isActive: true,
+              placeable: true,
               translations: { select: { language: true, name: true } },
             },
           },
@@ -202,7 +204,7 @@ export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmeniti
     },
   });
   if (!venue) throw venueNotFound();
-  const amenities = venue.amenities.map(({ option, price, pricing }) => {
+  const amenities = venue.amenities.map(({ option, price, pricing, _count }) => {
     const exact = (language: "EN" | "AR") =>
       option.translations.find((t) => t.language === language)?.name ?? null;
     return {
@@ -213,6 +215,8 @@ export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmeniti
       isActive: option.isActive,
       price,
       pricing,
+      placeable: option.placeable,
+      tiles: _count.tiles,
     };
   });
   amenities.sort((a, b) => (a.names.en ?? a.key).localeCompare(b.names.en ?? b.key, "en"));

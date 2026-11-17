@@ -238,6 +238,13 @@ export const AdminVenueAmenities = z
         }),
         price: z.int().nullable().meta({ description: "Minor units; null when free." }),
         pricing: AmenityPricing.nullable(),
+        placeable: z
+          .boolean()
+          .meta({ description: "The option can be drawn on a venue's layout." }),
+        tiles: z
+          .int()
+          .min(0)
+          .meta({ description: "How many times it's drawn on this venue's layout." }),
       }),
     ),
   })
