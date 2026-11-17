@@ -101,15 +101,28 @@ function AmenitiesForm({
       price,
       pricing,
     }));
-    void save([
-      () =>
-        send(
-          api.PUT("/v1/staff/venues/{venueId}/amenities", {
-            params: { path: { venueId } },
-            body: { amenities },
-          }),
-        ),
-    ]);
+    // The layout's tray holds the venue's placeable amenities. One added only grows the tray, so
+    // the layout is refetched. One taken off takes its tiles with it on the server, and the layout
+    // editor starts from whatever is cached, so the cached layout is thrown away instead: the
+    // editor would otherwise put the tiles back and the next save would be refused.
+    const placeable = new Set(options.filter((o) => o.placeable).map((o) => o.id));
+    const had = venue.amenities.filter((a) => placeable.has(a.optionId)).map((a) => a.optionId);
+    const removed = had.some((id) => !offered.has(id));
+    const added = [...offered.keys()].some((id) => placeable.has(id) && !had.includes(id));
+    const layout = queries.layout(venueId).queryKey;
+    void save(
+      [
+        () =>
+          send(
+            api.PUT("/v1/staff/venues/{venueId}/amenities", {
+              params: { path: { venueId } },
+              body: { amenities },
+            }),
+          ),
+      ],
+      undefined,
+      removed ? { drop: [layout] } : added ? { also: [layout] } : {},
+    );
   };
 
   return (
