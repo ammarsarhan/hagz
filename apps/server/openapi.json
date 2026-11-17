@@ -4786,6 +4786,111 @@
           "rate"
         ]
       },
+      "AdminVenueGrounds": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217; prices are in its minor units.",
+            "example": "EGP"
+          },
+          "grounds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sport": {
+                  "$ref": "#/components/schemas/GroundSport"
+                },
+                "size": {
+                  "$ref": "#/components/schemas/GroundSize"
+                },
+                "surface": {
+                  "$ref": "#/components/schemas/GroundSurface"
+                },
+                "environment": {
+                  "$ref": "#/components/schemas/GroundEnvironment"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/GroundStatus"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "basePrice": {
+                  "type": "integer"
+                },
+                "peakPrice": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "discountPrice": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "minimumSlots": {
+                  "type": "integer"
+                },
+                "maximumSlots": {
+                  "type": "integer"
+                },
+                "openHours": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Open hours in its week; 0 until set."
+                },
+                "schedule": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleDay"
+                  },
+                  "description": "Open days; days left out are closed."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "sport",
+                "size",
+                "surface",
+                "environment",
+                "status",
+                "position",
+                "basePrice",
+                "peakPrice",
+                "discountPrice",
+                "minimumSlots",
+                "maximumSlots",
+                "openHours",
+                "schedule"
+              ]
+            }
+          },
+          "layout": {
+            "$ref": "#/components/schemas/VenueLayoutView"
+          }
+        },
+        "required": [
+          "currency",
+          "grounds",
+          "layout"
+        ]
+      },
       "CheckTaxNumber": {
         "type": "object",
         "properties": {
@@ -13906,6 +14011,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminVenueSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/grounds": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "A venue's grounds and layout",
+        "description": "Its grounds with their weekly hours, its layout to draw them on, and the currency of their prices.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The grounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVenueGrounds"
                 }
               }
             }

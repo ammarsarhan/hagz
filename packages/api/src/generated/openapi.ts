@@ -8534,6 +8534,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/grounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A venue's grounds and layout
+         * @description Its grounds with their weekly hours, its layout to draw them on, and the currency of their prices.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The grounds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenueGrounds"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/translations/{language}": {
         parameters: {
             query?: never;
@@ -11473,6 +11550,34 @@ export interface components {
              * @example 1000
              */
             rate: number | null;
+        };
+        AdminVenueGrounds: {
+            /**
+             * @description ISO 4217; prices are in its minor units.
+             * @example EGP
+             */
+            currency: string;
+            grounds: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+                surface: components["schemas"]["GroundSurface"];
+                environment: components["schemas"]["GroundEnvironment"];
+                status: components["schemas"]["GroundStatus"];
+                position: number;
+                basePrice: number;
+                peakPrice: number | null;
+                discountPrice: number | null;
+                minimumSlots: number;
+                maximumSlots: number;
+                /** @description Open hours in its week; 0 until set. */
+                openHours: number;
+                /** @description Open days; days left out are closed. */
+                schedule: components["schemas"]["ScheduleDay"][];
+            }[];
+            layout: components["schemas"]["VenueLayoutView"];
         };
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
