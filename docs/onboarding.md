@@ -79,7 +79,15 @@ The admin side (`/v1/admin/venues`):
   - adjust photos if needed (later).
 - **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. **Slot generation (PR 2.6) is deferred**, so going live doesn't yet wait for `generatedUntil`; that condition returns with 2.6.
 - **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
-- **Transfer ownership** to an existing member (not built yet; revert and transfer come after the review core). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified. Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one.
+- **Transfer ownership** to an existing, active member (`POST /admin/venues/{id}/owner`, with a reason). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified (`OWNERSHIP_TRANSFERRED`). Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one. Revert is still to come.
+
+### Team support
+
+The venue's staff run their own team in the dashboard app; admins step in from the venue's Team tab when they can't. Every action is a `VenueEvent` with the admin as the actor and, except revoking and reactivating, a reason (10–500 characters):
+
+- **Remove a member** (`POST /admin/venues/{id}/members/{staffId}/remove`): never the owner (`409 OWNER_CANT_BE_REMOVED`; transfer first). The membership goes; their account and their name on past events stay. They're notified (`STAFF_REMOVED`) and lose access at once, since venue routes read the membership on every request.
+- **Revoke an invitation** (`DELETE /admin/venues/{id}/invitations/{invitationId}`): the same as the staff's revoke, with the admin recorded.
+- **Suspend or reactivate a staff account** (`POST /admin/staff/{staffId}/suspend`, `/reactivate`): account-wide. Suspending revokes every session (and push token) and keeps them out of every venue at once (`403 ACCOUNT_SUSPENDED`); reactivating lets them sign in afresh. With no account-level log yet, it's recorded on every venue they're a member of (`STAFF_SUSPENDED`, `STAFF_REACTIVATED`). A banned account can't be either (`409 ACCOUNT_BANNED`).
 
 ## Edits after going live
 
