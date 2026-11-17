@@ -67,7 +67,7 @@ export function StaffAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      title="Staff account"
+      title="Staff"
       description="Their account across every venue they're on, and keeping them out of it."
       compact
     >
