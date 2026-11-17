@@ -1364,7 +1364,7 @@
           },
           "canSubmit": {
             "type": "boolean",
-            "description": "A draft with every required item done."
+            "description": "A draft with every required item done and none that still needs changes."
           },
           "rejection": {
             "type": [
@@ -1378,11 +1378,19 @@
               "at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SetupItemKey"
+                },
+                "description": "The sections it asked to change."
               }
             },
             "required": [
               "reason",
-              "at"
+              "at",
+              "items"
             ],
             "description": "Why the last review sent this draft back; null otherwise."
           }
@@ -1420,13 +1428,18 @@
                 ]
               }
             ]
+          },
+          "needsChanges": {
+            "type": "boolean",
+            "description": "The last review sent the venue back asking to change this, and it hasn't been edited since. The venue can't be sent again until it is."
           }
         },
         "required": [
           "key",
           "required",
           "state",
-          "blockedBy"
+          "blockedBy",
+          "needsChanges"
         ]
       },
       "SetupItemKey": {
@@ -4409,6 +4422,18 @@
             "maxLength": 500,
             "description": "Shown to the owner; say what to change.",
             "example": "Add photos of the pitches themselves, not only the entrance."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetupItemKey"
+            },
+            "maxItems": 9,
+            "default": [],
+            "description": "The setup sections to change. Each has to be edited before the owner can send the venue again. Empty: the reason says it all.",
+            "example": [
+              "PHOTOS"
+            ]
           }
         },
         "required": [
@@ -4774,11 +4799,19 @@
               "at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SetupItemKey"
+                },
+                "description": "The sections it asked to change."
               }
             },
             "required": [
               "reason",
-              "at"
+              "at",
+              "items"
             ],
             "description": "Why the last review sent this draft back, while it's a draft."
           },

@@ -10181,13 +10181,15 @@ export interface components {
                 done: number;
                 total: number;
             };
-            /** @description A draft with every required item done. */
+            /** @description A draft with every required item done and none that still needs changes. */
             canSubmit: boolean;
             /** @description Why the last review sent this draft back; null otherwise. */
             rejection: {
                 reason: string;
                 /** Format: date-time */
                 at: string;
+                /** @description The sections it asked to change. */
+                items: components["schemas"]["SetupItemKey"][];
             } | null;
         };
         SetupItem: {
@@ -10196,6 +10198,8 @@ export interface components {
             required: boolean;
             state: components["schemas"]["SetupItemState"];
             blockedBy: components["schemas"]["SetupItemKey"] & (string | null);
+            /** @description The last review sent the venue back asking to change this, and it hasn't been edited since. The venue can't be sent again until it is. */
+            needsChanges: boolean;
         };
         /** @enum {string} */
         SetupItemKey: "DETAILS" | "LOCATION" | "PHOTOS" | "GROUNDS" | "SCHEDULES" | "LAYOUT" | "SETTINGS" | "AMENITIES" | "TAX_NUMBER";
@@ -11128,6 +11132,14 @@ export interface components {
              * @example Add photos of the pitches themselves, not only the entrance.
              */
             reason: string;
+            /**
+             * @description The setup sections to change. Each has to be edited before the owner can send the venue again. Empty: the reason says it all.
+             * @default []
+             * @example [
+             *       "PHOTOS"
+             *     ]
+             */
+            items: components["schemas"]["SetupItemKey"][];
         };
         /** @description Clears the owner's requested area. */
         SetVenueArea: {
@@ -11233,6 +11245,8 @@ export interface components {
                 reason: string;
                 /** Format: date-time */
                 at: string;
+                /** @description The sections it asked to change. */
+                items: components["schemas"]["SetupItemKey"][];
             } | null;
             /** @description What's still missing to go live; empty when it's ready. */
             goLive: components["schemas"]["GoLiveGap"][];
