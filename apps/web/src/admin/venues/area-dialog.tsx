@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminLocation, AdminVenueLocation } from "@hagz/contracts";
+import { PIN_NEAR_AREA_METRES, type AdminLocation, type AdminVenueLocation } from "@hagz/contracts";
 import { IconCheck } from "@tabler/icons-react";
 import {
   createColumnHelper,
@@ -46,9 +46,11 @@ function Distance({ node }: { node: LocationNode }) {
   const { center, childCount } = node.location;
   if (childCount > 0 || !context?.pin) return null;
   if (!center) return <span className="text-ink-3">No centre</span>;
+  const metres = metresBetween(context.pin, center);
+  // Black within the API's limit, where saving it would be accepted; grey beyond.
   return (
-    <span className="text-ink-2 tabular-nums">
-      {formatDistance(metresBetween(context.pin, center))}
+    <span className={`tabular-nums ${metres <= PIN_NEAR_AREA_METRES ? "text-ink" : "text-ink-2"}`}>
+      {formatDistance(metres)}
     </span>
   );
 }
@@ -215,7 +217,7 @@ export function AreaDialog({
       {/* Stays where it is while the tree scrolls under it. A sticky box sticks inside its scroller's
           padding, so it sticks 1.5rem higher (at the scroller's edge) and fills that band with its
           own white padding; otherwise rows show through above it. */}
-      <div className="sticky -top-6 z-10 -mt-6 bg-white pt-6 pb-4">
+      <div className="sticky -top-6 z-10 -mt-6 bg-white pt-4 pb-4">
         <TableSearch value={query} onChange={setQuery} placeholder="Search areas…" />
       </div>
       <div>
