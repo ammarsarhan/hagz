@@ -74,8 +74,9 @@ export default function VenueSetupScreen() {
     );
   }
 
-  // In review: nothing here can change, so the screen is where the review is (Figma 363:2).
-  if (setup.data.venue.status === "SUBMITTED") {
+  // In review, or approved and being provisioned: the screen is where the review is (Figma 363:2,
+  // 481:2). The checklist has nothing left to send.
+  if (setup.data.venue.status === "SUBMITTED" || setup.data.venue.status === "PROVISIONING") {
     return <VenueInReview venueId={venueId} setup={setup.data} onClose={leave} />;
   }
 

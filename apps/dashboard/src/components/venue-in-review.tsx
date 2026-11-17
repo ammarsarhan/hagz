@@ -25,6 +25,10 @@ type VenueSetup = components["schemas"]["VenueSetup"];
 // steps, and the way back to editing (Withdraw, which asks first). Nothing can change while it's in review
 // (the API refuses), so the checklist gives way to this until it's approved, sent back or
 // withdrawn.
+//
+// Approved, while Hagz provisions it (Figma "Review · Approved", 481:2): the same screen a step on,
+// "has been approved!", with Approved done and preparing the listing under way. It can't be
+// withdrawn any more, so there's no button; it stays here until it goes live.
 export function VenueInReview({
   venueId,
   setup,
@@ -41,6 +45,7 @@ export function VenueInReview({
   // Withdrawing asks first: it ends the review, and sending again starts a new one.
   const [confirming, setConfirming] = useState(false);
   const name = setup.venue.name ?? t("screens.setup.untitled");
+  const approved = setup.venue.status === "PROVISIONING";
 
   // Back to a draft: the screen becomes the checklist again, everything editable.
   const withdraw = async () => {
@@ -58,30 +63,54 @@ export function VenueInReview({
   return (
     <Screen
       footer={
-        <Button
-          label={t("screens.setup.review.withdraw")}
-          variant="soft"
-          onPress={() => setConfirming(true)}
-        />
+        approved ? undefined : (
+          <Button
+            label={t("screens.setup.review.withdraw")}
+            variant="soft"
+            onPress={() => setConfirming(true)}
+          />
+        )
       }
     >
       <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />} />
       <FadingScroll>
-        <Title subtitle={t("screens.setup.review.inReview")}>
-          {t("screens.setup.review.submittedTitle", { venue: name })}
+        <Title
+          subtitle={t(
+            approved ? "screens.setup.review.approvedBody" : "screens.setup.review.inReview",
+          )}
+        >
+          {t(
+            approved ? "screens.setup.review.approvedTitle" : "screens.setup.review.submittedTitle",
+            { venue: name },
+          )}
         </Title>
 
         <View className="mt-4">
           <Step
             state="done"
             title={t("screens.setup.review.sent")}
-            detail={setup.venue.submittedAt ? sentAt(setup.venue.submittedAt, t) : ""}
+            detail={setup.venue.submittedAt ? stepTime(setup.venue.submittedAt, t) : ""}
           />
-          <Step
-            state="now"
-            title={t("screens.setup.review.checking")}
-            detail={t("screens.setup.review.checkingBody")}
-          />
+          {approved ? (
+            <>
+              <Step
+                state="done"
+                title={t("screens.setup.review.approved")}
+                detail={setup.venue.approvedAt ? stepTime(setup.venue.approvedAt, t) : ""}
+              />
+              <Step
+                state="now"
+                title={t("screens.setup.review.preparing")}
+                detail={t("screens.setup.review.preparingBody")}
+              />
+            </>
+          ) : (
+            <Step
+              state="now"
+              title={t("screens.setup.review.checking")}
+              detail={t("screens.setup.review.checkingBody")}
+            />
+          )}
           <Step
             state="next"
             title={t("screens.setup.review.live")}
@@ -183,7 +212,7 @@ function Step({
 
 // "Today, 4:12 pm", "Yesterday, 9:05 am", "14 Nov, 6:30 pm", with Western digits in Arabic too.
 const locale = `${language}-u-nu-latn`;
-const sentAt = (iso: string, t: TFunction) => {
+const stepTime = (iso: string, t: TFunction) => {
   const at = new Date(iso);
   const time = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(at);
   const startOfToday = new Date();
