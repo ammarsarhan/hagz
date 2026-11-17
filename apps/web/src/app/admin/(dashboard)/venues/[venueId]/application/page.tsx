@@ -332,12 +332,7 @@ function GoLiveActions({
         />
       )}
       <AccessAction
-        title="Go live"
-        description={
-          goLive.length > 0
-            ? `Not yet: missing ${goLive.map((gap) => goLiveLabel[gap].toLowerCase()).join(", ")}.`
-            : "Players can find and book it from now on. The owner is told."
-        }
+        title="Launch the venue"
         action="Go live"
         primary
         disabled={goLive.length > 0}
