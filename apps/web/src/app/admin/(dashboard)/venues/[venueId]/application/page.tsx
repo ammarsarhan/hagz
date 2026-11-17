@@ -104,7 +104,7 @@ export default function VenueApplicationPage() {
                   </p>
                   <p className="mt-0.5 text-label text-ink-2">{data.rejection.reason}</p>
                   {data.rejection.items.length > 0 ? (
-                    <p className="mt-2 text-label text-ink-2">
+                    <p className="mt-3.5 text-label text-ink-2">
                       To change:{" "}
                       {data.rejection.items.map((key, index) => {
                         const pending = data.setup.items.some(
