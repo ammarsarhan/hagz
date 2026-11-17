@@ -67,7 +67,7 @@ export function StaffAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      title="Staff account"
+      label="Staff account"
     >
       <div className="flex flex-col gap-6">
         <PanelSection title="Account">
@@ -207,7 +207,7 @@ export function CustomerAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      title="Customer"
+      label="Customer"
     >
       <PanelSection title="Account">
         <AccountRows account={customer} />
