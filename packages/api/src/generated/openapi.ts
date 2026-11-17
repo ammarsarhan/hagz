@@ -8995,6 +8995,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Staff accounts
+         * @description Newest first, a page at a time, with the venues each is on. Deleted ones are left out.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Part of the name, or of the phone number in any format (spaces, a leading 0 or the country code). */
+                    q?: string;
+                    /** @description `SUSPENDED` is temporary, `BANNED` for good. */
+                    status?: components["schemas"]["AccountStatus"];
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of staff */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminStaffAccount"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Customer accounts
+         * @description Newest first, a page at a time. Deleted ones are left out.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Part of the name, or of the phone number in any format (spaces, a leading 0 or the country code). */
+                    q?: string;
+                    /** @description `SUSPENDED` is temporary, `BANNED` for good. */
+                    status?: components["schemas"]["AccountStatus"];
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of customers */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminCustomerAccount"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -10472,6 +10628,43 @@ export interface components {
              * @example The owner called support: he left the business in October.
              */
             reason: string;
+        };
+        AdminStaffAccount: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @example +201001234567 */
+            phone: string | null;
+            status: components["schemas"]["AccountStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
+            /** @description Every venue they're on, owned ones first. */
+            venues: {
+                /** Format: uuid */
+                id: string;
+                /** @description In English, else Arabic. */
+                name: string | null;
+                role: components["schemas"]["VenueRole"];
+            }[];
+        };
+        /**
+         * @description `SUSPENDED` is temporary, `BANNED` for good.
+         * @enum {string}
+         */
+        AccountStatus: "ACTIVE" | "SUSPENDED" | "BANNED";
+        AdminCustomerAccount: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @example +201001234567 */
+            phone: string | null;
+            status: components["schemas"]["AccountStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastSignedInAt: string | null;
         };
     };
     responses: never;
