@@ -30,8 +30,9 @@ export function JourneyStep({
           <span className={`my-1 w-[1.5px] flex-1 ${state === "done" ? "bg-ink" : "bg-border"}`} />
         )}
       </div>
-      <div className={`min-w-0 flex-1 ${last ? "" : "pb-8"}`}>
-        {/* The title's line is as tall as the marker, so the two sit centred on each other. */}
+      <div className={`-mt-0.5 min-w-0 flex-1 ${last ? "" : "pb-8"}`}>
+        {/* The title's line is as tall as the marker, and the text 2px up from centre: the optical
+            match for a cap-height title beside a circle. */}
         <h2
           className={`text-subtitle leading-[1.375rem] font-semibold ${later ? "text-ink-2" : "text-ink"}`}
         >
