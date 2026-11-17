@@ -268,3 +268,41 @@ describe("GET /admin/venues/{id}/translations", () => {
     expect((await get(`/${venue.id}/translations`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/photos", () => {
+  const photo = (venueId: string, position: number, status: "READY" | "PENDING" = "READY") => ({
+    venueId,
+    key: `venues/${venueId}/${String(position)}-${status}.jpg`,
+    type: "IMAGE" as const,
+    contentType: "image/jpeg",
+    size: 4,
+    status,
+    position,
+  });
+
+  it("reads the ready photos in order, the cover first", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    await prisma.venueMedia.createMany({
+      data: [photo(venue.id, 1), photo(venue.id, 0), photo(venue.id, 2, "PENDING")],
+    });
+    const res = await get(`/${venue.id}/photos`);
+    expect(res.status).toBe(200);
+    const data = res.body.data as { url: string; status: string; position: number }[];
+    expect(data.map((p) => [p.position, p.status])).toEqual([
+      [0, "READY"],
+      [1, "READY"],
+    ]);
+    expect(data[0]?.url).toContain(`venues/${venue.id}/0-READY.jpg`);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/photos");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/photos`, false)).status).toBe(401);
+  });
+});

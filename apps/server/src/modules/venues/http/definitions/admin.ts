@@ -18,6 +18,7 @@ import {
   VenueHistoryEvent,
   VenueHistoryQuery,
   VenueMember,
+  VenuePhoto,
   VenueStatus,
   VenueTranslation,
   VenueTranslationInput,
@@ -167,6 +168,24 @@ export const venueTranslations = createRoute({
   request: { params: venueParams },
   responses: {
     200: { description: "The translations", ...json(list(VenueTranslation)) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venuePhotos = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/photos",
+  tags,
+  summary: "A venue's photos, in order",
+  description:
+    "The ready photos players see, the cover first. Uploads still on their way are left out.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The photos", ...json(list(VenuePhoto)) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),
