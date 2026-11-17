@@ -9,8 +9,8 @@ import {
 } from "@tabler/icons-react";
 import { venueHref } from "./sections";
 
-// Plain data, without "use client": the Details pages that aren't built yet are server components,
-// and a server component importing from a client module gets references, not these values.
+// Plain data, without "use client", so a server component can import it too: one importing from a
+// client module gets references, not these values.
 
 // A venue's Details tab: what players see, split into sections by a menu beside them (Figma A6,
 // option 5, user 2026-11-17). Translating is what admins edit most in this phase, so the tab opens
