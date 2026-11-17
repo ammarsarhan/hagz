@@ -70,7 +70,8 @@ The checklist is computed from the data on every request. Nothing stores "step 3
 The admin side (`/v1/admin/venues`):
 
 - **Queue:** `GET /admin/venues/review`, submitted venues oldest submission first, with the owner. The full history is `GET /admin/venues/{id}/history`.
-- **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees. It stays the owner's one unfinished venue, so rejecting (like withdrawing) needs no check.
+- **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees, and optionally the setup sections to change (`items`, decided 2026-11-18). It stays the owner's one unfinished venue, so rejecting (like withdrawing) needs no check.
+  - **Sections to change.** The setup screen marks each one *Needs changes* (`SetupItem.needsChanges`) until it's edited, and the venue can't be sent again before then (`canSubmit` is false; submitting answers `422 CHANGES_NEEDED` listing them in `items`). A section counts as edited when the owner's side records an edit to it after the rejection: Details by a translation or the phone, Tax number by the tax number (both `VENUE_DETAILS_CHANGED`, told apart by the field), Photos by adding, removing or reordering, Grounds by adding, changing, removing or reordering, Schedules by a schedule change or copy, and Layout, Settings, Amenities and Location by their own events. An edit that changes nothing records nothing, so it doesn't count. *Changed*, not *fixed*: the next review judges that. A section that's no longer on the checklist (the layout, once down to one ground) doesn't hold it up. Worked out from the events on every read, nothing stored beyond the rejection event's `items`.
 - **Approve** (`SUBMITTED` → `PROVISIONING`).
 - **Provision**, while in `PROVISIONING`:
   - complete the translations so Arabic and English both exist (`PUT /admin/venues/{id}/translations/{language}`);
@@ -133,6 +134,7 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 |---|---|
 | `409 UNFINISHED_VENUE_EXISTS` | Creating a venue, or receiving an unfinished one by transfer, while already owning one in `DRAFT`, `SUBMITTED` or `PROVISIONING` (includes `venueId` and `venueStatus`) |
 | `422 SETUP_INCOMPLETE` | Submitting with checklist items missing (lists them in `missing`) |
+| `422 CHANGES_NEEDED` | Submitting a venue sent back with sections to change before each is edited (lists them in `items`) |
 | `403 OWNER_ONLY` | Submitting or withdrawing by anyone but the owner |
 | `422 GO_LIVE_BLOCKED` | Going live without both languages or an active ground (`missing`) |
 | `409 NO_ACTIVE_GROUND` | Resuming a paused venue with no active ground |
