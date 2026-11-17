@@ -76,9 +76,10 @@ export default function VenueLocation() {
                     rel="noreferrer"
                     variant="secondary"
                     size="small"
+                    weight="medium"
                   >
                     Open in Google Maps
-                    <IconExternalLink size={16} className="size-4" stroke={2} aria-hidden />
+                    <IconExternalLink size={16} className="size-4" stroke={1.75} aria-hidden />
                   </ButtonLink>
                 </div>
               ) : (

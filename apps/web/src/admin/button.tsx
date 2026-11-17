@@ -23,13 +23,17 @@ const sizes = {
   small: "h-10 gap-1.5 px-5 text-label",
 } as const;
 
-const shape = (size: keyof typeof sizes) =>
-  `flex shrink-0 cursor-pointer items-center justify-center rounded-full font-semibold ${sizes[size]} transition-opacity hover:opacity-90`;
+const shape = (size: keyof typeof sizes, weight: "semibold" | "medium" = "semibold") =>
+  `flex shrink-0 cursor-pointer items-center justify-center rounded-full ${
+    weight === "medium" ? "font-medium" : "font-semibold"
+  } ${sizes[size]} transition-opacity hover:opacity-90`;
 
 interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
   variant?: keyof typeof variants;
   size?: keyof typeof sizes;
+  // Medium for a link beside the content it's about (a map), so it doesn't outweigh it.
+  weight?: "semibold" | "medium";
 }
 
 // A link that looks like the button, for going somewhere rather than doing something (a map
@@ -37,11 +41,12 @@ interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 export function ButtonLink({
   variant = "primary",
   size = "regular",
+  weight = "semibold",
   children,
   ...anchor
 }: ButtonLinkProps) {
   return (
-    <a className={`${shape(size)} ${variants[variant]}`} {...anchor}>
+    <a className={`${shape(size, weight)} ${variants[variant]}`} {...anchor}>
       {children}
     </a>
   );
