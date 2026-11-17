@@ -3,6 +3,7 @@
 import type { StaffPermissions } from "@hagz/contracts";
 import { useState } from "react";
 import { expiresIn } from "@/admin/admins/model";
+import { Avatar } from "@/admin/avatar";
 import { Tag } from "@/admin/data-table";
 import { DetailRow, PanelSection, SidePanel } from "@/admin/side-panel";
 import { dateTime } from "./history";
@@ -24,6 +25,8 @@ export function MemberPanel({ member, onClose }: { member: VenueMember; onClose:
       description={member.phone ?? "No phone number"}
     >
       <div className="flex flex-col gap-6">
+        {/* Their initials, as on the Account page: staff accounts have no photo yet. */}
+        <Avatar name={member.name} size="large" />
         <PanelSection title="Member">
           <div>
             <DetailRow label="Role" value={owner ? <Tag>Owner</Tag> : "Member"} />
