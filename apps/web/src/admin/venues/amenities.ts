@@ -34,9 +34,10 @@ export function useVenueAmenities(venueId: string) {
   return { data, error };
 }
 
-const PER: Record<AmenityPricing, string> = { PER_HOUR: "per hour", PER_BOOKING: "per booking" };
+// Per hour shows as "/hr"; per booking is the plain price, the way a booking is charged.
+const PER: Record<AmenityPricing, string> = { PER_HOUR: "/hr", PER_BOOKING: "" };
 
-// "EGP 50 per booking", "AED 12.50 per hour", "Free": a price in the currency's minor units. The
+// "EGP 50" (per booking), "AED 12.50/hr", "Free": a price in the currency's minor units. The
 // currency's own decimals (2 for EGP, 3 for KWD) say how many minor units make one, and whole
 // amounts drop them.
 export const formatAmenityPrice = (
@@ -52,5 +53,5 @@ export const formatAmenityPrice = (
     minimumFractionDigits: Number.isInteger(amount) ? 0 : (digits ?? 2),
     maximumFractionDigits: digits ?? 2,
   }).format(amount);
-  return `${currency} ${text} ${PER[pricing]}`;
+  return `${currency} ${text}${PER[pricing]}`;
 };

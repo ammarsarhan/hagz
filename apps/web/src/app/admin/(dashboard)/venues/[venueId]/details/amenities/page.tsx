@@ -20,8 +20,7 @@ export default function VenueAmenities() {
     <section>
       <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">Amenities</h2>
       <p className="mt-1 text-body text-ink-2">
-        What the venue offers, and what each costs when it isn’t free. The owner sets them in the
-        staff app.
+        What the venue offers, and what each costs when it isn’t free.
         {count ? ` ${String(count)} ${count === 1 ? "amenity" : "amenities"}.` : ""}
       </p>
 
