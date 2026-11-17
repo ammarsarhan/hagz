@@ -1,4 +1,10 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import {
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from "react";
 
 // The box every input sits in: white, 48 high (the apps use 56; desktop forms are denser), 1px light
 // border, 14 corners; 1.5px black when focused, red with an error. Padding shrinks by the extra half
@@ -85,6 +91,35 @@ export function SelectField({ label, hint, options, placeholder, ...select }: Se
           ))}
         </select>
       </div>
+      {hint ? (
+        <p id={`${id}-note`} className="text-caption text-ink-2">
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string;
+  hint?: string;
+}
+
+// A labelled multi-line field in the same box as Field, for a sentence or two (a reason).
+export function TextAreaField({ label, hint, ...area }: TextAreaFieldProps) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-label font-medium text-ink-2">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        rows={4}
+        aria-describedby={hint ? `${id}-note` : undefined}
+        className="resize-none rounded-field border border-border bg-white px-4 py-3 text-[1rem] leading-[1.375rem] text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-[1.5px] focus:border-primary focus:px-[calc(1rem-0.5px)] focus:py-[calc(0.75rem-0.5px)]"
+        {...area}
+      />
       {hint ? (
         <p id={`${id}-note`} className="text-caption text-ink-2">
           {hint}

@@ -219,8 +219,9 @@ export function AdminPanel({
   );
 }
 
-// One thing that can be done to an admin's access: what it is and does, and its button.
-function AccessAction({
+// One thing that can be done to an account: what it is and does, and its button. Also the venue
+// Team tab's member actions.
+export function AccessAction({
   title,
   description,
   action,
