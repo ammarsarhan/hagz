@@ -1,5 +1,7 @@
+import { AmenityIcon } from "@hagz/contracts";
 import type {
   AdminVenue,
+  AdminVenueAmenities,
   AdminVenueLocation,
   AdminVenueQuery,
   VenueStatus,
@@ -173,4 +175,46 @@ export const adminVenueLocation = async (id: string): Promise<AdminVenueLocation
     },
     requestedArea: venue.requestedArea,
   };
+};
+
+// A venue's Amenities section: what it offers, with each option's name and icon and the price the
+// venue charges, by English name. The currency is the marketplace's.
+export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmenities> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    select: {
+      marketplace: { select: { currency: true } },
+      amenities: {
+        select: {
+          price: true,
+          pricing: true,
+          option: {
+            select: {
+              id: true,
+              key: true,
+              icon: true,
+              isActive: true,
+              translations: { select: { language: true, name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!venue) throw venueNotFound();
+  const amenities = venue.amenities.map(({ option, price, pricing }) => {
+    const exact = (language: "EN" | "AR") =>
+      option.translations.find((t) => t.language === language)?.name ?? null;
+    return {
+      optionId: option.id,
+      key: option.key,
+      icon: AmenityIcon.parse(option.icon),
+      names: { en: exact("EN"), ar: exact("AR") },
+      isActive: option.isActive,
+      price,
+      pricing,
+    };
+  });
+  amenities.sort((a, b) => (a.names.en ?? a.key).localeCompare(b.names.en ?? b.key, "en"));
+  return { currency: venue.marketplace.currency, amenities };
 };

@@ -353,3 +353,69 @@ describe("GET /admin/venues/{id}/location", () => {
     expect((await get(`/${venue.id}/location`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/amenities", () => {
+  it("reads what the venue offers with names and prices, by English name", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const option = (key: string, en: string, isActive = true) =>
+      prisma.amenityOption.create({
+        data: {
+          marketplaceId,
+          key,
+          icon: key,
+          isActive,
+          translations: { create: [{ language: "EN", name: en }] },
+        },
+      });
+    const showers = await option("showers", "Showers");
+    const parking = await option("parking", "Parking", false);
+    await prisma.venueAmenity.createMany({
+      data: [
+        { venueId: venue.id, marketplaceId, optionId: showers.id, price: null, pricing: null },
+        {
+          venueId: venue.id,
+          marketplaceId,
+          optionId: parking.id,
+          price: 5000,
+          pricing: "PER_BOOKING",
+        },
+      ],
+    });
+    const res = await get(`/${venue.id}/amenities`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      currency: "EGP",
+      amenities: [
+        {
+          optionId: parking.id,
+          key: "parking",
+          icon: "parking",
+          names: { en: "Parking", ar: null },
+          isActive: false,
+          price: 5000,
+          pricing: "PER_BOOKING",
+        },
+        {
+          optionId: showers.id,
+          key: "showers",
+          icon: "showers",
+          names: { en: "Showers", ar: null },
+          isActive: true,
+          price: null,
+          pricing: null,
+        },
+      ],
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/amenities");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/amenities`, false)).status).toBe(401);
+  });
+});

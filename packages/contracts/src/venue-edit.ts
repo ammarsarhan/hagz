@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AmenityIcon } from "./platform";
 import { Coordinates, RequestedArea } from "./venue-setup";
 import { VenueStatus } from "./venues";
 
@@ -219,6 +220,29 @@ export const StaffVenueDetail = z
   })
   .meta({ id: "StaffVenueDetail" });
 
+// What a venue offers, for the Amenities section of its admin Details: each amenity with its name
+// and icon from the marketplace's catalog, and its price in the marketplace's currency.
+export const AdminVenueAmenities = z
+  .object({
+    currency: z
+      .string()
+      .meta({ description: "ISO 4217; prices are in its minor units.", example: "EGP" }),
+    amenities: z.array(
+      z.object({
+        optionId: z.uuid(),
+        key: z.string().meta({ example: "parking" }),
+        icon: AmenityIcon,
+        names: z.object({ en: z.string().nullable(), ar: z.string().nullable() }),
+        isActive: z.boolean().meta({
+          description: "False once Hagz turned the option off; venues that had it keep it.",
+        }),
+        price: z.int().nullable().meta({ description: "Minor units; null when free." }),
+        pricing: AmenityPricing.nullable(),
+      }),
+    ),
+  })
+  .meta({ id: "AdminVenueAmenities" });
+
 // Where a venue is, for the Location section of its admin Details: its marketplace, the owner's pin,
 // and the area players find it under or the one the owner asked for.
 export const AdminVenueLocation = z
@@ -265,3 +289,4 @@ export type VenueAmenity = z.infer<typeof VenueAmenity>;
 export type SetVenueAmenities = z.infer<typeof SetVenueAmenities>;
 export type StaffVenueDetail = z.infer<typeof StaffVenueDetail>;
 export type AdminVenueLocation = z.infer<typeof AdminVenueLocation>;
+export type AdminVenueAmenities = z.infer<typeof AdminVenueAmenities>;
