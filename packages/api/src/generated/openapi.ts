@@ -8071,6 +8071,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a venue is
+         * @description The owner's pin, and the area players find the venue under or the one its owner asked for.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The location */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenueLocation"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/translations/{language}": {
         parameters: {
             query?: never;
@@ -10902,6 +10979,28 @@ export interface components {
         SetVenueArea: {
             /** Format: uuid */
             locationId: string;
+        };
+        AdminVenueLocation: {
+            /** @description Null until the owner drops a pin. */
+            coordinates: {
+                latitude: number;
+                longitude: number;
+            } | null;
+            /** @description Null while the owner's `requestedArea` waits for an admin. */
+            area: {
+                /** Format: uuid */
+                id: string;
+                names: {
+                    /** @example Nasr City, Cairo */
+                    en: string | null;
+                    ar: string | null;
+                };
+            } | null;
+            /**
+             * @description An area the owner asked for because Hagz doesn't cover it.
+             * @example Sheikh Zayed, Giza
+             */
+            requestedArea: string | null;
         };
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
