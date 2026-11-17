@@ -13,7 +13,6 @@ import { ConfirmDialog, Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { TextAreaField } from "@/admin/field";
 import { JourneyStep, type JourneyState } from "@/admin/journey";
-import { ReasonDialog } from "@/admin/reason-dialog";
 import { Reveal } from "@/admin/reveal";
 import { DetailRow } from "@/admin/side-panel";
 import { useSubmit } from "@/admin/submit";
@@ -26,6 +25,7 @@ import {
   type VenueOverview,
 } from "@/admin/venues/overview";
 import { venueHref } from "@/admin/venues/sections";
+import { SendBackDialog } from "@/admin/venues/send-back-dialog";
 import { TaxCheckDialog } from "@/admin/venues/tax-check-dialog";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
@@ -103,6 +103,25 @@ export default function VenueApplicationPage() {
                     Sent back {dateTime(data.rejection.at)}
                   </p>
                   <p className="mt-0.5 text-label text-ink-2">{data.rejection.reason}</p>
+                  {data.rejection.items.length > 0 ? (
+                    <p className="mt-2 text-label text-ink-2">
+                      To change:{" "}
+                      {data.rejection.items.map((key, index) => {
+                        const pending = data.setup.items.some(
+                          (item) => item.key === key && item.needsChanges,
+                        );
+                        return (
+                          <span key={key}>
+                            {index > 0 ? ", " : ""}
+                            <span className={pending ? "font-medium text-ink" : "text-ink-2"}>
+                              {setupLabel[key]}
+                            </span>
+                            {pending ? null : " (edited)"}
+                          </span>
+                        );
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
               <Checklist overview={data} />
@@ -207,20 +226,10 @@ export default function VenueApplicationPage() {
         />
       ) : null}
       {action === "reject" ? (
-        <ReasonDialog
-          title={`Send ${name} back?`}
-          description="It goes back to being a draft. The owner sees your reason on their checklist."
-          confirmLabel="Send back"
-          hint="The owner reads this. Say what to change."
-          placeholder="Add photos of the pitches themselves, not only the entrance."
-          request={(reason) =>
-            send(
-              api.POST("/v1/admin/venues/{id}/reject", {
-                params: { path: { id: venueId } },
-                body: { reason },
-              }),
-            )
-          }
+        <SendBackDialog
+          venueId={venueId}
+          name={name}
+          sections={data.setup.items.map((item) => item.key)}
           onClose={close}
           onDone={changed}
         />

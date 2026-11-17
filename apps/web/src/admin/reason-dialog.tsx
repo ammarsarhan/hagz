@@ -28,7 +28,7 @@ export function ReasonDialog({
   description: string;
   confirmLabel: string;
   danger?: boolean;
-  // Under the field: who reads the reason. A rejection's goes to the owner.
+  // Under the field: who reads the reason.
   hint?: string;
   placeholder?: string;
   request: (reason: string) => Promise<{ ok: boolean; error?: unknown }>;
