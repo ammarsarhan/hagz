@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { GoLiveGap, Rejection } from "./review";
+import { SetupItemKey } from "./setup-items";
 import { VenueStatus } from "./venues";
 
 // Creating a venue and its setup checklist (docs/onboarding.md, steps 1 and 2).
@@ -73,21 +74,6 @@ export const SetVenueArea = z
   .object({ locationId: z.uuid() })
   .meta({ id: "SetVenueArea", description: "Clears the owner's requested area." });
 
-// Every setup item. LAYOUT only appears for venues with two or more active grounds.
-export const SetupItemKey = z
-  .enum([
-    "DETAILS",
-    "LOCATION",
-    "PHOTOS",
-    "GROUNDS",
-    "SCHEDULES",
-    "LAYOUT",
-    "SETTINGS",
-    "AMENITIES",
-    "TAX_NUMBER",
-  ])
-  .meta({ id: "SetupItemKey" });
-
 export const SetupItemState = z.enum(["DONE", "MISSING", "BLOCKED"]).meta({
   id: "SetupItemState",
   description: "`BLOCKED`: can't be done until `blockedBy` is.",
@@ -128,7 +114,6 @@ export type Coordinates = z.infer<typeof Coordinates>;
 export type RequestedArea = z.infer<typeof RequestedArea>;
 export type CreateVenue = z.infer<typeof CreateVenue>;
 export type SetVenueArea = z.infer<typeof SetVenueArea>;
-export type SetupItemKey = z.infer<typeof SetupItemKey>;
 export type SetupItemState = z.infer<typeof SetupItemState>;
 export type SetupItem = z.infer<typeof SetupItem>;
 export type VenueSetup = z.infer<typeof VenueSetup>;
