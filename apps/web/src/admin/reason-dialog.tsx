@@ -6,13 +6,13 @@ import { Modal } from "@/admin/dialog";
 import { TextAreaField } from "@/admin/field";
 import { useSubmit } from "@/admin/submit";
 
-// The API keeps a reason with every support action on a team (RemoveMember, TransferOwnership,
-// SuspendStaff): 10 to 500 characters.
+// The API keeps a reason with every support action (RemoveMember, TransferOwnership, SuspendStaff):
+// 10 to 500 characters.
 const MIN = 10;
 const MAX = 500;
 
 // "Remove …?", "Make … the owner?", "Suspend …?": the question, what happens, and the reason it's
-// done, which goes on the venue's History. The button stays off until the reason is long enough.
+// done, which is kept with the action. The button stays off until the reason is long enough.
 export function ReasonDialog({
   title,
   description,

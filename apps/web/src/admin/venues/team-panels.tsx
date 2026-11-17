@@ -12,7 +12,7 @@ import { Tag } from "@/admin/data-table";
 import { send } from "@/admin/errors";
 import { DetailRow, PanelSection, SidePanel } from "@/admin/side-panel";
 import { dateTime } from "./history";
-import { ReasonDialog } from "./reason-dialog";
+import { ReasonDialog } from "@/admin/reason-dialog";
 import { AREAS, levelLabel, type StaffInvitation, type VenueMember } from "./team";
 
 // A venue's Team tab's side panels, opened by clicking a row: a member, or an open invitation. The
