@@ -52,7 +52,7 @@ export function OverlayHeader({
             </h2>
           ) : null}
           {description ? (
-            <p className={compact ? "mt-0.5 text-label text-ink-2" : "mt-1 text-body text-ink-2"}>
+            <p className={compact ? "mt-1.5 text-label text-ink-2" : "mt-1 text-body text-ink-2"}>
               {description}
             </p>
           ) : null}
