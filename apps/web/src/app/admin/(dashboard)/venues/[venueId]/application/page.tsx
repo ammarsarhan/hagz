@@ -75,7 +75,7 @@ export default function VenueApplicationPage() {
   const areaMissing = venue.area === null;
 
   return (
-    <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
+    <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-20">
       <ol className="min-w-0 lg:max-w-[43.75rem] lg:flex-1">
         <JourneyStep
           state="done"
