@@ -74,7 +74,8 @@ function TaxForm({ venueId, venue }: { venueId: string; venue: VenueDetail }) {
         autoCorrect={false}
         placeholder="123-456-789"
         returnKeyType="done"
-        autoFocus={!venue.taxNumber}
+        // No keyboard on arrival: raised while the screen slides in, it fought the transition. The
+        // field is a tap away.
       />
       <View className="-mt-2 items-end">
         <Text className="text-caption text-ink-3">{t("screens.setup.tax.hint")}</Text>

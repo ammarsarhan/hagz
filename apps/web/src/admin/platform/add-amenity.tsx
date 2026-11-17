@@ -8,6 +8,7 @@ import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field } from "@/admin/field";
 import { useSubmit } from "@/admin/submit";
+import { PLACEABLE_HINT, Toggle } from "./forms";
 import { IconPicker } from "./icon-picker";
 
 // Add amenity, in the add flows' white modal: its names, its key and its icon in one step. It starts
@@ -27,6 +28,7 @@ export function AddAmenityDialog({
 }) {
   const [form, setForm] = useState({ en: "", ar: "", key: "" });
   const [icon, setIcon] = useState<AmenityIcon>();
+  const [placeable, setPlaceable] = useState(false);
   const { busy, run } = useSubmit(onDone, onClose);
   const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm({ ...form, [field]: event.target.value });
@@ -43,7 +45,7 @@ export function AddAmenityDialog({
       send(
         api.POST("/v1/admin/marketplaces/{id}/amenities", {
           params: { path: { id: marketplace.id } },
-          body: { key, icon, names: { en: form.en.trim(), ar: form.ar.trim() } },
+          body: { key, icon, placeable, names: { en: form.en.trim(), ar: form.ar.trim() } },
         }),
       ),
     );
@@ -85,6 +87,12 @@ export function AddAmenityDialog({
           required
         />
         <IconPicker value={icon} onChange={setIcon} />
+        <Toggle
+          label="Venue asset"
+          hint={PLACEABLE_HINT}
+          checked={placeable}
+          onChange={setPlaceable}
+        />
       </form>
     </Modal>
   );

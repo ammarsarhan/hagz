@@ -22,6 +22,10 @@
   --color-hairline: #e7e7ea;
   --color-field: #f4f5f7;
   --color-chip: #f2f3f5;
+  /* The venue layout: a pitch's fill, the grid's lines and a facility tile's edge. */
+  --color-pitch: #dce5ff;
+  --color-grid: #e6e8ec;
+  --color-chip-line: #e3e5e9;
   --color-hud: #f3f3f5;
   --color-grab: #d5d8dd;
   --color-scrim: rgb(11 11 12 / 0.42);

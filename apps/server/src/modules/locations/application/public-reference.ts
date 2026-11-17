@@ -44,5 +44,6 @@ export const listAmenities = async (code: string, language: Language): Promise<A
     key: a.key,
     name: nameIn(a.translations, language),
     icon: AmenityIcon.parse(a.icon),
+    placeable: a.placeable,
   }));
 };

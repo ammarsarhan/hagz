@@ -12,6 +12,9 @@ export const colors = {
   red: "#d92d20",
   green: "#067647",
   border: "#ebebeb",
+  field: "#f4f5f7",
+  // The layout grid's lines, drawn in SVG.
+  grid: "#e6e8ec",
   // Animated backgrounds (a chosen option's tint, from white), which classes can't tween.
   white: "#ffffff",
   blueTint: "#eef1fe",

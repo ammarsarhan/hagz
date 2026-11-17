@@ -51,6 +51,17 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
   const required = setup.data?.required;
   const done = required?.done ?? 0;
   const total = required?.total ?? 0;
+  // Every required item done: what's left is to look it over and send it.
+  const ready = total > 0 && done >= total;
+  // Sent: the card opens where the review is.
+  const inReview = venue.status !== "DRAFT";
+  const action = t(
+    inReview
+      ? "screens.firstRun.draft.viewReview"
+      : ready
+        ? "screens.firstRun.draft.review"
+        : "screens.firstRun.draft.continue",
+  );
   // Redrawn as the time passes, so it doesn't stay on "30 minutes ago" while first run is left open.
   const now = useNow((time) => sinceLastActivity(venue.lastActivityAt, time).changesAt);
   const since = sinceLastActivity(venue.lastActivityAt, now);
@@ -63,7 +74,7 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t("screens.firstRun.draft.continue")}
+      accessibilityLabel={action}
       onPress={onPress}
       className="overflow-hidden rounded-[20px] bg-ink active:opacity-90"
     >
@@ -100,9 +111,9 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
           </Text>
         ) : null}
         <View className="mt-6 h-14 items-center justify-center rounded-full bg-white">
-          <Text className="text-button font-semibold">{t("screens.firstRun.draft.continue")}</Text>
+          <Text className="text-button font-semibold">{action}</Text>
         </View>
-        {required ? (
+        {required && !ready && !inReview ? (
           <Text className="mt-3.5 text-center text-caption text-on-ink-muted">
             {t("screens.firstRun.draft.sendWhenDone")}
           </Text>

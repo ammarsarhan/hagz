@@ -9,6 +9,8 @@ import { Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { Field, SelectField } from "@/admin/field";
 import { countries, kindOrder } from "./countries";
+import { CenterField } from "./forms";
+import { parseCenter } from "./geo";
 import { KindIcon } from "./kind-icon";
 import { useSubmit } from "@/admin/submit";
 import { byName, localityLabel } from "./model";
@@ -195,11 +197,16 @@ function Details({
     parentId: parent?.id ?? (topLevel ? TOP : ""),
     en: "",
     ar: "",
+    center: "",
   });
   const { busy, run } = useSubmit(onDone, frame.onClose);
   const label = localityLabel[kind].toLowerCase();
+  // Optional: left empty, the area is never suggested for a pin until it's given one.
+  const center = parseCenter(form.center);
+  const centerValid = form.center.trim() === "" || center !== null;
   // Like the sign-in page: the button stays grey until both names are there.
-  const ready = form.parentId !== "" && form.en.trim() !== "" && form.ar.trim() !== "";
+  const ready =
+    form.parentId !== "" && form.en.trim() !== "" && form.ar.trim() !== "" && centerValid;
 
   const submit = () =>
     ready &&
@@ -211,6 +218,7 @@ function Details({
             parentId: form.parentId === TOP ? null : form.parentId,
             locality: kind,
             names: { en: form.en.trim(), ar: form.ar.trim() },
+            center,
           },
         }),
       ),
@@ -279,6 +287,10 @@ function Details({
               required
             />
           </div>
+          <CenterField
+            value={form.center}
+            onChange={(value) => setForm({ ...form, center: value })}
+          />
         </div>
       </form>
     </Modal>

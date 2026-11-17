@@ -11,6 +11,16 @@ export const Coordinates = z
   })
   .meta({ id: "Coordinates", description: "A point in degrees (WGS 84)." });
 
+// How far a venue's pin may be from the centre of the area it's listed under, so a pin in Aswan
+// can't be filed under Smouha (docs/onboarding.md, "The pin and the area"). The API turns a farther
+// one away (PIN_FAR_FROM_AREA), and the app's area picker only offers areas within it.
+//
+// The picker suggests areas within 8 km, and a venue sits somewhere inside its area, not on the
+// centre. Large districts (New Cairo, 6th of October) reach well past 8 km from their middle, so
+// this allows about twice that: far enough for any venue honestly in the area, close enough to
+// catch one filed in the wrong part of the country.
+export const PIN_NEAR_AREA_METRES = 15_000;
+
 // An area the owner asked for because it isn't in the list. The marketplace is the country the pin
 // is in (Google's country code), since there's no area to take it from.
 export const RequestedArea = z
@@ -99,6 +109,9 @@ export const VenueSetup = z
       slug: z.string().meta({ description: "Permanent. Public once the venue is live." }),
       status: VenueStatus,
       name: z.string().nullable().meta({ description: "In `Accept-Language`, else any language." }),
+      submittedAt: z.iso.datetime().nullable().meta({
+        description: "When it was sent for review, while it's in review; null otherwise.",
+      }),
     }),
     items: z.array(SetupItem),
     required: z

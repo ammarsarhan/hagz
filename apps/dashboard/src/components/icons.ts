@@ -78,3 +78,8 @@ export { default as IconMinus } from "@tabler/icons-react-native/IconMinus";
 // Opening hours: switching between the dial and the week chart, and the copy sheet's checkboxes.
 export { default as IconCheck } from "@tabler/icons-react-native/IconCheck";
 export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayoutGrid";
+// The venue layout: the entrance marker and the list of what's placed.
+export { default as IconArrowDown } from "@tabler/icons-react-native/IconArrowDown";
+export { default as IconDoor } from "@tabler/icons-react-native/IconDoor";
+export { default as IconList } from "@tabler/icons-react-native/IconList";
+export { default as IconRotate } from "@tabler/icons-react-native/IconRotate";

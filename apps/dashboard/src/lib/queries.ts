@@ -56,6 +56,14 @@ export const queries = {
           )
         ).data,
     }),
+  // The venue layout, or the empty grid it would start as (`saved` false), and which grounds
+  // aren't on it yet.
+  layout: (venueId: string) =>
+    queryOptions({
+      queryKey: ["staff", "venues", venueId, "layout"],
+      queryFn: () =>
+        fetched(api.GET("/v1/staff/venues/{venueId}/layout", { params: { path: { venueId } } })),
+    }),
   // A ground's weekly hours, as the API stores them (lib/hours.ts reads them as days).
   schedule: (venueId: string, groundId: string) =>
     queryOptions({

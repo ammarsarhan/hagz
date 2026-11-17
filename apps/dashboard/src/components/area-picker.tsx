@@ -1,12 +1,14 @@
 import type { components } from "@hagz/api";
+import { PIN_NEAR_AREA_METRES } from "@hagz/contracts";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
   Keyboard,
   Modal,
+  Platform,
   Pressable,
   TextInput,
   View,
@@ -21,6 +23,7 @@ import { SheetHud } from "./hud";
 import { IconCircleCheckFilled, IconSearch } from "./icons";
 import { CloseButton } from "./nav";
 import { Text } from "./text";
+import { CardLink } from "./venue-map";
 
 export type Area = components["schemas"]["Area"];
 
@@ -32,7 +35,17 @@ export type Area = components["schemas"]["Area"];
 // every area by name, in Arabic or English, nearest first. The API does both (only the page shown is
 // fetched, never the whole tree). Anything typed can also be asked for: an area Hagz doesn't cover
 // yet, which it adds when the venue is submitted (docs/onboarding.md), unless `allowRequest` is off.
+// The list ends on Request coverage (`onRequestCoverage`), for an owner who'd rather not search
+// first; the screen asks for the name in its own sheet once this one has gone (`onHidden`).
+//
+// Only areas the pin could be listed under are offered: the API turns away one whose centre is more
+// than PIN_NEAR_AREA_METRES from the pin (PIN_FAR_FROM_AREA). An area without a centre has no
+// distance to go by, so it isn't offered either. A pin with nothing in reach is out of coverage,
+// and the sheet says so instead of listing areas across the country.
 const DEBOUNCE_MS = 250;
+const REACH_KM = PIN_NEAR_AREA_METRES / 1000;
+export const withinReach = (area: Area) =>
+  area.distance !== null && area.distance <= PIN_NEAR_AREA_METRES;
 const MIN_REQUEST = 2;
 
 export function AreaPicker({
@@ -45,6 +58,8 @@ export function AreaPicker({
   onClose,
   onPick,
   onRequest,
+  onRequestCoverage,
+  onHidden,
 }: {
   visible: boolean;
   // The pin's country, whose areas these are.
@@ -58,6 +73,9 @@ export function AreaPicker({
   onClose: () => void;
   onPick: (area: Area) => void;
   onRequest?: (name: string) => void;
+  onRequestCoverage?: () => void;
+  // Once the sheet has gone: iOS won't present another modal while this one is still leaving.
+  onHidden?: () => void;
 }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -71,6 +89,15 @@ export function AreaPicker({
     if (!visible) return;
     setQuery("");
     setSearched("");
+  }, [visible]);
+
+  // iOS says when the Modal is really gone (onDismiss below); Android presents over a leaving one.
+  const wasVisible = useRef(visible);
+  const hidden = useRef(onHidden);
+  hidden.current = onHidden;
+  useEffect(() => {
+    if (wasVisible.current && !visible && Platform.OS !== "ios") hidden.current?.();
+    wasVisible.current = visible;
   }, [visible]);
 
   useEffect(() => {
@@ -87,7 +114,8 @@ export function AreaPicker({
 
   // Typed text, tidied, is what a request would send.
   const typed = query.trim().replace(/\s+/g, " ");
-  const found = results.data ?? [];
+  const matches = results.data ?? [];
+  const found = matches.filter(withinReach);
   const canRequest =
     allowRequest &&
     typed.length >= MIN_REQUEST &&
@@ -99,6 +127,7 @@ export function AreaPicker({
       visible={visible}
       animationType="slide"
       onRequestClose={onClose}
+      onDismiss={Platform.OS === "ios" ? () => hidden.current?.() : undefined}
       statusBarTranslucent
     >
       <View className="flex-1 bg-scrim" style={{ direction: isRTL ? "rtl" : "ltr" }}>
@@ -116,7 +145,11 @@ export function AreaPicker({
             {t("screens.createVenue.place.chooseArea")}
           </Text>
           <Text className="mb-4 mt-1.5 text-body text-ink-2">
-            {t("screens.createVenue.place.chooseAreaBody")}
+            {t(
+              allowRequest
+                ? "screens.createVenue.place.chooseAreaBody"
+                : "screens.createVenue.place.chooseAreaBodyListed",
+            )}
           </Text>
 
           <FieldBox focused={focused} error={false}>
@@ -141,9 +174,9 @@ export function AreaPicker({
             keyExtractor={(area) => area.id}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingTop: 10, paddingBottom: insets.bottom + 24 }}
+            contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }}
             ListHeaderComponent={
-              typed ? undefined : (
+              typed || found.length === 0 ? undefined : (
                 <Text className="pb-0.5 pt-3 text-label font-medium text-ink-2">
                   {t("screens.createVenue.place.nearYourPin")}
                 </Text>
@@ -154,11 +187,20 @@ export function AreaPicker({
                 <View className="items-center pt-8">
                   <ActivityIndicator color={colors.ink3} />
                 </View>
-              ) : typed ? (
+              ) : (
                 <Text className="pt-4 text-body text-ink-2">
-                  {t("screens.createVenue.place.noAreaCalled", { query: typed })}
+                  {typed
+                    ? matches.length > 0
+                      ? t("screens.createVenue.place.areaTooFar", { query: typed, km: REACH_KM })
+                      : t("screens.createVenue.place.noAreaCalled", { query: typed })
+                    : t(
+                        allowRequest
+                          ? "screens.createVenue.place.noAreaNearRequest"
+                          : "screens.createVenue.place.noAreaNear",
+                        { km: REACH_KM },
+                      )}
                 </Text>
-              ) : undefined
+              )
             }
             ListFooterComponent={
               canRequest ? (
@@ -179,6 +221,16 @@ export function AreaPicker({
                     </Text>
                   </Text>
                 </Pressable>
+              ) : allowRequest && onRequestCoverage ? (
+                <View className="pt-2">
+                  <CardLink
+                    label={t("screens.createVenue.place.requestCoverage")}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      onRequestCoverage();
+                    }}
+                  />
+                </View>
               ) : undefined
             }
             renderItem={({ item }) => (

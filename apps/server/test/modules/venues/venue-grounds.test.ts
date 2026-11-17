@@ -131,6 +131,27 @@ describe("adding grounds", () => {
     expect(padel.sport).toBe("PADEL");
   });
 
+  it("keep surfaces to the sport", async () => {
+    const { owner, path } = await aDraft();
+    // Basketball isn't played on grass; sand is for beach football and volleyball.
+    const grass = { ...PITCH, sport: "BASKETBALL", size: "STANDARD", surface: "NATURAL_GRASS" };
+    expect((await call(owner.id, "POST", `${path}/grounds`, grass)).status).toBe(400);
+    const beach = await addGround(owner.id, path, {
+      sport: "VOLLEYBALL",
+      size: "STANDARD",
+      surface: "SAND",
+    });
+    expect(beach.surface).toBe("SAND");
+
+    // A change that leaves the sport on the wrong surface is refused, whichever field moved.
+    const pitch = await addGround(owner.id, path);
+    for (const change of [{ surface: "CLAY" }, { sport: "BASKETBALL", size: "STANDARD" }]) {
+      const res = await call(owner.id, "PATCH", `${path}/grounds/${pitch.id}`, change);
+      expect(res.status).toBe(422);
+      expect(await problem(res)).toMatchObject({ code: "INVALID_GROUND", field: "surface" });
+    }
+  });
+
   it("are for members who manage the schedule", async () => {
     const { owner, path, venueId } = await aDraft();
     const listingEditor = await createStaff({ phone: "+201009990000" });
@@ -244,7 +265,15 @@ describe("removing a ground", () => {
         columns: 16,
         rows: 19,
         items: {
-          create: { type: "GROUND", groundId: ground.id, x: 0, y: 0, orientation: "HORIZONTAL" },
+          create: {
+            type: "GROUND",
+            groundId: ground.id,
+            x: 0,
+            y: 0,
+            orientation: "HORIZONTAL",
+            width: 4,
+            height: 2,
+          },
         },
       },
     });
@@ -272,17 +301,41 @@ describe("the layout when a ground's footprint changes", () => {
         columns,
         rows,
         items: {
-          create: { type: "GROUND", groundId: ground.id, x: 0, y: 0, orientation: "HORIZONTAL" },
+          create: {
+            type: "GROUND",
+            groundId: ground.id,
+            x: 0,
+            y: 0,
+            orientation: "HORIZONTAL",
+            width: 4,
+            height: 2,
+          },
         },
       },
     });
     return { owner, path, ground };
   };
 
-  it("keeps the ground where it is if it still fits", async () => {
+  it("keeps the ground where it is if it still fits, at the new kind's size", async () => {
     const { owner, path, ground } = await placed(16, 19);
     await call(owner.id, "PATCH", `${path}/grounds/${ground.id}`, { size: "SEVEN_A_SIDE" });
-    expect(await prisma.venueLayoutItem.count({ where: { groundId: ground.id } })).toBe(1);
+    // A 4 × 2 5-a-side is too small for a 7-a-side: it takes the 7-a-side's 6 × 4.
+    expect(
+      await prisma.venueLayoutItem.findFirstOrThrow({ where: { groundId: ground.id } }),
+    ).toMatchObject({ x: 0, y: 0, width: 6, height: 4 });
+  });
+
+  it("keeps a size the new kind allows", async () => {
+    const { owner, path, ground } = await placed(16, 19);
+    // 4 × 2 is a tennis court's size too.
+    await call(owner.id, "PATCH", `${path}/grounds/${ground.id}`, {
+      sport: "TENNIS",
+      size: "STANDARD",
+      surface: "HARD_COURT",
+    });
+    expect(
+      await prisma.venueLayoutItem.findFirstOrThrow({ where: { groundId: ground.id } }),
+    ).toMatchObject({ width: 4, height: 2 });
   });
 
   it("takes it off the layout when it no longer fits", async () => {

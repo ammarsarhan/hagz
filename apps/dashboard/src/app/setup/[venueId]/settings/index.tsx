@@ -370,7 +370,6 @@ function DepositSheet({
           placeholder={String(DEFAULT_DEPOSIT_PERCENT)}
           placeholderTextColor={colors.ink3}
           selectionColor={colors.primary}
-          autoFocus
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{ textAlign: "left", writingDirection: "ltr" }}

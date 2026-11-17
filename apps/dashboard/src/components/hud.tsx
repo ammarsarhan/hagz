@@ -1,3 +1,4 @@
+import { useFocusEffect } from "expo-router";
 import {
   createContext,
   useCallback,
@@ -8,7 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Animated, View } from "react-native";
+import { Animated, Platform, View } from "react-native";
+import { FullWindowOverlay } from "react-native-screens";
 import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { IconAlertCircleFilled } from "./icons";
@@ -58,8 +60,17 @@ const useAnchors = () => {
   return anchors;
 };
 
-// For Screen: report this screen's lowest edge while it's the one in view.
-export const useScreenHudAnchor = () => useAnchors().setScreenAnchor;
+// For Screen, and screens that lay out their own bottom (the maps' cards): while this screen is in
+// view, the HUD sits `bottom` above the phone's bottom edge. Null leaves it to whatever is covering
+// this screen and reports its own (the map's location prompt is a Screen of its own).
+export const useHudAnchor = (bottom: number | null) => {
+  const { setScreenAnchor } = useAnchors();
+  useFocusEffect(
+    useCallback(() => {
+      if (bottom !== null) setScreenAnchor(bottom);
+    }, [bottom, setScreenAnchor]),
+  );
+};
 
 // For Sheet: while open, the HUD shows inside it, above its panel (`bottom` from the screen's bottom).
 let sheets = 0;
@@ -120,17 +131,28 @@ export function HudProvider({ children }: { children: ReactNode }) {
         <ShowingContext.Provider value={showing}>
           {children}
           {current && topSheet === null ? (
-            <Hud
-              key={current.key}
-              message={current.message}
-              bottom={screenBottom + GAP}
-              onHidden={onHidden}
-            />
+            <OverModals>
+              <Hud
+                key={current.key}
+                message={current.message}
+                bottom={screenBottom + GAP}
+                onHidden={onHidden}
+              />
+            </OverModals>
           ) : null}
         </ShowingContext.Provider>
       </AnchorsContext.Provider>
     </HudContext.Provider>
   );
+}
+
+// On iOS a screen presented as a modal (the map's fullScreenModal) is a view controller of its own,
+// drawn over the root's views, so a HUD drawn by the root would sit behind it. FullWindowOverlay
+// puts it in the window itself, over every presented screen. It's mounted only while a HUD shows,
+// so it's always added after (above) whatever is presented. Android's modal screens are ordinary
+// views under the root, so there the HUD already sits on top.
+function OverModals({ children }: { children: ReactNode }) {
+  return Platform.OS === "ios" ? <FullWindowOverlay>{children}</FullWindowOverlay> : children;
 }
 
 function Hud({
