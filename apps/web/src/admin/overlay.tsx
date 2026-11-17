@@ -12,14 +12,11 @@ import type { ReactNode } from "react";
 export function OverlayHeader({
   title,
   description,
-  media,
   onClose,
   onBack,
 }: {
   title: ReactNode;
   description?: ReactNode;
-  // Above the title, e.g. a person's avatar in their side panel.
-  media?: ReactNode;
   onClose: () => void;
   // On a later step of a modal: back to the one before.
   onBack?: () => void;
@@ -38,7 +35,6 @@ export function OverlayHeader({
       ) : null}
       <div className="flex items-start justify-between gap-10">
         <div className="min-w-0">
-          {media ? <div className="mb-4">{media}</div> : null}
           <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
             {title}
           </h2>
