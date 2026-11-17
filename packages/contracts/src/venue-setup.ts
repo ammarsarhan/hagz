@@ -133,7 +133,7 @@ export type SetupItemState = z.infer<typeof SetupItemState>;
 export type SetupItem = z.infer<typeof SetupItem>;
 export type VenueSetup = z.infer<typeof VenueSetup>;
 
-// Everything the admin's Overview tab needs to say where a venue is on its way to live, beside the
+// Everything the admin's Application tab needs to say where a venue is on its way to live, beside the
 // venue itself (GET /admin/venues/{id}).
 export const AdminVenueOverview = z
   .object({
