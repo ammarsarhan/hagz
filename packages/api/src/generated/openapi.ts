@@ -8911,6 +8911,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/staff/{staffId}/ban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ban a staff account for good
+         * @description Signs them out everywhere and keeps them out for good: it can't be reactivated. Not while they own a venue (transfer it first). Recorded on each venue they're on. Banning again changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    staffId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BanStaff"];
+                };
+            };
+            responses: {
+                /** @description Banned */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description STAFF_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWNS_A_VENUE (with `venueIds`): transfer them first */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/staff/{staffId}/reactivate": {
         parameters: {
             query?: never;
@@ -10623,6 +10711,13 @@ export interface components {
             reason: string;
         };
         SuspendStaff: {
+            /**
+             * @description For the record: what happened and how it was checked.
+             * @example The owner called support: he left the business in October.
+             */
+            reason: string;
+        };
+        BanStaff: {
             /**
              * @description For the record: what happened and how it was checked.
              * @example The owner called support: he left the business in October.
