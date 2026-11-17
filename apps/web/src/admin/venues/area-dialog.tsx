@@ -212,13 +212,18 @@ export function AreaDialog({
         </>
       }
     >
-      <TableSearch value={query} onChange={setQuery} placeholder="Search areas…" />
-      <div className="mt-4">
+      {/* Stays where it is while the tree scrolls under it: the white band covers the rows, and
+          its top padding stands in for the body's while it's stuck. */}
+      <div className="sticky top-0 z-10 -mt-6 bg-white pt-6 pb-4">
+        <TableSearch value={query} onChange={setQuery} placeholder="Search areas…" />
+      </div>
+      <div>
         <PickContext.Provider value={{ picked, pin: location.coordinates }}>
           <DataTable
             table={table}
             widths={widths}
             loading={!locations && !failed}
+            isSelected={(row) => row.original.location.id === picked}
             onRowClick={(row) => {
               if (row.getCanExpand()) row.toggleExpanded();
               else setPicked(row.original.location.id);
