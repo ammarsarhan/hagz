@@ -6,9 +6,9 @@ import { api } from "@/admin/api";
 import { message, notTheirFault, send } from "@/admin/errors";
 import { useHud } from "@/admin/hud";
 
-// A venue's Overview tab's data, with no design: where it is on its way to live (the owner's
-// checklist, the review, what going live still needs, the tax number's check), fetched when the tab
-// opens and again after each review step.
+// A venue's Application tab's data (the API calls it the venue's overview), with no design: where
+// it is on its way to live (the owner's checklist, the review, what going live still needs, the tax
+// number's check), fetched when the tab opens and again after each review step.
 
 export type VenueOverview = components["schemas"]["AdminVenueOverview"];
 type SetupKey = VenueOverview["setup"]["items"][number]["key"];
