@@ -437,3 +437,57 @@ describe("GET /admin/venues/{id}/amenities", () => {
     expect((await get(`/${venue.id}/amenities`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/contact", () => {
+  const withContact = async (taxNumber: string | null) => {
+    const venue = await addVenue({ en: "Arena", status: "PROVISIONING" });
+    await prisma.venue.update({
+      where: { id: venue.id },
+      data: { phone: "+20235514420", taxNumber },
+    });
+    return venue;
+  };
+  // Through the admin endpoint, as the Application tab records it.
+  const checked = async (venueId: string, valid: boolean, note: string | null) => {
+    const res = await router.request(`/v1/admin/venues/${venueId}/tax-number-check`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "X-Hagz-Admin": "1", Cookie: cookie },
+      body: JSON.stringify({ valid, note }),
+    });
+    expect(res.status).toBe(204);
+  };
+
+  it("reads the phone and the tax number with its latest check", async () => {
+    const venue = await withContact("512-334-981");
+    await checked(venue.id, false, "Not in the register.");
+    await checked(venue.id, true, null);
+    const res = await get(`/${venue.id}/contact`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      phone: "+20235514420",
+      taxNumber: { value: "512-334-981", check: { valid: true, note: null } },
+    });
+  });
+
+  it("drops a check made on a number that has since changed", async () => {
+    const venue = await withContact("111-222-333");
+    await checked(venue.id, true, null);
+    await prisma.venue.update({ where: { id: venue.id }, data: { taxNumber: "512-334-981" } });
+    const res = await get(`/${venue.id}/contact`);
+    expect(res.body).toEqual({
+      phone: "+20235514420",
+      taxNumber: { value: "512-334-981", check: null },
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/contact");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/contact`, false)).status).toBe(401);
+  });
+});

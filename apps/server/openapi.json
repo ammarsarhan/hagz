@@ -4637,6 +4637,67 @@
           "amenities"
         ]
       },
+      "AdminVenueContact": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "+20235514420"
+          },
+          "taxNumber": {
+            "$ref": "#/components/schemas/TaxNumberStatus"
+          }
+        },
+        "required": [
+          "phone",
+          "taxNumber"
+        ]
+      },
+      "TaxNumberStatus": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "check": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "valid": {
+                "type": "boolean"
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "valid",
+              "note",
+              "at"
+            ],
+            "description": "The latest check of this number; null when it's not been checked."
+          }
+        },
+        "required": [
+          "value",
+          "check"
+        ]
+      },
       "CheckTaxNumber": {
         "type": "object",
         "properties": {
@@ -4729,46 +4790,7 @@
             "description": "What's still missing to go live; empty when it's ready."
           },
           "taxNumber": {
-            "type": "object",
-            "properties": {
-              "value": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "check": {
-                "type": [
-                  "object",
-                  "null"
-                ],
-                "properties": {
-                  "valid": {
-                    "type": "boolean"
-                  },
-                  "note": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "at": {
-                    "type": "string",
-                    "format": "date-time"
-                  }
-                },
-                "required": [
-                  "valid",
-                  "note",
-                  "at"
-                ],
-                "description": "The latest check of this number; null when it's not been checked."
-              }
-            },
-            "required": [
-              "value",
-              "check"
-            ]
+            "$ref": "#/components/schemas/TaxNumberStatus"
           }
         },
         "required": [
@@ -13452,6 +13474,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminVenueAmenities"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/contact": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "A venue's phone and tax number",
+        "description": "The phone players call, and the tax number with its latest check (null when this number hasn't been checked).",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The contact and tax",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVenueContact"
                 }
               }
             }

@@ -19,6 +19,7 @@ import {
   resumeVenue,
   reviewQueue,
   setVenueArea,
+  venueContact,
   venueHistory,
   venueOverview,
 } from "../application/review";
@@ -66,6 +67,9 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.venueAmenities, async (c) => {
     return c.json(await adminVenueAmenities(c.req.valid("param").id), 200);
+  })
+  .openapi(route.venueContact, async (c) => {
+    return c.json(await venueContact(c.req.valid("param").id), 200);
   })
   .openapi(route.provisionTranslation, async (c) => {
     const { id, language } = c.req.valid("param");

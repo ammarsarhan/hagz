@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import {
   AdminVenue,
   AdminVenueAmenities,
+  AdminVenueContact,
   AdminVenueLocation,
   AdminVenueOverview,
   AdminVenueQuery,
@@ -223,6 +224,25 @@ export const venueAmenities = createRoute({
   request: { params: venueParams },
   responses: {
     200: { description: "The amenities", ...json(AdminVenueAmenities) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueContact = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/contact",
+  tags,
+  summary: "A venue's phone and tax number",
+  description:
+    "The phone players call, and the tax number with its latest check (null when this number " +
+    "hasn't been checked).",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The contact and tax", ...json(AdminVenueContact) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),
