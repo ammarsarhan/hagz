@@ -2,6 +2,7 @@ import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BackHandler, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import { BLOCKED_ART, BLOCKED_ART_SIZE } from "@/assets/blocked-art";
 import { Button } from "@/components/button";
@@ -16,6 +17,7 @@ export default function Blocked() {
   const { t } = useTranslation();
   const { kind } = useLocalSearchParams<{ kind: "suspended" | "banned" }>();
   const copy = kind === "banned" ? "banned" : "suspended";
+  const insets = useSafeAreaInsets();
 
   // Only the button leaves: no swipe back on iOS, and Android's back button does nothing here.
   useFocusEffect(
@@ -28,10 +30,15 @@ export default function Blocked() {
   return (
     <Screen>
       <Stack.Screen options={{ gestureEnabled: false }} />
-      {/* Centred on the whole screen, not the space above the buttons, which sit over its bottom. */}
-      <View className="flex-1 items-center justify-center">
+      {/* Centred on the whole screen: not the space above the buttons, which sit over its bottom,
+          nor the safe area, which is taller at the top (status bar) than the bottom (home
+          indicator), so the block moves up by half the difference. */}
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ transform: [{ translateY: (insets.bottom - insets.top) / 2 }] }}
+      >
         <View
-          className="mb-5 w-60"
+          className="mb-6 w-44"
           style={{ aspectRatio: BLOCKED_ART_SIZE.width / BLOCKED_ART_SIZE.height }}
         >
           <SvgXml xml={BLOCKED_ART[copy]} width="100%" height="100%" />
