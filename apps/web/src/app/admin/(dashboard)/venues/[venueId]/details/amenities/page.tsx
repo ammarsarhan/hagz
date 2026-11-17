@@ -39,7 +39,7 @@ export default function VenueAmenities() {
         <div className="mt-8">
           <div className={`${GRID} border-b border-border pb-3 text-label font-semibold text-ink`}>
             <span>Amenity</span>
-            <span className="text-right">Arabic</span>
+            <span>Arabic</span>
             <span>In layout</span>
             <span className="text-right">Price</span>
           </div>
@@ -47,7 +47,7 @@ export default function VenueAmenities() {
             ? [0, 1, 2].map((i) => (
                 <div key={i} className={`${GRID} border-b border-border py-4`}>
                   <Skeleton className="h-4 w-36" />
-                  <Skeleton className="ml-auto h-4 w-24" />
+                  <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-4 w-12" />
                   <Skeleton className="ml-auto h-4 w-20" />
                 </div>
@@ -71,10 +71,11 @@ export default function VenueAmenities() {
                         <span className="shrink-0 text-label text-ink-3">Turned off by Hagz</span>
                       )}
                     </span>
+                    {/* Right to left, but against the column's start, beside the English name. */}
                     <span
                       dir="rtl"
                       lang="ar"
-                      className={`truncate text-body ${amenity.names.ar ? "text-ink-2" : "text-ink-3"}`}
+                      className={`truncate text-left text-body ${amenity.names.ar ? "text-ink-2" : "text-ink-3"}`}
                     >
                       {amenity.names.ar ?? "None"}
                     </span>
@@ -91,10 +92,10 @@ export default function VenueAmenities() {
   );
 }
 
-// "Yes", "Yes, 2 times" when it's drawn more than once, "No", or "Can't be placed" for an option
-// that never goes on a layout (Wi-Fi, a ball to rent).
+// "Yes", "Yes, 2 times" when it's drawn more than once, "No", or "N/A" for an option that never
+// goes on a layout (Wi-Fi, a ball to rent).
 function InLayout({ placeable, tiles }: { placeable: boolean; tiles: number }) {
-  if (!placeable) return <span className="text-label text-ink-3">Can’t be placed</span>;
+  if (!placeable) return <span className="text-body text-ink-3">N/A</span>;
   if (tiles === 0) return <span className="text-body text-ink-2">No</span>;
   return (
     <span className="text-body text-ink">
