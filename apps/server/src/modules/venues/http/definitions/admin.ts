@@ -1,6 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   AdminVenue,
+  AdminVenueLocation,
   AdminVenueOverview,
   AdminVenueQuery,
   BanStaff,
@@ -186,6 +187,24 @@ export const venuePhotos = createRoute({
   request: { params: venueParams },
   responses: {
     200: { description: "The photos", ...json(list(VenuePhoto)) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueLocation = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/location",
+  tags,
+  summary: "Where a venue is",
+  description:
+    "The owner's pin, and the area players find the venue under or the one its owner asked for.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The location", ...json(AdminVenueLocation) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),

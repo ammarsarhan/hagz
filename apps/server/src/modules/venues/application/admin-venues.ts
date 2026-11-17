@@ -1,4 +1,10 @@
-import type { AdminVenue, AdminVenueQuery, VenueStatus, VenueTranslation } from "@hagz/contracts";
+import type {
+  AdminVenue,
+  AdminVenueLocation,
+  AdminVenueQuery,
+  VenueStatus,
+  VenueTranslation,
+} from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { placeOf } from "../domain/names";
@@ -6,6 +12,7 @@ import { venueNotFound } from "./access";
 import { listSentInvitations } from "./invitations";
 import { listMembers } from "./members";
 import { listPhotos } from "./venue-media";
+import { pinOf } from "./venue-edit";
 
 // The admin Venues table: every venue in any status, newest first, a page at a time. Ids are UUIDv7,
 // so ordering by id is ordering by creation, and the last id on a page is the cursor for the next.
@@ -128,4 +135,33 @@ export const adminVenueTranslations = async (id: string): Promise<VenueTranslati
 export const adminVenuePhotos = async (id: string) => {
   await mustExist(id);
   return (await listPhotos(id)).filter((photo) => photo.status === "READY");
+};
+
+const written = (place: { translations: { language: string }[] }, language: "EN" | "AR") =>
+  place.translations.some((t) => t.language === language);
+
+// A venue's Location section: the pin, and the area it's listed under ("Nasr City, Cairo", in both
+// languages) or the one its owner asked for.
+export const adminVenueLocation = async (id: string): Promise<AdminVenueLocation> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    select: {
+      requestedArea: true,
+      location: { select: { id: true, ...place, parent: { select: place } } },
+    },
+  });
+  if (!venue) throw venueNotFound();
+  return {
+    coordinates: await pinOf(prisma, id),
+    area: venue.location && {
+      id: venue.location.id,
+      // Only a name the area has in that language: placeOf falls back to the other one, which
+      // would hide a missing translation from the admin.
+      names: {
+        en: written(venue.location, "EN") ? placeOf(venue.location, "EN") : null,
+        ar: written(venue.location, "AR") ? placeOf(venue.location, "AR") : null,
+      },
+    },
+    requestedArea: venue.requestedArea,
+  };
 };

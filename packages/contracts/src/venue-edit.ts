@@ -219,6 +219,28 @@ export const StaffVenueDetail = z
   })
   .meta({ id: "StaffVenueDetail" });
 
+// Where a venue is, for the Location section of its admin Details: the owner's pin, and the area
+// players find it under or the one the owner asked for.
+export const AdminVenueLocation = z
+  .object({
+    coordinates: Coordinates.nullable().meta({ description: "Null until the owner drops a pin." }),
+    area: z
+      .object({
+        id: z.uuid(),
+        names: z.object({
+          en: z.string().nullable().meta({ example: "Nasr City, Cairo" }),
+          ar: z.string().nullable(),
+        }),
+      })
+      .nullable()
+      .meta({ description: "Null while the owner's `requestedArea` waits for an admin." }),
+    requestedArea: z.string().nullable().meta({
+      description: "An area the owner asked for because Hagz doesn't cover it.",
+      example: "Sheikh Zayed, Giza",
+    }),
+  })
+  .meta({ id: "AdminVenueLocation" });
+
 export type Language = z.infer<typeof Language>;
 export type MinimumNotice = z.infer<typeof MinimumNotice>;
 export type PaymentMode = z.infer<typeof PaymentMode>;
@@ -234,3 +256,4 @@ export type AmenityPricing = z.infer<typeof AmenityPricing>;
 export type VenueAmenity = z.infer<typeof VenueAmenity>;
 export type SetVenueAmenities = z.infer<typeof SetVenueAmenities>;
 export type StaffVenueDetail = z.infer<typeof StaffVenueDetail>;
+export type AdminVenueLocation = z.infer<typeof AdminVenueLocation>;

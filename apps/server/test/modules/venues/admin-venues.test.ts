@@ -306,3 +306,48 @@ describe("GET /admin/venues/{id}/photos", () => {
     expect((await get(`/${venue.id}/photos`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/location", () => {
+  it("reads the pin and the area, in both languages", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    await prisma.$executeRaw`
+      UPDATE "Venue" SET coordinates = ST_SetSRID(ST_MakePoint(31.33, 30.06), 4326)::geography
+      WHERE id = ${venue.id}::uuid`;
+    const res = await get(`/${venue.id}/location`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      coordinates: { latitude: 30.06, longitude: 31.33 },
+      area: { id: locationId, names: { en: "Nasr City, Cairo", ar: null } },
+      requestedArea: null,
+    });
+  });
+
+  it("reads the area the owner asked for, before a pin", async () => {
+    const venue = await prisma.venue.create({
+      data: {
+        marketplaceId,
+        slug: `venue-${String(++sequence)}`,
+        status: "SUBMITTED",
+        requestedArea: "Sheikh Zayed, Giza",
+      },
+    });
+    const res = await get(`/${venue.id}/location`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      coordinates: null,
+      area: null,
+      requestedArea: "Sheikh Zayed, Giza",
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/location");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/location`, false)).status).toBe(401);
+  });
+});
