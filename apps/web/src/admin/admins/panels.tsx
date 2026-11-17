@@ -48,8 +48,8 @@ const moment = (iso: string) =>
     minute: "2-digit",
   });
 
-// An admin in full, with their access looked after here. The panel has no title: who they are (name,
-// email) leads the Account section, then what the API knows about them (how they joined, the
+// An admin in full, with their access looked after here. Under a small title and line, who they are
+// (name, email) leads the Account section, then what the API knows about them (how they joined, the
 // authenticator, where they're signed in), then Access: reset their password (an emailed link) or
 // their authenticator, each confirmed first in a modal over the panel. Neither is offered on your
 // own account. The body scrolls when it's taller than the window.
@@ -76,7 +76,14 @@ export function AdminPanel({
   };
 
   return (
-    <SidePanel open={open} onRequestClose={() => setOpen(false)} onExited={onClose} label="Admin">
+    <SidePanel
+      open={open}
+      onRequestClose={() => setOpen(false)}
+      onExited={onClose}
+      title="Admin"
+      description="Their account here, how they sign in, and resetting their access."
+      compact
+    >
       {details ? (
         <div className="flex flex-col gap-6">
           <PanelSection title="Account">

@@ -42,7 +42,14 @@ export function MemberPanel({
   const suspended = member.status === "SUSPENDED";
   const banned = member.status === "BANNED";
   return (
-    <SidePanel open={open} onRequestClose={() => setOpen(false)} onExited={onClose} label="Member">
+    <SidePanel
+      open={open}
+      onRequestClose={() => setOpen(false)}
+      onExited={onClose}
+      title="Member"
+      description="Their place on this venue's staff, what they can do, and support for them."
+      compact
+    >
       <div className="flex flex-col gap-6">
         <PanelSection title="Member">
           <div>

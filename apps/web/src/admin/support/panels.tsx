@@ -67,7 +67,9 @@ export function StaffAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      label="Staff account"
+      title="Staff account"
+      description="Their account across every venue they're on, and keeping them out of it."
+      compact
     >
       <div className="flex flex-col gap-6">
         <PanelSection title="Account">
@@ -207,7 +209,9 @@ export function CustomerAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      label="Customer"
+      title="Customer"
+      description="A player's account."
+      compact
     >
       <PanelSection title="Account">
         <AccountRows account={customer} />
