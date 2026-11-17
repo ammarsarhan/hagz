@@ -15,7 +15,8 @@ export function OverlayHeader({
   onClose,
   onBack,
 }: {
-  title: ReactNode;
+  // Left out for a panel without one: only × stays, at the far end.
+  title?: ReactNode;
   description?: ReactNode;
   onClose: () => void;
   // On a later step of a modal: back to the one before.
@@ -35,9 +36,11 @@ export function OverlayHeader({
       ) : null}
       <div className="flex items-start justify-between gap-10">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
-            {title}
-          </h2>
+          {title ? (
+            <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
+              {title}
+            </h2>
+          ) : null}
           {description ? <p className="mt-1 text-body text-ink-2">{description}</p> : null}
         </div>
         {onBack ? null : (

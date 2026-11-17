@@ -13,19 +13,23 @@ import { OverlayBody, OverlayFooter, OverlayHeader } from "./overlay";
 // Every way out (×, Escape, a click on the dimmed page) asks through `onRequestClose`, so the owner
 // decides; it usually just sets `open` to false.
 
+// A panel has a visible title, or none (a person's panel, whose sections say who they are) and a
+// label instead, so screen readers can still name it.
+type Heading = { title: ReactNode; label?: string } | { title?: undefined; label: string };
+
 export function SidePanel({
   open,
   onRequestClose,
   onExited,
   title,
+  label,
   description,
   footer,
   children,
-}: {
+}: Heading & {
   open: boolean;
   onRequestClose: () => void;
   onExited: () => void;
-  title: ReactNode;
   description?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
@@ -42,6 +46,7 @@ export function SidePanel({
   return (
     <dialog
       ref={ref}
+      aria-label={label ?? (typeof title === "string" ? title : undefined)}
       data-closing={open ? undefined : ""}
       // Escape: let the owner close it (with the slide-out) instead of the browser, at once.
       onCancel={(event) => {
