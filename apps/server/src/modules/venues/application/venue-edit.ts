@@ -191,19 +191,33 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue, displa
     }
 
     if (input.location) {
-      const { coordinates, placeId, locationId } = input.location;
-      const location = await tx.location.findUnique({
-        where: { id: locationId },
-        select: {
-          marketplaceId: true,
-          marketplace: { select: { isActive: true } },
-        },
-      });
-      if (!location?.marketplace.isActive) throw locationNotFound();
-      // A venue's currency, VAT, amenities and payouts belong to its marketplace, so a new area
-      // must be in the same one (docs/onboarding.md, "Edits after going live").
-      if (location.marketplaceId !== venue.marketplaceId) throw locationOutsideMarketplace();
-      await checkPin(tx, { marketplaceId: venue.marketplaceId, locationId, pin: coordinates });
+      const { coordinates, placeId } = input.location;
+      const locationId = input.location.locationId ?? null;
+      const requestedArea = input.location.requestedArea ?? null;
+      if (locationId) {
+        const location = await tx.location.findUnique({
+          where: { id: locationId },
+          select: {
+            marketplaceId: true,
+            marketplace: { select: { isActive: true } },
+          },
+        });
+        if (!location?.marketplace.isActive) throw locationNotFound();
+        // A venue's currency, VAT, amenities and payouts belong to its marketplace, so a new area
+        // must be in the same one (docs/onboarding.md, "Edits after going live").
+        if (location.marketplaceId !== venue.marketplaceId) throw locationOutsideMarketplace();
+        await checkPin(tx, { marketplaceId: venue.marketplaceId, locationId, pin: coordinates });
+      } else {
+        // Asking for an area leaves the venue without one until Hagz adds it, which only a draft
+        // can be: a listed venue must stay findable under an area.
+        if (venue.status !== "DRAFT") {
+          throw venueStatusConflict(
+            venue.status,
+            "Only a venue being set up can ask for a new area. Choose one from the list.",
+          );
+        }
+        await checkPin(tx, { marketplaceId: venue.marketplaceId, pin: coordinates });
+      }
 
       const previous = {
         coordinates: await pinOf(tx, actor.venueId),
@@ -211,10 +225,10 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue, displa
         locationId: current.locationId,
         requestedArea: current.requestedArea,
       };
-      // Picking an area from the list replaces any the owner asked for.
+      // Picking an area from the list replaces any the owner asked for, and asking replaces the area.
       await tx.venue.update({
         where: { id: actor.venueId },
-        data: { placeId, locationId, requestedArea: null },
+        data: { placeId, locationId, requestedArea },
       });
       await tx.$executeRaw`
         UPDATE "Venue"
@@ -222,7 +236,7 @@ export const updateVenue = async (actor: VenueAccess, input: UpdateVenue, displa
         WHERE id = ${actor.venueId}::uuid`;
       await event(tx, actor.venueId, actor.staffId, VENUE_LOCATION_CHANGED, {
         previous,
-        next: { coordinates, placeId, locationId },
+        next: { coordinates, placeId, locationId, requestedArea },
       });
     }
   });
@@ -343,14 +357,19 @@ export const setAmenities = async (
 
     const next = [...input.amenities].sort((a, b) => a.optionId.localeCompare(b.optionId));
     if (JSON.stringify(previous) === JSON.stringify(next)) return;
-    await tx.venueAmenity.deleteMany({ where: { venueId: actor.venueId } });
-    await tx.venueAmenity.createMany({
-      data: next.map((amenity) => ({
-        venueId: actor.venueId,
-        marketplaceId: venue.marketplaceId,
-        ...amenity,
-      })),
+    // Row by row rather than all replaced: an amenity on the layout has tiles that go with its row,
+    // so only the ones dropped are deleted, and a kept one only has its price changed.
+    const keep = new Set(wanted);
+    await tx.venueAmenity.deleteMany({
+      where: { venueId: actor.venueId, optionId: { notIn: [...keep] } },
     });
+    for (const amenity of next) {
+      await tx.venueAmenity.upsert({
+        where: { venueId_optionId: { venueId: actor.venueId, optionId: amenity.optionId } },
+        create: { venueId: actor.venueId, marketplaceId: venue.marketplaceId, ...amenity },
+        update: { price: amenity.price, pricing: amenity.pricing },
+      });
+    }
     await event(tx, actor.venueId, actor.staffId, VENUE_AMENITIES_CHANGED, { previous, next });
   });
   return venueDetail(actor.venueId, display);

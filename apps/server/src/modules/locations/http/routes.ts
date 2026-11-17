@@ -15,6 +15,7 @@ import {
 import {
   createMarketplace,
   listAdminMarketplaces,
+  marketplaceBoundary,
   updateMarketplace,
 } from "../application/admin-marketplaces";
 import { nearestArea, searchAreas } from "../application/areas";
@@ -57,6 +58,9 @@ export const platformAdminRoutes = createRouter()
   .openapi(admin.updateMarketplace, async (c) => {
     const { id } = c.req.valid("param");
     return c.json(await updateMarketplace(id, c.req.valid("json"), c.var.admin.adminId), 200);
+  })
+  .openapi(admin.marketplaceBoundary, async (c) => {
+    return c.json(await marketplaceBoundary(c.req.valid("param").id), 200);
   })
   .openapi(admin.listLocations, async (c) => {
     return c.json({ data: await listAdminLocations(c.req.valid("param").id) }, 200);

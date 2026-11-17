@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Coordinates } from "./venue-setup";
+import { Coordinates, RequestedArea } from "./venue-setup";
 import { VenueStatus } from "./venues";
 
 // Editing a venue (docs/onboarding.md, "Step 2"): details, translations, settings and amenities.
@@ -141,8 +141,20 @@ export const UpdateVenue = z
       .object({
         coordinates: Coordinates,
         placeId: z.string().trim().min(1).max(300).nullable(),
-        locationId: z.uuid(),
+        locationId: z.uuid().optional().meta({
+          description: "An area from the list. Send this or `requestedArea`, not both.",
+        }),
+        requestedArea: RequestedArea.shape.name.optional().meta({
+          description:
+            "An area Hagz doesn't cover yet, in the owner's words, in the venue's marketplace. " +
+            "Drafts only: a listed venue keeps an area players can find it under.",
+        }),
       })
+      .refine(
+        (location) =>
+          (location.locationId === undefined) !== (location.requestedArea === undefined),
+        { message: "Send locationId or requestedArea, not both.", path: ["locationId"] },
+      )
       .meta({ description: "A new pin and area, in the same marketplace." }),
   })
   .partial()

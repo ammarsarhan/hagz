@@ -13,7 +13,8 @@ import { marketplaceNotFound } from "./admin-marketplaces";
 import { lockMarketplace, namesOf, translationRows, upsertNames } from "./names";
 
 // A marketplace's amenity catalog (floodlights, parking, ...), which venues pick from and price. The
-// key is fixed once created; the icon, one of Hagz's own icon names, can change. An option can be deleted only while no venue offers it and no booking
+// key is fixed once created; the icon, one of Hagz's own icon names, can change. `placeable`
+// says whether venues can put it on their layout (parking yes, Wi-Fi no). An option can be deleted only while no venue offers it and no booking
 // was charged for it (RESTRICT foreign keys); otherwise it's turned off, so venues can't newly pick it.
 
 const amenityNotFound = () =>
@@ -31,6 +32,7 @@ const present = (a: Row): AdminAmenity => ({
   // Only ever written from AmenityIcon, so a row outside it is a bug worth failing loudly on.
   icon: AmenityIcon.parse(a.icon),
   isActive: a.isActive,
+  placeable: a.placeable,
   venueCount: a._count.venues,
 });
 
@@ -58,6 +60,7 @@ export const createAmenity = async (
           marketplaceId,
           key: input.key,
           icon: input.icon,
+          placeable: input.placeable,
           translations: { create: translationRows(input.names) },
         },
         include,
@@ -85,11 +88,15 @@ export const updateAmenity = async (
   await transaction(async (tx) => {
     const found = await tx.amenityOption.findUnique({ where: { id }, select: { id: true } });
     if (!found) throw amenityNotFound();
-    if (input.isActive !== undefined || input.icon !== undefined) {
+    if (input.isActive !== undefined || input.icon !== undefined || input.placeable !== undefined) {
       await tx.amenityOption.update({
         where: { id },
-        data: { isActive: input.isActive, icon: input.icon },
+        data: { isActive: input.isActive, icon: input.icon, placeable: input.placeable },
       });
+    }
+    // No longer drawn on layouts: off every one it was on, as a deleted ground is.
+    if (input.placeable === false) {
+      await tx.venueLayoutItem.deleteMany({ where: { optionId: id } });
     }
     if (input.names) {
       await upsertNames(

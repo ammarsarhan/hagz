@@ -109,6 +109,9 @@ export const VenueSetup = z
       slug: z.string().meta({ description: "Permanent. Public once the venue is live." }),
       status: VenueStatus,
       name: z.string().nullable().meta({ description: "In `Accept-Language`, else any language." }),
+      submittedAt: z.iso.datetime().nullable().meta({
+        description: "When it was sent for review, while it's in review; null otherwise.",
+      }),
     }),
     items: z.array(SetupItem),
     required: z

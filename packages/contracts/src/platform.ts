@@ -238,6 +238,9 @@ export const AdminAmenity = z
     names: Names,
     icon: AmenityIcon,
     isActive: z.boolean().meta({ description: "Inactive options can't be newly picked." }),
+    placeable: z.boolean().meta({
+      description: "Venues can place it on their layout. Turning it off takes it off every layout.",
+    }),
     venueCount: z.int(),
   })
   .meta({ id: "AdminAmenity" });
@@ -250,6 +253,10 @@ export const CreateAmenity = z
       .meta({ example: "parking" }),
     names: Names,
     icon: AmenityIcon,
+    placeable: z
+      .boolean()
+      .default(false)
+      .meta({ description: "Venues can place it on their layout." }),
   })
   .meta({ id: "CreateAmenity" });
 
@@ -258,6 +265,7 @@ export const UpdateAmenity = z
     names: Names.optional(),
     icon: AmenityIcon.optional(),
     isActive: z.boolean().optional(),
+    placeable: z.boolean().optional(),
   })
   .meta({ id: "UpdateAmenity" });
 
@@ -319,6 +327,7 @@ export const Amenity = z
     key: z.string().meta({ example: "parking" }),
     name: z.string().meta({ description: "In the requested language." }),
     icon: AmenityIcon,
+    placeable: z.boolean().meta({ description: "Venues can place it on their layout." }),
   })
   .meta({ id: "Amenity" });
 

@@ -1,15 +1,24 @@
 "use client";
 
-import type { AdminAmenity, AdminLocation, AdminMarketplace, Locality } from "@hagz/contracts";
-import { useState } from "react";
+import type {
+  AdminAmenity,
+  AdminLocation,
+  AdminMarketplace,
+  Boundary,
+  Coordinates,
+  Locality,
+} from "@hagz/contracts";
+import { useRef, useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
 import { Tag } from "@/admin/data-table";
 import { PanelSection, ReadOnlyRow, SidePanel } from "@/admin/side-panel";
-import { send } from "@/admin/errors";
+import { message, send } from "@/admin/errors";
+import { useHud } from "@/admin/hud";
 import { Field, SelectField } from "@/admin/field";
 import { Flag } from "@/admin/flag";
 import { kindOrder } from "./countries";
+import { formatCenter, mapsLink, parseCenter, readBoundary, shapeCount } from "./geo";
 import { IconPicker } from "./icon-picker";
 import { KindIcon } from "./kind-icon";
 import { localityLabel } from "./model";
@@ -53,6 +62,8 @@ export function EditMarketplacePanel({
     isActive: marketplace.isActive,
   };
   const [form, setForm] = useState(initial);
+  // The border to save: left as it is (undefined), removed (null) or a new one from a file.
+  const [border, setBorder] = useState<BorderChange>();
   // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
   const [open, setOpen] = useState(true);
   const hide = () => setOpen(false);
@@ -62,9 +73,11 @@ export function EditMarketplacePanel({
 
   const taxRate = basisPoints(form.tax);
   const commissionRate = basisPoints(form.commission);
-  const changed = (Object.keys(initial) as (keyof typeof initial)[]).some(
-    (field) => form[field] !== initial[field],
-  );
+  const changed =
+    border !== undefined ||
+    (Object.keys(initial) as (keyof typeof initial)[]).some(
+      (field) => form[field] !== initial[field],
+    );
   // Save stays grey until something changed and everything is valid.
   const ready =
     changed &&
@@ -88,6 +101,7 @@ export function EditMarketplacePanel({
             taxRate,
             commissionRate,
             isActive: form.isActive,
+            ...(border === undefined ? {} : { boundary: border && border.boundary }),
           },
         }),
       ),
@@ -165,12 +179,175 @@ export function EditMarketplacePanel({
             onChange={(isActive) => setForm({ ...form, isActive })}
           />
         </PanelSection>
+        <PanelSection title="Border">
+          <BorderField marketplace={marketplace} change={border} onChange={setBorder} />
+        </PanelSection>
       </form>
     </SidePanel>
   );
 }
 
+type BorderChange = { boundary: Boundary; file: string } | null;
+
+// The country's border, which venue pins must fall inside. The list only says whether there is one,
+// so this shows that, downloads the saved one as GeoJSON (to keep, or edit and upload again), takes
+// a GeoJSON file to replace it, and can remove it.
+function BorderField({
+  marketplace,
+  change,
+  onChange,
+}: {
+  marketplace: AdminMarketplace;
+  change: BorderChange | undefined;
+  onChange: (change: BorderChange | undefined) => void;
+}) {
+  const has = marketplace.hasBoundary;
+  const hud = useHud();
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string>();
+  const [downloading, setDownloading] = useState(false);
+
+  const download = async () => {
+    setDownloading(true);
+    const result = await send(
+      api.GET("/v1/admin/marketplaces/{id}/boundary", { params: { path: { id: marketplace.id } } }),
+    );
+    setDownloading(false);
+    if (!result.ok) return hud(message(result.error));
+    const file = new Blob([JSON.stringify(result.data)], { type: "application/geo+json" });
+    // Attached while it's clicked, and the URL let go only after the download has started.
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${marketplace.code.toLowerCase()}-border.geojson`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+  const load = async (file: File) => {
+    try {
+      onChange({ boundary: readBoundary(await file.text()), file: file.name });
+      setError(undefined);
+    } catch (problem) {
+      setError(problem instanceof Error ? problem.message : "That file couldn't be read.");
+    }
+  };
+
+  const status =
+    change === undefined
+      ? has
+        ? { tag: <Tag tone="on">Set</Tag>, line: "Venue pins must fall inside it." }
+        : { tag: <Tag>None</Tag>, line: "Without one, a pin anywhere is taken." }
+      : change === null
+        ? { tag: <Tag>Removed on save</Tag>, line: "Pins won't be checked against a border." }
+        : {
+            tag: <Tag tone="on">New on save</Tag>,
+            line: `${change.file}: ${shapeCount(change.boundary) === 1 ? "1 shape" : `${String(shapeCount(change.boundary))} shapes`}.`,
+          };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex flex-col gap-1">
+          <span className="flex items-center gap-2 text-label text-ink">Border {status.tag}</span>
+          <span className="text-caption text-ink-2">{status.line}</span>
+        </span>
+        <span className="flex gap-2">
+          {has ? (
+            <Button
+              variant="ghost"
+              size="small"
+              loading={downloading}
+              onClick={() => void download()}
+            >
+              Download
+            </Button>
+          ) : null}
+          {change !== undefined ? (
+            <Button variant="ghost" size="small" onClick={() => onChange(undefined)}>
+              Undo
+            </Button>
+          ) : has ? (
+            <Button variant="ghost" size="small" onClick={() => onChange(null)}>
+              Remove
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="small" onClick={() => input.current?.click()}>
+            {has || change ? "Replace" : "Upload GeoJSON"}
+          </Button>
+        </span>
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept=".geojson,.json,application/geo+json,application/json"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Border file"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          // The same file can be picked again after an Undo.
+          event.target.value = "";
+          if (file) void load(file);
+        }}
+      />
+      {error ? <p className="text-caption font-medium text-red">{error}</p> : null}
+    </div>
+  );
+}
+
 // --- Location ---
+
+// Where an area is, roughly: a venue's pin suggests the areas whose centres are nearest, and must be
+// within 15 km of the one it's listed under. Left empty, the area is never suggested.
+export function CenterField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const center = parseCenter(value);
+  const invalid = value.trim() !== "" && !center;
+  return (
+    <Field
+      label="Latitude, longitude"
+      placeholder="30.04440, 31.23570"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      error={invalid ? "Two numbers, latitude then longitude, like 30.0444, 31.2357." : undefined}
+      hint="Right-click the middle of the area in Google Maps and paste what it copies. Empty: never suggested for a pin."
+      trailing={
+        center ? (
+          <a
+            href={mapsLink(center)}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-label font-medium text-ink-2 hover:text-ink hover:underline"
+          >
+            View
+          </a>
+        ) : null
+      }
+    />
+  );
+}
+
+// The centre to send: undefined while it's unchanged or invalid, null to clear it.
+export const centerChange = (
+  text: string,
+  current: Coordinates | null,
+): { valid: boolean; value: Coordinates | null | undefined } => {
+  if (text.trim() === "") return { valid: true, value: current ? null : undefined };
+  const center = parseCenter(text);
+  if (!center) return { valid: false, value: undefined };
+  const same =
+    current !== null &&
+    Math.abs(current.latitude - center.latitude) < 1e-7 &&
+    Math.abs(current.longitude - center.longitude) < 1e-7;
+  return { valid: true, value: same ? undefined : center };
+};
 
 // Edit location, in a side panel over the table.
 export function EditLocationPanel({
@@ -184,15 +361,24 @@ export function EditLocationPanel({
   onClose: Close;
   onDone: Done;
 }) {
-  const initial = { en: location.names.en, ar: location.names.ar, locality: location.locality };
+  const initial = {
+    en: location.names.en,
+    ar: location.names.ar,
+    locality: location.locality,
+    center: formatCenter(location.center),
+  };
   const [form, setForm] = useState(initial);
   // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
   const [open, setOpen] = useState(true);
   const hide = () => setOpen(false);
   const { busy, run } = useSubmit(onDone, hide);
+  const center = centerChange(form.center, location.center);
   const changed =
-    form.en !== initial.en || form.ar !== initial.ar || form.locality !== initial.locality;
-  const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
+    form.en !== initial.en ||
+    form.ar !== initial.ar ||
+    form.locality !== initial.locality ||
+    center.value !== undefined;
+  const ready = changed && center.valid && form.en.trim() !== "" && form.ar.trim() !== "";
 
   const submit = () => {
     if (!ready) return;
@@ -200,7 +386,11 @@ export function EditLocationPanel({
       send(
         api.PATCH("/v1/admin/locations/{id}", {
           params: { path: { id: location.id } },
-          body: { names: { en: form.en.trim(), ar: form.ar.trim() }, locality: form.locality },
+          body: {
+            names: { en: form.en.trim(), ar: form.ar.trim() },
+            locality: form.locality,
+            ...(center.value === undefined ? {} : { center: center.value }),
+          },
         }),
       ),
     );
@@ -254,6 +444,12 @@ export function EditLocationPanel({
             onChange={(event) => setForm({ ...form, locality: event.target.value as Locality })}
           />
         </PanelSection>
+        <PanelSection title="Centre">
+          <CenterField
+            value={form.center}
+            onChange={(value) => setForm({ ...form, center: value })}
+          />
+        </PanelSection>
         <PanelSection title="Link">
           {/* Made from the English name when it was added, and part of public URLs: renaming
               doesn't change it. */}
@@ -290,7 +486,7 @@ function EditButtons({
 }
 
 // An on/off switch with its label and a line under it.
-function Toggle({
+export function Toggle({
   label,
   hint,
   checked,
@@ -338,6 +534,10 @@ function Toggle({
 
 // --- Amenity ---
 
+// What "Venue asset" means, in the add dialog and the edit panel alike.
+export const PLACEABLE_HINT =
+  "Owners can add it to their venue's layout as many times as they need, like parking or a café. Turned off, it comes off every layout.";
+
 // Edit amenity, in a side panel over the table.
 export function EditAmenityPanel({
   marketplace,
@@ -355,6 +555,7 @@ export function EditAmenityPanel({
     ar: amenity.names.ar,
     icon: amenity.icon,
     isActive: amenity.isActive,
+    placeable: amenity.placeable,
   };
   const [form, setForm] = useState(initial);
   // Closing slides the panel out first; onClose (which removes it) runs once it's gone.
@@ -365,7 +566,8 @@ export function EditAmenityPanel({
     form.en !== initial.en ||
     form.ar !== initial.ar ||
     form.icon !== initial.icon ||
-    form.isActive !== initial.isActive;
+    form.isActive !== initial.isActive ||
+    form.placeable !== initial.placeable;
   const ready = changed && form.en.trim() !== "" && form.ar.trim() !== "";
 
   const submit = () => {
@@ -378,6 +580,7 @@ export function EditAmenityPanel({
             names: { en: form.en.trim(), ar: form.ar.trim() },
             icon: form.icon,
             isActive: form.isActive,
+            placeable: form.placeable,
           },
         }),
       ),
@@ -433,10 +636,16 @@ export function EditAmenityPanel({
         </PanelSection>
         <PanelSection title="Availability">
           <Toggle
-            label="On for venues"
+            label="Visible"
             hint="Turned off, venues can't newly pick it. Venues that offer it keep it."
             checked={form.isActive}
             onChange={(isActive) => setForm({ ...form, isActive })}
+          />
+          <Toggle
+            label="Venue asset"
+            hint={PLACEABLE_HINT}
+            checked={form.placeable}
+            onChange={(placeable) => setForm({ ...form, placeable })}
           />
         </PanelSection>
         <PanelSection title="Code">

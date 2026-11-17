@@ -17,9 +17,20 @@ const placeable = (db: Tx | typeof prisma, venueId: string) =>
     select: { id: true, sport: true, size: true },
   });
 
+// The venue's amenities that can go on the layout, as option ids.
+const placeableAmenities = async (db: Tx | typeof prisma, venueId: string) =>
+  (
+    await db.venueAmenity.findMany({
+      where: { venueId, option: { placeable: true } },
+      orderBy: { option: { key: "asc" } },
+      select: { optionId: true },
+    })
+  ).map((amenity) => amenity.optionId);
+
 const read = async (db: Tx | typeof prisma, venueId: string): Promise<VenueLayoutView> => {
-  const [grounds, layout] = await Promise.all([
+  const [grounds, amenityIds, layout] = await Promise.all([
     placeable(db, venueId),
+    placeableAmenities(db, venueId),
     db.venueLayout.findUnique({
       where: { venueId },
       select: {
@@ -31,6 +42,7 @@ const read = async (db: Tx | typeof prisma, venueId: string): Promise<VenueLayou
           select: {
             type: true,
             groundId: true,
+            optionId: true,
             x: true,
             y: true,
             orientation: true,
@@ -41,8 +53,10 @@ const read = async (db: Tx | typeof prisma, venueId: string): Promise<VenueLayou
       },
     }),
   ]);
+  // An option an admin has just stopped being placeable may still have a tile a save raced in.
+  const drawable = new Set(amenityIds);
   const placed: VenueLayout["grounds"] = [];
-  const facilities: VenueLayout["facilities"] = [];
+  const amenities: VenueLayout["amenities"] = [];
   for (const item of layout?.items ?? []) {
     if (item.type === "GROUND" && item.groundId) {
       placed.push({
@@ -50,14 +64,16 @@ const read = async (db: Tx | typeof prisma, venueId: string): Promise<VenueLayou
         x: item.x,
         y: item.y,
         orientation: item.orientation ?? "HORIZONTAL",
+        width: item.width,
+        height: item.height,
       });
-    } else if (item.type !== "GROUND") {
-      facilities.push({
-        type: item.type,
+    } else if (item.type === "AMENITY" && item.optionId && drawable.has(item.optionId)) {
+      amenities.push({
+        optionId: item.optionId,
         x: item.x,
         y: item.y,
-        width: item.width ?? 1,
-        height: item.height ?? 1,
+        width: item.width,
+        height: item.height,
       });
     }
   }
@@ -65,10 +81,11 @@ const read = async (db: Tx | typeof prisma, venueId: string): Promise<VenueLayou
   return {
     ...(layout ? { columns: layout.columns, rows: layout.rows } : defaultSize(grounds)),
     grounds: placed,
-    facilities,
+    amenities,
     entrances: (layout?.entrances ?? []) as VenueLayout["entrances"],
     saved: layout !== null,
     unplacedGroundIds: grounds.filter((g) => !onLayout.has(g.id)).map((g) => g.id),
+    placeableOptionIds: amenityIds,
   };
 };
 
@@ -78,7 +95,11 @@ export const saveLayout = async (actor: VenueAccess, input: VenueLayout) => {
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const grounds = await placeable(tx, actor.venueId);
-    validateLayout(input, new Map(grounds.map((g) => [g.id, { sport: g.sport, size: g.size }])));
+    validateLayout(
+      input,
+      new Map(grounds.map((g) => [g.id, { sport: g.sport, size: g.size }])),
+      new Set(await placeableAmenities(tx, actor.venueId)),
+    );
     const previous = await read(tx, actor.venueId);
 
     const entrances = input.entrances as unknown as Prisma.InputJsonValue;
@@ -97,8 +118,14 @@ export const saveLayout = async (actor: VenueAccess, input: VenueLayout) => {
           x: ground.x,
           y: ground.y,
           orientation: ground.orientation,
+          width: ground.width,
+          height: ground.height,
         })),
-        ...input.facilities.map((facility) => ({ venueId: actor.venueId, ...facility })),
+        ...input.amenities.map((amenity) => ({
+          venueId: actor.venueId,
+          type: "AMENITY" as const,
+          ...amenity,
+        })),
       ],
     });
     await tx.venueEvent.create({
@@ -112,7 +139,7 @@ export const saveLayout = async (actor: VenueAccess, input: VenueLayout) => {
                 columns: previous.columns,
                 rows: previous.rows,
                 grounds: previous.grounds,
-                facilities: previous.facilities,
+                amenities: previous.amenities,
                 entrances: previous.entrances,
               }
             : null,

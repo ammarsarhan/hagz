@@ -129,12 +129,26 @@ const EGYPT: Place[] = [
   governorate("south-sinai", "South Sinai", "جنوب سيناء", [28.971, 33.6176]),
 ];
 
-const AMENITIES: { key: string; icon: AmenityIcon; en: string; ar: string }[] = [
+// `placeable`: venues draw it on their layout. Only where the option is new: an admin may have
+// changed it since.
+const AMENITIES: {
+  key: string;
+  icon: AmenityIcon;
+  en: string;
+  ar: string;
+  placeable?: boolean;
+}[] = [
   { key: "floodlights", icon: "floodlights", en: "Floodlights", ar: "كشافات إضاءة" },
-  { key: "parking", icon: "parking", en: "Parking", ar: "موقف سيارات" },
-  { key: "changing_rooms", icon: "changing_rooms", en: "Changing rooms", ar: "غرف تبديل الملابس" },
+  { key: "parking", icon: "parking", en: "Parking", ar: "موقف سيارات", placeable: true },
+  {
+    key: "changing_rooms",
+    icon: "changing_rooms",
+    en: "Changing rooms",
+    ar: "غرف تبديل الملابس",
+    placeable: true,
+  },
   { key: "showers", icon: "showers", en: "Showers", ar: "دشات" },
-  { key: "cafe", icon: "cafe", en: "Café", ar: "كافيتريا" },
+  { key: "cafe", icon: "cafe", en: "Café", ar: "كافيتريا", placeable: true },
   { key: "ball_rental", icon: "ball_rental", en: "Ball rental", ar: "تأجير الكرة" },
 ];
 
@@ -215,6 +229,7 @@ const ensureAmenity = async (marketplaceId: string, amenity: (typeof AMENITIES)[
       marketplaceId,
       key: amenity.key,
       icon: amenity.icon,
+      placeable: amenity.placeable ?? false,
       translations: { create: names(amenity.en, amenity.ar) },
     },
   });

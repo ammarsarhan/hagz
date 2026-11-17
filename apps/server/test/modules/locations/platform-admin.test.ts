@@ -1,8 +1,10 @@
+import { randomUUID } from "node:crypto";
 import {
   AdminAmenity,
   AdminLocation,
   AdminMarketplace,
   Amenity,
+  Boundary,
   list,
   Location,
 } from "@hagz/contracts";
@@ -167,6 +169,29 @@ describe("admin marketplaces", () => {
     expect(AdminMarketplace.parse(cleared.body).hasBoundary).toBe(false);
     const { body } = await request("GET", "/admin/marketplaces");
     expect(list(AdminMarketplace).parse(body).data[0]?.hasBoundary).toBe(false);
+  });
+
+  it("hand their border back as GeoJSON that can be uploaded again", async () => {
+    const { id } = await createMarketplace();
+    const none = await request("GET", `/admin/marketplaces/${id}/boundary`);
+    expect(none.status).toBe(404);
+    expect(none.body.code).toBe("BOUNDARY_NOT_SET");
+
+    const square = box({ south: 22, west: 25, north: 31.7, east: 35 });
+    await request("PATCH", `/admin/marketplaces/${id}`, { boundary: square });
+    const { status, body } = await request("GET", `/admin/marketplaces/${id}/boundary`);
+    expect(status).toBe(200);
+    // Stored as a MultiPolygon, so it comes back as one, with the same points.
+    expect(Boundary.parse(body)).toEqual({
+      type: "MultiPolygon",
+      coordinates: [square.coordinates],
+    });
+    expect((await request("PATCH", `/admin/marketplaces/${id}`, { boundary: body })).status).toBe(
+      200,
+    );
+
+    const missing = await request("GET", `/admin/marketplaces/${randomUUID()}/boundary`);
+    expect(missing.body.code).toBe("MARKETPLACE_NOT_FOUND");
   });
 
   it("refuse a border that isn't a shape", async () => {
@@ -435,6 +460,45 @@ describe("admin amenities", () => {
     expect(off.body).toMatchObject({ icon: "bike_parking", isActive: false });
   });
 
+  it("can go on venue layouts, and leave every one when that's turned off", async () => {
+    const { id } = await createMarketplace();
+    expect(AdminAmenity.parse((await addAmenity(id, "wifi")).body).placeable).toBe(false);
+    const parking = AdminAmenity.parse(
+      (
+        await request("POST", `/admin/marketplaces/${id}/amenities`, {
+          key: "parking",
+          names: { en: "Parking", ar: "موقف سيارات" },
+          icon: "parking",
+          placeable: true,
+        })
+      ).body,
+    );
+    expect(parking.placeable).toBe(true);
+
+    // A venue with parking drawn on its layout.
+    const venue = await createVenue(id);
+    await prisma.venueAmenity.create({
+      data: { venueId: venue.id, optionId: parking.id, marketplaceId: id },
+    });
+    await prisma.venueLayout.create({
+      data: {
+        venueId: venue.id,
+        columns: 16,
+        rows: 19,
+        items: {
+          create: { type: "AMENITY", optionId: parking.id, x: 0, y: 0, width: 2, height: 2 },
+        },
+      },
+    });
+
+    const off = await request("PATCH", `/admin/amenities/${parking.id}`, { placeable: false });
+    expect(off.status).toBe(200);
+    expect(off.body).toMatchObject({ placeable: false, isActive: true });
+    expect(await prisma.venueLayoutItem.count({ where: { venueId: venue.id } })).toBe(0);
+    // The venue still offers it; it just isn't drawn.
+    expect(await prisma.venueAmenity.count({ where: { venueId: venue.id } })).toBe(1);
+  });
+
   it("delete only while no venue offers them", async () => {
     const { id } = await createMarketplace();
     const parking = AdminAmenity.parse((await addAmenity(id, "parking")).body);
@@ -498,7 +562,7 @@ describe("public reference data", () => {
       ).json(),
     ).data;
     expect(amenities).toEqual([
-      { id: parking.id, key: "parking", name: "Parking", icon: "parking" },
+      { id: parking.id, key: "parking", name: "Parking", icon: "parking", placeable: false },
     ]);
   });
 

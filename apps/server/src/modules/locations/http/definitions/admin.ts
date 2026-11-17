@@ -3,6 +3,7 @@ import {
   AdminAmenity,
   AdminLocation,
   AdminMarketplace,
+  Boundary,
   CreateAmenity,
   CreateLocation,
   CreateMarketplace,
@@ -81,6 +82,24 @@ export const updateMarketplace = createRoute({
     ),
     400: invalid,
     422: problemResponse("INVALID_BOUNDARY: the border's edges cross (`reason` says where)."),
+  },
+});
+
+export const marketplaceBoundary = createRoute({
+  method: "get",
+  path: "/admin/marketplaces/{id}/boundary",
+  tags,
+  summary: "A marketplace's border, as GeoJSON",
+  description:
+    "The shape venue pins are checked against, to download and keep or edit. Always a " +
+    "MultiPolygon; send it back as `boundary` to replace it.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: id },
+  responses: {
+    200: { description: "The border", ...json(Boundary) },
+    ...guarded,
+    404: problemResponse("MARKETPLACE_NOT_FOUND, or BOUNDARY_NOT_SET: it has none."),
   },
 });
 

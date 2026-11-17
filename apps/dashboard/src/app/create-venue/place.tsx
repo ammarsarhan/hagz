@@ -24,6 +24,8 @@ import {
   FloatingButton,
   floatShadow,
   PinOverlay,
+  PLACING_DELTA,
+  usePinReader,
 } from "@/components/venue-map";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/text";
@@ -96,6 +98,8 @@ export default function CreateVenuePlace() {
   const [searching, setSearching] = useState(false);
   const [choosingArea, setChoosingArea] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  // Request coverage was tapped in the area picker: the name sheet opens once the picker has gone.
+  const [requestNext, setRequestNext] = useState(false);
   const [creating, setCreating] = useState(false);
   // The point under the pin: the middle of the map, wherever it has been moved to.
   const [pin, setPin] = useState<Coordinates>(START);
@@ -110,6 +114,10 @@ export default function CreateVenuePlace() {
   const [requestedArea, setRequestedArea] = useState<string | null>(null);
   // How tall the bottom card is, so the map's middle (and the pin) sits above it.
   const [cardHeight, setCardHeight] = useState(0);
+  // Too far out to place a pin precisely: it asks to be zoomed in on first. The first view (all of
+  // Cairo) is.
+  const [zoomedOut, setZoomedOut] = useState(START.latitudeDelta > PLACING_DELTA);
+  const pinReader = usePinReader(map, insets.top, cardHeight);
   // No Screen here to say where the HUD goes: it sits on the card, once the location prompt (a
   // Screen, which says for itself) is out of the way.
   useHudAnchor(permission === "done" ? cardHeight : null);
@@ -119,17 +127,18 @@ export default function CreateVenuePlace() {
   // Until the list arrives, the country is taken as covered and the API has the last word.
   const inMarketplace =
     !marketplaces.data || marketplaces.data.some((marketplace) => marketplace.code === country);
+  // Looked up while the pin is being placed, once the map has settled, so the area step opens on
+  // its answer rather than a spinner that turns into a different card.
+  const lookUp =
+    (stage === "area" || (stage === "pin" && !locating && !zoomedOut)) && inMarketplace;
   // The area whose centre is nearest the pin, which the owner confirms or changes. Not Google's
   // address: in Egypt it names police districts, so a pin in Smouha would come back "Sidi Gaber".
-  const nearest = useQuery({
-    ...areas.nearest(country, pin),
-    enabled: stage === "area" && inMarketplace,
-  });
+  const nearest = useQuery({ ...areas.nearest(country, pin), enabled: lookUp });
   // Whether any area is in reach at all: the picker's own first page (nearest first), so opening
   // it afterwards is already loaded. A failed look leaves it to the API rather than blocking.
   const reach = useQuery({
     ...areas.search(country, "", pin),
-    enabled: stage === "area" && inMarketplace,
+    enabled: lookUp,
     select: (found) => found.some(withinReach),
   });
   const coverage: Coverage = !inMarketplace
@@ -139,6 +148,15 @@ export default function CreateVenuePlace() {
       : reach.data === false
         ? "outside"
         : "checking";
+  // Enough is known to draw the area step: whether there's coverage, and if so the nearest area.
+  const areaKnown = coverage !== "checking" && (coverage !== "covered" || !nearest.isPending);
+  // Continue was tapped before that: the button waits, then the step opens.
+  const [advancing, setAdvancing] = useState(false);
+  useEffect(() => {
+    if (!advancing || !areaKnown) return;
+    setAdvancing(false);
+    setStage("area");
+  }, [advancing, areaKnown]);
   const area = requestedArea ? null : (chosenArea ?? nearest.data ?? null);
   const label = requestedArea
     ? { name: requestedArea, within: t("screens.createVenue.place.requestedNote") }
@@ -146,10 +164,23 @@ export default function CreateVenuePlace() {
       ? { name: area.name, within: area.within ?? "" }
       : null;
 
-  const moveTo = useCallback((coordinates: Coordinates) => {
-    setPin(coordinates);
-    map.current?.animateToRegion({ ...coordinates, ...CLOSE }, 400);
+  // Google Maps ignores a move asked for before it has loaded, which the first time the SDK starts
+  // can be after the owner's position has come back: the map stayed on Cairo while the pin was on
+  // them. A move asked for too early is kept and made once the map says it's ready.
+  const mapReady = useRef(false);
+  const pendingRegion = useRef<Region | null>(null);
+  const showRegion = useCallback((region: Region) => {
+    if (mapReady.current) map.current?.animateToRegion(region, 400);
+    else pendingRegion.current = region;
   }, []);
+
+  const moveTo = useCallback(
+    (coordinates: Coordinates) => {
+      setPin(coordinates);
+      showRegion({ ...coordinates, ...CLOSE });
+    },
+    [showRegion],
+  );
 
   // Start the map on the owner. Being where they stand counts as placing it: they can go straight
   // on to checking the pin.
@@ -164,12 +195,12 @@ export default function CreateVenuePlace() {
       };
       setPin(coordinates);
       setPlaced(true);
-      map.current?.animateToRegion({ ...coordinates, ...NEARBY }, 400);
+      showRegion({ ...coordinates, ...NEARBY });
     } catch (error) {
       console.warn(error);
       hud.show(t("screens.createVenue.place.locationFailed"));
     }
-  }, [hud, t]);
+  }, [hud, t, showRegion]);
 
   // Whether the prompt is needed at all. With permission already given there's nothing to ask.
   const checkPermission = useCallback(async () => {
@@ -255,6 +286,8 @@ export default function CreateVenuePlace() {
   };
 
   const back = () => {
+    // A Continue still waiting on the area lookup doesn't carry on once they've gone back.
+    setAdvancing(false);
     if (stage === "area") return setStage("pin");
     if (stage === "pin") return setStage("find");
     router.back();
@@ -311,8 +344,10 @@ export default function CreateVenuePlace() {
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFill}
         initialRegion={START}
-        // The card covers the bottom, so the map's middle — and the pin — sits above it.
-        mapPadding={{ top: 0, right: 0, bottom: cardHeight, left: 0 }}
+        // The status bar and the card cover the edges, so the map's middle — and the pin's point —
+        // sits between them, where moves land and usePinReader reads it.
+        mapPadding={{ top: insets.top, right: 0, bottom: cardHeight, left: 0 }}
+        onLayout={pinReader.onLayout}
         showsUserLocation
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -320,8 +355,17 @@ export default function CreateVenuePlace() {
         zoomEnabled={stage !== "area"}
         rotateEnabled={false}
         pitchEnabled={false}
+        onMapReady={() => {
+          mapReady.current = true;
+          const region = pendingRegion.current;
+          pendingRegion.current = null;
+          if (region) map.current?.animateToRegion(region, 0);
+        }}
         onRegionChangeComplete={(region, details) => {
-          setPin({ latitude: region.latitude, longitude: region.longitude });
+          setZoomedOut(region.latitudeDelta > PLACING_DELTA);
+          void pinReader.read(region).then((at) => {
+            if (at) setPin(at);
+          });
           if (details?.isGesture === false) return;
           setPlaced(true);
           setNudged(true);
@@ -338,7 +382,15 @@ export default function CreateVenuePlace() {
         bottom={cardHeight}
         top={insets.top}
         visible={stage !== "find"}
-        hint={stage === "pin" && !nudged ? t("screens.createVenue.place.movePin") : null}
+        hint={
+          stage !== "pin"
+            ? null
+            : zoomedOut
+              ? t("screens.createVenue.place.zoomIn")
+              : nudged
+                ? null
+                : t("screens.createVenue.place.movePin")
+        }
       />
 
       {/* The controls float over the map: back, and what the map is showing. */}
@@ -421,8 +473,13 @@ export default function CreateVenuePlace() {
                 : t("screens.createVenue.place.pinBody")
             }
             action={t("common.actions.continue")}
-            disabled={stage === "find" ? !placed : locating}
-            onPress={() => setStage(stage === "find" ? "pin" : "area")}
+            disabled={stage === "find" ? !placed : locating || zoomedOut}
+            loading={advancing}
+            onPress={() => {
+              if (stage === "find") return setStage("pin");
+              if (areaKnown) setStage("area");
+              else setAdvancing(true);
+            }}
           />
         )}
       </View>
@@ -464,6 +521,15 @@ export default function CreateVenuePlace() {
         onRequest={(name) => {
           setRequestedArea(name);
           setChoosingArea(false);
+        }}
+        onRequestCoverage={() => {
+          setRequestNext(true);
+          setChoosingArea(false);
+        }}
+        onHidden={() => {
+          if (!requestNext) return;
+          setRequestNext(false);
+          setRequesting(true);
         }}
       />
       <RequestAreaSheet
@@ -546,18 +612,20 @@ function Step({
   body,
   action,
   disabled,
+  loading = false,
   onPress,
 }: {
   title: string;
   body: string;
   action: string;
   disabled: boolean;
+  loading?: boolean;
   onPress: () => void;
 }) {
   return (
     <>
       <Heading title={title} body={body} />
-      <Button label={action} disabled={disabled} onPress={onPress} />
+      <Button label={action} disabled={disabled} loading={loading} onPress={onPress} />
     </>
   );
 }
@@ -604,20 +672,15 @@ function AreaStep({
     );
   }
 
+  // Nothing in reach: say so plainly, and make asking for the area the one thing to do.
   if (outside && !label) {
     return (
       <>
         <Heading
-          title={t("screens.createVenue.place.areaUnknownTitle")}
-          body={t("screens.createVenue.place.areaNoneBody")}
+          title={t("screens.createVenue.place.noCoverageTitle")}
+          body={t("screens.createVenue.place.noCoverageBody", { km: PIN_NEAR_AREA_METRES / 1000 })}
         />
-        <View className="rounded-[16px] border border-border p-4">
-          <Text className="text-body text-ink-2">
-            {t("screens.createVenue.place.noCoverage", { km: PIN_NEAR_AREA_METRES / 1000 })}
-          </Text>
-        </View>
-        <CardLink label={t("screens.createVenue.place.requestCoverage")} onPress={onRequest} />
-        <Button label={t("screens.createVenue.place.create")} disabled onPress={onConfirm} />
+        <Button label={t("screens.createVenue.place.requestCoverage")} onPress={onRequest} />
       </>
     );
   }

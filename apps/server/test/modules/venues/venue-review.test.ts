@@ -177,9 +177,12 @@ describe("sending a venue for review", () => {
 
   it("locks the venue, tells the admins and joins the queue", async () => {
     const { owner, venueId, path } = await aReadyDraft();
+    const before = Date.now();
     const setup = await submit(owner.id, path);
     expect(setup.venue.status).toBe("SUBMITTED");
     expect(setup.canSubmit).toBe(false);
+    // Since when, for the in-review screen's "Sent for review".
+    expect(Date.parse(setup.venue.submittedAt ?? "")).toBeGreaterThanOrEqual(before - 1000);
 
     const edit = await staff(owner.id, "PATCH", `${path}/settings`, { autoConfirm: false });
     expect(edit.status).toBe(409);
@@ -207,7 +210,9 @@ describe("sending a venue for review", () => {
     const { owner, venueId, path } = await aReadyDraft();
     await submit(owner.id, path);
     const res = await staff(owner.id, "POST", `${path}/withdraw`);
-    expect(VenueSetup.parse(await res.json()).venue.status).toBe("DRAFT");
+    const draft = VenueSetup.parse(await res.json());
+    expect(draft.venue.status).toBe("DRAFT");
+    expect(draft.venue.submittedAt).toBeNull();
     expect(await statusOf(venueId)).toBe("DRAFT");
     expect((await staff(owner.id, "POST", `${path}/withdraw`)).status).toBe(409);
   });
