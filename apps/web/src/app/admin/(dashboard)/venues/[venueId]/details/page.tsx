@@ -28,7 +28,7 @@ export default function VenueText() {
 
   return (
     <section>
-      <h2 className="text-heading font-semibold text-ink">Name and description</h2>
+      <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">Translations</h2>
       <p className="mt-1 text-body text-ink-2">
         {venue && !editable
           ? "The owner’s words. They can be edited once an admin moves the venue to provisioning."

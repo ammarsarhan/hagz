@@ -90,7 +90,7 @@ export function TranslationsPanel({
       open={open}
       onRequestClose={hide}
       onExited={onClose}
-      title="Name and description"
+      title="Translations"
       description="What players read. They see the language their app is in."
       footer={
         <>

@@ -7,7 +7,7 @@ export function DetailPlaceholder({ slug }: { slug: string }) {
   const { icon: Item, label, description } = section;
   return (
     <section>
-      <h2 className="text-heading font-semibold text-ink">{label}</h2>
+      <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">{label}</h2>
       <p className="mt-1 text-body text-ink-2">{description}</p>
       <div className="mt-8 flex flex-col items-center rounded-hud border border-dashed border-border px-6 py-16 text-center">
         <span className="flex size-12 items-center justify-center rounded-full bg-chip text-ink-2">

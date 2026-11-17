@@ -27,7 +27,7 @@ export interface DetailSection {
 export const detailSections: DetailSection[] = [
   {
     slug: "",
-    label: "Name and description",
+    label: "Translations",
     icon: IconAlignLeft,
     description: "What players read, in English and Arabic.",
   },
