@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
-import { useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import type { components } from "@hagz/api";
@@ -8,9 +9,11 @@ import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { language } from "@/lib/language";
+import { firstTime } from "@/lib/celebrations";
 import { afterVenueWrite, queries } from "@/lib/queries";
 import { FadingScroll } from "./fading-scroll";
 import { Button } from "./button";
+import { Confetti } from "./confetti";
 import { useHud } from "./hud";
 import { IconCheck } from "./icons";
 import { CloseButton, NavBar } from "./nav";
@@ -46,6 +49,20 @@ export function VenueInReview({
   const [confirming, setConfirming] = useState(false);
   const name = setup.venue.name ?? t("screens.setup.untitled");
   const approved = setup.venue.status === "PROVISIONING";
+  // The first time they see it approved on this phone: confetti, and a success tap.
+  const [celebrating, setCelebrating] = useState(false);
+  useEffect(() => {
+    if (!approved) return;
+    let cancelled = false;
+    void firstTime("approval", venueId).then((first) => {
+      if (!first || cancelled) return;
+      setCelebrating(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [approved, venueId]);
 
   // Back to a draft: the screen becomes the checklist again, everything editable.
   const withdraw = async () => {
@@ -119,6 +136,8 @@ export function VenueInReview({
           />
         </View>
       </FadingScroll>
+
+      {celebrating ? <Confetti onDone={() => setCelebrating(false)} /> : null}
 
       <Sheet
         visible={confirming}
