@@ -77,6 +77,7 @@ const labels: Record<string, string> = {
   VENUE_AREA_SET: "Area set",
   VENUE_TRANSLATION_CHANGED: "Translation changed",
   VENUE_SETTINGS_CHANGED: "Settings changed",
+  VENUE_COMMISSION_CHANGED: "Commission changed",
   VENUE_AMENITIES_CHANGED: "Amenities changed",
   VENUE_PHOTO_ADDED: "Photo added",
   VENUE_PHOTO_REMOVED: "Photo removed",
