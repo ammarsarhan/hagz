@@ -134,6 +134,11 @@ const en = {
           continue: "Continue setup",
           review: "Review & submit",
           viewReview: "View review",
+          // Approved, while Hagz provisions it (Figma 481:101).
+          approved: "Approved · Going live soon",
+          preparing: "We're preparing your listing",
+          viewProgress: "View progress",
+          liveSoon: "We'll message you on WhatsApp when it's live",
           sendWhenDone: "Send for review when it's ready",
           agoNow: "Just now",
           ago: {
@@ -245,6 +250,13 @@ const en = {
           sent: "Sent for review",
           checking: "We check your listing",
           checkingBody: "Usually within a day",
+          // Approved, while Hagz provisions it (Figma "Review · Approved", 481:2).
+          approvedTitle: "{{venue}} has been approved!",
+          approvedBody:
+            "We're adding your listing in Arabic and English and running final checks. We'll message you on WhatsApp when you're live.",
+          approved: "Approved",
+          preparing: "We prepare your listing",
+          preparingBody: "Arabic and English, and final checks",
           live: "You go live",
           liveBody: "Players can find and book you",
           withdraw: "Withdraw from review",

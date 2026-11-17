@@ -159,6 +159,10 @@ const ar: ArabicTranslations = {
           continue: "أكمل الإعداد",
           review: "مراجعة وإرسال",
           viewReview: "عرض المراجعة",
+          approved: "تمت الموافقة · يصبح متاحًا قريبًا",
+          preparing: "نجهّز بيانات ملعبك",
+          viewProgress: "عرض التقدّم",
+          liveSoon: "سنراسلك على واتساب حين يصبح متاحًا",
           sendWhenDone: "أرسله للمراجعة حين يكتمل",
           agoNow: "الآن",
           ago: {
@@ -266,6 +270,12 @@ const ar: ArabicTranslations = {
           sent: "أُرسل للمراجعة",
           checking: "نراجع ملعبك",
           checkingBody: "غالبًا خلال يوم",
+          approvedTitle: "تمت الموافقة على {{venue}}!",
+          approvedBody:
+            "نضيف بيانات ملعبك بالعربية والإنجليزية ونجري الفحوصات الأخيرة. سنراسلك على واتساب حين يصبح متاحًا.",
+          approved: "تمت الموافقة",
+          preparing: "نجهّز بيانات ملعبك",
+          preparingBody: "العربية والإنجليزية، والفحوصات الأخيرة",
           live: "يصبح ملعبك متاحًا",
           liveBody: "يجدك اللاعبون ويحجزون",
           withdraw: "اسحب من المراجعة",
