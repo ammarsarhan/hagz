@@ -2,8 +2,8 @@
 
 import type { AdminVenue, VenueStatus } from "@hagz/contracts";
 import Link from "next/link";
+import { useId, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
 import { api } from "@/admin/api";
 import { ago } from "@/admin/admins/model";
 import { AccessAction } from "@/admin/admins/panels";
@@ -12,9 +12,10 @@ import { Skeleton, Tag } from "@/admin/data-table";
 import { ConfirmDialog, Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { TextAreaField } from "@/admin/field";
+import { JourneyStep, type JourneyState } from "@/admin/journey";
 import { ReasonDialog } from "@/admin/reason-dialog";
+import { Reveal } from "@/admin/reveal";
 import { DetailRow } from "@/admin/side-panel";
-import { StageCard, type StageState } from "@/admin/stage-card";
 import { useSubmit } from "@/admin/submit";
 import { dateTime } from "@/admin/venues/history";
 import {
@@ -27,19 +28,19 @@ import {
 import { venueHref } from "@/admin/venues/sections";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
-// A venue's Application tab, shown only until it's live (Figma A5, option 4): its way there as three
-// stage cards, Setup, Review and Going live, each with its count, beside the venue's facts. The stage
-// its status is at is open and the rest closed; any can be opened to look back or ahead. When the
-// status moves on (after Approve, say) the cards follow it. Every step asks first, and the venue's
-// header and this tab catch up after it; going live moves the venue off this tab.
+// A venue's Application tab, shown only until it's live (Figma A5, option 2, with option 4's facts):
+// its way to live as one journey down the page, Created, Setup, Review, Provisioning and Live, beside
+// the venue's facts. The step its status is at holds what to do now; done steps say how they went
+// (the finished checklist opens on demand) and later ones what they'll ask. Every step asks first,
+// and the venue's header and this tab catch up after it; going live moves the venue off this tab.
 
 type Action = "approve" | "reject" | "tax" | "go-live";
 
-// The stage each applying status is at: 0 Setup, 1 Review, 2 Going live.
-const currentStage: Partial<Record<VenueStatus, number>> = {
-  DRAFT: 0,
-  SUBMITTED: 1,
-  PROVISIONING: 2,
+// The step each applying status is at: 0 Created, 1 Setup, 2 Review, 3 Provisioning, 4 Live.
+const currentStep: Partial<Record<VenueStatus, number>> = {
+  DRAFT: 1,
+  SUBMITTED: 2,
+  PROVISIONING: 3,
 };
 
 export default function VenueApplicationPage() {
@@ -47,9 +48,8 @@ export default function VenueApplicationPage() {
   const { venue, reload: reloadVenue } = useCurrentVenue();
   const { data, error, reload } = useVenueOverview(venueId);
   const [action, setAction] = useState<Action>();
-  // The cards opened or closed by hand, for the status they were toggled in: a new status starts
-  // again from its own stage open.
-  const [opened, setOpened] = useState<{ status?: VenueStatus; stages: number[] }>({ stages: [] });
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const checklistId = useId();
   const close = () => setAction(undefined);
   const changed = () => {
     reload();
@@ -63,112 +63,134 @@ export default function VenueApplicationPage() {
   const step = (path: "approve" | "go-live") => () =>
     send(api.POST(`/v1/admin/venues/{id}/${path}`, { params: { path: { id: venueId } } }));
 
-  const current = currentStage[venue.status] ?? 2;
-  const isOpen = (stage: number) =>
-    opened.status === venue.status ? opened.stages.includes(stage) : stage === current;
-  const card = (stage: number) => ({
-    number: stage + 1,
-    state: (stage < current ? "done" : stage === current ? "current" : "later") as StageState,
-    open: isOpen(stage),
-    onToggle: () => {
-      const now = [0, 1, 2].filter(isOpen);
-      setOpened({
-        status: venue.status,
-        stages: now.includes(stage) ? now.filter((open) => open !== stage) : [...now, stage],
-      });
-    },
-  });
+  const current = currentStep[venue.status] ?? 3;
+  const state = (index: number): JourneyState =>
+    index < current ? "done" : index === current ? "current" : "later";
 
-  const { required } = data.setup;
+  const { required, items } = data.setup;
+  const skipped = items
+    .filter((item) => !item.required && item.state !== "DONE")
+    .map((item) => setupLabel[item.key]);
   const goLiveDone = GO_LIVE_NEEDS.length - data.goLive.length;
+  const areaMissing = venue.area === null;
 
   return (
-    <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12">
-      <div className="flex min-w-0 flex-col gap-3 lg:max-w-[47.5rem] lg:flex-1">
-        <StageCard
-          {...card(0)}
-          title="Setup"
-          description="The owner's checklist"
-          summary={`${String(required.done)} of ${String(required.total)} done`}
-        >
-          <Checklist overview={data} />
-        </StageCard>
+    <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
+      <ol className="min-w-0 lg:max-w-[43.75rem] lg:flex-1">
+        <JourneyStep
+          state="done"
+          title="Created"
+          meta={`${dateTime(venue.createdAt)}${venue.owner ? ` by ${venue.owner.name}` : ""}`}
+        />
 
-        <StageCard
-          {...card(1)}
-          title="Review"
-          description={
-            venue.status === "SUBMITTED" && data.submittedAt
-              ? `Sent ${dateTime(data.submittedAt)}`
-              : "Approve it, or send it back with a reason"
-          }
-          summary={
+        <JourneyStep
+          state={state(1)}
+          title={venue.status === "DRAFT" ? "Setup" : "Setup finished"}
+          meta={
             venue.status === "DRAFT"
-              ? data.rejection
-                ? "Sent back"
-                : "Not sent yet"
+              ? `${String(required.done)} of ${String(required.total)} required items done.`
+              : `${String(required.total)} of ${String(required.total)} required items.${
+                  skipped.length > 0 ? ` ${list(skipped)} not added (optional).` : ""
+                }`
+          }
+        >
+          {venue.status === "DRAFT" ? (
+            <>
+              {data.rejection ? (
+                <div className="mb-4 rounded-card border border-border bg-[#fafafa] px-4 py-3">
+                  <p className="text-label font-medium text-ink">
+                    Sent back {dateTime(data.rejection.at)}
+                  </p>
+                  <p className="mt-0.5 text-label text-ink-2">{data.rejection.reason}</p>
+                </div>
+              ) : null}
+              <Checklist overview={data} />
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                aria-expanded={checklistOpen}
+                aria-controls={checklistId}
+                onClick={() => setChecklistOpen((open) => !open)}
+                className="cursor-pointer text-label font-medium text-ink underline underline-offset-2"
+              >
+                {checklistOpen ? "Hide the checklist" : "Show the checklist"}
+              </button>
+              <Reveal id={checklistId} open={checklistOpen}>
+                <div className="pt-2">
+                  <Checklist overview={data} />
+                </div>
+              </Reveal>
+            </>
+          )}
+        </JourneyStep>
+
+        <JourneyStep
+          state={state(2)}
+          title={
+            venue.status === "DRAFT"
+              ? "Review"
               : venue.status === "SUBMITTED"
-                ? data.submittedAt
-                  ? `Sent ${ago(data.submittedAt)}`
-                  : "Waiting"
+                ? "In review"
                 : "Approved"
+          }
+          meta={
+            venue.status === "SUBMITTED"
+              ? data.submittedAt
+                ? `Sent ${dateTime(data.submittedAt)} · ${ago(data.submittedAt)}`
+                : "Waiting for your review."
+              : venue.status === "DRAFT"
+                ? "Approve it, or send it back to the owner with what to change."
+                : "The owner was told."
           }
         >
           {venue.status === "SUBMITTED" ? (
-            <Actions>
-              <AccessAction
-                title="Approve"
-                description={
-                  venue.area === null && venue.requestedArea
-                    ? `Waits for the area the owner asked for (${venue.requestedArea}): add it under Platform and set it first.`
-                    : "Moves it to provisioning, where you complete its listing before it goes live. The owner is told."
-                }
-                action="Approve"
-                primary
-                disabled={venue.area === null}
-                onClick={() => setAction("approve")}
-              />
-              <AccessAction
-                title="Send back"
-                description="Back to a draft, with a reason the owner sees on their checklist."
-                action="Send back"
-                onClick={() => setAction("reject")}
-              />
-            </Actions>
-          ) : venue.status === "DRAFT" && data.rejection ? (
-            <div>
-              <p className="text-label font-medium text-ink">
-                Sent back {dateTime(data.rejection.at)}
+            <div className="rounded-card border border-border p-5">
+              <p className="text-body text-ink-2">
+                {areaMissing && venue.requestedArea
+                  ? `Approving waits for the area the owner asked for (${venue.requestedArea}): add it under Platform and set it first. You can still send it back.`
+                  : "Approve it to start provisioning, or send it back to the owner with what to change."}
               </p>
-              <p className="mt-0.5 text-label text-ink-2">{data.rejection.reason}</p>
+              <div className="mt-4 flex gap-2">
+                <Button size="small" disabled={areaMissing} onClick={() => setAction("approve")}>
+                  Approve
+                </Button>
+                <Button variant="secondary" size="small" onClick={() => setAction("reject")}>
+                  Send back
+                </Button>
+              </div>
             </div>
-          ) : (
-            <p className="text-label text-ink-2">
-              {venue.status === "DRAFT"
-                ? "The owner sends it for review once the required items are done."
-                : "Approved: it's being provisioned. The owner was told."}
-            </p>
-          )}
-        </StageCard>
+          ) : null}
+        </JourneyStep>
 
-        <StageCard
-          {...card(2)}
-          title="Going live"
-          description="English and Arabic listing, an open ground, the tax number"
-          summary={
+        <JourneyStep
+          state={state(3)}
+          title="Provisioning"
+          meta={
             venue.status === "PROVISIONING"
-              ? `${String(goLiveDone)} of ${String(GO_LIVE_NEEDS.length)} done`
-              : "After review"
+              ? `${String(goLiveDone)} of ${String(GO_LIVE_NEEDS.length)} done. Complete its listing, then take it live.`
+              : "You complete its listing: English and Arabic, an open ground, the tax number check."
           }
         >
-          <GoingLive
-            overview={data}
-            provisioning={venue.status === "PROVISIONING"}
-            onCheckTax={() => setAction("tax")}
-            onGoLive={() => setAction("go-live")}
-          />
-        </StageCard>
-      </div>
+          {venue.status === "PROVISIONING" ? (
+            <div className="rounded-card border border-border p-5">
+              <GoingLive
+                overview={data}
+                onCheckTax={() => setAction("tax")}
+                onGoLive={() => setAction("go-live")}
+              />
+            </div>
+          ) : null}
+        </JourneyStep>
+
+        <JourneyStep
+          state="later"
+          title="Live"
+          meta="Players can find and book it. Pause and resume it from Settings."
+          last
+        />
+      </ol>
 
       <Facts venueId={venueId} venue={venue} />
 
@@ -248,30 +270,17 @@ function Checklist({ overview }: { overview: VenueOverview }) {
   );
 }
 
-// What going live needs, with the tax number's check. Before it's approved, only what will be
-// asked, greyed, with nothing to press yet.
+// What going live needs while it's provisioning, with the tax number's check and Go live.
 function GoingLive({
   overview,
-  provisioning,
   onCheckTax,
   onGoLive,
 }: {
   overview: VenueOverview;
-  provisioning: boolean;
   onCheckTax: () => void;
   onGoLive: () => void;
 }) {
   const { goLive, taxNumber } = overview;
-  if (!provisioning) {
-    return (
-      <div>
-        {GO_LIVE_NEEDS.map((need) => (
-          <DetailRow key={need} label={goLiveLabel[need]} value={<Muted>After review</Muted>} />
-        ))}
-        <DetailRow label="Tax number check" value={<Muted>After review</Muted>} />
-      </div>
-    );
-  }
   return (
     <>
       <div>
@@ -328,7 +337,7 @@ function GoingLive({
   );
 }
 
-// Who runs it and where it is, beside the stages: what a reviewer checks the application against.
+// Who runs it and where it is, beside the journey: what a reviewer checks the application against.
 function Facts({ venueId, venue }: { venueId: string; venue: AdminVenue }) {
   const rows: [string, ReactNode][] = [
     [
@@ -442,4 +451,11 @@ function Loading() {
       ))}
     </div>
   );
+}
+
+// "Layout", "Layout and Amenities", "Layout, Photos and Amenities".
+function list(names: string[]) {
+  return names.length < 2
+    ? names.join("")
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1) ?? ""}`;
 }
