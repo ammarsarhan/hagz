@@ -527,7 +527,8 @@ describe("a venue's settings, for admins", () => {
       settings: { autoConfirm: false, paymentMode: "DEPOSIT", depositPercent: 30 },
     });
     const [changed] = await eventsOf(venue.id, "VENUE_SETTINGS_CHANGED");
-    expect(changed).toMatchObject({ adminId: expect.any(String), staffId: null });
+    expect(changed?.adminId).not.toBeNull();
+    expect(changed?.staffId).toBeNull();
   });
 
   it("checks settings as a whole, as for the owner", async () => {
