@@ -245,8 +245,8 @@ export function AccessAction({
   return (
     <div className="flex items-center justify-between gap-12">
       <div className="min-w-0">
-        {/* Without a description the title is the whole row, so it's a size up (16). */}
-        <p className={`text-ink ${description ? "text-label" : "text-subtitle"}`}>{title}</p>
+        {/* The step the page is there for reads a step up: 15 and medium. */}
+        <p className={`text-ink ${primary ? "text-body font-medium" : "text-label"}`}>{title}</p>
         {description ? <p className="mt-0.5 text-caption text-ink-2">{description}</p> : null}
       </div>
       <Button

@@ -333,6 +333,7 @@ function GoLiveActions({
       )}
       <AccessAction
         title="Launch the venue"
+        description="Make the venue go live on the marketplace."
         action="Go live"
         primary
         disabled={goLive.length > 0}
