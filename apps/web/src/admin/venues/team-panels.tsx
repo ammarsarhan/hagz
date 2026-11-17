@@ -23,10 +23,10 @@ export function MemberPanel({ member, onClose }: { member: VenueMember; onClose:
       onExited={onClose}
       title={member.name}
       description={member.phone ?? "No phone number"}
+      // Their initials, as on the Account page: staff accounts have no photo yet.
+      media={<Avatar name={member.name} size="large" />}
     >
       <div className="flex flex-col gap-6">
-        {/* Their initials, as on the Account page: staff accounts have no photo yet. */}
-        <Avatar name={member.name} size="large" />
         <PanelSection title="Member">
           <div>
             <DetailRow label="Role" value={owner ? <Tag>Owner</Tag> : "Member"} />
