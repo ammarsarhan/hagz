@@ -19,7 +19,7 @@ export function OverlayHeader({
   // Left out for a panel without one: only × stays, at the far end.
   title?: ReactNode;
   description?: ReactNode;
-  // A step above the content rather than a heading over it (17/24 title, 14 grey line): for a
+  // A step above the content rather than a heading over it (18/26 title, 14 grey line): for a
   // person's side panel, whose rows are 14 under 15 section headings.
   compact?: boolean;
   onClose: () => void;
@@ -43,7 +43,7 @@ export function OverlayHeader({
           {title ? (
             <h2
               className={`flex items-center gap-2.5 font-semibold text-ink ${
-                compact ? "text-[1.0625rem] leading-6" : "text-[1.25rem] leading-[1.625rem]"
+                compact ? "text-[1.125rem] leading-[1.625rem]" : "text-[1.25rem] leading-[1.625rem]"
               }`}
             >
               {title}
