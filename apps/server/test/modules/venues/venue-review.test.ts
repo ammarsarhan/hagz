@@ -141,6 +141,11 @@ const aReadyDraft = async () => {
   return { ...draft, ground };
 };
 
+// Live without going through provisioning, for tests about what a running venue can do (inviting
+// staff): going live itself is tested under "going live".
+const markLive = (venueId: string) =>
+  prisma.venue.update({ where: { id: venueId }, data: { status: "LIVE" } });
+
 const statusOf = async (venueId: string) =>
   (await prisma.venue.findUniqueOrThrow({ where: { id: venueId } })).status;
 
@@ -327,7 +332,7 @@ describe("reviewing", () => {
     expect((await admin("POST", `/venues/${venueId}/reject`, { reason: "No." })).status).toBe(400);
   });
 
-  it("approves a venue into provisioning, which opens invitations but keeps the listing locked", async () => {
+  it("approves a venue into provisioning, which keeps the listing and invitations locked", async () => {
     const { owner, venueId, path, ground } = await aReadyDraft();
     await submit(owner.id, path);
     expect((await admin("POST", `/venues/${venueId}/approve`)).status).toBe(204);
@@ -346,8 +351,9 @@ describe("reviewing", () => {
       basePrice: 65000,
     });
     expect(operations.status).toBe(200);
+    // Staff join once it's live.
     const invite = await staff(owner.id, "POST", `${path}/invitations`, { phone: "+201005550000" });
-    expect(invite.status).toBe(201);
+    expect(invite.status).toBe(409);
   });
 
   it("only acts on venues in the right state", async () => {
@@ -555,6 +561,7 @@ describe("a venue's team", () => {
     const { owner, venueId, path } = await aReadyDraft();
     await submit(owner.id, path);
     await admin("POST", `/venues/${venueId}/approve`);
+    await markLive(venueId);
     const invite = await staff(owner.id, "POST", `${path}/invitations`, { phone: "+201005550000" });
     expect(invite.status).toBe(201);
 
@@ -622,6 +629,7 @@ describe("admin support on a venue's team", () => {
 
   it("revokes an open invitation", async () => {
     const { owner, venueId, path } = await aTeam();
+    await markLive(venueId);
     await staff(owner.id, "POST", `${path}/invitations`, { phone: "+201005550000" });
     const [invitation] = list(StaffInvitation).parse(
       await (await admin("GET", `/venues/${venueId}/invitations`)).json(),

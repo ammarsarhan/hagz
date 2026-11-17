@@ -207,7 +207,10 @@ const unavailableHere = () =>
     detail: "Invitations can't be sent from this environment yet.",
   });
 
-const INVITING: VenueStatus[] = ["PROVISIONING", "LIVE", "MAINTENANCE"];
+// Staff join once the venue runs: live, or paused for maintenance (user, 2026-11-18). Before that
+// there are no bookings for them to work on, and a running venue never goes back to setup, so it
+// never loses the ability.
+const INVITING: VenueStatus[] = ["LIVE", "MAINTENANCE"];
 
 // Everything an invitation is except the WhatsApp message: also used by the dev seed script, which
 // prints the code instead of sending it.
@@ -234,10 +237,7 @@ export const createInvitation = async (
           select: { status: true },
         });
         if (!INVITING.includes(venue.status)) {
-          throw venueStatusConflict(
-            venue.status,
-            "Staff can be invited once the venue is approved.",
-          );
+          throw venueStatusConflict(venue.status, "Staff can be invited once the venue is live.");
         }
 
         const settings = await tx.venueSettings.findUnique({
