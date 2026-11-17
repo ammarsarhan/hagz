@@ -252,6 +252,7 @@ const ar: ArabicTranslations = {
         compactProgress: "تم {{done}}/{{total}} من البنود",
         nextUp: "التالي: {{item}}",
         allDone: "اكتملت كل البنود المطلوبة.",
+        actionRequired: "مطلوب إجراء",
         required: "مطلوب",
         optional: "اختياري",
         send: "أرسل للمراجعة",

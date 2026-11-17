@@ -229,6 +229,8 @@ const en = {
         compactProgress: "{{done}}/{{total}} items done",
         nextUp: "Next up: {{item}}",
         allDone: "Everything required is done.",
+        // Sent back by Hagz with a reason: what to fix comes before the count until it's sent again.
+        actionRequired: "Action required",
         required: "Required",
         optional: "Optional",
         send: "Send for review",
