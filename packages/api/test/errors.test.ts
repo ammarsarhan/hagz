@@ -39,6 +39,11 @@ describe("shortErrorMessage", () => {
     expect(shortErrorMessage(problem("CHALLENGE_EXPIRED"), "ar")).toBe("انتهت صلاحية التحقق");
   });
 
+  it("says a refused save was the details, rather than something went wrong", () => {
+    expect(shortErrorMessage(problem("VALIDATION_FAILED"), "en")).toBe("Check the details");
+    expect(shortErrorMessage(problem("INVALID_GROUND"), "ar")).toBe("راجع تفاصيل الملعب");
+  });
+
   it("asks to wait when rate limited, rather than saying something went wrong", () => {
     expect(shortErrorMessage(problem("RATE_LIMITED"), "en")).toBe("Wait a moment");
   });

@@ -356,6 +356,10 @@ const short = {
   },
   STORAGE_UNAVAILABLE: { en: "Couldn't upload the photo", ar: "تعذّر رفع الصورة" },
   UPLOAD_NOT_FOUND: { en: "Upload didn't finish", ar: "لم يكتمل الرفع" },
+  // A save the API refused as invalid. Better under the field it's about, where a screen has one;
+  // where it doesn't (a ground's last step sends all four), the HUD still says it was the details.
+  VALIDATION_FAILED: { en: "Check the details", ar: "راجع البيانات" },
+  INVALID_GROUND: { en: "Check the ground's details", ar: "راجع تفاصيل الملعب" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
 } as const satisfies Partial<Record<ProblemCode, Record<Language, string>>>;
 
