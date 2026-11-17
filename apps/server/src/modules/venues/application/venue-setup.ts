@@ -16,7 +16,7 @@ import { rejectionOf, submittedAtOf } from "./review";
 
 // A venue someone owns that isn't live yet. One at a time per owner, so drafts can't pile up; any
 // number of live venues is fine.
-const UNFINISHED: VenueStatus[] = ["DRAFT", "SUBMITTED", "PROVISIONING"];
+export const UNFINISHED: VenueStatus[] = ["DRAFT", "SUBMITTED", "PROVISIONING"];
 
 export const unfinishedVenueExists = (venue: { id: string; status: VenueStatus }) =>
   new AppError({

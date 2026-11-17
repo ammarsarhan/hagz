@@ -8,6 +8,10 @@ export interface NotificationData {
   STAFF_INVITED: { invitationId: string };
   // An invitation was accepted: tells the venue's staff managers who joined.
   STAFF_JOINED: { staffId: string };
+  // An admin took them off a venue's staff; the venue leaves their list.
+  STAFF_REMOVED: Record<string, never>;
+  // An admin made another member the owner. To both: the new owner, and the old one (now a member).
+  OWNERSHIP_TRANSFERRED: { fromStaffId: string; toStaffId: string };
   // The venue's review (docs/onboarding.md, step 3). To admins: an owner sent a venue for review.
   VENUE_SUBMITTED: { submittedBy: string };
   // To the owner: approved (now provisioning), sent back with a reason, or live.

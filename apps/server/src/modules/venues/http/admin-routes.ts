@@ -17,6 +17,13 @@ import {
   setVenueArea,
   venueHistory,
 } from "../application/review";
+import {
+  reactivateStaff,
+  removeMember,
+  revokeInvitationAsAdmin,
+  suspendStaff,
+  transferOwnership,
+} from "../application/admin-team";
 import * as route from "./definitions/admin";
 
 // The queue is registered before /admin/venues/{id}, so "review" isn't read as an id.
@@ -71,4 +78,26 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.venueInvitations, async (c) => {
     return c.json({ data: await adminVenueInvitations(c.req.valid("param").id) }, 200);
+  })
+  .openapi(route.removeMember, async (c) => {
+    const { id, staffId } = c.req.valid("param");
+    await removeMember(c.var.admin.adminId, id, staffId, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.revokeInvitation, async (c) => {
+    const { id, invitationId } = c.req.valid("param");
+    await revokeInvitationAsAdmin(c.var.admin.adminId, id, invitationId);
+    return c.body(null, 204);
+  })
+  .openapi(route.transferOwnership, async (c) => {
+    await transferOwnership(c.var.admin.adminId, c.req.valid("param").id, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.suspendStaff, async (c) => {
+    await suspendStaff(c.var.admin.adminId, c.req.valid("param").staffId, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.reactivateStaff, async (c) => {
+    await reactivateStaff(c.var.admin.adminId, c.req.valid("param").staffId);
+    return c.body(null, 204);
   });

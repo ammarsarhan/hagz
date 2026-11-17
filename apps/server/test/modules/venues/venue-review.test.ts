@@ -497,3 +497,144 @@ describe("a venue's team", () => {
     }
   });
 });
+
+describe("admin support on a venue's team", () => {
+  const REASON = { reason: "The owner called support and asked for this." };
+
+  // A venue in provisioning (so it can have invitations) with a second member who manages everything.
+  const aTeam = async () => {
+    const draft = await aReadyDraft();
+    await submit(draft.owner.id, draft.path);
+    await admin("POST", `/venues/${draft.venueId}/approve`);
+    const member = await createStaff({ phone: "+201009998888" });
+    await addMember(draft.venueId, member.id, { permissions: ALL_PERMISSIONS });
+    return { ...draft, member };
+  };
+
+  const membersOf = async (venueId: string) =>
+    list(VenueMember).parse(await (await admin("GET", `/venues/${venueId}/members`)).json()).data;
+
+  it("removes a member, keeps the owner, and records who did it and why", async () => {
+    const { owner, member, venueId, path } = await aTeam();
+
+    const res = await admin("POST", `/venues/${venueId}/members/${member.id}/remove`, REASON);
+    expect(res.status).toBe(204);
+    expect((await membersOf(venueId)).map((m) => m.staffId)).toEqual([owner.id]);
+    // Gone from the venue at once, with the token they still hold.
+    expect((await staff(member.id, "GET", `${path}/members`)).status).toBe(404);
+    expect(
+      await prisma.venueEvent.findFirst({ where: { venueId, type: "STAFF_REMOVED" } }),
+    ).toMatchObject({ adminId, data: { staffId: member.id, reason: REASON.reason } });
+    expect(
+      await prisma.notification.count({ where: { staffId: member.id, type: "STAFF_REMOVED" } }),
+    ).toBe(1);
+
+    const theOwner = await admin("POST", `/venues/${venueId}/members/${owner.id}/remove`, REASON);
+    expect(theOwner.status).toBe(409);
+    expect(await problem(theOwner)).toMatchObject({ code: "OWNER_CANT_BE_REMOVED" });
+    expect(
+      (await admin("POST", `/venues/${venueId}/members/${member.id}/remove`, REASON)).status,
+    ).toBe(404);
+    expect(
+      (await admin("POST", `/venues/${venueId}/members/${owner.id}/remove`, { reason: "no" }))
+        .status,
+    ).toBe(400);
+  });
+
+  it("revokes an open invitation", async () => {
+    const { owner, venueId, path } = await aTeam();
+    await staff(owner.id, "POST", `${path}/invitations`, { phone: "+201005550000" });
+    const [invitation] = list(StaffInvitation).parse(
+      await (await admin("GET", `/venues/${venueId}/invitations`)).json(),
+    ).data;
+
+    const res = await admin("DELETE", `/venues/${venueId}/invitations/${invitation?.id}`);
+    expect(res.status).toBe(204);
+    expect(
+      list(StaffInvitation).parse(
+        await (await admin("GET", `/venues/${venueId}/invitations`)).json(),
+      ).data,
+    ).toEqual([]);
+    expect(
+      await prisma.venueEvent.findFirst({ where: { venueId, type: "STAFF_INVITATION_REVOKED" } }),
+    ).toMatchObject({ adminId, staffId: null });
+    // Already revoked: nothing more to do.
+    expect((await admin("DELETE", `/venues/${venueId}/invitations/${invitation?.id}`)).status).toBe(
+      204,
+    );
+  });
+
+  it("hands the venue to another member, who becomes the owner, and keeps the old one on", async () => {
+    const { owner, member, venueId } = await aTeam();
+
+    const res = await admin("POST", `/venues/${venueId}/owner`, { staffId: member.id, ...REASON });
+    expect(res.status).toBe(204);
+    const members = await membersOf(venueId);
+    expect(members.map((m) => [m.staffId, m.role])).toEqual([
+      [member.id, "OWNER"],
+      [owner.id, "MEMBER"],
+    ]);
+    expect(members[1]?.permissions).toEqual(ALL_PERMISSIONS);
+    expect(
+      await prisma.venueEvent.findFirst({ where: { venueId, type: "OWNERSHIP_TRANSFERRED" } }),
+    ).toMatchObject({ adminId, data: { fromStaffId: owner.id, toStaffId: member.id } });
+    expect(await prisma.notification.count({ where: { type: "OWNERSHIP_TRANSFERRED" } })).toBe(2);
+
+    const again = await admin("POST", `/venues/${venueId}/owner`, {
+      staffId: member.id,
+      ...REASON,
+    });
+    expect(await problem(again)).toMatchObject({ code: "ALREADY_OWNER" });
+    const stranger = await admin("POST", `/venues/${venueId}/owner`, {
+      staffId: randomUUID(),
+      ...REASON,
+    });
+    expect(stranger.status).toBe(404);
+  });
+
+  it("won't give someone a second venue that isn't live yet", async () => {
+    const { member, venueId } = await aTeam();
+    const { locationId } = await prisma.venue.findUniqueOrThrow({ where: { id: venueId } });
+    const own = await staff(member.id, "POST", "/venues", {
+      name: "Their Own Pitch",
+      coordinates: { latitude: 29.96, longitude: 31.25 },
+      locationId,
+    });
+    expect(own.status).toBe(201);
+
+    const res = await admin("POST", `/venues/${venueId}/owner`, { staffId: member.id, ...REASON });
+    expect(res.status).toBe(409);
+    expect(await problem(res)).toMatchObject({ code: "UNFINISHED_VENUE_EXISTS" });
+  });
+
+  it("suspends a staff account everywhere at once, and reactivates it", async () => {
+    const { member, venueId, path } = await aTeam();
+    await prisma.staffSession.create({
+      data: {
+        staffId: member.id,
+        refreshTokenHash: "a-hash",
+        expiresAt: new Date(Date.now() + 86_400_000),
+      },
+    });
+
+    expect((await admin("POST", `/staff/${member.id}/suspend`, REASON)).status).toBe(204);
+    expect((await membersOf(venueId)).find((m) => m.staffId === member.id)?.status).toBe(
+      "SUSPENDED",
+    );
+    expect(
+      await prisma.staffSession.count({ where: { staffId: member.id, revokedAt: null } }),
+    ).toBe(0);
+    const locked = await staff(member.id, "GET", `${path}/members`);
+    expect(await problem(locked)).toMatchObject({ code: "ACCOUNT_SUSPENDED" });
+    // Suspending again records nothing more.
+    await admin("POST", `/staff/${member.id}/suspend`, REASON);
+    expect(await prisma.venueEvent.count({ where: { venueId, type: "STAFF_SUSPENDED" } })).toBe(1);
+
+    expect((await admin("POST", `/staff/${member.id}/reactivate`)).status).toBe(204);
+    expect((await staff(member.id, "GET", `${path}/members`)).status).toBe(200);
+    expect(
+      await prisma.venueEvent.findFirst({ where: { venueId, type: "STAFF_REACTIVATED" } }),
+    ).toMatchObject({ adminId, data: { staffId: member.id } });
+    expect((await admin("POST", `/staff/${randomUUID()}/suspend`, REASON)).status).toBe(404);
+  });
+});

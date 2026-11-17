@@ -16,6 +16,14 @@ export const STAFF_INVITED = "STAFF_INVITED";
 export const STAFF_INVITATION_REVOKED = "STAFF_INVITATION_REVOKED";
 export const STAFF_INVITATION_DECLINED = "STAFF_INVITATION_DECLINED";
 export const STAFF_JOINED = "STAFF_JOINED";
+// Admin support on a venue's team (the admin is the actor, with their reason): a member taken off the
+// staff, and the venue handed to another member. The data names the people involved.
+export const STAFF_REMOVED = "STAFF_REMOVED";
+export const OWNERSHIP_TRANSFERRED = "OWNERSHIP_TRANSFERRED";
+// A staff account suspended or reactivated by an admin. Account-wide, so it's recorded on every venue
+// they're a member of, where each venue's admins look.
+export const STAFF_SUSPENDED = "STAFF_SUSPENDED";
+export const STAFF_REACTIVATED = "STAFF_REACTIVATED";
 
 // The venue's lifecycle (docs/onboarding.md): the owner is the actor when creating it.
 export const VENUE_CREATED = "VENUE_CREATED";

@@ -7,9 +7,12 @@ import {
   list,
   page,
   RejectVenue,
+  RemoveMember,
   ReviewVenue,
   SetVenueArea,
   StaffInvitation,
+  SuspendStaff,
+  TransferOwnership,
   VenueHistoryEvent,
   VenueHistoryQuery,
   VenueMember,
@@ -250,5 +253,109 @@ export const venueInvitations = createRoute({
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+const memberParams = venueParams.extend({ staffId: z.uuid() });
+
+export const removeMember = createRoute({
+  method: "post",
+  path: "/admin/venues/{id}/members/{staffId}/remove",
+  tags,
+  summary: "Take a member off a venue's staff",
+  description:
+    "Support, for when the venue can't (an owner who left, a lost phone). Never the owner: transfer " +
+    "the venue first. Their account and their name on what they did stay; they're told.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: memberParams, body: { required: true, ...json(RemoveMember) } },
+  responses: {
+    204: { description: "Removed" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND or MEMBER_NOT_FOUND"),
+    409: problemResponse("OWNER_CANT_BE_REMOVED: transfer the venue first"),
+  },
+});
+
+export const revokeInvitation = createRoute({
+  method: "delete",
+  path: "/admin/venues/{id}/invitations/{invitationId}",
+  tags,
+  summary: "Revoke a venue's staff invitation",
+  description: "Its code stops working. Revoking one already revoked, declined or expired is fine.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams.extend({ invitationId: z.uuid() }) },
+  responses: {
+    204: { description: "Revoked" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("INVITATION_NOT_FOUND"),
+    409: problemResponse("INVITATION_ALREADY_ACCEPTED: remove the member instead"),
+  },
+});
+
+export const transferOwnership = createRoute({
+  method: "post",
+  path: "/admin/venues/{id}/owner",
+  tags,
+  summary: "Make another member the venue's owner",
+  description:
+    "Only through support, once who they are is checked: ownership controls payouts. The old owner " +
+    "stays on with every permission; both are told. A venue that isn't live yet is the new owner's " +
+    "one unfinished venue.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(TransferOwnership) } },
+  responses: {
+    204: { description: "Transferred" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND or MEMBER_NOT_FOUND"),
+    409: problemResponse(
+      "ALREADY_OWNER, STAFF_NOT_ACTIVE (with `staffStatus`), or UNFINISHED_VENUE_EXISTS (they own " +
+        "another venue that isn't live; with `venueId` and `venueStatus`)",
+    ),
+  },
+});
+
+const staffParams = z.object({ staffId: z.uuid() });
+
+export const suspendStaff = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/suspend",
+  tags,
+  summary: "Suspend a staff account",
+  description:
+    "Signs them out everywhere and keeps them out of every venue until reactivated. Recorded on " +
+    "each venue they're on. Suspending again changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: staffParams, body: { required: true, ...json(SuspendStaff) } },
+  responses: {
+    204: { description: "Suspended" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("ACCOUNT_BANNED: closed for good"),
+  },
+});
+
+export const reactivateStaff = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/reactivate",
+  tags,
+  summary: "Reactivate a suspended staff account",
+  description: "They can sign in again. Reactivating an active account changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: staffParams },
+  responses: {
+    204: { description: "Reactivated" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("ACCOUNT_BANNED: closed for good"),
   },
 });
