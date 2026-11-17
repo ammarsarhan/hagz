@@ -26,6 +26,7 @@ import {
   type VenueOverview,
 } from "@/admin/venues/overview";
 import { venueHref } from "@/admin/venues/sections";
+import { TaxCheckDialog } from "@/admin/venues/tax-check-dialog";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
 // A venue's Application tab, shown only until it's live (Figma A5, option 2, with option 4's facts):
@@ -380,57 +381,6 @@ function Facts({ venueId, venue }: { venueId: string; venue: AdminVenue }) {
         ))}
       </dl>
     </aside>
-  );
-}
-
-// Recording whether the tax number checks out: Valid, or Not valid with a note saying why.
-function TaxCheckDialog({
-  venueId,
-  taxNumber,
-  onClose,
-  onDone,
-}: {
-  venueId: string;
-  taxNumber: string;
-  onClose: () => void;
-  onDone: () => void;
-}) {
-  const [note, setNote] = useState("");
-  const { busy, run } = useSubmit(onDone, onClose);
-  const check = (valid: boolean) =>
-    void run(() =>
-      send(
-        api.POST("/v1/admin/venues/{id}/tax-number-check", {
-          params: { path: { id: venueId } },
-          body: { valid, note: note.trim() || null },
-        }),
-      ),
-    );
-  return (
-    <Modal
-      onClose={onClose}
-      title={`Check ${taxNumber}`}
-      description="Record whether the number is real and belongs to the venue's business."
-      footer={
-        <>
-          <Button variant="secondary" size="small" disabled={busy} onClick={() => check(false)}>
-            Not valid
-          </Button>
-          <Button size="small" loading={busy} onClick={() => check(true)}>
-            Valid
-          </Button>
-        </>
-      }
-    >
-      <TextAreaField
-        label="Note"
-        hint="Optional. Kept with the check on the venue's History."
-        value={note}
-        maxLength={300}
-        placeholder="Not found in the tax authority's register."
-        onChange={(event) => setNote(event.target.value)}
-      />
-    </Modal>
   );
 }
 
