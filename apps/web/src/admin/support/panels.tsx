@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { AccessAction } from "@/admin/admins/panels";
-import { Avatar } from "@/admin/avatar";
 import { Tag } from "@/admin/data-table";
 import { ConfirmDialog } from "@/admin/dialog";
 import { send } from "@/admin/errors";
@@ -22,10 +21,13 @@ function Status({ status }: { status: AccountStatus }) {
   return <Tag tone={status === "ACTIVE" ? "on" : "neutral"}>{statusLabel[status]}</Tag>;
 }
 
-// What every account has: its state, when it joined and last signed in, and its id to look it up.
+// What every account has: who it is, its state, when it joined and last signed in, and its id to
+// look it up.
 function AccountRows({ account }: { account: StaffAccount | CustomerAccount }) {
   return (
     <div>
+      <DetailRow label="Name" value={account.name} />
+      <DetailRow label="Phone" value={account.phone ?? <span className="text-ink-3">None</span>} />
       <DetailRow label="Status" value={<Status status={account.status} />} />
       <DetailRow label="Joined" value={dateTime(account.createdAt)} />
       <DetailRow
@@ -65,9 +67,7 @@ export function StaffAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      title={staff.name}
-      description={staff.phone ?? "No phone number"}
-      media={<Avatar name={staff.name} size="large" />}
+      title="Staff account"
     >
       <div className="flex flex-col gap-6">
         <PanelSection title="Account">
@@ -207,9 +207,7 @@ export function CustomerAccountPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      title={customer.name}
-      description={customer.phone ?? "No phone number"}
-      media={<Avatar name={customer.name} size="large" />}
+      title="Customer"
     >
       <PanelSection title="Account">
         <AccountRows account={customer} />

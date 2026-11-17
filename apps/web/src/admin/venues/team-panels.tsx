@@ -5,7 +5,6 @@ import { useState } from "react";
 import { api } from "@/admin/api";
 import { expiresIn } from "@/admin/admins/model";
 import { AccessAction } from "@/admin/admins/panels";
-import { Avatar } from "@/admin/avatar";
 import { Button } from "@/admin/button";
 import { ConfirmDialog } from "@/admin/dialog";
 import { Tag } from "@/admin/data-table";
@@ -43,18 +42,15 @@ export function MemberPanel({
   const suspended = member.status === "SUSPENDED";
   const banned = member.status === "BANNED";
   return (
-    <SidePanel
-      open={open}
-      onRequestClose={() => setOpen(false)}
-      onExited={onClose}
-      title={member.name}
-      description={member.phone ?? "No phone number"}
-      // Their initials, as on the Account page: staff accounts have no photo yet.
-      media={<Avatar name={member.name} size="large" />}
-    >
+    <SidePanel open={open} onRequestClose={() => setOpen(false)} onExited={onClose} title="Member">
       <div className="flex flex-col gap-6">
         <PanelSection title="Member">
           <div>
+            <DetailRow label="Name" value={member.name} />
+            <DetailRow
+              label="Phone"
+              value={member.phone ?? <span className="text-ink-3">None</span>}
+            />
             <DetailRow label="Role" value={owner ? <Tag>Owner</Tag> : "Member"} />
             <DetailRow
               label="Account"

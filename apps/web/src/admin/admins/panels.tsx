@@ -48,11 +48,11 @@ const moment = (iso: string) =>
     minute: "2-digit",
   });
 
-// An admin in full, with their access looked after here. The header is their name over their
-// email; the body is what the API knows about them (how they joined, the authenticator, where
-// they're signed in), then Access: reset their password (an emailed link) or their authenticator,
-// each confirmed first in a modal over the panel. Neither is offered on your own account. The body
-// scrolls when it's taller than the window.
+// An admin in full, with their access looked after here. The panel is titled "Admin"; who they are
+// (name, email) leads the Account section, then what the API knows about them (how they joined, the
+// authenticator, where they're signed in), then Access: reset their password (an emailed link) or
+// their authenticator, each confirmed first in a modal over the panel. Neither is offered on your
+// own account. The body scrolls when it's taller than the window.
 export function AdminPanel({
   admin,
   self,
@@ -76,17 +76,13 @@ export function AdminPanel({
   };
 
   return (
-    <SidePanel
-      open={open}
-      onRequestClose={() => setOpen(false)}
-      onExited={onClose}
-      title={admin.name}
-      description={admin.email}
-    >
+    <SidePanel open={open} onRequestClose={() => setOpen(false)} onExited={onClose} title="Admin">
       {details ? (
         <div className="flex flex-col gap-6">
           <PanelSection title="Account">
             <div>
+              <DetailRow label="Name" value={admin.name} />
+              <DetailRow label="Email" value={admin.email} />
               <DetailRow label="Status" value={<AdminStatus status={details.status} />} />
               <DetailRow label="Admin since" value={day(details.createdAt)} />
               <DetailRow
