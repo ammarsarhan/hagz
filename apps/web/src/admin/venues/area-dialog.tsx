@@ -47,10 +47,10 @@ function Distance({ node }: { node: LocationNode }) {
   if (childCount > 0 || !context?.pin) return null;
   if (!center) return <span className="text-ink-3">No centre</span>;
   const metres = metresBetween(context.pin, center);
-  // Bold and black within the API's limit, where saving it would be accepted; grey beyond.
+  // Medium and black within the API's limit, where saving it would be accepted; grey beyond.
   return (
     <span
-      className={`tabular-nums ${metres <= PIN_NEAR_AREA_METRES ? "font-semibold text-ink" : "text-ink-2"}`}
+      className={`tabular-nums ${metres <= PIN_NEAR_AREA_METRES ? "font-medium text-ink" : "text-ink-2"}`}
     >
       {formatDistance(metres)}
     </span>
