@@ -120,3 +120,32 @@ export const dateTime = (iso: string) =>
     hour: "2-digit",
     minute: "2-digit",
   });
+
+// A row of the History table: one event, or a run of the same event back to back (a ground's hours
+// saved five times in a row), which opens like a location's sublocations to show each one.
+export type HistoryRow =
+  | { kind: "event"; id: string; event: VenueHistoryEvent }
+  | { kind: "run"; id: string; type: string; events: VenueHistoryEvent[]; children: HistoryRow[] };
+
+// Only neighbours are joined, so the table still reads in order: two "Ground changed" with a photo
+// between them stay apart. A run is named after its first (newest) event, so it keeps its id, and
+// stays open, when Show more adds older events to it.
+export const historyRows = (events: VenueHistoryEvent[]): HistoryRow[] => {
+  const runs: VenueHistoryEvent[][] = [];
+  for (const event of events) {
+    const last = runs.at(-1);
+    if (last?.[0]?.type === event.type) last.push(event);
+    else runs.push([event]);
+  }
+  return runs.map((run) => {
+    const [first] = run as [VenueHistoryEvent, ...VenueHistoryEvent[]];
+    if (run.length === 1) return { kind: "event", id: first.id, event: first };
+    return {
+      kind: "run",
+      id: `run:${first.id}`,
+      type: first.type,
+      events: run,
+      children: run.map((event) => ({ kind: "event", id: event.id, event })),
+    };
+  });
+};
