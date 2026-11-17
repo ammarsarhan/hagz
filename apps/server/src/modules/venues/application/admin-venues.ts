@@ -140,18 +140,27 @@ export const adminVenuePhotos = async (id: string) => {
 const written = (place: { translations: { language: string }[] }, language: "EN" | "AR") =>
   place.translations.some((t) => t.language === language);
 
-// A venue's Location section: the pin, and the area it's listed under ("Nasr City, Cairo", in both
+// A venue's Location section: its marketplace, the pin, and the area it's listed under ("Nasr City, Cairo", in both
 // languages) or the one its owner asked for.
 export const adminVenueLocation = async (id: string): Promise<AdminVenueLocation> => {
   const venue = await prisma.venue.findUnique({
     where: { id },
     select: {
       requestedArea: true,
+      marketplace: { select: { id: true, code: true, ...place } },
       location: { select: { id: true, ...place, parent: { select: place } } },
     },
   });
   if (!venue) throw venueNotFound();
+  const { marketplace } = venue;
+  const exact = (language: "EN" | "AR") =>
+    marketplace.translations.find((t) => t.language === language)?.name ?? null;
   return {
+    marketplace: {
+      id: marketplace.id,
+      code: marketplace.code,
+      names: { en: exact("EN"), ar: exact("AR") },
+    },
     coordinates: await pinOf(prisma, id),
     area: venue.location && {
       id: venue.location.id,

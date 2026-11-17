@@ -219,10 +219,18 @@ export const StaffVenueDetail = z
   })
   .meta({ id: "StaffVenueDetail" });
 
-// Where a venue is, for the Location section of its admin Details: the owner's pin, and the area
-// players find it under or the one the owner asked for.
+// Where a venue is, for the Location section of its admin Details: its marketplace, the owner's pin,
+// and the area players find it under or the one the owner asked for.
 export const AdminVenueLocation = z
   .object({
+    marketplace: z.object({
+      id: z.uuid(),
+      code: z.string().meta({ example: "EG" }),
+      names: z.object({
+        en: z.string().nullable().meta({ example: "Egypt" }),
+        ar: z.string().nullable(),
+      }),
+    }),
     coordinates: Coordinates.nullable().meta({ description: "Null until the owner drops a pin." }),
     area: z
       .object({

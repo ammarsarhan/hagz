@@ -316,6 +316,7 @@ describe("GET /admin/venues/{id}/location", () => {
     const res = await get(`/${venue.id}/location`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
+      marketplace: { id: marketplaceId, code: "EG", names: { en: "Country EG", ar: null } },
       coordinates: { latitude: 30.06, longitude: 31.33 },
       area: { id: locationId, names: { en: "Nasr City, Cairo", ar: null } },
       requestedArea: null,
@@ -334,6 +335,7 @@ describe("GET /admin/venues/{id}/location", () => {
     const res = await get(`/${venue.id}/location`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
+      marketplace: { id: marketplaceId, code: "EG", names: { en: "Country EG", ar: null } },
       coordinates: null,
       area: null,
       requestedArea: "Sheikh Zayed, Giza",
