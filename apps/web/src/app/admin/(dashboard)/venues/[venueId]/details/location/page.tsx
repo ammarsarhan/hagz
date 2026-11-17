@@ -3,9 +3,10 @@
 import { IconExternalLink } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { ButtonLink } from "@/admin/button";
 import { Skeleton } from "@/admin/data-table";
 import { formatCenter, mapsLink } from "@/admin/platform/geo";
-import { AreaPanel } from "@/admin/venues/area-panel";
+import { AreaDialog } from "@/admin/venues/area-dialog";
 import { useVenueLocation } from "@/admin/venues/location";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
@@ -61,23 +62,24 @@ export default function VenueLocation() {
           </Block>
 
           <Block title="Pin">
-            <Row label="Coordinates">
+            <Row label="Coordinates" center={Boolean(data?.coordinates)}>
               {!data ? (
                 <Skeleton className="h-4 w-40" />
               ) : data.coordinates ? (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <div className="flex items-center justify-between gap-6">
                   <span className="text-body text-ink tabular-nums">
                     {formatCenter(data.coordinates)}
                   </span>
-                  <a
+                  <ButtonLink
                     href={mapsLink(data.coordinates)}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-label font-medium text-ink-2 hover:text-ink hover:underline"
+                    variant="secondary"
+                    size="small"
                   >
                     Open in Google Maps
-                    <IconExternalLink size={14} className="size-3.5" stroke={2} aria-hidden />
-                  </a>
+                    <IconExternalLink size={16} className="size-4" stroke={2} aria-hidden />
+                  </ButtonLink>
                 </div>
               ) : (
                 <span className="text-body text-ink-3">The owner hasn’t dropped one yet.</span>
@@ -88,7 +90,7 @@ export default function VenueLocation() {
       )}
 
       {editing && data && venue ? (
-        <AreaPanel
+        <AreaDialog
           venueId={venueId}
           marketplaceId={venue.marketplace.id}
           location={data}
@@ -124,9 +126,22 @@ function Block({
   );
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+function Row({
+  label,
+  center = false,
+  children,
+}: {
+  label: string;
+  // Centres the label on a row with a button in it; text rows keep it level with their first line.
+  center?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-6 border-b border-border py-4">
+    <div
+      className={`grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-6 border-b border-border ${
+        center ? "items-center py-3" : "py-4"
+      }`}
+    >
       <span className="text-label text-ink-2">{label}</span>
       <div>{children}</div>
     </div>
