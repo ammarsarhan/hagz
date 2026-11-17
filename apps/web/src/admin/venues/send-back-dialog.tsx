@@ -1,7 +1,6 @@
 "use client";
 
 import type { SetupItemKey } from "@hagz/contracts";
-import { IconCheck } from "@tabler/icons-react";
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
@@ -93,15 +92,12 @@ export function SendBackDialog({
                   type="button"
                   aria-pressed={on}
                   onClick={() => toggle(key)}
-                  className={`flex h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-label font-medium transition-colors ${
+                  className={`flex h-9 cursor-pointer items-center rounded-full border px-3.5 text-label font-medium transition-colors ${
                     on
                       ? "border-ink bg-chip text-ink"
                       : "border-border bg-white text-ink-2 hover:bg-[#fafafa] hover:text-ink"
                   }`}
                 >
-                  {on ? (
-                    <IconCheck size={14} className="size-3.5" stroke={2.25} aria-hidden />
-                  ) : null}
                   {setupLabel[key]}
                 </button>
               );
