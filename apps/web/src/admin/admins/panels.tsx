@@ -228,11 +228,14 @@ export function AccessAction({
   title,
   description,
   action,
+  disabled = false,
   onClick,
 }: {
   title: string;
   description: string;
   action: string;
+  // Not yet possible; the description says why.
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -241,7 +244,7 @@ export function AccessAction({
         <p className="text-label text-ink">{title}</p>
         <p className="mt-0.5 text-caption text-ink-2">{description}</p>
       </div>
-      <Button variant="secondary" size="small" onClick={onClick}>
+      <Button variant="secondary" size="small" onClick={onClick} disabled={disabled}>
         {action}
       </Button>
     </div>

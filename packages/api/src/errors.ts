@@ -296,6 +296,10 @@ const messages = {
     en: "Finish the required setup steps before sending your venue for review.",
     ar: "أكمل خطوات الإعداد المطلوبة قبل إرسال المكان للمراجعة.",
   },
+  AREA_NOT_SET: {
+    en: "Set the venue's area before approving it.",
+    ar: "حدّد منطقة المكان قبل الموافقة عليه.",
+  },
   GO_LIVE_BLOCKED: {
     en: "The venue needs its listing in Arabic and English and an open ground to go live.",
     ar: "يحتاج المكان إلى بياناته بالعربية والإنجليزية وملعب مفتوح ليبدأ العمل.",
