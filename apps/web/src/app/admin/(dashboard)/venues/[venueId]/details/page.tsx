@@ -31,7 +31,7 @@ export default function VenueText() {
       <h2 className="text-heading font-semibold text-ink">Name and description</h2>
       <p className="mt-1 text-body text-ink-2">
         {venue && !editable
-          ? "The owner’s words. Hagz can edit them once the venue is approved."
+          ? "The owner’s words. They can be edited once an admin moves the venue to provisioning."
           : "What players read, in both languages. Arabic is shown right to left, as players see it."}
       </p>
 
