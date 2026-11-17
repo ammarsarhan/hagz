@@ -85,9 +85,10 @@ export function useSaveSettings(venueId: string) {
         return false;
       }
       queryClient.setQueryData(key, result.data);
-      // The draft card's "Last updated" follows. Not the checklist: no setting here finishes an item
-      // (the policy, which does, is saved by the cancellation flow).
-      void afterVenueWrite(queryClient, venueId, { checklist: false });
+      // The draft card's "Last updated" follows, and the checklist: no setting here finishes an item
+      // (the policy, which does, is saved by the cancellation flow), but any of them counts as
+      // changing Settings when a review sent the venue back asking to.
+      void afterVenueWrite(queryClient, venueId);
       return true;
     },
     [hud, queryClient, venueId],
