@@ -57,7 +57,13 @@ export default function VenueText() {
                 key={field}
                 className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-6 border-b border-border py-4"
               >
-                <span className="text-label text-ink-2">{fieldLabel}</span>
+                <span className="text-label text-ink-2">
+                  {fieldLabel}
+                  {/* Not written yet: going live needs every field in both languages. */}
+                  {data && !textOf(data, language, field) ? (
+                    <span className="text-ink-3"> (required)</span>
+                  ) : null}
+                </span>
                 <Value translations={data} language={language} field={field} />
               </div>
             ))}
@@ -81,6 +87,12 @@ export default function VenueText() {
   );
 }
 
+type Field = (typeof FIELDS)[number]["field"];
+
+// A field's text in a language, or undefined when nobody has written it.
+const textOf = (translations: VenueTranslation[], language: "EN" | "AR", field: Field) =>
+  translations.find((t) => t.language === language)?.[field]?.trim() || undefined;
+
 function Value({
   translations,
   language,
@@ -88,11 +100,11 @@ function Value({
 }: {
   translations?: VenueTranslation[];
   language: "EN" | "AR";
-  field: "name" | "description" | "address";
+  field: Field;
 }) {
   const arabic = language === "AR";
   if (!translations) return <Skeleton className={`h-4 w-3/4 ${arabic ? "ml-auto" : ""}`} />;
-  const text = translations.find((t) => t.language === language)?.[field]?.trim();
+  const text = textOf(translations, language, field);
   return text ? (
     <p
       dir={arabic ? "rtl" : undefined}
