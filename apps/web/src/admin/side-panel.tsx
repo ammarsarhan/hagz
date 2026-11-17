@@ -19,6 +19,7 @@ export function SidePanel({
   onExited,
   title,
   description,
+  media,
   footer,
   children,
 }: {
@@ -27,6 +28,8 @@ export function SidePanel({
   onExited: () => void;
   title: ReactNode;
   description?: ReactNode;
+  // Above the title, e.g. a person's avatar.
+  media?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 }) {
@@ -64,7 +67,12 @@ export function SidePanel({
       className="side-panel fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-[32rem] max-w-full bg-white p-0 text-ink shadow-[-12px_0_40px_rgba(0,0,0,0.12)] backdrop:bg-scrim"
     >
       <div className="flex h-full flex-col">
-        <OverlayHeader title={title} description={description} onClose={onRequestClose} />
+        <OverlayHeader
+          title={title}
+          description={description}
+          media={media}
+          onClose={onRequestClose}
+        />
         <OverlayBody>{children}</OverlayBody>
         {footer ? <OverlayFooter>{footer}</OverlayFooter> : null}
       </div>
