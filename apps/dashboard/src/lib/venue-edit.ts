@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import type { components } from "@hagz/api";
@@ -15,6 +15,10 @@ export type VenueDetail = components["schemas"]["StaffVenueDetail"];
 //
 // A failure stops there and is handed back, for the screen to put under its field when it's the
 // person's to fix; anything else goes to the HUD.
+//
+// `refresh`, for a save that changes another read: `also` is refetched with the checklist, `drop`
+// is thrown away, for a read whose cached answer would now be wrong to start from (it loads afresh
+// next time it's shown).
 export function useSaveVenue(venueId: string) {
   const queryClient = useQueryClient();
   const hud = useHud();
@@ -24,6 +28,7 @@ export function useSaveVenue(venueId: string) {
     async (
       requests: (() => Promise<Result<VenueDetail>>)[],
       onError?: (error: unknown) => boolean,
+      refresh: { also?: QueryKey[]; drop?: QueryKey[] } = {},
     ) => {
       setSaving(true);
       let saved: VenueDetail | undefined;
@@ -37,7 +42,9 @@ export function useSaveVenue(venueId: string) {
         saved = result.data;
       }
       if (saved) queryClient.setQueryData(queries.venue(venueId).queryKey, saved);
-      void afterVenueWrite(queryClient, venueId);
+      for (const queryKey of refresh.drop ?? [])
+        queryClient.removeQueries({ queryKey, exact: true });
+      void afterVenueWrite(queryClient, venueId, { also: refresh.also });
       setSaving(false);
       router.back();
     },
