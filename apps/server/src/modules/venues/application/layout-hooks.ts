@@ -1,13 +1,22 @@
 import type { Tx } from "@/platform/db/transaction";
-import { footprintOf, inside, overlap, type Rect } from "../domain/layout";
+import { footprintAfterChange, inside, oriented, overlap, type Rect } from "../domain/layout";
 
-// Keeps the layout valid when a ground's footprint changes (a new sport or size): the ground stays
-// where it is if its new footprint still fits, otherwise it leaves the layout and the owner places
-// it again (docs: venue layout design).
+// Keeps the layout valid when a ground's kind changes (a new sport or size): it keeps the size it
+// was given if the new kind allows it, or takes the new kind's default, and stays where it is if
+// that fits; otherwise it leaves the layout and the owner places it again (docs: venue layout
+// design).
 export const afterFootprintChange = async (tx: Tx, groundId: string) => {
   const item = await tx.venueLayoutItem.findFirst({
     where: { groundId },
-    select: { id: true, venueId: true, x: true, y: true, orientation: true },
+    select: {
+      id: true,
+      venueId: true,
+      x: true,
+      y: true,
+      width: true,
+      height: true,
+      orientation: true,
+    },
   });
   if (!item) return;
   const [layout, ground, others] = await Promise.all([
@@ -15,29 +24,28 @@ export const afterFootprintChange = async (tx: Tx, groundId: string) => {
     tx.ground.findUniqueOrThrow({ where: { id: groundId }, select: { sport: true, size: true } }),
     tx.venueLayoutItem.findMany({
       where: { venueId: item.venueId, id: { not: item.id } },
-      select: {
-        x: true,
-        y: true,
-        width: true,
-        height: true,
-        orientation: true,
-        ground: { select: { sport: true, size: true } },
-      },
+      select: { x: true, y: true, width: true, height: true, orientation: true },
     }),
   ]);
+  const size = footprintAfterChange(ground.sport, ground.size, item);
   const placed: Rect = {
     x: item.x,
     y: item.y,
-    ...footprintOf(ground.sport, ground.size, item.orientation ?? "HORIZONTAL"),
+    ...oriented(size, item.orientation ?? "HORIZONTAL"),
   };
+  // Every tile keeps its size as it lies: a ground's length and breadth, turned if VERTICAL.
   const rects: Rect[] = others.map((other) => ({
     x: other.x,
     y: other.y,
-    ...(other.ground
-      ? footprintOf(other.ground.sport, other.ground.size, other.orientation ?? "HORIZONTAL")
-      : { width: other.width ?? 1, height: other.height ?? 1 }),
+    ...oriented(other, other.orientation ?? "HORIZONTAL"),
   }));
   const fits =
     inside(placed, layout.columns, layout.rows) && !rects.some((r) => overlap(r, placed));
-  if (!fits) await tx.venueLayoutItem.delete({ where: { id: item.id } });
+  if (!fits) {
+    await tx.venueLayoutItem.delete({ where: { id: item.id } });
+    return;
+  }
+  if (size.width !== item.width || size.height !== item.height) {
+    await tx.venueLayoutItem.update({ where: { id: item.id }, data: size });
+  }
 };

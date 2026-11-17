@@ -1,10 +1,9 @@
 import { StatusBar } from "expo-status-bar";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Keyboard, Pressable, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardHeight } from "@/hooks/use-keyboard-height";
-import { useScreenHudAnchor } from "./hud";
+import { useHudAnchor } from "./hud";
 import { useTabBarHeight } from "./tab-bar";
 import { isRTL } from "@/lib/language";
 
@@ -48,8 +47,7 @@ export function Screen({
     keyboard > 0 && !footer
       ? keyboard
       : offset + (footer ? Math.max(footerHeight - FOOTER_TOP, bottom) : bottom);
-  const setHudAnchor = useScreenHudAnchor();
-  useFocusEffect(useCallback(() => setHudAnchor(lowestEdge), [lowestEdge, setHudAnchor]));
+  useHudAnchor(lowestEdge);
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1, backgroundColor: "#FFFFFF" }}>

@@ -6809,6 +6809,74 @@ export interface paths {
         };
         trace?: never;
     };
+    "/v1/admin/marketplaces/{id}/boundary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A marketplace's border, as GeoJSON
+         * @description The shape venue pins are checked against, to download and keep or edit. Always a MultiPolygon; send it back as `boundary` to replace it.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The border */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Boundary"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND, or BOUNDARY_NOT_SET: it has none. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/marketplaces/{id}/locations": {
         parameters: {
             query?: never;
@@ -8420,6 +8488,8 @@ export interface components {
             /** @description In the requested language. */
             name: string;
             icon: components["schemas"]["AmenityIcon"];
+            /** @description Venues can place it on their layout. */
+            placeable: boolean;
         };
         /**
          * @description Hagz's own icon name; each app draws it.
@@ -8797,6 +8867,11 @@ export interface components {
                 status: components["schemas"]["VenueStatus"];
                 /** @description In `Accept-Language`, else any language. */
                 name: string | null;
+                /**
+                 * Format: date-time
+                 * @description When it was sent for review, while it's in review; null otherwise.
+                 */
+                submittedAt: string | null;
             };
             items: components["schemas"]["SetupItem"][];
             /** @description Counts of required items, for the progress ring and the draft card. */
@@ -8956,8 +9031,16 @@ export interface components {
             location?: {
                 coordinates: components["schemas"]["Coordinates"];
                 placeId: string | null;
-                /** Format: uuid */
-                locationId: string;
+                /**
+                 * Format: uuid
+                 * @description An area from the list. Send this or `requestedArea`, not both.
+                 */
+                locationId?: string;
+                /**
+                 * @description An area Hagz doesn't cover yet, in the owner's words, in the venue's marketplace. Drafts only: a listed venue keeps an area players can find it under.
+                 * @example Sheikh Zayed, Giza
+                 */
+                requestedArea?: string;
             };
         };
         VenueTranslationInput: {
@@ -9051,7 +9134,7 @@ export interface components {
          */
         GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
         /** @enum {string} */
-        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "OTHER";
+        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "SAND" | "OTHER";
         /**
          * @description `COVERED`: a roof with open sides.
          * @enum {string}
@@ -9124,35 +9207,44 @@ export interface components {
             columns: number;
             rows: number;
             grounds: components["schemas"]["PlacedGround"][];
-            facilities: components["schemas"]["PlacedFacility"][];
+            amenities: components["schemas"]["PlacedAmenity"][];
             entrances: components["schemas"]["Entrance"][];
             /** @description False until the first save: a suggested empty grid. */
             saved: boolean;
             /** @description Grounds not on the layout yet. */
             unplacedGroundIds: string[];
+            /** @description The venue's amenities that can go on the layout, placed or not. */
+            placeableOptionIds: string[];
         };
-        /** @description Top-left cell; the footprint comes from the ground. */
+        /** @description Top-left cell, and the ground's size on the grid. */
         PlacedGround: {
             /** Format: uuid */
             groundId: string;
             x: number;
             y: number;
             orientation: components["schemas"]["Orientation"];
+            /** @description Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES. */
+            width: number;
+            /** @description Breadth in cells, as if HORIZONTAL. */
+            height: number;
         };
         /**
          * @description `VERTICAL` swaps the footprint's width and height.
          * @enum {string}
          */
         Orientation: "HORIZONTAL" | "VERTICAL";
-        PlacedFacility: {
-            type: components["schemas"]["FacilityType"];
+        PlacedAmenity: {
+            /**
+             * Format: uuid
+             * @description One of the venue's amenities whose option is placeable. It can go down more than once.
+             */
+            optionId: string;
             x: number;
             y: number;
+            /** @description Any size that fits on the grid without overlapping. */
             width: number;
             height: number;
         };
-        /** @enum {string} */
-        FacilityType: "CAFE" | "TOILETS" | "CHANGING_ROOMS" | "PARKING" | "SEATING";
         Entrance: {
             side: components["schemas"]["EntranceSide"];
             /** @description Cells from the side's start (left or top). */
@@ -9164,7 +9256,7 @@ export interface components {
             columns: number;
             rows: number;
             grounds: components["schemas"]["PlacedGround"][];
-            facilities: components["schemas"]["PlacedFacility"][];
+            amenities: components["schemas"]["PlacedAmenity"][];
             entrances: components["schemas"]["Entrance"][];
         };
         VenueMember: {
@@ -9554,6 +9646,22 @@ export interface components {
             } | null;
             isActive?: boolean;
         };
+        /** @description The country's border: venue pins must fall inside it. GeoJSON Polygon or MultiPolygon. */
+        Boundary: {
+            /** @enum {string} */
+            type: "Polygon";
+            coordinates: [
+                number,
+                number
+            ][][];
+        } | {
+            /** @enum {string} */
+            type: "MultiPolygon";
+            coordinates: [
+                number,
+                number
+            ][][][];
+        };
         AdminLocation: {
             /** Format: uuid */
             id: string;
@@ -9611,6 +9719,8 @@ export interface components {
             icon: components["schemas"]["AmenityIcon"];
             /** @description Inactive options can't be newly picked. */
             isActive: boolean;
+            /** @description Venues can place it on their layout. Turning it off takes it off every layout. */
+            placeable: boolean;
             venueCount: number;
         };
         CreateAmenity: {
@@ -9618,11 +9728,17 @@ export interface components {
             key: string;
             names: components["schemas"]["Names"];
             icon: components["schemas"]["AmenityIcon"];
+            /**
+             * @description Venues can place it on their layout.
+             * @default false
+             */
+            placeable: boolean;
         };
         UpdateAmenity: {
             names?: components["schemas"]["Names"];
             icon?: components["schemas"]["AmenityIcon"];
             isActive?: boolean;
+            placeable?: boolean;
         };
         AdminVenue: {
             /** Format: uuid */

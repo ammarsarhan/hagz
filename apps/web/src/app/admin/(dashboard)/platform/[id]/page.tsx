@@ -141,6 +141,12 @@ const columns = helper.columns([
     header: "Kind",
     cell: ({ row }) => <Tag>{localityLabel[row.original.location.locality]}</Tag>,
   }),
+  // Without a centre an area is never suggested for a venue's pin, so the gaps show here.
+  helper.display({
+    id: "center",
+    header: "Centre",
+    cell: ({ row }) => (row.original.location.center ? <Tag tone="on">Set</Tag> : <Tag>None</Tag>),
+  }),
   helper.display({
     id: "children",
     header: "Sub-locations",
@@ -160,11 +166,12 @@ const columns = helper.columns([
 ]);
 
 const widths = {
-  arabic: "17%",
-  kind: "13%",
+  arabic: "15%",
+  kind: "12%",
+  center: "9%",
   children: "11%",
-  venues: "9%",
-  added: "11%",
+  venues: "8%",
+  added: "10%",
   menu: "3.5rem",
 };
 

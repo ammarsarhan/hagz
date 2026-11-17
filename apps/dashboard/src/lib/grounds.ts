@@ -9,14 +9,6 @@ export type GroundEnvironment = components["schemas"]["GroundEnvironment"];
 
 // In the order the add flow offers them (Figma 352:2, 353:2).
 export const SPORTS: GroundSport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
-export const SURFACES: GroundSurface[] = [
-  "ARTIFICIAL_TURF",
-  "NATURAL_GRASS",
-  "HARD_COURT",
-  "HARD_WOOD",
-  "CLAY",
-  "OTHER",
-];
 export const ENVIRONMENTS: GroundEnvironment[] = ["OUTDOOR", "COVERED", "INDOOR"];
 
 // What kind of ground it is, the way players say it: "5-a-side football", or just "Padel" for a

@@ -5,6 +5,7 @@ model AmenityOption {
   key           String // Stable code, e.g. parking.
   icon          String // One of Hagz's own icon names (AMENITY_ICONS in contracts), never a library's.
   isActive      Boolean  @default(true) // Inactive options can't be newly picked.
+  placeable     Boolean  @default(false) // Drawn on venue layouts (parking, a café), unlike Wi-Fi.
   createdAt     DateTime @default(now()) @db.Timestamptz
   updatedAt     DateTime @updatedAt @db.Timestamptz
 

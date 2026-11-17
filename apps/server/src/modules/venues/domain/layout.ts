@@ -1,5 +1,7 @@
 import {
   DEFAULT_LAYOUT,
+  footprintAllowed,
+  FOOTPRINT_RANGES,
   FOOTPRINTS,
   MAXIMUM_LAYOUT_CELLS,
   type GroundSize,
@@ -9,7 +11,8 @@ import {
 import { AppError } from "@/platform/errors/app-error";
 
 // The venue layout (PR 2.5): a grid of about 10 m cells with grounds at fixed footprints and
-// facilities sized 1–4 cells, all inside the grid and never overlapping (docs: venue layout design).
+// placeable amenities sized 1–4 cells, all inside the grid and never overlapping (docs: venue
+// layout design).
 
 export type Orientation = "HORIZONTAL" | "VERTICAL";
 
@@ -20,12 +23,30 @@ export interface Rect {
   height: number;
 }
 
+// A footprint as it lies on the grid: VERTICAL swaps length and breadth.
+export const oriented = (size: { width: number; height: number }, orientation: Orientation) =>
+  orientation === "VERTICAL"
+    ? { width: size.height, height: size.width }
+    : { width: size.width, height: size.height };
+
+// A ground's default footprint (the one it's placed at), as it lies.
 export const footprintOf = (sport: GroundSport, size: GroundSize, orientation: Orientation) => {
   const base = FOOTPRINTS[sport][size];
   if (!base) throw new Error(`No footprint for ${sport} ${size}`);
-  return orientation === "VERTICAL"
-    ? { width: base.height, height: base.width }
-    : { width: base.width, height: base.height };
+  return oriented(base, orientation);
+};
+
+// The size a ground keeps when its sport or size changes: the one it had if the new kind allows it,
+// otherwise the new kind's default.
+export const footprintAfterChange = (
+  sport: GroundSport,
+  size: GroundSize,
+  had: { width: number; height: number },
+) => {
+  if (footprintAllowed(sport, size, had)) return had;
+  const base = FOOTPRINTS[sport][size];
+  if (!base || !FOOTPRINT_RANGES[sport][size]) throw new Error(`No footprint for ${sport} ${size}`);
+  return base;
 };
 
 export const inside = (rect: Rect, columns: number, rows: number) =>
@@ -53,11 +74,13 @@ export const invalidLayout = (
   new AppError({ code: "INVALID_LAYOUT", status: 422, detail, extensions: { reason, ...extra } });
 
 // Checks a whole layout before it's saved: every tile inside the grid, nothing overlapping, each of
-// the venue's grounds at most once, and entrances on their side. `grounds` are the venue's
-// grounds that can be placed (not deleted).
+// the venue's grounds at most once, amenities only ones the venue offers that can be placed, and
+// entrances on their side. `grounds` are the venue's grounds that can be placed (not deleted);
+// `amenities` the option ids of its placeable amenities.
 export const validateLayout = (
   layout: VenueLayout,
   grounds: Map<string, { sport: GroundSport; size: GroundSize }>,
+  amenities: Set<string>,
 ) => {
   const seen = new Set<string>();
   const tiles: { label: string; rect: Rect }[] = [];
@@ -74,17 +97,25 @@ export const validateLayout = (
       });
     }
     seen.add(placed.groundId);
+    if (!footprintAllowed(ground.sport, ground.size, placed)) {
+      throw invalidLayout("GROUND_SIZE", "That ground can't be that size.", {
+        groundId: placed.groundId,
+      });
+    }
     tiles.push({
       label: placed.groundId,
-      rect: {
-        x: placed.x,
-        y: placed.y,
-        ...footprintOf(ground.sport, ground.size, placed.orientation),
-      },
+      rect: { x: placed.x, y: placed.y, ...oriented(placed, placed.orientation) },
     });
   }
-  layout.facilities.forEach((facility, i) => {
-    tiles.push({ label: `facility:${i}`, rect: facility });
+  layout.amenities.forEach((amenity, i) => {
+    if (!amenities.has(amenity.optionId)) {
+      throw invalidLayout(
+        "UNKNOWN_AMENITY",
+        "That amenity isn't one this venue offers, or it can't go on a layout.",
+        { optionId: amenity.optionId },
+      );
+    }
+    tiles.push({ label: `amenity:${String(i)}`, rect: amenity });
   });
 
   for (const tile of tiles) {

@@ -10,8 +10,11 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
   runOnJS,
+  type SharedValue,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from "react-native-reanimated";
 import type { components } from "@hagz/api";
@@ -56,25 +59,48 @@ interface Slot {
   height: number;
 }
 
-// Where the nth tile goes: the first across the top, the rest two to a row under it.
-const layoutFor = (count: number, width: number) => {
+// Where the nth tile goes: the first across the top, the rest two to a row under it. A worklet, so
+// a drag can work out places on the UI thread without waiting on React.
+const slotAt = (index: number, width: number): Slot => {
+  "worklet";
   const coverHeight = Math.round(width * COVER_RATIO);
+  if (index === 0) return { x: 0, y: 0, width, height: coverHeight };
   const tileWidth = (width - GAP) / 2;
   const tileHeight = Math.round(tileWidth * TILE_RATIO);
-  const slots: Slot[] = Array.from({ length: count }, (_, index) => {
-    if (index === 0) return { x: 0, y: 0, width, height: coverHeight };
-    const column = (index - 1) % 2;
-    const row = Math.floor((index - 1) / 2);
-    return {
-      x: column * (tileWidth + GAP),
-      y: coverHeight + GAP + row * (tileHeight + GAP),
-      width: tileWidth,
-      height: tileHeight,
-    };
-  });
-  const rows = Math.ceil(Math.max(count - 1, 0) / 2);
-  const height = count === 0 ? 0 : coverHeight + rows * (tileHeight + GAP);
-  return { slots, height };
+  const column = (index - 1) % 2;
+  const row = Math.floor((index - 1) / 2);
+  return {
+    x: column * (tileWidth + GAP),
+    y: coverHeight + GAP + row * (tileHeight + GAP),
+    width: tileWidth,
+    height: tileHeight,
+  };
+};
+
+const layoutFor = (count: number, width: number) => {
+  const slots = Array.from({ length: count }, (_, index) => slotAt(index, width));
+  const last = slots[count - 1];
+  return { slots, height: last ? last.y + last.height : 0 };
+};
+
+// The place a photo carried to (x, y) would take among the first `count`: the one it's over, or
+// the nearest when it's over a gap or past the edge.
+const placeAt = (x: number, y: number, count: number, width: number) => {
+  "worklet";
+  let best = 0;
+  let bestDistance = Infinity;
+  for (let index = 0; index < count; index++) {
+    const slot = slotAt(index, width);
+    if (x >= slot.x && x <= slot.x + slot.width && y >= slot.y && y <= slot.y + slot.height) {
+      return index;
+    }
+    const distance = Math.hypot(slot.x + slot.width / 2 - x, slot.y + slot.height / 2 - y);
+    if (distance < bestDistance) {
+      best = index;
+      bestDistance = distance;
+    }
+  }
+  return best;
 };
 
 export default function SetupPhotos() {
@@ -108,6 +134,20 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
   const left = Math.max(MINIMUM_VENUE_PHOTOS - ready.length, 0);
   const tiles = ready.length + uploads.length + (room > 0 ? 1 : 0);
   const { slots, height } = layoutFor(tiles, width);
+
+  // The order on screen, which a drag rearranges as it goes (the others make room, live), and the
+  // photo being carried. They live on the UI thread so the grid moves with the finger, not a render
+  // later; the saved order catches up here.
+  const readyKey = ready.map((photo) => photo.id).join(",");
+  const order = useSharedValue<string[]>(readyKey ? readyKey.split(",") : []);
+  const carried = useSharedValue<string | null>(null);
+  const gridWidth = useSharedValue(width);
+  useEffect(() => {
+    order.value = readyKey ? readyKey.split(",") : [];
+  }, [readyKey, order]);
+  useEffect(() => {
+    gridWidth.value = width;
+  }, [width, gridWidth]);
 
   const photosKey = queries.photos(venueId).queryKey;
 
@@ -212,28 +252,11 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
     void afterVenueWrite(queryClient, venueId, { checklist: false });
   };
 
-  // A photo dropped at a point in the grid takes the place of the ready photo it landed on, or the
-  // nearest one; uploads and the add tile aren't places to drop.
-  const drop = (from: number, x: number, y: number) => {
+  // The order a drag left on screen: saved if it changed. Uploads and the add tile aren't places
+  // to drop, so a drag only ever moves ready photos among themselves.
+  const drop = (ids: string[]) => {
     setDragging(false);
-    const places = slots.slice(0, ready.length);
-    const centre = (slot: Slot) => ({ x: slot.x + slot.width / 2, y: slot.y + slot.height / 2 });
-    const inside = places.findIndex(
-      (slot) => x >= slot.x && x <= slot.x + slot.width && y >= slot.y && y <= slot.y + slot.height,
-    );
-    const to =
-      inside !== -1
-        ? inside
-        : places.reduce((best, slot, index) => {
-            const a = centre(slot);
-            const b = centre(places[best] ?? slot);
-            return Math.hypot(a.x - x, a.y - y) < Math.hypot(b.x - x, b.y - y) ? index : best;
-          }, 0);
-    if (to === from) return;
-    const ids = ready.map((photo) => photo.id);
-    const [moved] = ids.splice(from, 1);
-    if (moved) ids.splice(to, 0, moved);
-    void reorder(ids);
+    if (ids.join(",") !== readyKey) void reorder(ids);
   };
 
   const remove = async (photo: Photo) => {
@@ -310,13 +333,16 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
           </Pressable>
         ) : (
           <View style={{ height }}>
+            <DropGap order={order} carried={carried} gridWidth={gridWidth} />
             {ready.map((photo, index) => (
               <PhotoTile
                 key={photo.id}
                 photo={photo}
                 index={index}
-                slot={slots[index]}
-                cover={index === 0}
+                width={width}
+                order={order}
+                carried={carried}
+                gridWidth={gridWidth}
                 onDragStart={() => setDragging(true)}
                 onDrop={drop}
                 onPress={() => {
@@ -450,11 +476,13 @@ function SheetRow({
   );
 }
 
-// A tile glides to its new place when the order changes. It moves by transform (no layout pass per
-// frame), and the glide restarts only when its place really changes: keyed on the numbers, since
-// the grid rebuilds its slot objects on every render, and a drop causes several renders in a row.
+// Tiles glide to new places by transform. Only a move into or out of the cover changes a tile's
+// size, so only then does a glide cost a layout pass per frame.
 const GLIDE = { duration: 260, easing: Easing.out(Easing.cubic) };
 
+// Uploads and the add tile follow the grid's slots from React: they're never dragged, and they only
+// move when a photo is added or removed. Keyed on the numbers, since the grid rebuilds its slot
+// objects on every render.
 const useSlotStyle = (slot: Slot | undefined) => {
   const sx = slot?.x ?? 0;
   const sy = slot?.y ?? 0;
@@ -464,18 +492,13 @@ const useSlotStyle = (slot: Slot | undefined) => {
   const y = useSharedValue(sy);
   const width = useSharedValue(sw);
   const height = useSharedValue(sh);
-  // Where it's headed: a dropped tile heads back here when the order didn't change.
-  const targetX = useSharedValue(sx);
-  const targetY = useSharedValue(sy);
   useEffect(() => {
-    targetX.value = sx;
-    targetY.value = sy;
     x.value = withTiming(sx, GLIDE);
     y.value = withTiming(sy, GLIDE);
     width.value = withTiming(sw, GLIDE);
     height.value = withTiming(sh, GLIDE);
-  }, [sx, sy, sw, sh, x, y, width, height, targetX, targetY]);
-  const box = useAnimatedStyle(() => ({
+  }, [sx, sy, sw, sh, x, y, width, height]);
+  return useAnimatedStyle(() => ({
     position: "absolute",
     left: 0,
     top: 0,
@@ -483,33 +506,140 @@ const useSlotStyle = (slot: Slot | undefined) => {
     height: height.value,
     transform: [{ translateX: x.value }, { translateY: y.value }],
   }));
-  return { x, y, width, height, targetX, targetY, box };
 };
+
+// A picture of this shape just big enough to fill the cover, the largest place it can take.
+const pictureFor = (aspect: number, gridWidth: number) => {
+  "worklet";
+  const cover = slotAt(0, gridWidth);
+  return aspect > cover.width / cover.height
+    ? { width: cover.height * aspect, height: cover.height }
+    : { width: cover.width, height: cover.width / aspect };
+};
+
+// Moves `id` to `to`, the rest keeping their order around it.
+const moved = (ids: string[], id: string, to: number) => {
+  "worklet";
+  const rest = ids.filter((other) => other !== id);
+  rest.splice(to, 0, id);
+  return rest;
+};
+
+// The faint grey place the carried photo will land in: it opens where the photo was lifted from
+// and follows the finger as the others make room, then hides under the photo once it's down.
+function DropGap({
+  order,
+  carried,
+  gridWidth,
+}: {
+  order: SharedValue<string[]>;
+  carried: SharedValue<string | null>;
+  gridWidth: SharedValue<number>;
+}) {
+  const x = useSharedValue(0);
+  const y = useSharedValue(0);
+  const width = useSharedValue(0);
+  const height = useSharedValue(0);
+  const shown = useSharedValue(0);
+
+  useAnimatedReaction(
+    () => (carried.value === null ? -1 : order.value.indexOf(carried.value)),
+    (at, before) => {
+      if (at === -1) {
+        // Dropped: the photo glides onto the gap, which goes once it's covered.
+        if (before !== null && before !== -1) {
+          shown.value = withDelay(GLIDE.duration, withTiming(0, { duration: 0 }));
+        }
+        return;
+      }
+      const slot = slotAt(at, gridWidth.value);
+      if (before === null || before === -1) {
+        // Lifted: the gap opens where the photo was, under it.
+        x.value = slot.x;
+        y.value = slot.y;
+        width.value = slot.width;
+        height.value = slot.height;
+        shown.value = withTiming(1, { duration: 120 });
+        return;
+      }
+      x.value = withTiming(slot.x, GLIDE);
+      y.value = withTiming(slot.y, GLIDE);
+      width.value = withTiming(slot.width, GLIDE);
+      height.value = withTiming(slot.height, GLIDE);
+    },
+  );
+
+  const style = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: width.value,
+    height: height.value,
+    opacity: shown.value,
+    transform: [{ translateX: x.value }, { translateY: y.value }],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[style, { borderRadius: 8, backgroundColor: colors.field }]}
+    />
+  );
+}
 
 function PhotoTile({
   photo,
   index,
-  slot,
-  cover,
+  width: initialWidth,
+  order,
+  carried,
+  gridWidth,
   onDragStart,
   onDrop,
   onPress,
 }: {
   photo: Photo;
   index: number;
-  slot: Slot | undefined;
-  cover: boolean;
+  width: number;
+  order: SharedValue<string[]>;
+  carried: SharedValue<string | null>;
+  gridWidth: SharedValue<number>;
   onDragStart: () => void;
-  onDrop: (from: number, x: number, y: number) => void;
+  onDrop: (ids: string[]) => void;
   onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const place = useSlotStyle(slot);
+  const id = photo.id;
+  const start = slotAt(index, initialWidth);
+  const x = useSharedValue(start.x);
+  const y = useSharedValue(start.y);
+  const width = useSharedValue(start.width);
+  const height = useSharedValue(start.height);
   const dx = useSharedValue(0);
   const dy = useSharedValue(0);
   const touchX = useSharedValue(0);
   const touchY = useSharedValue(0);
   const lifted = useSharedValue(0);
+  // Above the others from the lift until it has landed, so it never passes under the photos it
+  // glides over on the way to its place.
+  const onTop = useSharedValue(0);
+  // The picture's own width over height, known once it has loaded.
+  const aspect = useSharedValue(4 / 3);
+
+  // To its place whenever the order on screen moves it, during a drag included. The carried photo
+  // follows the finger instead, and is sent to its place when it's let go.
+  useAnimatedReaction(
+    () => ({ at: order.value.indexOf(id), width: gridWidth.value }),
+    (now, before) => {
+      if (now.at === -1 || carried.value === id) return;
+      if (before && now.at === before.at && now.width === before.width) return;
+      const slot = slotAt(now.at, now.width);
+      x.value = withTiming(slot.x, GLIDE);
+      y.value = withTiming(slot.y, GLIDE);
+      width.value = withTiming(slot.width, GLIDE);
+      height.value = withTiming(slot.height, GLIDE);
+    },
+  );
 
   const lift = () => {
     onDragStart();
@@ -521,35 +651,47 @@ function PhotoTile({
     .onStart((event) => {
       touchX.value = event.x;
       touchY.value = event.y;
+      carried.value = id;
+      onTop.value = 1;
       lifted.value = withTiming(1, { duration: 120 });
       runOnJS(lift)();
     })
     .onUpdate((event) => {
       dx.value = event.translationX;
       dy.value = event.translationY;
-    })
-    .onEnd((event) => {
-      // Where the finger is, in the grid's coordinates.
-      runOnJS(onDrop)(
-        index,
-        place.x.value + touchX.value + event.translationX,
-        place.y.value + touchY.value + event.translationY,
+      // Where the finger is, in the grid's coordinates; the others make room as it moves.
+      const ids = order.value;
+      const to = placeAt(
+        x.value + touchX.value + event.translationX,
+        y.value + touchY.value + event.translationY,
+        ids.length,
+        gridWidth.value,
       );
-      // The drag becomes the tile's position, so it carries on from where it was let go instead
-      // of springing back first: home if the order stays, or (a frame later, once the new order
-      // arrives) on to its new place.
-      place.x.value = place.x.value + dx.value;
-      place.y.value = place.y.value + dy.value;
+      if (to !== ids.indexOf(id)) order.value = moved(ids, id, to);
+    })
+    .onEnd(() => {
+      // The drag becomes the tile's position, so it carries on from where it was let go into the
+      // place that's been kept open for it.
+      x.value = x.value + dx.value;
+      y.value = y.value + dy.value;
       dx.value = 0;
       dy.value = 0;
-      place.x.value = withTiming(place.targetX.value, GLIDE);
-      place.y.value = withTiming(place.targetY.value, GLIDE);
+      const slot = slotAt(order.value.indexOf(id), gridWidth.value);
+      x.value = withTiming(slot.x, GLIDE);
+      y.value = withTiming(slot.y, GLIDE, () => {
+        onTop.value = 0;
+      });
+      width.value = withTiming(slot.width, GLIDE);
+      height.value = withTiming(slot.height, GLIDE);
+      lifted.value = withTiming(0, GLIDE);
+      carried.value = null;
+      runOnJS(onDrop)(order.value.slice());
     })
     .onFinalize(() => {
       // A drag that never got going (or was cancelled) just settles back.
       dx.value = withTiming(0, GLIDE);
       dy.value = withTiming(0, GLIDE);
-      lifted.value = withTiming(0, { duration: 180 });
+      lifted.value = withTiming(0, GLIDE);
     });
   const tap = Gesture.Tap().onEnd(() => runOnJS(onPress)());
 
@@ -557,39 +699,81 @@ function PhotoTile({
     position: "absolute",
     left: 0,
     top: 0,
-    width: place.width.value,
-    height: place.height.value,
-    zIndex: lifted.value > 0 ? 10 : 1,
+    width: width.value,
+    height: height.value,
+    zIndex: onTop.value ? 10 : 1,
     transform: [
-      { translateX: place.x.value + dx.value },
-      { translateY: place.y.value + dy.value },
+      { translateX: x.value + dx.value },
+      { translateY: y.value + dy.value },
       { scale: 1 + (LIFT - 1) * lifted.value },
     ],
     shadowOpacity: 0.18 * lifted.value,
   }));
+  // The chip follows the order on screen, so it moves with the cover during a drag.
+  const chip = useAnimatedStyle(() => ({
+    opacity: withTiming(order.value[0] === id ? 1 : 0, { duration: 150 }),
+  }));
+  // The picture is laid out once, at its own shape and big enough to fill the cover, and scaled
+  // to fill the tile: expo-image reloads (and downscales again) whenever its view changes size, so
+  // a picture sized with the tile would reload on every frame of a glide into or out of the cover.
+  // Scaling a picture of its own shape to cover the tile is what contentFit "cover" does, so it
+  // looks the same at rest as it did, and grows without a jump.
+  const pictureSize = useAnimatedStyle(() => {
+    const size = pictureFor(aspect.value, gridWidth.value);
+    return { position: "absolute", left: 0, top: 0, width: size.width, height: size.height };
+  });
+  const pictureFit = useAnimatedStyle(() => {
+    const size = pictureFor(aspect.value, gridWidth.value);
+    return {
+      transform: [
+        { translateX: (width.value - size.width) / 2 },
+        { translateY: (height.value - size.height) / 2 },
+        { scale: Math.max(width.value / size.width, height.value / size.height) },
+      ],
+    };
+  });
 
   return (
     <GestureDetector gesture={Gesture.Race(drag, tap)}>
       <Animated.View
         accessible
         accessibilityRole="button"
-        accessibilityLabel={cover ? t("screens.setup.photos.cover") : undefined}
+        accessibilityLabel={index === 0 ? t("screens.setup.photos.cover") : undefined}
         style={[
           style,
-          { shadowColor: "#0b0b0c", shadowRadius: 12, shadowOffset: { width: 0, height: 8 } },
+          {
+            // Opaque and rounded, so iOS draws the lifted shadow from the shape instead of
+            // working it out from the picture's pixels on every frame.
+            borderRadius: 8,
+            backgroundColor: colors.border,
+            shadowColor: colors.ink,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 8 },
+          },
         ]}
       >
-        <Image
-          source={{ uri: reachable(photo.url) }}
-          contentFit="cover"
-          transition={150}
-          style={{ flex: 1, borderRadius: 8, backgroundColor: colors.border }}
-        />
-        {cover ? (
-          <View className="absolute start-2.5 top-2.5 rounded-[6px] bg-white px-2 py-1">
-            <Text className="text-caption font-medium">{t("screens.setup.photos.cover")}</Text>
-          </View>
-        ) : null}
+        {/* Clipped here rather than on the tile, which would clip its shadow too. */}
+        <View style={{ flex: 1, borderRadius: 8, overflow: "hidden" }}>
+          <Animated.View style={[pictureSize, pictureFit]}>
+            <Image
+              source={{ uri: reachable(photo.url) }}
+              contentFit="cover"
+              transition={150}
+              onLoad={(event) => {
+                const { width: w, height: h } = event.source;
+                if (w > 0 && h > 0) aspect.value = w / h;
+              }}
+              style={{ flex: 1 }}
+            />
+          </Animated.View>
+        </View>
+        <Animated.View
+          pointerEvents="none"
+          style={chip}
+          className="absolute start-2.5 top-2.5 rounded-[6px] bg-white px-2 py-1"
+        >
+          <Text className="text-caption font-medium">{t("screens.setup.photos.cover")}</Text>
+        </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
@@ -600,7 +784,7 @@ function UploadTile({ upload, slot }: { upload: Upload; slot: Slot | undefined }
   const place = useSlotStyle(slot);
 
   return (
-    <Animated.View style={place.box}>
+    <Animated.View style={place}>
       <Image
         source={{ uri: upload.uri }}
         contentFit="cover"
@@ -620,7 +804,7 @@ function AddTile({ slot, onPress }: { slot: Slot | undefined; onPress: () => voi
   const place = useSlotStyle(slot);
 
   return (
-    <Animated.View style={place.box}>
+    <Animated.View style={place}>
       <Pressable
         accessibilityRole="button"
         onPress={onPress}

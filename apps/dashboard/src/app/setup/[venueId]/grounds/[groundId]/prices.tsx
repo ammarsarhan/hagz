@@ -74,7 +74,7 @@ export default function GroundPrices() {
         {...field("basePrice")}
         label={t("screens.setup.grounds.normalPrice")}
         placeholder={t("screens.setup.grounds.example", { amount: 600 })}
-        autoFocus={draft.basePrice === ""}
+        // No keyboard on arrival: raised while the screen slides in, it fights the transition.
       />
       <MoneyField
         {...field("peakPrice")}

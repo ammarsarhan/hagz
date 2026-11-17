@@ -1,4 +1,4 @@
-import type { Coordinates } from "@hagz/contracts";
+import { PIN_NEAR_AREA_METRES, type Coordinates } from "@hagz/contracts";
 import type { Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 
@@ -10,12 +10,6 @@ import { AppError } from "@/platform/errors/app-error";
 //                        dropped abroad can't be filed under an Egyptian area. No border: no check.
 //   near the area        the pin is within PIN_NEAR_AREA_METRES of the area's centre, so a pin in
 //                        Aswan can't be listed under Smouha. An area without a centre: no check.
-
-// The area picker suggests areas within 8 km of a pin (SUGGEST_WITHIN_METRES), and a venue sits
-// somewhere inside its area, not on the centre. Large districts (New Cairo, 6th of October) reach
-// well past 8 km from their middle, so the check allows about twice that: far enough for any
-// venue honestly in the area, close enough to catch one filed in the wrong part of the country.
-export const PIN_NEAR_AREA_METRES = 15_000;
 
 export const locationOutsideMarketplace = () =>
   new AppError({

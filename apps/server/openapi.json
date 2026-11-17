@@ -204,13 +204,18 @@
           },
           "icon": {
             "$ref": "#/components/schemas/AmenityIcon"
+          },
+          "placeable": {
+            "type": "boolean",
+            "description": "Venues can place it on their layout."
           }
         },
         "required": [
           "id",
           "key",
           "name",
-          "icon"
+          "icon",
+          "placeable"
         ]
       },
       "AmenityIcon": {
@@ -1315,13 +1320,22 @@
                   "null"
                 ],
                 "description": "In `Accept-Language`, else any language."
+              },
+              "submittedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When it was sent for review, while it's in review; null otherwise."
               }
             },
             "required": [
               "id",
               "slug",
               "status",
-              "name"
+              "name",
+              "submittedAt"
             ]
           },
           "items": {
@@ -1928,13 +1942,20 @@
               },
               "locationId": {
                 "type": "string",
-                "format": "uuid"
+                "format": "uuid",
+                "description": "An area from the list. Send this or `requestedArea`, not both."
+              },
+              "requestedArea": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 80,
+                "example": "Sheikh Zayed, Giza",
+                "description": "An area Hagz doesn't cover yet, in the owner's words, in the venue's marketplace. Drafts only: a listed venue keeps an area players can find it under."
               }
             },
             "required": [
               "coordinates",
-              "placeId",
-              "locationId"
+              "placeId"
             ],
             "description": "A new pin and area, in the same marketplace."
           }
@@ -2282,6 +2303,7 @@
           "HARD_WOOD",
           "HARD_COURT",
           "CLAY",
+          "SAND",
           "OTHER"
         ]
       },
@@ -2551,10 +2573,10 @@
             },
             "maxItems": 100
           },
-          "facilities": {
+          "amenities": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PlacedFacility"
+              "$ref": "#/components/schemas/PlacedAmenity"
             },
             "maxItems": 50
           },
@@ -2576,16 +2598,25 @@
               "format": "uuid"
             },
             "description": "Grounds not on the layout yet."
+          },
+          "placeableOptionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The venue's amenities that can go on the layout, placed or not."
           }
         },
         "required": [
           "columns",
           "rows",
           "grounds",
-          "facilities",
+          "amenities",
           "entrances",
           "saved",
-          "unplacedGroundIds"
+          "unplacedGroundIds",
+          "placeableOptionIds"
         ]
       },
       "PlacedGround": {
@@ -2607,15 +2638,29 @@
           },
           "orientation": {
             "$ref": "#/components/schemas/Orientation"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Breadth in cells, as if HORIZONTAL."
           }
         },
         "required": [
           "groundId",
           "x",
           "y",
-          "orientation"
+          "orientation",
+          "width",
+          "height"
         ],
-        "description": "Top-left cell; the footprint comes from the ground."
+        "description": "Top-left cell, and the ground's size on the grid."
       },
       "Orientation": {
         "type": "string",
@@ -2625,11 +2670,13 @@
         ],
         "description": "`VERTICAL` swaps the footprint's width and height."
       },
-      "PlacedFacility": {
+      "PlacedAmenity": {
         "type": "object",
         "properties": {
-          "type": {
-            "$ref": "#/components/schemas/FacilityType"
+          "optionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "One of the venue's amenities whose option is placeable. It can go down more than once."
           },
           "x": {
             "type": "integer",
@@ -2644,30 +2691,21 @@
           "width": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 4
+            "maximum": 60,
+            "description": "Any size that fits on the grid without overlapping."
           },
           "height": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 4
+            "maximum": 60
           }
         },
         "required": [
-          "type",
+          "optionId",
           "x",
           "y",
           "width",
           "height"
-        ]
-      },
-      "FacilityType": {
-        "type": "string",
-        "enum": [
-          "CAFE",
-          "TOILETS",
-          "CHANGING_ROOMS",
-          "PARKING",
-          "SEATING"
         ]
       },
       "Entrance": {
@@ -2717,10 +2755,10 @@
             },
             "maxItems": 100
           },
-          "facilities": {
+          "amenities": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PlacedFacility"
+              "$ref": "#/components/schemas/PlacedAmenity"
             },
             "maxItems": 50
           },
@@ -2736,7 +2774,7 @@
           "columns",
           "rows",
           "grounds",
-          "facilities",
+          "amenities",
           "entrances"
         ]
       },
@@ -3810,6 +3848,91 @@
         },
         "description": "Only the fields sent change. `code` and `currency` are refused once it's in use."
       },
+      "Boundary": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Polygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      }
+                    ]
+                  },
+                  "minItems": 4
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "MultiPolygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        }
+                      ]
+                    },
+                    "minItems": 4
+                  },
+                  "minItems": 1
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          }
+        ],
+        "description": "The country's border: venue pins must fall inside it. GeoJSON Polygon or MultiPolygon."
+      },
       "AdminLocation": {
         "type": "object",
         "properties": {
@@ -3966,6 +4089,10 @@
             "type": "boolean",
             "description": "Inactive options can't be newly picked."
           },
+          "placeable": {
+            "type": "boolean",
+            "description": "Venues can place it on their layout. Turning it off takes it off every layout."
+          },
           "venueCount": {
             "type": "integer"
           }
@@ -3976,6 +4103,7 @@
           "names",
           "icon",
           "isActive",
+          "placeable",
           "venueCount"
         ]
       },
@@ -3992,6 +4120,11 @@
           },
           "icon": {
             "$ref": "#/components/schemas/AmenityIcon"
+          },
+          "placeable": {
+            "type": "boolean",
+            "default": false,
+            "description": "Venues can place it on their layout."
           }
         },
         "required": [
@@ -4010,6 +4143,9 @@
             "$ref": "#/components/schemas/AmenityIcon"
           },
           "isActive": {
+            "type": "boolean"
+          },
+          "placeable": {
             "type": "boolean"
           }
         }
@@ -11229,6 +11365,73 @@
           },
           "422": {
             "description": "INVALID_BOUNDARY: the border's edges cross (`reason` says where).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/marketplaces/{id}/boundary": {
+      "get": {
+        "tags": [
+          "Platform"
+        ],
+        "summary": "A marketplace's border, as GeoJSON",
+        "description": "The shape venue pins are checked against, to download and keep or edit. Always a MultiPolygon; send it back as `boundary` to replace it.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The border",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Boundary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND, or BOUNDARY_NOT_SET: it has none.",
             "content": {
               "application/problem+json": {
                 "schema": {

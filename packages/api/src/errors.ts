@@ -295,6 +295,11 @@ const messages = {
     en: "The pin is outside the area's country. Move it and try again.",
     ar: "الدبوس خارج دولة هذه المنطقة. حرّكه وحاول مرة أخرى.",
   },
+  // `{km}` is the problem's `limit` (see withLimit).
+  PIN_FAR_FROM_AREA: {
+    en: "The pin is more than {km} km from this area. Move it or pick another area.",
+    ar: "الدبوس أبعد من {km} كم عن هذه المنطقة. حرّكه أو اختر منطقة أخرى.",
+  },
 } as const satisfies Record<string, Record<Language, string>>;
 
 export type ProblemCode = keyof typeof messages;
@@ -316,7 +321,17 @@ export const isProblem = (value: unknown): value is Problem =>
 export const errorMessage = (error: unknown, language: Language): string => {
   if (!isProblem(error)) return offline[language];
   const code = Object.hasOwn(messages, error.code) ? (error.code as ProblemCode) : "INTERNAL_ERROR";
-  return messages[code][language];
+  return withLimit(messages[code][language], error, messages.INTERNAL_ERROR[language]);
+};
+
+// PIN_FAR_FROM_AREA's distance comes from the problem (`limit`, in metres), so the API stays the
+// one place that sets it. A problem without one can't fill the message in: `fallback` instead.
+const withLimit = (message: string, error: Problem, fallback: string): string => {
+  if (!message.includes("{km}")) return message;
+  const { limit } = error;
+  return typeof limit === "number"
+    ? message.replaceAll("{km}", String(Math.round(limit / 1000)))
+    : fallback;
 };
 
 // Seconds until a RATE_LIMITED request can be tried again, from the problem's `retryAfter`.
@@ -335,6 +350,10 @@ const short = {
   CHALLENGE_EXPIRED: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   RESET_TOKEN_INVALID: { en: "Verification expired", ar: "انتهت صلاحية التحقق" },
   LOCATION_OUTSIDE_MARKETPLACE: { en: "Pin is in another country", ar: "الدبوس في دولة أخرى" },
+  PIN_FAR_FROM_AREA: {
+    en: "Pin is over {km} km from the area",
+    ar: "الدبوس أبعد من {km} كم عن المنطقة",
+  },
   STORAGE_UNAVAILABLE: { en: "Couldn't upload the photo", ar: "تعذّر رفع الصورة" },
   UPLOAD_NOT_FOUND: { en: "Upload didn't finish", ar: "لم يكتمل الرفع" },
   SERVICE_UNAVAILABLE: { en: "Something went wrong", ar: "حدث خطأ ما" },
@@ -345,5 +364,6 @@ const offlineShort = { en: "You're offline", ar: "أنت غير متصل" } as c
 export const shortErrorMessage = (error: unknown, language: Language): string => {
   if (!isProblem(error)) return offlineShort[language];
   const code = Object.hasOwn(short, error.code) ? (error.code as keyof typeof short) : null;
-  return (code ? short[code] : short.SERVICE_UNAVAILABLE)[language];
+  const fallback = short.SERVICE_UNAVAILABLE[language];
+  return code ? withLimit(short[code][language], error, fallback) : fallback;
 };
