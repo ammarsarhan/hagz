@@ -103,25 +103,6 @@ export default function VenueApplicationPage() {
                     Sent back {dateTime(data.rejection.at)}
                   </p>
                   <p className="mt-0.5 text-label text-ink-2">{data.rejection.reason}</p>
-                  {data.rejection.items.length > 0 ? (
-                    <p className="mt-3.5 text-label text-ink-2">
-                      To change:{" "}
-                      {data.rejection.items.map((key, index) => {
-                        const pending = data.setup.items.some(
-                          (item) => item.key === key && item.needsChanges,
-                        );
-                        return (
-                          <span key={key}>
-                            {index > 0 ? ", " : ""}
-                            <span className={pending ? "font-medium text-ink" : "text-ink-2"}>
-                              {setupLabel[key]}
-                            </span>
-                            {pending ? null : " (edited)"}
-                          </span>
-                        );
-                      })}
-                    </p>
-                  ) : null}
                 </div>
               ) : null}
               <Checklist overview={data} />
@@ -266,10 +247,13 @@ function Checklist({ overview }: { overview: VenueOverview }) {
           key={item.key}
           label={item.required ? setupLabel[item.key] : `${setupLabel[item.key]} (optional)`}
           value={
-            item.state === "DONE" ? (
-              "Done"
-            ) : item.state === "BLOCKED" && item.blockedBy ? (
+            item.state === "BLOCKED" && item.blockedBy ? (
               <Muted>After {setupLabel[item.blockedBy].toLowerCase()}</Muted>
+            ) : item.needsChanges ? (
+              // Sent back asking to change it, and not edited since.
+              <span className="font-medium">To modify</span>
+            ) : item.state === "DONE" ? (
+              "Done"
             ) : (
               <Muted>To do</Muted>
             )
