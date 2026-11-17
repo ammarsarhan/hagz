@@ -2,13 +2,14 @@
 
 import { IconExternalLink } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { ButtonLink } from "@/admin/button";
 import { Skeleton } from "@/admin/data-table";
 import { Flag } from "@/admin/flag";
 import { formatCenter, mapsLink } from "@/admin/platform/geo";
 import { AreaDialog } from "@/admin/venues/area-dialog";
 import { useVenueLocation } from "@/admin/venues/location";
+import { DetailsBlock, DetailsRow } from "@/admin/venues/details-block";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
 // Where a venue is, laid out like Translations: the area players find it under (or the one its owner
@@ -32,7 +33,7 @@ export default function VenueLocation() {
         <p className="mt-8 text-body text-ink-2">{error}</p>
       ) : (
         <>
-          <Block
+          <DetailsBlock
             title="Area"
             action={
               data && venue ? (
@@ -48,7 +49,7 @@ export default function VenueLocation() {
           >
             {/* The country the venue is in: its areas, currency and tax come from it, and it can't
                 change (an area is always picked in the same one). */}
-            <Row label="Marketplace">
+            <DetailsRow label="Marketplace">
               {data ? (
                 <span className="flex items-center gap-2.5">
                   <Flag code={data.marketplace.code} size="1.25rem" />
@@ -59,25 +60,25 @@ export default function VenueLocation() {
               ) : (
                 <Skeleton className="h-4 w-32" />
               )}
-            </Row>
+            </DetailsRow>
             {data?.requestedArea ? (
-              <Row label="Asked for">
+              <DetailsRow label="Asked for">
                 <p className="text-body text-ink">{data.requestedArea}</p>
                 <p className="mt-0.5 text-label text-ink-2">
                   Hagz doesn’t cover it yet. Approval waits until an area is set.
                 </p>
-              </Row>
+              </DetailsRow>
             ) : null}
-            <Row label="English">
+            <DetailsRow label="English">
               <Value loading={!data} text={data?.area?.names.en} />
-            </Row>
-            <Row label="Arabic">
+            </DetailsRow>
+            <DetailsRow label="Arabic">
               <Value loading={!data} text={data?.area?.names.ar} arabic />
-            </Row>
-          </Block>
+            </DetailsRow>
+          </DetailsBlock>
 
-          <Block title="Pin">
-            <Row label="Coordinates" center={Boolean(data?.coordinates)}>
+          <DetailsBlock title="Pin">
+            <DetailsRow label="Coordinates" center={Boolean(data?.coordinates)}>
               {!data ? (
                 <Skeleton className="h-4 w-40" />
               ) : data.coordinates ? (
@@ -100,8 +101,8 @@ export default function VenueLocation() {
               ) : (
                 <span className="text-body text-ink-3">The owner hasn’t dropped one yet.</span>
               )}
-            </Row>
-          </Block>
+            </DetailsRow>
+          </DetailsBlock>
         </>
       )}
 
@@ -119,48 +120,6 @@ export default function VenueLocation() {
         />
       ) : null}
     </section>
-  );
-}
-
-function Block({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="mt-8">
-      <div className="flex items-center justify-between gap-6 border-b border-border pb-3">
-        <h3 className="text-body font-semibold text-ink">{title}</h3>
-        {action}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Row({
-  label,
-  center = false,
-  children,
-}: {
-  label: string;
-  // Centres the label on a row with a button in it; text rows keep it level with their first line.
-  center?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={`grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-6 border-b border-border ${
-        center ? "items-center py-3" : "py-4"
-      }`}
-    >
-      <span className="text-label text-ink-2">{label}</span>
-      <div>{children}</div>
-    </div>
   );
 }
 
