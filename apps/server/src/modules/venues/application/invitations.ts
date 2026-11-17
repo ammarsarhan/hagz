@@ -326,8 +326,9 @@ export const listSentInvitations = async (venueId: string, clock: Clock = system
 };
 
 // Idempotent for invitations already revoked, declined or expired.
+// By a member who manages the staff, or by an admin from the venue's Team tab.
 export const revokeInvitation = async (
-  actor: VenueAccess,
+  actor: { venueId: string } & ({ staffId: string } | { adminId: string }),
   invitationId: string,
   clock: Clock = systemClock,
 ) =>
@@ -359,7 +360,7 @@ export const revokeInvitation = async (
         data: {
           venueId: actor.venueId,
           type: STAFF_INVITATION_REVOKED,
-          staffId: actor.staffId,
+          ...("adminId" in actor ? { adminId: actor.adminId } : { staffId: actor.staffId }),
           data: { invitationId },
         },
       });
