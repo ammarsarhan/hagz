@@ -8,7 +8,7 @@ import { send } from "@/admin/errors";
 import { Field, TextAreaField } from "@/admin/field";
 import { PanelSection, SidePanel } from "@/admin/side-panel";
 import { useSubmit } from "@/admin/submit";
-import { LANGUAGES } from "./details";
+import { LANGUAGES } from "./detail-sections";
 
 // Editing a venue's name, description and address in both languages at once, in a side panel over
 // its Details. Every field is needed for the venue to be live, so every label has the asterisk and

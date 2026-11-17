@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { detailHref, detailSections } from "@/admin/venues/details";
+import { detailHref, detailSections } from "@/admin/venues/detail-sections";
 
 // A venue's Details tab: its sections in a menu on the left, each a page of its own, the open one on
 // the right (Figma A6, option 5). The menu's rows are the rail's, a size for a column of a page.

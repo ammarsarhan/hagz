@@ -1,4 +1,4 @@
-import { detailSections } from "./details";
+import { detailSections } from "./detail-sections";
 
 // A section of a venue's Details that isn't built yet: its title and what it will hold.
 export function DetailPlaceholder({ slug }: { slug: string }) {

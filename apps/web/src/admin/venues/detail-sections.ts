@@ -1,6 +1,4 @@
-"use client";
-
-import type { Language, VenueStatus, VenueTranslation } from "@hagz/contracts";
+import type { Language, VenueStatus } from "@hagz/contracts";
 import {
   IconAlignLeft,
   IconMapPin,
@@ -9,11 +7,10 @@ import {
   IconStar,
   type Icon,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
-import { api } from "@/admin/api";
-import { message, notTheirFault, send } from "@/admin/errors";
-import { useHud } from "@/admin/hud";
 import { venueHref } from "./sections";
+
+// Plain data, without "use client": the Details pages that aren't built yet are server components,
+// and a server component importing from a client module gets references, not these values.
 
 // A venue's Details tab: what players see, split into sections by a menu beside them (Figma A6,
 // option 5, user 2026-11-17). Translating is what admins edit most in this phase, so the tab opens
@@ -71,29 +68,3 @@ export const LANGUAGES: { language: Language; label: string }[] = [
   { language: "EN", label: "English" },
   { language: "AR", label: "Arabic" },
 ];
-
-export function useVenueTranslations(venueId: string) {
-  const [data, setData] = useState<VenueTranslation[]>();
-  const [error, setError] = useState<string>();
-  const hud = useHud();
-
-  const load = useCallback(async () => {
-    const result = await send(
-      api.GET("/v1/admin/venues/{id}/translations", { params: { path: { id: venueId } } }),
-    );
-    if (!result.ok) {
-      const text = message(result.error);
-      setError(text);
-      if (notTheirFault(result.error)) hud(text, { label: "Try again", run: () => void load() });
-      return;
-    }
-    setError(undefined);
-    setData(result.data.data);
-  }, [venueId, hud]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  return { data, error, reload: () => void load() };
-}

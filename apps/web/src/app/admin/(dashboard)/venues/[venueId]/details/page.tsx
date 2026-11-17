@@ -4,7 +4,8 @@ import type { VenueTranslation } from "@hagz/contracts";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Skeleton } from "@/admin/data-table";
-import { canTranslate, LANGUAGES, useVenueTranslations } from "@/admin/venues/details";
+import { canTranslate, LANGUAGES } from "@/admin/venues/detail-sections";
+import { useVenueTranslations } from "@/admin/venues/translations";
 import { TranslationsPanel } from "@/admin/venues/translations-panel";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
