@@ -133,6 +133,18 @@ export type SetupItemState = z.infer<typeof SetupItemState>;
 export type SetupItem = z.infer<typeof SetupItem>;
 export type VenueSetup = z.infer<typeof VenueSetup>;
 
+// A venue's tax number with the latest check of that number. A check only counts for the number it
+// was made on, so changing the number makes it unchecked again.
+export const TaxNumberStatus = z
+  .object({
+    value: z.string().nullable(),
+    check: z
+      .object({ valid: z.boolean(), note: z.string().nullable(), at: z.iso.datetime() })
+      .nullable()
+      .meta({ description: "The latest check of this number; null when it's not been checked." }),
+  })
+  .meta({ id: "TaxNumberStatus" });
+
 // Everything the admin's Application tab needs to say where a venue is on its way to live, beside the
 // venue itself (GET /admin/venues/{id}).
 export const AdminVenueOverview = z
@@ -150,14 +162,19 @@ export const AdminVenueOverview = z
     goLive: z
       .array(GoLiveGap)
       .meta({ description: "What's still missing to go live; empty when it's ready." }),
-    taxNumber: z.object({
-      value: z.string().nullable(),
-      check: z
-        .object({ valid: z.boolean(), note: z.string().nullable(), at: z.iso.datetime() })
-        .nullable()
-        .meta({ description: "The latest check of this number; null when it's not been checked." }),
-    }),
+    taxNumber: TaxNumberStatus,
   })
   .meta({ id: "AdminVenueOverview" });
 
+// A venue's contact and tax, for the Contact and tax section of its admin Details: the phone players
+// call, and the tax number with its latest check.
+export const AdminVenueContact = z
+  .object({
+    phone: z.string().nullable().meta({ example: "+20235514420" }),
+    taxNumber: TaxNumberStatus,
+  })
+  .meta({ id: "AdminVenueContact" });
+
+export type TaxNumberStatus = z.infer<typeof TaxNumberStatus>;
 export type AdminVenueOverview = z.infer<typeof AdminVenueOverview>;
+export type AdminVenueContact = z.infer<typeof AdminVenueContact>;

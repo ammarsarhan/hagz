@@ -1,4 +1,6 @@
 import type {
+  AdminVenueContact,
+  TaxNumberStatus,
   AdminVenueOverview,
   CheckTaxNumber,
   RejectVenue,
@@ -372,12 +374,40 @@ export const goLive = async (adminId: string, venueId: string, clock: Clock = sy
   });
 };
 
-// The admin's Overview tab: the owner's checklist (with when it was sent and why it was last sent
-// back), what going live still needs, and the tax number with its latest check. A check only counts
-// for the number it was made on, so changing the number makes it unchecked again.
+// A tax number with the latest check of it. A check only counts for the number it was made on, so
+// changing the number makes it unchecked again.
+const taxNumberStatus = async (
+  venueId: string,
+  taxNumber: string | null,
+): Promise<TaxNumberStatus> => {
+  const check = await prisma.venueEvent.findFirst({
+    where: { venueId, type: TAX_NUMBER_CHECKED },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { data: true, createdAt: true },
+  });
+  const checked = check?.data as {
+    taxNumber?: string | null;
+    valid?: boolean;
+    note?: string | null;
+  };
+  return {
+    value: taxNumber,
+    check:
+      check && taxNumber !== null && checked.taxNumber === taxNumber
+        ? {
+            valid: checked.valid === true,
+            note: checked.note ?? null,
+            at: check.createdAt.toISOString(),
+          }
+        : null,
+  };
+};
+
+// The admin's Application tab: the owner's checklist (with when it was sent and why it was last
+// sent back), what going live still needs, and the tax number with its latest check.
 export const venueOverview = async (venueId: string): Promise<AdminVenueOverview> => {
   const setup = await venueSetup(venueId, "EN");
-  const [venue, grounds, check] = await Promise.all([
+  const [venue, grounds] = await Promise.all([
     prisma.venue.findUniqueOrThrow({
       where: { id: venueId },
       select: {
@@ -386,34 +416,25 @@ export const venueOverview = async (venueId: string): Promise<AdminVenueOverview
       },
     }),
     prisma.ground.count({ where: { venueId, status: "ACTIVE" } }),
-    prisma.venueEvent.findFirst({
-      where: { venueId, type: TAX_NUMBER_CHECKED },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      select: { data: true, createdAt: true },
-    }),
   ]);
-  const checked = check?.data as {
-    taxNumber?: string | null;
-    valid?: boolean;
-    note?: string | null;
-  };
   return {
     setup: { items: setup.items, required: setup.required },
     submittedAt: setup.venue.submittedAt,
     rejection: setup.rejection,
     goLive: goLiveGaps(venue.translations, grounds),
-    taxNumber: {
-      value: venue.taxNumber,
-      check:
-        check && venue.taxNumber !== null && checked.taxNumber === venue.taxNumber
-          ? {
-              valid: checked.valid === true,
-              note: checked.note ?? null,
-              at: check.createdAt.toISOString(),
-            }
-          : null,
-    },
+    taxNumber: await taxNumberStatus(venueId, venue.taxNumber),
   };
+};
+
+// A venue's Contact and tax section: the phone players call, and the tax number with its latest
+// check.
+export const venueContact = async (venueId: string): Promise<AdminVenueContact> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id: venueId },
+    select: { phone: true, taxNumber: true },
+  });
+  if (!venue) throw venueNotFound();
+  return { phone: venue.phone, taxNumber: await taxNumberStatus(venueId, venue.taxNumber) };
 };
 
 export const venueHistory = async (
