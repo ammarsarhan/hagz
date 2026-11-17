@@ -18,6 +18,7 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
   table,
   widths = {},
   onRowClick,
+  isSelected,
   loading = false,
   empty,
 }: {
@@ -27,6 +28,8 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
   widths?: Record<string, string>;
   // Rows that open something: the whole row is the target, and Enter works from the keyboard.
   onRowClick?: (row: Row<TFeatures, TData>) => void;
+  // The row picked in a chooser (the area modal): shaded grey until another is picked.
+  isSelected?: (row: Row<TFeatures, TData>) => boolean;
   // Still fetching: grey bars stand in for the rows, under the real headers.
   loading?: boolean;
   // Shown under the headers when there are no rows.
@@ -78,7 +81,9 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
                   : undefined
               }
               tabIndex={onRowClick ? 0 : undefined}
-              className={`border-b border-border transition-colors hover:bg-[#fafafa] ${
+              className={`border-b border-border transition-colors ${
+                isSelected?.(row) ? "bg-chip" : "hover:bg-[#fafafa]"
+              } ${
                 onRowClick
                   ? "cursor-pointer outline-none focus-visible:bg-[#f5f5f5] focus-visible:shadow-[inset_2px_0_0_var(--color-ink)]"
                   : ""
