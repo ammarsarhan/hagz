@@ -122,6 +122,9 @@ export function VenueInReview({
   );
 }
 
+// How far a step's mark sits below the middle of its title's line, in points.
+const MARK_NUDGE = 2;
+
 // One step of the review: done (a filled tick), happening now (a ring with a dot), or still to
 // come (a pale ring, its words pale too), joined by a line down to the next.
 function Step({
@@ -137,22 +140,25 @@ function Step({
 }) {
   const pending = state === "next";
   // The mark and the title share a row, centred on each other, so the mark sits on the title's line
-  // whatever the line height does (iOS puts a tall line's extra space above the text). The detail
-  // and the line down to the next step go under it.
+  // whatever the line height does (iOS puts a tall line's extra space above the text). Centred on
+  // the line, it still reads high next to mostly lowercase words, so it's nudged down onto them.
+  // The detail and the line down to the next step go under it.
   return (
     <View>
       <View className="flex-row items-center gap-3.5">
-        {state === "done" ? (
-          <View className="size-[22px] items-center justify-center rounded-full bg-ink">
-            <IconCheck size={14} color={colors.white} strokeWidth={3} />
-          </View>
-        ) : state === "now" ? (
-          <View className="size-[22px] items-center justify-center rounded-full border-2 border-ink">
-            <View className="size-2 rounded-full bg-ink" />
-          </View>
-        ) : (
-          <View className="size-[22px] rounded-full border-[1.5px] border-hairline" />
-        )}
+        <View style={{ transform: [{ translateY: MARK_NUDGE }] }}>
+          {state === "done" ? (
+            <View className="size-[22px] items-center justify-center rounded-full bg-ink">
+              <IconCheck size={14} color={colors.white} strokeWidth={3} />
+            </View>
+          ) : state === "now" ? (
+            <View className="size-[22px] items-center justify-center rounded-full border-2 border-ink">
+              <View className="size-2 rounded-full bg-ink" />
+            </View>
+          ) : (
+            <View className="size-[22px] rounded-full border-[1.5px] border-hairline" />
+          )}
+        </View>
         <Text
           className={`flex-1 text-subtitle leading-[1.375] ${pending ? "text-ink-2" : "font-medium"}`}
         >
