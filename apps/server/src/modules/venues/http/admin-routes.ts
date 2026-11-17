@@ -16,6 +16,7 @@ import {
   reviewQueue,
   setVenueArea,
   venueHistory,
+  venueOverview,
 } from "../application/review";
 import {
   banStaff,
@@ -70,6 +71,9 @@ export const venuesAdminRoutes = createRouter()
   .openapi(route.resumeVenue, async (c) => {
     await resumeVenue(c.req.valid("param").id, { adminId: c.var.admin.adminId });
     return c.body(null, 204);
+  })
+  .openapi(route.venueOverview, async (c) => {
+    return c.json(await venueOverview(c.req.valid("param").id), 200);
   })
   .openapi(route.venueHistory, async (c) => {
     return c.json(await venueHistory(c.req.valid("param").id, c.req.valid("query")), 200);

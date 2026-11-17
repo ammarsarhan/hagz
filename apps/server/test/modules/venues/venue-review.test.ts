@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  AdminVenueOverview,
   Ground,
   ReviewVenue,
   StaffInvitation,
@@ -657,5 +658,52 @@ describe("admin support on a venue's team", () => {
       const res = await admin("POST", `/staff/${member.id}/${action}`, REASON);
       expect(await problem(res)).toMatchObject({ code: "ACCOUNT_BANNED" });
     }
+  });
+});
+
+describe("a venue's overview", () => {
+  const overview = async (venueId: string) =>
+    AdminVenueOverview.parse(await (await admin("GET", `/venues/${venueId}/overview`)).json());
+
+  it("follows the venue from draft to provisioning", async () => {
+    const { owner, venueId, path } = await aReadyDraft();
+
+    const draft = await overview(venueId);
+    expect(draft.setup.required.done).toBe(draft.setup.required.total);
+    expect(draft.submittedAt).toBeNull();
+    expect(draft.rejection).toBeNull();
+
+    await submit(owner.id, path);
+    expect((await overview(venueId)).submittedAt).not.toBeNull();
+
+    await admin("POST", `/venues/${venueId}/reject`, {
+      reason: "Add photos of the pitches themselves.",
+    });
+    expect((await overview(venueId)).rejection).toMatchObject({
+      reason: "Add photos of the pitches themselves.",
+    });
+
+    await submit(owner.id, path);
+    await admin("POST", `/venues/${venueId}/approve`);
+    // The owner wrote the listing in English; the admin writes the Arabic.
+    expect((await overview(venueId)).goLive).toEqual(["AR_TRANSLATION"]);
+  });
+
+  it("keeps a tax number check for that number only", async () => {
+    const { owner, venueId, path } = await aReadyDraft();
+    await staff(owner.id, "PATCH", path, { taxNumber: "100-200-300" });
+    await submit(owner.id, path);
+    await admin("POST", `/venues/${venueId}/approve`);
+    expect((await overview(venueId)).taxNumber).toEqual({ value: "100-200-300", check: null });
+
+    await admin("POST", `/venues/${venueId}/tax-number-check`, { valid: false, note: "Not found" });
+    expect((await overview(venueId)).taxNumber.check).toMatchObject({
+      valid: false,
+      note: "Not found",
+    });
+
+    await prisma.venue.update({ where: { id: venueId }, data: { taxNumber: "999-888-777" } });
+    expect((await overview(venueId)).taxNumber).toEqual({ value: "999-888-777", check: null });
+    expect((await admin("GET", `/venues/${randomUUID()}/overview`)).status).toBe(404);
   });
 });

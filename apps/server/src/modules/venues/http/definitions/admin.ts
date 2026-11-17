@@ -1,6 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   AdminVenue,
+  AdminVenueOverview,
   AdminVenueQuery,
   BanStaff,
   CheckTaxNumber,
@@ -202,6 +203,25 @@ export const pauseVenue = step("pause", "Pause a live venue", "No new bookings u
 
 export const resumeVenue = step("resume", "Reopen a paused venue", "Needs an active ground.", {
   409: problemResponse("VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND"),
+});
+
+export const venueOverview = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/overview",
+  tags,
+  summary: "Where a venue is on its way to live",
+  description:
+    "The owner's checklist, when it was sent for review and why it was last sent back, what going " +
+    "live still needs, and the tax number with its latest check.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The overview", ...json(AdminVenueOverview) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
 });
 
 export const venueHistory = createRoute({
