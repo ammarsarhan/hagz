@@ -13,8 +13,7 @@ import { OverlayBody, OverlayFooter, OverlayHeader } from "./overlay";
 // Every way out (×, Escape, a click on the dimmed page) asks through `onRequestClose`, so the owner
 // decides; it usually just sets `open` to false.
 
-// A panel has a visible title, or none (a person's panel, whose sections say who they are) and a
-// label instead, so screen readers can still name it.
+// A panel has a visible title, or none and a label instead, so screen readers can still name it.
 type Heading = { title: ReactNode; label?: string } | { title?: undefined; label: string };
 
 export function SidePanel({
@@ -24,6 +23,7 @@ export function SidePanel({
   title,
   label,
   description,
+  compact = false,
   footer,
   children,
 }: Heading & {
@@ -31,6 +31,8 @@ export function SidePanel({
   onRequestClose: () => void;
   onExited: () => void;
   description?: ReactNode;
+  // The smaller title and line (OverlayHeader's compact), for a person's panel.
+  compact?: boolean;
   footer?: ReactNode;
   children: ReactNode;
 }) {
@@ -69,7 +71,12 @@ export function SidePanel({
       className="side-panel fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-[32rem] max-w-full bg-white p-0 text-ink shadow-[-12px_0_40px_rgba(0,0,0,0.12)] backdrop:bg-scrim"
     >
       <div className="flex h-full flex-col">
-        <OverlayHeader title={title} description={description} onClose={onRequestClose} />
+        <OverlayHeader
+          title={title}
+          description={description}
+          compact={compact}
+          onClose={onRequestClose}
+        />
         <OverlayBody>{children}</OverlayBody>
         {footer ? <OverlayFooter>{footer}</OverlayFooter> : null}
       </div>
