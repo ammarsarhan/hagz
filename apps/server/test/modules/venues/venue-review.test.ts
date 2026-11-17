@@ -285,6 +285,32 @@ describe("reviewing", () => {
     expect((await submit(owner.id, path)).venue.status).toBe("SUBMITTED");
   });
 
+  it("doesn't count a section changed and changed back", async () => {
+    const { owner, venueId, path, ground } = await aReadyDraft();
+    await submit(owner.id, path);
+    await admin("POST", `/venues/${venueId}/reject`, {
+      reason: "The pitch is covered: mark it indoor.",
+      items: ["GROUNDS", "SETTINGS"],
+    });
+    const flagged = async () =>
+      VenueSetup.parse(await (await staff(owner.id, "GET", `${path}/setup`)).json())
+        .items.filter((item) => item.needsChanges)
+        .map((item) => item.key);
+    const groundPath = `${path}/grounds/${ground.id}`;
+
+    // Indoor and back to outdoor; a stricter policy and back to the one it had.
+    await staff(owner.id, "PATCH", groundPath, { environment: "INDOOR" });
+    await staff(owner.id, "PATCH", groundPath, { environment: "OUTDOOR" });
+    await staff(owner.id, "PATCH", `${path}/settings`, { cancellationPolicy: "STRICT" });
+    await staff(owner.id, "PATCH", `${path}/settings`, { cancellationPolicy: "MODERATE" });
+    expect(await flagged()).toEqual(["GROUNDS", "SETTINGS"]);
+    const early = await staff(owner.id, "POST", `${path}/submit`);
+    expect(await problem(early)).toMatchObject({ code: "CHANGES_NEEDED" });
+
+    await staff(owner.id, "PATCH", groundPath, { environment: "INDOOR" });
+    expect(await flagged()).toEqual(["SETTINGS"]);
+  });
+
   it("only takes setup sections to change, each once", async () => {
     const { owner, venueId, path } = await aReadyDraft();
     await submit(owner.id, path);

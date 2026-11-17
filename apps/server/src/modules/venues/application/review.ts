@@ -32,7 +32,8 @@ import {
   VENUE_SUBMITTED,
   VENUE_WITHDRAWN,
 } from "../domain/events";
-import { goLiveGaps, SECTION_EDIT_EVENTS, unchangedSections } from "../domain/review";
+import { goLiveGaps, unchangedSections } from "../domain/review";
+import { sectionFingerprints } from "./section-fingerprints";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { adminVenueSelect, presentAdminVenue } from "./admin-venues";
 import { pinOf, writeTranslation } from "./venue-edit";
@@ -213,36 +214,42 @@ export const submittedAtOf = async (venueId: string): Promise<string | null> => 
   return latest?.createdAt.toISOString() ?? null;
 };
 
-export const rejectionOf = async (venueId: string): Promise<Rejection | null> => {
+// The last send-back while the venue is a draft, with the fingerprints of the sections it asked to
+// change (kept off the API: they only mean something to sectionsToChange).
+export const latestRejection = async (venueId: string) => {
   const latest = await prisma.venueEvent.findFirst({
     where: { venueId, type: { in: LIFECYCLE_EVENTS } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: { type: true, data: true, createdAt: true },
   });
   if (latest?.type !== VENUE_REJECTED) return null;
-  const data = latest.data as { reason?: string; items?: unknown } | null;
-  return {
+  const data = latest.data as {
+    reason?: string;
+    items?: unknown;
+    fingerprints?: Partial<Record<SetupItemKey, string>>;
+  } | null;
+  const rejection: Rejection = {
     reason: data?.reason ?? "",
     at: latest.createdAt.toISOString(),
-    // Send-backs from before sections were asked for have none.
     items: SetupItemKey.array()
       .catch([])
       .parse(data?.items ?? []),
   };
+  return { rejection, fingerprints: data?.fingerprints ?? {} };
 };
 
-// The sections a send-back asked to change that nothing has edited since.
-export const sectionsToChange = async (venueId: string, rejection: Rejection | null) => {
-  if (!rejection || rejection.items.length === 0) return [];
-  const edits = await prisma.venueEvent.findMany({
-    where: {
-      venueId,
-      type: { in: SECTION_EDIT_EVENTS },
-      createdAt: { gt: new Date(rejection.at) },
-    },
-    select: { type: true, data: true },
-  });
-  return unchangedSections(rejection.items, edits);
+// The sections a send-back asked to change that still hold what they held then.
+export const sectionsToChange = async (
+  venueId: string,
+  last: Awaited<ReturnType<typeof latestRejection>>,
+): Promise<SetupItemKey[]> => {
+  if (!last || last.rejection.items.length === 0) return [];
+  const { items } = last.rejection;
+  return unchangedSections(
+    items,
+    last.fingerprints,
+    await sectionFingerprints(prisma, venueId, items),
+  );
 };
 
 // ---------- Admins ----------
@@ -318,9 +325,10 @@ export const rejectVenue = async (
       "DRAFT",
       statusTo("Only a venue in review can be rejected."),
     );
-    // The sections to change go with the reason: the setup screen marks them, and sending again
-    // waits until each is edited.
-    await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason, items });
+    // The sections to change go with the reason, each with its fingerprint as it is now: the setup
+    // screen marks them, and sending again waits until each holds something different.
+    const fingerprints = await sectionFingerprints(tx, venueId, items);
+    await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason, items, fingerprints });
     await tellOwner(tx, venueId, { type: "VENUE_REJECTED", data: { reason } }, clock);
   });
 };

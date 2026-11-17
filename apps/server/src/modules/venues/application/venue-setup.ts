@@ -10,7 +10,7 @@ import { setupChecklist } from "../domain/setup";
 import { generateSlug } from "../domain/slug";
 import { accountSuspended, venueNotFound } from "./access";
 import { checkPin } from "./pin-checks";
-import { rejectionOf, sectionsToChange, submittedAtOf } from "./review";
+import { latestRejection, sectionsToChange, submittedAtOf } from "./review";
 
 // Creating a venue and reading its setup checklist (docs/onboarding.md, steps 1 and 2).
 
@@ -169,8 +169,9 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
   const [pin] = await prisma.$queryRaw<{ hasPin: boolean }[]>`
     SELECT coordinates IS NOT NULL AS "hasPin" FROM "Venue" WHERE id = ${venueId}::uuid`;
   // A draft that was sent back shows why; the review module reads it from the events.
-  const rejection = venue.status === "DRAFT" ? await rejectionOf(venueId) : null;
-  const needsChanges = await sectionsToChange(venueId, rejection);
+  const last = venue.status === "DRAFT" ? await latestRejection(venueId) : null;
+  const rejection = last?.rejection ?? null;
+  const needsChanges = await sectionsToChange(venueId, last);
   // One in review says since when.
   const submittedAt = venue.status === "SUBMITTED" ? await submittedAtOf(venueId) : null;
   return {
