@@ -4431,6 +4431,46 @@
       "AdminVenueLocation": {
         "type": "object",
         "properties": {
+          "marketplace": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string",
+                "example": "EG"
+              },
+              "names": {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "example": "Egypt"
+                  },
+                  "ar": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "en",
+                  "ar"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "names"
+            ]
+          },
           "coordinates": {
             "type": [
               "object",
@@ -4503,6 +4543,7 @@
           }
         },
         "required": [
+          "marketplace",
           "coordinates",
           "area",
           "requestedArea"

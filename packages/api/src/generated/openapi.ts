@@ -10981,6 +10981,17 @@ export interface components {
             locationId: string;
         };
         AdminVenueLocation: {
+            marketplace: {
+                /** Format: uuid */
+                id: string;
+                /** @example EG */
+                code: string;
+                names: {
+                    /** @example Egypt */
+                    en: string | null;
+                    ar: string | null;
+                };
+            };
             /** @description Null until the owner drops a pin. */
             coordinates: {
                 latitude: number;
