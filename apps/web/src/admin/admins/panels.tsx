@@ -233,7 +233,8 @@ export function AccessAction({
   onClick,
 }: {
   title: string;
-  description: string;
+  // Left out for a step its title already explains.
+  description?: string;
   action: string;
   // Not yet possible; the description says why.
   disabled?: boolean;
@@ -245,7 +246,7 @@ export function AccessAction({
     <div className="flex items-center justify-between gap-12">
       <div className="min-w-0">
         <p className="text-label text-ink">{title}</p>
-        <p className="mt-0.5 text-caption text-ink-2">{description}</p>
+        {description ? <p className="mt-0.5 text-caption text-ink-2">{description}</p> : null}
       </div>
       <Button
         variant={primary ? "primary" : "secondary"}
