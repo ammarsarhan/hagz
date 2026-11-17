@@ -8,6 +8,7 @@ import { api } from "@/admin/api";
 import { day, expiresIn } from "@/admin/admins/model";
 import { Initial } from "@/admin/admins/panels";
 import { DataTable, RowMenu, TableSearch, Tag } from "@/admin/data-table";
+import { Section } from "@/admin/section";
 import { ConfirmDialog } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import {
@@ -196,54 +197,47 @@ export default function VenueTeam() {
 
   return (
     <>
-      <Section
-        title="Members"
-        description="Who works at the venue, the owner first."
-        search={
-          <TableSearch
-            value={memberQuery}
-            onChange={setMemberQuery}
-            placeholder="Search members…"
+      <Section title="Members" description="Who works at the venue, the owner first.">
+        <TableSearch value={memberQuery} onChange={setMemberQuery} placeholder="Search members…" />
+        <div className="mt-4">
+          <DataTable
+            table={memberTable}
+            widths={memberWidths}
+            onRowClick={(row) => setSelected({ kind: "member", id: row.original.staffId })}
+            loading={!data && !error}
+            empty={
+              error ??
+              (memberQuery.trim() ? `No member matches “${memberQuery}”.` : "No members yet.")
+            }
           />
-        }
-      >
-        <DataTable
-          table={memberTable}
-          widths={memberWidths}
-          onRowClick={(row) => setSelected({ kind: "member", id: row.original.staffId })}
-          loading={!data && !error}
-          empty={
-            error ??
-            (memberQuery.trim() ? `No member matches “${memberQuery}”.` : "No members yet.")
-          }
-        />
+        </div>
       </Section>
 
       <Section
         title="Invitations"
         description="Sent by the venue's staff and waiting for an answer."
-        search={
-          <TableSearch
-            value={invitationQuery}
-            onChange={setInvitationQuery}
-            placeholder="Search invitations…"
-          />
-        }
       >
-        <RevokeContext.Provider value={setRevoking}>
-          <DataTable
-            table={invitationTable}
-            widths={invitationWidths}
-            onRowClick={(row) => setSelected({ kind: "invitation", id: row.original.id })}
-            loading={!data && !error}
-            empty={
-              error ??
-              (invitationQuery.trim()
-                ? `No invitation matches “${invitationQuery}”.`
-                : "No open invitations.")
-            }
-          />
-        </RevokeContext.Provider>
+        <TableSearch
+          value={invitationQuery}
+          onChange={setInvitationQuery}
+          placeholder="Search invitations…"
+        />
+        <div className="mt-4">
+          <RevokeContext.Provider value={setRevoking}>
+            <DataTable
+              table={invitationTable}
+              widths={invitationWidths}
+              onRowClick={(row) => setSelected({ kind: "invitation", id: row.original.id })}
+              loading={!data && !error}
+              empty={
+                error ??
+                (invitationQuery.trim()
+                  ? `No invitation matches “${invitationQuery}”.`
+                  : "No open invitations.")
+              }
+            />
+          </RevokeContext.Provider>
+        </div>
       </Section>
 
       {selectedMember ? (
@@ -280,28 +274,5 @@ export default function VenueTeam() {
         />
       ) : null}
     </>
-  );
-}
-
-// A titled block, as on the Account page: the title, a line under it, then its search and table.
-// The second sits below a hairline.
-function Section({
-  title,
-  description,
-  search,
-  children,
-}: {
-  title: string;
-  description: string;
-  search: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="border-t border-border pt-8 first:border-t-0 first:pt-0 [&+&]:mt-8">
-      <h2 className="text-body font-semibold text-ink">{title}</h2>
-      <p className="mt-0.5 text-label text-ink-2">{description}</p>
-      <div className="mt-5">{search}</div>
-      <div className="mt-4">{children}</div>
-    </section>
   );
 }
