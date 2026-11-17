@@ -128,11 +128,8 @@ export function MemberPanel({
                     onClick={() => setAction("suspend")}
                   />
                 )}
-                {owner ? (
-                  <p className="text-label text-ink-2">
-                    They own this venue. Make another member the owner before banning them.
-                  </p>
-                ) : (
+                {/* Not offered to the owner: the API refuses until the venue has another owner. */}
+                {owner ? null : (
                   <AccessAction
                     title="Ban account"
                     description="For good: they can never sign in again. Use it for abuse or fraud, not a pause."

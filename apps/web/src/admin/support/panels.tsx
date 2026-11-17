@@ -123,11 +123,8 @@ export function StaffAccountPanel({
                   onClick={() => setAction("suspend")}
                 />
               )}
-              {ownsAVenue ? (
-                <p className="text-label text-ink-2">
-                  They own a venue. Make another member its owner before banning them.
-                </p>
-              ) : (
+              {/* Not offered to an owner: the API refuses until their venue has another owner. */}
+              {ownsAVenue ? null : (
                 <AccessAction
                   title="Ban account"
                   description="For good: they can never sign in again. Use it for abuse or fraud, not a pause."
