@@ -200,6 +200,23 @@ const messages = {
     en: "This person isn't a member of the venue.",
     ar: "هذا الشخص ليس عضوًا في الملعب.",
   },
+  STAFF_NOT_FOUND: {
+    en: "We couldn't find this staff account.",
+    ar: "لم نعثر على حساب الموظف هذا.",
+  },
+  OWNER_CANT_BE_REMOVED: {
+    en: "The owner can't be removed. Make another member the owner first.",
+    ar: "لا يمكن إزالة المالك. اجعل عضوًا آخر المالك أولًا.",
+  },
+  ALREADY_OWNER: { en: "They already own this venue.", ar: "هذا الشخص يملك الملعب بالفعل." },
+  STAFF_NOT_ACTIVE: {
+    en: "Their account is suspended or closed, so they can't be made the owner.",
+    ar: "حسابه موقوف أو مغلق، لذا لا يمكن جعله المالك.",
+  },
+  OWNS_A_VENUE: {
+    en: "They own a venue. Make another member its owner before banning them.",
+    ar: "يملك هذا الشخص ملعبًا. اجعل عضوًا آخر مالكه قبل حظره.",
+  },
   PERMISSION_DENIED: {
     en: "You don't have permission to do this.",
     ar: "ليست لديك صلاحية للقيام بذلك.",
