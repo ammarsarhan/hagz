@@ -19,6 +19,8 @@ export interface SetupFacts {
   cancellationPolicy: string | null;
   amenityCount: number;
   taxNumber: string | null;
+  // Sections the last send-back asked to change that haven't been edited since (domain/review.ts).
+  needsChanges: SetupItemKey[];
 }
 
 const filled = (text: string | null) => text !== null && text.trim().length > 0;
@@ -72,16 +74,26 @@ const RULES: Rule[] = [
 export const setupChecklist = (facts: SetupFacts): Omit<VenueSetup, "venue" | "rejection"> => {
   const items: SetupItem[] = RULES.filter((rule) => rule.applies?.(facts) ?? true).map(
     ({ key, required, done, after }) => {
+      const needsChanges = facts.needsChanges.includes(key);
       if (after && !after.done(facts))
-        return { key, required, state: "BLOCKED", blockedBy: after.key };
-      return { key, required, state: done(facts) ? "DONE" : "MISSING", blockedBy: null };
+        return { key, required, state: "BLOCKED", blockedBy: after.key, needsChanges };
+      return {
+        key,
+        required,
+        state: done(facts) ? "DONE" : "MISSING",
+        blockedBy: null,
+        needsChanges,
+      };
     },
   );
   const required = items.filter((item) => item.required);
   const done = required.filter((item) => item.state === "DONE").length;
+  // Only sections on the checklist hold it up: one that no longer applies (the layout, once down to
+  // one ground) can't be edited from it.
+  const pending = items.some((item) => item.needsChanges);
   return {
     items,
     required: { done, total: required.length },
-    canSubmit: facts.status === "DRAFT" && done === required.length,
+    canSubmit: facts.status === "DRAFT" && done === required.length && !pending,
   };
 };
