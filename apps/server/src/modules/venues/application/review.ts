@@ -205,14 +205,18 @@ export const resumeVenue = async (venueId: string, actor: Actor) => {
 
 // The draft's latest rejection, while it's the newest step of its review.
 // When a venue in review was sent: its latest submission.
-export const submittedAtOf = async (venueId: string): Promise<string | null> => {
+// When the venue last had this event: sent for review, approved.
+const lastAt = async (venueId: string, type: string): Promise<string | null> => {
   const latest = await prisma.venueEvent.findFirst({
-    where: { venueId, type: VENUE_SUBMITTED },
+    where: { venueId, type },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: { createdAt: true },
   });
   return latest?.createdAt.toISOString() ?? null;
 };
+
+export const submittedAtOf = (venueId: string) => lastAt(venueId, VENUE_SUBMITTED);
+export const approvedAtOf = (venueId: string) => lastAt(venueId, VENUE_APPROVED);
 
 // The last send-back while the venue is a draft, with the fingerprints of the sections it asked to
 // change (kept off the API: they only mean something to sectionsToChange).

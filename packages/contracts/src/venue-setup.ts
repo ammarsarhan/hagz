@@ -101,7 +101,11 @@ export const VenueSetup = z
       status: VenueStatus,
       name: z.string().nullable().meta({ description: "In `Accept-Language`, else any language." }),
       submittedAt: z.iso.datetime().nullable().meta({
-        description: "When it was sent for review, while it's in review; null otherwise.",
+        description:
+          "When it was last sent for review, while it's in review or approved; null otherwise.",
+      }),
+      approvedAt: z.iso.datetime().nullable().meta({
+        description: "When an admin approved it, while it's being provisioned; null otherwise.",
       }),
     }),
     items: z.array(SetupItem),

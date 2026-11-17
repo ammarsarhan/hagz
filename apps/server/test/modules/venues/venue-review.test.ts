@@ -341,6 +341,12 @@ describe("reviewing", () => {
       await prisma.notification.count({ where: { staffId: owner.id, type: "VENUE_APPROVED" } }),
     ).toBe(1);
 
+    // The staff app's review steps: when it was sent, and when it was approved.
+    const setup = VenueSetup.parse(await (await staff(owner.id, "GET", `${path}/setup`)).json());
+    const { submittedAt, approvedAt } = setup.venue;
+    expect(submittedAt).not.toBeNull();
+    expect(Date.parse(approvedAt ?? "")).toBeGreaterThanOrEqual(Date.parse(submittedAt ?? ""));
+
     const listing = await staff(owner.id, "PUT", `${path}/translations/EN`, {
       name: "Champions",
       description: null,
