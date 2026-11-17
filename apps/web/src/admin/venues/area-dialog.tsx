@@ -212,9 +212,10 @@ export function AreaDialog({
         </>
       }
     >
-      {/* Stays where it is while the tree scrolls under it: the white band covers the rows, and
-          its top padding stands in for the body's while it's stuck. */}
-      <div className="sticky top-0 z-10 -mt-6 bg-white pt-6 pb-4">
+      {/* Stays where it is while the tree scrolls under it. A sticky box sticks inside its scroller's
+          padding, so it sticks 1.5rem higher (at the scroller's edge) and fills that band with its
+          own white padding; otherwise rows show through above it. */}
+      <div className="sticky -top-6 z-10 -mt-6 bg-white pt-6 pb-4">
         <TableSearch value={query} onChange={setQuery} placeholder="Search areas…" />
       </div>
       <div>
