@@ -92,7 +92,7 @@ export default function VenueSetupScreen() {
     void afterVenueWrite(queryClient, venueId, { checklist: false });
   };
 
-  const { venue, items, required, canSubmit } = setup.data;
+  const { venue, items, required, canSubmit, rejection } = setup.data;
   const name = venue.name ?? t("screens.setup.untitled");
   // What to do next: the first required item that can actually be done now.
   const next = items.find((item) => item.required && item.state === "MISSING");
@@ -116,10 +116,14 @@ export default function VenueSetupScreen() {
           <CompactTitle
             button={<BackButton label={t("components.shared.nav.back")} onPress={leave} />}
             title={name}
-            detail={t("screens.setup.compactProgress", {
-              done: required.done,
-              total: required.total,
-            })}
+            detail={
+              rejection
+                ? t("screens.setup.actionRequired")
+                : t("screens.setup.compactProgress", {
+                    done: required.done,
+                    total: required.total,
+                  })
+            }
             style={compact.style}
           />
         }
@@ -132,13 +136,21 @@ export default function VenueSetupScreen() {
         <View className="mb-2 flex-row items-center gap-4 pt-1">
           <ProgressRing done={required.done} total={required.total} />
           <View className="flex-1">
-            <Text className="text-subtitle font-medium leading-[1.31]">
-              {t("screens.setup.progress", { done: required.done, total: required.total })}
+            {/* Sent back: what Hagz asked for, in its own words, instead of the count. Emphasis by
+                weight, not a warning colour (staff app type rules). */}
+            <Text
+              className={`text-subtitle leading-[1.31] ${rejection ? "font-semibold" : "font-medium"}`}
+            >
+              {rejection
+                ? t("screens.setup.actionRequired")
+                : t("screens.setup.progress", { done: required.done, total: required.total })}
             </Text>
             <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
-              {next
-                ? t("screens.setup.nextUp", { item: t(`screens.setup.items.${next.key}.title`) })
-                : t("screens.setup.allDone")}
+              {rejection
+                ? rejection.reason
+                : next
+                  ? t("screens.setup.nextUp", { item: t(`screens.setup.items.${next.key}.title`) })
+                  : t("screens.setup.allDone")}
             </Text>
           </View>
         </View>
