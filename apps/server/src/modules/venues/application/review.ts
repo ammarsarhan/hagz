@@ -1,3 +1,4 @@
+import { SetupItemKey } from "@hagz/contracts";
 import type {
   AdminVenueContact,
   TaxNumberStatus,
@@ -31,7 +32,7 @@ import {
   VENUE_SUBMITTED,
   VENUE_WITHDRAWN,
 } from "../domain/events";
-import { goLiveGaps } from "../domain/review";
+import { goLiveGaps, SECTION_EDIT_EVENTS, unchangedSections } from "../domain/review";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { adminVenueSelect, presentAdminVenue } from "./admin-venues";
 import { pinOf, writeTranslation } from "./venue-edit";
@@ -57,6 +58,14 @@ const setupIncomplete = (missing: string[]) =>
     status: 422,
     detail: "Some required setup items aren't done yet.",
     extensions: { missing },
+  });
+
+const changesNeeded = (items: string[]) =>
+  new AppError({
+    code: "CHANGES_NEEDED",
+    status: 422,
+    detail: "Change what the review asked for before sending the venue again.",
+    extensions: { items },
   });
 
 const goLiveBlocked = (missing: string[]) =>
@@ -133,11 +142,11 @@ export const submitVenue = async (actor: VenueAccess, language: Language): Promi
     // Edits lock the same row, so nothing changes between this check and the submission.
     const setup = await venueSetup(actor.venueId, language);
     if (!setup.canSubmit) {
-      throw setupIncomplete(
-        setup.items
-          .filter((item) => item.required && item.state !== "DONE")
-          .map((item) => item.key),
-      );
+      const missing = setup.items
+        .filter((item) => item.required && item.state !== "DONE")
+        .map((item) => item.key);
+      if (missing.length > 0) throw setupIncomplete(missing);
+      throw changesNeeded(setup.items.filter((item) => item.needsChanges).map((item) => item.key));
     }
     await tx.venue.update({ where: { id: actor.venueId }, data: { status: "SUBMITTED" } });
     await record(tx, actor.venueId, { staffId: actor.staffId }, VENUE_SUBMITTED);
@@ -211,10 +220,29 @@ export const rejectionOf = async (venueId: string): Promise<Rejection | null> =>
     select: { type: true, data: true, createdAt: true },
   });
   if (latest?.type !== VENUE_REJECTED) return null;
+  const data = latest.data as { reason?: string; items?: unknown } | null;
   return {
-    reason: (latest.data as { reason?: string } | null)?.reason ?? "",
+    reason: data?.reason ?? "",
     at: latest.createdAt.toISOString(),
+    // Send-backs from before sections were asked for have none.
+    items: SetupItemKey.array()
+      .catch([])
+      .parse(data?.items ?? []),
   };
+};
+
+// The sections a send-back asked to change that nothing has edited since.
+export const sectionsToChange = async (venueId: string, rejection: Rejection | null) => {
+  if (!rejection || rejection.items.length === 0) return [];
+  const edits = await prisma.venueEvent.findMany({
+    where: {
+      venueId,
+      type: { in: SECTION_EDIT_EVENTS },
+      createdAt: { gt: new Date(rejection.at) },
+    },
+    select: { type: true, data: true },
+  });
+  return unchangedSections(rejection.items, edits);
 };
 
 // ---------- Admins ----------
@@ -278,7 +306,7 @@ export const approveVenue = async (
 export const rejectVenue = async (
   adminId: string,
   venueId: string,
-  { reason }: RejectVenue,
+  { reason, items }: RejectVenue,
   clock: Clock = systemClock,
 ) => {
   await transaction(async (tx) => {
@@ -290,7 +318,9 @@ export const rejectVenue = async (
       "DRAFT",
       statusTo("Only a venue in review can be rejected."),
     );
-    await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason });
+    // The sections to change go with the reason: the setup screen marks them, and sending again
+    // waits until each is edited.
+    await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason, items });
     await tellOwner(tx, venueId, { type: "VENUE_REJECTED", data: { reason } }, clock);
   });
 };

@@ -243,6 +243,58 @@ describe("reviewing", () => {
     expect(resubmitted.rejection).toBeNull();
   });
 
+  it("holds a venue sent back with sections to change until each is edited", async () => {
+    const { owner, venueId, path } = await aReadyDraft();
+    await submit(owner.id, path);
+    const reason = "Choose a stricter policy, and add the VAT number from your invoices.";
+    const sentBack = await admin("POST", `/venues/${venueId}/reject`, {
+      reason,
+      items: ["SETTINGS", "TAX_NUMBER"],
+    });
+    expect(sentBack.status).toBe(204);
+
+    const setupOf = async () =>
+      VenueSetup.parse(await (await staff(owner.id, "GET", `${path}/setup`)).json());
+    const flagged = (setup: VenueSetup) =>
+      setup.items.filter((item) => item.needsChanges).map((item) => item.key);
+
+    const setup = await setupOf();
+    expect(setup.rejection).toMatchObject({ reason, items: ["SETTINGS", "TAX_NUMBER"] });
+    expect(flagged(setup)).toEqual(["SETTINGS", "TAX_NUMBER"]);
+    expect(setup.canSubmit).toBe(false);
+
+    const early = await staff(owner.id, "POST", `${path}/submit`);
+    expect(early.status).toBe(422);
+    expect(await problem(early)).toMatchObject({
+      code: "CHANGES_NEEDED",
+      items: ["SETTINGS", "TAX_NUMBER"],
+    });
+
+    // Saving the policy it already has changes nothing, and the phone isn't the tax number.
+    await staff(owner.id, "PATCH", `${path}/settings`, { cancellationPolicy: "MODERATE" });
+    await staff(owner.id, "PATCH", path, { phone: "+20 2 2358 1111" });
+    expect(flagged(await setupOf())).toEqual(["SETTINGS", "TAX_NUMBER"]);
+
+    await staff(owner.id, "PATCH", `${path}/settings`, { cancellationPolicy: "STRICT" });
+    expect(flagged(await setupOf())).toEqual(["TAX_NUMBER"]);
+    await staff(owner.id, "PATCH", path, { taxNumber: "512-334-981" });
+    const ready = await setupOf();
+    expect(flagged(ready)).toEqual([]);
+    expect(ready.canSubmit).toBe(true);
+
+    expect((await submit(owner.id, path)).venue.status).toBe("SUBMITTED");
+  });
+
+  it("only takes setup sections to change, each once", async () => {
+    const { owner, venueId, path } = await aReadyDraft();
+    await submit(owner.id, path);
+    const reason = "Retake the photos in daylight, please.";
+    for (const items of [["PRICES"], ["PHOTOS", "PHOTOS"]]) {
+      const res = await admin("POST", `/venues/${venueId}/reject`, { reason, items });
+      expect(res.status).toBe(400);
+    }
+  });
+
   it("needs a reason to send a venue back", async () => {
     const { owner, venueId, path } = await aReadyDraft();
     await submit(owner.id, path);
