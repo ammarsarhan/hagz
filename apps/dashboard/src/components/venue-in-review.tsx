@@ -67,7 +67,9 @@ export function VenueInReview({
     >
       <NavBar start={<CloseButton label={t("components.shared.nav.close")} onPress={onClose} />} />
       <FadingScroll>
-        <Title subtitle={t("screens.setup.review.inReview")}>{name}</Title>
+        <Title subtitle={t("screens.setup.review.inReview")}>
+          {t("screens.setup.review.submittedTitle", { venue: name })}
+        </Title>
 
         <View className="mt-4">
           <Step
@@ -151,15 +153,23 @@ function Step({
         ) : (
           <View className="size-[22px] rounded-full border-[1.5px] border-hairline" />
         )}
-        {last ? null : <View className="my-1 w-px flex-1 bg-hairline" style={{ minHeight: 28 }} />}
-      </View>
-      <View className={`flex-1 ${last ? "" : "pb-7"}`}>
-        <Text className={`text-subtitle leading-[1.375] ${pending ? "text-ink-2" : "font-medium"}`}>
+        <Text
+          className={`flex-1 text-subtitle leading-[1.375] ${pending ? "text-ink-2" : "font-medium"}`}
+        >
           {title}
         </Text>
-        {detail ? (
-          <Text className={`text-label ${pending ? "text-ink-3" : "text-ink-2"}`}>{detail}</Text>
-        ) : null}
+      </View>
+      <View className="flex-row gap-3.5">
+        <View className="items-center" style={{ width: 22 }}>
+          {last ? null : (
+            <View className="my-1 w-px flex-1 bg-hairline" style={{ minHeight: 28 }} />
+          )}
+        </View>
+        <View className={`flex-1 ${last ? "" : "pb-7"}`}>
+          {detail ? (
+            <Text className={`text-label ${pending ? "text-ink-3" : "text-ink-2"}`}>{detail}</Text>
+          ) : null}
+        </View>
       </View>
     </View>
   );
