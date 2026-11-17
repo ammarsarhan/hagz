@@ -602,6 +602,8 @@ const en = {
         },
         states: {
           todo: "To do",
+          // The last review asked to change it and it hasn't been edited since.
+          needsChanges: "Needs changes",
           done: "Done",
           optional: "Optional",
           // GROUNDS is the only item that blocks another (opening hours, and the layout), so these

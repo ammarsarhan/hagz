@@ -654,6 +654,7 @@ const ar: ArabicTranslations = {
         },
         states: {
           todo: "مطلوب",
+          needsChanges: "يحتاج إلى تعديل",
           done: "تم",
           optional: "اختياري",
           waiting: "بانتظار الملاعب",
