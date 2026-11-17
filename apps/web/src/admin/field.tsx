@@ -13,7 +13,7 @@ function Label({ htmlFor, text, asterisk }: { htmlFor: string; text: string; ast
     <label htmlFor={htmlFor} className="text-label font-medium text-ink-2">
       {text}
       {asterisk ? (
-        <span aria-hidden className="ml-0.5 text-ink">
+        <span aria-hidden className="ml-0.5">
           *
         </span>
       ) : null}
