@@ -6,6 +6,21 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 
+// A field's label. `asterisk` marks one that has to be filled in; the input's `required` is what
+// tells screen readers, so the mark itself is hidden from them.
+function Label({ htmlFor, text, asterisk }: { htmlFor: string; text: string; asterisk: boolean }) {
+  return (
+    <label htmlFor={htmlFor} className="text-label font-medium text-ink-2">
+      {text}
+      {asterisk ? (
+        <span aria-hidden className="ml-0.5 text-ink">
+          *
+        </span>
+      ) : null}
+    </label>
+  );
+}
+
 // The box every input sits in: white, 48 high (the apps use 56; desktop forms are denser), 1px light
 // border, 14 corners; 1.5px black when focused, red with an error. Padding shrinks by the extra half
 // pixel so text doesn't move.
@@ -21,17 +36,24 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   hint?: string;
   trailing?: ReactNode;
+  // Marks the label of a field that has to be filled in.
+  asterisk?: boolean;
 }
 
 // A labelled input. Errors are the person's to fix, so they sit right under the field.
-export function Field({ label, error, hint, trailing, ...input }: FieldProps) {
+export function Field({
+  label,
+  error,
+  hint,
+  trailing,
+  asterisk = false,
+  ...input
+}: FieldProps) {
   const id = useId();
   const note = error ?? hint;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-label font-medium text-ink-2">
-        {label}
-      </label>
+      <Label htmlFor={id} text={label} asterisk={asterisk} />
       <div className={boxClass(Boolean(error))}>
         <input
           id={id}
@@ -103,16 +125,16 @@ export function SelectField({ label, hint, options, placeholder, ...select }: Se
 interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   hint?: string;
+  // Marks the label of a field that has to be filled in.
+  asterisk?: boolean;
 }
 
 // A labelled multi-line field in the same box as Field, for a sentence or two (a reason).
-export function TextAreaField({ label, hint, ...area }: TextAreaFieldProps) {
+export function TextAreaField({ label, hint, asterisk = false, ...area }: TextAreaFieldProps) {
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-label font-medium text-ink-2">
-        {label}
-      </label>
+      <Label htmlFor={id} text={label} asterisk={asterisk} />
       <textarea
         id={id}
         rows={4}
