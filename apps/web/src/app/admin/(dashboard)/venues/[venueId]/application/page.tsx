@@ -251,7 +251,7 @@ function Checklist({ overview }: { overview: VenueOverview }) {
               <Muted>After {setupLabel[item.blockedBy].toLowerCase()}</Muted>
             ) : item.needsChanges ? (
               // Sent back asking to change it, and not edited since.
-              <span className="font-medium">To modify</span>
+              "To modify"
             ) : item.state === "DONE" ? (
               "Done"
             ) : (
