@@ -4448,6 +4448,137 @@
         ],
         "description": "The result of checking the venue's tax number."
       },
+      "AdminVenueOverview": {
+        "type": "object",
+        "properties": {
+          "setup": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SetupItem"
+                }
+              },
+              "required": {
+                "type": "object",
+                "properties": {
+                  "done": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "done",
+                  "total"
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "required"
+            ],
+            "description": "The owner's checklist, as their app shows it."
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "While it's in review."
+          },
+          "rejection": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "reason": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "reason",
+              "at"
+            ],
+            "description": "Why the last review sent this draft back, while it's a draft."
+          },
+          "goLive": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoLiveGap"
+            },
+            "description": "What's still missing to go live; empty when it's ready."
+          },
+          "taxNumber": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "check": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "valid": {
+                    "type": "boolean"
+                  },
+                  "note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "valid",
+                  "note",
+                  "at"
+                ],
+                "description": "The latest check of this number; null when it's not been checked."
+              }
+            },
+            "required": [
+              "value",
+              "check"
+            ]
+          }
+        },
+        "required": [
+          "setup",
+          "submittedAt",
+          "rejection",
+          "goLive",
+          "taxNumber"
+        ]
+      },
+      "GoLiveGap": {
+        "type": "string",
+        "enum": [
+          "AR_TRANSLATION",
+          "EN_TRANSLATION",
+          "ACTIVE_GROUND"
+        ],
+        "description": "Something a venue needs before it can go live."
+      },
       "VenueHistoryEvent": {
         "type": "object",
         "properties": {
@@ -13225,6 +13356,83 @@
           },
           "409": {
             "description": "VENUE_STATUS_CONFLICT (with `venueStatus`), or NO_ACTIVE_GROUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/overview": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Where a venue is on its way to live",
+        "description": "The owner's checklist, when it was sent for review and why it was last sent back, what going live still needs, and the tax number with its latest check.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVenueOverview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {

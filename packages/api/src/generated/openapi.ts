@@ -8321,6 +8321,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a venue is on its way to live
+         * @description The owner's checklist, when it was sent for review and why it was last sent back, what going live still needs, and the tax number with its latest check.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The overview */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenueOverview"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/history": {
         parameters: {
             query?: never;
@@ -10673,6 +10750,44 @@ export interface components {
             valid: boolean;
             note: string | null;
         };
+        AdminVenueOverview: {
+            /** @description The owner's checklist, as their app shows it. */
+            setup: {
+                items: components["schemas"]["SetupItem"][];
+                required: {
+                    done: number;
+                    total: number;
+                };
+            };
+            /**
+             * Format: date-time
+             * @description While it's in review.
+             */
+            submittedAt: string | null;
+            /** @description Why the last review sent this draft back, while it's a draft. */
+            rejection: {
+                reason: string;
+                /** Format: date-time */
+                at: string;
+            } | null;
+            /** @description What's still missing to go live; empty when it's ready. */
+            goLive: components["schemas"]["GoLiveGap"][];
+            taxNumber: {
+                value: string | null;
+                /** @description The latest check of this number; null when it's not been checked. */
+                check: {
+                    valid: boolean;
+                    note: string | null;
+                    /** Format: date-time */
+                    at: string;
+                } | null;
+            };
+        };
+        /**
+         * @description Something a venue needs before it can go live.
+         * @enum {string}
+         */
+        GoLiveGap: "AR_TRANSLATION" | "EN_TRANSLATION" | "ACTIVE_GROUND";
         VenueHistoryEvent: {
             /** Format: uuid */
             id: string;
