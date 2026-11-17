@@ -162,7 +162,7 @@ const ar: ArabicTranslations = {
           approved: "تمت الموافقة · يصبح متاحًا قريبًا",
           preparing: "نجهّز بيانات ملعبك",
           viewProgress: "عرض التقدّم",
-          liveSoon: "سنراسلك على واتساب حين يصبح متاحًا",
+          liveSoon: "سنراسلك حين يصبح متاحًا",
           sendWhenDone: "أرسله للمراجعة حين يكتمل",
           agoNow: "الآن",
           ago: {

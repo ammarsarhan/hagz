@@ -138,7 +138,7 @@ const en = {
           approved: "Approved · Going live soon",
           preparing: "We're preparing your listing",
           viewProgress: "View progress",
-          liveSoon: "We'll message you on WhatsApp when it's live",
+          liveSoon: "We'll message you when it's live",
           sendWhenDone: "Send for review when it's ready",
           agoNow: "Just now",
           ago: {
