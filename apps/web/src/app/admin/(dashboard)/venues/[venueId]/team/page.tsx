@@ -2,11 +2,10 @@
 
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { day, expiresIn } from "@/admin/admins/model";
 import { Initial } from "@/admin/admins/panels";
 import { DataTable, TableSearch, Tag } from "@/admin/data-table";
-import { TabPanel, Tabs } from "@/admin/tabs";
 import {
   accessSummary,
   useVenueTeam,
@@ -15,9 +14,10 @@ import {
 } from "@/admin/venues/team";
 import { MemberPanel, TeamInvitationPanel } from "@/admin/venues/team-panels";
 
-// A venue's Team tab, laid out like the Admins page: tabs on a hairline that split it into the staff
-// (the owner first) and the invitations still open, each a table under its own search, numbered
-// from 1. Clicking a row opens it in a side panel: a member's role and permissions, or an
+// A venue's Team tab, laid out like the Account page: the staff (the owner first) on top, then the
+// invitations still open below a hairline, each a titled section with its own search over a table
+// in the Admins page's design, numbered from 1. Members come first: fewer, and what an admin looks
+// for. Clicking a row opens it in a side panel: a member's role and permissions, or an
 // invitation's. Looking only; the venue's own staff manage their team in the dashboard app.
 
 // Each row's place in the table as it's shown (after the search), counting from 1.
@@ -113,13 +113,11 @@ const filter = <T,>(items: T[], query: string, texts: (item: T) => (string | nul
   return items.filter((item) => texts(item).some((text) => text?.toLowerCase().includes(q)));
 };
 
-type Section = "members" | "invitations";
 type Selected = { kind: "member"; id: string } | { kind: "invitation"; id: string };
 
 export default function VenueTeam() {
   const { venueId } = useParams<{ venueId: string }>();
   const { data, error } = useVenueTeam(venueId);
-  const [section, setSection] = useState<Section>("members");
   const [memberQuery, setMemberQuery] = useState("");
   const [invitationQuery, setInvitationQuery] = useState("");
   const [selected, setSelected] = useState<Selected>();
@@ -161,63 +159,53 @@ export default function VenueTeam() {
 
   return (
     <>
-      <Tabs
-        label="Team sections"
-        value={section}
-        onChange={setSection}
-        items={[
-          { id: "members", label: "Members", count: data?.members.length },
-          { id: "invitations", label: "Invitations", count: data?.invitations.length },
-        ]}
-      />
+      <Section
+        title="Members"
+        description="Who works at the venue, the owner first."
+        search={
+          <TableSearch
+            value={memberQuery}
+            onChange={setMemberQuery}
+            placeholder="Search members…"
+          />
+        }
+      >
+        <DataTable
+          table={memberTable}
+          widths={memberWidths}
+          onRowClick={(row) => setSelected({ kind: "member", id: row.original.staffId })}
+          loading={!data && !error}
+          empty={
+            error ??
+            (memberQuery.trim() ? `No member matches “${memberQuery}”.` : "No members yet.")
+          }
+        />
+      </Section>
 
-      {section === "members" ? (
-        <TabPanel id="members">
-          <div className="mt-6">
-            <TableSearch
-              value={memberQuery}
-              onChange={setMemberQuery}
-              placeholder="Search members…"
-            />
-          </div>
-          <div className="mt-4">
-            <DataTable
-              table={memberTable}
-              widths={memberWidths}
-              onRowClick={(row) => setSelected({ kind: "member", id: row.original.staffId })}
-              loading={!data && !error}
-              empty={
-                error ??
-                (memberQuery.trim() ? `No member matches “${memberQuery}”.` : "No members yet.")
-              }
-            />
-          </div>
-        </TabPanel>
-      ) : (
-        <TabPanel id="invitations">
-          <div className="mt-6">
-            <TableSearch
-              value={invitationQuery}
-              onChange={setInvitationQuery}
-              placeholder="Search invitations…"
-            />
-          </div>
-          <div className="mt-4">
-            <DataTable
-              table={invitationTable}
-              widths={invitationWidths}
-              onRowClick={(row) => setSelected({ kind: "invitation", id: row.original.id })}
-              loading={!data && !error}
-              empty={
-                error ??
-                (invitationQuery.trim()
-                  ? `No invitation matches “${invitationQuery}”.`
-                  : "No open invitations.")
-              }
-            />
-          </div>
-        </TabPanel>
-      )}
+      <Section
+        title="Invitations"
+        description="Sent by the venue's staff and waiting for an answer."
+        search={
+          <TableSearch
+            value={invitationQuery}
+            onChange={setInvitationQuery}
+            placeholder="Search invitations…"
+          />
+        }
+      >
+        <DataTable
+          table={invitationTable}
+          widths={invitationWidths}
+          onRowClick={(row) => setSelected({ kind: "invitation", id: row.original.id })}
+          loading={!data && !error}
+          empty={
+            error ??
+            (invitationQuery.trim()
+              ? `No invitation matches “${invitationQuery}”.`
+              : "No open invitations.")
+          }
+        />
+      </Section>
 
       {selectedMember ? (
         <MemberPanel
@@ -234,5 +222,28 @@ export default function VenueTeam() {
         />
       ) : null}
     </>
+  );
+}
+
+// A titled block, as on the Account page: the title, a line under it, then its search and table.
+// The second sits below a hairline.
+function Section({
+  title,
+  description,
+  search,
+  children,
+}: {
+  title: string;
+  description: string;
+  search: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-t border-border pt-8 first:border-t-0 first:pt-0 [&+&]:mt-8">
+      <h2 className="text-body font-semibold text-ink">{title}</h2>
+      <p className="mt-0.5 text-label text-ink-2">{description}</p>
+      <div className="mt-5">{search}</div>
+      <div className="mt-4">{children}</div>
+    </section>
   );
 }
