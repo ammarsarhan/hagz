@@ -7,9 +7,10 @@ import { amenityIcons } from "@/admin/platform/amenity-icons";
 import { formatAmenityPrice, useVenueAmenities } from "@/admin/venues/amenities";
 
 // What a venue offers, view only like its photos: the owner picks amenities and their prices in the
-// staff app. One row each, its icon and name, the Arabic name players see, and the price.
+// staff app. One row each, its icon and name, the Arabic name players see, whether it's drawn on the
+// venue's layout, and the price.
 
-const GRID = "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem] items-center gap-x-6";
+const GRID = "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8rem_9rem] items-center gap-x-6";
 
 export default function VenueAmenities() {
   const { venueId } = useParams<{ venueId: string }>();
@@ -39,6 +40,7 @@ export default function VenueAmenities() {
           <div className={`${GRID} border-b border-border pb-3 text-label font-semibold text-ink`}>
             <span>Amenity</span>
             <span className="text-right">Arabic</span>
+            <span>In layout</span>
             <span className="text-right">Price</span>
           </div>
           {!data
@@ -46,6 +48,7 @@ export default function VenueAmenities() {
                 <div key={i} className={`${GRID} border-b border-border py-4`}>
                   <Skeleton className="h-4 w-36" />
                   <Skeleton className="ml-auto h-4 w-24" />
+                  <Skeleton className="h-4 w-12" />
                   <Skeleton className="ml-auto h-4 w-20" />
                 </div>
               ))
@@ -75,6 +78,7 @@ export default function VenueAmenities() {
                     >
                       {amenity.names.ar ?? "None"}
                     </span>
+                    <InLayout placeable={amenity.placeable} tiles={amenity.tiles} />
                     <span className="text-right text-body text-ink tabular-nums">
                       {formatAmenityPrice(data.currency, amenity.price, amenity.pricing)}
                     </span>
@@ -84,5 +88,17 @@ export default function VenueAmenities() {
         </div>
       )}
     </section>
+  );
+}
+
+// "Yes", "Yes, 2 times" when it's drawn more than once, "No", or "Can't be placed" for an option
+// that never goes on a layout (Wi-Fi, a ball to rent).
+function InLayout({ placeable, tiles }: { placeable: boolean; tiles: number }) {
+  if (!placeable) return <span className="text-label text-ink-3">Can’t be placed</span>;
+  if (tiles === 0) return <span className="text-body text-ink-2">No</span>;
+  return (
+    <span className="text-body text-ink">
+      Yes{tiles > 1 ? <span className="text-ink-2">, {tiles} times</span> : null}
+    </span>
   );
 }
