@@ -29,6 +29,8 @@ export const TransferOwnership = z
 
 export const SuspendStaff = z.object({ reason: AdminReason }).meta({ id: "SuspendStaff" });
 
+export const BanStaff = z.object({ reason: AdminReason }).meta({ id: "BanStaff" });
+
 export const CheckTaxNumber = z
   .object({
     valid: z.boolean(),
@@ -74,6 +76,7 @@ export type RejectVenue = z.infer<typeof RejectVenue>;
 export type RemoveMember = z.infer<typeof RemoveMember>;
 export type TransferOwnership = z.infer<typeof TransferOwnership>;
 export type SuspendStaff = z.infer<typeof SuspendStaff>;
+export type BanStaff = z.infer<typeof BanStaff>;
 export type CheckTaxNumber = z.infer<typeof CheckTaxNumber>;
 export type ReviewVenue = z.infer<typeof ReviewVenue>;
 export type VenueHistoryEvent = z.infer<typeof VenueHistoryEvent>;

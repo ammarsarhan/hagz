@@ -637,4 +637,25 @@ describe("admin support on a venue's team", () => {
     ).toMatchObject({ adminId, data: { staffId: member.id } });
     expect((await admin("POST", `/staff/${randomUUID()}/suspend`, REASON)).status).toBe(404);
   });
+
+  it("bans for good, but not someone who still owns a venue", async () => {
+    const { owner, member, venueId, path } = await aTeam();
+
+    const ownerBan = await admin("POST", `/staff/${owner.id}/ban`, REASON);
+    expect(ownerBan.status).toBe(409);
+    expect(await problem(ownerBan)).toMatchObject({ code: "OWNS_A_VENUE", venueIds: [venueId] });
+
+    expect((await admin("POST", `/staff/${member.id}/ban`, REASON)).status).toBe(204);
+    expect((await membersOf(venueId)).find((m) => m.staffId === member.id)?.status).toBe("BANNED");
+    const locked = await staff(member.id, "GET", `${path}/members`);
+    expect(locked.status).toBe(403);
+    expect(
+      await prisma.venueEvent.findFirst({ where: { venueId, type: "STAFF_BANNED" } }),
+    ).toMatchObject({ adminId, data: { staffId: member.id, reason: REASON.reason } });
+    // There's no way back.
+    for (const action of ["reactivate", "suspend"]) {
+      const res = await admin("POST", `/staff/${member.id}/${action}`, REASON);
+      expect(await problem(res)).toMatchObject({ code: "ACCOUNT_BANNED" });
+    }
+  });
 });

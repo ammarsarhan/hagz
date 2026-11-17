@@ -18,6 +18,7 @@ import {
   venueHistory,
 } from "../application/review";
 import {
+  banStaff,
   reactivateStaff,
   removeMember,
   revokeInvitationAsAdmin,
@@ -95,6 +96,10 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.suspendStaff, async (c) => {
     await suspendStaff(c.var.admin.adminId, c.req.valid("param").staffId, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.banStaff, async (c) => {
+    await banStaff(c.var.admin.adminId, c.req.valid("param").staffId, c.req.valid("json"));
     return c.body(null, 204);
   })
   .openapi(route.reactivateStaff, async (c) => {

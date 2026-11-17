@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import {
   AdminVenue,
   AdminVenueQuery,
+  BanStaff,
   CheckTaxNumber,
   Language,
   list,
@@ -339,6 +340,26 @@ export const suspendStaff = createRoute({
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("STAFF_NOT_FOUND"),
     409: problemResponse("ACCOUNT_BANNED: closed for good"),
+  },
+});
+
+export const banStaff = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/ban",
+  tags,
+  summary: "Ban a staff account for good",
+  description:
+    "Signs them out everywhere and keeps them out for good: it can't be reactivated. Not while they " +
+    "own a venue (transfer it first). Recorded on each venue they're on. Banning again changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: staffParams, body: { required: true, ...json(BanStaff) } },
+  responses: {
+    204: { description: "Banned" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("OWNS_A_VENUE (with `venueIds`): transfer them first"),
   },
 });
 

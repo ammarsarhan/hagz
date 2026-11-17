@@ -1,4 +1,4 @@
-import type { RemoveMember, SuspendStaff, TransferOwnership } from "@hagz/contracts";
+import type { BanStaff, RemoveMember, SuspendStaff, TransferOwnership } from "@hagz/contracts";
 import { notifyStaff } from "@/modules/notifications";
 import type { VenueStatus } from "@/generated/prisma/enums";
 import { systemClock, type Clock } from "@/platform/clock/clock";
@@ -6,6 +6,7 @@ import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import {
   OWNERSHIP_TRANSFERRED,
+  STAFF_BANNED,
   STAFF_REACTIVATED,
   STAFF_REMOVED,
   STAFF_SUSPENDED,
@@ -15,10 +16,11 @@ import { venueNotFound } from "./access";
 import { revokeInvitation } from "./invitations";
 import { UNFINISHED, unfinishedVenueExists } from "./venue-setup";
 
-// Admin support on a venue's team (the Team tab): removing a member, revoking an invitation, handing
-// the venue to another member, and suspending a staff account. The venue's own staff run their team
-// in the dashboard app; these are for when they can't (an owner who left, a lost phone, abuse). Each
-// is recorded as a VenueEvent with the admin as the actor and their reason.
+// Admin support on a venue's team (the Team tab): removing a member, revoking an invitation and
+// handing the venue to another member; and on a staff account (the Team tab and Support page):
+// suspending, reactivating and banning it. The venue's own staff run their team in the dashboard
+// app; these are for when they can't (an owner who left, a lost phone, abuse). Each is recorded as a
+// VenueEvent with the admin as the actor and their reason.
 
 const memberNotFound = () =>
   new AppError({
@@ -46,6 +48,14 @@ const staffNotActive = (status: string) =>
     status: 409,
     detail: "Their account is suspended or closed, so they can't be made the owner.",
     extensions: { staffStatus: status },
+  });
+
+const ownsVenues = (venueIds: string[]) =>
+  new AppError({
+    code: "OWNS_A_VENUE",
+    status: 409,
+    detail: "They own a venue. Transfer it to another member before banning them.",
+    extensions: { venueIds },
   });
 
 const accountBanned = () =>
@@ -192,9 +202,34 @@ const lockStaff = async (tx: Tx, staffId: string) => {
   return staff.status;
 };
 
-// Signs them out everywhere and keeps them out: sign-in and refreshing a session refuse a suspended
-// account, and every venue route checks the account on each request, so even a token they still
-// hold stops working there at once. Suspending again changes nothing.
+// Signs them out and records why on every venue they're on. Sign-in and refreshing a session refuse
+// an account that isn't active, and every venue route checks the account on each request, so even
+// a token they still hold stops working there at once.
+const keepOut = async (
+  tx: Tx,
+  adminId: string,
+  staffId: string,
+  to: "SUSPENDED" | "BANNED",
+  reason: string,
+  clock: Clock,
+) => {
+  await tx.staff.update({ where: { id: staffId }, data: { status: to } });
+  // As identity's session store revokes: the push token goes too, so nothing is sent there.
+  await tx.staffSession.updateMany({
+    where: { staffId, revokedAt: null },
+    data: { revokedAt: clock.now(), pushToken: null },
+  });
+  await tx.venueEvent.createMany({
+    data: (await venuesOf(tx, staffId)).map((venueId) => ({
+      venueId,
+      adminId,
+      type: to === "BANNED" ? STAFF_BANNED : STAFF_SUSPENDED,
+      data: { staffId, reason },
+    })),
+  });
+};
+
+// Until an admin reactivates them. Suspending again changes nothing.
 export const suspendStaff = async (
   adminId: string,
   staffId: string,
@@ -205,21 +240,28 @@ export const suspendStaff = async (
     const status = await lockStaff(tx, staffId);
     if (status === "BANNED") throw accountBanned();
     if (status === "SUSPENDED") return;
-    const now = clock.now();
-    await tx.staff.update({ where: { id: staffId }, data: { status: "SUSPENDED" } });
-    // As identity's session store revokes: the push token goes too, so nothing is sent there.
-    await tx.staffSession.updateMany({
-      where: { staffId, revokedAt: null },
-      data: { revokedAt: now, pushToken: null },
+    await keepOut(tx, adminId, staffId, "SUSPENDED", reason, clock);
+  });
+};
+
+// For good: a banned account can't be reactivated (sign-in answers ACCOUNT_BANNED). Not while they
+// own a venue, which would be left with an owner who can never sign in: transfer it first. A
+// suspended account can be banned; banning again changes nothing.
+export const banStaff = async (
+  adminId: string,
+  staffId: string,
+  { reason }: BanStaff,
+  clock: Clock = systemClock,
+) => {
+  await transaction(async (tx) => {
+    const status = await lockStaff(tx, staffId);
+    if (status === "BANNED") return;
+    const owned = await tx.venueMembership.findMany({
+      where: { staffId, role: "OWNER" },
+      select: { venueId: true },
     });
-    await tx.venueEvent.createMany({
-      data: (await venuesOf(tx, staffId)).map((venueId) => ({
-        venueId,
-        adminId,
-        type: STAFF_SUSPENDED,
-        data: { staffId, reason },
-      })),
-    });
+    if (owned.length > 0) throw ownsVenues(owned.map((m) => m.venueId));
+    await keepOut(tx, adminId, staffId, "BANNED", reason, clock);
   });
 };
 

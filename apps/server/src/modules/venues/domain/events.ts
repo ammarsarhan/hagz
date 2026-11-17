@@ -24,6 +24,8 @@ export const OWNERSHIP_TRANSFERRED = "OWNERSHIP_TRANSFERRED";
 // they're a member of, where each venue's admins look.
 export const STAFF_SUSPENDED = "STAFF_SUSPENDED";
 export const STAFF_REACTIVATED = "STAFF_REACTIVATED";
+// Banned for good by an admin, recorded the same way.
+export const STAFF_BANNED = "STAFF_BANNED";
 
 // The venue's lifecycle (docs/onboarding.md): the owner is the actor when creating it.
 export const VENUE_CREATED = "VENUE_CREATED";
