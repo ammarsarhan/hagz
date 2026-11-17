@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ButtonLink } from "@/admin/button";
 import { Skeleton } from "@/admin/data-table";
+import { Flag } from "@/admin/flag";
 import { formatCenter, mapsLink } from "@/admin/platform/geo";
 import { AreaDialog } from "@/admin/venues/area-dialog";
 import { useVenueLocation } from "@/admin/venues/location";
@@ -45,6 +46,20 @@ export default function VenueLocation() {
               ) : null
             }
           >
+            {/* The country the venue is in: its areas, currency and tax come from it, and it can't
+                change (an area is always picked in the same one). */}
+            <Row label="Marketplace">
+              {data ? (
+                <span className="flex items-center gap-2.5">
+                  <Flag code={data.marketplace.code} size="1.25rem" />
+                  <span className="text-body text-ink">
+                    {data.marketplace.names.en ?? data.marketplace.code}
+                  </span>
+                </span>
+              ) : (
+                <Skeleton className="h-4 w-32" />
+              )}
+            </Row>
             {data?.requestedArea ? (
               <Row label="Asked for">
                 <p className="text-body text-ink">{data.requestedArea}</p>
