@@ -2,6 +2,7 @@
 
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/admin/button";
 import { DataTable, Tag } from "@/admin/data-table";
 import {
@@ -10,9 +11,11 @@ import {
   useVenueHistory,
   type VenueHistoryEvent,
 } from "@/admin/venues/history";
+import { HistoryEventModal } from "@/admin/venues/history-event";
 
 // A venue's History tab: everything that happened to it, newest first, in the admin's one table
-// design. A page at a time from the API; Show more below the table fetches the next.
+// design. A page at a time from the API; Show more below the table fetches the next. Clicking a row
+// opens the event in full: who did it, with their id, and its payload.
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, VenueHistoryEvent>();
@@ -64,6 +67,8 @@ const widths = { index: "3.5rem", actor: "28%", when: "12rem" };
 export default function VenueHistory() {
   const { venueId } = useParams<{ venueId: string }>();
   const { data, error, loadingMore, loadMore } = useVenueHistory(venueId);
+  // The event whose details are open, from a click on its row.
+  const [opened, setOpened] = useState<VenueHistoryEvent>();
 
   const table = useTable({
     features,
@@ -77,6 +82,7 @@ export default function VenueHistory() {
       <DataTable
         table={table}
         widths={widths}
+        onRowClick={(row) => setOpened(row.original)}
         loading={!data && !error}
         empty={error ?? "Nothing has happened to this venue yet."}
       />
@@ -92,6 +98,7 @@ export default function VenueHistory() {
           </Button>
         </div>
       ) : null}
+      {opened ? <HistoryEventModal event={opened} onClose={() => setOpened(undefined)} /> : null}
     </>
   );
 }
