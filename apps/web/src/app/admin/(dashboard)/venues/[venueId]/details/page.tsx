@@ -9,9 +9,9 @@ import { useVenueTranslations } from "@/admin/venues/translations";
 import { TranslationsPanel } from "@/admin/venues/translations-panel";
 import { useCurrentVenue } from "@/admin/venues/venue";
 
-// A venue's name, description and address, the section its Details opens on: one row per field with
-// English and Arabic beside each other, so a missing or mistranslated line shows against the other
-// language (Figma A6, option 5, with option 3's columns). Edit opens both languages in a side panel.
+// A venue's name, description and address, the section its Details opens on, as in the design
+// (Figma A6, option 5): an English block, then an Arabic one, each a heading over a row per field.
+// Either block's Edit opens both languages in one side panel.
 
 const FIELDS = [
   { field: "name", label: "Name" },
@@ -28,52 +28,42 @@ export default function VenueText() {
 
   return (
     <section>
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <h2 className="text-heading font-semibold text-ink">Name and description</h2>
-          <p className="mt-1 text-body text-ink-2">
-            {venue && !editable
-              ? "The owner’s words. Hagz can edit them once the venue is approved."
-              : "What players read, in English and Arabic."}
-          </p>
-        </div>
-        {editable && data ? (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="mt-1.5 shrink-0 cursor-pointer text-label font-semibold text-ink underline underline-offset-4 hover:opacity-70"
-          >
-            Edit
-          </button>
-        ) : null}
-      </div>
+      <h2 className="text-heading font-semibold text-ink">Name and description</h2>
+      <p className="mt-1 text-body text-ink-2">
+        {venue && !editable
+          ? "The owner’s words. Hagz can edit them once the venue is approved."
+          : "What players read, in both languages. Arabic is shown right to left, as players see it."}
+      </p>
 
-      <div className="mt-8">
-        {/* The languages, over their columns. */}
-        <div className="grid grid-cols-[8rem_minmax(0,1fr)_minmax(0,1fr)] gap-x-10 border-b border-border pb-3 text-label font-semibold text-ink">
-          <span />
-          {LANGUAGES.map(({ language, label }) => (
-            <span key={language} className={language === "AR" ? "text-right" : undefined}>
-              {label}
-            </span>
-          ))}
-        </div>
-        {error && !data ? (
-          <p className="py-6 text-body text-ink-2">{error}</p>
-        ) : (
-          FIELDS.map(({ field, label }) => (
-            <div
-              key={field}
-              className="grid grid-cols-[8rem_minmax(0,1fr)_minmax(0,1fr)] gap-x-10 border-b border-border py-4"
-            >
-              <span className="text-label text-ink-2">{label}</span>
-              {LANGUAGES.map(({ language }) => (
-                <Value key={language} translations={data} language={language} field={field} />
-              ))}
+      {error && !data ? (
+        <p className="mt-8 text-body text-ink-2">{error}</p>
+      ) : (
+        LANGUAGES.map(({ language, label }) => (
+          <div key={language} className="mt-8">
+            <div className="flex items-center justify-between gap-6 border-b border-border pb-3">
+              <h3 className="text-body font-semibold text-ink">{label}</h3>
+              {editable && data ? (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="shrink-0 cursor-pointer text-label font-semibold text-ink underline underline-offset-4 hover:opacity-70"
+                >
+                  Edit
+                </button>
+              ) : null}
             </div>
-          ))
-        )}
-      </div>
+            {FIELDS.map(({ field, label: fieldLabel }) => (
+              <div
+                key={field}
+                className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-6 border-b border-border py-4"
+              >
+                <span className="text-label text-ink-2">{fieldLabel}</span>
+                <Value translations={data} language={language} field={field} />
+              </div>
+            ))}
+          </div>
+        ))
+      )}
 
       {editing && data ? (
         <TranslationsPanel
