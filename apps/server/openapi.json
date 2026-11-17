@@ -4549,6 +4549,83 @@
           "requestedArea"
         ]
       },
+      "AdminVenueAmenities": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217; prices are in its minor units.",
+            "example": "EGP"
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "optionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string",
+                  "example": "parking"
+                },
+                "icon": {
+                  "$ref": "#/components/schemas/AmenityIcon"
+                },
+                "names": {
+                  "type": "object",
+                  "properties": {
+                    "en": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "ar": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "en",
+                    "ar"
+                  ]
+                },
+                "isActive": {
+                  "type": "boolean",
+                  "description": "False once Hagz turned the option off; venues that had it keep it."
+                },
+                "price": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Minor units; null when free."
+                },
+                "pricing": {
+                  "$ref": "#/components/schemas/AmenityPricing"
+                }
+              },
+              "required": [
+                "optionId",
+                "key",
+                "icon",
+                "names",
+                "isActive",
+                "price",
+                "pricing"
+              ]
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "amenities"
+        ]
+      },
       "CheckTaxNumber": {
         "type": "object",
         "properties": {
@@ -13287,6 +13364,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminVenueLocation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/amenities": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "What a venue offers",
+        "description": "Each amenity with its name, icon and the venue's price, by English name.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The amenities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVenueAmenities"
                 }
               }
             }

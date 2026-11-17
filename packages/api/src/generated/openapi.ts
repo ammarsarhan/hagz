@@ -8148,6 +8148,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/amenities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a venue offers
+         * @description Each amenity with its name, icon and the venue's price, by English name.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The amenities */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenueAmenities"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/translations/{language}": {
         parameters: {
             query?: never;
@@ -11012,6 +11089,29 @@ export interface components {
              * @example Sheikh Zayed, Giza
              */
             requestedArea: string | null;
+        };
+        AdminVenueAmenities: {
+            /**
+             * @description ISO 4217; prices are in its minor units.
+             * @example EGP
+             */
+            currency: string;
+            amenities: {
+                /** Format: uuid */
+                optionId: string;
+                /** @example parking */
+                key: string;
+                icon: components["schemas"]["AmenityIcon"];
+                names: {
+                    en: string | null;
+                    ar: string | null;
+                };
+                /** @description False once Hagz turned the option off; venues that had it keep it. */
+                isActive: boolean;
+                /** @description Minor units; null when free. */
+                price: number | null;
+                pricing: components["schemas"]["AmenityPricing"];
+            }[];
         };
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
