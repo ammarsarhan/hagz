@@ -67,12 +67,17 @@ export const VenueHistoryQuery = z
   })
   .meta({ id: "VenueHistoryQuery" });
 
+export const GoLiveGap = z
+  .enum(["AR_TRANSLATION", "EN_TRANSLATION", "ACTIVE_GROUND"])
+  .meta({ id: "GoLiveGap", description: "Something a venue needs before it can go live." });
+
 // Why the last review sent a draft back, shown on the owner's checklist.
 export const Rejection = z
   .object({ reason: z.string(), at: z.iso.datetime() })
   .meta({ id: "Rejection" });
 
 export type RejectVenue = z.infer<typeof RejectVenue>;
+export type GoLiveGap = z.infer<typeof GoLiveGap>;
 export type RemoveMember = z.infer<typeof RemoveMember>;
 export type TransferOwnership = z.infer<typeof TransferOwnership>;
 export type SuspendStaff = z.infer<typeof SuspendStaff>;

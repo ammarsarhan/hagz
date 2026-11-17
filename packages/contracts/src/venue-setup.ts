@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Rejection } from "./review";
+import { GoLiveGap, Rejection } from "./review";
 import { VenueStatus } from "./venues";
 
 // Creating a venue and its setup checklist (docs/onboarding.md, steps 1 and 2).
@@ -132,3 +132,32 @@ export type SetupItemKey = z.infer<typeof SetupItemKey>;
 export type SetupItemState = z.infer<typeof SetupItemState>;
 export type SetupItem = z.infer<typeof SetupItem>;
 export type VenueSetup = z.infer<typeof VenueSetup>;
+
+// Everything the admin's Overview tab needs to say where a venue is on its way to live, beside the
+// venue itself (GET /admin/venues/{id}).
+export const AdminVenueOverview = z
+  .object({
+    setup: z
+      .object({
+        items: z.array(SetupItem),
+        required: z.object({ done: z.int().min(0), total: z.int().min(0) }),
+      })
+      .meta({ description: "The owner's checklist, as their app shows it." }),
+    submittedAt: z.iso.datetime().nullable().meta({ description: "While it's in review." }),
+    rejection: Rejection.nullable().meta({
+      description: "Why the last review sent this draft back, while it's a draft.",
+    }),
+    goLive: z
+      .array(GoLiveGap)
+      .meta({ description: "What's still missing to go live; empty when it's ready." }),
+    taxNumber: z.object({
+      value: z.string().nullable(),
+      check: z
+        .object({ valid: z.boolean(), note: z.string().nullable(), at: z.iso.datetime() })
+        .nullable()
+        .meta({ description: "The latest check of this number; null when it's not been checked." }),
+    }),
+  })
+  .meta({ id: "AdminVenueOverview" });
+
+export type AdminVenueOverview = z.infer<typeof AdminVenueOverview>;
