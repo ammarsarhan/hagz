@@ -243,7 +243,7 @@ function Item({ item, last, onPress }: { item: SetupItem; last: boolean; onPress
   const blocked = item.state === "BLOCKED";
   const done = item.state === "DONE";
   // Needs doing: ink and medium. Done, optional or waiting: grey and quiet. Sent back asking to
-  // change it: ink and semibold, above everything but waiting, until it's edited. No reds or greens
+  // change it: ink and medium like To do, above everything but waiting, until it's changed. No reds or greens
   // anywhere in the staff app — emphasis is weight and colour of ink (Figma 285:2).
   const status = blocked
     ? {
@@ -252,7 +252,7 @@ function Item({ item, last, onPress }: { item: SetupItem; last: boolean; onPress
         label: t("screens.setup.states.waiting"),
       }
     : item.needsChanges
-      ? { dot: "bg-ink", text: "text-ink font-semibold", label: t("screens.setup.states.needsChanges") }
+      ? { dot: "bg-ink", text: "text-ink font-medium", label: t("screens.setup.states.needsChanges") }
       : done
         ? { dot: "bg-ink-3", text: "text-ink-2", label: t("screens.setup.states.done") }
         : item.required
