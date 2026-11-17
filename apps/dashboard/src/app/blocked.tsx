@@ -5,12 +5,13 @@ import { BackHandler, View } from "react-native";
 import { Button } from "@/components/button";
 import { IconAlertCircle } from "@/components/icons";
 import { Screen } from "@/components/screen";
-import { Title } from "@/components/title";
+import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { contactSupport, hasSupport } from "@/lib/support";
 
 // A suspended (temporary) or banned (permanent) account, after the right password: no way back
-// in from here, only support. The one place with an icon above the title, in plain grey.
+// in from here, only support. The icon, title and why sit centred on the screen, in the title's and
+// subtitle's styles; Back to sign in is pinned to the bottom, last.
 export default function Blocked() {
   const { t } = useTranslation();
   const { kind } = useLocalSearchParams<{ kind: "suspended" | "banned" }>();
@@ -40,14 +41,19 @@ export default function Blocked() {
       }
     >
       <Stack.Screen options={{ gestureEnabled: false }} />
-      {/* No back button: the 40px icon takes the nav row's place, set 8px lower and 8px closer to the
-          title, so the title still sits where it does on other screens. */}
-      <View className="mb-3.5 mt-2">
+      {/* Centred in the space above the buttons: there's nothing to do here but read it. */}
+      <View className="flex-1 items-center justify-center">
         <IconAlertCircle size={40} color={colors.unit} strokeWidth={1.75} />
+        <Text
+          accessibilityRole="header"
+          className="mb-2 mt-3.5 text-center text-title font-semibold tracking-[-0.4px]"
+        >
+          {t(`screens.blocked.${copy}.title`)}
+        </Text>
+        <Text className="text-center text-subtitle text-ink-2">
+          {t(`screens.blocked.${copy}.body`)}
+        </Text>
       </View>
-      <Title subtitle={t(`screens.blocked.${copy}.body`)}>
-        {t(`screens.blocked.${copy}.title`)}
-      </Title>
     </Screen>
   );
 }
