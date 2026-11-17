@@ -8225,6 +8225,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A venue's phone and tax number
+         * @description The phone players call, and the tax number with its latest check (null when this number hasn't been checked).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The contact and tax */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenueContact"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/translations/{language}": {
         parameters: {
             query?: never;
@@ -11117,6 +11194,21 @@ export interface components {
                 tiles: number;
             }[];
         };
+        AdminVenueContact: {
+            /** @example +20235514420 */
+            phone: string | null;
+            taxNumber: components["schemas"]["TaxNumberStatus"];
+        };
+        TaxNumberStatus: {
+            value: string | null;
+            /** @description The latest check of this number; null when it's not been checked. */
+            check: {
+                valid: boolean;
+                note: string | null;
+                /** Format: date-time */
+                at: string;
+            } | null;
+        };
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
             valid: boolean;
@@ -11144,16 +11236,7 @@ export interface components {
             } | null;
             /** @description What's still missing to go live; empty when it's ready. */
             goLive: components["schemas"]["GoLiveGap"][];
-            taxNumber: {
-                value: string | null;
-                /** @description The latest check of this number; null when it's not been checked. */
-                check: {
-                    valid: boolean;
-                    note: string | null;
-                    /** Format: date-time */
-                    at: string;
-                } | null;
-            };
+            taxNumber: components["schemas"]["TaxNumberStatus"];
         };
         /**
          * @description Something a venue needs before it can go live.
