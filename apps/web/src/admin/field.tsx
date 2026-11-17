@@ -41,14 +41,7 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 // A labelled input. Errors are the person's to fix, so they sit right under the field.
-export function Field({
-  label,
-  error,
-  hint,
-  trailing,
-  asterisk = false,
-  ...input
-}: FieldProps) {
+export function Field({ label, error, hint, trailing, asterisk = false, ...input }: FieldProps) {
   const id = useId();
   const note = error ?? hint;
   return (
