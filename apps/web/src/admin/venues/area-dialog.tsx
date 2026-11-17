@@ -193,6 +193,7 @@ export function AreaDialog({
 
   return (
     <Modal
+      size="large"
       onClose={onClose}
       title={location.area ? "Change area" : "Set area"}
       description={
