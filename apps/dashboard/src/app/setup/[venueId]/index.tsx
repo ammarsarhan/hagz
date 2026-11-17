@@ -242,7 +242,8 @@ function Item({ item, last, onPress }: { item: SetupItem; last: boolean; onPress
   const { t } = useTranslation();
   const blocked = item.state === "BLOCKED";
   const done = item.state === "DONE";
-  // Needs doing: ink and medium. Done, optional or waiting: grey and quiet. No reds or greens
+  // Needs doing: ink and medium. Done, optional or waiting: grey and quiet. Sent back asking to
+  // change it: ink and semibold, above everything but waiting, until it's edited. No reds or greens
   // anywhere in the staff app — emphasis is weight and colour of ink (Figma 285:2).
   const status = blocked
     ? {
@@ -250,11 +251,13 @@ function Item({ item, last, onPress }: { item: SetupItem; last: boolean; onPress
         text: "text-ink-3 font-medium",
         label: t("screens.setup.states.waiting"),
       }
-    : done
-      ? { dot: "bg-ink-3", text: "text-ink-2", label: t("screens.setup.states.done") }
-      : item.required
-        ? { dot: "bg-ink", text: "text-ink font-medium", label: t("screens.setup.states.todo") }
-        : { dot: "bg-ink-3", text: "text-ink-3 font-medium", label: t("screens.setup.states.optional") }; // prettier-ignore
+    : item.needsChanges
+      ? { dot: "bg-ink", text: "text-ink font-semibold", label: t("screens.setup.states.needsChanges") }
+      : done
+        ? { dot: "bg-ink-3", text: "text-ink-2", label: t("screens.setup.states.done") }
+        : item.required
+          ? { dot: "bg-ink", text: "text-ink font-medium", label: t("screens.setup.states.todo") }
+          : { dot: "bg-ink-3", text: "text-ink-3 font-medium", label: t("screens.setup.states.optional") }; // prettier-ignore
 
   return (
     <Pressable
