@@ -1327,7 +1327,15 @@
                   "null"
                 ],
                 "format": "date-time",
-                "description": "When it was sent for review, while it's in review; null otherwise."
+                "description": "When it was last sent for review, while it's in review or approved; null otherwise."
+              },
+              "approvedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When an admin approved it, while it's being provisioned; null otherwise."
               }
             },
             "required": [
@@ -1335,7 +1343,8 @@
               "slug",
               "status",
               "name",
-              "submittedAt"
+              "submittedAt",
+              "approvedAt"
             ]
           },
           "items": {

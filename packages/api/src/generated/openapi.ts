@@ -10171,9 +10171,14 @@ export interface components {
                 name: string | null;
                 /**
                  * Format: date-time
-                 * @description When it was sent for review, while it's in review; null otherwise.
+                 * @description When it was last sent for review, while it's in review or approved; null otherwise.
                  */
                 submittedAt: string | null;
+                /**
+                 * Format: date-time
+                 * @description When an admin approved it, while it's being provisioned; null otherwise.
+                 */
+                approvedAt: string | null;
             };
             items: components["schemas"]["SetupItem"][];
             /** @description Counts of required items, for the progress ring and the draft card. */
