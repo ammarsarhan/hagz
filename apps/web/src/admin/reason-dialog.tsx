@@ -18,6 +18,8 @@ export function ReasonDialog({
   description,
   confirmLabel,
   danger = true,
+  hint = "Kept on the venue's History. Say what happened and how you checked it.",
+  placeholder = "The owner called support: …",
   request,
   onClose,
   onDone,
@@ -26,6 +28,9 @@ export function ReasonDialog({
   description: string;
   confirmLabel: string;
   danger?: boolean;
+  // Under the field: who reads the reason. A rejection's goes to the owner.
+  hint?: string;
+  placeholder?: string;
   request: (reason: string) => Promise<{ ok: boolean; error?: unknown }>;
   onClose: () => void;
   onDone: () => void;
@@ -57,11 +62,11 @@ export function ReasonDialog({
     >
       <TextAreaField
         label="Reason"
-        hint="Kept on the venue's History. Say what happened and how you checked it."
+        hint={hint}
         value={reason}
         maxLength={MAX}
         autoFocus
-        placeholder="The owner called support: …"
+        placeholder={placeholder}
         onChange={(event) => setReason(event.target.value)}
       />
     </Modal>
