@@ -31,6 +31,11 @@ import {
   suspendStaff,
   transferOwnership,
 } from "../application/admin-team";
+import {
+  adminVenueSettings,
+  setCommission,
+  updateSettingsAsAdmin,
+} from "../application/admin-settings";
 import * as route from "./definitions/admin";
 
 // The queue is registered before /admin/venues/{id}, so "review" isn't read as an id.
@@ -70,6 +75,17 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.venueContact, async (c) => {
     return c.json(await venueContact(c.req.valid("param").id), 200);
+  })
+  .openapi(route.venueSettings, async (c) => {
+    return c.json(await adminVenueSettings(c.req.valid("param").id), 200);
+  })
+  .openapi(route.updateVenueSettings, async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await updateSettingsAsAdmin(c.var.admin.adminId, id, c.req.valid("json")), 200);
+  })
+  .openapi(route.setVenueCommission, async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await setCommission(c.var.admin.adminId, id, c.req.valid("json")), 200);
   })
   .openapi(route.provisionTranslation, async (c) => {
     const { id, language } = c.req.valid("param");

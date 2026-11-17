@@ -4,6 +4,7 @@ import {
   AdminVenueAmenities,
   AdminVenueContact,
   AdminVenueLocation,
+  AdminVenueSettings,
   AdminVenueOverview,
   AdminVenueQuery,
   BanStaff,
@@ -14,10 +15,12 @@ import {
   RejectVenue,
   RemoveMember,
   ReviewVenue,
+  SetCommission,
   SetVenueArea,
   StaffInvitation,
   SuspendStaff,
   TransferOwnership,
+  UpdateVenueSettings,
   VenueHistoryEvent,
   VenueHistoryQuery,
   VenueMember,
@@ -243,6 +246,63 @@ export const venueContact = createRoute({
   request: { params: venueParams },
   responses: {
     200: { description: "The contact and tax", ...json(AdminVenueContact) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueSettings = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/settings",
+  tags,
+  summary: "A venue's commission and settings",
+  description:
+    "Hagz's commission for it (its own rate or the marketplace's), and the settings its owner " +
+    "also changes in the staff app.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The settings", ...json(AdminVenueSettings) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const updateVenueSettings = createRoute({
+  method: "patch",
+  path: "/admin/venues/{id}/settings",
+  tags,
+  summary: "Change a venue's settings",
+  description:
+    "The owner's settings, changed by an admin for support. Only what's sent changes, checked as " +
+    "a whole as for the owner. Recorded on the venue's history as the admin's.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(UpdateVenueSettings) } },
+  responses: {
+    200: { description: "The settings after the change", ...json(AdminVenueSettings) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+    422: problemResponse("INVALID_SETTINGS (with the `field`)"),
+  },
+});
+
+export const setVenueCommission = createRoute({
+  method: "put",
+  path: "/admin/venues/{id}/commission",
+  tags,
+  summary: "Set or clear a venue's commission override",
+  description:
+    "Its own rate in basis points, or null for the marketplace's. Recorded on its history.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SetCommission) } },
+  responses: {
+    200: { description: "The settings after the change", ...json(AdminVenueSettings) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),

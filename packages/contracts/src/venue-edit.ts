@@ -220,6 +220,29 @@ export const StaffVenueDetail = z
   })
   .meta({ id: "StaffVenueDetail" });
 
+// A venue's admin Settings tab: Hagz's commission for it, and the settings its owner also changes
+// in the staff app (booking rules, payments, cancellation, loyalty), which admins can change too.
+export const AdminVenueSettings = z
+  .object({
+    commission: z.object({
+      override: z.int().min(0).max(10_000).nullable().meta({
+        description: "This venue's rate in basis points; null uses the marketplace's.",
+      }),
+      marketplaceRate: z.int().min(0).max(10_000).meta({ description: "In basis points." }),
+    }),
+    settings: VenueSettingsView,
+  })
+  .meta({ id: "AdminVenueSettings" });
+
+export const SetCommission = z
+  .object({
+    rate: z.int().min(0).max(10_000).nullable().meta({
+      description: "Basis points (1000 is 10%); null goes back to the marketplace's rate.",
+      example: 1000,
+    }),
+  })
+  .meta({ id: "SetCommission" });
+
 // What a venue offers, for the Amenities section of its admin Details: each amenity with its name
 // and icon from the marketplace's catalog, and its price in the marketplace's currency.
 export const AdminVenueAmenities = z
@@ -296,4 +319,6 @@ export type VenueAmenity = z.infer<typeof VenueAmenity>;
 export type SetVenueAmenities = z.infer<typeof SetVenueAmenities>;
 export type StaffVenueDetail = z.infer<typeof StaffVenueDetail>;
 export type AdminVenueLocation = z.infer<typeof AdminVenueLocation>;
+export type AdminVenueSettings = z.infer<typeof AdminVenueSettings>;
+export type SetCommission = z.infer<typeof SetCommission>;
 export type AdminVenueAmenities = z.infer<typeof AdminVenueAmenities>;

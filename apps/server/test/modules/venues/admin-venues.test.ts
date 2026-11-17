@@ -491,3 +491,79 @@ describe("GET /admin/venues/{id}/contact", () => {
     expect((await get(`/${venue.id}/contact`, false)).status).toBe(401);
   });
 });
+
+describe("a venue's settings, for admins", () => {
+  const call = async (method: string, path: string, body: unknown) => {
+    const res = await router.request(`/v1/admin/venues${path}`, {
+      method,
+      headers: { "content-type": "application/json", "X-Hagz-Admin": "1", Cookie: cookie },
+      body: JSON.stringify(body),
+    });
+    return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+  };
+  const eventsOf = (venueId: string, type: string) =>
+    prisma.venueEvent.findMany({ where: { venueId, type }, orderBy: { id: "asc" } });
+
+  it("reads the commission and the owner's settings", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await get(`/${venue.id}/settings`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      commission: { override: null },
+      settings: { autoConfirm: true, paymentMode: "MANUAL", cancellationPolicy: null },
+    });
+  });
+
+  it("changes the owner's settings, recorded as the admin's", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await call("PATCH", `/${venue.id}/settings`, {
+      autoConfirm: false,
+      paymentMode: "DEPOSIT",
+      depositPercent: 30,
+      cancellationPolicy: "STRICT",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      settings: { autoConfirm: false, paymentMode: "DEPOSIT", depositPercent: 30 },
+    });
+    const [changed] = await eventsOf(venue.id, "VENUE_SETTINGS_CHANGED");
+    expect(changed).toMatchObject({ adminId: expect.any(String), staffId: null });
+  });
+
+  it("checks settings as a whole, as for the owner", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await call("PATCH", `/${venue.id}/settings`, { paymentMode: "DEPOSIT" });
+    expect(res.status).toBe(422);
+    expect(res.body).toMatchObject({ code: "INVALID_SETTINGS", field: "depositPercent" });
+  });
+
+  it("sets and clears the commission override, each on the history", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const set = await call("PUT", `/${venue.id}/commission`, { rate: 800 });
+    expect(set.body).toMatchObject({ commission: { override: 800 } });
+    // The same rate again changes nothing.
+    await call("PUT", `/${venue.id}/commission`, { rate: 800 });
+    const cleared = await call("PUT", `/${venue.id}/commission`, { rate: null });
+    expect(cleared.body).toMatchObject({ commission: { override: null } });
+    const events = await eventsOf(venue.id, "VENUE_COMMISSION_CHANGED");
+    expect(events.map((e) => e.data)).toEqual([
+      { previous: null, next: 800 },
+      { previous: 800, next: null },
+    ]);
+  });
+
+  it("only takes a rate from 0 to 100%", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await call("PUT", `/${venue.id}/commission`, { rate: 10_001 })).status).toBe(400);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/settings");
+    expect(res.status).toBe(404);
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/settings`, false)).status).toBe(401);
+  });
+});

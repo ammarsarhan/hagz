@@ -37,6 +37,8 @@ export const VENUE_LOCATION_CHANGED = "VENUE_LOCATION_CHANGED";
 export const VENUE_AREA_SET = "VENUE_AREA_SET";
 export const VENUE_TRANSLATION_CHANGED = "VENUE_TRANSLATION_CHANGED";
 export const VENUE_SETTINGS_CHANGED = "VENUE_SETTINGS_CHANGED";
+// An admin set or cleared the venue's commission override.
+export const VENUE_COMMISSION_CHANGED = "VENUE_COMMISSION_CHANGED";
 export const VENUE_AMENITIES_CHANGED = "VENUE_AMENITIES_CHANGED";
 // Photos: added when an upload is confirmed.
 export const VENUE_PHOTO_ADDED = "VENUE_PHOTO_ADDED";
