@@ -9,8 +9,10 @@ import {
   RejectVenue,
   ReviewVenue,
   SetVenueArea,
+  StaffInvitation,
   VenueHistoryEvent,
   VenueHistoryQuery,
+  VenueMember,
   VenueStatus,
   VenueTranslationInput,
 } from "@hagz/contracts";
@@ -211,6 +213,40 @@ export const venueHistory = createRoute({
       description: "A page of events",
       ...json(z.object({ data: z.array(VenueHistoryEvent), next: z.uuid().nullable() })),
     },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueMembers = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/members",
+  tags,
+  summary: "A venue's staff",
+  description: "The owner and members with their permissions, as the venue's staff see them.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "Members, owner included", ...json(list(VenueMember)) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueInvitations = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/invitations",
+  tags,
+  summary: "A venue's open staff invitations",
+  description: "Sent, not yet accepted, declined, revoked or expired; newest first.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "Open invitations, newest first", ...json(list(StaffInvitation)) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),

@@ -3,6 +3,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { placeOf } from "../domain/names";
 import { venueNotFound } from "./access";
+import { listSentInvitations } from "./invitations";
+import { listMembers } from "./members";
 
 // The admin Venues table: every venue in any status, newest first, a page at a time. Ids are UUIDv7,
 // so ordering by id is ordering by creation, and the last id on a page is the cursor for the next.
@@ -88,4 +90,21 @@ export const getAdminVenue = async (id: string): Promise<AdminVenue> => {
   const venue = await prisma.venue.findUnique({ where: { id }, select: adminVenueSelect });
   if (!venue) throw venueNotFound();
   return presentAdminVenue(venue);
+};
+
+const mustExist = async (id: string) => {
+  const venue = await prisma.venue.findUnique({ where: { id }, select: { id: true } });
+  if (!venue) throw venueNotFound();
+};
+
+// A venue's Team tab: the same lists its staff see (members with their permissions, the owner
+// first; invitations still open), for any venue in any status.
+export const adminVenueMembers = async (id: string) => {
+  await mustExist(id);
+  return listMembers(id);
+};
+
+export const adminVenueInvitations = async (id: string) => {
+  await mustExist(id);
+  return listSentInvitations(id);
 };

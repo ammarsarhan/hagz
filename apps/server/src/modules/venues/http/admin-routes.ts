@@ -1,5 +1,10 @@
 import { createRouter } from "@/platform/http/router";
-import { getAdminVenue, listAdminVenues } from "../application/admin-venues";
+import {
+  adminVenueInvitations,
+  adminVenueMembers,
+  getAdminVenue,
+  listAdminVenues,
+} from "../application/admin-venues";
 import {
   approveVenue,
   checkTaxNumber,
@@ -60,4 +65,10 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.venueHistory, async (c) => {
     return c.json(await venueHistory(c.req.valid("param").id, c.req.valid("query")), 200);
+  })
+  .openapi(route.venueMembers, async (c) => {
+    return c.json({ data: await adminVenueMembers(c.req.valid("param").id) }, 200);
+  })
+  .openapi(route.venueInvitations, async (c) => {
+    return c.json({ data: await adminVenueInvitations(c.req.valid("param").id) }, 200);
   });

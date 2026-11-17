@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import {
   Ground,
   ReviewVenue,
+  StaffInvitation,
   VenueHistoryEvent,
+  VenueMember,
   VenueSetup,
   list,
   type CreateGround,
@@ -466,5 +468,32 @@ describe("a venue's history", () => {
     );
     expect(rest.data.at(-1)?.type).toBe("VENUE_CREATED");
     expect(rest.next).toBeNull();
+  });
+});
+
+describe("a venue's team", () => {
+  it("lists the staff, owner first, and the invitations still open", async () => {
+    const { owner, venueId, path } = await aReadyDraft();
+    await submit(owner.id, path);
+    await admin("POST", `/venues/${venueId}/approve`);
+    const invite = await staff(owner.id, "POST", `${path}/invitations`, { phone: "+201005550000" });
+    expect(invite.status).toBe(201);
+
+    const members = list(VenueMember).parse(
+      await (await admin("GET", `/venues/${venueId}/members`)).json(),
+    );
+    expect(members.data.map((m) => [m.staffId, m.role])).toEqual([[owner.id, "OWNER"]]);
+
+    const invitations = list(StaffInvitation).parse(
+      await (await admin("GET", `/venues/${venueId}/invitations`)).json(),
+    );
+    expect(invitations.data).toHaveLength(1);
+    expect(invitations.data[0]?.phone).toBe("+201005550000");
+  });
+
+  it("is a 404 for a venue that isn't there", async () => {
+    for (const list of ["members", "invitations"]) {
+      expect((await admin("GET", `/venues/${randomUUID()}/${list}`)).status).toBe(404);
+    }
   });
 });
