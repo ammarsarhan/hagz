@@ -2804,6 +2804,15 @@
           "restorable": {
             "type": "boolean",
             "description": "True when a password reset made them read-only and nothing changed since: POST permissions/restore brings back what they had."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "BANNED"
+            ],
+            "description": "Their staff account's. A suspended member can't sign in anywhere."
           }
         },
         "required": [
@@ -2812,7 +2821,8 @@
           "phone",
           "role",
           "permissions",
-          "restorable"
+          "restorable",
+          "status"
         ]
       },
       "StaffPermissions": {
@@ -4496,6 +4506,57 @@
           "STAFF",
           "ADMIN",
           "SYSTEM"
+        ]
+      },
+      "RemoveMember": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "For the record: what happened and how it was checked.",
+            "example": "The owner called support: he left the business in October."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "TransferOwnership": {
+        "type": "object",
+        "properties": {
+          "staffId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A member of the venue, who becomes its owner."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "For the record: what happened and how it was checked.",
+            "example": "The owner called support: he left the business in October."
+          }
+        },
+        "required": [
+          "staffId",
+          "reason"
+        ]
+      },
+      "SuspendStaff": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "For the record: what happened and how it was checked.",
+            "example": "The owner called support: he left the business in October."
+          }
+        },
+        "required": [
+          "reason"
         ]
       }
     },
@@ -13322,6 +13383,454 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/members/{staffId}/remove": {
+      "post": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Take a member off a venue's staff",
+        "description": "Support, for when the venue can't (an owner who left, a lost phone). Never the owner: transfer the venue first. Their account and their name on what they did stay; they're told.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveMember"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OWNER_CANT_BE_REMOVED: transfer the venue first",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/invitations/{invitationId}": {
+      "delete": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Revoke a venue's staff invitation",
+        "description": "Its code stops working. Revoking one already revoked, declined or expired is fine.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "invitationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "INVITATION_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "INVITATION_ALREADY_ACCEPTED: remove the member instead",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/owner": {
+      "post": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Make another member the venue's owner",
+        "description": "Only through support, once who they are is checked: ownership controls payouts. The old owner stays on with every permission; both are told. A venue that isn't live yet is the new owner's one unfinished venue.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferOwnership"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Transferred"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND or MEMBER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_OWNER, STAFF_NOT_ACTIVE (with `staffStatus`), or UNFINISHED_VENUE_EXISTS (they own another venue that isn't live; with `venueId` and `venueStatus`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staff/{staffId}/suspend": {
+      "post": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Suspend a staff account",
+        "description": "Signs them out everywhere and keeps them out of every venue until reactivated. Recorded on each venue they're on. Suspending again changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendStaff"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Suspended"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ACCOUNT_BANNED: closed for good",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staff/{staffId}/reactivate": {
+      "post": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Reactivate a suspended staff account",
+        "description": "They can sign in again. Reactivating an active account changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reactivated"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ACCOUNT_BANNED: closed for good",
             "content": {
               "application/problem+json": {
                 "schema": {
