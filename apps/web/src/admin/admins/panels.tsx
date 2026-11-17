@@ -229,6 +229,7 @@ export function AccessAction({
   description,
   action,
   disabled = false,
+  primary = false,
   onClick,
 }: {
   title: string;
@@ -236,6 +237,8 @@ export function AccessAction({
   action: string;
   // Not yet possible; the description says why.
   disabled?: boolean;
+  // The one step a page is there for (Approve, Go live): black, where the rest are grey.
+  primary?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -244,7 +247,12 @@ export function AccessAction({
         <p className="text-label text-ink">{title}</p>
         <p className="mt-0.5 text-caption text-ink-2">{description}</p>
       </div>
-      <Button variant="secondary" size="small" onClick={onClick} disabled={disabled}>
+      <Button
+        variant={primary ? "primary" : "secondary"}
+        size="small"
+        onClick={onClick}
+        disabled={disabled}
+      >
         {action}
       </Button>
     </div>
