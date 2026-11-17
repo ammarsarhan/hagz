@@ -108,7 +108,7 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
         {/* Sent back by Hagz: that comes first, instead of the count (the reason is on the
             setup screen). */}
         {setup.data?.rejection ? (
-          <Text className="text-label font-semibold text-white">
+          <Text className="text-label font-semibold text-on-ink-muted">
             {t("screens.setup.actionRequired")}
           </Text>
         ) : required ? (
