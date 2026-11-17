@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { Ground, ScheduleDay } from "./grounds";
+import { VenueLayoutView } from "./layout";
 import { AmenityIcon } from "./platform";
 import { Coordinates, RequestedArea } from "./venue-setup";
 import { VenueStatus } from "./venues";
@@ -243,6 +245,24 @@ export const SetCommission = z
   })
   .meta({ id: "SetCommission" });
 
+// A venue's admin Grounds tab: its grounds with their weekly hours, drawn on its layout, with the
+// marketplace's currency for their prices.
+export const AdminVenueGrounds = z
+  .object({
+    currency: z
+      .string()
+      .meta({ description: "ISO 4217; prices are in its minor units.", example: "EGP" }),
+    grounds: z.array(
+      Ground.extend({
+        schedule: z
+          .array(ScheduleDay)
+          .meta({ description: "Open days; days left out are closed." }),
+      }),
+    ),
+    layout: VenueLayoutView,
+  })
+  .meta({ id: "AdminVenueGrounds" });
+
 // What a venue offers, for the Amenities section of its admin Details: each amenity with its name
 // and icon from the marketplace's catalog, and its price in the marketplace's currency.
 export const AdminVenueAmenities = z
@@ -320,5 +340,6 @@ export type SetVenueAmenities = z.infer<typeof SetVenueAmenities>;
 export type StaffVenueDetail = z.infer<typeof StaffVenueDetail>;
 export type AdminVenueLocation = z.infer<typeof AdminVenueLocation>;
 export type AdminVenueSettings = z.infer<typeof AdminVenueSettings>;
+export type AdminVenueGrounds = z.infer<typeof AdminVenueGrounds>;
 export type SetCommission = z.infer<typeof SetCommission>;
 export type AdminVenueAmenities = z.infer<typeof AdminVenueAmenities>;

@@ -568,3 +568,67 @@ describe("a venue's settings, for admins", () => {
     expect((await get(`/${venue.id}/settings`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/grounds", () => {
+  it("reads the grounds with their hours, and the layout they're placed on", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await prisma.ground.create({
+      data: {
+        venueId: venue.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 0,
+        basePrice: 60000,
+        translations: { create: [{ language: "EN", name: "Pitch 1" }] },
+        settings: { create: {} },
+        schedules: { create: [{ dayOfWeek: 4, hours: { "19": "BASE", "20": "PEAK" } }] },
+      },
+    });
+    await prisma.venueLayout.create({ data: { venueId: venue.id, columns: 10, rows: 8 } });
+    await prisma.venueLayoutItem.create({
+      data: {
+        venueId: venue.id,
+        type: "GROUND",
+        groundId: ground.id,
+        x: 1,
+        y: 1,
+        orientation: "HORIZONTAL",
+        width: 4,
+        height: 3,
+      },
+    });
+
+    const res = await get(`/${venue.id}/grounds`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      currency: "EGP",
+      grounds: [
+        {
+          id: ground.id,
+          name: "Pitch 1",
+          sport: "FOOTBALL",
+          openHours: 2,
+          schedule: [{ dayOfWeek: 4 }],
+        },
+      ],
+      layout: {
+        saved: true,
+        columns: 10,
+        rows: 8,
+        grounds: [{ groundId: ground.id, x: 1, y: 1, width: 4, height: 3 }],
+      },
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/grounds");
+    expect(res.status).toBe(404);
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/grounds`, false)).status).toBe(401);
+  });
+});

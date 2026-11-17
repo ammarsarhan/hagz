@@ -3,6 +3,7 @@ import {
   AdminVenue,
   AdminVenueAmenities,
   AdminVenueContact,
+  AdminVenueGrounds,
   AdminVenueLocation,
   AdminVenueSettings,
   AdminVenueOverview,
@@ -303,6 +304,25 @@ export const setVenueCommission = createRoute({
   request: { params: venueParams, body: { required: true, ...json(SetCommission) } },
   responses: {
     200: { description: "The settings after the change", ...json(AdminVenueSettings) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueGrounds = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/grounds",
+  tags,
+  summary: "A venue's grounds and layout",
+  description:
+    "Its grounds with their weekly hours, its layout to draw them on, and the currency of their " +
+    "prices.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The grounds", ...json(AdminVenueGrounds) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),

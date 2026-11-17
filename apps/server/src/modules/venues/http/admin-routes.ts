@@ -1,6 +1,7 @@
 import { createRouter } from "@/platform/http/router";
 import {
   adminVenueAmenities,
+  adminVenueGrounds,
   adminVenueInvitations,
   adminVenueLocation,
   adminVenueMembers,
@@ -86,6 +87,9 @@ export const venuesAdminRoutes = createRouter()
   .openapi(route.setVenueCommission, async (c) => {
     const { id } = c.req.valid("param");
     return c.json(await setCommission(c.var.admin.adminId, id, c.req.valid("json")), 200);
+  })
+  .openapi(route.venueGrounds, async (c) => {
+    return c.json(await adminVenueGrounds(c.req.valid("param").id), 200);
   })
   .openapi(route.provisionTranslation, async (c) => {
     const { id, language } = c.req.valid("param");

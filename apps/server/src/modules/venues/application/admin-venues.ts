@@ -2,6 +2,7 @@ import { AmenityIcon } from "@hagz/contracts";
 import type {
   AdminVenue,
   AdminVenueAmenities,
+  AdminVenueGrounds,
   AdminVenueLocation,
   AdminVenueQuery,
   VenueStatus,
@@ -13,6 +14,8 @@ import { placeOf } from "../domain/names";
 import { venueNotFound } from "./access";
 import { listSentInvitations } from "./invitations";
 import { listMembers } from "./members";
+import { groundSchedule, listGrounds } from "./grounds";
+import { venueLayout } from "./layout";
 import { listPhotos } from "./venue-media";
 import { pinOf } from "./venue-edit";
 
@@ -221,4 +224,25 @@ export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmeniti
   });
   amenities.sort((a, b) => (a.names.en ?? a.key).localeCompare(b.names.en ?? b.key, "en"));
   return { currency: venue.marketplace.currency, amenities };
+};
+
+// A venue's Grounds tab: its grounds (names in English) with their weekly hours, its layout to draw
+// them on, and the currency their prices are in.
+export const adminVenueGrounds = async (id: string): Promise<AdminVenueGrounds> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    select: { marketplace: { select: { currency: true } } },
+  });
+  if (!venue) throw venueNotFound();
+  const [grounds, layout] = await Promise.all([listGrounds(id, "EN"), venueLayout(id)]);
+  return {
+    currency: venue.marketplace.currency,
+    grounds: await Promise.all(
+      grounds.map(async (ground) => ({
+        ...ground,
+        schedule: (await groundSchedule(id, ground.id)).days,
+      })),
+    ),
+    layout,
+  };
 };
