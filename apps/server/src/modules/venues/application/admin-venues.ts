@@ -1,4 +1,4 @@
-import type { AdminVenue, AdminVenueQuery, VenueStatus } from "@hagz/contracts";
+import type { AdminVenue, AdminVenueQuery, VenueStatus, VenueTranslation } from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { placeOf } from "../domain/names";
@@ -107,4 +107,17 @@ export const adminVenueMembers = async (id: string) => {
 export const adminVenueInvitations = async (id: string) => {
   await mustExist(id);
   return listSentInvitations(id);
+};
+
+// A venue's Details tab: what players read in each language, English first. A language nobody has
+// written yet isn't in the list.
+export const adminVenueTranslations = async (id: string): Promise<VenueTranslation[]> => {
+  await mustExist(id);
+  const rows = await prisma.venueTranslation.findMany({
+    where: { venueId: id },
+    select: { language: true, name: true, description: true, address: true },
+  });
+  return (["EN", "AR"] as const).flatMap((language) =>
+    rows.filter((row) => row.language === language),
+  );
 };

@@ -19,6 +19,7 @@ import {
   VenueHistoryQuery,
   VenueMember,
   VenueStatus,
+  VenueTranslation,
   VenueTranslationInput,
 } from "@hagz/contracts";
 import { ADMIN_COOKIE_AUTH, ADMIN_CSRF_HEADER, requireAdmin } from "@/platform/http/authenticate";
@@ -150,6 +151,25 @@ export const rejectVenue = createRoute({
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),
     409: conflict,
+  },
+});
+
+export const venueTranslations = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/translations",
+  tags,
+  summary: "A venue's listing in each language",
+  description:
+    "The name, description and address players read, English first. A language nobody has " +
+    "written yet is left out.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The translations", ...json(list(VenueTranslation)) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
   },
 });
 

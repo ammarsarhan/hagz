@@ -223,3 +223,48 @@ describe("GET /admin/venues/{id}", () => {
     expect((await get(`/${venue.id}`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/translations", () => {
+  it("reads what players see in each language, English first", async () => {
+    const venue = await prisma.venue.create({
+      data: {
+        marketplaceId,
+        locationId,
+        slug: `venue-${++sequence}`,
+        status: "PROVISIONING",
+        translations: {
+          create: [
+            { language: "AR", name: "الساحة", description: null, address: "شارع ٩" },
+            { language: "EN", name: "Arena", description: "Two pitches.", address: "9 Street" },
+          ],
+        },
+      },
+    });
+    const res = await get(`/${venue.id}/translations`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([
+      { language: "EN", name: "Arena", description: "Two pitches.", address: "9 Street" },
+      { language: "AR", name: "الساحة", description: null, address: "شارع ٩" },
+    ]);
+  });
+
+  it("leaves out a language nobody has written", async () => {
+    const venue = await addVenue({ en: "Arena", status: "DRAFT" });
+    const res = await get(`/${venue.id}/translations`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([
+      { language: "EN", name: "Arena", description: "", address: "" },
+    ]);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/translations");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/translations`, false)).status).toBe(401);
+  });
+});

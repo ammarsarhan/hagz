@@ -2,6 +2,7 @@ import { createRouter } from "@/platform/http/router";
 import {
   adminVenueInvitations,
   adminVenueMembers,
+  adminVenueTranslations,
   getAdminVenue,
   listAdminVenues,
 } from "../application/admin-venues";
@@ -50,6 +51,9 @@ export const venuesAdminRoutes = createRouter()
   .openapi(route.setVenueArea, async (c) => {
     await setVenueArea(c.var.admin.adminId, c.req.valid("param").id, c.req.valid("json"));
     return c.body(null, 204);
+  })
+  .openapi(route.venueTranslations, async (c) => {
+    return c.json({ data: await adminVenueTranslations(c.req.valid("param").id) }, 200);
   })
   .openapi(route.provisionTranslation, async (c) => {
     const { id, language } = c.req.valid("param");
