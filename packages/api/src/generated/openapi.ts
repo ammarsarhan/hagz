@@ -11111,6 +11111,10 @@ export interface components {
                 /** @description Minor units; null when free. */
                 price: number | null;
                 pricing: components["schemas"]["AmenityPricing"];
+                /** @description The option can be drawn on a venue's layout. */
+                placeable: boolean;
+                /** @description How many times it's drawn on this venue's layout. */
+                tiles: number;
             }[];
         };
         /** @description The result of checking the venue's tax number. */

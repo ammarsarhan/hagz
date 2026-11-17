@@ -4607,6 +4607,15 @@
                 },
                 "pricing": {
                   "$ref": "#/components/schemas/AmenityPricing"
+                },
+                "placeable": {
+                  "type": "boolean",
+                  "description": "The option can be drawn on a venue's layout."
+                },
+                "tiles": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "How many times it's drawn on this venue's layout."
                 }
               },
               "required": [
@@ -4616,7 +4625,9 @@
                 "names",
                 "isActive",
                 "price",
-                "pricing"
+                "pricing",
+                "placeable",
+                "tiles"
               ]
             }
           }
