@@ -85,6 +85,11 @@ export const SetupItem = z
     required: z.boolean().meta({ description: "Needed before the venue can be sent for review." }),
     state: SetupItemState,
     blockedBy: SetupItemKey.nullable(),
+    needsChanges: z.boolean().meta({
+      description:
+        "The last review sent the venue back asking to change this, and it hasn't been edited " +
+        "since. The venue can't be sent again until it is.",
+    }),
   })
   .meta({ id: "SetupItem" });
 
@@ -103,7 +108,9 @@ export const VenueSetup = z
     required: z
       .object({ done: z.int().min(0), total: z.int().min(0) })
       .meta({ description: "Counts of required items, for the progress ring and the draft card." }),
-    canSubmit: z.boolean().meta({ description: "A draft with every required item done." }),
+    canSubmit: z.boolean().meta({
+      description: "A draft with every required item done and none that still needs changes.",
+    }),
     rejection: Rejection.nullable().meta({
       description: "Why the last review sent this draft back; null otherwise.",
     }),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SetupItemKey } from "./setup-items";
 import { AdminVenue } from "./venues";
 
 // A venue's review and going live (PR 2.7, docs/onboarding.md step 3).
@@ -9,6 +10,17 @@ export const RejectVenue = z
       description: "Shown to the owner; say what to change.",
       example: "Add photos of the pitches themselves, not only the entrance.",
     }),
+    items: z
+      .array(SetupItemKey)
+      .max(SetupItemKey.options.length)
+      .refine((keys) => new Set(keys).size === keys.length, { message: "Each section once." })
+      .default([])
+      .meta({
+        description:
+          "The setup sections to change. Each has to be edited before the owner can send the " +
+          "venue again. Empty: the reason says it all.",
+        example: ["PHOTOS"],
+      }),
   })
   .meta({ id: "RejectVenue" });
 
@@ -73,7 +85,11 @@ export const GoLiveGap = z
 
 // Why the last review sent a draft back, shown on the owner's checklist.
 export const Rejection = z
-  .object({ reason: z.string(), at: z.iso.datetime() })
+  .object({
+    reason: z.string(),
+    at: z.iso.datetime(),
+    items: z.array(SetupItemKey).meta({ description: "The sections it asked to change." }),
+  })
   .meta({ id: "Rejection" });
 
 export type RejectVenue = z.infer<typeof RejectVenue>;
