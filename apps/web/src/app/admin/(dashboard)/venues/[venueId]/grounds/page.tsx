@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Skeleton } from "@/admin/data-table";
 import { useVenueAmenities } from "@/admin/venues/amenities";
 import { useVenueGrounds } from "@/admin/venues/grounds";
@@ -16,9 +17,26 @@ export default function VenueGrounds() {
   const { data: amenities } = useVenueAmenities(venueId);
   const drawn = data?.layout.saved && data.layout.grounds.length > 0;
 
+  // Exactly the window below the tabs, less the page's 64px bottom padding (main's pb-16), so the
+  // page never scrolls: measured from where the section starts, again on every resize.
+  const ref = useRef<HTMLElement>(null);
+  const [height, setHeight] = useState<number>();
+  useLayoutEffect(() => {
+    const fit = () => {
+      const top = ref.current?.getBoundingClientRect().top ?? 0;
+      setHeight(Math.max(320, window.innerHeight - top - 64));
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
+
   return (
-    // The window's height less the header, breadcrumb and tabs above, never under 20rem.
-    <section className="flex h-[calc(100dvh-15rem)] min-h-80 w-full items-center justify-center">
+    <section
+      ref={ref}
+      className="flex w-full items-center justify-center"
+      style={{ height: height ?? 320 }}
+    >
       {error && !data ? (
         <p className="text-body text-ink-2">{error}</p>
       ) : !data ? (
