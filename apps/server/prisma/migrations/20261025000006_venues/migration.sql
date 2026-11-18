@@ -131,11 +131,16 @@ CREATE TABLE "VenueMedia" (
     "size" INTEGER NOT NULL,
     "status" "MediaStatus" NOT NULL DEFAULT 'PENDING',
     "position" INTEGER NOT NULL,
+    "preview" BYTEA,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "VenueMedia_pkey" PRIMARY KEY ("id")
 );
+
+-- AddCheck (hand-added: Prisma can't declare CHECK constraints)
+ALTER TABLE "VenueMedia" ADD CONSTRAINT "VenueMedia_preview_check"
+  CHECK (octet_length("preview") <= 4096);
 
 -- CreateTable
 CREATE TABLE "VenueEvent" (

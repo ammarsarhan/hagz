@@ -172,6 +172,34 @@ describe("my venues", () => {
     });
     expect((await venues("en"))[1]?.location).toBe("Sheikh Zayed, Giza");
   });
+
+  it("gives each venue its cover's preview: the first ready photo's, or none", async () => {
+    const { a, b, ownerA } = await world();
+    await addMember(b.id, ownerA.id, { permissions: permissions({ venue: "view" }) });
+    const photo = (position: number, status: "READY" | "PENDING") => ({
+      venueId: a.id,
+      key: `venues/${a.id}/${String(position)}-${status}.jpg`,
+      type: "IMAGE" as const,
+      contentType: "image/jpeg",
+      size: 4,
+      status,
+      position,
+      preview: new Uint8Array([0xff, 0xd8, 0xff, position]),
+    });
+    // Position 0 is still uploading, so the cover is the next one that's ready.
+    await prisma.venueMedia.createMany({
+      data: [photo(2, "READY"), photo(0, "PENDING"), photo(1, "READY")],
+    });
+
+    const res = await router.request("/v1/staff/venues", {
+      headers: { Authorization: `Bearer ${await tokenFor(ownerA.id)}` },
+    });
+    const [first, second] = list(StaffVenue).parse(await res.json()).data;
+    expect(first?.coverPreview).toBe(
+      `data:image/jpeg;base64,${Buffer.from([0xff, 0xd8, 0xff, 1]).toString("base64")}`,
+    );
+    expect(second?.coverPreview).toBeNull();
+  });
 });
 
 describe("tenant isolation", () => {

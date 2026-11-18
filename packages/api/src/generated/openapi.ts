@@ -4417,7 +4417,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm an upload, putting the photo on the venue
-         * @description Needs `venue: manage`. Checks the stored file is the type and size that were declared.
+         * @description Needs `venue: manage`. Checks the stored file is the type and size that were declared, and keeps the preview the app made of it.
          */
         post: {
             parameters: {
@@ -4429,7 +4429,11 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ConfirmPhoto"];
+                };
+            };
             responses: {
                 /** @description The photo, now ready */
                 200: {
@@ -4438,6 +4442,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["VenuePhoto"];
+                    };
+                };
+                /** @description VALIDATION_FAILED, or INVALID_PREVIEW (not a JPEG of 4 KB or less) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
                 /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
@@ -11480,6 +11493,8 @@ export interface components {
              * @description When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created).
              */
             lastActivityAt: string;
+            /** @description The cover's preview (its first ready photo's, about 64 px) as a `data:image/jpeg` URI, or null when there's none. */
+            coverPreview: string | null;
             role: components["schemas"]["VenueRole"];
             /** @description What the signed-in member may do here; all `manage` for the owner. */
             permissions: {
@@ -11781,6 +11796,10 @@ export interface components {
             contentType: "image/jpeg" | "image/png" | "image/webp";
             /** @description In bytes. */
             size: number;
+        };
+        ConfirmPhoto: {
+            /** @description A JPEG of the photo about 64 px on its long side, base64, 4 KB at most. */
+            preview: string;
         };
         ReorderPhotos: {
             /** @description Every ready photo, in the new order; the first becomes the cover. */

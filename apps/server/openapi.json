@@ -1283,6 +1283,13 @@
             "format": "date-time",
             "description": "When anything about the venue last changed: its details, photos, grounds, hours, layout, settings, team or review status (its newest change history entry, else when it was created)."
           },
+          "coverPreview": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The cover's preview (its first ready photo's, about 64 px) as a `data:image/jpeg` URI, or null when there's none."
+          },
           "role": {
             "$ref": "#/components/schemas/VenueRole"
           },
@@ -1372,6 +1379,7 @@
           "status",
           "location",
           "lastActivityAt",
+          "coverPreview",
           "role",
           "permissions"
         ]
@@ -2299,6 +2307,19 @@
         "required": [
           "contentType",
           "size"
+        ]
+      },
+      "ConfirmPhoto": {
+        "type": "object",
+        "properties": {
+          "preview": {
+            "type": "string",
+            "maxLength": 5464,
+            "description": "A JPEG of the photo about 64 px on its long side, base64, 4 KB at most."
+          }
+        },
+        "required": [
+          "preview"
         ]
       },
       "ReorderPhotos": {
@@ -10018,7 +10039,7 @@
           "Venue staff"
         ],
         "summary": "Confirm an upload, putting the photo on the venue",
-        "description": "Needs `venue: manage`. Checks the stored file is the type and size that were declared.",
+        "description": "Needs `venue: manage`. Checks the stored file is the type and size that were declared, and keeps the preview the app made of it.",
         "security": [
           {
             "staffBearer": []
@@ -10044,6 +10065,16 @@
             "in": "path"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPhoto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "The photo, now ready",
@@ -10051,6 +10082,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VenuePhoto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED, or INVALID_PREVIEW (not a JPEG of 4 KB or less)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
