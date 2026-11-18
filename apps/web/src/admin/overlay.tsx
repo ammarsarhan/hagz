@@ -98,7 +98,7 @@ function IconButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
+      className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 outline-none hover:bg-chip hover:text-ink focus-visible:ring-2 focus-visible:ring-ink"
     >
       {children}
     </button>
