@@ -207,7 +207,10 @@ const unavailableHere = () =>
     detail: "Invitations can't be sent from this environment yet.",
   });
 
-const INVITING: VenueStatus[] = ["PROVISIONING", "LIVE", "MAINTENANCE"];
+// Staff join once the venue runs: live, or paused for maintenance (user, 2026-11-18). Before that
+// there are no bookings for them to work on, and a running venue never goes back to setup, so it
+// never loses the ability.
+const INVITING: VenueStatus[] = ["LIVE", "MAINTENANCE"];
 
 // Everything an invitation is except the WhatsApp message: also used by the dev seed script, which
 // prints the code instead of sending it.
@@ -234,10 +237,7 @@ export const createInvitation = async (
           select: { status: true },
         });
         if (!INVITING.includes(venue.status)) {
-          throw venueStatusConflict(
-            venue.status,
-            "Staff can be invited once the venue is approved.",
-          );
+          throw venueStatusConflict(venue.status, "Staff can be invited once the venue is live.");
         }
 
         const settings = await tx.venueSettings.findUnique({
@@ -326,8 +326,9 @@ export const listSentInvitations = async (venueId: string, clock: Clock = system
 };
 
 // Idempotent for invitations already revoked, declined or expired.
+// By a member who manages the staff, or by an admin from the venue's Team tab.
 export const revokeInvitation = async (
-  actor: VenueAccess,
+  actor: { venueId: string } & ({ staffId: string } | { adminId: string }),
   invitationId: string,
   clock: Clock = systemClock,
 ) =>
@@ -359,7 +360,7 @@ export const revokeInvitation = async (
         data: {
           venueId: actor.venueId,
           type: STAFF_INVITATION_REVOKED,
-          staffId: actor.staffId,
+          ...("adminId" in actor ? { adminId: actor.adminId } : { staffId: actor.staffId }),
           data: { invitationId },
         },
       });

@@ -12,6 +12,7 @@ const fresh: SetupFacts = {
   cancellationPolicy: null,
   amenityCount: 0,
   taxNumber: null,
+  needsChanges: [],
 };
 
 const complete: SetupFacts = {
@@ -49,6 +50,22 @@ describe("setup checklist", () => {
     const setup = setupChecklist(complete);
     expect(setup.required).toEqual({ done: 6, total: 6 });
     expect(setup.canSubmit).toBe(true);
+  });
+
+  it("holds a sent-back draft until each section it asked to change is edited", () => {
+    const setup = setupChecklist({ ...complete, needsChanges: ["PHOTOS", "TAX_NUMBER"] });
+    expect(setup.items.filter((item) => item.needsChanges).map((item) => item.key)).toEqual([
+      "PHOTOS",
+      "TAX_NUMBER",
+    ]);
+    // Everything required is done: only the changes hold it up.
+    expect(setup.required).toEqual({ done: 6, total: 6 });
+    expect(setup.canSubmit).toBe(false);
+  });
+
+  it("ignores a section to change that's no longer on the checklist", () => {
+    // The layout only applies with two grounds or more; this venue has one.
+    expect(setupChecklist({ ...complete, needsChanges: ["LAYOUT"] }).canSubmit).toBe(true);
   });
 
   it("only lets a draft be submitted", () => {

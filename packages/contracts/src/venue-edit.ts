@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { Ground, ScheduleDay } from "./grounds";
+import { VenueLayoutView } from "./layout";
+import { AmenityIcon } from "./platform";
 import { Coordinates, RequestedArea } from "./venue-setup";
 import { VenueStatus } from "./venues";
 
@@ -219,6 +222,107 @@ export const StaffVenueDetail = z
   })
   .meta({ id: "StaffVenueDetail" });
 
+// A venue's admin Settings tab: Hagz's commission for it, and the settings its owner also changes
+// in the staff app (booking rules, payments, cancellation, loyalty), which admins can change too.
+export const AdminVenueSettings = z
+  .object({
+    commission: z.object({
+      override: z.int().min(0).max(10_000).nullable().meta({
+        description: "This venue's rate in basis points; null uses the marketplace's.",
+      }),
+      marketplaceRate: z.int().min(0).max(10_000).meta({ description: "In basis points." }),
+    }),
+    settings: VenueSettingsView,
+  })
+  .meta({ id: "AdminVenueSettings" });
+
+export const SetCommission = z
+  .object({
+    rate: z.int().min(0).max(10_000).nullable().meta({
+      description: "Basis points (1000 is 10%); null goes back to the marketplace's rate.",
+      example: 1000,
+    }),
+  })
+  .meta({ id: "SetCommission" });
+
+// A venue's admin Grounds tab: its grounds with their weekly hours, drawn on its layout, with the
+// marketplace's currency for their prices.
+export const AdminVenueGrounds = z
+  .object({
+    currency: z
+      .string()
+      .meta({ description: "ISO 4217; prices are in its minor units.", example: "EGP" }),
+    grounds: z.array(
+      Ground.extend({
+        schedule: z
+          .array(ScheduleDay)
+          .meta({ description: "Open days; days left out are closed." }),
+      }),
+    ),
+    layout: VenueLayoutView,
+  })
+  .meta({ id: "AdminVenueGrounds" });
+
+// What a venue offers, for the Amenities section of its admin Details: each amenity with its name
+// and icon from the marketplace's catalog, and its price in the marketplace's currency.
+export const AdminVenueAmenities = z
+  .object({
+    currency: z
+      .string()
+      .meta({ description: "ISO 4217; prices are in its minor units.", example: "EGP" }),
+    amenities: z.array(
+      z.object({
+        optionId: z.uuid(),
+        key: z.string().meta({ example: "parking" }),
+        icon: AmenityIcon,
+        names: z.object({ en: z.string().nullable(), ar: z.string().nullable() }),
+        isActive: z.boolean().meta({
+          description: "False once Hagz turned the option off; venues that had it keep it.",
+        }),
+        price: z.int().nullable().meta({ description: "Minor units; null when free." }),
+        pricing: AmenityPricing.nullable(),
+        placeable: z
+          .boolean()
+          .meta({ description: "The option can be drawn on a venue's layout." }),
+        tiles: z
+          .int()
+          .min(0)
+          .meta({ description: "How many times it's drawn on this venue's layout." }),
+      }),
+    ),
+  })
+  .meta({ id: "AdminVenueAmenities" });
+
+// Where a venue is, for the Location section of its admin Details: its marketplace, the owner's pin,
+// and the area players find it under or the one the owner asked for.
+export const AdminVenueLocation = z
+  .object({
+    marketplace: z.object({
+      id: z.uuid(),
+      code: z.string().meta({ example: "EG" }),
+      names: z.object({
+        en: z.string().nullable().meta({ example: "Egypt" }),
+        ar: z.string().nullable(),
+      }),
+    }),
+    coordinates: Coordinates.nullable().meta({ description: "Null until the owner drops a pin." }),
+    area: z
+      .object({
+        id: z.uuid(),
+        names: z.object({
+          en: z.string().nullable().meta({ example: "Nasr City, Cairo" }),
+          ar: z.string().nullable(),
+        }),
+      })
+      .nullable()
+      .meta({ description: "Null while the owner's `requestedArea` waits for an admin." }),
+    requestedArea: z.string().nullable().meta({
+      description: "An area the owner asked for because Hagz doesn't cover it.",
+      example: "Sheikh Zayed, Giza",
+    }),
+  })
+  .meta({ id: "AdminVenueLocation" });
+
 export type Language = z.infer<typeof Language>;
 export type MinimumNotice = z.infer<typeof MinimumNotice>;
 export type PaymentMode = z.infer<typeof PaymentMode>;
@@ -234,3 +338,8 @@ export type AmenityPricing = z.infer<typeof AmenityPricing>;
 export type VenueAmenity = z.infer<typeof VenueAmenity>;
 export type SetVenueAmenities = z.infer<typeof SetVenueAmenities>;
 export type StaffVenueDetail = z.infer<typeof StaffVenueDetail>;
+export type AdminVenueLocation = z.infer<typeof AdminVenueLocation>;
+export type AdminVenueSettings = z.infer<typeof AdminVenueSettings>;
+export type AdminVenueGrounds = z.infer<typeof AdminVenueGrounds>;
+export type SetCommission = z.infer<typeof SetCommission>;
+export type AdminVenueAmenities = z.infer<typeof AdminVenueAmenities>;

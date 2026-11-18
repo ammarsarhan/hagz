@@ -10,13 +10,13 @@ import { setupChecklist } from "../domain/setup";
 import { generateSlug } from "../domain/slug";
 import { accountSuspended, venueNotFound } from "./access";
 import { checkPin } from "./pin-checks";
-import { rejectionOf, submittedAtOf } from "./review";
+import { approvedAtOf, latestRejection, sectionsToChange, submittedAtOf } from "./review";
 
 // Creating a venue and reading its setup checklist (docs/onboarding.md, steps 1 and 2).
 
 // A venue someone owns that isn't live yet. One at a time per owner, so drafts can't pile up; any
 // number of live venues is fine.
-const UNFINISHED: VenueStatus[] = ["DRAFT", "SUBMITTED", "PROVISIONING"];
+export const UNFINISHED: VenueStatus[] = ["DRAFT", "SUBMITTED", "PROVISIONING"];
 
 export const unfinishedVenueExists = (venue: { id: string; status: VenueStatus }) =>
   new AppError({
@@ -169,9 +169,15 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
   const [pin] = await prisma.$queryRaw<{ hasPin: boolean }[]>`
     SELECT coordinates IS NOT NULL AS "hasPin" FROM "Venue" WHERE id = ${venueId}::uuid`;
   // A draft that was sent back shows why; the review module reads it from the events.
-  const rejection = venue.status === "DRAFT" ? await rejectionOf(venueId) : null;
-  // One in review says since when.
-  const submittedAt = venue.status === "SUBMITTED" ? await submittedAtOf(venueId) : null;
+  const last = venue.status === "DRAFT" ? await latestRejection(venueId) : null;
+  const rejection = last?.rejection ?? null;
+  const needsChanges = await sectionsToChange(venueId, last);
+  // In review or approved, since when: the staff app's review steps show both.
+  const submittedAt =
+    venue.status === "SUBMITTED" || venue.status === "PROVISIONING"
+      ? await submittedAtOf(venueId)
+      : null;
+  const approvedAt = venue.status === "PROVISIONING" ? await approvedAtOf(venueId) : null;
   return {
     rejection,
     venue: {
@@ -180,6 +186,7 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
       status: venue.status,
       name: nameIn(venue.translations, language),
       submittedAt,
+      approvedAt,
     },
     ...setupChecklist({
       status: venue.status,
@@ -197,6 +204,7 @@ export const venueSetup = async (venueId: string, language: Language): Promise<V
       cancellationPolicy: venue.settings?.cancellationPolicy ?? null,
       amenityCount: venue._count.amenities,
       taxNumber: venue.taxNumber,
+      needsChanges,
     }),
   };
 };

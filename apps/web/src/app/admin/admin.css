@@ -8,6 +8,15 @@
    scales the whole app. The staff app keeps the tokens in pixels. */
 html {
   font-size: 89.25%;
+  /* The scrollbar's room is kept even while the page can't scroll (below), so locking it never
+     shifts the page sideways where scrollbars take space (Windows; macOS with them always shown). */
+  scrollbar-gutter: stable;
+}
+
+/* While a modal or side panel is open (both are a native <dialog>), the page behind stays put: the
+   dialog blocks clicks there but not the wheel or a trackpad. Covers every overlay, with no script. */
+html:has(dialog[open]) {
+  overflow: hidden;
 }
 
 @theme {

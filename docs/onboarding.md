@@ -12,7 +12,7 @@ Agreed on 2026-10-27:
 - **Location:** the owner drops a pin or searches Google Places, the API suggests the area whose centre is nearest the pin, within 8 km (`GET /marketplaces/{code}/areas/nearest`), and the owner confirms or changes it by searching areas (`GET /marketplaces/{code}/areas`, either language, nearest first). Not Google's address: in Egypt it names police districts, so a pin in Smouha comes back as Sidi Gaber (decided 2026-11-14). Admins set each area's centre on the Platform page. The API checks the pin itself, in PostGIS and never with Google (the server only sees coordinates and an area id, sent by the app): it must be inside the marketplace's border (`Marketplace.boundary`), and within 15 km of the chosen area's centre (decided 2026-11-14, replacing the 2026-11-12 bounding box). The border catches a pin in the wrong country, the distance one in the wrong part of it. A marketplace without a border, or an area without a centre, skips that check.
 - **Areas Hagz doesn't cover yet.** If the owner's area isn't in the list, they write it in and the venue is created with `requestedArea` instead of `locationId`, in the marketplace of the country the pin is in (decided 2026-11-14). An admin adds the area under Locations and sets it with `PUT /admin/venues/{id}/area`, which clears the request; approval waits for it (`422 AREA_NOT_SET`). Picking an area from the list later also replaces the request.
 - **Drafts live outside the venue dashboard.** An unfinished venue opens its own setup flow, reached from first run (no venues yet) or from the Venues section of the Account tab; the dashboard's tabs and switcher are for `LIVE` and `MAINTENANCE` venues (decided 2026-11-12).
-- **Staff join after approval.** Invitations can only be sent once an admin has approved the venue (`PROVISIONING`, `LIVE` or `MAINTENANCE`); before that the API answers `409 VENUE_STATUS_CONFLICT` (decided 2026-11-13). A draft or a venue in review has nothing for staff to do, and rejection only happens before approval, so an approved venue never loses the ability.
+- **Staff join once the venue is live.** Invitations can only be sent while the venue runs (`LIVE` or `MAINTENANCE`); before that the API answers `409 VENUE_STATUS_CONFLICT` (decided 2026-11-13 as "after approval", narrowed to live on 2026-11-18). Until it's live there are no bookings for staff to work on, and a running venue never goes back to setup, so it never loses the ability.
 - **One unfinished venue per staff account.** A venue they own in `DRAFT`, `SUBMITTED` or `PROVISIONING` blocks starting another until it goes live (clarified 2026-11-12). Any number of live venues, so chains are fine.
 - **Nothing is deleted.** Drafts stay until submitted, and a rejected venue goes back to `DRAFT` with the reason.
 - **Ownership changes only through support.** An admin transfers it to an existing member after checking identity, because ownership controls payouts.
@@ -24,7 +24,7 @@ Agreed on 2026-10-27:
 |---|---|---|---|
 | `DRAFT` | The owner creates it, or an admin rejects it | Edit everything, then submit | No |
 | `SUBMITTED` | The owner submits | Withdraw it (back to `DRAFT`). **Nothing else changes** until an admin decides (decided 2026-11-13) | No |
-| `PROVISIONING` | An admin approves | Edit grounds, hours, layout, settings and amenities, and invite staff. The listing (name, description, address, location, photos) stays locked | No |
+| `PROVISIONING` | An admin approves | Edit grounds, hours, layout, settings and amenities. The listing (name, description, address, location, photos) stays locked, and staff can't be invited yet | No |
 | `LIVE` | An admin, once provisioning is complete | Everything, applied at once (see [Edits after going live](#edits-after-going-live)) | Yes: page, search, sitemap, bookings |
 | `MAINTENANCE` | The owner (`venue: manage`) or an admin | Everything, then switch back to `LIVE` | Page visible with a notice. No new bookings; existing bookings stand |
 
@@ -70,7 +70,8 @@ The checklist is computed from the data on every request. Nothing stores "step 3
 The admin side (`/v1/admin/venues`):
 
 - **Queue:** `GET /admin/venues/review`, submitted venues oldest submission first, with the owner. The full history is `GET /admin/venues/{id}/history`.
-- **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees. It stays the owner's one unfinished venue, so rejecting (like withdrawing) needs no check.
+- **Reject** (`SUBMITTED` → `DRAFT`) with a reason the owner sees, and optionally the setup sections to change (`items`, decided 2026-11-18). It stays the owner's one unfinished venue, so rejecting (like withdrawing) needs no check.
+  - **Sections to change.** The setup screen marks each one *Needs changes* (`SetupItem.needsChanges`) until it's edited, and the venue can't be sent again before then (`canSubmit` is false; submitting answers `422 CHANGES_NEEDED` listing them in `items`). A section counts as changed when what it holds differs from what it held at the send-back: the rejection event keeps a fingerprint (a SHA-256 of the section's contents) for each flagged section, and the checklist and submitting compare it with one taken now (`application/section-fingerprints.ts`). So changing something and changing it back counts as unchanged (decided 2026-11-18). The fingerprints cover what the owner edits in each section: Details (names, descriptions and addresses in each language, and the phone), Location (pin and area or requested area), Photos (the ready photos in order), Grounds (every ground but its hours: sport, size, surface, environment, status, prices, names, slot limits, order), Opening hours (each ground's week), Layout (grid, entrances and tiles), Policy (the settings the staff app edits) and Amenities (each with its price), and the tax number. A field added to a section later belongs in its fingerprint too. *Changed*, not *fixed*: the next review judges that. A section that's no longer on the checklist (the layout, once down to one ground) doesn't hold it up.
 - **Approve** (`SUBMITTED` → `PROVISIONING`).
 - **Provision**, while in `PROVISIONING`:
   - complete the translations so Arabic and English both exist (`PUT /admin/venues/{id}/translations/{language}`);
@@ -79,7 +80,17 @@ The admin side (`/v1/admin/venues`):
   - adjust photos if needed (later).
 - **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. **Slot generation (PR 2.6) is deferred**, so going live doesn't yet wait for `generatedUntil`; that condition returns with 2.6.
 - **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
-- **Transfer ownership** to an existing member (not built yet; revert and transfer come after the review core). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified. Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one.
+- **Transfer ownership** to an existing, active member (`POST /admin/venues/{id}/owner`, with a reason). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified (`OWNERSHIP_TRANSFERRED`). Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one. Revert is still to come.
+
+### Team support
+
+The venue's staff run their own team in the dashboard app; admins step in from the venue's Team tab when they can't. Every action is a `VenueEvent` with the admin as the actor and, except revoking and reactivating, a reason (10–500 characters):
+
+- **Remove a member** (`POST /admin/venues/{id}/members/{staffId}/remove`): never the owner (`409 OWNER_CANT_BE_REMOVED`; transfer first). The membership goes; their account and their name on past events stay. They're notified (`STAFF_REMOVED`) and lose access at once, since venue routes read the membership on every request.
+- **Revoke an invitation** (`DELETE /admin/venues/{id}/invitations/{invitationId}`): the same as the staff's revoke, with the admin recorded.
+- **Suspend or reactivate a staff account** (`POST /admin/staff/{staffId}/suspend`, `/reactivate`): account-wide. Suspending revokes every session (and push token) and keeps them out of every venue at once (`403 ACCOUNT_SUSPENDED`); reactivating lets them sign in afresh. With no account-level log yet, it's recorded on every venue they're a member of (`STAFF_SUSPENDED`, `STAFF_REACTIVATED`). A banned account can't be either (`409 ACCOUNT_BANNED`).
+- **Ban a staff account** (`POST /admin/staff/{staffId}/ban`): for good, with no way back; signed out and kept out as with suspending, recorded as `STAFF_BANNED`. Refused while they own a venue (`409 OWNS_A_VENUE`, with `venueIds`), which would be left with an owner who can never sign in: transfer it first.
+- **Deleting an account** isn't an admin action. `deletedAt` and the nullable phone are in the schema for in-app deletion (plan 8.2), which anonymizes and keeps bookings and money records.
 
 ## Edits after going live
 
@@ -123,6 +134,7 @@ A `LIVE` venue always has at least one `ACTIVE` ground; a venue with nothing to 
 |---|---|
 | `409 UNFINISHED_VENUE_EXISTS` | Creating a venue, or receiving an unfinished one by transfer, while already owning one in `DRAFT`, `SUBMITTED` or `PROVISIONING` (includes `venueId` and `venueStatus`) |
 | `422 SETUP_INCOMPLETE` | Submitting with checklist items missing (lists them in `missing`) |
+| `422 CHANGES_NEEDED` | Submitting a venue sent back with sections to change before each is edited (lists them in `items`) |
 | `403 OWNER_ONLY` | Submitting or withdrawing by anyone but the owner |
 | `422 GO_LIVE_BLOCKED` | Going live without both languages or an active ground (`missing`) |
 | `409 NO_ACTIVE_GROUND` | Resuming a paused venue with no active ground |

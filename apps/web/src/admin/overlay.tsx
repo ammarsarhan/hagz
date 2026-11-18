@@ -12,11 +12,16 @@ import type { ReactNode } from "react";
 export function OverlayHeader({
   title,
   description,
+  compact = false,
   onClose,
   onBack,
 }: {
-  title: ReactNode;
+  // Left out for a panel without one: only × stays, at the far end.
+  title?: ReactNode;
   description?: ReactNode;
+  // A step above the content rather than a heading over it (19/26 title, 14 grey line): for a
+  // person's side panel, whose rows are 14 under 15 section headings.
+  compact?: boolean;
   onClose: () => void;
   // On a later step of a modal: back to the one before.
   onBack?: () => void;
@@ -35,10 +40,22 @@ export function OverlayHeader({
       ) : null}
       <div className="flex items-start justify-between gap-10">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2.5 text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
-            {title}
-          </h2>
-          {description ? <p className="mt-1 text-body text-ink-2">{description}</p> : null}
+          {title ? (
+            <h2
+              className={`flex items-center gap-2.5 font-semibold text-ink ${
+                compact
+                  ? "text-[1.1875rem] leading-[1.625rem]"
+                  : "text-[1.25rem] leading-[1.625rem]"
+              }`}
+            >
+              {title}
+            </h2>
+          ) : null}
+          {description ? (
+            <p className={compact ? "mt-1.5 text-label text-ink-2" : "mt-1 text-body text-ink-2"}>
+              {description}
+            </p>
+          ) : null}
         </div>
         {onBack ? null : (
           <div className="-mt-0.5 -mr-1.5 shrink-0">

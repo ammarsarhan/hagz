@@ -1,4 +1,8 @@
+import { SetupItemKey } from "@hagz/contracts";
 import type {
+  AdminVenueContact,
+  TaxNumberStatus,
+  AdminVenueOverview,
   CheckTaxNumber,
   RejectVenue,
   Rejection,
@@ -28,7 +32,8 @@ import {
   VENUE_SUBMITTED,
   VENUE_WITHDRAWN,
 } from "../domain/events";
-import { goLiveGaps } from "../domain/review";
+import { goLiveGaps, unchangedSections } from "../domain/review";
+import { sectionFingerprints } from "./section-fingerprints";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { adminVenueSelect, presentAdminVenue } from "./admin-venues";
 import { pinOf, writeTranslation } from "./venue-edit";
@@ -54,6 +59,14 @@ const setupIncomplete = (missing: string[]) =>
     status: 422,
     detail: "Some required setup items aren't done yet.",
     extensions: { missing },
+  });
+
+const changesNeeded = (items: string[]) =>
+  new AppError({
+    code: "CHANGES_NEEDED",
+    status: 422,
+    detail: "Change what the review asked for before sending the venue again.",
+    extensions: { items },
   });
 
 const goLiveBlocked = (missing: string[]) =>
@@ -130,11 +143,11 @@ export const submitVenue = async (actor: VenueAccess, language: Language): Promi
     // Edits lock the same row, so nothing changes between this check and the submission.
     const setup = await venueSetup(actor.venueId, language);
     if (!setup.canSubmit) {
-      throw setupIncomplete(
-        setup.items
-          .filter((item) => item.required && item.state !== "DONE")
-          .map((item) => item.key),
-      );
+      const missing = setup.items
+        .filter((item) => item.required && item.state !== "DONE")
+        .map((item) => item.key);
+      if (missing.length > 0) throw setupIncomplete(missing);
+      throw changesNeeded(setup.items.filter((item) => item.needsChanges).map((item) => item.key));
     }
     await tx.venue.update({ where: { id: actor.venueId }, data: { status: "SUBMITTED" } });
     await record(tx, actor.venueId, { staffId: actor.staffId }, VENUE_SUBMITTED);
@@ -192,26 +205,55 @@ export const resumeVenue = async (venueId: string, actor: Actor) => {
 
 // The draft's latest rejection, while it's the newest step of its review.
 // When a venue in review was sent: its latest submission.
-export const submittedAtOf = async (venueId: string): Promise<string | null> => {
+// When the venue last had this event: sent for review, approved.
+const lastAt = async (venueId: string, type: string): Promise<string | null> => {
   const latest = await prisma.venueEvent.findFirst({
-    where: { venueId, type: VENUE_SUBMITTED },
+    where: { venueId, type },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: { createdAt: true },
   });
   return latest?.createdAt.toISOString() ?? null;
 };
 
-export const rejectionOf = async (venueId: string): Promise<Rejection | null> => {
+export const submittedAtOf = (venueId: string) => lastAt(venueId, VENUE_SUBMITTED);
+export const approvedAtOf = (venueId: string) => lastAt(venueId, VENUE_APPROVED);
+
+// The last send-back while the venue is a draft, with the fingerprints of the sections it asked to
+// change (kept off the API: they only mean something to sectionsToChange).
+export const latestRejection = async (venueId: string) => {
   const latest = await prisma.venueEvent.findFirst({
     where: { venueId, type: { in: LIFECYCLE_EVENTS } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: { type: true, data: true, createdAt: true },
   });
   if (latest?.type !== VENUE_REJECTED) return null;
-  return {
-    reason: (latest.data as { reason?: string } | null)?.reason ?? "",
+  const data = latest.data as {
+    reason?: string;
+    items?: unknown;
+    fingerprints?: Partial<Record<SetupItemKey, string>>;
+  } | null;
+  const rejection: Rejection = {
+    reason: data?.reason ?? "",
     at: latest.createdAt.toISOString(),
+    items: SetupItemKey.array()
+      .catch([])
+      .parse(data?.items ?? []),
   };
+  return { rejection, fingerprints: data?.fingerprints ?? {} };
+};
+
+// The sections a send-back asked to change that still hold what they held then.
+export const sectionsToChange = async (
+  venueId: string,
+  last: Awaited<ReturnType<typeof latestRejection>>,
+): Promise<SetupItemKey[]> => {
+  if (!last || last.rejection.items.length === 0) return [];
+  const { items } = last.rejection;
+  return unchangedSections(
+    items,
+    last.fingerprints,
+    await sectionFingerprints(prisma, venueId, items),
+  );
 };
 
 // ---------- Admins ----------
@@ -275,7 +317,7 @@ export const approveVenue = async (
 export const rejectVenue = async (
   adminId: string,
   venueId: string,
-  { reason }: RejectVenue,
+  { reason, items }: RejectVenue,
   clock: Clock = systemClock,
 ) => {
   await transaction(async (tx) => {
@@ -287,7 +329,10 @@ export const rejectVenue = async (
       "DRAFT",
       statusTo("Only a venue in review can be rejected."),
     );
-    await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason });
+    // The sections to change go with the reason, each with its fingerprint as it is now: the setup
+    // screen marks them, and sending again waits until each holds something different.
+    const fingerprints = await sectionFingerprints(tx, venueId, items);
+    await record(tx, venueId, { adminId }, VENUE_REJECTED, { reason, items, fingerprints });
     await tellOwner(tx, venueId, { type: "VENUE_REJECTED", data: { reason } }, clock);
   });
 };
@@ -369,6 +414,69 @@ export const goLive = async (adminId: string, venueId: string, clock: Clock = sy
     await record(tx, venueId, { adminId }, VENUE_LIVE);
     await tellOwner(tx, venueId, { type: "VENUE_LIVE", data: {} }, clock);
   });
+};
+
+// A tax number with the latest check of it. A check only counts for the number it was made on, so
+// changing the number makes it unchecked again.
+const taxNumberStatus = async (
+  venueId: string,
+  taxNumber: string | null,
+): Promise<TaxNumberStatus> => {
+  const check = await prisma.venueEvent.findFirst({
+    where: { venueId, type: TAX_NUMBER_CHECKED },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { data: true, createdAt: true },
+  });
+  const checked = check?.data as {
+    taxNumber?: string | null;
+    valid?: boolean;
+    note?: string | null;
+  };
+  return {
+    value: taxNumber,
+    check:
+      check && taxNumber !== null && checked.taxNumber === taxNumber
+        ? {
+            valid: checked.valid === true,
+            note: checked.note ?? null,
+            at: check.createdAt.toISOString(),
+          }
+        : null,
+  };
+};
+
+// The admin's Application tab: the owner's checklist (with when it was sent and why it was last
+// sent back), what going live still needs, and the tax number with its latest check.
+export const venueOverview = async (venueId: string): Promise<AdminVenueOverview> => {
+  const setup = await venueSetup(venueId, "EN");
+  const [venue, grounds] = await Promise.all([
+    prisma.venue.findUniqueOrThrow({
+      where: { id: venueId },
+      select: {
+        taxNumber: true,
+        translations: { select: { language: true, name: true, description: true, address: true } },
+      },
+    }),
+    prisma.ground.count({ where: { venueId, status: "ACTIVE" } }),
+  ]);
+  return {
+    setup: { items: setup.items, required: setup.required },
+    submittedAt: setup.venue.submittedAt,
+    rejection: setup.rejection,
+    goLive: goLiveGaps(venue.translations, grounds),
+    taxNumber: await taxNumberStatus(venueId, venue.taxNumber),
+  };
+};
+
+// A venue's Contact and tax section: the phone players call, and the tax number with its latest
+// check.
+export const venueContact = async (venueId: string): Promise<AdminVenueContact> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id: venueId },
+    select: { phone: true, taxNumber: true },
+  });
+  if (!venue) throw venueNotFound();
+  return { phone: venue.phone, taxNumber: await taxNumberStatus(venueId, venue.taxNumber) };
 };
 
 export const venueHistory = async (

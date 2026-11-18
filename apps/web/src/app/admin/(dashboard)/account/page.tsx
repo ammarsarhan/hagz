@@ -21,6 +21,7 @@ import { Field } from "@/admin/field";
 import { useHud } from "@/admin/hud";
 import { PageHeader } from "@/admin/page-header";
 import { signOut, useAdmin, useUpdateAdmin } from "@/admin/session";
+import { Section } from "@/admin/section";
 import { TabPanel, Tabs } from "@/admin/tabs";
 
 // The signed-in admin's own account, option 3 of Figma A4 (Tabs, after Acctual and Railway, picked
@@ -33,25 +34,6 @@ const MIN_PASSWORD = 8;
 const formClass = "flex max-w-[29rem] flex-col gap-5";
 
 type TabId = "profile" | "security" | "browsers";
-
-// A titled block in a tab, with a line under the title; sections after the first sit below a hairline.
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="border-t border-border pt-8 first:border-t-0 first:pt-0 [&+&]:mt-8">
-      <h2 className="text-body font-semibold text-ink">{title}</h2>
-      <p className="mt-0.5 text-label text-ink-2">{description}</p>
-      <div className="mt-5">{children}</div>
-    </section>
-  );
-}
 
 // The eye at the end of a password field, as on sign in: the open eye while the password shows.
 function Reveal({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {

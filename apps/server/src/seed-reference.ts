@@ -101,6 +101,9 @@ const EGYPT: Place[] = [
       district("miami", "Miami", "ميامي", [31.268, 29.996]),
       district("montaza", "Montaza", "المنتزه", [31.3107, 30.0607]),
       district("agami", "Agami", "العجمي", [31.0988, 29.7667]),
+      // Added 2026-11-17 (user). The old town's centre (30°55′N 29°32′E); New Borg El Arab, the
+      // newer city, is about 7 km south-east, well inside the 15 km a pin may be from its area.
+      city("borg-el-arab", "Borg El Arab", "برج العرب", [30.9167, 29.5333]),
     ],
   ),
   governorate("qalyubia", "Qalyubia", "القليوبية", [30.222, 31.3084]),

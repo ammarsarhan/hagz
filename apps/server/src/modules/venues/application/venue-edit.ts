@@ -58,7 +58,7 @@ export const pinOf = async (db: Tx | typeof prisma, venueId: string) => {
     : { latitude: pin.latitude, longitude: pin.longitude };
 };
 
-const settingsSelect = {
+export const settingsSelect = {
   autoConfirm: true,
   minimumNotice: true,
   paymentMode: true,
@@ -83,7 +83,7 @@ const DEFAULT_SETTINGS: StoredSettings = {
   loyaltyWindow: null,
 };
 
-const stored = (row: SettingsRow | null): StoredSettings =>
+export const storedSettings = (row: SettingsRow | null): StoredSettings =>
   row
     ? { ...row, cancellationTiers: row.cancellationTiers as StoredSettings["cancellationTiers"] }
     : DEFAULT_SETTINGS;
@@ -143,7 +143,7 @@ export const venueDetail = async (
       placeId: venue.placeId,
     },
     translations: venue.translations,
-    settings: settingsView(stored(venue.settings)),
+    settings: settingsView(storedSettings(venue.settings)),
     amenities: venue.amenities,
   };
 };
@@ -290,6 +290,36 @@ export const writeTranslation = async (
   });
 };
 
+// Changes a venue's settings and records what changed, as the staff member or the admin who did it.
+// Nothing recorded when nothing changes. The caller has locked the venue.
+export const writeSettings = async (
+  tx: Tx,
+  venueId: string,
+  change: UpdateVenueSettings,
+  actor: { staffId: string } | { adminId: string },
+) => {
+  const row = await tx.venueSettings.findUnique({ where: { venueId }, select: settingsSelect });
+  const previous = storedSettings(row);
+  const next = mergeSettings(previous, change);
+  const changes = changedSettings(previous, next);
+  if (Object.keys(changes).length === 0) return;
+  const data = { ...next, cancellationTiers: next.cancellationTiers ?? Prisma.DbNull };
+  await tx.venueSettings.upsert({
+    where: { venueId },
+    // A venue without settings gets the platform's default invitation permissions with them.
+    create: { venueId, defaultPermissions: DEFAULT_INVITATION_PERMISSIONS, ...data },
+    update: data,
+  });
+  await tx.venueEvent.create({
+    data: {
+      venueId,
+      ...actor,
+      type: VENUE_SETTINGS_CHANGED,
+      data: { changes } as Prisma.InputJsonValue,
+    },
+  });
+};
+
 export const updateSettings = async (
   actor: VenueAccess,
   change: UpdateVenueSettings,
@@ -297,28 +327,7 @@ export const updateSettings = async (
 ) => {
   await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
-    const row = await tx.venueSettings.findUnique({
-      where: { venueId: actor.venueId },
-      select: settingsSelect,
-    });
-    const previous = stored(row);
-    const next = mergeSettings(previous, change);
-    const changes = changedSettings(previous, next);
-    if (Object.keys(changes).length === 0) return;
-    const data = { ...next, cancellationTiers: next.cancellationTiers ?? Prisma.DbNull };
-    await tx.venueSettings.upsert({
-      where: { venueId: actor.venueId },
-      // A venue without settings gets the platform's default invitation permissions with them.
-      create: {
-        venueId: actor.venueId,
-        defaultPermissions: DEFAULT_INVITATION_PERMISSIONS,
-        ...data,
-      },
-      update: data,
-    });
-    await event(tx, actor.venueId, actor.staffId, VENUE_SETTINGS_CHANGED, {
-      changes,
-    } as Prisma.InputJsonValue);
+    await writeSettings(tx, actor.venueId, change, { staffId: actor.staffId });
   });
   return venueDetail(actor.venueId, display);
 };
