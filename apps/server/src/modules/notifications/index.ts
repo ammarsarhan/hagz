@@ -5,3 +5,4 @@ export {
   type AdminNotification,
   type StaffNotification,
 } from "./application/notify";
+export type { SlotProblem } from "./domain/types";
