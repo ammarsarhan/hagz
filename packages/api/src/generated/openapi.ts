@@ -6661,6 +6661,538 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One day of the venue's slots
+         * @description Needs `schedule: view`. Every ground's slots on a day in the venue's timezone (today, or the nearest day with slots, when no date is given), and the first and last days with any.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots. */
+                    date?: string;
+                };
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's slots */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Add slots for an occasion
+         * @description Needs `schedule: manage`. Eid, Ramadan, a match night: slots of 30 minutes to 4 hours on the quarter hour, up to 90 days ahead, kept whatever the weekly schedule says. Free schedule slots they overlap make way.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddSlots"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_OVERLAPS: a held, booked, blocked or staff-set slot is in the way */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_SLOT (with the `index` of the slot in the request) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/slots/block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block slots
+         * @description Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. All or nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SlotSelection"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE (with the `slotIds` held, booked or blocked) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_STARTED (with the `slotIds`): it began already */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/slots/unblock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unblock slots
+         * @description Needs `schedule: manage`. Opens blocked slots again. One the weekly schedule no longer has goes at the next generation run, unless staff set it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SlotSelection"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE (with the `slotIds` that aren't blocked) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_STARTED (with the `slotIds`): it began already */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/slots/price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Price slots by hand
+         * @description Needs `schedule: manage`. They keep this price, ignoring weekly schedule and tier price changes, until reset. A held or booked slot's booking keeps the price it was made at.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetSlotPrice"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_STARTED (with the `slotIds`): it began already */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/slots/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset slots to the schedule
+         * @description Needs `schedule: manage`. Prices set by hand and added slots go back to the weekly schedule at the next generation run: re-priced from their tier, or removed if free and not scheduled. Blocked slots stay blocked.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SlotSelection"];
+                };
+            };
+            responses: {
+                /** @description The slots after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChangedSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_STARTED (with the `slotIds`): it began already */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/status": {
         parameters: {
             query?: never;
@@ -9053,7 +9585,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AdminVenueSlots"];
+                        "application/json": components["schemas"]["VenueSlots"];
                     };
                 };
                 /** @description VALIDATION_FAILED */
@@ -11579,6 +12111,97 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
         };
+        VenueSlots: {
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            /**
+             * @description ISO 4217; prices are in its minor units.
+             * @example EGP
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The day read.
+             * @example 2026-11-19
+             */
+            date: string;
+            /** @description The first and last days with slots; null until any are generated. */
+            days: {
+                /**
+                 * Format: date
+                 * @description A local date, YYYY-MM-DD.
+                 * @example 2026-11-19
+                 */
+                first: string;
+                /**
+                 * Format: date
+                 * @description A local date, YYYY-MM-DD.
+                 * @example 2026-11-19
+                 */
+                last: string;
+            } | null;
+            grounds: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            }[];
+            slots: components["schemas"]["Slot"][];
+        };
+        Slot: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            groundId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            tier: components["schemas"]["PriceTier"];
+            /** @description In minor units. */
+            price: number;
+            status: components["schemas"]["SlotStatus"];
+            /** @description Set by staff rather than the schedule. */
+            isManual: boolean;
+            /** Format: uuid */
+            bookingId: string | null;
+        };
+        /**
+         * @description `HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff.
+         * @enum {string}
+         */
+        SlotStatus: "AVAILABLE" | "HELD" | "BOOKED" | "BLOCKED";
+        ChangedSlots: {
+            slots: components["schemas"]["Slot"][];
+        };
+        /** @description Slots of the venue that haven't started. */
+        SlotSelection: {
+            slotIds: string[];
+        };
+        /** @description The slots keep this price, and ignore weekly schedule changes, until reset to the schedule. A held or booked slot's booking keeps the price it was made at. */
+        SetSlotPrice: {
+            slotIds: string[];
+            /** @description In minor units. */
+            price: number;
+        };
+        /** @description Slots for an occasion (Eid, Ramadan, a match night), kept whatever the weekly schedule says. Free slots from the schedule they overlap make way; any other overlap is refused. */
+        AddSlots: {
+            /** Format: uuid */
+            groundId: string;
+            slots: {
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                tier?: components["schemas"]["PriceTier"];
+                /** @description In minor units. */
+                price: number;
+            }[];
+        };
         SystemStatus: {
             /** Format: date-time */
             checkedAt: string;
@@ -12165,69 +12788,6 @@ export interface components {
                 wrong: number;
             };
         };
-        AdminVenueSlots: {
-            /**
-             * @description The venue's IANA timezone.
-             * @example Africa/Cairo
-             */
-            timezone: string;
-            /**
-             * @description ISO 4217; prices are in its minor units.
-             * @example EGP
-             */
-            currency: string;
-            /**
-             * Format: date
-             * @description The day read.
-             * @example 2026-11-19
-             */
-            date: string;
-            /** @description The first and last days with slots; null until any are generated. */
-            days: {
-                /**
-                 * Format: date
-                 * @description A local date, YYYY-MM-DD.
-                 * @example 2026-11-19
-                 */
-                first: string;
-                /**
-                 * Format: date
-                 * @description A local date, YYYY-MM-DD.
-                 * @example 2026-11-19
-                 */
-                last: string;
-            } | null;
-            grounds: {
-                /** Format: uuid */
-                id: string;
-                name: string | null;
-                sport: components["schemas"]["GroundSport"];
-                size: components["schemas"]["GroundSize"];
-            }[];
-            slots: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                groundId: string;
-                /** Format: date-time */
-                startsAt: string;
-                /** Format: date-time */
-                endsAt: string;
-                tier: components["schemas"]["PriceTier"];
-                /** @description In minor units. */
-                price: number;
-                status: components["schemas"]["SlotStatus"];
-                /** @description Set by staff rather than the schedule. */
-                isManual: boolean;
-                /** Format: uuid */
-                bookingId: string | null;
-            }[];
-        };
-        /**
-         * @description `HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff.
-         * @enum {string}
-         */
-        SlotStatus: "AVAILABLE" | "HELD" | "BOOKED" | "BLOCKED";
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
             valid: boolean;

@@ -3318,6 +3318,262 @@
           "expiresAt"
         ]
       },
+      "VenueSlots": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217; prices are in its minor units.",
+            "example": "EGP"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "The day read.",
+            "example": "2026-11-19"
+          },
+          "days": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "first": {
+                "type": "string",
+                "format": "date",
+                "description": "A local date, YYYY-MM-DD.",
+                "example": "2026-11-19"
+              },
+              "last": {
+                "type": "string",
+                "format": "date",
+                "description": "A local date, YYYY-MM-DD.",
+                "example": "2026-11-19"
+              }
+            },
+            "required": [
+              "first",
+              "last"
+            ],
+            "description": "The first and last days with slots; null until any are generated."
+          },
+          "grounds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sport": {
+                  "$ref": "#/components/schemas/GroundSport"
+                },
+                "size": {
+                  "$ref": "#/components/schemas/GroundSize"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "sport",
+                "size"
+              ]
+            }
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            }
+          }
+        },
+        "required": [
+          "timezone",
+          "currency",
+          "date",
+          "days",
+          "grounds",
+          "slots"
+        ]
+      },
+      "Slot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/PriceTier"
+          },
+          "price": {
+            "type": "integer",
+            "description": "In minor units."
+          },
+          "status": {
+            "$ref": "#/components/schemas/SlotStatus"
+          },
+          "isManual": {
+            "type": "boolean",
+            "description": "Set by staff rather than the schedule."
+          },
+          "bookingId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "groundId",
+          "startsAt",
+          "endsAt",
+          "tier",
+          "price",
+          "status",
+          "isManual",
+          "bookingId"
+        ]
+      },
+      "SlotStatus": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "HELD",
+          "BOOKED",
+          "BLOCKED"
+        ],
+        "description": "`HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff."
+      },
+      "ChangedSlots": {
+        "type": "object",
+        "properties": {
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            }
+          }
+        },
+        "required": [
+          "slots"
+        ]
+      },
+      "SlotSelection": {
+        "type": "object",
+        "properties": {
+          "slotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "slotIds"
+        ],
+        "description": "Slots of the venue that haven't started."
+      },
+      "SetSlotPrice": {
+        "type": "object",
+        "properties": {
+          "slotIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000,
+            "description": "In minor units."
+          }
+        },
+        "required": [
+          "slotIds",
+          "price"
+        ],
+        "description": "The slots keep this price, and ignore weekly schedule changes, until reset to the schedule. A held or booked slot's booking keeps the price it was made at."
+      },
+      "AddSlots": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "tier": {
+                  "$ref": "#/components/schemas/PriceTier"
+                },
+                "price": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000000,
+                  "description": "In minor units."
+                }
+              },
+              "required": [
+                "startsAt",
+                "endsAt",
+                "price"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "groundId",
+          "slots"
+        ],
+        "description": "Slots for an occasion (Eid, Ramadan, a match night), kept whatever the weekly schedule says. Free slots from the schedule they overlap make way; any other overlap is refused."
+      },
       "SystemStatus": {
         "type": "object",
         "properties": {
@@ -5183,156 +5439,6 @@
           "stale",
           "drift"
         ]
-      },
-      "AdminVenueSlots": {
-        "type": "object",
-        "properties": {
-          "timezone": {
-            "type": "string",
-            "description": "The venue's IANA timezone.",
-            "example": "Africa/Cairo"
-          },
-          "currency": {
-            "type": "string",
-            "description": "ISO 4217; prices are in its minor units.",
-            "example": "EGP"
-          },
-          "date": {
-            "type": "string",
-            "format": "date",
-            "description": "The day read.",
-            "example": "2026-11-19"
-          },
-          "days": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "first": {
-                "type": "string",
-                "format": "date",
-                "description": "A local date, YYYY-MM-DD.",
-                "example": "2026-11-19"
-              },
-              "last": {
-                "type": "string",
-                "format": "date",
-                "description": "A local date, YYYY-MM-DD.",
-                "example": "2026-11-19"
-              }
-            },
-            "required": [
-              "first",
-              "last"
-            ],
-            "description": "The first and last days with slots; null until any are generated."
-          },
-          "grounds": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "sport": {
-                  "$ref": "#/components/schemas/GroundSport"
-                },
-                "size": {
-                  "$ref": "#/components/schemas/GroundSize"
-                }
-              },
-              "required": [
-                "id",
-                "name",
-                "sport",
-                "size"
-              ]
-            }
-          },
-          "slots": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "groundId": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "startsAt": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "endsAt": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "tier": {
-                  "$ref": "#/components/schemas/PriceTier"
-                },
-                "price": {
-                  "type": "integer",
-                  "description": "In minor units."
-                },
-                "status": {
-                  "$ref": "#/components/schemas/SlotStatus"
-                },
-                "isManual": {
-                  "type": "boolean",
-                  "description": "Set by staff rather than the schedule."
-                },
-                "bookingId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "uuid"
-                }
-              },
-              "required": [
-                "id",
-                "groundId",
-                "startsAt",
-                "endsAt",
-                "tier",
-                "price",
-                "status",
-                "isManual",
-                "bookingId"
-              ]
-            }
-          }
-        },
-        "required": [
-          "timezone",
-          "currency",
-          "date",
-          "days",
-          "grounds",
-          "slots"
-        ]
-      },
-      "SlotStatus": {
-        "type": "string",
-        "enum": [
-          "AVAILABLE",
-          "HELD",
-          "BOOKED",
-          "BLOCKED"
-        ],
-        "description": "`HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff."
       },
       "CheckTaxNumber": {
         "type": "object",
@@ -12403,6 +12509,598 @@
         }
       }
     },
+    "/v1/staff/venues/{venueId}/slots": {
+      "get": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "One day of the venue's slots",
+        "description": "Needs `schedule: view`. Every ground's slots on a day in the venue's timezone (today, or the nearest day with slots, when no date is given), and the first and last days with any.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots.",
+              "example": "2026-11-19"
+            },
+            "required": false,
+            "description": "The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots.",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The day's slots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Add slots for an occasion",
+        "description": "Needs `schedule: manage`. Eid, Ramadan, a match night: slots of 30 minutes to 4 hours on the quarter hour, up to 90 days ahead, kept whatever the weekly schedule says. Free schedule slots they overlap make way.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSlots"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GROUND_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_OVERLAPS: a held, booked, blocked or staff-set slot is in the way",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_SLOT (with the `index` of the slot in the request)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/slots/block": {
+      "post": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Block slots",
+        "description": "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. All or nothing.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotSelection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE (with the `slotIds` held, booked or blocked)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/slots/unblock": {
+      "post": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Unblock slots",
+        "description": "Needs `schedule: manage`. Opens blocked slots again. One the weekly schedule no longer has goes at the next generation run, unless staff set it.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotSelection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE (with the `slotIds` that aren't blocked)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/slots/price": {
+      "put": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Price slots by hand",
+        "description": "Needs `schedule: manage`. They keep this price, ignoring weekly schedule and tier price changes, until reset. A held or booked slot's booking keeps the price it was made at.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSlotPrice"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/slots/reset": {
+      "post": {
+        "tags": [
+          "Venue slots"
+        ],
+        "summary": "Reset slots to the schedule",
+        "description": "Needs `schedule: manage`. Prices set by hand and added slots go back to the weekly schedule at the next generation run: re-priced from their tier, or removed if free and not scheduled. Blocked slots stay blocked.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotSelection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The slots after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangedSlots"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/status": {
       "get": {
         "tags": [
@@ -14997,7 +15695,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminVenueSlots"
+                  "$ref": "#/components/schemas/VenueSlots"
                 }
               }
             }
