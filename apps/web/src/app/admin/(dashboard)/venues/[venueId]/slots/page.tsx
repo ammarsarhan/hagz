@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminVenueSlots, SlotStatus } from "@hagz/contracts";
+import type { VenueSlots, SlotStatus } from "@hagz/contracts";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -68,7 +68,7 @@ const rowsOf = (hours: Set<number>): Row[] => {
   return rows;
 };
 
-export default function VenueSlots() {
+export default function VenueSlotsTab() {
   const { venueId } = useParams<{ venueId: string }>();
   const [date, setDate] = useState<string>();
   const { data, error, loading } = useVenueSlots(venueId, date);
@@ -106,7 +106,7 @@ function Calendar({
   loading,
   onDate,
 }: {
-  data: AdminVenueSlots;
+  data: VenueSlots;
   // The first and last days with slots: the days it moves between.
   days: { first: string; last: string };
   loading: boolean;

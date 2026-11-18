@@ -1,17 +1,43 @@
-import type { AdminVenueSlots, AdminVenueSlotsQuery } from "@hagz/contracts";
+import type { PriceTier, Slot, SlotStatus, VenueSlots, VenueSlotsQuery } from "@hagz/contracts";
 import { prisma } from "@/platform/db/prisma";
 import { venueNotFound } from "./access";
 import { listGrounds } from "./grounds";
 
-// A venue's admin Slots tab: one local day of its grounds' slots, read only. A venue's day is its
+// One local day of a venue's slots, for the admin's Slots tab and the staff calendar. A venue's day is its
 // marketplace's: Postgres turns the date into that day's two instants (`AT TIME ZONE` knows the
 // zone's DST), so a day is 23 or 25 hours when the clocks change. Slots of deleted grounds are left
 // out, as the grounds are.
 
-export const adminVenueSlots = async (
-  id: string,
-  query: AdminVenueSlotsQuery,
-): Promise<AdminVenueSlots> => {
+// A slot as the API returns it.
+export const slotSelect = {
+  id: true,
+  groundId: true,
+  startsAt: true,
+  endsAt: true,
+  tier: true,
+  price: true,
+  status: true,
+  isManual: true,
+  bookingId: true,
+} as const;
+
+export const presentSlot = (slot: {
+  id: string;
+  groundId: string;
+  startsAt: Date;
+  endsAt: Date;
+  tier: PriceTier;
+  price: number;
+  status: SlotStatus;
+  isManual: boolean;
+  bookingId: string | null;
+}): Slot => ({
+  ...slot,
+  startsAt: slot.startsAt.toISOString(),
+  endsAt: slot.endsAt.toISOString(),
+});
+
+export const daySlots = async (id: string, query: VenueSlotsQuery): Promise<VenueSlots> => {
   const venue = await prisma.venue.findUnique({
     where: { id },
     select: { marketplace: { select: { currency: true, timezone: true } } },
@@ -51,17 +77,7 @@ export const adminVenueSlots = async (
           startsAt: { gte: bounds.from, lt: bounds.to },
         },
         orderBy: [{ startsAt: "asc" }, { groundId: "asc" }],
-        select: {
-          id: true,
-          groundId: true,
-          startsAt: true,
-          endsAt: true,
-          tier: true,
-          price: true,
-          status: true,
-          isManual: true,
-          bookingId: true,
-        },
+        select: slotSelect,
       })
     : [];
 
@@ -76,10 +92,6 @@ export const adminVenueSlots = async (
       sport,
       size,
     })),
-    slots: slots.map((slot) => ({
-      ...slot,
-      startsAt: slot.startsAt.toISOString(),
-      endsAt: slot.endsAt.toISOString(),
-    })),
+    slots: slots.map(presentSlot),
   };
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminVenueSlots } from "@hagz/contracts";
+import type { VenueSlots } from "@hagz/contracts";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/admin/api";
 import { message, notTheirFault, send } from "@/admin/errors";
@@ -9,10 +9,10 @@ import { useHud } from "@/admin/hud";
 // A venue's Slots tab's data: one local day of its slots. No date opens on today, or the nearest
 // day that has slots; the day before stays on screen while the next one loads.
 
-export type AdminSlot = AdminVenueSlots["slots"][number];
+export type AdminSlot = VenueSlots["slots"][number];
 
 export function useVenueSlots(venueId: string, date: string | undefined) {
-  const [data, setData] = useState<AdminVenueSlots>();
+  const [data, setData] = useState<VenueSlots>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
   const hud = useHud();

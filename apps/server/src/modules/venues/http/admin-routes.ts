@@ -11,7 +11,7 @@ import {
   listAdminVenues,
   regenerateGround,
 } from "../application/admin-venues";
-import { adminVenueSlots } from "../application/admin-slots";
+import { daySlots } from "../application/day-slots";
 import {
   approveVenue,
   checkTaxNumber,
@@ -99,7 +99,7 @@ export const venuesAdminRoutes = createRouter()
     return c.body(null, 202);
   })
   .openapi(route.venueSlots, async (c) => {
-    return c.json(await adminVenueSlots(c.req.valid("param").id, c.req.valid("query")), 200);
+    return c.json(await daySlots(c.req.valid("param").id, c.req.valid("query")), 200);
   })
   .openapi(route.provisionTranslation, async (c) => {
     const { id, language } = c.req.valid("param");

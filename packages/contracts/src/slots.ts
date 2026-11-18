@@ -14,17 +14,32 @@ const LocalDate = z.iso
   .date()
   .meta({ description: "A local date, YYYY-MM-DD.", example: "2026-11-19" });
 
-export const AdminVenueSlotsQuery = z
+export const VenueSlotsQuery = z
   .object({
     date: LocalDate.optional().meta({
       description:
         "The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots.",
     }),
   })
-  .meta({ id: "AdminVenueSlotsQuery" });
+  .meta({ id: "VenueSlotsQuery" });
 
-// A venue's admin Slots tab: one local day of its grounds' slots, and the days it has any at all.
-export const AdminVenueSlots = z
+export const Slot = z
+  .object({
+    id: z.uuid(),
+    groundId: z.uuid(),
+    startsAt: z.iso.datetime(),
+    endsAt: z.iso.datetime(),
+    tier: PriceTier,
+    price: z.int().meta({ description: "In minor units." }),
+    status: SlotStatus,
+    isManual: z.boolean().meta({ description: "Set by staff rather than the schedule." }),
+    bookingId: z.uuid().nullable(),
+  })
+  .meta({ id: "Slot" });
+
+// One local day of a venue's grounds' slots, and the days it has any at all: the admin's Slots tab
+// and the staff calendar.
+export const VenueSlots = z
   .object({
     timezone: z
       .string()
@@ -45,22 +60,60 @@ export const AdminVenueSlots = z
         size: GroundSize,
       }),
     ),
-    slots: z.array(
-      z.object({
-        id: z.uuid(),
-        groundId: z.uuid(),
-        startsAt: z.iso.datetime(),
-        endsAt: z.iso.datetime(),
-        tier: PriceTier,
-        price: z.int().meta({ description: "In minor units." }),
-        status: SlotStatus,
-        isManual: z.boolean().meta({ description: "Set by staff rather than the schedule." }),
-        bookingId: z.uuid().nullable(),
-      }),
-    ),
+    slots: z.array(Slot),
   })
-  .meta({ id: "AdminVenueSlots" });
+  .meta({ id: "VenueSlots" });
 
 export type SlotStatus = z.infer<typeof SlotStatus>;
-export type AdminVenueSlotsQuery = z.infer<typeof AdminVenueSlotsQuery>;
-export type AdminVenueSlots = z.infer<typeof AdminVenueSlots>;
+export type VenueSlotsQuery = z.infer<typeof VenueSlotsQuery>;
+export type VenueSlots = z.infer<typeof VenueSlots>;
+
+// ---------- Staff changes (PR 2.6) ----------
+
+export const MAXIMUM_SLOTS_PER_CHANGE = 500;
+// A slot staff add for an occasion: from half an hour to four hours, on a quarter hour.
+export const MANUAL_SLOT_MINUTES = { min: 30, max: 240 } as const;
+
+const SlotIds = z.array(z.uuid()).min(1).max(MAXIMUM_SLOTS_PER_CHANGE);
+const Price = z.int().min(1).max(100_000_00).meta({ description: "In minor units." });
+
+export const SlotSelection = z
+  .object({ slotIds: SlotIds })
+  .meta({ id: "SlotSelection", description: "Slots of the venue that haven't started." });
+
+export const SetSlotPrice = z.object({ slotIds: SlotIds, price: Price }).meta({
+  id: "SetSlotPrice",
+  description:
+    "The slots keep this price, and ignore weekly schedule changes, until reset to the schedule. " +
+    "A held or booked slot's booking keeps the price it was made at.",
+});
+
+export const AddSlots = z
+  .object({
+    groundId: z.uuid(),
+    slots: z
+      .array(
+        z.object({
+          startsAt: z.iso.datetime(),
+          endsAt: z.iso.datetime(),
+          tier: PriceTier.default("BASE"),
+          price: Price,
+        }),
+      )
+      .min(1)
+      .max(100),
+  })
+  .meta({
+    id: "AddSlots",
+    description:
+      "Slots for an occasion (Eid, Ramadan, a match night), kept whatever the weekly schedule says. " +
+      "Free slots from the schedule they overlap make way; any other overlap is refused.",
+  });
+
+export const ChangedSlots = z.object({ slots: z.array(Slot) }).meta({ id: "ChangedSlots" });
+
+export type Slot = z.infer<typeof Slot>;
+export type SlotSelection = z.infer<typeof SlotSelection>;
+export type SetSlotPrice = z.infer<typeof SetSlotPrice>;
+export type AddSlots = z.infer<typeof AddSlots>;
+export type ChangedSlots = z.infer<typeof ChangedSlots>;
