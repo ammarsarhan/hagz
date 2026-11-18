@@ -8,49 +8,47 @@ import type { AdminGround } from "./grounds";
 
 // A venue's layout drawn to scale for its admin Grounds tab, read only: the staff app's layout (a
 // cinema grid in ~10 m cells, the venue's outline, its grounds and amenities on it, entrances on
-// its edges) in the admin's neutral inks. Each ground is a button that opens its details; the one
-// open is drawn in ink. Cells shrink so the whole venue fits the column, and never grow past 32px.
+// its edges) in the admin's neutral inks. It fills its container and sits in its middle: cells are
+// as big as fits both the width and the height, so the whole venue shows with no scrolling.
 
-const MAX_CELL = 32;
-// Small enough that the widest venue (60 cells) fits half a page.
-const MIN_CELL = 6;
-
-// The width the view has to fit in, kept up to date as the window changes.
-function useWidth() {
+// The space the view has to fill, kept up to date as the window changes.
+function useSize() {
   const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry?.contentRect.width ?? 0));
+    const observer = new ResizeObserver(([entry]) =>
+      setSize({ width: entry?.contentRect.width ?? 0, height: entry?.contentRect.height ?? 0 }),
+    );
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  return { ref, width };
+  return { ref, size };
 }
 
 export function LayoutView({
   layout,
   grounds,
   amenities,
-  selected,
-  onSelect,
 }: {
   layout: VenueLayoutView;
   grounds: AdminGround[];
   amenities?: AdminVenueAmenities["amenities"];
-  selected?: string;
-  onSelect: (groundId: string) => void;
 }) {
-  const { ref, width } = useWidth();
-  const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, Math.floor(width / layout.columns)));
+  const { ref, size } = useSize();
+  // Whole pixels, so the grid's hairlines stay sharp; less the outline's 3px.
+  const cell = Math.max(
+    1,
+    Math.floor(Math.min((size.width - 3) / layout.columns, (size.height - 3) / layout.rows)),
+  );
   const byId = new Map(grounds.map((ground) => [ground.id, ground]));
   const amenityById = new Map((amenities ?? []).map((amenity) => [amenity.optionId, amenity]));
 
   return (
-    // Padded so the entrance tags, half over the edge, aren't cut off by the scroll.
-    <div ref={ref} className="w-full overflow-x-auto p-3">
-      {width > 0 ? (
+    // Padded so the entrance tags, half over the edge, stay inside.
+    <div ref={ref} className="flex size-full items-center justify-center p-3">
+      {size.width > 0 && size.height > 0 ? (
         <div
           role="group"
           aria-label="The venue's layout"
@@ -93,19 +91,11 @@ export function LayoutView({
             const vertical = tile.orientation === "VERTICAL";
             const w = (vertical ? tile.height : tile.width) * cell;
             const h = (vertical ? tile.width : tile.height) * cell;
-            const on = tile.groundId === selected;
             const paused = ground?.status === "MAINTENANCE";
             return (
-              <button
+              <div
                 key={tile.groundId}
-                type="button"
-                aria-pressed={on}
-                onClick={() => onSelect(tile.groundId)}
-                className={`absolute flex cursor-pointer items-center justify-center overflow-hidden rounded-[0.25rem] border-[1.5px] transition-colors ${
-                  on
-                    ? "border-ink bg-[#e3e5e9]"
-                    : "border-[#9aa0a8] bg-chip hover:border-ink hover:bg-[#e9ebee]"
-                } ${paused ? "opacity-60" : ""}`}
+                className={`absolute flex items-center justify-center overflow-hidden rounded-[0.25rem] border-[1.5px] border-[#9aa0a8] bg-chip ${paused ? "opacity-60" : ""}`}
                 style={{ left: tile.x * cell, top: tile.y * cell, width: w, height: h }}
               >
                 {/* The pitch's halfway line, across its length. */}
@@ -116,7 +106,7 @@ export function LayoutView({
                 <span className="relative max-w-full truncate px-1.5 text-caption font-medium text-ink">
                   {ground?.name ?? "Ground"}
                 </span>
-              </button>
+              </div>
             );
           })}
 
