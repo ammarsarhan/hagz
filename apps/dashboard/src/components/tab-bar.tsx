@@ -3,7 +3,15 @@ import * as Haptics from "expo-haptics";
 import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -35,11 +43,33 @@ const TABS = {
 // How much of the screen the bar takes, from the bottom edge (Screen measures above it).
 export const useTabBarHeight = () => ROW + HAIRLINE + useSafeAreaInsets().bottom;
 
-export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
+// The venue recedes in step with the switcher's sheet: eased out on the way back, settling as the
+// sheet lands, and straight back on close.
+const RECEDE = { duration: 320, easing: Easing.out(Easing.cubic) };
+const RETURN = { duration: 260, easing: Easing.out(Easing.cubic) };
+
+export function TabBar({
+  state,
+  emitter,
+  navigateToTab,
+  depth,
+  onRecede,
+}: TabBarProps & {
+  // The venue layout's recede (0 at rest, 1 behind the switcher), and when it's away from rest.
+  depth: SharedValue<number>;
+  onRecede: (receded: boolean) => void;
+}) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { venue, venues, running } = useCurrentVenue();
   const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    if (switching) onRecede(true);
+    depth.value = withTiming(switching ? 1 : 0, switching ? RECEDE : RETURN, (finished) => {
+      if (finished && !switching) runOnJS(onRecede)(false);
+    });
+  }, [switching, depth, onRecede]);
 
   return (
     <View
