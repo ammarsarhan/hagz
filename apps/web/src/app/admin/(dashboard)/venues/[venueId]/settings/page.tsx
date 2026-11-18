@@ -19,13 +19,13 @@ import {
 import { useCurrentVenue } from "@/admin/venues/venue";
 
 // A venue's Settings tab: how Hagz runs it, as opposed to Details, which is what players see. Blocks
-// of settings changed in place (user, 2026-11-18): pausing and resuming once it's live, then Hagz's
-// commission, and the settings its owner also changes in the staff app, which admins change for
-// support. Each block saves on its own; every change is on the History as the admin's.
+// of settings changed in place and saved as they change (user, 2026-11-18): pausing and resuming
+// once it's live, then Hagz's commission, and the settings its owner also changes in the staff app,
+// which admins change for support. Every change is on the History as the admin's.
 export default function VenueSettingsPage() {
   const { venueId } = useParams<{ venueId: string }>();
   const { venue, reload: reloadVenue } = useCurrentVenue();
-  const { data, error, reload } = useVenueSettings(venueId);
+  const { data, error, saved } = useVenueSettings(venueId);
   const [action, setAction] = useState<"pause" | "resume">();
   const close = () => setAction(undefined);
 
@@ -35,7 +35,7 @@ export default function VenueSettingsPage() {
   const live = venue.status === "LIVE";
   const step = (path: "pause" | "resume") => () =>
     send(api.POST(`/v1/admin/venues/{id}/${path}`, { params: { path: { id: venueId } } }));
-  const props = data ? { venueId, data, onSaved: reload } : undefined;
+  const props = data ? { venueId, data, onSaved: saved } : undefined;
 
   return (
     // The first block sits right under the tabs, like the other tabs' content.
@@ -68,24 +68,11 @@ export default function VenueSettingsPage() {
         <Skeleton className="h-72 w-full rounded-card" />
       ) : (
         <>
-          {/* Keyed by what's saved, so a section starts again from it after a save. */}
-          <CommissionSection key={JSON.stringify(props.data.commission)} {...props} />
-          <BookingRulesSection
-            key={`rules-${String(props.data.settings.autoConfirm)}-${String(props.data.settings.minimumNotice)}`}
-            {...props}
-          />
-          <PaymentsSection
-            key={`pay-${props.data.settings.paymentMode}-${String(props.data.settings.depositPercent)}`}
-            {...props}
-          />
-          <CancellationSection
-            key={`cancel-${String(props.data.settings.cancellationPolicy)}-${JSON.stringify(props.data.settings.cancellationTiers)}`}
-            {...props}
-          />
-          <LoyaltySection
-            key={`loyalty-${JSON.stringify(props.data.settings.loyalty)}`}
-            {...props}
-          />
+          <CommissionSection {...props} />
+          <BookingRulesSection {...props} />
+          <PaymentsSection {...props} />
+          <CancellationSection {...props} />
+          <LoyaltySection {...props} />
         </>
       )}
 

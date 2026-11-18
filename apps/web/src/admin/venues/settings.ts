@@ -39,7 +39,8 @@ export function useVenueSettings(venueId: string) {
     void load();
   }, [load]);
 
-  return { data, error, reload: () => void load() };
+  // `saved` takes the settings a change answered with, so the page shows them without a reload.
+  return { data, error, reload: () => void load(), saved: setData };
 }
 
 // Basis points as a percentage: 1000 → "10%", 1250 → "12.5%".
