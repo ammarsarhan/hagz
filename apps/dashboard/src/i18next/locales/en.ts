@@ -10,6 +10,17 @@ const en = {
         payments: "Payments",
         account: "Account",
       },
+      venueSwitcher: {
+        close: "Close",
+        owner: "Owner",
+        member: "Team member",
+        paused: "Paused",
+        current: "Open now",
+        createVenue: "Create your venue",
+        continueSetup: "Continue setting up",
+        switched: "Now on {{name}}",
+        untitled: "Your venue",
+      },
       invitationCard: {
         invitedBy: "{{name}} invited you",
         grounds_one: "{{count}} ground",
