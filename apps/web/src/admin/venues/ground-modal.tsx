@@ -1,25 +1,48 @@
 "use client";
 
 import { FOOTPRINTS, type PlacedGround, type PriceTier } from "@hagz/contracts";
-import type { ReactNode } from "react";
 import { Tag } from "@/admin/data-table";
 import { Dialog } from "@/admin/dialog";
 import { formatMoney } from "@/admin/money";
 import { CloseButton } from "@/admin/overlay";
 import { environmentLabel, sizeLabel, sportLabel, surfaceLabel, type AdminGround } from "./grounds";
-import { DAY_NAMES, HoursGrid, TierSwatch, weekOf } from "./hours-grid";
 import { PitchMarkings } from "./pitch-drawing";
+import { hourLabel, weekOf } from "./week";
 
 // A ground's details, opened from its pitch on the venue's layout, read only (the owner changes it
-// all in the staff app). Wide (user, 2026-11-18): one header across the top (its name, what it is,
-// ×); under it the ground drawn to scale on the layout's grid, glowing as its pitch does when
-// picked, with what it's made of beside its week on the staff app's hours grid; and along the
-// bottom its prices, each by the swatch its hours wear on the grid, so the prices are the grid's key.
+// all in the staff app): Figma A7, option 2 "Programme" (97:208), picked 2026-11-18. The ground in
+// one line under its name, then its week read like a TV guide: a row a day, its hours left to right
+// (only the hours it uses, a late night carrying on in its evening's row), each run of a price tier
+// a block with the price printed in it. Base light grey, peak dark, discount dashed; closed hours a
+// faint fill, a day closed throughout a hairline.
 
-// The drawing's room in its column, in px.
-const ROOM = { width: 320, height: 176 };
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const TIER = { BASE: "base", PEAK: "peak", DISCOUNT: "discount" } as const;
+
+const block: Record<PriceTier, { box: string; price: string; tier: string }> = {
+  BASE: { box: "bg-[#e4e6ea]", price: "text-ink", tier: "text-ink-3" },
+  PEAK: { box: "bg-ink-2", price: "text-white", tier: "text-[#d9dbdf]" },
+  DISCOUNT: {
+    box: "border border-dashed border-ink-3 bg-white",
+    price: "text-ink-2",
+    tier: "text-ink-3",
+  },
+};
 
 const hours = (count: number) => `${String(count)} ${count === 1 ? "hour" : "hours"}`;
+
+// A day's hours as runs: the same tier, or closed (null), back to back.
+type Run = { tier: PriceTier | null; from: number; length: number };
+const runsOf = (tierOf: (offset: number) => PriceTier | null, span: number) => {
+  const runs: Run[] = [];
+  for (let offset = 0; offset < span; offset += 1) {
+    const tier = tierOf(offset);
+    const last = runs.at(-1);
+    if (last && last.tier === tier) last.length += 1;
+    else runs.push({ tier, from: offset, length: 1 });
+  }
+  return runs;
+};
 
 export function GroundModal({
   ground,
@@ -28,147 +51,178 @@ export function GroundModal({
   onClose,
 }: {
   ground: AdminGround;
-  // Where it sits on the layout, for its size; a ground not on it is drawn at its sport's default.
+  // Where it sits on the layout, for its shape; a ground not on it is drawn at its sport's default.
   tile?: PlacedGround;
   currency: string;
   onClose: () => void;
 }) {
   const footprint = tile ?? FOOTPRINTS[ground.sport][ground.size] ?? { width: 4, height: 2 };
-  // Whole pixels a cell, like the layout, so the grid behind lines up with the ground's edges.
-  const cell = Math.floor(Math.min(ROOM.width / footprint.width, ROOM.height / footprint.height));
-  const drawn = { width: footprint.width * cell, height: footprint.height * cell };
+  const week = weekOf(ground.schedule);
+  const price = (tier: PriceTier) => {
+    const minor =
+      tier === "PEAK"
+        ? ground.peakPrice
+        : tier === "DISCOUNT"
+          ? ground.discountPrice
+          : ground.basePrice;
+    return minor === null ? "—" : formatMoney(currency, minor).slice(currency.length + 1);
+  };
+  // Where an hour falls along the timeline, as a share of it.
+  const x = (offset: number) => `${String((offset / week.hours) * 100)}%`;
+  const midnight = (offset: number) => offset > 0 && (week.start + offset) % 24 === 0;
   const bookings =
     ground.minimumSlots === ground.maximumSlots
       ? hours(ground.minimumSlots)
       : `${String(ground.minimumSlots)} to ${hours(ground.maximumSlots)}`;
-  const { closedDays } = weekOf(ground.schedule);
-  const week =
-    ground.openHours === 0
-      ? "Not set yet"
-      : [
-          `${hours(ground.openHours)} a week`,
-          closedDays.length === 0
-            ? "open every day"
-            : `closed ${closedDays.map((day) => DAY_NAMES[day]).join(", ")}`,
-        ].join(" · ");
+  const facts = [
+    sportLabel[ground.sport],
+    // A sport with no sizes (padel, tennis…) leaves it out.
+    ...(ground.size === "STANDARD" ? [] : [sizeLabel[ground.size]]),
+    surfaceLabel[ground.surface],
+    environmentLabel[ground.environment],
+    `Books ${bookings}`,
+  ];
 
   return (
-    <Dialog open size="large" onClose={onClose}>
+    <Dialog open size="wider" onClose={onClose}>
       <div className="flex max-h-[85vh] flex-col overflow-y-auto">
-        <header className="flex items-start justify-between gap-10 border-b border-border px-7 pt-6 pb-5">
-          <div className="min-w-0">
-            <h2 className="flex items-center gap-2.5 text-[1.5rem] leading-[1.875rem] font-semibold text-ink">
-              <span className="truncate">{ground.name ?? "Ground"}</span>
-              {ground.status === "MAINTENANCE" ? <Tag>Paused</Tag> : null}
-            </h2>
-            <p className="mt-1 text-body text-ink-2">
-              {/* A sport with no sizes (padel, tennis…) is just its name. */}
-              {ground.size === "STANDARD"
-                ? sportLabel[ground.sport]
-                : `${sportLabel[ground.sport]} · ${sizeLabel[ground.size]}`}
-            </p>
+        <header className="flex items-start justify-between gap-10 border-b border-border px-8 pt-[1.625rem] pb-6">
+          <div className="flex min-w-0 items-center gap-5">
+            {/* The ground itself, small: its shape on the layout, with its sport's lines. */}
+            <div
+              aria-hidden
+              className="relative shrink-0 border border-ink bg-white"
+              style={{ width: 64, height: Math.round((64 * footprint.height) / footprint.width) }}
+            >
+              <PitchMarkings sport={ground.sport} {...footprint} icon />
+            </div>
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2.5 text-[1.5rem] leading-[1.875rem] font-semibold text-ink">
+                <span className="truncate">{ground.name ?? "Ground"}</span>
+                {ground.status === "MAINTENANCE" ? <Tag>Paused</Tag> : null}
+              </h2>
+              <p className="mt-1 truncate text-label text-ink-2">{facts.join(" · ")}</p>
+            </div>
           </div>
           <div className="-mt-0.5 -mr-1.5 shrink-0">
             <CloseButton onClose={onClose} />
           </div>
         </header>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* The ground, filling its column, over what it's made of. */}
-          <div className="flex flex-col border-r border-border">
-            <div
-              className="flex min-h-60 flex-1 items-center justify-center bg-[#fafafa]"
-              style={{
-                // The layout's grid, a cell to every 10 m, lined up with the ground's edges.
-                backgroundImage:
-                  "linear-gradient(to right, #eef0f2 1px, transparent 1px), linear-gradient(to bottom, #eef0f2 1px, transparent 1px)",
-                backgroundSize: `${String(cell)}px ${String(cell)}px`,
-                backgroundPosition: `calc(50% + ${String(cell / 2 - drawn.width / 2)}px) calc(50% + ${String(cell / 2 - drawn.height / 2)}px)`,
-              }}
-            >
-              <div
-                className={`relative rounded-[0.25rem] border-[1.5px] border-[#c9cdd3] bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.85),0_0_28px_rgba(11,11,12,0.16)] ${
-                  ground.status === "MAINTENANCE" ? "opacity-60" : ""
-                }`}
-                style={drawn}
-              >
-                <PitchMarkings sport={ground.sport} {...footprint} />
+        <div className="px-8 pt-7 pb-7">
+          {week.hours === 0 ? (
+            <p className="py-10 text-center text-body text-ink-3">No opening hours yet.</p>
+          ) : (
+            <div className="flex">
+              {/* The days down the side, level with their rows. */}
+              <div className="w-[5.125rem] shrink-0 pt-9">
+                {DAYS.map((day, index) => (
+                  <div
+                    key={day}
+                    className={`flex h-[3.375rem] items-center pb-2 text-label ${
+                      week.closedDays.includes(index) ? "text-ink-3" : "font-medium text-ink"
+                    }`}
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="relative min-w-0 flex-1">
+                {/* The hours along the top, every other one, and a line at each. Midnight is the
+                    day's turn, so its line and label are a step darker. */}
+                <div className="relative h-9">
+                  {Array.from({ length: week.hours + 1 }, (_, offset) =>
+                    offset % 2 === 0 || midnight(offset) ? (
+                      <span
+                        key={offset}
+                        className={`absolute top-0 -translate-x-1/2 text-caption whitespace-nowrap ${
+                          midnight(offset) ? "font-medium text-ink-2" : "text-ink-3"
+                        }`}
+                        style={{ left: x(offset) }}
+                      >
+                        {hourLabel(week.start + offset)}
+                      </span>
+                    ) : null,
+                  )}
+                </div>
+                <div aria-hidden className="pointer-events-none absolute inset-x-0 top-9 bottom-2">
+                  {Array.from({ length: week.hours + 1 }, (_, offset) => (
+                    <span
+                      key={offset}
+                      className={`absolute inset-y-0 w-px ${midnight(offset) ? "bg-[#c9cdd3]" : "bg-[#f1f2f4]"}`}
+                      style={{ left: x(offset) }}
+                    />
+                  ))}
+                </div>
+
+                {DAYS.map((day, index) =>
+                  week.closedDays.includes(index) ? (
+                    <div key={day} className="relative flex h-[3.375rem] items-center pb-2">
+                      <span className="h-px w-full bg-[#d4d6da]" />
+                      <span className="absolute left-1/2 -translate-x-1/2 bg-white px-2 text-caption text-ink-3">
+                        Closed all day
+                      </span>
+                    </div>
+                  ) : (
+                    <div key={day} className="relative h-[3.375rem] pb-2">
+                      {runsOf((offset) => week.tierOf(index, offset), week.hours).map((run) => {
+                        const style = {
+                          left: `calc(${x(run.from)} + 2px)`,
+                          width: `calc(${x(run.length)} - 4px)`,
+                        };
+                        if (run.tier === null) {
+                          return (
+                            <div
+                              key={run.from}
+                              className="absolute top-0 h-[2.875rem] rounded-[0.375rem] bg-[#f8f8f9]"
+                              style={style}
+                            />
+                          );
+                        }
+                        const tone = block[run.tier];
+                        const label = `${hourLabel(week.start + run.from)} – ${hourLabel(
+                          week.start + run.from + run.length,
+                        )} · ${TIER[run.tier]} · ${currency} ${price(run.tier)} an hour`;
+                        return (
+                          <div
+                            key={run.from}
+                            title={label}
+                            className={`absolute top-0 flex h-[2.875rem] flex-col justify-center overflow-hidden rounded-[0.375rem] px-2.5 ${tone.box}`}
+                            style={style}
+                          >
+                            <span
+                              className={`text-body leading-[1.125rem] font-medium tabular-nums ${tone.price}`}
+                            >
+                              {price(run.tier)}
+                            </span>
+                            {/* A single hour has room for its price only. */}
+                            {run.length > 1 ? (
+                              <span className={`text-[0.75rem] leading-[0.9375rem] ${tone.tier}`}>
+                                {TIER[run.tier]}
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ),
+                )}
               </div>
             </div>
-            <dl className="grid grid-cols-3 border-t border-border px-7">
-              <Fact label="Surface">{surfaceLabel[ground.surface]}</Fact>
-              <Fact label="Setting">{environmentLabel[ground.environment]}</Fact>
-              <Fact label="Bookings">{bookings}</Fact>
-            </dl>
-          </div>
-
-          <div className="px-7 pt-5 pb-6">
-            <div className="flex items-baseline justify-between gap-4">
-              <h3 className="text-label font-medium text-ink">Opening hours</h3>
-              <p className="truncate text-caption text-ink-2">{week}</p>
-            </div>
-            <div className="mt-4">
-              <HoursGrid schedule={ground.schedule} />
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* The prices, each by its swatch on the grid: the grid's key. */}
-        <div className="grid grid-cols-3 border-t border-border">
-          <Price tier="BASE" label="Base" currency={currency} minor={ground.basePrice} />
-          <Price tier="PEAK" label="Peak" currency={currency} minor={ground.peakPrice} />
-          <Price
-            tier="DISCOUNT"
-            label="Discount"
-            currency={currency}
-            minor={ground.discountPrice}
-          />
-        </div>
+        <footer className="flex items-center justify-between gap-6 border-t border-border px-8 py-[1.125rem]">
+          <p className="text-caption text-ink-3">
+            {currency} per hour, printed on each block. Hours past midnight belong to the day they
+            start on.
+          </p>
+          <p className="shrink-0 text-caption font-medium text-ink-2">
+            {ground.openHours === 0 ? "No hours yet" : `${hours(ground.openHours)} a week`}
+          </p>
+        </footer>
       </div>
     </Dialog>
-  );
-}
-
-// One of the strip's three: a grey label over its value, hairlines between them.
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="border-border py-3.5 not-first:border-l not-first:pl-4">
-      <dt className="text-caption text-ink-2">{label}</dt>
-      <dd className="mt-0.5 text-body text-ink">{children}</dd>
-    </div>
-  );
-}
-
-// A price by the hour as the number it is, big, under its swatch and name; one not set is a dash.
-function Price({
-  tier,
-  label,
-  currency,
-  minor,
-}: {
-  tier: PriceTier;
-  label: string;
-  currency: string;
-  minor: number | null;
-}) {
-  const amount = minor === null ? null : formatMoney(currency, minor).slice(currency.length + 1);
-  return (
-    <div className="px-7 py-4">
-      <p className="flex items-center gap-2 text-caption text-ink-2">
-        <TierSwatch tier={tier} />
-        {label}
-      </p>
-      {amount === null ? (
-        <p className="mt-1.5 text-[1.375rem] leading-[1.75rem] font-semibold text-ink-3">Not set</p>
-      ) : (
-        <p className="mt-1.5 flex items-baseline gap-1">
-          <span className="text-caption font-medium text-ink-2">{currency}</span>
-          <span className="text-[1.375rem] leading-[1.75rem] font-semibold text-ink tabular-nums">
-            {amount}
-          </span>
-          <span className="text-caption text-ink-3">/hr</span>
-        </p>
-      )}
-    </div>
   );
 }
