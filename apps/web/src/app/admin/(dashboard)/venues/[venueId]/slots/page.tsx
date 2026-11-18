@@ -110,9 +110,9 @@ export default function VenueSlotsTab() {
   const midWeek = data !== undefined && data.date !== weekStart(data.date);
 
   return (
-    // Full bleed: out over main's side and bottom padding and up against the tabs, so the days sit
-    // right under them.
-    <section ref={ref} className="-mx-10 -mt-8 -mb-16 flex flex-col" style={{ height }}>
+    // Out over main's bottom padding and up against the tabs, so the days sit right under them, and
+    // over most of its side padding, keeping 16px each side.
+    <section ref={ref} className="-mx-6 -mt-8 -mb-16 flex flex-col" style={{ height }}>
       {error && !data ? (
         <Centre>
           <p className="text-body text-ink-2">{error}</p>
