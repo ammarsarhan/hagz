@@ -1,3 +1,4 @@
+import type { QueueName } from "@hagz/contracts";
 import { Worker } from "bullmq";
 import { createQueue } from "@/platform/jobs/queues";
 import { logger } from "@/platform/logger/logger";
@@ -7,7 +8,7 @@ import { sweepAvatarUploads } from "../application/avatars";
 // Removes profile photo uploads asked for but never confirmed (PR 2.3), every hour. The scheduler
 // is an upsert, so every worker can register it without making a second one; the sweep is
 // idempotent.
-const QUEUE = "customer-avatar-sweeper";
+const QUEUE: QueueName = "customer-avatar-sweeper";
 const EVERY_HOUR_MS = 60 * 60 * 1000;
 
 export const startAvatarSweeper = async () => {

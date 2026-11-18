@@ -6784,6 +6784,139 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The background queues
+         * @description Each queue's waiting, active, delayed and failed jobs and the one waiting longest; when slot generation's nightly roll-forward, drift audit and checks last finished; and the jobs that failed on their last attempt, newest first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The queues now */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JobsStatus"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/jobs/{queue}/{jobId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a failed job
+         * @description Runs a job that failed on its last attempt again, from its first attempt.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    queue: components["schemas"]["QueueName"];
+                    jobId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Queued again */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED: not one of the queues */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description JOB_NOT_FOUND: no failed job with that id there */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/marketplaces": {
         parameters: {
             query?: never;
@@ -11527,6 +11660,46 @@ export interface components {
                 latencyMs: number | null;
             };
         };
+        JobsStatus: {
+            queues: {
+                name: components["schemas"]["QueueName"];
+                waiting: number;
+                active: number;
+                delayed: number;
+                failed: number;
+                /**
+                 * Format: date-time
+                 * @description When the job waiting longest was queued; null when none wait.
+                 */
+                oldestWaitingAt: string | null;
+            }[];
+            /** @description When slot generation's nightly runs and checks last finished. */
+            lastRuns: {
+                /** Format: date-time */
+                rollForward: string | null;
+                /** Format: date-time */
+                audit: string | null;
+                /** Format: date-time */
+                checks: string | null;
+            };
+            /** @description Jobs that failed on their last attempt, newest first, up to 20 a queue. */
+            failed: {
+                queue: components["schemas"]["QueueName"];
+                id: string;
+                name: string;
+                /**
+                 * Format: uuid
+                 * @description For a slot generation run.
+                 */
+                groundId: string | null;
+                reason: string;
+                attempts: number;
+                /** Format: date-time */
+                failedAt: string | null;
+            }[];
+        };
+        /** @enum {string} */
+        QueueName: "slot-generation" | "slot-maintenance" | "venue-photo-sweeper" | "customer-avatar-sweeper";
         AdminMarketplace: {
             /** Format: uuid */
             id: string;

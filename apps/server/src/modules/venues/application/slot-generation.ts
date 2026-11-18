@@ -1,3 +1,4 @@
+import type { QueueName } from "@hagz/contracts";
 import type { Queue } from "bullmq";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
@@ -20,7 +21,7 @@ import { desiredSlots, generationWindow, type DesiredSlot } from "../domain/slot
 // slots; a draft, a ground that's gone, or a venue that's left has none, so a run for one clears its
 // free generated slots.
 
-export const GENERATION_QUEUE = "slot-generation";
+export const GENERATION_QUEUE: QueueName = "slot-generation";
 
 export interface GenerateJob {
   groundId: string;

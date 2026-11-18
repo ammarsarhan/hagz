@@ -229,7 +229,7 @@ export const lastRuns = async () => {
     LAST_RUN("audit"),
     LAST_RUN("checks"),
   );
-  return { rollForward, audit, checks };
+  return { rollForward: rollForward ?? null, audit: audit ?? null, checks: checks ?? null };
 };
 
 // A bucket of minutes, so the same check or audit queues a ground once however often it fires.

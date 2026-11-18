@@ -8,3 +8,4 @@ export { createInvitation } from "./application/invitations";
 export { ALL_PERMISSIONS } from "./domain/permissions";
 export { startPhotoSweeper } from "./jobs/photo-sweeper";
 export { startSlotGeneration } from "./jobs/slot-generation";
+export { lastRuns as slotLastRuns } from "./application/slot-monitoring";

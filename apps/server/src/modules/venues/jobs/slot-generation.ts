@@ -1,3 +1,4 @@
+import type { QueueName } from "@hagz/contracts";
 import { Worker } from "bullmq";
 import { createQueue } from "@/platform/jobs/queues";
 import { logger } from "@/platform/logger/logger";
@@ -14,7 +15,7 @@ import { alertFailedRun, rollForward, runAudit, runChecks } from "../application
 // upkeep on schedules: the checks every five minutes, then nightly the roll-forward and, half an
 // hour later, the drift audit. Schedulers are upserts, so every worker can register them without
 // making a second; every job is idempotent.
-const MAINTENANCE_QUEUE = "slot-maintenance";
+const MAINTENANCE_QUEUE: QueueName = "slot-maintenance";
 // Cairo's small hours, out of the evening rush, whatever the server's timezone.
 const NIGHTLY = { tz: "Africa/Cairo" };
 

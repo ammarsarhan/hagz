@@ -3594,6 +3594,144 @@
           "cache"
         ]
       },
+      "JobsStatus": {
+        "type": "object",
+        "properties": {
+          "queues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "$ref": "#/components/schemas/QueueName"
+                },
+                "waiting": {
+                  "type": "integer"
+                },
+                "active": {
+                  "type": "integer"
+                },
+                "delayed": {
+                  "type": "integer"
+                },
+                "failed": {
+                  "type": "integer"
+                },
+                "oldestWaitingAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When the job waiting longest was queued; null when none wait."
+                }
+              },
+              "required": [
+                "name",
+                "waiting",
+                "active",
+                "delayed",
+                "failed",
+                "oldestWaitingAt"
+              ]
+            }
+          },
+          "lastRuns": {
+            "type": "object",
+            "properties": {
+              "rollForward": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "audit": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "checks": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "rollForward",
+              "audit",
+              "checks"
+            ],
+            "description": "When slot generation's nightly runs and checks last finished."
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "queue": {
+                  "$ref": "#/components/schemas/QueueName"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "groundId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid",
+                  "description": "For a slot generation run."
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "failedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "queue",
+                "id",
+                "name",
+                "groundId",
+                "reason",
+                "attempts",
+                "failedAt"
+              ]
+            },
+            "description": "Jobs that failed on their last attempt, newest first, up to 20 a queue."
+          }
+        },
+        "required": [
+          "queues",
+          "lastRuns",
+          "failed"
+        ]
+      },
+      "QueueName": {
+        "type": "string",
+        "enum": [
+          "slot-generation",
+          "slot-maintenance",
+          "venue-photo-sweeper",
+          "customer-avatar-sweeper"
+        ]
+      },
       "AdminMarketplace": {
         "type": "object",
         "properties": {
@@ -12356,6 +12494,131 @@
           },
           "503": {
             "description": "SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/jobs": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The background queues",
+        "description": "Each queue's waiting, active, delayed and failed jobs and the one waiting longest; when slot generation's nightly roll-forward, drift audit and checks last finished; and the jobs that failed on their last attempt, newest first.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The queues now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobsStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/jobs/{queue}/{jobId}/retry": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Retry a failed job",
+        "description": "Runs a job that failed on its last attempt again, from its first attempt.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/QueueName"
+            },
+            "required": true,
+            "name": "queue",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "jobId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Queued again"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: not one of the queues",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "JOB_NOT_FOUND: no failed job with that id there",
             "content": {
               "application/problem+json": {
                 "schema": {
