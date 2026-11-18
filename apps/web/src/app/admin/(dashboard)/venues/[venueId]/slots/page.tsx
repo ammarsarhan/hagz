@@ -4,9 +4,9 @@ import type { VenueSlots, SlotStatus } from "@hagz/contracts";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { Button } from "@/admin/button";
 import { Skeleton } from "@/admin/data-table";
 import { formatMoney } from "@/admin/money";
+import { sizeLabel, sportLabel } from "@/admin/venues/grounds";
 import {
   addDays,
   hourLabel,
@@ -18,13 +18,15 @@ import {
 import { useFillHeight } from "@/admin/venues/use-fill-height";
 
 // A venue's Slots tab (user, 2026-11-18): the bookable hours generated from its grounds' schedules,
-// a day at a time, as a calendar: a column per ground, a row per hour of the venue's local day, each
-// slot with its price and tier, filled by whether it's free, held, booked or blocked. Read only.
-// Days move within the ones that have slots. Until any are generated, a single line in the middle
-// says that going live generates them.
+// a day at a time, as a planner after Trello's (the user's reference): the day, its range of slots
+// and a key of slot squares above, then a calendar filling the rest of the tab, a column per ground
+// and a row per hour of the venue's local day, each slot a block with its price and tier, filled by
+// whether it's free, held, booked or blocked; the day buttons float at its foot. Read only. Days
+// move within the ones that have slots. Until any are generated, a single line in the middle says
+// that going live generates them.
 
-const ROW = 44;
-const TIME = 56;
+const ROW = 64;
+const TIME = 64;
 // A run of hours with no slot on any ground this long or longer folds into one short row.
 const FOLD = 3;
 
@@ -124,94 +126,98 @@ function Calendar({
       month: "short",
       timeZone: "UTC",
     });
+  const columns = `${String(TIME)}px repeat(${String(grounds.length)}, minmax(10rem, 1fr))`;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-end justify-between gap-6 pb-5">
-        <div>
-          <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
-            {longDate(date)}
-          </h2>
-          <p className="mt-1 text-body text-ink-2">
-            Slots from {short(days.first)} to {short(days.last)}
-            {loading ? <span className="text-ink-3"> · Loading…</span> : null}
-          </p>
-        </div>
-        <div className="flex items-center gap-5">
-          <Key />
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="small"
-              disabled={date === today}
-              onClick={() => onDate(today)}
-            >
-              Today
-            </Button>
-            <Step
-              label="Previous day"
-              disabled={date <= days.first}
-              onClick={() => onDate(addDays(date, -1))}
-            >
-              <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
-            </Step>
-            <Step
-              label="Next day"
-              disabled={date >= days.last}
-              onClick={() => onDate(addDays(date, 1))}
-            >
-              <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
-            </Step>
-          </div>
-        </div>
+      <div className="pb-5">
+        <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">
+          {longDate(date)}
+        </h2>
+        <p className="mt-1 text-body text-ink-2">
+          Slots from {short(days.first)} to {short(days.last)}
+          {loading ? <span className="text-ink-3"> · Loading…</span> : null}
+        </p>
+        <Key />
       </div>
 
-      {rows.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center rounded-card border border-border">
-          <p className="text-body text-ink-3">No slots on this day.</p>
-        </div>
-      ) : (
-        <div
-          className={`min-h-0 flex-1 overflow-auto rounded-card border border-border transition-opacity ${loading ? "opacity-60" : ""}`}
-        >
-          <div
-            className="grid min-w-fit"
-            style={{
-              gridTemplateColumns: `${String(TIME)}px repeat(${String(grounds.length)}, minmax(9rem, 1fr))`,
-            }}
-          >
-            {/* The grounds across the top, staying put as the day scrolls. */}
-            <div className="sticky top-0 z-10 border-b border-border bg-white" />
-            {grounds.map((ground) => (
-              <div
-                key={ground.id}
-                className="sticky top-0 z-10 truncate border-b border-l border-border bg-white px-3 py-2.5 text-label font-medium text-ink"
-              >
-                {ground.name ?? "Ground"}
-              </div>
-            ))}
-
-            {rows.map((row) =>
-              row.kind === "fold" ? (
-                <div
-                  key={`fold-${String(row.from)}`}
-                  className="col-span-full border-b border-border bg-[#fafafa] px-3 py-1.5 text-caption text-ink-3"
-                >
-                  No slots {hourLabel(row.from)} – {hourLabel(row.to)}
-                </div>
-              ) : (
-                <Hour
-                  key={row.hour}
-                  hour={row.hour}
-                  grounds={grounds}
-                  slotAt={(groundId) => at.get(`${groundId}:${String(row.hour)}`)}
-                  currency={data.currency}
-                />
-              ),
-            )}
+      {/* The calendar fills the rest, scrolling inside; the day buttons float over its foot. */}
+      <div className="relative min-h-0 flex-1 border-t border-border">
+        {rows.length === 0 ? (
+          <div className="flex size-full items-center justify-center">
+            <p className="text-body text-ink-3">No slots on this day.</p>
           </div>
+        ) : (
+          <div
+            className={`size-full overflow-auto pb-24 transition-opacity ${loading ? "opacity-60" : ""}`}
+          >
+            <div className="grid min-w-fit" style={{ gridTemplateColumns: columns }}>
+              {/* The grounds across the top, staying put as the day scrolls. */}
+              <div className="sticky top-0 z-10 border-b border-border bg-white" />
+              {grounds.map((ground) => (
+                <div
+                  key={ground.id}
+                  className="sticky top-0 z-10 min-w-0 border-b border-l border-[#f1f2f4] bg-white px-3 pt-3 pb-2.5"
+                >
+                  <p className="truncate text-label font-medium text-ink">
+                    {ground.name ?? "Ground"}
+                  </p>
+                  <p className="truncate text-caption text-ink-3">
+                    {ground.size === "STANDARD"
+                      ? sportLabel[ground.sport]
+                      : `${sportLabel[ground.sport]} · ${sizeLabel[ground.size]}`}
+                  </p>
+                </div>
+              ))}
+
+              {rows.map((row) =>
+                row.kind === "fold" ? (
+                  <div
+                    key={`fold-${String(row.from)}`}
+                    className="col-span-full border-b border-[#f1f2f4] bg-[#fafafa] py-1.5 pl-3 text-caption text-ink-3"
+                  >
+                    No slots {hourLabel(row.from)} – {hourLabel(row.to)}
+                  </div>
+                ) : (
+                  <Hour
+                    key={row.hour}
+                    hour={row.hour}
+                    grounds={grounds}
+                    slotAt={(groundId) => at.get(`${groundId}:${String(row.hour)}`)}
+                    currency={data.currency}
+                  />
+                ),
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Floating, after Trello's planner bar. */}
+        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-white p-1 shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
+          <Step
+            label="Previous day"
+            disabled={date <= days.first}
+            onClick={() => onDate(addDays(date, -1))}
+          >
+            <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
+          <button
+            type="button"
+            disabled={date === today}
+            onClick={() => onDate(today)}
+            className="h-8 cursor-pointer rounded-full px-3.5 text-label font-medium text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default disabled:text-ink-3 disabled:hover:bg-transparent"
+          >
+            Today
+          </button>
+          <Step
+            label="Next day"
+            disabled={date >= days.last}
+            onClick={() => onDate(addDays(date, 1))}
+          >
+            <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -229,30 +235,30 @@ function Hour({
 }) {
   return (
     <>
-      <div
-        className="border-b border-border pt-1.5 pr-2 text-right text-caption text-ink-3 tabular-nums"
-        style={{ height: ROW }}
-      >
-        {hourLabel(hour)}
+      {/* The hour on its line, as in a planner. */}
+      <div className="relative border-b border-[#f1f2f4]" style={{ height: ROW }}>
+        <span className="absolute top-1.5 right-3 text-caption text-ink-3 tabular-nums">
+          {hourLabel(hour)}
+        </span>
       </div>
       {grounds.map((ground) => {
         const slot = slotAt(ground.id);
         return (
           <div
             key={ground.id}
-            className="border-b border-l border-border p-1"
+            className="border-b border-l border-[#f1f2f4] p-1"
             style={{ height: ROW }}
           >
             {slot ? (
               <div
                 title={`${ground.name ?? "Ground"} · ${hourLabel(hour)} – ${hourLabel(hour + 1)} · ${TIER[slot.tier]} · ${formatMoney(currency, slot.price)} · ${STATUS[slot.status]}${slot.isManual ? " · Set by staff" : ""}`}
-                className={`flex h-full items-center justify-between gap-2 rounded-[0.375rem] px-2.5 ${statusClass[slot.status]}`}
+                className={`flex h-full flex-col justify-center overflow-hidden rounded-[0.5rem] px-2.5 ${statusClass[slot.status]}`}
                 style={slot.status === "BLOCKED" ? { backgroundImage: HATCH } : undefined}
               >
-                <span className="truncate text-caption font-medium tabular-nums">
+                <span className="truncate text-label font-medium tabular-nums">
                   {formatMoney(currency, slot.price)}
                 </span>
-                <span className="shrink-0 text-caption opacity-70">
+                <span className="truncate text-caption opacity-70">
                   {slot.status === "AVAILABLE" ? TIER[slot.tier] : STATUS[slot.status]}
                   {/* Set by staff rather than the schedule. */}
                   {slot.isManual ? " · Edited" : ""}
@@ -266,15 +272,15 @@ function Hour({
   );
 }
 
-// What a slot's fill means.
+// What a slot's fill means: a small slot of each kind, under the range.
 function Key() {
   return (
-    <ul className="flex items-center gap-4 text-caption text-ink-2">
+    <ul className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-caption text-ink-2">
       {(Object.keys(STATUS) as SlotStatus[]).map((status) => (
-        <li key={status} className="flex items-center gap-1.5">
+        <li key={status} className="flex items-center gap-2">
           <span
             aria-hidden
-            className={`h-3 w-4 rounded-[0.1875rem] ${statusClass[status]}`}
+            className={`size-3.5 rounded-[0.25rem] ${statusClass[status]}`}
             style={status === "BLOCKED" ? { backgroundImage: HATCH } : undefined}
           />
           {STATUS[status]}
@@ -301,7 +307,7 @@ function Step({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-8 cursor-pointer items-center justify-center rounded-full border border-border text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
+      className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
     >
       {children}
     </button>
