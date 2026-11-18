@@ -10,8 +10,8 @@ import { desiredSlots, generationWindow, type DesiredSlot } from "../domain/slot
 
 // Slot generation (PR 2.6). Each run reconciles one whole ground: it works out the slots the ground
 // should have from scratch (desiredSlots), compares them with the table, and in one transaction
-// adds the missing ones, re-prices or re-versions free generated ones that differ, deletes free
-// generated ones no longer scheduled, and moves generatedUntil. It never patches "what changed".
+// deletes free generated ones no longer scheduled, re-prices or re-versions free generated ones
+// that differ, adds the missing ones, and moves generatedUntil. It never patches "what changed".
 // Only AVAILABLE slots that staff haven't set (isManual) are touched: held, booked, blocked and
 // staff-set slots stay as they are, even if the hour is no longer scheduled (the dashboard flags
 // those). A lock on the ground's settings row means two runs for one ground never overlap, and an
@@ -142,16 +142,13 @@ export const reconcileGround = async (
     const tiers = desired.map((slot) => slot.tier);
     const prices = desired.map((slot) => slot.price);
 
-    // Missing slots. An hour already taken by another slot (held, booked, blocked or staff-set)
-    // keeps that one.
-    const created = await tx.$executeRaw`
-      INSERT INTO "GroundSlot"
-        ("id", "groundId", "venueId", "startsAt", "endsAt", "tier", "price", "scheduleVersion",
-         "updatedAt")
-      SELECT uuidv7(), ${groundId}::uuid, ${ground.venueId}::uuid, d.s, d.s + interval '1 hour',
-             d.t::"PriceTier", d.p, ${version}, now()
-      FROM unnest(${starts}::timestamptz[], ${tiers}::text[], ${prices}::int[]) AS d(s, t, p)
-      ON CONFLICT DO NOTHING`;
+    // First, free generated slots from now on that are no longer scheduled, so an hour they leave
+    // (say, a reset occasion slot's) is clear for the scheduled slots added below.
+    const deleted = await tx.$executeRaw`
+      DELETE FROM "GroundSlot"
+      WHERE "groundId" = ${groundId}::uuid AND "startsAt" >= ${now}
+        AND "status" = 'AVAILABLE' AND NOT "isManual"
+        AND NOT ("startsAt" = ANY(${starts}::timestamptz[]))`;
 
     // Free generated slots whose tier, price or version differ.
     const updated = await tx.$executeRaw`
@@ -163,12 +160,16 @@ export const reconcileGround = async (
         AND g."status" = 'AVAILABLE' AND NOT g."isManual"
         AND (g."tier" <> d.t::"PriceTier" OR g."price" <> d.p OR g."scheduleVersion" <> ${version})`;
 
-    // Free generated slots from now on that are no longer scheduled.
-    const deleted = await tx.$executeRaw`
-      DELETE FROM "GroundSlot"
-      WHERE "groundId" = ${groundId}::uuid AND "startsAt" >= ${now}
-        AND "status" = 'AVAILABLE' AND NOT "isManual"
-        AND NOT ("startsAt" = ANY(${starts}::timestamptz[]))`;
+    // Missing slots. An hour already taken by another slot (held, booked, blocked or staff-set)
+    // keeps that one.
+    const created = await tx.$executeRaw`
+      INSERT INTO "GroundSlot"
+        ("id", "groundId", "venueId", "startsAt", "endsAt", "tier", "price", "scheduleVersion",
+         "updatedAt")
+      SELECT uuidv7(), ${groundId}::uuid, ${ground.venueId}::uuid, d.s, d.s + interval '1 hour',
+             d.t::"PriceTier", d.p, ${version}, now()
+      FROM unnest(${starts}::timestamptz[], ${tiers}::text[], ${prices}::int[]) AS d(s, t, p)
+      ON CONFLICT DO NOTHING`;
 
     await tx.groundSettings.update({
       where: { groundId },
