@@ -5,8 +5,8 @@ import { useCurrentVenue } from "@/lib/current-venue";
 // A venue's five tabs (Figma "D3 · Venue tabs"): Home, Calendar, Venue, Payments, Account. Only for
 // someone on a venue's team; anyone else (removed from their last venue, say) goes back to first run.
 export default function VenueTabs() {
-  const { venue, venues } = useCurrentVenue();
-  if (venues.isSuccess && !venue) return <Redirect href="/home" />;
+  const { venue, ready } = useCurrentVenue();
+  if (ready && !venue) return <Redirect href="/home" />;
 
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
