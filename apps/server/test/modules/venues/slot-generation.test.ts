@@ -68,9 +68,7 @@ describe("reconcileGround", () => {
     expect(new Set(slots.map((slot) => slot.tier))).toEqual(new Set(["BASE", "PEAK", "DISCOUNT"]));
     for (const slot of slots) {
       expect(slot).toMatchObject({ status: "AVAILABLE", isManual: false, scheduleVersion: 1 });
-      expect(slot.price).toBe(
-        { BASE: 60000, PEAK: 75000, DISCOUNT: 45000 }[slot.tier as "BASE" | "PEAK" | "DISCOUNT"],
-      );
+      expect(slot.price).toBe({ BASE: 60000, PEAK: 75000, DISCOUNT: 45000 }[slot.tier]);
       expect(slot.endsAt.getTime() - slot.startsAt.getTime()).toBe(HOUR);
     }
     const settings = await prisma.groundSettings.findUniqueOrThrow({ where: { groundId } });

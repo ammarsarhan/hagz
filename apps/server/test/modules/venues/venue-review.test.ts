@@ -14,6 +14,7 @@ import {
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { router } from "@/http/router";
+import { generationQueue } from "@/modules/venues/application/slot-generation";
 import { ALL_PERMISSIONS } from "@/modules/venues/domain/permissions";
 import { signJwt } from "@/platform/crypto/jwt";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
@@ -486,8 +487,15 @@ describe("going live", () => {
     });
     expect(arabic.status).toBe(204);
 
+    // Setting the draft's hours queued runs of its own; only going live's are wanted here.
+    await generationQueue().drain();
     expect((await admin("POST", `/venues/${venueId}/go-live`)).status).toBe(204);
     expect(await statusOf(venueId)).toBe("LIVE");
+    // Going live generates its grounds' slots.
+    const grounds = await prisma.ground.findMany({ where: { venueId }, select: { id: true } });
+    const queued = await generationQueue().getJobs(["waiting", "delayed"]);
+    expect(queued.map((job) => job.data.groundId).sort()).toEqual(grounds.map((g) => g.id).sort());
+    expect(grounds.length).toBeGreaterThan(0);
     expect(
       await prisma.notification.count({ where: { staffId: owner.id, type: "VENUE_LIVE" } }),
     ).toBe(1);
