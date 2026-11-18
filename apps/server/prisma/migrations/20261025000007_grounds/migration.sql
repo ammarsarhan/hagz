@@ -54,6 +54,7 @@ CREATE TABLE "GroundSettings" (
     "minimumSlots" INTEGER NOT NULL DEFAULT 1,
     "maximumSlots" INTEGER NOT NULL DEFAULT 3,
     "generatedUntil" TIMESTAMPTZ,
+    "generatedAt" TIMESTAMPTZ,
     "scheduleVersion" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
@@ -176,6 +177,11 @@ ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_horizon_check"
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_booking_check"
   CHECK (("bookingId" IS NOT NULL) = (status IN ('HELD', 'BOOKED')));
+
+-- AddExclusion (hand-added: Prisma cannot declare exclusion constraints). No two slots on a ground
+-- overlap in time: a staff-added 10:30–12:00 slot can't sit across the generated 11:00 one.
+ALTER TABLE "GroundSlot" ADD CONSTRAINT "GroundSlot_no_overlap"
+  EXCLUDE USING gist ("groundId" WITH =, tstzrange("startsAt", "endsAt") WITH &&);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "SlotWaitlist" ADD CONSTRAINT "SlotWaitlist_range_check" CHECK ("endsAt" > "startsAt");

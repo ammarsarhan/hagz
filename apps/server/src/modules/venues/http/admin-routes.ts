@@ -9,7 +9,9 @@ import {
   adminVenueTranslations,
   getAdminVenue,
   listAdminVenues,
+  regenerateGround,
 } from "../application/admin-venues";
+import { daySlots } from "../application/day-slots";
 import {
   approveVenue,
   checkTaxNumber,
@@ -90,6 +92,14 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.venueGrounds, async (c) => {
     return c.json(await adminVenueGrounds(c.req.valid("param").id), 200);
+  })
+  .openapi(route.regenerateGround, async (c) => {
+    const { id, groundId } = c.req.valid("param");
+    await regenerateGround(id, groundId);
+    return c.body(null, 202);
+  })
+  .openapi(route.venueSlots, async (c) => {
+    return c.json(await daySlots(c.req.valid("param").id, c.req.valid("query")), 200);
   })
   .openapi(route.provisionTranslation, async (c) => {
     const { id, language } = c.req.valid("param");

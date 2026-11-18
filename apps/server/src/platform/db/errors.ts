@@ -51,6 +51,9 @@ export const violatedUniqueIndex = (error: unknown): string | undefined => {
   return adapterCause(error)?.constraint?.index;
 };
 
+// A row refused by an exclusion constraint (23P01), e.g. "GroundSlot_no_overlap": it overlaps another.
+export const isExclusionViolation = (error: unknown): boolean => sqlState(error) === "23P01";
+
 // A delete or update refused because other rows still point at the row: P2003 from the model API,
 // with SQLSTATE 23001 for an ON DELETE RESTRICT key (verified against Postgres 18) or 23503 for a
 // NO ACTION one.

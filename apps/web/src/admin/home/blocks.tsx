@@ -97,7 +97,7 @@ export function ShareTable({
         ))}
       </div>
       {rows.length === 0 ? (
-        <p className="rounded-[0.625rem] border border-dashed border-border px-4 py-3 text-center text-label text-ink-2">
+        <p className="mt-2 rounded-[0.625rem] border border-dashed border-border px-4 py-3 text-center text-label text-ink-2">
           {empty}
         </p>
       ) : (

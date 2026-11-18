@@ -76,7 +76,7 @@ export function OverlayFooter({ children }: { children: ReactNode }) {
   return <footer className="flex shrink-0 justify-end gap-2 px-7 py-5">{children}</footer>;
 }
 
-function CloseButton({ onClose }: { onClose: () => void }) {
+export function CloseButton({ onClose }: { onClose: () => void }) {
   return (
     <IconButton label="Close" onClick={onClose}>
       <IconX size={20} className="size-5" stroke={1.75} />
@@ -98,7 +98,7 @@ function IconButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 hover:bg-chip hover:text-ink"
+      className="flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-2 outline-none hover:bg-chip hover:text-ink focus-visible:ring-2 focus-visible:ring-ink"
     >
       {children}
     </button>

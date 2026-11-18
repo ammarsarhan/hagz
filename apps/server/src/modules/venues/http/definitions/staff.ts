@@ -1,5 +1,11 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  AddSlots,
+  ChangedSlots,
+  SetSlotPrice,
+  SlotSelection,
+  VenueSlots,
+  VenueSlotsQuery,
   VenueLayout,
   VenueLayoutView,
   CopySchedule,
@@ -826,5 +832,145 @@ export const decline = createRoute({
     401: unauthenticated,
     403: problemResponse("ACCOUNT_SUSPENDED"),
     404: problemResponse("INVITATION_NOT_FOUND"),
+  },
+});
+
+// ---------- Slots (PR 2.6) ----------
+
+const slotsTags = ["Venue slots"];
+const slotGone = problemResponse("SLOT_NOT_FOUND (with the `slotIds` that aren't this venue's)");
+const slotStarted = problemResponse("SLOT_STARTED (with the `slotIds`): it began already");
+
+export const slots = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/slots",
+  tags: slotsTags,
+  summary: "One day of the venue's slots",
+  description:
+    "Needs `schedule: view`. Every ground's slots on a day in the venue's timezone (today, or the " +
+    "nearest day with slots, when no date is given), and the first and last days with any.",
+  middleware: [requireStaff, requireVenueAccess("schedule", "view")] as const,
+  security,
+  request: { params: venueParams, query: VenueSlotsQuery },
+  responses: {
+    200: { description: "The day's slots", ...json(VenueSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+  },
+});
+
+export const blockSlots = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/slots/block",
+  tags: slotsTags,
+  summary: "Block slots",
+  description:
+    "Needs `schedule: manage`. Closes free slots: nobody can book them until they're unblocked. " +
+    "All or nothing.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SlotSelection) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: slotGone,
+    409: problemResponse("SLOT_UNAVAILABLE (with the `slotIds` held, booked or blocked)"),
+    422: slotStarted,
+  },
+});
+
+export const unblockSlots = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/slots/unblock",
+  tags: slotsTags,
+  summary: "Unblock slots",
+  description:
+    "Needs `schedule: manage`. Opens blocked slots again. One the weekly schedule no longer has " +
+    "goes at the next generation run, unless staff set it.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SlotSelection) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: slotGone,
+    409: problemResponse("SLOT_UNAVAILABLE (with the `slotIds` that aren't blocked)"),
+    422: slotStarted,
+  },
+});
+
+export const setSlotPrice = createRoute({
+  method: "put",
+  path: "/staff/venues/{venueId}/slots/price",
+  tags: slotsTags,
+  summary: "Price slots by hand",
+  description:
+    "Needs `schedule: manage`. They keep this price, ignoring weekly schedule and tier price " +
+    "changes, until reset. A held or booked slot's booking keeps the price it was made at.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SetSlotPrice) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: slotGone,
+    422: slotStarted,
+  },
+});
+
+export const addSlots = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/slots",
+  tags: slotsTags,
+  summary: "Add slots for an occasion",
+  description:
+    "Needs `schedule: manage`. Eid, Ramadan, a match night: slots of 30 minutes to 4 hours on " +
+    "the quarter hour, up to 90 days ahead, kept whatever the weekly schedule says. Free schedule " +
+    "slots they overlap make way.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(AddSlots) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: problemResponse("GROUND_NOT_FOUND"),
+    409: problemResponse("SLOT_OVERLAPS: a held, booked, blocked or staff-set slot is in the way"),
+    422: problemResponse("INVALID_SLOT (with the `index` of the slot in the request)"),
+  },
+});
+
+export const resetSlots = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/slots/reset",
+  tags: slotsTags,
+  summary: "Reset slots to the schedule",
+  description:
+    "Needs `schedule: manage`. Prices set by hand and added slots go back to the weekly schedule " +
+    "at the next generation run: re-priced from their tier, or removed if free and not " +
+    "scheduled. Blocked slots stay blocked.",
+  // Spelled out per route: spread from a shared object, the route types lose `c.var.venue`.
+  middleware: [requireStaff, requireVenueAccess("schedule", "manage")] as const,
+  security,
+  request: { params: venueParams, body: { required: true, ...json(SlotSelection) } },
+  responses: {
+    200: { description: "The slots after the change", ...json(ChangedSlots) },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: denied,
+    404: slotGone,
+    422: slotStarted,
   },
 });

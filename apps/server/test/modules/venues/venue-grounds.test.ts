@@ -10,6 +10,7 @@ import {
 } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
+import { generationQueue } from "@/modules/venues/application/slot-generation";
 import { NO_PERMISSIONS } from "@/modules/venues/domain/permissions";
 import { signJwt } from "@/platform/crypto/jwt";
 import { prisma } from "@/platform/db/prisma";
@@ -76,6 +77,12 @@ const addGround = async (owner: string, path: string, overrides: Partial<CreateG
   expect(res.status).toBe(201);
   return Ground.parse(await res.json());
 };
+
+// The grounds with a slot generation run waiting, in the order queued.
+const queued = async () =>
+  (await generationQueue().getJobs(["waiting", "delayed"]))
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .map((job) => job.data.groundId);
 
 const versionOf = async (groundId: string) =>
   (await prisma.groundSettings.findUniqueOrThrow({ where: { groundId } })).scheduleVersion;
@@ -171,10 +178,13 @@ describe("changing grounds", () => {
 
     await call(owner.id, "PATCH", `${path}/grounds/${ground.id}`, { surface: "NATURAL_GRASS" });
     expect(await versionOf(ground.id)).toBe(before);
+    expect(await queued()).toEqual([]);
 
     const res = await call(owner.id, "PATCH", `${path}/grounds/${ground.id}`, { basePrice: 65000 });
     expect(Ground.parse(await res.json()).basePrice).toBe(65000);
     expect(await versionOf(ground.id)).toBe(before + 1);
+    // Its slots are regenerated once the change is saved.
+    expect(await queued()).toEqual([ground.id]);
   });
 
   it("renames in the owner's language", async () => {
@@ -282,6 +292,8 @@ describe("removing a ground", () => {
     expect((await prisma.ground.findUniqueOrThrow({ where: { id: ground.id } })).status).toBe(
       "DELETED",
     );
+    // Its free slots go.
+    expect(await queued()).toEqual([ground.id]);
     expect(await prisma.venueLayoutItem.count()).toBe(0);
     const { data } = list(Ground).parse(
       await (await call(owner.id, "GET", `${path}/grounds`)).json(),
@@ -360,6 +372,7 @@ describe("weekly hours", () => {
     const read = await call(owner.id, "GET", `${path}/grounds/${ground.id}/schedule`);
     expect(WeekSchedule.parse(await read.json())).toEqual(THURSDAY_EVENING);
     expect(await versionOf(ground.id)).toBe(before + 1);
+    expect(await queued()).toEqual([ground.id]);
 
     const { data } = list(Ground).parse(
       await (await call(owner.id, "GET", `${path}/grounds`)).json(),
@@ -398,6 +411,8 @@ describe("weekly hours", () => {
       .parse(await kept.json())
       .data.map((g) => g.basePrice);
     expect(prices).toEqual([60000, 70000]);
+    // The source's own edit, then the copy.
+    expect(await queued()).toEqual([source.id, target.id]);
   });
 
   it("won't copy peak hours to a ground without a peak price, saying which", async () => {

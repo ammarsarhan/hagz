@@ -1,5 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
 import {
+  AvatarUpload,
   ChangeTwoFactor,
   CompleteTwoFactor,
   ConfirmPasswordReset,
@@ -7,8 +8,10 @@ import {
   VerifyPasswordReset,
   ConfirmVerificationCode,
   CustomerAuthenticated,
+  CustomerProfile,
   CustomerSignUp,
   RefreshSession,
+  RequestAvatarUpload,
   RequestPasswordReset,
   ResendTwoFactor,
   SendVerificationCode,
@@ -245,5 +248,73 @@ export const changeTwoFactorSetting = createRoute({
     200: { description: "The new setting", ...json(TwoFactorStatus) },
     400: codeRejected,
     401: unauthenticated,
+  },
+});
+
+// ---------- Profile ----------
+
+const profileTags = ["Customers"];
+const sessionGone = problemResponse(
+  "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+);
+
+export const me = createRoute({
+  method: "get",
+  path: "/customers/me",
+  tags: profileTags,
+  summary: "The signed-in customer",
+  description: "Name, phone, language and photo, for the app to show after a relaunch.",
+  middleware: [requireCustomer] as const,
+  security: customerSecurity,
+  responses: {
+    200: { description: "Their profile", ...json(CustomerProfile) },
+    401: sessionGone,
+  },
+});
+
+export const requestAvatarUpload = createRoute({
+  method: "post",
+  path: "/customers/me/avatar",
+  tags: profileTags,
+  summary: "Ask to upload a profile photo",
+  description:
+    "Returns a signed request to upload the file straight to storage; then confirm it. Asking " +
+    "again replaces an upload not confirmed yet.",
+  middleware: [requireCustomer] as const,
+  security: customerSecurity,
+  request: body(RequestAvatarUpload),
+  responses: {
+    201: { description: "Where to upload it", ...json(AvatarUpload) },
+    400: problemResponse("VALIDATION_FAILED: a type or size that isn't allowed"),
+    401: sessionGone,
+  },
+});
+
+export const confirmAvatar = createRoute({
+  method: "post",
+  path: "/customers/me/avatar/confirm",
+  tags: profileTags,
+  summary: "Make the uploaded photo their profile photo",
+  description: "Checks the file that arrived, then replaces the current photo with it.",
+  middleware: [requireCustomer] as const,
+  security: customerSecurity,
+  responses: {
+    200: { description: "Their profile with the new photo", ...json(CustomerProfile) },
+    401: sessionGone,
+    409: problemResponse("UPLOAD_NOT_FOUND: no upload asked for, or the file hasn't arrived"),
+    422: problemResponse("UPLOAD_MISMATCH: not an allowed image, or too big; ask again"),
+  },
+});
+
+export const removeAvatar = createRoute({
+  method: "delete",
+  path: "/customers/me/avatar",
+  tags: profileTags,
+  summary: "Remove their profile photo",
+  middleware: [requireCustomer] as const,
+  security: customerSecurity,
+  responses: {
+    204: { description: "Removed, or there wasn't one" },
+    401: sessionGone,
   },
 });

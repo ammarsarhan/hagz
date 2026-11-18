@@ -56,3 +56,55 @@ export const SystemHistory = z
 export type SystemStatus = z.infer<typeof SystemStatus>;
 export type SystemSample = z.infer<typeof SystemSample>;
 export type SystemHistory = z.infer<typeof SystemHistory>;
+
+// Every background queue (PR 2.6), for the admin's Jobs card.
+export const QUEUE_NAMES = [
+  "slot-generation",
+  "slot-maintenance",
+  "venue-photo-sweeper",
+  "customer-avatar-sweeper",
+] as const;
+export const QueueName = z.enum(QUEUE_NAMES).meta({ id: "QueueName" });
+
+export const JobsStatus = z
+  .object({
+    queues: z.array(
+      z.object({
+        name: QueueName,
+        waiting: z.int(),
+        active: z.int(),
+        delayed: z.int(),
+        failed: z.int(),
+        oldestWaitingAt: z.iso
+          .datetime()
+          .nullable()
+          .meta({ description: "When the job waiting longest was queued; null when none wait." }),
+      }),
+    ),
+    lastRuns: z
+      .object({
+        rollForward: z.iso.datetime().nullable(),
+        audit: z.iso.datetime().nullable(),
+        checks: z.iso.datetime().nullable(),
+      })
+      .meta({ description: "When slot generation's nightly runs and checks last finished." }),
+    failed: z
+      .array(
+        z.object({
+          queue: QueueName,
+          id: z.string(),
+          name: z.string(),
+          groundId: z.uuid().nullable().meta({ description: "For a slot generation run." }),
+          reason: z.string(),
+          attempts: z.int(),
+          failedAt: z.iso.datetime().nullable(),
+        }),
+      )
+      .meta({
+        description: "Jobs that failed on their last attempt, newest first, up to 20 a queue.",
+      }),
+  })
+  .meta({ id: "JobsStatus" });
+
+export type QueueName = z.infer<typeof QueueName>;
+export type JobsStatus = z.infer<typeof JobsStatus>;

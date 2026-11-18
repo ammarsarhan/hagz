@@ -14,7 +14,9 @@ import { placeOf } from "../domain/names";
 import { venueNotFound } from "./access";
 import { listSentInvitations } from "./invitations";
 import { listMembers } from "./members";
-import { groundSchedule, listGrounds } from "./grounds";
+import { groundNotFound, groundSchedule, listGrounds } from "./grounds";
+import { enqueueGeneration } from "./slot-generation";
+import { driftOf } from "./slot-monitoring";
 import { venueLayout } from "./layout";
 import { listPhotos } from "./venue-media";
 import { pinOf } from "./venue-edit";
@@ -235,14 +237,50 @@ export const adminVenueGrounds = async (id: string): Promise<AdminVenueGrounds> 
   });
   if (!venue) throw venueNotFound();
   const [grounds, layout] = await Promise.all([listGrounds(id, "EN"), venueLayout(id)]);
+  const now = new Date();
   return {
     currency: venue.marketplace.currency,
     grounds: await Promise.all(
       grounds.map(async (ground) => ({
         ...ground,
         schedule: (await groundSchedule(id, ground.id)).days,
+        generation: await generationOf(ground.id, now),
       })),
     ),
     layout,
   };
+};
+
+// How a ground's slots stand: how far and when they were generated, how many free ones are stale,
+// and its drift from the schedule, worked out now.
+const generationOf = async (groundId: string, now: Date) => {
+  const settings = await prisma.groundSettings.findUnique({
+    where: { groundId },
+    select: { generatedUntil: true, generatedAt: true, scheduleVersion: true },
+  });
+  const stale = await prisma.groundSlot.count({
+    where: {
+      groundId,
+      status: "AVAILABLE",
+      isManual: false,
+      startsAt: { gte: now },
+      scheduleVersion: { lt: settings?.scheduleVersion ?? 0 },
+    },
+  });
+  return {
+    generatedUntil: settings?.generatedUntil?.toISOString() ?? null,
+    generatedAt: settings?.generatedAt?.toISOString() ?? null,
+    stale,
+    drift: await driftOf(groundId, now),
+  };
+};
+
+// Queues a run for one of a venue's grounds now, from its admin panel.
+export const regenerateGround = async (venueId: string, groundId: string) => {
+  const ground = await prisma.ground.findFirst({
+    where: { id: groundId, venueId },
+    select: { id: true },
+  });
+  if (!ground) throw groundNotFound();
+  await enqueueGeneration([groundId], `admin-${String(Date.now())}`);
 };

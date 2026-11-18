@@ -2,6 +2,7 @@ import { AdminVenue, page } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { router } from "@/http/router";
+import { generationQueue, reconcileGround } from "@/modules/venues/application/slot-generation";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
@@ -611,6 +612,8 @@ describe("GET /admin/venues/{id}/grounds", () => {
           sport: "FOOTBALL",
           openHours: 2,
           schedule: [{ dayOfWeek: 4 }],
+          // Not generated yet: a run would make Thursday's two hours each week.
+          generation: { generatedUntil: null, generatedAt: null, stale: 0 },
         },
       ],
       layout: {
@@ -622,6 +625,56 @@ describe("GET /admin/venues/{id}/grounds", () => {
     });
   });
 
+  it("says how its slots stand, and queues a run on Regenerate", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await prisma.ground.create({
+      data: {
+        venueId: venue.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 0,
+        basePrice: 60000,
+        settings: { create: { scheduleVersion: 1 } },
+        schedules: { create: [{ dayOfWeek: 4, hours: { "19": "BASE" } }] },
+      },
+    });
+    const before = (await get(`/${venue.id}/grounds`)).body as {
+      grounds: { generation: { drift: { missing: number } } }[];
+    };
+    // About 13 Thursdays ahead, none generated.
+    expect(before.grounds[0]?.generation.drift.missing).toBeGreaterThanOrEqual(12);
+
+    const regenerate = await router.request(
+      `/v1/admin/venues/${venue.id}/grounds/${ground.id}/regenerate`,
+      { method: "POST", headers: { "X-Hagz-Admin": "1", Cookie: cookie } },
+    );
+    expect(regenerate.status).toBe(202);
+    const jobs = await generationQueue().getJobs(["waiting"]);
+    expect(jobs.map((job) => job.data.groundId)).toEqual([ground.id]);
+
+    await reconcileGround(ground.id);
+    const after = (await get(`/${venue.id}/grounds`)).body as {
+      grounds: { generation: Record<string, unknown> }[];
+    };
+    expect(after.grounds[0]?.generation).toMatchObject({
+      stale: 0,
+      drift: { missing: 0, extra: 0, wrong: 0 },
+    });
+    expect(after.grounds[0]?.generation.generatedUntil).not.toBeNull();
+    expect(after.grounds[0]?.generation.generatedAt).not.toBeNull();
+  });
+
+  it("won't regenerate a ground of another venue", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await router.request(
+      `/v1/admin/venues/${venue.id}/grounds/0190f2a4-0000-7000-8000-000000000000/regenerate`,
+      { method: "POST", headers: { "X-Hagz-Admin": "1", Cookie: cookie } },
+    );
+    expect(res.status).toBe(404);
+  });
+
   it("answers 404 for a venue that isn't there", async () => {
     const res = await get("/0190f2a4-0000-7000-8000-000000000000/grounds");
     expect(res.status).toBe(404);
@@ -630,5 +683,166 @@ describe("GET /admin/venues/{id}/grounds", () => {
   it("needs a signed-in admin", async () => {
     const venue = await addVenue({ en: "Arena" });
     expect((await get(`/${venue.id}/grounds`, false)).status).toBe(401);
+  });
+});
+
+describe("GET /admin/venues/{id}/slots", () => {
+  const HOUR = 3_600_000;
+  // A local date and hour in Cairo, from an instant.
+  const cairo = (instant: Date) => {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Africa/Cairo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        hourCycle: "h23",
+      })
+        .formatToParts(instant)
+        .map((part) => [part.type, part.value]),
+    );
+    return { date: `${parts.year}-${parts.month}-${parts.day}`, hour: Number(parts.hour) };
+  };
+  // A Cairo midnight about a month ahead: slots can only be 90 days out (a CHECK constraint).
+  const midnightAhead = () => {
+    let at = Math.ceil((Date.now() + 30 * 24 * HOUR) / HOUR) * HOUR;
+    while (cairo(new Date(at)).hour !== 0) at += HOUR;
+    return at;
+  };
+
+  const addGround = (venueId: string, name: string, status: "ACTIVE" | "DELETED" = "ACTIVE") =>
+    prisma.ground.create({
+      data: {
+        venueId,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 0,
+        basePrice: 60000,
+        status,
+        translations: { create: [{ language: "EN", name }] },
+        settings: { create: {} },
+      },
+    });
+  const addSlot = (venueId: string, groundId: string, startsAt: number) =>
+    prisma.groundSlot.create({
+      data: {
+        venueId,
+        groundId,
+        startsAt: new Date(startsAt),
+        endsAt: new Date(startsAt + HOUR),
+        tier: "PEAK",
+        price: 75000,
+        scheduleVersion: 1,
+      },
+    });
+
+  it("says there are none before any are generated, on today in the venue's timezone", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await addGround(venue.id, "Pitch 1");
+
+    const res = await get(`/${venue.id}/slots`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      timezone: "Africa/Cairo",
+      currency: "EGP",
+      date: cairo(new Date()).date,
+      days: null,
+      grounds: [{ id: ground.id, name: "Pitch 1", sport: "FOOTBALL", size: "FIVE_A_SIDE" }],
+      slots: [],
+    });
+  });
+
+  it("reads a local day, a slot after local midnight belonging to the next one", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await addGround(venue.id, "Pitch 1");
+    const midnight = midnightAhead();
+    // 11 pm, then 12 am the next day, then 7 pm the day after.
+    const late = await addSlot(venue.id, ground.id, midnight - HOUR);
+    const first = await addSlot(venue.id, ground.id, midnight);
+    const evening = await addSlot(venue.id, ground.id, midnight + 43 * HOUR);
+    const day = cairo(late.startsAt).date;
+    const next = cairo(first.startsAt).date;
+
+    const res = await get(`/${venue.id}/slots?date=${day}`);
+    expect(res.body).toMatchObject({
+      date: day,
+      days: { first: day, last: cairo(evening.startsAt).date },
+      slots: [
+        {
+          id: late.id,
+          groundId: ground.id,
+          startsAt: late.startsAt.toISOString(),
+          endsAt: late.endsAt.toISOString(),
+          tier: "PEAK",
+          price: 75000,
+          status: "AVAILABLE",
+          isManual: false,
+          bookingId: null,
+        },
+      ],
+    });
+    const after = await get(`/${venue.id}/slots?date=${next}`);
+    expect((after.body.slots as { id: string }[]).map((slot) => slot.id)).toEqual([first.id]);
+  });
+
+  it("reads a week from a day, and nothing past it", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await addGround(venue.id, "Pitch 1");
+    const midnight = midnightAhead();
+    const first = await addSlot(venue.id, ground.id, midnight + 19 * HOUR);
+    // Evening on the seventh day, then midday on the eighth, past the week (clear of a clock change).
+    const seventh = await addSlot(venue.id, ground.id, midnight + (6 * 24 + 20) * HOUR);
+    await addSlot(venue.id, ground.id, midnight + (7 * 24 + 12) * HOUR);
+    const day = cairo(first.startsAt).date;
+
+    const res = await get(`/${venue.id}/slots?date=${day}&span=7`);
+    expect(res.body).toMatchObject({ date: day });
+    expect((res.body.slots as { id: string }[]).map((slot) => slot.id)).toEqual([
+      first.id,
+      seventh.id,
+    ]);
+  });
+
+  it("refuses a span longer than a week", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/slots?span=8`)).status).toBe(400);
+  });
+
+  it("opens on the nearest day with slots when today has none", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await addGround(venue.id, "Pitch 1");
+    const slot = await addSlot(venue.id, ground.id, midnightAhead() + 19 * HOUR);
+
+    const res = await get(`/${venue.id}/slots`);
+    expect(res.body).toMatchObject({
+      date: cairo(slot.startsAt).date,
+      slots: [{ id: slot.id }],
+    });
+  });
+
+  it("leaves out deleted grounds and their slots", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const gone = await addGround(venue.id, "Old pitch", "DELETED");
+    await addSlot(venue.id, gone.id, midnightAhead() + 19 * HOUR);
+
+    const res = await get(`/${venue.id}/slots`);
+    expect(res.body).toMatchObject({ days: null, grounds: [], slots: [] });
+  });
+
+  it("refuses a date that isn't one", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/slots?date=2026-13-40`)).status).toBe(400);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    expect((await get("/0190f2a4-0000-7000-8000-000000000000/slots")).status).toBe(404);
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/slots`, false)).status).toBe(401);
   });
 });
