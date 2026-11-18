@@ -10,7 +10,13 @@ import { useSubmit } from "./submit";
 // opening starts from a fresh form.
 // Narrow (30rem) for a question, wide (40rem) for a form or a grid of cards, large (52rem) for a
 // table to pick from.
-const WIDTHS = { narrow: "w-[30rem]", wide: "w-[40rem]", large: "w-[52rem]" } as const;
+const WIDTHS = {
+  narrow: "w-[30rem]",
+  wide: "w-[40rem]",
+  large: "w-[52rem]",
+  // A week laid out along the hours (a ground's details).
+  wider: "w-[65rem]",
+} as const;
 export type DialogSize = keyof typeof WIDTHS;
 
 export function Dialog({

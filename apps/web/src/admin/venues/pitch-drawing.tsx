@@ -10,11 +10,14 @@ export function PitchMarkings({
   sport,
   width,
   height,
+  icon = false,
 }: {
   sport: GroundSport;
   // The footprint in cells, landscape.
   width: number;
   height: number;
+  // Drawn small, as an icon: darker lines a pixel wide whatever the size.
+  icon?: boolean;
 }) {
   const H = (W * height) / width;
   // The run-off: the same margin on every side, a share of the shorter side.
@@ -27,9 +30,19 @@ export function PitchMarkings({
   const ph = y1 - y0;
   const cx = W / 2;
   const cy = H / 2;
-  const line = { stroke: "#d5d8dd", strokeWidth: 1.5, fill: "none" } as const;
+  const fixed = icon ? ({ vectorEffect: "non-scaling-stroke" } as const) : {};
+  const line = {
+    stroke: icon ? "#5e636b" : "#d5d8dd",
+    strokeWidth: icon ? 1 : 1.5,
+    fill: "none",
+    ...fixed,
+  } as const;
   // A net reads a step darker than the lines on the ground.
-  const net = { stroke: "#9aa0a8", strokeWidth: 2 } as const;
+  const net = {
+    stroke: icon ? "#0b0b0c" : "#9aa0a8",
+    strokeWidth: icon ? 1 : 2,
+    ...fixed,
+  } as const;
 
   const marks = (() => {
     switch (sport) {
