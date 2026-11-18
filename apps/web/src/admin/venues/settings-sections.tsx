@@ -75,6 +75,12 @@ function Fields({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-5 py-5">{children}</div>;
 }
 
+// A field alone on its line: half the block, as wide as one of a pair (Loyalty's), so a short value
+// doesn't sit in a box the width of the page.
+function Single({ children }: { children: ReactNode }) {
+  return <div className="w-[calc(50%-0.375rem)]">{children}</div>;
+}
+
 const saveSettings = (venueId: string, body: UpdateVenueSettings): ReturnType<Request> =>
   send(api.PATCH("/v1/admin/venues/{id}/settings", { params: { path: { id: venueId } }, body }));
 
@@ -127,18 +133,20 @@ export function CommissionSection({ venueId, data, onSaved }: SectionProps) {
           }}
         />
         {form.own ? (
-          <Field
-            label="Rate"
-            hint="Hagz's share of each booking at this venue."
-            inputMode="decimal"
-            value={form.rate}
-            onChange={(event) => setForm({ ...form, rate: event.target.value })}
-            error={parsed === null ? "A percentage from 0 to 100." : undefined}
-            trailing={<span className="text-label text-ink-3">%</span>}
-            {...onCommit(() => {
-              if (parsed !== null && parsed !== override) put(parsed);
-            })}
-          />
+          <Single>
+            <Field
+              label="Rate"
+              hint="Hagz's share of each booking at this venue."
+              inputMode="decimal"
+              value={form.rate}
+              onChange={(event) => setForm({ ...form, rate: event.target.value })}
+              error={parsed === null ? "A percentage from 0 to 100." : undefined}
+              trailing={<span className="text-label text-ink-3">%</span>}
+              {...onCommit(() => {
+                if (parsed !== null && parsed !== override) put(parsed);
+              })}
+            />
+          </Single>
         ) : null}
       </Fields>
     </DetailsBlock>
@@ -168,18 +176,20 @@ export function BookingRulesSection({ venueId, data, onSaved }: SectionProps) {
           checked={form.autoConfirm}
           onChange={(autoConfirm) => change({ ...form, autoConfirm })}
         />
-        <SelectField
-          label="Booking closes"
-          hint="How long before kick-off players can still book."
-          value={String(form.minimumNotice)}
-          options={NOTICE_CHOICES.map((minutes) => ({
-            value: String(minutes),
-            label: noticeLabel[minutes],
-          }))}
-          onChange={(event) =>
-            change({ ...form, minimumNotice: Number(event.target.value) as MinimumNotice })
-          }
-        />
+        <Single>
+          <SelectField
+            label="Booking closes"
+            hint="How long before kick-off players can still book."
+            value={String(form.minimumNotice)}
+            options={NOTICE_CHOICES.map((minutes) => ({
+              value: String(minutes),
+              label: noticeLabel[minutes],
+            }))}
+            onChange={(event) =>
+              change({ ...form, minimumNotice: Number(event.target.value) as MinimumNotice })
+            }
+          />
+        </Single>
       </Fields>
     </DetailsBlock>
   );
@@ -210,37 +220,41 @@ export function PaymentsSection({ venueId, data, onSaved }: SectionProps) {
   return (
     <DetailsBlock title="Payments" action={status}>
       <Fields>
-        <SelectField
-          label="Players pay"
-          value={form.mode}
-          options={(Object.keys(paymentModeLabel) as PaymentMode[]).map((value) => ({
-            value,
-            label: paymentModeLabel[value],
-          }))}
-          onChange={(event) => {
-            const mode = event.target.value as PaymentMode;
-            setForm({ ...form, mode });
-            put(mode, depositValue ?? STARTING_DEPOSIT);
-          }}
-        />
-        {form.mode === "DEPOSIT" ? (
-          <Field
-            label="Deposit"
-            hint={`The share paid online, ${String(DEPOSIT_PERCENT.min)}% to ${String(DEPOSIT_PERCENT.max)}%.`}
-            inputMode="numeric"
-            value={form.deposit}
-            onChange={(event) => setForm({ ...form, deposit: event.target.value })}
-            error={
-              depositValue === null
-                ? `A whole number from ${String(DEPOSIT_PERCENT.min)} to ${String(DEPOSIT_PERCENT.max)}.`
-                : undefined
-            }
-            trailing={<span className="text-label text-ink-3">%</span>}
-            {...onCommit(() => {
-              if (depositValue !== null && depositValue !== settings.depositPercent)
-                put("DEPOSIT", depositValue);
-            })}
+        <Single>
+          <SelectField
+            label="Players pay"
+            value={form.mode}
+            options={(Object.keys(paymentModeLabel) as PaymentMode[]).map((value) => ({
+              value,
+              label: paymentModeLabel[value],
+            }))}
+            onChange={(event) => {
+              const mode = event.target.value as PaymentMode;
+              setForm({ ...form, mode });
+              put(mode, depositValue ?? STARTING_DEPOSIT);
+            }}
           />
+        </Single>
+        {form.mode === "DEPOSIT" ? (
+          <Single>
+            <Field
+              label="Deposit"
+              hint={`The share paid online, ${String(DEPOSIT_PERCENT.min)}% to ${String(DEPOSIT_PERCENT.max)}%.`}
+              inputMode="numeric"
+              value={form.deposit}
+              onChange={(event) => setForm({ ...form, deposit: event.target.value })}
+              error={
+                depositValue === null
+                  ? `A whole number from ${String(DEPOSIT_PERCENT.min)} to ${String(DEPOSIT_PERCENT.max)}.`
+                  : undefined
+              }
+              trailing={<span className="text-label text-ink-3">%</span>}
+              {...onCommit(() => {
+                if (depositValue !== null && depositValue !== settings.depositPercent)
+                  put("DEPOSIT", depositValue);
+              })}
+            />
+          </Single>
         ) : null}
       </Fields>
     </DetailsBlock>
@@ -316,25 +330,27 @@ export function CancellationSection({ venueId, data, onSaved }: SectionProps) {
   return (
     <DetailsBlock title="Cancellation" action={status}>
       <Fields>
-        <SelectField
-          label="Policy"
-          hint="What players get back when they cancel. A venue cancelling refunds in full."
-          value={policy}
-          placeholder="Choose a policy"
-          options={(Object.keys(policyLabel) as CancellationPolicy[]).map((value) => ({
-            value,
-            label: policyLabel[value],
-          }))}
-          onChange={(event) => {
-            const next = event.target.value as CancellationPolicy;
-            setForm({ ...form, policy: next });
-            if (next === "CUSTOM") putCustom(tiers);
-            else
-              void save(() =>
-                saveSettings(venueId, { cancellationPolicy: next, cancellationTiers: null }),
-              );
-          }}
-        />
+        <Single>
+          <SelectField
+            label="Policy"
+            hint="What players get back when they cancel. A venue cancelling refunds in full."
+            value={policy}
+            placeholder="Choose a policy"
+            options={(Object.keys(policyLabel) as CancellationPolicy[]).map((value) => ({
+              value,
+              label: policyLabel[value],
+            }))}
+            onChange={(event) => {
+              const next = event.target.value as CancellationPolicy;
+              setForm({ ...form, policy: next });
+              if (next === "CUSTOM") putCustom(tiers);
+              else
+                void save(() =>
+                  saveSettings(venueId, { cancellationPolicy: next, cancellationTiers: null }),
+                );
+            }}
+          />
+        </Single>
 
         {policy !== "" && policy !== "CUSTOM" ? (
           <ul className="-mt-1 flex flex-col gap-1 text-label text-ink-2">
