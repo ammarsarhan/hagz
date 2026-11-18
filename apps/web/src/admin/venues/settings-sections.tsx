@@ -70,14 +70,9 @@ function useAutoSave(onSaved: SectionProps["onSaved"], onFailed: () => void) {
   return { save, status };
 }
 
-// The fields of a block, spaced like the Platform forms, their labels and hints a step larger than
-// in a form panel (15 and 14): here they're the page's content, not a form's small print.
+// The fields of a block, spaced like the Platform forms.
 function Fields({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-5 py-5 [&_.text-caption]:text-label [&_.text-label]:text-body">
-      {children}
-    </div>
-  );
+  return <div className="flex flex-col gap-5 py-5">{children}</div>;
 }
 
 const saveSettings = (venueId: string, body: UpdateVenueSettings): ReturnType<Request> =>
