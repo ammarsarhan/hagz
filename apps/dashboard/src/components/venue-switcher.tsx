@@ -75,6 +75,11 @@ export function VenueSwitcher({
         after.current = null;
       }}
       closeLabel={t("components.venueSwitcher.close")}
+      header={
+        <Text accessibilityRole="header" className="text-subtitle font-semibold">
+          {t("components.venueSwitcher.title")}
+        </Text>
+      }
     >
       {running.map((venue) => (
         <VenueRow

@@ -11,6 +11,7 @@ const en = {
         account: "Account",
       },
       venueSwitcher: {
+        title: "Switch venue",
         close: "Close",
         owner: "Owner",
         member: "Team member",

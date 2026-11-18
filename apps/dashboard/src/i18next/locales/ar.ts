@@ -13,6 +13,7 @@ const ar: ArabicTranslations = {
         account: "الحساب",
       },
       venueSwitcher: {
+        title: "تبديل الملعب",
         close: "إغلاق",
         owner: "المالك",
         member: "عضو في الفريق",
