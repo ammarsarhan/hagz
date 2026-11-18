@@ -84,7 +84,7 @@ export default function VenueSlots() {
         <Skeleton className="size-full rounded-card" />
       ) : !data.days ? (
         <Centre>
-          <p className="text-[1.125rem] leading-[1.5rem] font-medium text-ink">No slots yet</p>
+          <p className="text-body font-medium text-ink">No slots yet</p>
           <p className="mt-1 max-w-[26rem] text-center text-body text-ink-2">
             Going live generates them from each ground&apos;s weekly hours, about 90 days ahead.
           </p>
