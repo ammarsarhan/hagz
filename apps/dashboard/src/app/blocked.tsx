@@ -2,15 +2,17 @@ import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BackHandler, View } from "react-native";
+import { SvgXml } from "react-native-svg";
+import { BLOCKED_ART, BLOCKED_ART_SIZE } from "@/assets/blocked-art";
 import { Button } from "@/components/button";
-import { IconAlertCircle } from "@/components/icons";
 import { Screen } from "@/components/screen";
-import { Title } from "@/components/title";
-import { colors } from "@/lib/colors";
+import { Text } from "@/components/text";
 import { contactSupport, hasSupport } from "@/lib/support";
 
 // A suspended (temporary) or banned (permanent) account, after the right password: no way back
-// in from here, only support. The one place with an icon above the title, in plain grey.
+// in from here, only support. Its illustration (an account card with a pause or block badge), title
+// and why sit centred in the safe area above the buttons; Back to sign in is pinned to the bottom,
+// last, where every screen's footer puts it.
 export default function Blocked() {
   const { t } = useTranslation();
   const { kind } = useLocalSearchParams<{ kind: "suspended" | "banned" }>();
@@ -40,14 +42,24 @@ export default function Blocked() {
       }
     >
       <Stack.Screen options={{ gestureEnabled: false }} />
-      {/* No back button: the 40px icon takes the nav row's place, set 8px lower and 8px closer to the
-          title, so the title still sits where it does on other screens. */}
-      <View className="mb-3.5 mt-2">
-        <IconAlertCircle size={40} color={colors.unit} strokeWidth={1.75} />
+      {/* Centred in what's left of the safe area once the buttons are pinned below it. */}
+      <View className="flex-1 items-center justify-center">
+        <View
+          className="mb-6 w-44"
+          style={{ aspectRatio: BLOCKED_ART_SIZE.width / BLOCKED_ART_SIZE.height }}
+        >
+          <SvgXml xml={BLOCKED_ART[copy]} width="100%" height="100%" />
+        </View>
+        <Text
+          accessibilityRole="header"
+          className="mb-2 text-center text-title font-semibold tracking-[-0.4px]"
+        >
+          {t(`screens.blocked.${copy}.title`)}
+        </Text>
+        <Text className="text-center text-subtitle text-ink-2">
+          {t(`screens.blocked.${copy}.body`)}
+        </Text>
       </View>
-      <Title subtitle={t(`screens.blocked.${copy}.body`)}>
-        {t(`screens.blocked.${copy}.title`)}
-      </Title>
     </Screen>
   );
 }

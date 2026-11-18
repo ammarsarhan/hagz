@@ -134,6 +134,11 @@ const en = {
           continue: "Continue setup",
           review: "Review & submit",
           viewReview: "View review",
+          // Approved, while Hagz provisions it (Figma 481:101).
+          approved: "Approved · Going live soon",
+          preparing: "We're preparing your listing",
+          viewProgress: "View progress",
+          liveSoon: "We'll message you when it's live",
           sendWhenDone: "Send for review when it's ready",
           agoNow: "Just now",
           ago: {
@@ -229,10 +234,13 @@ const en = {
         compactProgress: "{{done}}/{{total}} items done",
         nextUp: "Next up: {{item}}",
         allDone: "Everything required is done.",
+        // Sent back by Hagz with a reason: what to fix comes before the count until it's sent again.
+        actionRequired: "Action required",
         required: "Required",
         optional: "Optional",
         send: "Send for review",
         review: {
+          submittedTitle: "{{venue}} has been submitted!",
           confirmTitle: "Send for review?",
           confirmBody:
             "We'll check your details and photos, usually within a day, and message you on WhatsApp. While we review, your venue is locked; withdraw from review to make changes.",
@@ -242,6 +250,13 @@ const en = {
           sent: "Sent for review",
           checking: "We check your listing",
           checkingBody: "Usually within a day",
+          // Approved, while Hagz provisions it (Figma "Review · Approved", 481:2).
+          approvedTitle: "{{venue}} has been approved!",
+          approvedBody:
+            "We're adding your listing in Arabic and English and running final checks. We'll message you on WhatsApp when you're live.",
+          approved: "Approved",
+          preparing: "We prepare your listing",
+          preparingBody: "Arabic and English, and final checks",
           live: "You go live",
           liveBody: "Players can find and book you",
           withdraw: "Withdraw from review",
@@ -599,6 +614,8 @@ const en = {
         },
         states: {
           todo: "To do",
+          // The last review asked to change it and it hasn't been edited since.
+          needsChanges: "Needs changes",
           done: "Done",
           optional: "Optional",
           // GROUNDS is the only item that blocks another (opening hours, and the layout), so these

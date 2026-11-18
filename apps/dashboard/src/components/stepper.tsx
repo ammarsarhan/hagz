@@ -27,6 +27,12 @@ export function Stepper({
 }) {
   const canDecrease = value > min;
   const canIncrease = value < max;
+  // Never past a limit, however the press arrives: a greyed button's tap, two taps landing before
+  // the screen catches up, or a limit that moved under it (the shortest stops at the longest).
+  const step = (by: 1 | -1) => {
+    const next = Math.min(max, Math.max(min, value + by));
+    if (next !== value) onChange(next);
+  };
   return (
     <View
       accessible
@@ -35,19 +41,14 @@ export function Stepper({
       accessibilityValue={{ text: format(value) }}
       accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
       onAccessibilityAction={({ nativeEvent }) => {
-        if (nativeEvent.actionName === "increment" && canIncrease) onChange(value + 1);
-        if (nativeEvent.actionName === "decrement" && canDecrease) onChange(value - 1);
+        if (nativeEvent.actionName === "increment") step(1);
+        if (nativeEvent.actionName === "decrement") step(-1);
       }}
       className="flex-row items-center gap-3"
     >
-      <Round
-        label={decreaseLabel}
-        enabled={canDecrease}
-        onPress={() => onChange(value - 1)}
-        plus={false}
-      />
+      <Round label={decreaseLabel} enabled={canDecrease} onPress={() => step(-1)} plus={false} />
       <Text className="min-w-9 text-center text-subtitle font-medium">{format(value)}</Text>
-      <Round label={increaseLabel} enabled={canIncrease} onPress={() => onChange(value + 1)} plus />
+      <Round label={increaseLabel} enabled={canIncrease} onPress={() => step(1)} plus />
     </View>
   );
 }

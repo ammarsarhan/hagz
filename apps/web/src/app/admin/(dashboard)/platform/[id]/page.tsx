@@ -1,15 +1,7 @@
 "use client";
 
 import type { AdminAmenity, AdminMarketplace } from "@hagz/contracts";
-import {
-  IconChevronDown,
-  IconChevronRight,
-  IconEye,
-  IconEyeOff,
-  IconPencil,
-  IconPlus,
-  IconTrash,
-} from "@tabler/icons-react";
+import { IconEye, IconEyeOff, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import {
   createColumnHelper,
   createExpandedRowModel,
@@ -40,6 +32,7 @@ import {
   type Actions,
   type LocationNode,
 } from "@/admin/platform/model";
+import { LocationName, searchLocations } from "@/admin/platform/location-tree";
 import { TabPanel, Tabs } from "@/admin/tabs";
 
 // A marketplace's page, after the user's reference (Attio's Members): a breadcrumb back to
@@ -63,33 +56,6 @@ const percent = (basisPoints: number) => `${basisPoints / 100}%`;
 // "8 Nov 2026", in the admin's own time zone.
 const added = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-
-function LocationName({ row }: { row: LocationRow }) {
-  const { location } = row.original;
-  const open = row.getIsExpanded();
-  return (
-    <div className="flex items-center gap-1.5" style={{ paddingLeft: `${row.depth * 1.5}rem` }}>
-      {row.getCanExpand() ? (
-        <button
-          type="button"
-          onClick={row.getToggleExpandedHandler()}
-          aria-expanded={open}
-          aria-label={`${open ? "Collapse" : "Expand"} ${location.names.en}`}
-          className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[0.375rem] text-ink-2 hover:bg-chip hover:text-ink"
-        >
-          {open ? (
-            <IconChevronDown size={16} className="size-4" stroke={1.75} />
-          ) : (
-            <IconChevronRight size={16} className="size-4" stroke={1.75} />
-          )}
-        </button>
-      ) : (
-        <span className="size-6 shrink-0" />
-      )}
-      <span className="truncate text-ink">{location.names.en}</span>
-    </div>
-  );
-}
 
 function LocationMenu({ row }: { row: LocationRow }) {
   const context = useContext(RowContext);
@@ -276,19 +242,6 @@ const searchAmenities = (amenities: AdminAmenity[], query: string) => {
 
 type Section = "locations" | "amenities";
 
-// The tree cut down to what matches the English or Arabic name, with the parents of
-// every match kept so it shows where it sits. A match keeps everything under it.
-const search = (nodes: LocationNode[], query: string): LocationNode[] => {
-  const q = query.trim().toLowerCase();
-  if (!q) return nodes;
-  return nodes.flatMap((node) => {
-    const { names } = node.location;
-    if ([names.en, names.ar].some((text) => text.toLowerCase().includes(q))) return [node];
-    const children = search(node.children, query);
-    return children.length > 0 ? [{ ...node, children }] : [];
-  });
-};
-
 export default function AdminMarketplacePage() {
   const { id } = useParams<{ id: string }>();
   const { data, missing, error, open, actions, close, reload } = useMarketplace(id);
@@ -299,7 +252,7 @@ export default function AdminMarketplacePage() {
 
   const tree = useMemo(() => (data ? locationTree(data.locations) : []), [data]);
   const searching = query.trim() !== "";
-  const shown = useMemo(() => search(tree, query), [tree, query]);
+  const shown = useMemo(() => searchLocations(tree, query), [tree, query]);
 
   const table = useTable({
     features,

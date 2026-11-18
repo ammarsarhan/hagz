@@ -74,8 +74,9 @@ export default function VenueSetupScreen() {
     );
   }
 
-  // In review: nothing here can change, so the screen is where the review is (Figma 363:2).
-  if (setup.data.venue.status === "SUBMITTED") {
+  // In review, or approved and being provisioned: the screen is where the review is (Figma 363:2,
+  // 481:2). The checklist has nothing left to send.
+  if (setup.data.venue.status === "SUBMITTED" || setup.data.venue.status === "PROVISIONING") {
     return <VenueInReview venueId={venueId} setup={setup.data} onClose={leave} />;
   }
 
@@ -92,7 +93,7 @@ export default function VenueSetupScreen() {
     void afterVenueWrite(queryClient, venueId, { checklist: false });
   };
 
-  const { venue, items, required, canSubmit } = setup.data;
+  const { venue, items, required, canSubmit, rejection } = setup.data;
   const name = venue.name ?? t("screens.setup.untitled");
   // What to do next: the first required item that can actually be done now.
   const next = items.find((item) => item.required && item.state === "MISSING");
@@ -116,10 +117,14 @@ export default function VenueSetupScreen() {
           <CompactTitle
             button={<BackButton label={t("components.shared.nav.back")} onPress={leave} />}
             title={name}
-            detail={t("screens.setup.compactProgress", {
-              done: required.done,
-              total: required.total,
-            })}
+            detail={
+              rejection
+                ? t("screens.setup.actionRequired")
+                : t("screens.setup.compactProgress", {
+                    done: required.done,
+                    total: required.total,
+                  })
+            }
             style={compact.style}
           />
         }
@@ -132,13 +137,21 @@ export default function VenueSetupScreen() {
         <View className="mb-2 flex-row items-center gap-4 pt-1">
           <ProgressRing done={required.done} total={required.total} />
           <View className="flex-1">
-            <Text className="text-subtitle font-medium leading-[1.31]">
-              {t("screens.setup.progress", { done: required.done, total: required.total })}
+            {/* Sent back: what Hagz asked for, in its own words, instead of the count. Emphasis by
+                weight, not a warning colour (staff app type rules). */}
+            <Text
+              className={`text-subtitle leading-[1.31] ${rejection ? "font-semibold" : "font-medium"}`}
+            >
+              {rejection
+                ? t("screens.setup.actionRequired")
+                : t("screens.setup.progress", { done: required.done, total: required.total })}
             </Text>
             <Text className="mt-[3px] text-label leading-[1.43] text-ink-2">
-              {next
-                ? t("screens.setup.nextUp", { item: t(`screens.setup.items.${next.key}.title`) })
-                : t("screens.setup.allDone")}
+              {rejection
+                ? rejection.reason
+                : next
+                  ? t("screens.setup.nextUp", { item: t(`screens.setup.items.${next.key}.title`) })
+                  : t("screens.setup.allDone")}
             </Text>
           </View>
         </View>
@@ -230,7 +243,8 @@ function Item({ item, last, onPress }: { item: SetupItem; last: boolean; onPress
   const { t } = useTranslation();
   const blocked = item.state === "BLOCKED";
   const done = item.state === "DONE";
-  // Needs doing: ink and medium. Done, optional or waiting: grey and quiet. No reds or greens
+  // Needs doing: ink and medium. Done, optional or waiting: grey and quiet. Sent back asking to
+  // change it: ink and medium like To do, above everything but waiting, until it's changed. No reds or greens
   // anywhere in the staff app — emphasis is weight and colour of ink (Figma 285:2).
   const status = blocked
     ? {
@@ -238,11 +252,13 @@ function Item({ item, last, onPress }: { item: SetupItem; last: boolean; onPress
         text: "text-ink-3 font-medium",
         label: t("screens.setup.states.waiting"),
       }
-    : done
-      ? { dot: "bg-ink-3", text: "text-ink-2", label: t("screens.setup.states.done") }
-      : item.required
-        ? { dot: "bg-ink", text: "text-ink font-medium", label: t("screens.setup.states.todo") }
-        : { dot: "bg-ink-3", text: "text-ink-3 font-medium", label: t("screens.setup.states.optional") }; // prettier-ignore
+    : item.needsChanges
+      ? { dot: "bg-ink", text: "text-ink font-medium", label: t("screens.setup.states.needsChanges") }
+      : done
+        ? { dot: "bg-ink-3", text: "text-ink-2", label: t("screens.setup.states.done") }
+        : item.required
+          ? { dot: "bg-ink", text: "text-ink font-medium", label: t("screens.setup.states.todo") }
+          : { dot: "bg-ink-3", text: "text-ink-3 font-medium", label: t("screens.setup.states.optional") }; // prettier-ignore
 
   return (
     <Pressable

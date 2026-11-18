@@ -79,7 +79,8 @@ export function TabPanel({ id, children }: { id: string; children: ReactNode }) 
 }
 
 // The same tabs as links, for sections that are pages of their own (a venue's dashboard): each has
-// its URL, so it can be bookmarked, opened in a new tab, and reached with Back.
+// its URL, so it can be bookmarked, opened in a new tab, and reached with Back. A tab stays open on
+// the pages under it (a venue's Details has its own).
 export function LinkTabs({
   label,
   items,
@@ -92,7 +93,7 @@ export function LinkTabs({
   return (
     <nav aria-label={label} className="flex gap-6 border-b border-border">
       {items.map((item) => {
-        const selected = item.href === current;
+        const selected = current === item.href || current.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}

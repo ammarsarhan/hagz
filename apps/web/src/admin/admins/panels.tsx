@@ -48,11 +48,11 @@ const moment = (iso: string) =>
     minute: "2-digit",
   });
 
-// An admin in full, with their access looked after here. The header is their name over their
-// email; the body is what the API knows about them (how they joined, the authenticator, where
-// they're signed in), then Access: reset their password (an emailed link) or their authenticator,
-// each confirmed first in a modal over the panel. Neither is offered on your own account. The body
-// scrolls when it's taller than the window.
+// An admin in full, with their access looked after here. Under a small title and line, who they are
+// (name, email) leads the Account section, then what the API knows about them (how they joined, the
+// authenticator, where they're signed in), then Access: reset their password (an emailed link) or
+// their authenticator, each confirmed first in a modal over the panel. Neither is offered on your
+// own account. The body scrolls when it's taller than the window.
 export function AdminPanel({
   admin,
   self,
@@ -80,13 +80,16 @@ export function AdminPanel({
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
-      title={admin.name}
-      description={admin.email}
+      title="Admin"
+      description="Their account here, how they sign in, and resetting their access."
+      compact
     >
       {details ? (
         <div className="flex flex-col gap-6">
           <PanelSection title="Account">
             <div>
+              <DetailRow label="Name" value={admin.name} />
+              <DetailRow label="Email" value={admin.email} />
               <DetailRow label="Status" value={<AdminStatus status={details.status} />} />
               <DetailRow label="Admin since" value={day(details.createdAt)} />
               <DetailRow
@@ -219,25 +222,39 @@ export function AdminPanel({
   );
 }
 
-// One thing that can be done to an admin's access: what it is and does, and its button.
-function AccessAction({
+// One thing that can be done to an account: what it is and does, and its button. Also the venue
+// Team tab's member actions.
+export function AccessAction({
   title,
   description,
   action,
+  disabled = false,
+  primary = false,
   onClick,
 }: {
   title: string;
-  description: string;
+  // Left out for a step its title already explains.
+  description?: string;
   action: string;
+  // Not yet possible; the description says why.
+  disabled?: boolean;
+  // The one step a page is there for (Approve, Go live): black, where the rest are grey.
+  primary?: boolean;
   onClick: () => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-12">
       <div className="min-w-0">
-        <p className="text-label text-ink">{title}</p>
-        <p className="mt-0.5 text-caption text-ink-2">{description}</p>
+        {/* The step the page is there for reads a step up: 15 and medium. */}
+        <p className={`text-ink ${primary ? "text-body font-medium" : "text-label"}`}>{title}</p>
+        {description ? <p className="mt-0.5 text-caption text-ink-2">{description}</p> : null}
       </div>
-      <Button variant="secondary" size="small" onClick={onClick}>
+      <Button
+        variant={primary ? "primary" : "secondary"}
+        size="small"
+        onClick={onClick}
+        disabled={disabled}
+      >
         {action}
       </Button>
     </div>

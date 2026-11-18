@@ -53,14 +53,18 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
   const total = required?.total ?? 0;
   // Every required item done: what's left is to look it over and send it.
   const ready = total > 0 && done >= total;
-  // Sent: the card opens where the review is.
+  // Sent: the card opens where the review is. Approved: Hagz is preparing it to go live (Figma
+  // 481:101), and the same screen shows how far it's got.
+  const approved = venue.status === "PROVISIONING";
   const inReview = venue.status !== "DRAFT";
   const action = t(
-    inReview
-      ? "screens.firstRun.draft.viewReview"
-      : ready
-        ? "screens.firstRun.draft.review"
-        : "screens.firstRun.draft.continue",
+    approved
+      ? "screens.firstRun.draft.viewProgress"
+      : inReview
+        ? "screens.firstRun.draft.viewReview"
+        : ready
+          ? "screens.firstRun.draft.review"
+          : "screens.firstRun.draft.continue",
   );
   // Redrawn as the time passes, so it doesn't stay on "30 minutes ago" while first run is left open.
   const now = useNow((time) => sinceLastActivity(venue.lastActivityAt, time).changesAt);
@@ -91,11 +95,16 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
           height={DRAFT_CARD_ART_SIZE.height}
         />
       </View>
-      <ProgressEdge fraction={total > 0 ? done / total : 0} />
+      {/* Approved: setup's done, the line runs the full width. */}
+      <ProgressEdge fraction={approved ? 1 : total > 0 ? done / total : 0} />
 
       <View className="px-5 pb-5 pt-[22px]">
         <Text className="text-caption font-medium text-on-ink-muted">
-          {venue.status === "DRAFT" ? ago : t("screens.firstRun.draft.inReview", { ago })}
+          {approved
+            ? t("screens.firstRun.draft.approved")
+            : venue.status === "DRAFT"
+              ? ago
+              : t("screens.firstRun.draft.inReview", { ago })}
         </Text>
         <Text className="mb-1 mt-1.5 text-heading font-semibold tracking-[-0.3px] text-white">
           {venue.name ?? t("screens.setup.untitled")}
@@ -105,7 +114,17 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
             {venue.location}
           </Text>
         ) : null}
-        {required ? (
+        {/* Sent back by Hagz: that comes first, instead of the count (the reason is on the
+            setup screen). */}
+        {approved ? (
+          <Text className="text-label text-on-ink-muted">
+            {t("screens.firstRun.draft.preparing")}
+          </Text>
+        ) : setup.data?.rejection ? (
+          <Text className="text-label font-semibold text-on-ink-muted">
+            {t("screens.setup.actionRequired")}
+          </Text>
+        ) : required ? (
           <Text className="text-label text-on-ink-muted">
             {t("screens.setup.progress", { done, total })}
           </Text>
@@ -113,7 +132,11 @@ export function DraftCard({ venue, onPress }: { venue: StaffVenue; onPress: () =
         <View className="mt-6 h-14 items-center justify-center rounded-full bg-white">
           <Text className="text-button font-semibold">{action}</Text>
         </View>
-        {required && !ready && !inReview ? (
+        {approved ? (
+          <Text className="mt-3.5 text-center text-caption text-on-ink-muted">
+            {t("screens.firstRun.draft.liveSoon")}
+          </Text>
+        ) : required && !ready && !inReview ? (
           <Text className="mt-3.5 text-center text-caption text-on-ink-muted">
             {t("screens.firstRun.draft.sendWhenDone")}
           </Text>
