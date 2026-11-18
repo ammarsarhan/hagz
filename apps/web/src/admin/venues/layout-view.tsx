@@ -8,8 +8,10 @@ import type { AdminGround } from "./grounds";
 
 // A venue's layout drawn to scale for its admin Grounds tab, read only: the staff app's layout (a
 // cinema grid in ~10 m cells, the venue's outline, its grounds and amenities on it, entrances on
-// its edges) in the admin's neutral inks. It fills its container and sits in its middle: cells are
-// as big as fits both the width and the height, so the whole venue shows with no scrolling.
+// its edges) in the admin's neutral inks: grey edges and the faintest grid, so the grounds are what
+// reads. It fills its container and sits in its middle: cells are as big as fits both the width and
+// the height, so the whole venue shows with no scrolling. Each ground is a button that opens its
+// details; the open one turns white and glows (user, 2026-11-18).
 
 // The space the view has to fill, kept up to date as the window changes.
 function useSize() {
@@ -31,10 +33,14 @@ export function LayoutView({
   layout,
   grounds,
   amenities,
+  selected,
+  onSelect,
 }: {
   layout: VenueLayoutView;
   grounds: AdminGround[];
   amenities?: AdminVenueAmenities["amenities"];
+  selected?: string;
+  onSelect: (groundId: string) => void;
 }) {
   const { ref, size } = useSize();
   // Whole pixels, so the grid's hairlines stay sharp; less the outline's 3px.
@@ -52,13 +58,13 @@ export function LayoutView({
         <div
           role="group"
           aria-label="The venue's layout"
-          className="relative rounded-[0.375rem] border-[1.5px] border-ink bg-white"
+          className="relative rounded-[0.375rem] border-[1.5px] border-[#d5d8dd] bg-white"
           style={{
             width: layout.columns * cell + 3,
             height: layout.rows * cell + 3,
-            // The grid: a hairline at every cell.
+            // The grid: a hairline at every cell, barely there.
             backgroundImage:
-              "linear-gradient(to right, #eef0f2 1px, transparent 1px), linear-gradient(to bottom, #eef0f2 1px, transparent 1px)",
+              "linear-gradient(to right, #f4f5f7 1px, transparent 1px), linear-gradient(to bottom, #f4f5f7 1px, transparent 1px)",
             backgroundSize: `${String(cell)}px ${String(cell)}px`,
           }}
         >
@@ -92,21 +98,31 @@ export function LayoutView({
             const w = (vertical ? tile.height : tile.width) * cell;
             const h = (vertical ? tile.width : tile.height) * cell;
             const paused = ground?.status === "MAINTENANCE";
+            const on = tile.groundId === selected;
             return (
-              <div
+              <button
                 key={tile.groundId}
-                className={`absolute flex items-center justify-center overflow-hidden rounded-[0.25rem] border-[1.5px] border-[#9aa0a8] bg-chip ${paused ? "opacity-60" : ""}`}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onSelect(tile.groundId)}
+                // Grey at rest, a little whiter under the pointer; open, white and glowing, above
+                // its neighbours so the glow isn't covered.
+                className={`absolute flex cursor-pointer items-center justify-center overflow-hidden rounded-[0.25rem] border-[1.5px] transition-[background-color,border-color,box-shadow] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
+                  on
+                    ? "z-10 border-[#c9cdd3] bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.85),0_0_28px_rgba(11,11,12,0.16)]"
+                    : "border-[#d5d8dd] bg-chip hover:bg-[#f8f9fa]"
+                } ${paused ? "opacity-60" : ""}`}
                 style={{ left: tile.x * cell, top: tile.y * cell, width: w, height: h }}
               >
                 {/* The pitch's halfway line, across its length. */}
                 <span
                   aria-hidden
-                  className={`absolute bg-[#c9cdd3] ${vertical ? "inset-x-0 top-1/2 h-px" : "inset-y-0 left-1/2 w-px"}`}
+                  className={`absolute bg-[#d5d8dd] ${vertical ? "inset-x-0 top-1/2 h-px" : "inset-y-0 left-1/2 w-px"}`}
                 />
                 <span className="relative max-w-full truncate px-1.5 text-caption font-medium text-ink">
                   {ground?.name ?? "Ground"}
                 </span>
-              </div>
+              </button>
             );
           })}
 

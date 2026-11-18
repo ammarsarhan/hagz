@@ -4,18 +4,21 @@ import { useParams } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Skeleton } from "@/admin/data-table";
 import { useVenueAmenities } from "@/admin/venues/amenities";
+import { GroundModal } from "@/admin/venues/ground-modal";
 import { useVenueGrounds } from "@/admin/venues/grounds";
 import { LayoutView } from "@/admin/venues/layout-view";
 
 // A venue's Grounds tab: for now only its layout, drawn to scale and filling the space under the
-// tabs (user, 2026-11-18). The grounds list and a ground's details come later. A venue with one
-// ground needs no layout, so it says so instead.
+// tabs (user, 2026-11-18), each ground on it opening its details in a modal. The grounds list comes
+// later. A venue with one ground needs no layout, so it says so instead.
 export default function VenueGrounds() {
   const { venueId } = useParams<{ venueId: string }>();
   const { data, error } = useVenueGrounds(venueId);
   // The layout's amenity tiles show their icons and names.
   const { data: amenities } = useVenueAmenities(venueId);
   const drawn = data?.layout.saved && data.layout.grounds.length > 0;
+  const [selected, setSelected] = useState<string>();
+  const ground = data?.grounds.find((g) => g.id === selected);
 
   // Exactly the window below the tabs, less the page's 64px bottom padding (main's pb-16), so the
   // page never scrolls: measured from where the section starts, again on every resize.
@@ -42,12 +45,26 @@ export default function VenueGrounds() {
       ) : !data ? (
         <Skeleton className="size-full rounded-card" />
       ) : drawn ? (
-        <LayoutView layout={data.layout} grounds={data.grounds} amenities={amenities?.amenities} />
+        <LayoutView
+          layout={data.layout}
+          grounds={data.grounds}
+          amenities={amenities?.amenities}
+          selected={selected}
+          onSelect={setSelected}
+        />
       ) : (
         <p className="text-body text-ink-3">
           {data.grounds.length === 0 ? "No grounds yet." : "No layout yet."}
         </p>
       )}
+
+      {data && ground ? (
+        <GroundModal
+          ground={ground}
+          currency={data.currency}
+          onClose={() => setSelected(undefined)}
+        />
+      ) : null}
     </section>
   );
 }
