@@ -7,3 +7,4 @@ export { venuesStaffRoutes } from "./http/staff-routes";
 export { createInvitation } from "./application/invitations";
 export { ALL_PERMISSIONS } from "./domain/permissions";
 export { startPhotoSweeper } from "./jobs/photo-sweeper";
+export { startSlotGeneration } from "./jobs/slot-generation";

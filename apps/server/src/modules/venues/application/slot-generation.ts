@@ -28,6 +28,12 @@ export interface GenerateJob {
 
 let queue: Queue<GenerateJob> | undefined;
 export const generationQueue = () => (queue ??= createQueue<GenerateJob>(GENERATION_QUEUE));
+// On shutdown. The next generationQueue() opens a new one.
+export const closeGenerationQueue = async () => {
+  const open = queue;
+  queue = undefined;
+  await open?.close();
+};
 
 // Queues a run for each ground, after the change that needs it has committed (no outbox: a lost
 // enqueue is caught by the stale-slot check within minutes). `tag` makes the job id: a fresh one

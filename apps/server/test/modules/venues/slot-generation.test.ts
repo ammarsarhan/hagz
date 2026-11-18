@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  enqueueGeneration,
   groundForGeneration,
   purgePastSlots,
   reconcileGround,
 } from "@/modules/venues/application/slot-generation";
+import { startSlotGeneration } from "@/modules/venues/jobs/slot-generation";
 import { HORIZON_DAYS } from "@/modules/venues/domain/slots";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
@@ -200,5 +202,25 @@ describe("purgePastSlots", () => {
 
     expect((await purgePastSlots()).count).toBe(1);
     expect((await slotsOf(groundId)).map((s) => s.id)).toEqual([blocked.id, future.id]);
+  });
+});
+
+describe("the worker", () => {
+  it("generates a queued ground's slots", async () => {
+    const { groundId } = await aGround();
+    const generation = await startSlotGeneration();
+    try {
+      await enqueueGeneration([groundId]);
+      const wanted = await desiredCount(groundId);
+      // Poll until the run lands, for up to ten seconds.
+      for (let tries = 0; tries < 100; tries += 1) {
+        if ((await prisma.groundSlot.count({ where: { groundId } })) === wanted) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      expect(await prisma.groundSlot.count({ where: { groundId } })).toBe(wanted);
+    } finally {
+      await Promise.all(generation.workers.map((worker) => worker.close()));
+      await generation.close();
+    }
   });
 });
