@@ -491,6 +491,7 @@ export function Toggle({
   hint,
   checked,
   disabled = false,
+  page = false,
   onChange,
 }: {
   label: string;
@@ -498,6 +499,8 @@ export function Toggle({
   checked: boolean;
   // Locked in place, with the hint saying why.
   disabled?: boolean;
+  // On a page rather than in a panel: the label at the page's 15, like a Details row's value.
+  page?: boolean;
   onChange: (checked: boolean) => void;
 }) {
   return (
@@ -505,7 +508,7 @@ export function Toggle({
       className={`flex items-center justify-between gap-6 ${disabled ? "cursor-default" : "cursor-pointer"}`}
     >
       <span className="flex flex-col">
-        <span className="text-label text-ink">{label}</span>
+        <span className={`text-ink ${page ? "text-body" : "text-label"}`}>{label}</span>
         <span className="text-caption text-ink-2">{hint}</span>
       </span>
       <input
