@@ -300,6 +300,9 @@ importers:
       eslint-plugin-boundaries:
         specifier: ^7.3.0
         version: 7.3.0(eslint-import-resolver-typescript@4.4.5(eslint@10.13.0(jiti@2.7.0)))(eslint@10.13.0(jiti@2.7.0))
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -320,7 +323,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/web:
     dependencies:
@@ -415,7 +418,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@types/node@26.6.3)(vite@8.3.5(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/brand:
     devDependencies:
@@ -4543,6 +4546,10 @@ packages:
     resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
     engines: {node: '>=8.0.0'}
 
+  fast-check@4.10.2:
+    resolution: {integrity: sha512-iK2f+YrcmoeGqk6fA0ea2bptcu/itMIm4NfEozq6N25+aG6h7s5HZbB/k1aV7b5w5sFLMCbbtRUsTVR+BgC3xw==}
+    engines: {node: '>=12.17.0'}
+
   fast-copy@4.3.0:
     resolution: {integrity: sha512-oWBZLHWpUYt2A471n+ayC4+bJSGDWpl2h3COgBxYX5xHFnr7KqOSrYJZX82ZmrtAfVK+SqsOuNMgsoL+lJquuQ==}
 
@@ -5837,6 +5844,9 @@ packages:
 
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
 
   qified@0.10.1:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
@@ -11201,6 +11211,10 @@ snapshots:
     dependencies:
       pure-rand: 6.1.0
 
+  fast-check@4.10.2:
+    dependencies:
+      pure-rand: 8.4.2
+
   fast-copy@4.3.0: {}
 
   fast-decode-uri-component@1.0.1: {}
@@ -12622,6 +12636,8 @@ snapshots:
   punycode@2.3.1: {}
 
   pure-rand@6.1.0: {}
+
+  pure-rand@8.4.2: {}
 
   qified@0.10.1:
     dependencies:

@@ -34,6 +34,7 @@ import {
 } from "../domain/events";
 import { goLiveGaps, unchangedSections } from "../domain/review";
 import { sectionFingerprints } from "./section-fingerprints";
+import { enqueueGeneration, venueGroundIds } from "./slot-generation";
 import { venueNotFound, venueStatusConflict, type VenueAccess } from "./access";
 import { adminVenueSelect, presentAdminVenue } from "./admin-venues";
 import { pinOf, writeTranslation } from "./venue-edit";
@@ -414,6 +415,8 @@ export const goLive = async (adminId: string, venueId: string, clock: Clock = sy
     await record(tx, venueId, { adminId }, VENUE_LIVE);
     await tellOwner(tx, venueId, { type: "VENUE_LIVE", data: {} }, clock);
   });
+  // Going live is what generates its slots.
+  await enqueueGeneration(await venueGroundIds(venueId));
 };
 
 // A tax number with the latest check of it. A check only counts for the number it was made on, so

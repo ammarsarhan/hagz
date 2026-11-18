@@ -3,6 +3,12 @@ import { createRouter } from "@/platform/http/router";
 import { clientIp } from "@/platform/rate-limit/rate-limit";
 import { customers } from "../application/accounts";
 import {
+  confirmAvatar,
+  customerProfile,
+  removeAvatar,
+  requestAvatarUpload,
+} from "../application/avatars";
+import {
   confirmPasswordReset,
   requestPasswordReset,
   verifyPasswordReset,
@@ -104,4 +110,16 @@ export const customerAuthRoutes = createRouter()
       ip: clientIp(c),
     });
     return c.json(changed, 200);
+  })
+  .openapi(route.me, async (c) => c.json(await customerProfile(c.var.customer.customerId), 200))
+  .openapi(route.requestAvatarUpload, async (c) => {
+    const upload = await requestAvatarUpload(c.var.customer.customerId, c.req.valid("json"));
+    return c.json(upload, 201);
+  })
+  .openapi(route.confirmAvatar, async (c) =>
+    c.json(await confirmAvatar(c.var.customer.customerId), 200),
+  )
+  .openapi(route.removeAvatar, async (c) => {
+    await removeAvatar(c.var.customer.customerId);
+    return c.body(null, 204);
   });

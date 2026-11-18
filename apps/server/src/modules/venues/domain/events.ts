@@ -64,3 +64,10 @@ export const VENUE_PAUSED = "VENUE_PAUSED";
 export const VENUE_RESUMED = "VENUE_RESUMED";
 export const TAX_NUMBER_CHECKED = "TAX_NUMBER_CHECKED";
 export const LIFECYCLE_EVENTS = [VENUE_SUBMITTED, VENUE_WITHDRAWN, VENUE_REJECTED, VENUE_APPROVED];
+
+// Staff changing slots (PR 2.6), each with the slots' ids and what they did to them.
+export const SLOTS_BLOCKED = "SLOTS_BLOCKED";
+export const SLOTS_UNBLOCKED = "SLOTS_UNBLOCKED";
+export const SLOT_PRICES_SET = "SLOT_PRICES_SET";
+export const SLOTS_ADDED = "SLOTS_ADDED";
+export const SLOTS_RESET = "SLOTS_RESET";

@@ -1,12 +1,15 @@
 import type { Worker } from "bullmq";
+import { startAvatarSweeper } from "@/modules/identity";
 import { startWorkerHeartbeat } from "@/modules/system";
-import { startPhotoSweeper } from "@/modules/venues";
+import { startPhotoSweeper, startSlotGeneration } from "@/modules/venues";
 import { handleShutdown } from "@/platform/lifecycle/shutdown";
 import { logger } from "@/platform/logger/logger";
 
 // Register workers here, e.g. new Worker(name, processor, { connection: queueConnection }).
 const photoSweeper = await startPhotoSweeper();
-const workers: Worker[] = [photoSweeper.worker];
+const avatarSweeper = await startAvatarSweeper();
+const slotGeneration = await startSlotGeneration();
+const workers: Worker[] = [photoSweeper.worker, avatarSweeper.worker, ...slotGeneration.workers];
 
 // Tells the admin home this worker is alive (and which commit it runs), even before it has jobs.
 const stopHeartbeat = startWorkerHeartbeat();
@@ -18,5 +21,9 @@ logger.info({ workers: workers.length }, "worker started");
 handleShutdown(async () => {
   await stopHeartbeat();
   await Promise.all(workers.map((w) => w.close()));
-  await photoSweeper.queue.close();
+  await Promise.all([
+    photoSweeper.queue.close(),
+    avatarSweeper.queue.close(),
+    slotGeneration.close(),
+  ]);
 });

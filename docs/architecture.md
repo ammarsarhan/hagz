@@ -141,7 +141,7 @@ If Redis is down, requests still succeed and the sweepers catch up when it's bac
 - Code gets the time from an injected `Clock`, so tests can move time.
 - Slot generation has property-based tests (`fast-check`) across Egypt's DST changes (see the slot generation rules).
 
-### Exclusion constraints (proposed)
+### Exclusion constraints
 
 The unique index on `GroundSlot [groundId, startsAt]` stops two slots starting at the same moment. It doesn't stop slots that **overlap**: a manual 10:30–12:00 slot added for a match night overlaps the generated 11:00 slot. A unique index can only compare exact values. An **exclusion constraint** compares ranges, and rejects any two rows where the condition holds:
 
@@ -158,7 +158,7 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_no_overlap"
   WHERE (status IN ('PENDING', 'HELD', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));
 ```
 
-The slot constraint closes a real gap (manual slots). The booking constraint is a backstop: the slot claim should already prevent overlaps, but if application code ever writes a booking whose range doesn't match its slots, Postgres refuses it. Like the CHECKs, Prisma can't declare these, so they're hand-added to a migration and verified for drift.
+The slot constraint closes a real gap (manual slots), and is in the grounds migration (2026-11-18, with `btree_gist` in the first one); the booking one comes with bookings (Phase 4). The booking constraint is a backstop: the slot claim should already prevent overlaps, but if application code ever writes a booking whose range doesn't match its slots, Postgres refuses it. Like the CHECKs, Prisma can't declare these, so they're hand-added to a migration and verified for drift.
 
 ## Reliability
 

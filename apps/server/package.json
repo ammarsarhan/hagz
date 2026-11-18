@@ -53,6 +53,7 @@
     "eslint": "^10.13.0",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-boundaries": "^7.3.0",
+    "fast-check": "^4.10.2",
     "pg": "^8.23.1",
     "pino-pretty": "^13.2.0",
     "testcontainers": "^12.2.1",

@@ -5,6 +5,10 @@ model Customer {
   phone            String?       @unique // E.164. Null only after deletion (CHECK).
   passwordHash     String
   avatarKey        String?
+  // An avatar asked for but not confirmed yet; removed by the sweeper after a day. CHECK: both set
+  // or neither.
+  avatarUploadKey  String?
+  avatarUploadAt   DateTime?     @db.Timestamptz
   twoFactorEnabled Boolean       @default(false)
   status           AccountStatus @default(ACTIVE)
   phoneVerifiedAt  DateTime?     @db.Timestamptz

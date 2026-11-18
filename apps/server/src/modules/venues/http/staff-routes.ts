@@ -43,6 +43,14 @@ import {
 import { saveLayout, venueLayout } from "../application/layout";
 import { pauseVenue, resumeVenue, submitVenue, withdrawVenue } from "../application/review";
 import { createVenue, venueSetup } from "../application/venue-setup";
+import {
+  addSlots,
+  blockSlots,
+  resetSlots,
+  setSlotPrice,
+  staffDaySlots,
+  unblockSlots,
+} from "../application/staff-slots";
 import * as route from "./definitions/staff";
 
 export const venuesStaffRoutes = createRouter()
@@ -192,4 +200,22 @@ export const venuesStaffRoutes = createRouter()
   .openapi(route.decline, async (c) => {
     await declineInvitation(c.var.staff.staffId, c.req.valid("param").invitationId);
     return c.body(null, 204);
-  });
+  })
+  .openapi(route.slots, async (c) =>
+    c.json(await staffDaySlots(c.var.venue, c.req.valid("query")), 200),
+  )
+  .openapi(route.blockSlots, async (c) =>
+    c.json(await blockSlots(c.var.venue, c.req.valid("json")), 200),
+  )
+  .openapi(route.unblockSlots, async (c) =>
+    c.json(await unblockSlots(c.var.venue, c.req.valid("json")), 200),
+  )
+  .openapi(route.setSlotPrice, async (c) =>
+    c.json(await setSlotPrice(c.var.venue, c.req.valid("json")), 200),
+  )
+  .openapi(route.addSlots, async (c) =>
+    c.json(await addSlots(c.var.venue, c.req.valid("json")), 200),
+  )
+  .openapi(route.resetSlots, async (c) =>
+    c.json(await resetSlots(c.var.venue, c.req.valid("json")), 200),
+  );

@@ -6,6 +6,8 @@ import {
   AdminVenueGrounds,
   AdminVenueLocation,
   AdminVenueSettings,
+  VenueSlots,
+  VenueSlotsQuery,
   AdminVenueOverview,
   AdminVenueQuery,
   BanStaff,
@@ -323,6 +325,45 @@ export const venueGrounds = createRoute({
   request: { params: venueParams },
   responses: {
     200: { description: "The grounds", ...json(AdminVenueGrounds) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const regenerateGround = createRoute({
+  method: "post",
+  path: "/admin/venues/{id}/grounds/{groundId}/regenerate",
+  tags,
+  summary: "Regenerate a ground's slots now",
+  description:
+    "Queues a run that brings its slots in line with its schedule, as edits do. Held, booked, " +
+    "blocked and staff-set slots stay as they are.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams.extend({ groundId: z.uuid() }) },
+  responses: {
+    202: { description: "Queued" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("GROUND_NOT_FOUND"),
+  },
+});
+
+export const venueSlots = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/slots",
+  tags,
+  summary: "A day or a week of a venue's slots",
+  description:
+    "Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no " +
+    "date is given), or on up to seven days from it, the first and last days it has slots, and " +
+    "the currency of their prices.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams, query: VenueSlotsQuery },
+  responses: {
+    200: { description: "The day's slots", ...json(VenueSlots) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),

@@ -27,6 +27,7 @@ export const ROUTES = {
   staffInvitation: { app: "dashboard", path: "/manage/invite/[code]" },
   adminInvitation: { app: "web", path: "/admin/invitations/accept" },
   adminPasswordReset: { app: "web", path: "/admin/password/reset" },
+  adminVenueSlots: { app: "web", path: "/admin/venues/[venueId]/slots" },
 } as const satisfies Record<string, { app: AppName | "web"; path: string }>;
 
 export type RouteName = keyof typeof ROUTES;
@@ -54,5 +55,6 @@ export const links = (webUrl: string) => {
       `${base}${ROUTES.adminInvitation.path}#token=${encodeURIComponent(token)}`,
     adminPasswordReset: (token: string) =>
       `${base}${ROUTES.adminPasswordReset.path}#token=${encodeURIComponent(token)}`,
+    adminVenueSlots: (venueId: string) => base + fill(ROUTES.adminVenueSlots.path, venueId),
   } satisfies Record<RouteName, (value: string) => string>;
 };

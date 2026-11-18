@@ -4,6 +4,7 @@ import type {
   AdminInvitationEmail,
   AdminPasswordResetEmail,
   EmailProvider,
+  SlotGenerationAlertEmail,
 } from "./email-provider";
 
 // Development: the email goes to the console, so invitations work without an email account. Never
@@ -24,21 +25,34 @@ export const consoleProvider: EmailProvider = {
     );
     return Promise.resolve();
   },
+  sendSlotGenerationAlert: ({ to, venueName, groundName, problem, slotsUrl }) => {
+    logger.warn(
+      { to, venueName, groundName, problem, slotsUrl },
+      "slot generation alert email (development: not sent)",
+    );
+    return Promise.resolve();
+  },
 };
 
 // Tests: keeps what was sent, so a test can follow the link like the recipient would.
 export const createInMemoryProvider = () => {
   const sent: AdminInvitationEmail[] = [];
   const resets: AdminPasswordResetEmail[] = [];
+  const alerts: SlotGenerationAlertEmail[] = [];
   return {
     sent,
     resets,
+    alerts,
     sendAdminInvitation: (email: AdminInvitationEmail) => {
       sent.push(email);
       return Promise.resolve();
     },
     sendAdminPasswordReset: (email: AdminPasswordResetEmail) => {
       resets.push(email);
+      return Promise.resolve();
+    },
+    sendSlotGenerationAlert: (email: SlotGenerationAlertEmail) => {
+      alerts.push(email);
       return Promise.resolve();
     },
     lastInvitationTo: (to: string) => sent.findLast((email) => email.to === to),
@@ -58,4 +72,5 @@ const unavailable = () =>
 export const unconfiguredProvider: EmailProvider = {
   sendAdminInvitation: unavailable,
   sendAdminPasswordReset: unavailable,
+  sendSlotGenerationAlert: unavailable,
 };

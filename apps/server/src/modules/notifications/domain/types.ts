@@ -18,6 +18,14 @@ export interface NotificationData {
   VENUE_APPROVED: Record<string, never>;
   VENUE_REJECTED: { reason: string };
   VENUE_LIVE: Record<string, never>;
+  // To admins: a ground's slots aren't what its schedule says, or its generation keeps failing
+  // (docs/plan.md 2.6). One open (unread) alert per problem per ground.
+  SLOT_GENERATION_ALERT: { groundId: string; problem: SlotProblem; detail: string };
 }
+
+// STALE: free slots from an older schedule, minutes after an edit. BEHIND: not generated to the
+// horizon. EMPTY: a schedule but no future slots. DRIFT: the nightly audit found slots that differ
+// from the schedule. FAILED: a generation run failed on its last attempt.
+export type SlotProblem = "STALE" | "BEHIND" | "EMPTY" | "DRIFT" | "FAILED";
 
 export type NotificationType = keyof NotificationData;
