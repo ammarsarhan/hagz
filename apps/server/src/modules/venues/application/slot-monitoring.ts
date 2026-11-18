@@ -94,38 +94,50 @@ export const checkSlots = async (clock: Clock = systemClock): Promise<SlotIssue[
 
 // ---------- The audit ----------
 
-// Every ground's free generated slots ahead against what desiredSlots says: missing hours, extra
-// slots, and slots with the wrong tier or price. Staff-set, held, booked and blocked slots are left
-// out, as generation leaves them alone.
+export interface Drift {
+  // Scheduled hours with no slot, free generated slots no longer scheduled, and free generated slots
+  // with the wrong tier or price.
+  missing: number;
+  extra: number;
+  wrong: number;
+}
+
+// A ground's free generated slots ahead against what desiredSlots says. Staff-set, held, booked and
+// blocked slots are left out, as generation leaves them alone.
+export const driftOf = async (groundId: string, now: Date): Promise<Drift> => {
+  const ground = await groundForGeneration(prisma, groundId, now);
+  if (!ground) return { missing: 0, extra: 0, wrong: 0 };
+  const slots = await prisma.groundSlot.findMany({
+    where: { groundId, startsAt: { gte: now } },
+    select: { startsAt: true, tier: true, price: true, status: true, isManual: true },
+  });
+  const byStart = new Map(slots.map((slot) => [slot.startsAt.getTime(), slot]));
+  const wanted = new Set(ground.desired.map((slot) => slot.startsAt.getTime()));
+  let missing = 0;
+  let wrong = 0;
+  for (const slot of ground.desired) {
+    const existing = byStart.get(slot.startsAt.getTime());
+    if (!existing) missing += 1;
+    else if (
+      existing.status === "AVAILABLE" &&
+      !existing.isManual &&
+      (existing.tier !== slot.tier || existing.price !== slot.price)
+    ) {
+      wrong += 1;
+    }
+  }
+  const extra = slots.filter(
+    (slot) => slot.status === "AVAILABLE" && !slot.isManual && !wanted.has(slot.startsAt.getTime()),
+  ).length;
+  return { missing, extra, wrong };
+};
+
+// Every ground that should have slots, nightly.
 export const auditSlots = async (clock: Clock = systemClock): Promise<SlotIssue[]> => {
   const now = clock.now();
   const issues: SlotIssue[] = [];
   for (const { id: groundId, venueId } of await eligibleGrounds()) {
-    const ground = await groundForGeneration(prisma, groundId, now);
-    if (!ground) continue;
-    const slots = await prisma.groundSlot.findMany({
-      where: { groundId, startsAt: { gte: now } },
-      select: { startsAt: true, tier: true, price: true, status: true, isManual: true },
-    });
-    const byStart = new Map(slots.map((slot) => [slot.startsAt.getTime(), slot]));
-    const wanted = new Set(ground.desired.map((slot) => slot.startsAt.getTime()));
-    let missing = 0;
-    let wrong = 0;
-    for (const slot of ground.desired) {
-      const existing = byStart.get(slot.startsAt.getTime());
-      if (!existing) missing += 1;
-      else if (
-        existing.status === "AVAILABLE" &&
-        !existing.isManual &&
-        (existing.tier !== slot.tier || existing.price !== slot.price)
-      ) {
-        wrong += 1;
-      }
-    }
-    const extra = slots.filter(
-      (slot) =>
-        slot.status === "AVAILABLE" && !slot.isManual && !wanted.has(slot.startsAt.getTime()),
-    ).length;
+    const { missing, extra, wrong } = await driftOf(groundId, now);
     if (missing + wrong + extra > 0) {
       const parts = [
         missing > 0 ? `${plural(missing, "slot")} missing` : null,
