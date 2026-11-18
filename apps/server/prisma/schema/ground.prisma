@@ -73,6 +73,7 @@ model GroundSchedule {
 // AVAILABLE ones; it leaves isManual (staff-added) slots alone. Stale: AVAILABLE, not manual, older
 // scheduleVersion than the ground's. venueId matches the ground's and the booking's.
 // CHECKs: endsAt > startsAt, startsAt <= now() + 90 days, bookingId set exactly when HELD/BOOKED.
+// EXCLUDE: no two slots on a ground overlap in time (GroundSlot_no_overlap).
 model GroundSlot {
   id              String     @id @default(uuid(7)) @db.Uuid
   groundId        String     @db.Uuid
