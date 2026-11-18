@@ -2,9 +2,6 @@
 
 import { FOOTPRINTS, type PlacedGround, type PriceTier } from "@hagz/contracts";
 import Link from "next/link";
-import { useState } from "react";
-import { Button } from "@/admin/button";
-import { ago } from "@/admin/home/model";
 import { Tag } from "@/admin/data-table";
 import { Dialog } from "@/admin/dialog";
 import { formatMoney } from "@/admin/money";
@@ -53,7 +50,6 @@ export function GroundModal({
   tile,
   currency,
   slotsHref,
-  onRegenerate,
   onClose,
 }: {
   ground: AdminGround;
@@ -62,8 +58,6 @@ export function GroundModal({
   currency: string;
   // The venue's Slots tab, where this week's hours are the bookable slots.
   slotsHref: string;
-  // Queues a generation run for it, and resolves once its status has been read again.
-  onRegenerate: () => Promise<void>;
   onClose: () => void;
 }) {
   const footprint = tile ?? FOOTPRINTS[ground.sport][ground.size] ?? { width: 4, height: 2 };
@@ -124,8 +118,6 @@ export function GroundModal({
             <CloseButton onClose={onClose} />
           </div>
         </header>
-
-        <Generation generation={ground.generation} onRegenerate={onRegenerate} />
 
         <div className="px-8 pt-7 pb-7">
           {week.hours === 0 ? (
@@ -242,58 +234,5 @@ export function GroundModal({
         </footer>
       </div>
     </Dialog>
-  );
-}
-
-// How its slots stand against its schedule (PR 2.6), with Regenerate: how far ahead they're
-// generated and when, and anything out of line, in weight rather than colour.
-function Generation({
-  generation,
-  onRegenerate,
-}: {
-  generation: AdminGround["generation"];
-  onRegenerate: () => Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-  const { generatedUntil, generatedAt, stale, drift } = generation;
-  const now = Date.now();
-  const day = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const issues = [
-    stale > 0 ? `${String(stale)} from an older schedule` : null,
-    drift.missing > 0 ? `${String(drift.missing)} missing` : null,
-    drift.extra > 0 ? `${String(drift.extra)} not on the schedule` : null,
-    drift.wrong > 0 ? `${String(drift.wrong)} with the wrong price` : null,
-  ].filter((issue): issue is string => issue !== null);
-
-  return (
-    <div className="flex items-center justify-between gap-6 border-b border-border bg-[#fafafa] px-8 py-3">
-      <p className="min-w-0 truncate text-label text-ink-2">
-        <span className="font-medium text-ink">Slots</span>
-        {" · "}
-        {generatedUntil
-          ? `to ${day(generatedUntil)}${generatedAt ? `, generated ${ago(generatedAt, now)}` : ""}`
-          : "none generated: a venue's slots come once it's live"}
-        {" · "}
-        {issues.length > 0 ? (
-          <span className="font-medium text-ink underline underline-offset-4">
-            {issues.join(", ")}
-          </span>
-        ) : (
-          "in line with the schedule"
-        )}
-      </p>
-      <Button
-        size="small"
-        variant="secondary"
-        loading={busy}
-        onClick={() => {
-          setBusy(true);
-          void onRegenerate().finally(() => setBusy(false));
-        }}
-      >
-        Regenerate
-      </Button>
-    </div>
   );
 }

@@ -57,8 +57,7 @@ export const venueSections: VenueSection[] = [
     icon: IconSoccerField,
     phase: "Phase 2",
     when: "always",
-    description:
-      "Each ground with its prices and schedule: generated until, the last run, stale or drifted slots, and Regenerate.",
+    description: "Each ground on the venue's layout, with its prices and weekly schedule.",
   },
   {
     slug: "slots",
