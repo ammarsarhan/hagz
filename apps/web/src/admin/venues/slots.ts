@@ -6,12 +6,12 @@ import { api } from "@/admin/api";
 import { message, notTheirFault, send } from "@/admin/errors";
 import { useHud } from "@/admin/hud";
 
-// A venue's Slots tab's data: one local day of its slots. No date opens on today, or the nearest
-// day that has slots; the day before stays on screen while the next one loads.
+// A venue's Slots tab's data: a week of its slots from a local day. No date opens on today, or the
+// nearest day that has slots; the week before stays on screen while the next one loads.
 
 export type AdminSlot = VenueSlots["slots"][number];
 
-export function useVenueSlots(venueId: string, date: string | undefined) {
+export function useVenueSlots(venueId: string, date: string | undefined, span = 1) {
   const [data, setData] = useState<VenueSlots>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ export function useVenueSlots(venueId: string, date: string | undefined) {
     setLoading(true);
     const result = await send(
       api.GET("/v1/admin/venues/{id}/slots", {
-        params: { path: { id: venueId }, query: date ? { date } : {} },
+        params: { path: { id: venueId }, query: date ? { date, span } : { span } },
       }),
     );
     setLoading(false);
@@ -33,7 +33,7 @@ export function useVenueSlots(venueId: string, date: string | undefined) {
     }
     setError(undefined);
     setData(result.data);
-  }, [venueId, date, hud]);
+  }, [venueId, date, span, hud]);
 
   useEffect(() => {
     void load();
@@ -50,25 +50,34 @@ export const addDays = (date: string, days: number) => {
   return at.toISOString().slice(0, 10);
 };
 
-// "Thursday 19 November 2026".
-export const longDate = (date: string) =>
-  new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+// The Sunday a local date's week starts on.
+export const weekStart = (date: string) =>
+  addDays(date, -new Date(`${date}T12:00:00Z`).getUTCDay());
 
-// The hour of the day (0–23) an instant falls on in a timezone.
-export const localHour = (instant: string, timezone: string) =>
-  Number(
-    new Intl.DateTimeFormat("en-GB", {
+// Today's local date in a timezone.
+export const localToday = (timezone: string, now = Date.now()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date(now));
+
+// The local date an instant falls on in a timezone, and the minutes into that day.
+export const localTime = (instant: string | Date, timezone: string) => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
+      minute: "2-digit",
       hourCycle: "h23",
       timeZone: timezone,
-    }).format(new Date(instant)),
+    })
+      .formatToParts(new Date(instant))
+      .map((part) => [part.type, part.value]),
   );
+  return {
+    date: `${parts.year ?? ""}-${parts.month ?? ""}-${parts.day ?? ""}`,
+    minutes: Number(parts.hour) * 60 + Number(parts.minute),
+  };
+};
 
 // "4 pm", "12 am".
 export const hourLabel = (hour: number) => {
