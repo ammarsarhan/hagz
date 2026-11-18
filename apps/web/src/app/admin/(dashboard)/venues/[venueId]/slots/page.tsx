@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Skeleton } from "@/admin/data-table";
+import { Skeleton, SkeletonText } from "@/admin/data-table";
 import { formatMoney } from "@/admin/money";
 import { sizeLabel, sportLabel } from "@/admin/venues/grounds";
 import {
@@ -58,6 +58,9 @@ const FLOAT =
   "absolute bottom-5 z-20 flex items-center gap-1 rounded-full border border-border bg-white p-1 whitespace-nowrap shadow-[0_8px_24px_rgba(11,11,12,0.12)]";
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+// A hairline at each hour, down a day's column.
+const HOUR_LINES = `repeating-linear-gradient(to bottom, transparent 0 ${String(ROW - 1)}px, #f1f2f4 ${String(ROW - 1)}px ${String(ROW)}px)`;
+const COLUMNS = `${String(TIME)}px repeat(7, minmax(7.5rem, 1fr))`;
 
 // "7 pm", "7:30 pm", from minutes into the day.
 const timeLabel = (minutes: number) => {
@@ -123,7 +126,7 @@ export default function VenueSlotsTab() {
           <p className="text-body text-ink-2">{error}</p>
         </Centre>
       ) : !data || !week || midWeek ? (
-        <Skeleton className="size-full rounded-none" />
+        <PlannerLoading />
       ) : !data.days ? (
         <Centre>
           <p className="text-body font-medium text-ink">No slots yet</p>
@@ -135,6 +138,76 @@ export default function VenueSlotsTab() {
         <Planner data={data} days={data.days} loading={loading} onWeek={setWeek} />
       )}
     </section>
+  );
+}
+
+// The planner as it'll stand while the week loads: the days across with their names and dates
+// greyed, the hours down the side from where an unknown ground's day opens (8 am, as the planner
+// scrolls to with no slots to go by), the hour lines, and the floating bars, the key as it is.
+const LOADING_FROM = 8;
+
+function PlannerLoading() {
+  return (
+    <div aria-busy className="flex min-h-0 flex-1 flex-col">
+      <div className="relative min-h-0 flex-1">
+        <div aria-hidden className="flex size-full flex-col overflow-hidden">
+          <div className="grid min-w-fit" style={{ gridTemplateColumns: COLUMNS }}>
+            <div className="border-b border-border" />
+            {Array.from({ length: 7 }, (_, day) => (
+              <div
+                key={day}
+                className="flex flex-col items-center gap-1 border-b border-border pt-3 pb-2.5"
+              >
+                <SkeletonText size="caption" className="w-7" />
+                <Skeleton className="size-9 rounded-full" />
+              </div>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <div
+              className="grid min-w-fit"
+              style={{ gridTemplateColumns: COLUMNS, marginTop: -LOADING_FROM * ROW }}
+            >
+              <div className="relative" style={{ height: 24 * ROW }}>
+                {HOURS.slice(1).map((hour) => (
+                  <span
+                    key={hour}
+                    className="absolute right-3 -translate-y-1/2 text-caption text-ink-3 tabular-nums"
+                    style={{ top: hour * ROW }}
+                  >
+                    {hourLabel(hour)}
+                  </span>
+                ))}
+              </div>
+              {Array.from({ length: 7 }, (_, day) => (
+                <div
+                  key={day}
+                  className="border-l border-[#f1f2f4]"
+                  style={{ height: 24 * ROW, backgroundImage: HOUR_LINES }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div aria-hidden className={`left-5 ${FLOAT}`}>
+          <span className="flex h-10 items-center px-3.5">
+            <Skeleton className="h-3 w-28" />
+          </span>
+          {[0, 1, 2].map((step) => (
+            <span key={step} className="flex size-10 items-center justify-center">
+              <Skeleton className="size-[1.125rem]" />
+            </span>
+          ))}
+        </div>
+        <div aria-hidden className={`left-1/2 -translate-x-1/2 ${FLOAT}`}>
+          <span className="flex h-10 items-center px-3.5">
+            <Skeleton className="h-3 w-40" />
+          </span>
+        </div>
+        <Key />
+      </div>
+    </div>
   );
 }
 
@@ -192,8 +265,6 @@ function Planner({
     scroller.current?.scrollTo({ top: Math.max(0, firstHour - 1) * ROW });
   }, [ground, firstHour]);
 
-  const columns = `${String(TIME)}px repeat(7, minmax(7.5rem, 1fr))`;
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative min-h-0 flex-1">
@@ -206,7 +277,7 @@ function Planner({
             ref={scroller}
             className={`size-full overflow-auto pb-24 transition-opacity ${loading ? "opacity-60" : ""}`}
           >
-            <div className="grid min-w-fit" style={{ gridTemplateColumns: columns }}>
+            <div className="grid min-w-fit" style={{ gridTemplateColumns: COLUMNS }}>
               {/* The days across the top, staying put as the hours scroll. */}
               <div className="sticky top-0 z-20 border-b border-border bg-white" />
               {dates.map((date) => (
@@ -344,8 +415,7 @@ function Day({
       className={`relative border-l border-[#f1f2f4] ${outside ? "bg-[#fafafa]" : ""}`}
       style={{
         height: 24 * ROW,
-        // A hairline at each hour.
-        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0 ${String(ROW - 1)}px, #f1f2f4 ${String(ROW - 1)}px ${String(ROW)}px)`,
+        backgroundImage: HOUR_LINES,
       }}
     >
       {slots.map(({ slot, from, to }) => {
