@@ -325,6 +325,7 @@ function GoLiveActions({
     <div className="mt-6 flex flex-col gap-6">
       {taxNumber.value === null ? null : (
         <AccessAction
+          page
           title="Check tax number"
           description="Record whether the number is real and theirs, with a note if it isn't."
           action="Check"
@@ -332,6 +333,7 @@ function GoLiveActions({
         />
       )}
       <AccessAction
+        page
         title="Launch the venue"
         description="Make the venue go live on the marketplace."
         action="Go live"

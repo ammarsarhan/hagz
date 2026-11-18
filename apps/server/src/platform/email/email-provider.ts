@@ -5,6 +5,8 @@ export interface EmailProvider {
   sendAdminInvitation(email: AdminInvitationEmail): Promise<void>;
   // A link that lets an admin choose a new password, sent at another admin's request.
   sendAdminPasswordReset(email: AdminPasswordResetEmail): Promise<void>;
+  // A problem with a ground's slots that needs an admin to look (slot generation monitoring).
+  sendSlotGenerationAlert(email: SlotGenerationAlertEmail): Promise<void>;
 }
 
 export interface AdminInvitationEmail {
@@ -20,4 +22,14 @@ export interface AdminPasswordResetEmail {
   requestedBy: string;
   resetUrl: string;
   expiresAt: Date;
+}
+
+export interface SlotGenerationAlertEmail {
+  to: string;
+  name: string;
+  venueName: string;
+  groundName: string;
+  // What's wrong, in a sentence.
+  problem: string;
+  slotsUrl: string;
 }

@@ -230,6 +230,7 @@ export function AccessAction({
   action,
   disabled = false,
   primary = false,
+  page = false,
   onClick,
 }: {
   title: string;
@@ -240,13 +241,19 @@ export function AccessAction({
   disabled?: boolean;
   // The one step a page is there for (Approve, Go live): black, where the rest are grey.
   primary?: boolean;
+  // On a page rather than in a panel: the title at the page's 15, like a Details row's value.
+  page?: boolean;
   onClick: () => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-12">
       <div className="min-w-0">
-        {/* The step the page is there for reads a step up: 15 and medium. */}
-        <p className={`text-ink ${primary ? "text-body font-medium" : "text-label"}`}>{title}</p>
+        {/* The step the page is there for reads a step up: 15 and medium (on a page, medium only). */}
+        <p
+          className={`text-ink ${primary || page ? "text-body" : "text-label"} ${primary ? "font-medium" : ""}`}
+        >
+          {title}
+        </p>
         {description ? <p className="mt-0.5 text-caption text-ink-2">{description}</p> : null}
       </div>
       <Button

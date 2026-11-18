@@ -10,6 +10,7 @@ import {
 import type { Prisma } from "@/generated/prisma/client";
 import type { Language } from "@/generated/prisma/enums";
 import { prisma } from "@/platform/db/prisma";
+import { enqueueGeneration } from "./slot-generation";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import {
@@ -125,6 +126,8 @@ const staffLanguage = async (tx: Tx, staffId: string) =>
 const event = (tx: Tx, actor: VenueAccess, type: string, data: Prisma.InputJsonValue) =>
   tx.venueEvent.create({ data: { venueId: actor.venueId, staffId: actor.staffId, type, data } });
 
+// Every edit that changes which slots a ground should have bumps its version in the edit's
+// transaction, then queues its generation once committed (slot-generation.ts).
 const bumpSchedule = (tx: Tx, groundId: string) =>
   tx.groundSettings.update({
     where: { groundId },
@@ -195,7 +198,7 @@ export const updateGround = async (
   change: UpdateGround,
   language: Language,
 ): Promise<Ground> => {
-  await transaction(async (tx) => {
+  const shaped = await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const row = await findGround(tx, actor.venueId, groundId);
     const { name, status, ...fieldChange } = change;
@@ -225,7 +228,7 @@ export const updateGround = async (
         changes.name = { previous: current, next: name };
       }
     }
-    if (Object.keys(changes).length === 0) return;
+    if (Object.keys(changes).length === 0) return false;
 
     const { minimumSlots, maximumSlots, ...groundFields } = next;
     await tx.ground.update({
@@ -239,10 +242,13 @@ export const updateGround = async (
     });
     // Prices and booking length shape the slots, so generation picks the change up.
     const shapesSlots = ["basePrice", "peakPrice", "discountPrice", "minimumSlots", "maximumSlots"];
-    if (shapesSlots.some((key) => key in changes)) await bumpSchedule(tx, groundId);
+    const shapes = shapesSlots.some((key) => key in changes);
+    if (shapes) await bumpSchedule(tx, groundId);
     if ("sport" in changes || "size" in changes) await afterFootprintChange(tx, groundId);
     await event(tx, actor, GROUND_CHANGED, { groundId, changes } as Prisma.InputJsonValue);
+    return shapes;
   });
+  if (shaped) await enqueueGeneration([groundId]);
   const updated = await prisma.ground.findUniqueOrThrow({ where: { id: groundId }, select });
   return present(updated, language);
 };
@@ -257,6 +263,8 @@ export const removeGround = async (actor: VenueAccess, groundId: string) => {
     await tx.venueLayoutItem.deleteMany({ where: { groundId } });
     await event(tx, actor, GROUND_REMOVED, { groundId });
   });
+  // Its free slots go.
+  await enqueueGeneration([groundId]);
 };
 
 export const reorderGrounds = async (
@@ -327,13 +335,14 @@ export const putSchedule = async (actor: VenueAccess, groundId: string, week: We
       next: week,
     });
   });
+  await enqueueGeneration([groundId]);
   return groundSchedule(actor.venueId, groundId);
 };
 
 // Copies the hours and their tiers; each ground keeps its own prices, so each must have the prices
 // the copied tiers need.
 export const copySchedule = async (actor: VenueAccess, groundId: string, input: CopySchedule) => {
-  await transaction(async (tx) => {
+  const copied = await transaction(async (tx) => {
     await lockForEdit(tx, actor.venueId, "operations");
     const source = await findGround(tx, actor.venueId, groundId);
     const days = await tx.groundSchedule.findMany({
@@ -355,5 +364,7 @@ export const copySchedule = async (actor: VenueAccess, groundId: string, input: 
       await writeSchedule(tx, targetId, week);
     }
     await event(tx, actor, GROUND_SCHEDULE_COPIED, { from: groundId, to: targets });
+    return targets;
   });
+  await enqueueGeneration(copied);
 };

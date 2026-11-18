@@ -1,3 +1,4 @@
+import type { QueueName } from "@hagz/contracts";
 import { Worker } from "bullmq";
 import { createQueue } from "@/platform/jobs/queues";
 import { logger } from "@/platform/logger/logger";
@@ -6,7 +7,7 @@ import { sweepPendingPhotos } from "../application/venue-media";
 
 // Removes photo uploads asked for but never confirmed (PR 2.3), every hour. The scheduler is an
 // upsert, so every worker can register it without making a second one; the sweep is idempotent.
-const QUEUE = "venue-photo-sweeper";
+const QUEUE: QueueName = "venue-photo-sweeper";
 const EVERY_HOUR_MS = 60 * 60 * 1000;
 
 export const startPhotoSweeper = async () => {

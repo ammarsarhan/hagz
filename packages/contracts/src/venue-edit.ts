@@ -245,6 +245,25 @@ export const SetCommission = z
   })
   .meta({ id: "SetCommission" });
 
+// How a ground's slots stand against its schedule (PR 2.6), for its admin panel and Regenerate.
+export const SlotGeneration = z
+  .object({
+    generatedUntil: z.iso
+      .datetime()
+      .nullable()
+      .meta({ description: "How far ahead its slots go; null when it has none to have." }),
+    generatedAt: z.iso.datetime().nullable().meta({ description: "When generation last ran." }),
+    stale: z.int().meta({ description: "Free slots ahead still from an older schedule." }),
+    drift: z
+      .object({
+        missing: z.int().meta({ description: "Scheduled hours with no slot." }),
+        extra: z.int().meta({ description: "Free generated slots no longer scheduled." }),
+        wrong: z.int().meta({ description: "Free generated slots with the wrong tier or price." }),
+      })
+      .meta({ description: "Its slots ahead against what its schedule says, worked out now." }),
+  })
+  .meta({ id: "SlotGeneration" });
+
 // A venue's admin Grounds tab: its grounds with their weekly hours, drawn on its layout, with the
 // marketplace's currency for their prices.
 export const AdminVenueGrounds = z
@@ -257,6 +276,7 @@ export const AdminVenueGrounds = z
         schedule: z
           .array(ScheduleDay)
           .meta({ description: "Open days; days left out are closed." }),
+        generation: SlotGeneration,
       }),
     ),
     layout: VenueLayoutView,

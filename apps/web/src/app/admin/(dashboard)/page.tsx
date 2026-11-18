@@ -6,6 +6,7 @@ import { Button } from "@/admin/button";
 import { AvailabilityStrip, Legend, LineChart, OverviewChart, type Series } from "@/admin/charts";
 import { Skeleton } from "@/admin/data-table";
 import { Dot, Section, ShareTable, Stat } from "@/admin/home/blocks";
+import { JobsSections, useJobs } from "@/admin/home/jobs";
 import {
   DEPENDENCIES,
   RANGES,
@@ -26,7 +27,8 @@ import { PillSelect } from "@/admin/pill-select";
 
 // Home, laid out after Gumloop's Insights (the user's reference of 2026-11-11) on the data it
 // already had: the title with a range and a refresh on the right, a row of big figures, one chart of
-// every response time with downtime behind it, then sections of tables and charts two to a row.
+// every response time with downtime behind it, then sections of tables and charts two to a row, the
+// background jobs last.
 
 // The overview's series, darkest first; the admin web is neutral ink, so shade tells them apart.
 const SHADES: Record<string, { line: string; dot: string; dashed?: boolean }> = {
@@ -39,6 +41,7 @@ const ms = (latency: number | null) => (latency === null ? "—" : `${latency} m
 
 export default function AdminHome() {
   const { status, web, samples, error, now, refreshing, refresh } = useSystem();
+  const jobs = useJobs();
   const [rangeId, setRangeId] = useState<RangeId>("24h");
   const range = RANGES.find((r) => r.id === rangeId)!;
   const from = now - range.ms;
@@ -68,7 +71,10 @@ export default function AdminHome() {
             aria-label="Refresh"
             title="Refresh"
             aria-busy={refreshing}
-            onClick={() => void refresh()}
+            onClick={() => {
+              void refresh();
+              void jobs.reload();
+            }}
           >
             <IconRefresh
               size={16}
@@ -384,6 +390,10 @@ export default function AdminHome() {
             ]}
           />
         </Section>
+      </div>
+
+      <div className="mt-12 grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-2">
+        <JobsSections jobs={jobs.jobs} error={jobs.error} now={now} reload={jobs.reload} />
       </div>
     </>
   );

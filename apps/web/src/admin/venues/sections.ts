@@ -3,6 +3,7 @@ import {
   IconAdjustments,
   IconCalendarEvent,
   IconCash,
+  IconClockHour4,
   IconClipboardCheck,
   IconHistory,
   IconInfoCircle,
@@ -58,6 +59,15 @@ export const venueSections: VenueSection[] = [
     when: "always",
     description:
       "Each ground with its prices and schedule: generated until, the last run, stale or drifted slots, and Regenerate.",
+  },
+  {
+    slug: "slots",
+    label: "Slots",
+    icon: IconClockHour4,
+    phase: "Phase 2",
+    when: "always",
+    description:
+      "The bookable hours generated from each ground's schedule, a day at a time: price, tier and whether they're free, held, booked or blocked.",
   },
   {
     slug: "bookings",

@@ -5,6 +5,8 @@ CREATE TABLE "Customer" (
     "phone" TEXT,
     "passwordHash" TEXT NOT NULL,
     "avatarKey" TEXT,
+    "avatarUploadKey" TEXT,
+    "avatarUploadAt" TIMESTAMPTZ,
     "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
     "status" "AccountStatus" NOT NULL DEFAULT 'ACTIVE',
     "phoneVerifiedAt" TIMESTAMPTZ,
@@ -74,3 +76,7 @@ ALTER TABLE "CustomerVerification" ADD CONSTRAINT "CustomerVerification_customer
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Customer" ADD CONSTRAINT "Customer_phone_check"
   CHECK (phone IS NOT NULL OR "deletedAt" IS NOT NULL);
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "Customer" ADD CONSTRAINT "Customer_avatar_upload_check"
+  CHECK (("avatarUploadKey" IS NULL) = ("avatarUploadAt" IS NULL));
