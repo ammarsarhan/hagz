@@ -172,6 +172,7 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       const confirmed = await send(
         api.POST("/v1/staff/venues/{venueId}/photos/{photoId}/confirm", {
           params: { path: { venueId, photoId: photo.id } },
+          body: { preview: prepared.preview },
         }),
       );
       if (!confirmed.ok) throw confirmed.error;
