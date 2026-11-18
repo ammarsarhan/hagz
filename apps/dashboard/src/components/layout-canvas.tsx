@@ -1058,9 +1058,12 @@ const entranceCentre = (
   offset: number,
   columns: number,
   rows: number,
-  grow: Grow = NO_GROWTH,
+  edge?: Grow,
 ) => {
   "worklet";
+  // The fallback lives in the body, not as a default parameter: Reanimated's plugin only captures
+  // what a worklet's body uses, so a default of NO_GROWTH is undefined on the UI thread.
+  const grow = edge ?? NO_GROWTH;
   // Kept on the venue as it is now: an edge coming in pushes it along.
   const along = (offset + 0.5) * CELL;
   const across = Math.min(
