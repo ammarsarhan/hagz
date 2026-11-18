@@ -153,30 +153,39 @@ export default function VenueHistory() {
   });
 
   return (
-    <>
-      <DataTable
-        table={table}
-        widths={widths}
-        onRowClick={(row) => {
-          if (row.original.kind === "run") row.toggleExpanded();
-          else setOpened(row.original.event);
-        }}
-        loading={!data && !error}
-        empty={error ?? "Nothing has happened to this venue yet."}
-      />
-      {data?.next ? (
-        <div className="mt-6 flex justify-center">
-          <Button
-            size="small"
-            variant="secondary"
-            loading={loadingMore}
-            onClick={() => void loadMore()}
-          >
-            Show more
-          </Button>
-        </div>
-      ) : null}
+    <section>
+      {/* Titled as the Details pages are. */}
+      <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">History</h2>
+      <p className="mt-1 text-body text-ink-2">
+        Everything that happened to this venue, newest first: who did it and when. Open an event to
+        see it in full.
+      </p>
+
+      <div className="mt-8">
+        <DataTable
+          table={table}
+          widths={widths}
+          onRowClick={(row) => {
+            if (row.original.kind === "run") row.toggleExpanded();
+            else setOpened(row.original.event);
+          }}
+          loading={!data && !error}
+          empty={error ?? "Nothing has happened to this venue yet."}
+        />
+        {data?.next ? (
+          <div className="mt-6 flex justify-center">
+            <Button
+              size="small"
+              variant="secondary"
+              loading={loadingMore}
+              onClick={() => void loadMore()}
+            >
+              Show more
+            </Button>
+          </div>
+        ) : null}
+      </div>
       {opened ? <HistoryEventModal event={opened} onClose={() => setOpened(undefined)} /> : null}
-    </>
+    </section>
   );
 }
