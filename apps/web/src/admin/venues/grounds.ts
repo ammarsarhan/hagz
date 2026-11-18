@@ -6,8 +6,6 @@ import type {
   GroundSize,
   GroundSport,
   GroundSurface,
-  PriceTier,
-  ScheduleDay,
 } from "@hagz/contracts";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/admin/api";
@@ -74,32 +72,4 @@ export const environmentLabel: Record<GroundEnvironment, string> = {
   INDOOR: "Indoor",
   OUTDOOR: "Outdoor",
   COVERED: "Covered",
-};
-
-export const tierLabel: Record<PriceTier, string> = {
-  BASE: "Base",
-  PEAK: "Peak",
-  DISCOUNT: "Discount",
-};
-
-export const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-// "7 pm", "12 am", "11 am": the start of an hour.
-const hourLabel = (hour: number) =>
-  `${String(hour % 12 === 0 ? 12 : hour % 12)} ${hour < 12 || hour === 24 ? "am" : "pm"}`;
-
-// A day's open hours as runs of one tier: 19–20 BASE and 20–22 PEAK are two runs. An hour is its
-// start, so a run ends an hour after its last one.
-export const runsOf = (day: ScheduleDay) => {
-  const hours = [...day.hours].sort((a, b) => a.hour - b.hour);
-  const runs: { from: number; to: number; tier: PriceTier }[] = [];
-  for (const { hour, tier } of hours) {
-    const last = runs.at(-1);
-    if (last && last.to === hour && last.tier === tier) last.to = hour + 1;
-    else runs.push({ from: hour, to: hour + 1, tier });
-  }
-  return runs.map((run) => ({
-    ...run,
-    label: `${hourLabel(run.from)} – ${hourLabel(run.to)}`,
-  }));
 };
