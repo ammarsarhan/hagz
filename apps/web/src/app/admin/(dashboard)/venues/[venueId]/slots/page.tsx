@@ -52,6 +52,10 @@ const statusClass: Record<SlotStatus, string> = {
   BLOCKED: "border border-[#e3e5e9] bg-chip text-ink-3",
 };
 
+// A pill floating at the foot of the planner; each adds where along it sits.
+const FLOAT =
+  "absolute bottom-5 z-20 flex items-center gap-1 rounded-full border border-border bg-white p-1 whitespace-nowrap shadow-[0_8px_24px_rgba(11,11,12,0.12)]";
+
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 
 // "7 pm", "7:30 pm", from minutes into the day.
@@ -235,8 +239,35 @@ function Planner({
           </div>
         )}
 
-        {/* The week and the ground, floating at the foot after the reference's bar. */}
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-white p-1 whitespace-nowrap shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
+        {/* Floating at the foot, after the reference's bar: the ground on the left, the week in
+            the middle and the key on the right. */}
+        {ground ? (
+          <div className={`left-5 ${FLOAT}`}>
+            <span className="relative flex h-10 items-center rounded-full text-label font-medium text-ink focus-within:ring-2 focus-within:ring-ink hover:bg-chip">
+              <select
+                aria-label="Ground"
+                value={ground.id}
+                onChange={(event) => setPicked(event.target.value)}
+                className="h-full cursor-pointer appearance-none bg-transparent pr-9 pl-3.5 outline-none"
+              >
+                {grounds.map((one) => (
+                  <option key={one.id} value={one.id}>
+                    {one.name ?? "Ground"} ·{" "}
+                    {one.size === "STANDARD"
+                      ? sportLabel[one.sport]
+                      : `${sportLabel[one.sport]} ${sizeLabel[one.size]}`}
+                  </option>
+                ))}
+              </select>
+              <IconChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 size-4 text-ink-2"
+                stroke={1.75}
+              />
+            </span>
+          </div>
+        ) : null}
+        <div className={`left-1/2 -translate-x-1/2 ${FLOAT}`}>
           <MonthPicker
             title={weekTitle(week)}
             week={week}
@@ -266,36 +297,8 @@ function Planner({
           >
             <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
           </Step>
-          {ground ? (
-            <>
-              <span aria-hidden className="mx-1 h-6 w-px bg-border" />
-              <span className="relative flex h-10 items-center rounded-full text-label font-medium text-ink focus-within:ring-2 focus-within:ring-ink hover:bg-chip">
-                <select
-                  aria-label="Ground"
-                  value={ground.id}
-                  onChange={(event) => setPicked(event.target.value)}
-                  className="h-full cursor-pointer appearance-none bg-transparent pr-9 pl-3.5 outline-none"
-                >
-                  {grounds.map((one) => (
-                    <option key={one.id} value={one.id}>
-                      {one.name ?? "Ground"} ·{" "}
-                      {one.size === "STANDARD"
-                        ? sportLabel[one.sport]
-                        : `${sportLabel[one.sport]} ${sizeLabel[one.size]}`}
-                    </option>
-                  ))}
-                </select>
-                <IconChevronDown
-                  size={16}
-                  className="pointer-events-none absolute right-3 size-4 text-ink-2"
-                  stroke={1.75}
-                />
-              </span>
-            </>
-          ) : null}
         </div>
 
-        {/* What a slot's fill means, floating in the corner. */}
         <Key />
       </div>
     </div>
@@ -515,12 +518,12 @@ function MonthPicker({
   );
 }
 
-// What a slot's fill means: a small slot of each kind, floating in the bottom right corner.
+// What a slot's fill means: a small slot of each kind, floating at the bottom right.
 function Key() {
   return (
-    <ul className="absolute right-5 bottom-5 z-20 flex items-center gap-4 rounded-full border border-border bg-white px-5 py-2.5 text-caption whitespace-nowrap text-ink-2 shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
+    <ul className={`right-5 gap-4 px-5 text-caption text-ink-2 ${FLOAT}`}>
       {(Object.keys(STATUS) as SlotStatus[]).map((status) => (
-        <li key={status} className="flex items-center gap-2">
+        <li key={status} className="flex h-10 items-center gap-2">
           <span
             aria-hidden
             className={`size-3.5 rounded-[0.25rem] ${statusClass[status]}`}
