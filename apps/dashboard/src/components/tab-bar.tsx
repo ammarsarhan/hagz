@@ -20,7 +20,7 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 //
 // A long press on the Venue tab opens the venue switcher (Figma "D3 · Venue switcher options",
 // option C, with the stadium kept: the user preferred the icon to the venue's photo): a heavy tap,
-// and the icon shrinks into a blue ring until the switcher closes.
+// and the icon shrinks until the switcher closes.
 const ROW = 49;
 const HAIRLINE = 1;
 
@@ -107,8 +107,8 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   );
 }
 
-// Held (the switcher open), the Venue tab's icon springs down inside a blue ring with a little room
-// around it, and back out when the switcher closes.
+// Held (the switcher open), the Venue tab's icon springs down a little, and back out when the
+// switcher closes.
 const HELD_SCALE = 17 / 24;
 const SPRING = { damping: 16, stiffness: 260 };
 
@@ -120,16 +120,6 @@ function Held({ held, children }: { held: boolean; children: ReactNode }) {
   const icon = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - (1 - HELD_SCALE) * progress.value }],
   }));
-  const ring = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, progress.value)) }));
 
-  return (
-    <View className="size-6 items-center justify-center">
-      <Animated.View
-        pointerEvents="none"
-        className="absolute inset-0 rounded-[8px] border-[1.75px] border-primary"
-        style={ring}
-      />
-      <Animated.View style={icon}>{children}</Animated.View>
-    </View>
-  );
+  return <Animated.View style={icon}>{children}</Animated.View>;
 }
