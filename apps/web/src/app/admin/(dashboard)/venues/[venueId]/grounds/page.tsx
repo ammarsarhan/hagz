@@ -7,6 +7,7 @@ import { useVenueAmenities } from "@/admin/venues/amenities";
 import { GroundModal } from "@/admin/venues/ground-modal";
 import { useVenueGrounds } from "@/admin/venues/grounds";
 import { LayoutView } from "@/admin/venues/layout-view";
+import { venueHref } from "@/admin/venues/sections";
 import { useFillHeight } from "@/admin/venues/use-fill-height";
 
 // A venue's Grounds tab: for now only its layout, drawn to scale and filling the space under the
@@ -49,6 +50,7 @@ export default function VenueGrounds() {
           ground={ground}
           tile={data.layout.grounds.find((tile) => tile.groundId === ground.id)}
           currency={data.currency}
+          slotsHref={venueHref(venueId, "slots")}
           onClose={() => setSelected(undefined)}
         />
       ) : null}

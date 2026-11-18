@@ -1,6 +1,7 @@
 "use client";
 
 import { FOOTPRINTS, type PlacedGround, type PriceTier } from "@hagz/contracts";
+import Link from "next/link";
 import { Tag } from "@/admin/data-table";
 import { Dialog } from "@/admin/dialog";
 import { formatMoney } from "@/admin/money";
@@ -48,12 +49,15 @@ export function GroundModal({
   ground,
   tile,
   currency,
+  slotsHref,
   onClose,
 }: {
   ground: AdminGround;
   // Where it sits on the layout, for its shape; a ground not on it is drawn at its sport's default.
   tile?: PlacedGround;
   currency: string;
+  // The venue's Slots tab, where this week's hours are the bookable slots.
+  slotsHref: string;
   onClose: () => void;
 }) {
   const footprint = tile ?? FOOTPRINTS[ground.sport][ground.size] ?? { width: 4, height: 2 };
@@ -102,6 +106,12 @@ export function GroundModal({
                 {ground.status === "MAINTENANCE" ? <Tag>Paused</Tag> : null}
               </h2>
               <p className="mt-1 truncate text-label text-ink-2">{facts.join(" · ")}</p>
+              <Link
+                href={slotsHref}
+                className="mt-2 inline-block rounded-sm text-label font-semibold text-ink underline underline-offset-4 outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
+              >
+                View slots
+              </Link>
             </div>
           </div>
           <div className="-mt-0.5 -mr-1.5 shrink-0">
