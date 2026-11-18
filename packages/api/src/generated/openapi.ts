@@ -8611,6 +8611,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One day of a venue's slots
+         * @description Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no date is given), the first and last days it has slots, and the currency of their prices.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots. */
+                    date?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's slots */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminVenueSlots"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/translations/{language}": {
         parameters: {
             query?: never;
@@ -11579,6 +11659,69 @@ export interface components {
             }[];
             layout: components["schemas"]["VenueLayoutView"];
         };
+        AdminVenueSlots: {
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            /**
+             * @description ISO 4217; prices are in its minor units.
+             * @example EGP
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The day read.
+             * @example 2026-11-19
+             */
+            date: string;
+            /** @description The first and last days with slots; null until any are generated. */
+            days: {
+                /**
+                 * Format: date
+                 * @description A local date, YYYY-MM-DD.
+                 * @example 2026-11-19
+                 */
+                first: string;
+                /**
+                 * Format: date
+                 * @description A local date, YYYY-MM-DD.
+                 * @example 2026-11-19
+                 */
+                last: string;
+            } | null;
+            grounds: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            }[];
+            slots: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                groundId: string;
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                tier: components["schemas"]["PriceTier"];
+                /** @description In minor units. */
+                price: number;
+                status: components["schemas"]["SlotStatus"];
+                /** @description Set by staff rather than the schedule. */
+                isManual: boolean;
+                /** Format: uuid */
+                bookingId: string | null;
+            }[];
+        };
+        /**
+         * @description `HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff.
+         * @enum {string}
+         */
+        SlotStatus: "AVAILABLE" | "HELD" | "BOOKED" | "BLOCKED";
         /** @description The result of checking the venue's tax number. */
         CheckTaxNumber: {
             valid: boolean;

@@ -6,6 +6,8 @@ import {
   AdminVenueGrounds,
   AdminVenueLocation,
   AdminVenueSettings,
+  AdminVenueSlots,
+  AdminVenueSlotsQuery,
   AdminVenueOverview,
   AdminVenueQuery,
   BanStaff,
@@ -323,6 +325,25 @@ export const venueGrounds = createRoute({
   request: { params: venueParams },
   responses: {
     200: { description: "The grounds", ...json(AdminVenueGrounds) },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("VENUE_NOT_FOUND"),
+  },
+});
+
+export const venueSlots = createRoute({
+  method: "get",
+  path: "/admin/venues/{id}/slots",
+  tags,
+  summary: "One day of a venue's slots",
+  description:
+    "Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no " +
+    "date is given), the first and last days it has slots, and the currency of their prices.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams, query: AdminVenueSlotsQuery },
+  responses: {
+    200: { description: "The day's slots", ...json(AdminVenueSlots) },
     ...guarded,
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("VENUE_NOT_FOUND"),

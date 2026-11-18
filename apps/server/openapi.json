@@ -4891,6 +4891,156 @@
           "layout"
         ]
       },
+      "AdminVenueSlots": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217; prices are in its minor units.",
+            "example": "EGP"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "The day read.",
+            "example": "2026-11-19"
+          },
+          "days": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "first": {
+                "type": "string",
+                "format": "date",
+                "description": "A local date, YYYY-MM-DD.",
+                "example": "2026-11-19"
+              },
+              "last": {
+                "type": "string",
+                "format": "date",
+                "description": "A local date, YYYY-MM-DD.",
+                "example": "2026-11-19"
+              }
+            },
+            "required": [
+              "first",
+              "last"
+            ],
+            "description": "The first and last days with slots; null until any are generated."
+          },
+          "grounds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sport": {
+                  "$ref": "#/components/schemas/GroundSport"
+                },
+                "size": {
+                  "$ref": "#/components/schemas/GroundSize"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "sport",
+                "size"
+              ]
+            }
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "groundId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "startsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "tier": {
+                  "$ref": "#/components/schemas/PriceTier"
+                },
+                "price": {
+                  "type": "integer",
+                  "description": "In minor units."
+                },
+                "status": {
+                  "$ref": "#/components/schemas/SlotStatus"
+                },
+                "isManual": {
+                  "type": "boolean",
+                  "description": "Set by staff rather than the schedule."
+                },
+                "bookingId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                }
+              },
+              "required": [
+                "id",
+                "groundId",
+                "startsAt",
+                "endsAt",
+                "tier",
+                "price",
+                "status",
+                "isManual",
+                "bookingId"
+              ]
+            }
+          }
+        },
+        "required": [
+          "timezone",
+          "currency",
+          "date",
+          "days",
+          "grounds",
+          "slots"
+        ]
+      },
+      "SlotStatus": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "HELD",
+          "BOOKED",
+          "BLOCKED"
+        ],
+        "description": "`HELD`: reserved while a booking awaits payment or confirmation. `BLOCKED`: closed by staff."
+      },
       "CheckTaxNumber": {
         "type": "object",
         "properties": {
@@ -14088,6 +14238,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminVenueGrounds"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/slots": {
+      "get": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "One day of a venue's slots",
+        "description": "Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no date is given), the first and last days it has slots, and the currency of their prices.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots.",
+              "example": "2026-11-19"
+            },
+            "required": false,
+            "description": "The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots.",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The day's slots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminVenueSlots"
                 }
               }
             }
