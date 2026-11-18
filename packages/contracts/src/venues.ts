@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { StaffPermissions } from "./permissions";
 
-const VenueRole = z.enum(["OWNER", "MEMBER"]).meta({
+export const VenueRole = z.enum(["OWNER", "MEMBER"]).meta({
   id: "VenueRole",
   description: "Each venue has exactly one `OWNER`, who can do everything.",
 });
@@ -48,6 +48,9 @@ export const VenueMember = z
       description:
         "True when a password reset made them read-only and nothing changed since: POST " +
         "permissions/restore brings back what they had.",
+    }),
+    status: z.enum(["ACTIVE", "SUSPENDED", "BANNED"]).meta({
+      description: "Their staff account's. A suspended member can't sign in anywhere.",
     }),
   })
   .meta({ id: "VenueMember" });

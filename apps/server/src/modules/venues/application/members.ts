@@ -135,12 +135,13 @@ const restorableFrom = (latest: LatestEvent | undefined, current: StaffPermissio
 export const listMembers = async (venueId: string): Promise<VenueMember[]> => {
   const memberships = await prisma.venueMembership.findMany({
     where: { venueId },
-    orderBy: { createdAt: "asc" },
+    // The owner first (OWNER is declared before MEMBER), then in the order they joined.
+    orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     select: {
       staffId: true,
       role: true,
       permissions: true,
-      staff: { select: { name: true, phone: true } },
+      staff: { select: { name: true, phone: true, status: true } },
     },
   });
   const latest = await latestPermissionEvents(
@@ -157,6 +158,7 @@ export const listMembers = async (venueId: string): Promise<VenueMember[]> => {
       role,
       permissions: current,
       restorable: role === "MEMBER" && restorableFrom(latest.get(staffId), current) !== undefined,
+      status: staff.status,
     };
   });
 };

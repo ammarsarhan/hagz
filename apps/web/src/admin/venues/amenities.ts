@@ -1,0 +1,47 @@
+"use client";
+
+import type { AdminVenueAmenities, AmenityPricing } from "@hagz/contracts";
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/admin/api";
+import { message, notTheirFault, send } from "@/admin/errors";
+import { useHud } from "@/admin/hud";
+import { formatMoney } from "@/admin/money";
+
+// What a venue offers, for the Amenities section of its Details.
+
+export function useVenueAmenities(venueId: string) {
+  const [data, setData] = useState<AdminVenueAmenities>();
+  const [error, setError] = useState<string>();
+  const hud = useHud();
+
+  const load = useCallback(async () => {
+    const result = await send(
+      api.GET("/v1/admin/venues/{id}/amenities", { params: { path: { id: venueId } } }),
+    );
+    if (!result.ok) {
+      const text = message(result.error);
+      setError(text);
+      if (notTheirFault(result.error)) hud(text, { label: "Try again", run: () => void load() });
+      return;
+    }
+    setError(undefined);
+    setData(result.data);
+  }, [venueId, hud]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { data, error };
+}
+
+// Per hour shows as "/hr"; per booking is the plain price, the way a booking is charged.
+const PER: Record<AmenityPricing, string> = { PER_HOUR: "/hr", PER_BOOKING: "" };
+
+// "EGP 50" (per booking), "AED 12.50/hr", "Free".
+export const formatAmenityPrice = (
+  currency: string,
+  price: number | null,
+  pricing: AmenityPricing | null,
+) =>
+  price === null || pricing === null ? "Free" : `${formatMoney(currency, price)}${PER[pricing]}`;

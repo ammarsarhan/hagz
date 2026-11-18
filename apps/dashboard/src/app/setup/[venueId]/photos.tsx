@@ -247,9 +247,9 @@ function PhotosGrid({ venueId, photos }: { venueId: string; photos: Photo[] }) {
       hud.show(hudMessage(result.error));
       return;
     }
-    // The order is already on screen; only the draft card's "Last updated" moves. An order can't
-    // finish an item, so not the checklist.
-    void afterVenueWrite(queryClient, venueId, { checklist: false });
+    // The order is already on screen. It can't finish an item, but it does count as changing the
+    // photos when a review sent the venue back asking to, so the checklist is fetched again too.
+    void afterVenueWrite(queryClient, venueId);
   };
 
   // The order a drag left on screen: saved if it changed. Uploads and the add tile aren't places

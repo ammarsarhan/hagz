@@ -1,8 +1,23 @@
-import type { AdminVenue, AdminVenueQuery, VenueStatus } from "@hagz/contracts";
+import { AmenityIcon } from "@hagz/contracts";
+import type {
+  AdminVenue,
+  AdminVenueAmenities,
+  AdminVenueGrounds,
+  AdminVenueLocation,
+  AdminVenueQuery,
+  VenueStatus,
+  VenueTranslation,
+} from "@hagz/contracts";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { placeOf } from "../domain/names";
 import { venueNotFound } from "./access";
+import { listSentInvitations } from "./invitations";
+import { listMembers } from "./members";
+import { groundSchedule, listGrounds } from "./grounds";
+import { venueLayout } from "./layout";
+import { listPhotos } from "./venue-media";
+import { pinOf } from "./venue-edit";
 
 // The admin Venues table: every venue in any status, newest first, a page at a time. Ids are UUIDv7,
 // so ordering by id is ordering by creation, and the last id on a page is the cursor for the next.
@@ -88,4 +103,146 @@ export const getAdminVenue = async (id: string): Promise<AdminVenue> => {
   const venue = await prisma.venue.findUnique({ where: { id }, select: adminVenueSelect });
   if (!venue) throw venueNotFound();
   return presentAdminVenue(venue);
+};
+
+const mustExist = async (id: string) => {
+  const venue = await prisma.venue.findUnique({ where: { id }, select: { id: true } });
+  if (!venue) throw venueNotFound();
+};
+
+// A venue's Team tab: the same lists its staff see (members with their permissions, the owner
+// first; invitations still open), for any venue in any status.
+export const adminVenueMembers = async (id: string) => {
+  await mustExist(id);
+  return listMembers(id);
+};
+
+export const adminVenueInvitations = async (id: string) => {
+  await mustExist(id);
+  return listSentInvitations(id);
+};
+
+// A venue's Details tab: what players read in each language, English first. A language nobody has
+// written yet isn't in the list.
+export const adminVenueTranslations = async (id: string): Promise<VenueTranslation[]> => {
+  await mustExist(id);
+  const rows = await prisma.venueTranslation.findMany({
+    where: { venueId: id },
+    select: { language: true, name: true, description: true, address: true },
+  });
+  return (["EN", "AR"] as const).flatMap((language) =>
+    rows.filter((row) => row.language === language),
+  );
+};
+
+// A venue's photos as players see them: ready ones only, in order, the cover first. An upload still
+// on its way isn't on the venue page, so it isn't here either.
+export const adminVenuePhotos = async (id: string) => {
+  await mustExist(id);
+  return (await listPhotos(id)).filter((photo) => photo.status === "READY");
+};
+
+const written = (place: { translations: { language: string }[] }, language: "EN" | "AR") =>
+  place.translations.some((t) => t.language === language);
+
+// A venue's Location section: its marketplace, the pin, and the area it's listed under ("Nasr City, Cairo", in both
+// languages) or the one its owner asked for.
+export const adminVenueLocation = async (id: string): Promise<AdminVenueLocation> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    select: {
+      requestedArea: true,
+      marketplace: { select: { id: true, code: true, ...place } },
+      location: { select: { id: true, ...place, parent: { select: place } } },
+    },
+  });
+  if (!venue) throw venueNotFound();
+  const { marketplace } = venue;
+  const exact = (language: "EN" | "AR") =>
+    marketplace.translations.find((t) => t.language === language)?.name ?? null;
+  return {
+    marketplace: {
+      id: marketplace.id,
+      code: marketplace.code,
+      names: { en: exact("EN"), ar: exact("AR") },
+    },
+    coordinates: await pinOf(prisma, id),
+    area: venue.location && {
+      id: venue.location.id,
+      // Only a name the area has in that language: placeOf falls back to the other one, which
+      // would hide a missing translation from the admin.
+      names: {
+        en: written(venue.location, "EN") ? placeOf(venue.location, "EN") : null,
+        ar: written(venue.location, "AR") ? placeOf(venue.location, "AR") : null,
+      },
+    },
+    requestedArea: venue.requestedArea,
+  };
+};
+
+// A venue's Amenities section: what it offers, with each option's name and icon, the price the venue
+// charges and whether it's drawn on the layout, by English name. The currency is the marketplace's.
+export const adminVenueAmenities = async (id: string): Promise<AdminVenueAmenities> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    select: {
+      marketplace: { select: { currency: true } },
+      amenities: {
+        select: {
+          price: true,
+          pricing: true,
+          _count: { select: { tiles: true } },
+          option: {
+            select: {
+              id: true,
+              key: true,
+              icon: true,
+              isActive: true,
+              placeable: true,
+              translations: { select: { language: true, name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!venue) throw venueNotFound();
+  const amenities = venue.amenities.map(({ option, price, pricing, _count }) => {
+    const exact = (language: "EN" | "AR") =>
+      option.translations.find((t) => t.language === language)?.name ?? null;
+    return {
+      optionId: option.id,
+      key: option.key,
+      icon: AmenityIcon.parse(option.icon),
+      names: { en: exact("EN"), ar: exact("AR") },
+      isActive: option.isActive,
+      price,
+      pricing,
+      placeable: option.placeable,
+      tiles: _count.tiles,
+    };
+  });
+  amenities.sort((a, b) => (a.names.en ?? a.key).localeCompare(b.names.en ?? b.key, "en"));
+  return { currency: venue.marketplace.currency, amenities };
+};
+
+// A venue's Grounds tab: its grounds (names in English) with their weekly hours, its layout to draw
+// them on, and the currency their prices are in.
+export const adminVenueGrounds = async (id: string): Promise<AdminVenueGrounds> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    select: { marketplace: { select: { currency: true } } },
+  });
+  if (!venue) throw venueNotFound();
+  const [grounds, layout] = await Promise.all([listGrounds(id, "EN"), venueLayout(id)]);
+  return {
+    currency: venue.marketplace.currency,
+    grounds: await Promise.all(
+      grounds.map(async (ground) => ({
+        ...ground,
+        schedule: (await groundSchedule(id, ground.id)).days,
+      })),
+    ),
+    layout,
+  };
 };

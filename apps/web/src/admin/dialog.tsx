@@ -8,16 +8,20 @@ import { useSubmit } from "./submit";
 // A modal on the native <dialog>: the browser traps focus, closes it on Escape and draws the
 // backdrop; a click on the backdrop closes it too. Its content mounts only while open, so every
 // opening starts from a fresh form.
+// Narrow (30rem) for a question, wide (40rem) for a form or a grid of cards, large (52rem) for a
+// table to pick from.
+const WIDTHS = { narrow: "w-[30rem]", wide: "w-[40rem]", large: "w-[52rem]" } as const;
+export type DialogSize = keyof typeof WIDTHS;
+
 export function Dialog({
   open,
   onClose,
-  wide = false,
+  size = "narrow",
   children,
 }: {
   open: boolean;
   onClose: () => void;
-  // The chooser size (40rem), for a grid of cards; forms are 30rem.
-  wide?: boolean;
+  size?: DialogSize;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -43,7 +47,7 @@ export function Dialog({
         if (pressedOutside.current && event.target === event.currentTarget) onClose();
         pressedOutside.current = false;
       }}
-      className={`m-auto ${wide ? "w-[40rem]" : "w-[30rem]"} max-w-[calc(100vw-2rem)] overflow-hidden rounded-card bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
+      className={`m-auto ${WIDTHS[size]} max-w-[calc(100vw-2rem)] overflow-hidden rounded-card bg-white p-0 text-ink shadow-xl backdrop:bg-scrim`}
     >
       {open ? children : null}
     </dialog>
@@ -52,14 +56,15 @@ export function Dialog({
 
 // The admin's one modal, after the Platform pages: the shared header (title, a grey line, ×, and
 // ← back on a later step), a body that scrolls inside 85% of the window, and small buttons at the
-// bottom right. Wide (40rem) fits a grid of cards or a form; narrow (30rem) is for a question.
+// bottom right. Wide (40rem) fits a grid of cards or a form, narrow (30rem) a question, and large
+// (52rem) a table to pick from.
 export function Modal({
   onClose,
   title,
   description,
   onBack,
   footer,
-  narrow = false,
+  size = "wide",
   children,
 }: {
   onClose: () => void;
@@ -69,12 +74,12 @@ export function Modal({
   // On a later step: back to the one before.
   onBack?: () => void;
   footer?: ReactNode;
-  narrow?: boolean;
+  size?: DialogSize;
   // Left out for a question that the title and description already ask.
   children?: ReactNode;
 }) {
   return (
-    <Dialog open wide={!narrow} onClose={onClose}>
+    <Dialog open size={size} onClose={onClose}>
       <div className="flex max-h-[85vh] flex-col">
         <OverlayHeader title={title} description={description} onClose={onClose} onBack={onBack} />
         {children ? <OverlayBody>{children}</OverlayBody> : <div className="h-4 shrink-0" />}
@@ -106,7 +111,7 @@ export function ConfirmDialog({
   const { busy, run } = useSubmit(onDone, onClose);
   return (
     <Modal
-      narrow
+      size="narrow"
       onClose={onClose}
       title={title}
       description={description}

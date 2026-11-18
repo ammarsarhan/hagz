@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SetupItemKey } from "./setup-items";
 import { AdminVenue } from "./venues";
 
 // A venue's review and going live (PR 2.7, docs/onboarding.md step 3).
@@ -9,8 +10,38 @@ export const RejectVenue = z
       description: "Shown to the owner; say what to change.",
       example: "Add photos of the pitches themselves, not only the entrance.",
     }),
+    items: z
+      .array(SetupItemKey)
+      .max(SetupItemKey.options.length)
+      .refine((keys) => new Set(keys).size === keys.length, { message: "Each section once." })
+      .default([])
+      .meta({
+        description:
+          "The setup sections to change. Each has to be edited before the owner can send the " +
+          "venue again. Empty: the reason says it all.",
+        example: ["PHOTOS"],
+      }),
   })
   .meta({ id: "RejectVenue" });
+
+// Why an admin acted on a venue's team or a staff account, kept with the event for audit.
+const AdminReason = z.string().trim().min(10).max(500).meta({
+  description: "For the record: what happened and how it was checked.",
+  example: "The owner called support: he left the business in October.",
+});
+
+export const RemoveMember = z.object({ reason: AdminReason }).meta({ id: "RemoveMember" });
+
+export const TransferOwnership = z
+  .object({
+    staffId: z.uuid().meta({ description: "A member of the venue, who becomes its owner." }),
+    reason: AdminReason,
+  })
+  .meta({ id: "TransferOwnership" });
+
+export const SuspendStaff = z.object({ reason: AdminReason }).meta({ id: "SuspendStaff" });
+
+export const BanStaff = z.object({ reason: AdminReason }).meta({ id: "BanStaff" });
 
 export const CheckTaxNumber = z
   .object({
@@ -48,12 +79,25 @@ export const VenueHistoryQuery = z
   })
   .meta({ id: "VenueHistoryQuery" });
 
+export const GoLiveGap = z
+  .enum(["AR_TRANSLATION", "EN_TRANSLATION", "ACTIVE_GROUND"])
+  .meta({ id: "GoLiveGap", description: "Something a venue needs before it can go live." });
+
 // Why the last review sent a draft back, shown on the owner's checklist.
 export const Rejection = z
-  .object({ reason: z.string(), at: z.iso.datetime() })
+  .object({
+    reason: z.string(),
+    at: z.iso.datetime(),
+    items: z.array(SetupItemKey).meta({ description: "The sections it asked to change." }),
+  })
   .meta({ id: "Rejection" });
 
 export type RejectVenue = z.infer<typeof RejectVenue>;
+export type GoLiveGap = z.infer<typeof GoLiveGap>;
+export type RemoveMember = z.infer<typeof RemoveMember>;
+export type TransferOwnership = z.infer<typeof TransferOwnership>;
+export type SuspendStaff = z.infer<typeof SuspendStaff>;
+export type BanStaff = z.infer<typeof BanStaff>;
 export type CheckTaxNumber = z.infer<typeof CheckTaxNumber>;
 export type ReviewVenue = z.infer<typeof ReviewVenue>;
 export type VenueHistoryEvent = z.infer<typeof VenueHistoryEvent>;

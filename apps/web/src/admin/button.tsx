@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react";
 
 // The pill from the apps, a step smaller for desktop: 48 high (the apps use 56), fully round, 16/600
 // label, matching the fields. Black here, where the staff app is blue.
@@ -23,6 +23,35 @@ const sizes = {
   small: "h-10 gap-1.5 px-5 text-label",
 } as const;
 
+const shape = (size: keyof typeof sizes, weight: "semibold" | "medium" = "semibold") =>
+  `flex shrink-0 cursor-pointer items-center justify-center rounded-full ${
+    weight === "medium" ? "font-medium" : "font-semibold"
+  } ${sizes[size]} transition-opacity hover:opacity-90`;
+
+interface ButtonLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string;
+  variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
+  // Medium for a link beside the content it's about (a map), so it doesn't outweigh it.
+  weight?: "semibold" | "medium";
+}
+
+// A link that looks like the button, for going somewhere rather than doing something (a map
+// elsewhere): it opens in a new tab, middle-clicks and copies like any link.
+export function ButtonLink({
+  variant = "primary",
+  size = "regular",
+  weight = "semibold",
+  children,
+  ...anchor
+}: ButtonLinkProps) {
+  return (
+    <a className={`${shape(size, weight)} ${variants[variant]}`} {...anchor}>
+      {children}
+    </a>
+  );
+}
+
 export function Button({
   variant = "primary",
   loading = false,
@@ -38,7 +67,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading}
-      className={`flex shrink-0 cursor-pointer items-center justify-center rounded-full font-semibold ${sizes[size]} transition-opacity hover:opacity-90 disabled:cursor-default disabled:hover:opacity-100 ${look}`}
+      className={`${shape(size)} disabled:cursor-default disabled:hover:opacity-100 ${look}`}
       {...rest}
     >
       {loading ? (

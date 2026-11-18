@@ -15,4 +15,6 @@ export * from "./venue-setup";
 export * from "./venues";
 export * from "./problem";
 export * from "./review";
+export * from "./setup-items";
+export * from "./support";
 export * from "./system";

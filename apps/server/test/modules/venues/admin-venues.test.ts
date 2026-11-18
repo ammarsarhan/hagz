@@ -223,3 +223,412 @@ describe("GET /admin/venues/{id}", () => {
     expect((await get(`/${venue.id}`, false)).status).toBe(401);
   });
 });
+
+describe("GET /admin/venues/{id}/translations", () => {
+  it("reads what players see in each language, English first", async () => {
+    const venue = await prisma.venue.create({
+      data: {
+        marketplaceId,
+        locationId,
+        slug: `venue-${++sequence}`,
+        status: "PROVISIONING",
+        translations: {
+          create: [
+            { language: "AR", name: "الساحة", description: null, address: "شارع ٩" },
+            { language: "EN", name: "Arena", description: "Two pitches.", address: "9 Street" },
+          ],
+        },
+      },
+    });
+    const res = await get(`/${venue.id}/translations`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([
+      { language: "EN", name: "Arena", description: "Two pitches.", address: "9 Street" },
+      { language: "AR", name: "الساحة", description: null, address: "شارع ٩" },
+    ]);
+  });
+
+  it("leaves out a language nobody has written", async () => {
+    const venue = await addVenue({ en: "Arena", status: "DRAFT" });
+    const res = await get(`/${venue.id}/translations`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([
+      { language: "EN", name: "Arena", description: "", address: "" },
+    ]);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/translations");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/translations`, false)).status).toBe(401);
+  });
+});
+
+describe("GET /admin/venues/{id}/photos", () => {
+  const photo = (venueId: string, position: number, status: "READY" | "PENDING" = "READY") => ({
+    venueId,
+    key: `venues/${venueId}/${String(position)}-${status}.jpg`,
+    type: "IMAGE" as const,
+    contentType: "image/jpeg",
+    size: 4,
+    status,
+    position,
+  });
+
+  it("reads the ready photos in order, the cover first", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    await prisma.venueMedia.createMany({
+      data: [photo(venue.id, 1), photo(venue.id, 0), photo(venue.id, 2, "PENDING")],
+    });
+    const res = await get(`/${venue.id}/photos`);
+    expect(res.status).toBe(200);
+    const data = res.body.data as { url: string; status: string; position: number }[];
+    expect(data.map((p) => [p.position, p.status])).toEqual([
+      [0, "READY"],
+      [1, "READY"],
+    ]);
+    expect(data[0]?.url).toContain(`venues/${venue.id}/0-READY.jpg`);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/photos");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/photos`, false)).status).toBe(401);
+  });
+});
+
+describe("GET /admin/venues/{id}/location", () => {
+  it("reads the pin and the area, in both languages", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    await prisma.$executeRaw`
+      UPDATE "Venue" SET coordinates = ST_SetSRID(ST_MakePoint(31.33, 30.06), 4326)::geography
+      WHERE id = ${venue.id}::uuid`;
+    const res = await get(`/${venue.id}/location`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      marketplace: { id: marketplaceId, code: "EG", names: { en: "Country EG", ar: null } },
+      coordinates: { latitude: 30.06, longitude: 31.33 },
+      area: { id: locationId, names: { en: "Nasr City, Cairo", ar: null } },
+      requestedArea: null,
+    });
+  });
+
+  it("reads the area the owner asked for, before a pin", async () => {
+    const venue = await prisma.venue.create({
+      data: {
+        marketplaceId,
+        slug: `venue-${String(++sequence)}`,
+        status: "SUBMITTED",
+        requestedArea: "Sheikh Zayed, Giza",
+      },
+    });
+    const res = await get(`/${venue.id}/location`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      marketplace: { id: marketplaceId, code: "EG", names: { en: "Country EG", ar: null } },
+      coordinates: null,
+      area: null,
+      requestedArea: "Sheikh Zayed, Giza",
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/location");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/location`, false)).status).toBe(401);
+  });
+});
+
+describe("GET /admin/venues/{id}/amenities", () => {
+  it("reads what the venue offers with names, prices and layout tiles, by English name", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const option = (key: string, en: string, isActive = true, placeable = false) =>
+      prisma.amenityOption.create({
+        data: {
+          marketplaceId,
+          key,
+          icon: key,
+          isActive,
+          placeable,
+          translations: { create: [{ language: "EN", name: en }] },
+        },
+      });
+    const showers = await option("showers", "Showers");
+    const parking = await option("parking", "Parking", false, true);
+    await prisma.venueAmenity.createMany({
+      data: [
+        { venueId: venue.id, marketplaceId, optionId: showers.id, price: null, pricing: null },
+        {
+          venueId: venue.id,
+          marketplaceId,
+          optionId: parking.id,
+          price: 5000,
+          pricing: "PER_BOOKING",
+        },
+      ],
+    });
+    // Parking drawn twice on the layout.
+    await prisma.venueLayout.create({ data: { venueId: venue.id, columns: 10, rows: 10 } });
+    await prisma.venueLayoutItem.createMany({
+      data: [0, 3].map((x) => ({
+        venueId: venue.id,
+        type: "AMENITY" as const,
+        optionId: parking.id,
+        x,
+        y: 0,
+        width: 2,
+        height: 2,
+      })),
+    });
+    const res = await get(`/${venue.id}/amenities`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      currency: "EGP",
+      amenities: [
+        {
+          optionId: parking.id,
+          key: "parking",
+          icon: "parking",
+          names: { en: "Parking", ar: null },
+          isActive: false,
+          price: 5000,
+          pricing: "PER_BOOKING",
+          placeable: true,
+          tiles: 2,
+        },
+        {
+          optionId: showers.id,
+          key: "showers",
+          icon: "showers",
+          names: { en: "Showers", ar: null },
+          isActive: true,
+          price: null,
+          pricing: null,
+          placeable: false,
+          tiles: 0,
+        },
+      ],
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/amenities");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/amenities`, false)).status).toBe(401);
+  });
+});
+
+describe("GET /admin/venues/{id}/contact", () => {
+  const withContact = async (taxNumber: string | null) => {
+    const venue = await addVenue({ en: "Arena", status: "PROVISIONING" });
+    await prisma.venue.update({
+      where: { id: venue.id },
+      data: { phone: "+20235514420", taxNumber },
+    });
+    return venue;
+  };
+  // Through the admin endpoint, as the Application tab records it.
+  const checked = async (venueId: string, valid: boolean, note: string | null) => {
+    const res = await router.request(`/v1/admin/venues/${venueId}/tax-number-check`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "X-Hagz-Admin": "1", Cookie: cookie },
+      body: JSON.stringify({ valid, note }),
+    });
+    expect(res.status).toBe(204);
+  };
+
+  it("reads the phone and the tax number with its latest check", async () => {
+    const venue = await withContact("512-334-981");
+    await checked(venue.id, false, "Not in the register.");
+    await checked(venue.id, true, null);
+    const res = await get(`/${venue.id}/contact`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      phone: "+20235514420",
+      taxNumber: { value: "512-334-981", check: { valid: true, note: null } },
+    });
+  });
+
+  it("drops a check made on a number that has since changed", async () => {
+    const venue = await withContact("111-222-333");
+    await checked(venue.id, true, null);
+    await prisma.venue.update({ where: { id: venue.id }, data: { taxNumber: "512-334-981" } });
+    const res = await get(`/${venue.id}/contact`);
+    expect(res.body).toEqual({
+      phone: "+20235514420",
+      taxNumber: { value: "512-334-981", check: null },
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/contact");
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("VENUE_NOT_FOUND");
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/contact`, false)).status).toBe(401);
+  });
+});
+
+describe("a venue's settings, for admins", () => {
+  const call = async (method: string, path: string, body: unknown) => {
+    const res = await router.request(`/v1/admin/venues${path}`, {
+      method,
+      headers: { "content-type": "application/json", "X-Hagz-Admin": "1", Cookie: cookie },
+      body: JSON.stringify(body),
+    });
+    return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+  };
+  const eventsOf = (venueId: string, type: string) =>
+    prisma.venueEvent.findMany({ where: { venueId, type }, orderBy: { id: "asc" } });
+
+  it("reads the commission and the owner's settings", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await get(`/${venue.id}/settings`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      commission: { override: null },
+      settings: { autoConfirm: true, paymentMode: "MANUAL", cancellationPolicy: null },
+    });
+  });
+
+  it("changes the owner's settings, recorded as the admin's", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await call("PATCH", `/${venue.id}/settings`, {
+      autoConfirm: false,
+      paymentMode: "DEPOSIT",
+      depositPercent: 30,
+      cancellationPolicy: "STRICT",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      settings: { autoConfirm: false, paymentMode: "DEPOSIT", depositPercent: 30 },
+    });
+    const [changed] = await eventsOf(venue.id, "VENUE_SETTINGS_CHANGED");
+    expect(changed?.adminId).not.toBeNull();
+    expect(changed?.staffId).toBeNull();
+  });
+
+  it("checks settings as a whole, as for the owner", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await call("PATCH", `/${venue.id}/settings`, { paymentMode: "DEPOSIT" });
+    expect(res.status).toBe(422);
+    expect(res.body).toMatchObject({ code: "INVALID_SETTINGS", field: "depositPercent" });
+  });
+
+  it("sets and clears the commission override, each on the history", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const set = await call("PUT", `/${venue.id}/commission`, { rate: 800 });
+    expect(set.body).toMatchObject({ commission: { override: 800 } });
+    // The same rate again changes nothing.
+    await call("PUT", `/${venue.id}/commission`, { rate: 800 });
+    const cleared = await call("PUT", `/${venue.id}/commission`, { rate: null });
+    expect(cleared.body).toMatchObject({ commission: { override: null } });
+    const events = await eventsOf(venue.id, "VENUE_COMMISSION_CHANGED");
+    expect(events.map((e) => e.data)).toEqual([
+      { previous: null, next: 800 },
+      { previous: 800, next: null },
+    ]);
+  });
+
+  it("only takes a rate from 0 to 100%", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await call("PUT", `/${venue.id}/commission`, { rate: 10_001 })).status).toBe(400);
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/settings");
+    expect(res.status).toBe(404);
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/settings`, false)).status).toBe(401);
+  });
+});
+
+describe("GET /admin/venues/{id}/grounds", () => {
+  it("reads the grounds with their hours, and the layout they're placed on", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await prisma.ground.create({
+      data: {
+        venueId: venue.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 0,
+        basePrice: 60000,
+        translations: { create: [{ language: "EN", name: "Pitch 1" }] },
+        settings: { create: {} },
+        schedules: { create: [{ dayOfWeek: 4, hours: { "19": "BASE", "20": "PEAK" } }] },
+      },
+    });
+    await prisma.venueLayout.create({ data: { venueId: venue.id, columns: 10, rows: 8 } });
+    await prisma.venueLayoutItem.create({
+      data: {
+        venueId: venue.id,
+        type: "GROUND",
+        groundId: ground.id,
+        x: 1,
+        y: 1,
+        orientation: "HORIZONTAL",
+        width: 4,
+        height: 3,
+      },
+    });
+
+    const res = await get(`/${venue.id}/grounds`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      currency: "EGP",
+      grounds: [
+        {
+          id: ground.id,
+          name: "Pitch 1",
+          sport: "FOOTBALL",
+          openHours: 2,
+          schedule: [{ dayOfWeek: 4 }],
+        },
+      ],
+      layout: {
+        saved: true,
+        columns: 10,
+        rows: 8,
+        grounds: [{ groundId: ground.id, x: 1, y: 1, width: 4, height: 3 }],
+      },
+    });
+  });
+
+  it("answers 404 for a venue that isn't there", async () => {
+    const res = await get("/0190f2a4-0000-7000-8000-000000000000/grounds");
+    expect(res.status).toBe(404);
+  });
+
+  it("needs a signed-in admin", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/grounds`, false)).status).toBe(401);
+  });
+});
