@@ -3,6 +3,7 @@
 import type { SlotStatus, VenueSlots } from "@hagz/contracts";
 import {
   IconCalendar,
+  IconCalendarDot,
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
@@ -25,11 +26,11 @@ import { useFillHeight } from "@/admin/venues/use-fill-height";
 import { DAY_NAMES } from "@/admin/venues/week";
 
 // A venue's Slots tab (user, 2026-11-18): the bookable hours generated from its grounds' schedules,
-// a week of one ground at a time, as Trello's planner week (the user's reference): the month with a
-// picker, ‹ Today › and the ground at the top, the week's days across with today circled, the hours
-// of the venue's local day down the side, and each slot a block at its time, with its price and tier,
-// filled by whether it's free, held, booked or blocked; the key floats at the foot. A line marks now.
-// Read only. Weeks move within the ones that have slots; days outside them are greyed. Until any
+// a week of one ground at a time, as Trello's planner week (the user's reference), full bleed under
+// the tabs: the week's days across with today circled, the hours of the venue's local day down the
+// side, and each slot a block at its time, with its price and tier, filled by whether it's free,
+// held, booked or blocked. A line marks now. Floating at the foot: the month picker with ‹ this week
+// › on the left, the ground in the middle and the key on the right. Read only. Weeks move within the ones that have slots; days outside them are greyed. Until any
 // are generated, a single line in the middle says that going live generates them.
 
 // An hour's height, and the time column's width.
@@ -239,10 +240,40 @@ function Planner({
           </div>
         )}
 
-        {/* Floating at the foot, after the reference's bar: the ground on the left, the week in
-            the middle and the key on the right. */}
+        {/* Floating at the foot, after the reference's bar: the week on the left, the ground in
+            the middle and the key on the right, in that order for the keyboard too. */}
+        <div className={`left-5 ${FLOAT}`}>
+          <MonthPicker
+            title={weekTitle(week)}
+            week={week}
+            today={today}
+            days={days}
+            onWeek={onWeek}
+          />
+          <Step
+            label="Previous week"
+            disabled={week <= days.first}
+            onClick={() => onWeek(addDays(week, -7))}
+          >
+            <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
+          <Step
+            label="This week"
+            disabled={week === weekStart(today)}
+            onClick={() => onWeek(weekStart(today))}
+          >
+            <IconCalendarDot size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
+          <Step
+            label="Next week"
+            disabled={end >= days.last}
+            onClick={() => onWeek(addDays(week, 7))}
+          >
+            <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
+        </div>
         {ground ? (
-          <div className={`left-5 ${FLOAT}`}>
+          <div className={`left-1/2 -translate-x-1/2 ${FLOAT}`}>
             <span className="relative flex h-10 items-center rounded-full text-label font-medium text-ink focus-within:ring-2 focus-within:ring-ink hover:bg-chip">
               <select
                 aria-label="Ground"
@@ -267,37 +298,6 @@ function Planner({
             </span>
           </div>
         ) : null}
-        <div className={`left-1/2 -translate-x-1/2 ${FLOAT}`}>
-          <MonthPicker
-            title={weekTitle(week)}
-            week={week}
-            today={today}
-            days={days}
-            onWeek={onWeek}
-          />
-          <Step
-            label="Previous week"
-            disabled={week <= days.first}
-            onClick={() => onWeek(addDays(week, -7))}
-          >
-            <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
-          </Step>
-          <button
-            type="button"
-            disabled={week === weekStart(today)}
-            onClick={() => onWeek(weekStart(today))}
-            className="h-10 cursor-pointer rounded-full px-3.5 text-label font-medium text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default disabled:text-ink-3 disabled:hover:bg-transparent"
-          >
-            Today
-          </button>
-          <Step
-            label="Next week"
-            disabled={end >= days.last}
-            onClick={() => onWeek(addDays(week, 7))}
-          >
-            <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
-          </Step>
-        </div>
 
         <Key />
       </div>
@@ -551,6 +551,7 @@ function Step({
     <button
       type="button"
       aria-label={label}
+      title={label}
       disabled={disabled}
       onClick={onClick}
       className="flex size-10 cursor-pointer items-center justify-center rounded-full text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
