@@ -54,6 +54,7 @@ CREATE TABLE "GroundSettings" (
     "minimumSlots" INTEGER NOT NULL DEFAULT 1,
     "maximumSlots" INTEGER NOT NULL DEFAULT 3,
     "generatedUntil" TIMESTAMPTZ,
+    "generatedAt" TIMESTAMPTZ,
     "scheduleVersion" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,

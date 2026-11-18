@@ -171,7 +171,7 @@ export const reconcileGround = async (
 
     await tx.groundSettings.update({
       where: { groundId },
-      data: { generatedUntil: ground.eligible ? to : null },
+      data: { generatedUntil: ground.eligible ? to : null, generatedAt: now },
     });
     return { created, updated, deleted };
   });

@@ -46,6 +46,7 @@ model GroundSettings {
   minimumSlots    Int       @default(1) // Shortest booking, in slots.
   maximumSlots    Int       @default(3) // Longest booking, in slots.
   generatedUntil  DateTime? @db.Timestamptz // Set by the generation job.
+  generatedAt     DateTime? @db.Timestamptz // When the generation job last ran for it.
   scheduleVersion Int       @default(0) // Bumped on every schedule, tier price or settings edit.
   createdAt       DateTime  @default(now()) @db.Timestamptz
   updatedAt       DateTime  @updatedAt @db.Timestamptz
