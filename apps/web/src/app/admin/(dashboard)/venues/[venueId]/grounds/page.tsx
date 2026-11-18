@@ -23,16 +23,12 @@ export default function VenueGrounds() {
   const placed = new Set(data?.layout.grounds.map((tile) => tile.groundId));
 
   return (
-    <section>
-      <h2 className="text-[1.25rem] leading-[1.625rem] font-semibold text-ink">Grounds</h2>
-      <p className="mt-1 text-body text-ink-2">
-        The venue's layout and its grounds. Choose one to see its details.
-      </p>
-
+    // The first block sits right under the tabs, like the other tabs' content.
+    <section className="[&>*:first-child]:mt-0">
       {error && !data ? (
-        <p className="mt-8 text-body text-ink-2">{error}</p>
+        <p className="text-body text-ink-2">{error}</p>
       ) : !data ? (
-        <Skeleton className="mt-8 h-72 w-full rounded-card" />
+        <Skeleton className="h-72 w-full rounded-card" />
       ) : (
         <>
           {data.layout.saved && data.layout.grounds.length > 0 ? (
