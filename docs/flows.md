@@ -569,7 +569,7 @@ flowchart LR
   review --> approve["Approve → provisioning"] --> provision["Provision: translations, tax number, commission override, photos"] --> live["Go live"]:::result
   venues["A4 Venues in any status: search"] --> venue["Venue detail"]
   venue --> pause["Pause / resume"]
-  venue --> history["History: each change, with revert"]
+  venue --> history["History: each change"]
   venue --> transfer["Transfer ownership"]
 ```
 

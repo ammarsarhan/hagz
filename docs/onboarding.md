@@ -16,7 +16,7 @@ Agreed on 2026-10-27:
 - **One unfinished venue per staff account.** A venue they own in `DRAFT`, `SUBMITTED` or `PROVISIONING` blocks starting another until it goes live (clarified 2026-11-12). Any number of live venues, so chains are fine.
 - **Nothing is deleted.** Drafts stay until submitted, and a rejected venue goes back to `DRAFT` with the reason.
 - **Ownership changes only through support.** An admin transfers it to an existing member after checking identity, because ownership controls payouts.
-- **After going live, nothing is reviewed again.** Members with the right permission edit anything, including the name and location, and it applies at once. Every edit is a `VenueEvent` with the previous and new values, so admins can audit and revert from the admin panel.
+- **After going live, nothing is reviewed again.** Members with the right permission edit anything, including the name and location, and it applies at once. Every edit is a `VenueEvent` with the previous and new values, so admins can audit it from the admin panel.
 
 ## Lifecycle
 
@@ -95,7 +95,7 @@ The venue's staff run their own team in the dashboard app; admins step in from t
 ## Edits after going live
 
 - **Every edit applies at once** for members with the permission for that area (`venue` for details, location, photos, amenities, layout and settings; `schedule` for grounds, prices and schedules). Name and location included; nothing waits for an admin.
-- **Every edit is a `VenueEvent` with the previous and new values** of what changed (`VENUE_DETAILS_CHANGED`, `VENUE_LOCATION_CHANGED`, `VENUE_SETTINGS_CHANGED`, and so on). Admins see a venue's history in the admin panel and can **revert** a change, which applies the previous values and writes its own event.
+- **Every edit is a `VenueEvent` with the previous and new values** of what changed (`VENUE_DETAILS_CHANGED`, `VENUE_LOCATION_CHANGED`, `VENUE_SETTINGS_CHANGED`, and so on). Admins see a venue's history in the admin panel (no revert in v1: user, 2026-11-18).
 - **A live venue keeps an active ground.** See below.
 - **The area can't move to another marketplace.** A live venue's currency, VAT, amenities and payouts belong to its marketplace, so a new location must be in the same one. The pin must still fall inside it.
 
