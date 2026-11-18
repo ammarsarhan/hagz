@@ -30,7 +30,9 @@ export default function VenueGrounds() {
       ) : !data ? (
         <Skeleton className="h-72 w-full rounded-card" />
       ) : (
-        <>
+        // Side by side, half each, on a wide window; stacked, the layout first, on a narrow one. The
+        // columns can shrink below their content (minmax 0), so the layout scales down to fit.
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-x-12 [&>*]:mt-0">
           {data.layout.saved && data.layout.grounds.length > 0 ? (
             <DetailsBlock title="Layout">
               <div className="pt-4">
@@ -82,7 +84,7 @@ export default function VenueGrounds() {
               </ul>
             )}
           </DetailsBlock>
-        </>
+        </div>
       )}
 
       {data && ground ? (

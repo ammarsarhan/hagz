@@ -12,7 +12,8 @@ import type { AdminGround } from "./grounds";
 // open is drawn in ink. Cells shrink so the whole venue fits the column, and never grow past 32px.
 
 const MAX_CELL = 32;
-const MIN_CELL = 10;
+// Small enough that the widest venue (60 cells) fits half a page.
+const MIN_CELL = 6;
 
 // The width the view has to fit in, kept up to date as the window changes.
 function useWidth() {
