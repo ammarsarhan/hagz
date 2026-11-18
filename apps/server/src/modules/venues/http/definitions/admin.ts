@@ -354,10 +354,11 @@ export const venueSlots = createRoute({
   method: "get",
   path: "/admin/venues/{id}/slots",
   tags,
-  summary: "One day of a venue's slots",
+  summary: "A day or a week of a venue's slots",
   description:
     "Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no " +
-    "date is given), the first and last days it has slots, and the currency of their prices.",
+    "date is given), or on up to seven days from it, the first and last days it has slots, and " +
+    "the currency of their prices.",
   middleware: [requireAdmin] as const,
   security,
   request: { params: venueParams, query: VenueSlotsQuery },

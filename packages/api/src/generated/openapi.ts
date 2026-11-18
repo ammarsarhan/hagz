@@ -6677,6 +6677,8 @@ export interface paths {
                 query?: {
                     /** @description The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots. */
                     date?: string;
+                    /** @description How many days to read from the date, up to a week. */
+                    span?: number;
                 };
                 header?: never;
                 path: {
@@ -9562,14 +9564,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * One day of a venue's slots
-         * @description Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no date is given), the first and last days it has slots, and the currency of their prices.
+         * A day or a week of a venue's slots
+         * @description Its grounds' slots on a day in its timezone (today, or the nearest day with slots, when no date is given), or on up to seven days from it, the first and last days it has slots, and the currency of their prices.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots. */
                     date?: string;
+                    /** @description How many days to read from the date, up to a week. */
+                    span?: number;
                 };
                 header?: never;
                 path: {
@@ -12124,7 +12128,7 @@ export interface components {
             currency: string;
             /**
              * Format: date
-             * @description The day read.
+             * @description The first day read.
              * @example 2026-11-19
              */
             date: string;

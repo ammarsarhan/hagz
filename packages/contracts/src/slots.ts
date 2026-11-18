@@ -20,6 +20,9 @@ export const VenueSlotsQuery = z
       description:
         "The day to read, in the venue's timezone. Left out: today, or the nearest day that has slots.",
     }),
+    span: z.coerce.number().int().min(1).max(7).default(1).meta({
+      description: "How many days to read from the date, up to a week.",
+    }),
   })
   .meta({ id: "VenueSlotsQuery" });
 
@@ -37,8 +40,8 @@ export const Slot = z
   })
   .meta({ id: "Slot" });
 
-// One local day of a venue's grounds' slots, and the days it has any at all: the admin's Slots tab
-// and the staff calendar.
+// A run of local days (one, or a week) of a venue's grounds' slots, and the days it has any at all:
+// the admin's Slots tab and the staff calendar.
 export const VenueSlots = z
   .object({
     timezone: z
@@ -47,7 +50,7 @@ export const VenueSlots = z
     currency: z
       .string()
       .meta({ description: "ISO 4217; prices are in its minor units.", example: "EGP" }),
-    date: LocalDate.meta({ description: "The day read." }),
+    date: LocalDate.meta({ description: "The first day read." }),
     days: z
       .object({ first: LocalDate, last: LocalDate })
       .nullable()

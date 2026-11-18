@@ -788,6 +788,29 @@ describe("GET /admin/venues/{id}/slots", () => {
     expect((after.body.slots as { id: string }[]).map((slot) => slot.id)).toEqual([first.id]);
   });
 
+  it("reads a week from a day, and nothing past it", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await addGround(venue.id, "Pitch 1");
+    const midnight = midnightAhead();
+    const first = await addSlot(venue.id, ground.id, midnight + 19 * HOUR);
+    // Evening on the seventh day, then midday on the eighth, past the week (clear of a clock change).
+    const seventh = await addSlot(venue.id, ground.id, midnight + (6 * 24 + 20) * HOUR);
+    await addSlot(venue.id, ground.id, midnight + (7 * 24 + 12) * HOUR);
+    const day = cairo(first.startsAt).date;
+
+    const res = await get(`/${venue.id}/slots?date=${day}&span=7`);
+    expect(res.body).toMatchObject({ date: day });
+    expect((res.body.slots as { id: string }[]).map((slot) => slot.id)).toEqual([
+      first.id,
+      seventh.id,
+    ]);
+  });
+
+  it("refuses a span longer than a week", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    expect((await get(`/${venue.id}/slots?span=8`)).status).toBe(400);
+  });
+
   it("opens on the nearest day with slots when today has none", async () => {
     const venue = await addVenue({ en: "Arena" });
     const ground = await addGround(venue.id, "Pitch 1");
