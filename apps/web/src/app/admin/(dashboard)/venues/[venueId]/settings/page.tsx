@@ -45,6 +45,7 @@ export default function VenueSettingsPage() {
           <div className="py-4">
             {live ? (
               <AccessAction
+                page
                 title="Pause"
                 description="No new bookings until it's resumed. Bookings already made stand."
                 action="Pause"
@@ -52,6 +53,7 @@ export default function VenueSettingsPage() {
               />
             ) : (
               <AccessAction
+                page
                 title="Resume"
                 description="Paused: players can't book it. Resuming needs an open ground."
                 action="Resume"

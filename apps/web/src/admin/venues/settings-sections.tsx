@@ -116,6 +116,7 @@ export function CommissionSection({ venueId, data, onSaved }: SectionProps) {
     <DetailsBlock title="Commission" action={status}>
       <Fields>
         <Toggle
+          page
           label="Its own rate"
           hint={`Off, it takes the marketplace's ${percent(marketplaceRate)} of each booking.`}
           checked={form.own}
@@ -161,6 +162,7 @@ export function BookingRulesSection({ venueId, data, onSaved }: SectionProps) {
     <DetailsBlock title="Booking rules" action={status}>
       <Fields>
         <Toggle
+          page
           label="Confirm bookings automatically"
           hint="Off, the venue's staff approve each booking."
           checked={form.autoConfirm}
@@ -439,6 +441,7 @@ export function LoyaltySection({ venueId, data, onSaved }: SectionProps) {
     <DetailsBlock title="Loyalty" action={status}>
       <Fields>
         <Toggle
+          page
           label="Loyalty rewards"
           hint="Players collect a stamp per booking and get one free."
           checked={form.on}
