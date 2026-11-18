@@ -11,7 +11,6 @@ import { useParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Skeleton } from "@/admin/data-table";
 import { formatMoney } from "@/admin/money";
-import { PillSelect } from "@/admin/pill-select";
 import { sizeLabel, sportLabel } from "@/admin/venues/grounds";
 import {
   addDays,
@@ -99,7 +98,8 @@ export default function VenueSlotsTab() {
   // The Sunday the week shown starts on: unknown until the first read says which day to open on.
   const [week, setWeek] = useState<string>();
   const { data, error, loading } = useVenueSlots(venueId, week, 7);
-  const { ref, height } = useFillHeight();
+  // Right to the foot of the window: the planner runs off the page's bottom padding too.
+  const { ref, height } = useFillHeight(0);
 
   // The first read opens on today, or the nearest day with slots: show the week it's in.
   useEffect(() => {
@@ -110,13 +110,15 @@ export default function VenueSlotsTab() {
   const midWeek = data !== undefined && data.date !== weekStart(data.date);
 
   return (
-    <section ref={ref} className="flex w-full flex-col" style={{ height }}>
+    // Full bleed: out over main's side and bottom padding and up against the tabs, so the days sit
+    // right under them.
+    <section ref={ref} className="-mx-10 -mt-8 -mb-16 flex flex-col" style={{ height }}>
       {error && !data ? (
         <Centre>
           <p className="text-body text-ink-2">{error}</p>
         </Centre>
       ) : !data || !week || midWeek ? (
-        <Skeleton className="size-full rounded-card" />
+        <Skeleton className="size-full rounded-none" />
       ) : !data.days ? (
         <Centre>
           <p className="text-body font-medium text-ink">No slots yet</p>
@@ -189,60 +191,7 @@ function Planner({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* The toolbar, as the reference's: the month, the week's steps, and the ground at the far end. */}
-      <div className="flex flex-wrap items-center gap-3 pb-4">
-        <MonthPicker
-          title={weekTitle(week)}
-          week={week}
-          today={today}
-          days={days}
-          onWeek={onWeek}
-        />
-        <div className="flex items-center gap-1">
-          <Step
-            label="Previous week"
-            disabled={week <= days.first}
-            onClick={() => onWeek(addDays(week, -7))}
-          >
-            <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
-          </Step>
-          <button
-            type="button"
-            disabled={week === weekStart(today)}
-            onClick={() => onWeek(weekStart(today))}
-            className="h-10 cursor-pointer rounded-full border border-border px-4 text-label font-medium text-ink outline-none hover:bg-[#fafafa] focus-visible:border-ink disabled:cursor-default disabled:text-ink-3 disabled:hover:bg-transparent"
-          >
-            Today
-          </button>
-          <Step
-            label="Next week"
-            disabled={end >= days.last}
-            onClick={() => onWeek(addDays(week, 7))}
-          >
-            <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
-          </Step>
-        </div>
-        {loading ? <span className="text-caption text-ink-3">Loading…</span> : null}
-        {grounds.length > 0 && ground ? (
-          <div className="ml-auto">
-            <PillSelect
-              label="Ground"
-              value={ground.id}
-              onChange={(event) => setPicked(event.target.value)}
-              options={grounds.map((one) => ({
-                value: one.id,
-                label: `${one.name ?? "Ground"} · ${
-                  one.size === "STANDARD"
-                    ? sportLabel[one.sport]
-                    : `${sportLabel[one.sport]} ${sizeLabel[one.size]}`
-                }`,
-              }))}
-            />
-          </div>
-        ) : null}
-      </div>
-
-      <div className="relative min-h-0 flex-1 border-t border-border">
+      <div className="relative min-h-0 flex-1">
         {!ground ? (
           <div className="flex size-full items-center justify-center">
             <p className="text-body text-ink-3">This venue has no grounds.</p>
@@ -286,7 +235,67 @@ function Planner({
           </div>
         )}
 
-        {/* What a slot's fill means, floating at the foot after the reference's bar. */}
+        {/* The week and the ground, floating at the foot after the reference's bar. */}
+        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-white p-1 whitespace-nowrap shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
+          <MonthPicker
+            title={weekTitle(week)}
+            week={week}
+            today={today}
+            days={days}
+            onWeek={onWeek}
+          />
+          <Step
+            label="Previous week"
+            disabled={week <= days.first}
+            onClick={() => onWeek(addDays(week, -7))}
+          >
+            <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
+          <button
+            type="button"
+            disabled={week === weekStart(today)}
+            onClick={() => onWeek(weekStart(today))}
+            className="h-10 cursor-pointer rounded-full px-3.5 text-label font-medium text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default disabled:text-ink-3 disabled:hover:bg-transparent"
+          >
+            Today
+          </button>
+          <Step
+            label="Next week"
+            disabled={end >= days.last}
+            onClick={() => onWeek(addDays(week, 7))}
+          >
+            <IconChevronRight size={18} className="size-[1.125rem]" stroke={1.75} />
+          </Step>
+          {ground ? (
+            <>
+              <span aria-hidden className="mx-1 h-6 w-px bg-border" />
+              <span className="relative flex h-10 items-center rounded-full text-label font-medium text-ink focus-within:ring-2 focus-within:ring-ink hover:bg-chip">
+                <select
+                  aria-label="Ground"
+                  value={ground.id}
+                  onChange={(event) => setPicked(event.target.value)}
+                  className="h-full cursor-pointer appearance-none bg-transparent pr-9 pl-3.5 outline-none"
+                >
+                  {grounds.map((one) => (
+                    <option key={one.id} value={one.id}>
+                      {one.name ?? "Ground"} ·{" "}
+                      {one.size === "STANDARD"
+                        ? sportLabel[one.sport]
+                        : `${sportLabel[one.sport]} ${sizeLabel[one.size]}`}
+                    </option>
+                  ))}
+                </select>
+                <IconChevronDown
+                  size={16}
+                  className="pointer-events-none absolute right-3 size-4 text-ink-2"
+                  stroke={1.75}
+                />
+              </span>
+            </>
+          ) : null}
+        </div>
+
+        {/* What a slot's fill means, floating in the corner. */}
         <Key />
       </div>
     </div>
@@ -434,15 +443,15 @@ function MonthPicker({
           setMonth(`${week.slice(0, 7)}-01`);
           setOpen(!open);
         }}
-        className="flex h-10 cursor-pointer items-center gap-2 rounded-full px-3 text-[1.125rem] font-semibold text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink"
+        className="flex h-10 cursor-pointer items-center gap-2 rounded-full px-3.5 text-label font-semibold text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink"
       >
-        <IconCalendar size={20} className="size-5 text-ink-2" stroke={1.75} />
+        <IconCalendar size={18} className="size-[1.125rem] text-ink-2" stroke={1.75} />
         {title}
         <IconChevronDown size={16} className="size-4 text-ink-2" stroke={2} />
       </button>
 
       {open ? (
-        <div className="absolute top-12 left-0 z-30 w-[18rem] rounded-card border border-border bg-white p-3 shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
+        <div className="absolute bottom-13 left-0 z-30 w-[18rem] rounded-card border border-border bg-white p-3 shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
           <div className="mb-2 flex items-center justify-between">
             <Step label="Previous month" disabled={month <= firstMonth} onClick={() => shift(-1)}>
               <IconChevronLeft size={18} className="size-[1.125rem]" stroke={1.75} />
@@ -506,10 +515,10 @@ function MonthPicker({
   );
 }
 
-// What a slot's fill means: a small slot of each kind, in a bar floating at the foot.
+// What a slot's fill means: a small slot of each kind, floating in the bottom right corner.
 function Key() {
   return (
-    <ul className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-5 rounded-full border border-border bg-white px-5 py-2.5 text-caption whitespace-nowrap text-ink-2 shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
+    <ul className="absolute right-5 bottom-5 z-20 flex items-center gap-4 rounded-full border border-border bg-white px-5 py-2.5 text-caption whitespace-nowrap text-ink-2 shadow-[0_8px_24px_rgba(11,11,12,0.12)]">
       {(Object.keys(STATUS) as SlotStatus[]).map((status) => (
         <li key={status} className="flex items-center gap-2">
           <span
