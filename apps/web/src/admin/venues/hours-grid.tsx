@@ -171,7 +171,7 @@ function GridKey() {
     { tier: null, label: "Closed" },
   ];
   return (
-    <ul className="mt-4 flex flex-wrap gap-x-[18px] gap-y-2" style={{ paddingLeft: LABELS }}>
+    <ul className="mt-4 flex flex-wrap gap-x-[18px] gap-y-2">
       {tiers.map(({ tier, label }) => (
         <li key={label} className="flex items-center gap-2 text-caption text-ink-2">
           <svg aria-hidden width={22} height={14}>

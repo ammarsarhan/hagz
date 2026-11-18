@@ -42,65 +42,74 @@ export function GroundModal({
       : `${String(ground.minimumSlots)} to ${hours(ground.maximumSlots)}`;
 
   return (
-    <Dialog open size="narrow" onClose={onClose}>
-      <div className="flex max-h-[85vh] flex-col overflow-y-auto">
-        <div
-          className="relative flex h-52 shrink-0 items-center justify-center border-b border-border bg-[#fafafa]"
-          style={{
-            // The layout's grid, a cell to every 10 m, lined up with the ground's edges.
-            backgroundImage:
-              "linear-gradient(to right, #eef0f2 1px, transparent 1px), linear-gradient(to bottom, #eef0f2 1px, transparent 1px)",
-            backgroundSize: `${String(cell)}px ${String(cell)}px`,
-            backgroundPosition: `calc(50% + ${String(cell / 2 - drawn.width / 2)}px) calc(50% + ${String(cell / 2 - drawn.height / 2)}px)`,
-          }}
-        >
+    // Wide, two columns (user, 2026-11-18): the ground and what it costs on the left, its week on
+    // the right.
+    <Dialog open size="large" onClose={onClose}>
+      <div className="grid max-h-[85vh] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] overflow-y-auto">
+        <div className="border-r border-border">
           <div
-            className={`relative rounded-[0.25rem] border-[1.5px] border-[#c9cdd3] bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.85),0_0_28px_rgba(11,11,12,0.16)] ${
-              ground.status === "MAINTENANCE" ? "opacity-60" : ""
-            }`}
-            style={drawn}
+            className="relative flex h-52 shrink-0 items-center justify-center border-b border-border bg-[#fafafa]"
+            style={{
+              // The layout's grid, a cell to every 10 m, lined up with the ground's edges.
+              backgroundImage:
+                "linear-gradient(to right, #eef0f2 1px, transparent 1px), linear-gradient(to bottom, #eef0f2 1px, transparent 1px)",
+              backgroundSize: `${String(cell)}px ${String(cell)}px`,
+              backgroundPosition: `calc(50% + ${String(cell / 2 - drawn.width / 2)}px) calc(50% + ${String(cell / 2 - drawn.height / 2)}px)`,
+            }}
           >
-            <PitchMarkings sport={ground.sport} {...footprint} />
+            <div
+              className={`relative rounded-[0.25rem] border-[1.5px] border-[#c9cdd3] bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.85),0_0_28px_rgba(11,11,12,0.16)] ${
+                ground.status === "MAINTENANCE" ? "opacity-60" : ""
+              }`}
+              style={drawn}
+            >
+              <PitchMarkings sport={ground.sport} {...footprint} />
+            </div>
           </div>
-          <div className="absolute top-3 right-3 rounded-full bg-white/80 backdrop-blur-sm">
-            <CloseButton onClose={onClose} />
+
+          <div className="px-7 pt-6 pb-7">
+            <h2 className="flex items-center gap-2.5 text-[1.5rem] leading-[1.875rem] font-semibold text-ink">
+              {ground.name ?? "Ground"}
+              {ground.status === "MAINTENANCE" ? <Tag>Paused</Tag> : null}
+            </h2>
+            <p className="mt-1 text-body text-ink-2">
+              {/* A sport with no sizes (padel, tennis…) is just its name. */}
+              {ground.size === "STANDARD"
+                ? sportLabel[ground.sport]
+                : `${sportLabel[ground.sport]} · ${sizeLabel[ground.size]}`}
+            </p>
+
+            <dl className="mt-6 grid grid-cols-3 border-y border-border">
+              <Fact label="Surface">{surfaceLabel[ground.surface]}</Fact>
+              <Fact label="Setting">{environmentLabel[ground.environment]}</Fact>
+              <Fact label="Bookings">{bookings}</Fact>
+            </dl>
+
+            <h3 className="mt-6 text-label text-ink-2">Per hour</h3>
+            <div className="mt-2 grid grid-cols-3 gap-3">
+              <Price label="Base" currency={currency} minor={ground.basePrice} />
+              <Price label="Peak" currency={currency} minor={ground.peakPrice} />
+              <Price label="Discount" currency={currency} minor={ground.discountPrice} />
+            </div>
           </div>
         </div>
 
         <div className="px-7 pt-6 pb-7">
-          <h2 className="flex items-center gap-2.5 text-[1.5rem] leading-[1.875rem] font-semibold text-ink">
-            {ground.name ?? "Ground"}
-            {ground.status === "MAINTENANCE" ? <Tag>Paused</Tag> : null}
-          </h2>
-          <p className="mt-1 text-body text-ink-2">
-            {/* A sport with no sizes (padel, tennis…) is just its name. */}
-            {ground.size === "STANDARD"
-              ? sportLabel[ground.sport]
-              : `${sportLabel[ground.sport]} · ${sizeLabel[ground.size]}`}
-          </p>
-
-          <dl className="mt-6 grid grid-cols-3 border-y border-border">
-            <Fact label="Surface">{surfaceLabel[ground.surface]}</Fact>
-            <Fact label="Setting">{environmentLabel[ground.environment]}</Fact>
-            <Fact label="Bookings">{bookings}</Fact>
-          </dl>
-
-          <h3 className="mt-6 text-label text-ink-2">Per hour</h3>
-          <div className="mt-2 grid grid-cols-3 gap-3">
-            <Price label="Base" currency={currency} minor={ground.basePrice} />
-            <Price label="Peak" currency={currency} minor={ground.peakPrice} />
-            <Price label="Discount" currency={currency} minor={ground.discountPrice} />
+          {/* The week's heading, with × at the far end of the modal's top. */}
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <h3 className="text-subtitle font-semibold text-ink">Opening hours</h3>
+              <p className="mt-0.5 text-caption text-ink-2 tabular-nums">
+                {ground.openHours === 0
+                  ? "Not set yet"
+                  : `${String(ground.openHours)} ${ground.openHours === 1 ? "hour" : "hours"} a week`}
+              </p>
+            </div>
+            <div className="-mt-1.5 -mr-2.5 shrink-0">
+              <CloseButton onClose={onClose} />
+            </div>
           </div>
-
-          <div className="mt-7 flex items-baseline justify-between gap-6">
-            <h3 className="text-label text-ink-2">Opening hours</h3>
-            <p className="text-caption text-ink-3 tabular-nums">
-              {ground.openHours === 0
-                ? "Not set yet"
-                : `${String(ground.openHours)} ${ground.openHours === 1 ? "hour" : "hours"} a week`}
-            </p>
-          </div>
-          <div className="mt-3">
+          <div className="mt-5">
             <HoursGrid schedule={ground.schedule} />
           </div>
         </div>
