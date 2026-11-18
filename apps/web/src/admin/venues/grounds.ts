@@ -40,7 +40,7 @@ export function useVenueGrounds(venueId: string) {
     void load();
   }, [load]);
 
-  return { data, error };
+  return { data, error, reload: load };
 }
 
 export const sportLabel: Record<GroundSport, string> = {
