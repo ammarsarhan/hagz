@@ -1,17 +1,9 @@
 import type { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
-import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  type SharedValue,
-} from "react-native-reanimated";
+import { Easing, runOnJS, withTiming, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -27,8 +19,8 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 // has no filled wallet or stadium, so colour and weight mark it, the same for all five.
 //
 // A long press on the Venue tab opens the venue switcher (Figma "D3 · Venue switcher options",
-// option C, with the stadium kept: the user preferred the icon to the venue's photo): a heavy tap,
-// and the icon shrinks until the switcher closes.
+// option C, with the stadium kept: the user preferred the icon to the venue's photo) with a heavy
+// tap, and the venue recedes behind it (see the venue layout).
 const ROW = 49;
 const HAIRLINE = 1;
 
@@ -109,13 +101,11 @@ export function TabBar({
             className="flex-1 items-center gap-[3px] pt-[7px]"
             style={{ height: ROW }}
           >
-            <Held held={isVenue && switching}>
-              <Icon
-                size={24}
-                color={focused ? colors.primary : colors.ink3}
-                strokeWidth={focused ? 1.85 : 1.6}
-              />
-            </Held>
+            <Icon
+              size={24}
+              color={focused ? colors.primary : colors.ink3}
+              strokeWidth={focused ? 1.85 : 1.6}
+            />
             <Text
               className={`text-[11px] leading-[13px] ${focused ? "font-semibold text-primary" : "font-medium text-ink-3"}`}
             >
@@ -135,21 +125,4 @@ export function TabBar({
       ) : null}
     </View>
   );
-}
-
-// Held (the switcher open), the Venue tab's icon springs down a little, and back out when the
-// switcher closes.
-const HELD_SCALE = 17 / 24;
-const SPRING = { damping: 16, stiffness: 260 };
-
-function Held({ held, children }: { held: boolean; children: ReactNode }) {
-  const progress = useSharedValue(0);
-  useEffect(() => {
-    progress.value = withSpring(held ? 1 : 0, SPRING);
-  }, [held, progress]);
-  const icon = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 - (1 - HELD_SCALE) * progress.value }],
-  }));
-
-  return <Animated.View style={icon}>{children}</Animated.View>;
 }
