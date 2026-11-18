@@ -57,7 +57,7 @@ export default function VenueGrounds() {
                     <button
                       type="button"
                       onClick={() => setSelected(g.id)}
-                      className={`flex w-full cursor-pointer items-center justify-between gap-6 border-b border-border px-1 py-3.5 text-left transition-colors hover:bg-[#fafafa] ${
+                      className={`flex w-full cursor-pointer items-center justify-between gap-6 border-b border-border px-4 py-3.5 text-left transition-colors hover:bg-[#fafafa] ${
                         g.id === selected ? "bg-[#f5f5f5]" : ""
                       }`}
                     >
