@@ -1,8 +1,10 @@
 import type { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useState, type ComponentProps } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import type { components } from "@hagz/api";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
 import { useCurrentVenue } from "@/lib/current-venue";
@@ -19,8 +21,8 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 // has no filled wallet or stadium, so colour and weight mark it, the same for all five.
 //
 // The Venue tab is the venue (Figma "D3 · Venue switcher options", option C): its cover in place of
-// the stadium, ringed blue while open, so which venue you're on is always in view. A long press on
-// it opens the switcher.
+// the stadium, the icons' size, so which venue you're on is always in view. A long press on it
+// opens the switcher: a heavy tap, and the cover shrinks into a blue ring until the switcher closes.
 const ROW = 49;
 const HAIRLINE = 1;
 
@@ -73,19 +75,14 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
             onLongPress={() => {
               emitter.emit({ type: "tabLongPress", target: route.key });
               if (!isVenue || !venue) return;
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setSwitching(true);
             }}
             className="flex-1 items-center gap-[3px] pt-[7px]"
             style={{ height: ROW }}
           >
             {isVenue && venue?.coverPreview ? (
-              // 24 pt like the icons: a 20 pt cover in a ring that turns blue while the tab is open.
-              <View
-                className={`size-6 items-center justify-center rounded-[8px] border-[1.75px] ${focused ? "border-primary" : "border-transparent"}`}
-              >
-                <VenueCover venue={venue} size={17} radius={5} />
-              </View>
+              <VenueTabCover venue={venue} held={switching} />
             ) : (
               <Icon
                 size={24}
@@ -110,6 +107,41 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
           current={venue}
         />
       ) : null}
+    </View>
+  );
+}
+
+// The cover fills the icons' 24 pt. Held (the switcher open), it springs down inside a blue ring
+// with a little room around it, and back out when the switcher closes.
+const HELD_SCALE = 17 / 24;
+const SPRING = { damping: 16, stiffness: 260 };
+
+function VenueTabCover({
+  venue,
+  held,
+}: {
+  venue: components["schemas"]["StaffVenue"];
+  held: boolean;
+}) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withSpring(held ? 1 : 0, SPRING);
+  }, [held, progress]);
+  const cover = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 - (1 - HELD_SCALE) * progress.value }],
+  }));
+  const ring = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, progress.value)) }));
+
+  return (
+    <View className="size-6 items-center justify-center">
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 rounded-[8px] border-[1.75px] border-primary"
+        style={ring}
+      />
+      <Animated.View style={cover}>
+        <VenueCover venue={venue} size={24} radius={7} />
+      </Animated.View>
     </View>
   );
 }
