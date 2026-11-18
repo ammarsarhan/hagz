@@ -4,3 +4,4 @@ export { adminAuthRoutes } from "./http/admin-routes";
 export { customerAuthRoutes } from "./http/customer-routes";
 export { staffAuthRoutes } from "./http/staff-routes";
 export { supportAdminRoutes } from "./http/support-routes";
+export { startAvatarSweeper } from "./jobs/avatar-sweeper";

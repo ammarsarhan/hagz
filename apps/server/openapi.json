@@ -661,6 +661,103 @@
         ],
         "description": "Needs a code from POST two-factor/codes."
       },
+      "CustomerProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+201001234567"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "AR",
+              "EN"
+            ]
+          },
+          "twoFactorEnabled": {
+            "type": "boolean",
+            "description": "Whether sign-in also asks for a code."
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null until they add a photo."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "language",
+          "twoFactorEnabled",
+          "avatarUrl"
+        ]
+      },
+      "AvatarUpload": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ]
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Send exactly these."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "url",
+          "method",
+          "headers",
+          "expiresAt"
+        ],
+        "description": "Upload the file here, then confirm it. Unconfirmed uploads are removed after a day."
+      },
+      "RequestAvatarUpload": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5242880,
+            "description": "In bytes."
+          }
+        },
+        "required": [
+          "contentType",
+          "size"
+        ]
+      },
       "StaffAuthenticated": {
         "type": "object",
         "properties": {
@@ -6568,6 +6665,180 @@
           },
           "401": {
             "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/me": {
+      "get": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "The signed-in customer",
+        "description": "Name, phone, language and photo, for the app to show after a relaunch.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Their profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/me/avatar": {
+      "post": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Ask to upload a profile photo",
+        "description": "Returns a signed request to upload the file straight to storage; then confirm it. Asking again replaces an upload not confirmed yet.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestAvatarUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Where to upload it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarUpload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: a type or size that isn't allowed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Remove their profile photo",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed, or there wasn't one"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/me/avatar/confirm": {
+      "post": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Make the uploaded photo their profile photo",
+        "description": "Checks the file that arrived, then replaces the current photo with it.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Their profile with the new photo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED, TOKEN_EXPIRED, or SESSION_ENDED (the account is gone): sign in again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "UPLOAD_NOT_FOUND: no upload asked for, or the file hasn't arrived",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "UPLOAD_MISMATCH: not an allowed image, or too big; ask again",
             "content": {
               "application/problem+json": {
                 "schema": {
