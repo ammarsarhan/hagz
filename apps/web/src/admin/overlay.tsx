@@ -76,7 +76,7 @@ export function OverlayFooter({ children }: { children: ReactNode }) {
   return <footer className="flex shrink-0 justify-end gap-2 px-7 py-5">{children}</footer>;
 }
 
-function CloseButton({ onClose }: { onClose: () => void }) {
+export function CloseButton({ onClose }: { onClose: () => void }) {
   return (
     <IconButton label="Close" onClick={onClose}>
       <IconX size={20} className="size-5" stroke={1.75} />

@@ -61,6 +61,7 @@ export default function VenueGrounds() {
       {data && ground ? (
         <GroundModal
           ground={ground}
+          tile={data.layout.grounds.find((tile) => tile.groundId === ground.id)}
           currency={data.currency}
           onClose={() => setSelected(undefined)}
         />
