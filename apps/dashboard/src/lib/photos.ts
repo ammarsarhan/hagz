@@ -5,8 +5,8 @@ import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 // to the signed URL the API hands out. The API only checks what arrived.
 const LONG_SIDE = 2048;
 const QUALITY = 0.82;
-// The preview sent with the confirm, for places too small to load the photo (the Venue tab's 26 pt
-// cover): about 64 px, soft JPEG, a couple of KB. The API refuses more than 4 KB.
+// The preview sent with the confirm, for places too small to load the photo (the venue switcher's
+// covers): about 64 px, soft JPEG, a couple of KB. The API refuses more than 4 KB.
 const PREVIEW_LONG_SIDE = 64;
 const PREVIEW_QUALITY = 0.6;
 

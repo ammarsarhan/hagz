@@ -6,7 +6,7 @@ import { IconBuildingStadium } from "./icons";
 
 type StaffVenue = components["schemas"]["StaffVenue"];
 
-// A venue's cover, small: the Venue tab, the switcher's rows, the "Now on …" HUD. Drawn from the
+// A venue's cover, small: the switcher's rows and its "Now on …" HUD. Drawn from the
 // preview the venues list carries inline (about 64 px), never the photo itself, so it's there the
 // moment the list is, with no request of its own. A venue without one (no photos yet, or photos
 // added before previews existed) shows the stadium on grey instead.
