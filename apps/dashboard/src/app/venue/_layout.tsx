@@ -10,11 +10,12 @@ import { useCurrentVenue } from "@/lib/current-venue";
 // someone on a venue's team; anyone else (removed from their last venue, say) goes back to first run.
 //
 // While the venue switcher is open, the whole venue (screen and tab bar) recedes behind it: it
-// shrinks, rounds its corners and tips back a touch over black, like a card set down, and comes
-// forward again when the switcher closes. The tab bar drives `depth` (0 at rest, 1 receded).
+// shrinks, rounds its corners and settles a little lower over black, like a card set down, and
+// comes forward again when the switcher closes. The tab bar drives `depth` (0 at rest, 1 receded).
+// No 3D tilt: rotating it swings half the venue behind the black it sits on.
 const RECEDED_SCALE = 0.9;
 const RECEDED_RADIUS = 44;
-const RECEDED_TILT = 6;
+const RECEDED_DROP = 12;
 
 export default function VenueTabs() {
   const { venue, ready } = useCurrentVenue();
@@ -24,9 +25,8 @@ export default function VenueTabs() {
   const recede = useAnimatedStyle(() => ({
     borderRadius: interpolate(depth.value, [0, 1], [0, RECEDED_RADIUS]),
     transform: [
-      { perspective: 900 },
+      { translateY: interpolate(depth.value, [0, 1], [0, RECEDED_DROP]) },
       { scale: interpolate(depth.value, [0, 1], [1, RECEDED_SCALE]) },
-      { rotateX: `${interpolate(depth.value, [0, 1], [0, RECEDED_TILT])}deg` },
     ],
   }));
 
