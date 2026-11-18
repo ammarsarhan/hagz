@@ -28,7 +28,11 @@ const VISIBLE_MS = 3000;
 // Between the HUD and what it sits on.
 const GAP = 16;
 
-const HudContext = createContext<{ show: (message: string) => void } | null>(null);
+// Most say something went wrong, behind an alert icon. A few confirm where you are instead (the
+// venue switcher's "Now on Zayed Arena"), and bring their own picture for its place.
+type Show = (message: string, options?: { leading?: ReactNode }) => void;
+
+const HudContext = createContext<{ show: Show } | null>(null);
 
 // Who reports where the HUD goes: the focused screen its lowest edge (a distance from the bottom of
 // the screen), and sheets that they're open (the last on top). Stable, so reporting doesn't make
@@ -41,7 +45,7 @@ interface Anchors {
 
 // What's showing, and the sheet that draws it (null: the app's root does).
 interface Showing {
-  current: { message: string; key: number; onHidden: () => void } | null;
+  current: { message: string; leading?: ReactNode; key: number; onHidden: () => void } | null;
   topSheet: number | null;
 }
 
@@ -90,6 +94,7 @@ export function SheetHud({ open, bottom }: { open: boolean; bottom: number }) {
     <Hud
       key={current.key}
       message={current.message}
+      leading={current.leading}
       bottom={bottom + GAP}
       onHidden={current.onHidden}
     />
@@ -98,12 +103,14 @@ export function SheetHud({ open, bottom }: { open: boolean; bottom: number }) {
 
 export function HudProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState<string | null>(null);
+  const [leading, setLeading] = useState<ReactNode>(null);
   const [shownAt, setShownAt] = useState(0);
   const [screenBottom, setScreenBottom] = useState(0);
   const [open, setOpen] = useState<number[]>([]);
 
-  const show = useCallback((next: string) => {
+  const show = useCallback<Show>((next, options) => {
     setMessage(next);
+    setLeading(options?.leading ?? null);
     setShownAt(Date.now());
   }, []);
   const onHidden = useCallback(() => setMessage(null), []);
@@ -120,8 +127,8 @@ export function HudProvider({ children }: { children: ReactNode }) {
   );
   const topSheet = open.at(-1) ?? null;
   const showing = useMemo<Showing>(
-    () => ({ current: message ? { message, key: shownAt, onHidden } : null, topSheet }),
-    [message, shownAt, onHidden, topSheet],
+    () => ({ current: message ? { message, leading, key: shownAt, onHidden } : null, topSheet }),
+    [message, leading, shownAt, onHidden, topSheet],
   );
   const { current } = showing;
 
@@ -135,6 +142,7 @@ export function HudProvider({ children }: { children: ReactNode }) {
               <Hud
                 key={current.key}
                 message={current.message}
+                leading={current.leading}
                 bottom={screenBottom + GAP}
                 onHidden={onHidden}
               />
@@ -157,10 +165,12 @@ function OverModals({ children }: { children: ReactNode }) {
 
 function Hud({
   message,
+  leading,
   bottom,
   onHidden,
 }: {
   message: string;
+  leading?: ReactNode;
   bottom: number;
   onHidden: () => void;
 }) {
@@ -197,7 +207,7 @@ function Hud({
           shadowOffset: { width: 0, height: 6 },
         }}
       >
-        <IconAlertCircleFilled size={22} color={colors.ink} />
+        {leading ?? <IconAlertCircleFilled size={22} color={colors.ink} />}
         <Text className="text-subtitle font-medium">{message}</Text>
       </Animated.View>
     </View>
