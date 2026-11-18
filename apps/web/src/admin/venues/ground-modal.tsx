@@ -1,22 +1,23 @@
 "use client";
 
-import { FOOTPRINTS, type PlacedGround } from "@hagz/contracts";
+import { FOOTPRINTS, type PlacedGround, type PriceTier } from "@hagz/contracts";
 import type { ReactNode } from "react";
 import { Tag } from "@/admin/data-table";
 import { Dialog } from "@/admin/dialog";
 import { formatMoney } from "@/admin/money";
 import { CloseButton } from "@/admin/overlay";
 import { environmentLabel, sizeLabel, sportLabel, surfaceLabel, type AdminGround } from "./grounds";
-import { HoursGrid } from "./hours-grid";
+import { DAY_NAMES, HoursGrid, TierSwatch, weekOf } from "./hours-grid";
 import { PitchMarkings } from "./pitch-drawing";
 
 // A ground's details, opened from its pitch on the venue's layout, read only (the owner changes it
-// all in the staff app). It opens on the ground itself: drawn to scale with its sport's markings,
-// on the layout's grid, glowing as its pitch does when picked. Then what it is, how long a booking
-// can be, its prices by the hour, and its week as the staff app's hours grid draws it.
+// all in the staff app). Wide (user, 2026-11-18): one header across the top (its name, what it is,
+// ×); under it the ground drawn to scale on the layout's grid, glowing as its pitch does when
+// picked, with what it's made of beside its week on the staff app's hours grid; and along the
+// bottom its prices, each by the swatch its hours wear on the grid, so the prices are the grid's key.
 
-// The drawing's room in the modal's head, in px.
-const ROOM = { width: 300, height: 128 };
+// The drawing's room in its column, in px.
+const ROOM = { width: 320, height: 176 };
 
 const hours = (count: number) => `${String(count)} ${count === 1 ? "hour" : "hours"}`;
 
@@ -40,36 +41,24 @@ export function GroundModal({
     ground.minimumSlots === ground.maximumSlots
       ? hours(ground.minimumSlots)
       : `${String(ground.minimumSlots)} to ${hours(ground.maximumSlots)}`;
+  const { closedDays } = weekOf(ground.schedule);
+  const week =
+    ground.openHours === 0
+      ? "Not set yet"
+      : [
+          `${hours(ground.openHours)} a week`,
+          closedDays.length === 0
+            ? "open every day"
+            : `closed ${closedDays.map((day) => DAY_NAMES[day]).join(", ")}`,
+        ].join(" · ");
 
   return (
-    // Wide, two columns (user, 2026-11-18): the ground and what it costs on the left, its week on
-    // the right.
     <Dialog open size="large" onClose={onClose}>
-      <div className="grid max-h-[85vh] grid-cols-[minmax(0,1fr)_minmax(0,1fr)] overflow-y-auto">
-        <div className="border-r border-border">
-          <div
-            className="relative flex h-52 shrink-0 items-center justify-center border-b border-border bg-[#fafafa]"
-            style={{
-              // The layout's grid, a cell to every 10 m, lined up with the ground's edges.
-              backgroundImage:
-                "linear-gradient(to right, #eef0f2 1px, transparent 1px), linear-gradient(to bottom, #eef0f2 1px, transparent 1px)",
-              backgroundSize: `${String(cell)}px ${String(cell)}px`,
-              backgroundPosition: `calc(50% + ${String(cell / 2 - drawn.width / 2)}px) calc(50% + ${String(cell / 2 - drawn.height / 2)}px)`,
-            }}
-          >
-            <div
-              className={`relative rounded-[0.25rem] border-[1.5px] border-[#c9cdd3] bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.85),0_0_28px_rgba(11,11,12,0.16)] ${
-                ground.status === "MAINTENANCE" ? "opacity-60" : ""
-              }`}
-              style={drawn}
-            >
-              <PitchMarkings sport={ground.sport} {...footprint} />
-            </div>
-          </div>
-
-          <div className="px-7 pt-6 pb-7">
+      <div className="flex max-h-[85vh] flex-col overflow-y-auto">
+        <header className="flex items-start justify-between gap-10 border-b border-border px-7 pt-6 pb-5">
+          <div className="min-w-0">
             <h2 className="flex items-center gap-2.5 text-[1.5rem] leading-[1.875rem] font-semibold text-ink">
-              {ground.name ?? "Ground"}
+              <span className="truncate">{ground.name ?? "Ground"}</span>
               {ground.status === "MAINTENANCE" ? <Tag>Paused</Tag> : null}
             </h2>
             <p className="mt-1 text-body text-ink-2">
@@ -78,40 +67,62 @@ export function GroundModal({
                 ? sportLabel[ground.sport]
                 : `${sportLabel[ground.sport]} · ${sizeLabel[ground.size]}`}
             </p>
+          </div>
+          <div className="-mt-0.5 -mr-1.5 shrink-0">
+            <CloseButton onClose={onClose} />
+          </div>
+        </header>
 
-            <dl className="mt-6 grid grid-cols-3 border-y border-border">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          {/* The ground, filling its column, over what it's made of. */}
+          <div className="flex flex-col border-r border-border">
+            <div
+              className="flex min-h-60 flex-1 items-center justify-center bg-[#fafafa]"
+              style={{
+                // The layout's grid, a cell to every 10 m, lined up with the ground's edges.
+                backgroundImage:
+                  "linear-gradient(to right, #eef0f2 1px, transparent 1px), linear-gradient(to bottom, #eef0f2 1px, transparent 1px)",
+                backgroundSize: `${String(cell)}px ${String(cell)}px`,
+                backgroundPosition: `calc(50% + ${String(cell / 2 - drawn.width / 2)}px) calc(50% + ${String(cell / 2 - drawn.height / 2)}px)`,
+              }}
+            >
+              <div
+                className={`relative rounded-[0.25rem] border-[1.5px] border-[#c9cdd3] bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.85),0_0_28px_rgba(11,11,12,0.16)] ${
+                  ground.status === "MAINTENANCE" ? "opacity-60" : ""
+                }`}
+                style={drawn}
+              >
+                <PitchMarkings sport={ground.sport} {...footprint} />
+              </div>
+            </div>
+            <dl className="grid grid-cols-3 border-t border-border px-7">
               <Fact label="Surface">{surfaceLabel[ground.surface]}</Fact>
               <Fact label="Setting">{environmentLabel[ground.environment]}</Fact>
               <Fact label="Bookings">{bookings}</Fact>
             </dl>
+          </div>
 
-            <h3 className="mt-6 text-label text-ink-2">Per hour</h3>
-            <div className="mt-2 grid grid-cols-3 gap-3">
-              <Price label="Base" currency={currency} minor={ground.basePrice} />
-              <Price label="Peak" currency={currency} minor={ground.peakPrice} />
-              <Price label="Discount" currency={currency} minor={ground.discountPrice} />
+          <div className="px-7 pt-5 pb-6">
+            <div className="flex items-baseline justify-between gap-4">
+              <h3 className="text-label font-medium text-ink">Opening hours</h3>
+              <p className="truncate text-caption text-ink-2">{week}</p>
+            </div>
+            <div className="mt-4">
+              <HoursGrid schedule={ground.schedule} />
             </div>
           </div>
         </div>
 
-        <div className="px-7 pt-6 pb-7">
-          {/* The week's heading, with × at the far end of the modal's top. */}
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              <h3 className="text-subtitle font-semibold text-ink">Opening hours</h3>
-              <p className="mt-0.5 text-caption text-ink-2 tabular-nums">
-                {ground.openHours === 0
-                  ? "Not set yet"
-                  : `${String(ground.openHours)} ${ground.openHours === 1 ? "hour" : "hours"} a week`}
-              </p>
-            </div>
-            <div className="-mt-1.5 -mr-2.5 shrink-0">
-              <CloseButton onClose={onClose} />
-            </div>
-          </div>
-          <div className="mt-5">
-            <HoursGrid schedule={ground.schedule} />
-          </div>
+        {/* The prices, each by its swatch on the grid: the grid's key. */}
+        <div className="grid grid-cols-3 border-t border-border">
+          <Price tier="BASE" label="Base" currency={currency} minor={ground.basePrice} />
+          <Price tier="PEAK" label="Peak" currency={currency} minor={ground.peakPrice} />
+          <Price
+            tier="DISCOUNT"
+            label="Discount"
+            currency={currency}
+            minor={ground.discountPrice}
+          />
         </div>
       </div>
     </Dialog>
@@ -128,28 +139,34 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-// A price as the number it is, big, its currency small beside it; one not set is a grey dash.
+// A price by the hour as the number it is, big, under its swatch and name; one not set is a dash.
 function Price({
+  tier,
   label,
   currency,
   minor,
 }: {
+  tier: PriceTier;
   label: string;
   currency: string;
   minor: number | null;
 }) {
   const amount = minor === null ? null : formatMoney(currency, minor).slice(currency.length + 1);
   return (
-    <div className="rounded-card bg-[#fafafa] px-4 py-3.5">
-      <p className="text-caption text-ink-2">{label}</p>
+    <div className="px-7 py-4">
+      <p className="flex items-center gap-2 text-caption text-ink-2">
+        <TierSwatch tier={tier} />
+        {label}
+      </p>
       {amount === null ? (
-        <p className="mt-1 text-[1.375rem] leading-[1.75rem] font-semibold text-ink-3">—</p>
+        <p className="mt-1.5 text-[1.375rem] leading-[1.75rem] font-semibold text-ink-3">Not set</p>
       ) : (
-        <p className="mt-1 flex items-baseline gap-1">
+        <p className="mt-1.5 flex items-baseline gap-1">
           <span className="text-caption font-medium text-ink-2">{currency}</span>
           <span className="text-[1.375rem] leading-[1.75rem] font-semibold text-ink tabular-nums">
             {amount}
           </span>
+          <span className="text-caption text-ink-3">/hr</span>
         </p>
       )}
     </div>
