@@ -8813,6 +8813,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/venues/{id}/grounds/{groundId}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate a ground's slots now
+         * @description Queues a run that brings its slots in line with its schedule, as edits do. Held, booked, blocked and staff-set slots stay as they are.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    groundId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Queued */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GROUND_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/venues/{id}/slots": {
         parameters: {
             query?: never;
@@ -11889,8 +11965,32 @@ export interface components {
                 openHours: number;
                 /** @description Open days; days left out are closed. */
                 schedule: components["schemas"]["ScheduleDay"][];
+                generation: components["schemas"]["SlotGeneration"];
             }[];
             layout: components["schemas"]["VenueLayoutView"];
+        };
+        SlotGeneration: {
+            /**
+             * Format: date-time
+             * @description How far ahead its slots go; null when it has none to have.
+             */
+            generatedUntil: string | null;
+            /**
+             * Format: date-time
+             * @description When generation last ran.
+             */
+            generatedAt: string | null;
+            /** @description Free slots ahead still from an older schedule. */
+            stale: number;
+            /** @description Its slots ahead against what its schedule says, worked out now. */
+            drift: {
+                /** @description Scheduled hours with no slot. */
+                missing: number;
+                /** @description Free generated slots no longer scheduled. */
+                extra: number;
+                /** @description Free generated slots with the wrong tier or price. */
+                wrong: number;
+            };
         };
         AdminVenueSlots: {
             /**

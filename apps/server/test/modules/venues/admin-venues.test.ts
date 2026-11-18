@@ -2,6 +2,7 @@ import { AdminVenue, page } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { router } from "@/http/router";
+import { generationQueue, reconcileGround } from "@/modules/venues/application/slot-generation";
 import { totpCode, totpStep } from "@/platform/crypto/totp";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
@@ -611,6 +612,8 @@ describe("GET /admin/venues/{id}/grounds", () => {
           sport: "FOOTBALL",
           openHours: 2,
           schedule: [{ dayOfWeek: 4 }],
+          // Not generated yet: a run would make Thursday's two hours each week.
+          generation: { generatedUntil: null, generatedAt: null, stale: 0 },
         },
       ],
       layout: {
@@ -620,6 +623,56 @@ describe("GET /admin/venues/{id}/grounds", () => {
         grounds: [{ groundId: ground.id, x: 1, y: 1, width: 4, height: 3 }],
       },
     });
+  });
+
+  it("says how its slots stand, and queues a run on Regenerate", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const ground = await prisma.ground.create({
+      data: {
+        venueId: venue.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 0,
+        basePrice: 60000,
+        settings: { create: { scheduleVersion: 1 } },
+        schedules: { create: [{ dayOfWeek: 4, hours: { "19": "BASE" } }] },
+      },
+    });
+    const before = (await get(`/${venue.id}/grounds`)).body as {
+      grounds: { generation: { drift: { missing: number } } }[];
+    };
+    // About 13 Thursdays ahead, none generated.
+    expect(before.grounds[0]?.generation.drift.missing).toBeGreaterThanOrEqual(12);
+
+    const regenerate = await router.request(
+      `/v1/admin/venues/${venue.id}/grounds/${ground.id}/regenerate`,
+      { method: "POST", headers: { "X-Hagz-Admin": "1", Cookie: cookie } },
+    );
+    expect(regenerate.status).toBe(202);
+    const jobs = await generationQueue().getJobs(["waiting"]);
+    expect(jobs.map((job) => job.data.groundId)).toEqual([ground.id]);
+
+    await reconcileGround(ground.id);
+    const after = (await get(`/${venue.id}/grounds`)).body as {
+      grounds: { generation: Record<string, unknown> }[];
+    };
+    expect(after.grounds[0]?.generation).toMatchObject({
+      stale: 0,
+      drift: { missing: 0, extra: 0, wrong: 0 },
+    });
+    expect(after.grounds[0]?.generation.generatedUntil).not.toBeNull();
+    expect(after.grounds[0]?.generation.generatedAt).not.toBeNull();
+  });
+
+  it("won't regenerate a ground of another venue", async () => {
+    const venue = await addVenue({ en: "Arena" });
+    const res = await router.request(
+      `/v1/admin/venues/${venue.id}/grounds/0190f2a4-0000-7000-8000-000000000000/regenerate`,
+      { method: "POST", headers: { "X-Hagz-Admin": "1", Cookie: cookie } },
+    );
+    expect(res.status).toBe(404);
   });
 
   it("answers 404 for a venue that isn't there", async () => {

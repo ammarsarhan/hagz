@@ -331,6 +331,25 @@ export const venueGrounds = createRoute({
   },
 });
 
+export const regenerateGround = createRoute({
+  method: "post",
+  path: "/admin/venues/{id}/grounds/{groundId}/regenerate",
+  tags,
+  summary: "Regenerate a ground's slots now",
+  description:
+    "Queues a run that brings its slots in line with its schedule, as edits do. Held, booked, " +
+    "blocked and staff-set slots stay as they are.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: venueParams.extend({ groundId: z.uuid() }) },
+  responses: {
+    202: { description: "Queued" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("GROUND_NOT_FOUND"),
+  },
+});
+
 export const venueSlots = createRoute({
   method: "get",
   path: "/admin/venues/{id}/slots",

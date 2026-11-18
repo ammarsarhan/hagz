@@ -4957,6 +4957,9 @@
                     "$ref": "#/components/schemas/ScheduleDay"
                   },
                   "description": "Open days; days left out are closed."
+                },
+                "generation": {
+                  "$ref": "#/components/schemas/SlotGeneration"
                 }
               },
               "required": [
@@ -4974,7 +4977,8 @@
                 "minimumSlots",
                 "maximumSlots",
                 "openHours",
-                "schedule"
+                "schedule",
+                "generation"
               ]
             }
           },
@@ -4986,6 +4990,60 @@
           "currency",
           "grounds",
           "layout"
+        ]
+      },
+      "SlotGeneration": {
+        "type": "object",
+        "properties": {
+          "generatedUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "How far ahead its slots go; null when it has none to have."
+          },
+          "generatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When generation last ran."
+          },
+          "stale": {
+            "type": "integer",
+            "description": "Free slots ahead still from an older schedule."
+          },
+          "drift": {
+            "type": "object",
+            "properties": {
+              "missing": {
+                "type": "integer",
+                "description": "Scheduled hours with no slot."
+              },
+              "extra": {
+                "type": "integer",
+                "description": "Free generated slots no longer scheduled."
+              },
+              "wrong": {
+                "type": "integer",
+                "description": "Free generated slots with the wrong tier or price."
+              }
+            },
+            "required": [
+              "missing",
+              "extra",
+              "wrong"
+            ],
+            "description": "Its slots ahead against what its schedule says, worked out now."
+          }
+        },
+        "required": [
+          "generatedUntil",
+          "generatedAt",
+          "stale",
+          "drift"
         ]
       },
       "AdminVenueSlots": {
@@ -14545,6 +14603,85 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/venues/{id}/grounds/{groundId}/regenerate": {
+      "post": {
+        "tags": [
+          "Venues (admin)"
+        ],
+        "summary": "Regenerate a ground's slots now",
+        "description": "Queues a run that brings its slots in line with its schedule, as edits do. Held, booked, blocked and staff-set slots stay as they are.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "groundId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Queued"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GROUND_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {
