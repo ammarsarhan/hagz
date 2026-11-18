@@ -108,17 +108,34 @@ export const driftOf = async (groundId: string, now: Date): Promise<Drift> => {
   const ground = await groundForGeneration(prisma, groundId, now);
   if (!ground) return { missing: 0, extra: 0, wrong: 0 };
   const slots = await prisma.groundSlot.findMany({
-    where: { groundId, startsAt: { gte: now } },
-    select: { startsAt: true, tier: true, price: true, status: true, isManual: true },
+    where: { groundId, endsAt: { gt: now } },
+    orderBy: { startsAt: "asc" },
+    select: {
+      startsAt: true,
+      endsAt: true,
+      tier: true,
+      price: true,
+      status: true,
+      isManual: true,
+    },
   });
   const byStart = new Map(slots.map((slot) => [slot.startsAt.getTime(), slot]));
   const wanted = new Set(ground.desired.map((slot) => slot.startsAt.getTime()));
+  // Whether any slot overlaps an hour: one staff added for an occasion (10:30–12:00) covers the
+  // scheduled hours it sits across, which generation then leaves out. Both lists are in order, so
+  // one pass finds them.
+  let next = 0;
+  const covered = (start: number, end: number) => {
+    while (next < slots.length && (slots[next]?.endsAt.getTime() ?? 0) <= start) next += 1;
+    return next < slots.length && (slots[next]?.startsAt.getTime() ?? Infinity) < end;
+  };
   let missing = 0;
   let wrong = 0;
   for (const slot of ground.desired) {
     const existing = byStart.get(slot.startsAt.getTime());
-    if (!existing) missing += 1;
-    else if (
+    if (!existing) {
+      if (!covered(slot.startsAt.getTime(), slot.endsAt.getTime())) missing += 1;
+    } else if (
       existing.status === "AVAILABLE" &&
       !existing.isManual &&
       (existing.tier !== slot.tier || existing.price !== slot.price)
@@ -127,7 +144,11 @@ export const driftOf = async (groundId: string, now: Date): Promise<Drift> => {
     }
   }
   const extra = slots.filter(
-    (slot) => slot.status === "AVAILABLE" && !slot.isManual && !wanted.has(slot.startsAt.getTime()),
+    (slot) =>
+      slot.startsAt >= now &&
+      slot.status === "AVAILABLE" &&
+      !slot.isManual &&
+      !wanted.has(slot.startsAt.getTime()),
   ).length;
   return { missing, extra, wrong };
 };
