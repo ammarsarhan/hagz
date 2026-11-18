@@ -2,9 +2,9 @@
 
 import type { AdminVenueAmenities, VenueLayoutView } from "@hagz/contracts";
 import { IconArrowDown } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
 import { amenityIcons } from "@/admin/platform/amenity-icons";
 import type { AdminGround } from "./grounds";
+import { useSize } from "./use-size";
 
 // A venue's layout drawn to scale for its admin Grounds tab, read only: the staff app's layout (a
 // cinema grid in ~10 m cells, the venue's outline, its grounds and amenities on it, entrances on
@@ -16,22 +16,6 @@ import type { AdminGround } from "./grounds";
 // A paused ground's hatching, on the layout and in its legend: fading it alone barely shows against
 // the light grey a ground is drawn in.
 const HATCH = "repeating-linear-gradient(135deg, #dcdfe3 0 1px, transparent 1px 6px)";
-
-// The space the view has to fill, kept up to date as the window changes.
-function useSize() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) =>
-      setSize({ width: entry?.contentRect.width ?? 0, height: entry?.contentRect.height ?? 0 }),
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  return { ref, size };
-}
 
 export function LayoutView({
   layout,
