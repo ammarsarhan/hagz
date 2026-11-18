@@ -7,12 +7,13 @@ import { Dialog } from "@/admin/dialog";
 import { formatMoney } from "@/admin/money";
 import { CloseButton } from "@/admin/overlay";
 import { environmentLabel, sizeLabel, sportLabel, surfaceLabel, type AdminGround } from "./grounds";
+import { HoursGrid } from "./hours-grid";
 import { PitchMarkings } from "./pitch-drawing";
 
 // A ground's details, opened from its pitch on the venue's layout, read only (the owner changes it
 // all in the staff app). It opens on the ground itself: drawn to scale with its sport's markings,
 // on the layout's grid, glowing as its pitch does when picked. Then what it is, how long a booking
-// can be, and its prices by the hour.
+// can be, its prices by the hour, and its week as the staff app's hours grid draws it.
 
 // The drawing's room in the modal's head, in px.
 const ROOM = { width: 300, height: 128 };
@@ -61,9 +62,6 @@ export function GroundModal({
           >
             <PitchMarkings sport={ground.sport} {...footprint} />
           </div>
-          <span className="absolute bottom-3 left-4 text-caption text-ink-3 tabular-nums">
-            About {String(footprint.width * 10)} × {String(footprint.height * 10)} m
-          </span>
           <div className="absolute top-3 right-3 rounded-full bg-white/80 backdrop-blur-sm">
             <CloseButton onClose={onClose} />
           </div>
@@ -92,6 +90,18 @@ export function GroundModal({
             <Price label="Base" currency={currency} minor={ground.basePrice} />
             <Price label="Peak" currency={currency} minor={ground.peakPrice} />
             <Price label="Discount" currency={currency} minor={ground.discountPrice} />
+          </div>
+
+          <div className="mt-7 flex items-baseline justify-between gap-6">
+            <h3 className="text-label text-ink-2">Opening hours</h3>
+            <p className="text-caption text-ink-3 tabular-nums">
+              {ground.openHours === 0
+                ? "Not set yet"
+                : `${String(ground.openHours)} ${ground.openHours === 1 ? "hour" : "hours"} a week`}
+            </p>
+          </div>
+          <div className="mt-3">
+            <HoursGrid schedule={ground.schedule} />
           </div>
         </div>
       </div>
