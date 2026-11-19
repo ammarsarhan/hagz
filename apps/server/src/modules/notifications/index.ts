@@ -2,6 +2,7 @@
 export {
   notifyAdmins,
   notifyStaff,
+  withdrawNotifications,
   type AdminNotification,
   type StaffNotification,
 } from "./application/notify";
