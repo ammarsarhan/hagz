@@ -225,9 +225,9 @@ const lengthLabel = (ground: PublicGround) =>
     : `Book ${ground.minimumSlots}–${ground.maximumSlots} hours`;
 
 // A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
-// it is, how long a booking can be, and a black See times button across the bottom. Picking only
-// fades things: the black border over the grey one (which stays, so an unpicked card keeps its 1px
-// edge) and the button, whose room every card keeps. Nothing changes size, so nothing moves.
+// it is, how long a booking can be, and a See times button across the bottom. Picking only fades
+// things: the black border over the grey one (which stays, so an unpicked card keeps its 1px edge)
+// and the button from grey to black. Nothing changes size, so nothing moves.
 function GroundOption({
   ground,
   width,
@@ -271,20 +271,28 @@ function GroundOption({
       <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
       {bookable ? <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text> : null}
       {bookable ? (
-        <Animated.View
-          className="mt-auto pt-3"
-          style={fade}
-          pointerEvents={picked ? "auto" : "none"}
-          accessibilityElementsHidden={!picked}
-        >
+        // On every card: grey, and black once it's the picked one, the black laid over the grey
+        // and faded in. Pressed on a card that isn't picked, it picks it too.
+        <View className="mt-auto pt-3">
           <Pressable
             accessibilityRole="button"
-            onPress={onSeeTimes}
-            className="h-10 items-center justify-center rounded-full bg-ink active:opacity-80"
+            accessibilityLabel={`See times for ${ground.name ?? kindOf(ground)}`}
+            onPress={() => {
+              if (!picked) onPick();
+              onSeeTimes();
+            }}
+            className="h-10 items-center justify-center rounded-full bg-chip active:opacity-80"
           >
-            <Text className="text-body font-semibold text-white">See times</Text>
+            <Text className="text-body font-semibold">See times</Text>
+            <Animated.View
+              pointerEvents="none"
+              className="absolute inset-0 items-center justify-center rounded-full bg-ink"
+              style={fade}
+            >
+              <Text className="text-body font-semibold text-white">See times</Text>
+            </Animated.View>
           </Pressable>
-        </Animated.View>
+        </View>
       ) : null}
     </Pressable>
   );
@@ -322,6 +330,11 @@ export function GroundsSection({
   const { width: screen } = useWindowDimensions();
   const card = Math.round(screen * CARD_SHARE);
   const step = card + CARD_GAP;
+  // Where the row stops for each card: its left edge on the page's gutter, except at the end,
+  // where the last card's right edge meets the gutter on the other side.
+  const count = venue.grounds.length;
+  const end = Math.max(0, 2 * GUTTER + count * card + (count - 1) * CARD_GAP - screen);
+  const stops = venue.grounds.map((_, index) => Math.min(index * step, end));
   const first = Math.max(
     0,
     venue.grounds.findIndex((ground) => ground.status === "ACTIVE"),
@@ -332,13 +345,17 @@ export function GroundsSection({
 
   // The card that settles in place is the picked one, so the map follows the swipe; tapping a
   // card brings it into place.
+  // The card whose stop is nearest; at the end, where several may share it, the last of them.
   const settle = (x: number) => {
-    const index = Math.min(venue.grounds.length - 1, Math.max(0, Math.round(x / step)));
+    let index = 0;
+    stops.forEach((stop, i) => {
+      if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
+    });
     const ground = venue.grounds[index];
     if (ground) setPickedId(ground.id);
   };
   const bringIn = (index: number) => {
-    row.current?.scrollTo({ x: index * step, animated: true });
+    row.current?.scrollTo({ x: stops[index] ?? 0, animated: true });
     const ground = venue.grounds[index];
     if (ground) setPickedId(ground.id);
   };
@@ -353,22 +370,21 @@ export function GroundsSection({
           selectedId={pickedId}
         />
       ) : null}
-      {/* Edge to edge, snapping each card to the page's gutter. The end padding lets the last card
-          reach the gutter too. All as tall as the tallest. */}
+      {/* Edge to edge, snapping each card to the page's gutter, the last one to the right gutter.
+          All as tall as the tallest. */}
       <ScrollView
         ref={row}
         horizontal
         showsHorizontalScrollIndicator={false}
-        snapToInterval={step}
+        snapToOffsets={[...new Set(stops)]}
         decelerationRate="fast"
         disableIntervalMomentum
-        contentOffset={{ x: first * step, y: 0 }}
+        contentOffset={{ x: stops[first] ?? 0, y: 0 }}
         onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
         className="-mx-6"
         contentContainerStyle={{
           gap: CARD_GAP,
-          paddingLeft: GUTTER,
-          paddingRight: Math.max(GUTTER, screen - GUTTER - card),
+          paddingHorizontal: GUTTER,
         }}
       >
         {venue.grounds.map((ground, index) => (
