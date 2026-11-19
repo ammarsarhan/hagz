@@ -212,6 +212,25 @@ The sorts the player picks (distance, price, rating, soonest available) are appl
 - **Caching:** guest results can be cached briefly, as above. A signed-in player's best match is computed per request. Their own venues number in the tens, so this costs a few milliseconds and keeps their cards' state exact.
 - **The app says how results are ranked** ("Your venues and loyalty venues first, then by distance, rating and availability"), so the order never looks like paid placement.
 
+### Search indexes
+
+Measured on 2026-11-19 (PR 3.1) against `seed:scale`: a local `hagz_scale` database with 1,000 live venues, 3,953 grounds and 5.7M slots (2.2 GB with indexes, 82% of slots free). Run `pnpm --filter @hagz/server seed:scale` to rebuild it.
+
+**Names.** `fold_name()` (first migration) folds a name the way `foldName` in `src/platform/text/fold.ts` folds what the player types: case, Latin accents, Arabic diacritics, hamza and madda forms, ى/ي, ة/ه, Arabic-Indic digits, spaces and the invisible marks pasted text carries. A test keeps the two equal. Venue names have a trigram index on `fold_name(name)`, which `LIKE '%part%'` uses. Postgres inlines the function into both the index and the query, so it must stay `IMMUTABLE`, and changing it means a migration that replaces it and rebuilds every index on it.
+
+**Availability: no new index.** Four search shapes, warm cache:
+
+| Shape | Existing indexes | + covering `(groundId, startsAt) INCLUDE (status, price, tier)` | + partial, same `WHERE status = 'AVAILABLE'` |
+|---|---|---|---|
+| Near me (5 km), 5-a-side, free 20:00–22:00 | 0.3 ms, 375 buffers | 0.3 ms, 324 | 0.3 ms, 324 |
+| Whole country, same | 4–8 ms, 9,050 | 4.0 ms, 7,173 | 3.9 ms, 7,180 |
+| Near me, any time that day | 0.5 ms, 430 | 0.4 ms, 335 | 0.4 ms, 330 |
+| Whole country, a 2-hour start between 18:00 and 22:00 | 9 ms, 9,259 | 8.1 ms, 7,264 | 7.7 ms, 7,198 |
+
+- The unique `(groundId, startsAt)` index already answers every shape, with the venue GiST index for "near me". The rest of the reads are one B-tree descent per candidate ground, which no index shape removes.
+- Both candidates allow index-only scans and save about 20% of buffer reads, but cost 320 MB (covering) or 221 MB (partial) and slow every write to the busiest table. Adding the columns to the existing unique index instead isn't possible: Prisma owns that index (slot generation upserts through it) and reports the change as drift.
+- **Revisit** if 3.3's latency budgets fail under load or with a cold cache, which this test didn't cover. Add the partial index first: it's the smaller one, and taken slots never match a search anyway.
+
 ### Why precomputed slots
 
 The alternative to `GroundSlot` is working availability out on the fly: schedule hours, minus live bookings, minus staff blocks. Bookings would still be safe without slots (the `Booking_no_overlap` exclusion constraint prevents double bookings on its own), so the case for slots is speed under load, keeping the time maths in one place, and per-hour state, not correctness.
