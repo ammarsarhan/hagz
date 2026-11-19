@@ -52,6 +52,20 @@ CREATE TABLE "CustomerVerification" (
     CONSTRAINT "CustomerVerification_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "AccountEvent" (
+    "id" UUID NOT NULL,
+    "adminId" UUID NOT NULL,
+    "customerId" UUID,
+    "staffId" UUID,
+    "subjectAdminId" UUID,
+    "type" TEXT NOT NULL,
+    "data" JSONB,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AccountEvent_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Customer_phone_key" ON "Customer"("phone");
 
@@ -67,11 +81,32 @@ CREATE INDEX "CustomerSession_customerId_idx" ON "CustomerSession"("customerId")
 -- CreateIndex
 CREATE INDEX "CustomerVerification_customerId_purpose_createdAt_idx" ON "CustomerVerification"("customerId", "purpose", "createdAt");
 
+-- CreateIndex
+CREATE INDEX "AccountEvent_customerId_createdAt_idx" ON "AccountEvent"("customerId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AccountEvent_staffId_createdAt_idx" ON "AccountEvent"("staffId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "AccountEvent_subjectAdminId_createdAt_idx" ON "AccountEvent"("subjectAdminId", "createdAt");
+
 -- AddForeignKey
 ALTER TABLE "CustomerSession" ADD CONSTRAINT "CustomerSession_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CustomerVerification" ADD CONSTRAINT "CustomerVerification_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccountEvent" ADD CONSTRAINT "AccountEvent_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccountEvent" ADD CONSTRAINT "AccountEvent_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccountEvent" ADD CONSTRAINT "AccountEvent_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccountEvent" ADD CONSTRAINT "AccountEvent_subjectAdminId_fkey" FOREIGN KEY ("subjectAdminId") REFERENCES "Admin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Customer" ADD CONSTRAINT "Customer_phone_check"
@@ -80,3 +115,7 @@ ALTER TABLE "Customer" ADD CONSTRAINT "Customer_phone_check"
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Customer" ADD CONSTRAINT "Customer_avatar_upload_check"
   CHECK (("avatarUploadKey" IS NULL) = ("avatarUploadAt" IS NULL));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+ALTER TABLE "AccountEvent" ADD CONSTRAINT "AccountEvent_one_subject_check"
+  CHECK (num_nonnulls("customerId", "staffId", "subjectAdminId") = 1);
