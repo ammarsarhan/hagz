@@ -3,11 +3,13 @@ import type { EntranceSide, VenueLayoutView } from "@hagz/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
 import Animated, {
+  Easing,
+  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -79,6 +81,8 @@ type Amenity = components["schemas"]["Amenity"];
 
 // The tray: its padding, title and one row of 56-high chips.
 const TRAY_HEIGHT = 124;
+// Leaving once nothing's left to place, and coming back when something comes off the layout.
+const TRAY_CHANGE = { duration: 280, easing: Easing.out(Easing.cubic) };
 // Gliding to something picked from the list.
 const GLIDE = { duration: 320 };
 
@@ -138,9 +142,11 @@ function LayoutView({
   const [previewing, setPreviewing] = useState(false);
   // The venue's size while one of its edges is being dragged.
   const [sizing, setSizing] = useState<{ columns: number; rows: number } | null>(null);
-  const trayFade = useAnimatedStyle(() => ({
-    opacity: withTiming(previewing ? 0 : 1, { duration: 200 }),
-  }));
+  // 1 normally, 0 in the preview.
+  const unpreviewed = useSharedValue(1);
+  useEffect(() => {
+    unpreviewed.value = withTiming(previewing ? 0 : 1, { duration: 200 });
+  }, [previewing, unpreviewed]);
   const [lifted, setLifted] = useState<{ key: string; art: React.ReactNode; name: string } | null>(
     null,
   );
@@ -185,6 +191,20 @@ function LayoutView({
   const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
   const needsEntrance = plan.entrances.length === 0;
   const trayEmpty = unplaced.length === 0 && placeable.length === 0 && !needsEntrance;
+  // 0 with things to place, 1 with none: the tray leaves, fading, scaling down and dropping a
+  // little, and comes back the same way. Starts where it is, unanimated.
+  const emptied = useSharedValue(trayEmpty ? 1 : 0);
+  useEffect(() => {
+    emptied.value = withTiming(trayEmpty ? 1 : 0, TRAY_CHANGE);
+  }, [trayEmpty, emptied]);
+  // Hidden by either: the preview fades it, an empty tray takes it away.
+  const trayShown = useAnimatedStyle(() => ({
+    opacity: unpreviewed.value * (1 - emptied.value),
+    transform: [
+      { translateY: interpolate(emptied.value, [0, 1], [0, 16]) },
+      { scale: interpolate(emptied.value, [0, 1], [1, 0.94]) },
+    ],
+  }));
 
   const middle = { x: screen.width / 2, y: (area.top + screen.height - area.bottom) / 2 };
   // The cell in the middle of what's on screen, where new things go.
@@ -629,9 +649,11 @@ function LayoutView({
 
       {/* What can go on the layout: grounds not on it yet, the venue's assets (as many of each as
           it likes) and an entrance. Tap one to put it in the middle of the view, or drag it into
-          place. It fades out for the preview. */}
+          place. It fades out for the preview, and leaves once there's nothing left to place. */}
       <Animated.View
-        pointerEvents={previewing ? "none" : "auto"}
+        pointerEvents={previewing || trayEmpty ? "none" : "auto"}
+        accessibilityElementsHidden={trayEmpty}
+        importantForAccessibility={trayEmpty ? "no-hide-descendants" : "auto"}
         className="absolute inset-x-3 rounded-[24px] bg-white py-[18px] pl-[18px]"
         style={[
           {
@@ -642,7 +664,7 @@ function LayoutView({
             shadowRadius: 14,
             shadowOffset: { width: 0, height: 8 },
           },
-          trayFade,
+          trayShown,
         ]}
       >
         <Text className="pb-3 text-[16px] font-medium">{t("screens.setup.layout.tray")}</Text>
@@ -740,11 +762,6 @@ function LayoutView({
                 label={t("screens.setup.layout.entrance")}
               />
             </EntranceTrayItem>
-          ) : null}
-          {trayEmpty ? (
-            <Text className="self-center text-body text-ink-2">
-              {t("screens.setup.layout.allPlaced")}
-            </Text>
           ) : null}
         </ScrollView>
       </Animated.View>
