@@ -11,7 +11,9 @@ import {
   type LayoutChangeEvent,
   type ScrollViewInstance,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { SvgXml } from "react-native-svg";
+import { MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
@@ -105,9 +107,12 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
 // the bar can show it once it has scrolled under.
 export function VenueHeader({
   venue,
+  distance,
   onTitleLayout,
 }: {
   venue: PublicVenue;
+  // How far it is from the player ("5.5 km"), when the phone knows.
+  distance: string | null;
   onTitleLayout: (event: LayoutChangeEvent) => void;
 }) {
   const sports = sportsLine(venue);
@@ -121,7 +126,10 @@ export function VenueHeader({
         {venue.name ?? "Venue"}
       </Text>
       {venue.location.area ? (
-        <Text className="text-body text-ink-2">{venue.location.area}</Text>
+        <Text className="text-body text-ink-2">
+          {venue.location.area}
+          {distance ? ` (${distance})` : ""}
+        </Text>
       ) : null}
       {sports ? <Text className="text-body text-ink-2">{sports}</Text> : null}
       <View className="mt-1 flex-row items-center gap-1.5">
@@ -563,9 +571,11 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
 // The map and address. No phone: players get the venue's number with a booking there.
 export function WhereSection({
   venue,
+  distance,
   onLayout,
 }: {
   venue: PublicVenue;
+  distance: string | null;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
   const { coordinates, address, area } = venue.location;
@@ -574,6 +584,8 @@ export function WhereSection({
       {coordinates ? (
         <View className="h-[180px] overflow-hidden rounded-2xl" pointerEvents="none">
           <MapView
+            // Google Maps on both platforms, as in the staff app (the key is built in for both).
+            provider={PROVIDER_GOOGLE}
             style={{ flex: 1 }}
             initialRegion={{ ...coordinates, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
             scrollEnabled={false}
@@ -582,10 +594,10 @@ export function WhereSection({
             pitchEnabled={false}
             toolbarEnabled={false}
           >
-            <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 0.5 }}>
-              <View className="size-9 items-center justify-center rounded-full bg-ink">
-                <View className="size-3 rounded-full bg-primary" />
-              </View>
+            {/* Its point on the venue: anchored at the bottom middle. Drawn once, so the map
+                doesn't keep re-rendering it. */}
+            <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
+              <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
             </Marker>
           </MapView>
         </View>
@@ -595,7 +607,12 @@ export function WhereSection({
           <Text className="text-subtitle font-medium">
             {address ?? area ?? "Address not given"}
           </Text>
-          {address && area ? <Text className="text-label text-ink-2">{area}</Text> : null}
+          {address && area ? (
+            <Text className="text-label text-ink-2">
+              {area}
+              {distance ? ` (${distance})` : ""}
+            </Text>
+          ) : null}
         </View>
         {coordinates ? (
           <Link

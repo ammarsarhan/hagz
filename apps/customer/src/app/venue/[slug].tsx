@@ -43,6 +43,7 @@ import {
 import { api, reachable } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { useDistanceTo } from "@/lib/distance";
 import { webLinks } from "@/lib/links";
 import { formatAmount } from "@/lib/money";
 import { cheapestHour, paymentShort, type PublicVenue } from "@/lib/venue";
@@ -347,6 +348,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
 
   // Null in a build without the web app's address: no Share then.
   const link = webLinks?.venue(venue.slug) ?? null;
+  const distance = useDistanceTo(venue.location.coordinates);
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";
 
@@ -364,6 +366,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         <Photos venue={venue} />
         <VenueHeader
           venue={venue}
+          distance={distance}
           onTitleLayout={(event) => {
             const { y, height } = event.nativeEvent.layout;
             titleEnd.value = PHOTO_HEIGHT + y + height;
@@ -388,7 +391,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         ) : null}
         {venue.description ? <AboutSection description={venue.description} /> : null}
         <ReviewsSection venue={venue} onLayout={recordOffset("reviews")} />
-        <WhereSection venue={venue} onLayout={recordOffset("map")} />
+        <WhereSection venue={venue} distance={distance} onLayout={recordOffset("map")} />
       </Animated.ScrollView>
 
       {/* The bar over the top: white behind the back button once the photo has gone, with the
