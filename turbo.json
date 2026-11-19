@@ -1,6 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "agentGuidance": false,
+  "cacheMaxSize": "5GB",
   "globalEnv": ["APP_ENV", "NODE_ENV"],
   "tasks": {
     "db:generate": {
