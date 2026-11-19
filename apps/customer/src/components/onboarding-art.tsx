@@ -321,8 +321,8 @@ function PitchScene({ k, offset, active }: SceneProps) {
   );
 }
 
-// A venue's punch card: stamps for the bookings played, the last one landing, and the free booking
-// waiting in the final spot.
+// A venue's punch card, with the same 22 of padding above the title and below the stamps: stamps
+// for the bookings played, the last one landing, and the free booking waiting in the final spot.
 const CARD_LOOP: Loop = { period: 3800, y: [0, -4] };
 const STAMPED = [
   [92, 200],
@@ -354,7 +354,7 @@ function LoyaltyScene({ k, offset, active }: SceneProps) {
         <Rect x={80} y={86} width={232} height={164} rx={20} fill={GREY} />
       </Part>
       <Part k={k} offset={offset} depth={12} loop={CARD_LOOP}>
-        <Rect x={40} y={112} width={250} height={168} rx={22} fill={BLACK} />
+        <Rect x={40} y={112} width={250} height={178} rx={22} fill={BLACK} />
         <Rect x={62} y={134} width={96} height={10} rx={5} fill={WHITE} />
         <Rect x={62} y={152} width={60} height={8} rx={4} fill={WHITE} fillOpacity={0.4} />
         {STAMPED.map((at) => (
