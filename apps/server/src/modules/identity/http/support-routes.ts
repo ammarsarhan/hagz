@@ -1,5 +1,9 @@
 import { createRouter } from "@/platform/http/router";
-import { reactivateCustomer, suspendCustomer } from "../application/account-support";
+import {
+  grantStaffPasswordReset,
+  reactivateCustomer,
+  suspendCustomer,
+} from "../application/account-support";
 import { listCustomerAccounts, listStaffAccounts } from "../application/admin-support";
 import * as route from "./definitions/support";
 
@@ -17,5 +21,10 @@ export const supportAdminRoutes = createRouter()
   })
   .openapi(route.reactivateCustomer, async (c) => {
     await reactivateCustomer(c.var.admin.adminId, c.req.valid("param").customerId);
+    return c.body(null, 204);
+  })
+  .openapi(route.grantStaffPasswordReset, async (c) => {
+    const { staffId } = c.req.valid("param");
+    await grantStaffPasswordReset(c.var.admin.adminId, staffId, c.req.valid("json"));
     return c.body(null, 204);
   });

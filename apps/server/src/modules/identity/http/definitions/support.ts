@@ -3,6 +3,7 @@ import {
   AdminAccountQuery,
   AdminCustomerAccount,
   AdminStaffAccount,
+  GrantPasswordReset,
   page,
   SuspendAccount,
 } from "@hagz/contracts";
@@ -93,5 +94,30 @@ export const reactivateCustomer = createRoute({
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("CUSTOMER_NOT_FOUND"),
     409: problemResponse("ACCOUNT_BANNED: closed for good"),
+  },
+});
+
+export const grantStaffPasswordReset = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/password-reset",
+  tags,
+  summary: "Let a staff member reset their password",
+  description:
+    "For venue owners, who can't reset by themselves, once support has checked who is asking. For " +
+    "the next 24 hours they can reset once in the app, with a code sent to their phone; nobody at " +
+    "Hagz sees the password. That reset leaves their venues and permissions as they are. Granting " +
+    "again starts the 24 hours afresh. Recorded on the account.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: {
+    params: z.object({ staffId: z.uuid() }),
+    body: { required: true, ...json(GrantPasswordReset) },
+  },
+  responses: {
+    204: { description: "Granted" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("STAFF_NOT_ACTIVE (with `staffStatus`): reactivate them first"),
   },
 });

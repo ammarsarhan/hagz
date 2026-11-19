@@ -16,11 +16,19 @@ import {
 import { codeExpired, consumeCode, issueCode } from "./account-codes";
 import type { Account, AccountStore } from "./accounts";
 import { accountBlocked } from "./sessions";
+import { supportResetKey } from "./account-support";
 import { discardVerificationToken, redis, verifiedPhone } from "./verification-codes";
 
+// How an account may reset its password by phone: by itself, or through support, which has checked
+// who they are and left a grant for one reset (account-support.ts). Null: neither.
+const resetRoute = async (store: AccountStore, account: Account) => {
+  if (await redis((r) => r.exists(supportResetKey(store.type, account.id)))) return "SUPPORT";
+  return (await store.selfServiceReset(account)) ? "SELF" : null;
+};
+
 // The same answer for every number. A code goes out only to an active account that may reset by
-// itself; one that resets through support (a venue owner) gets a WhatsApp message saying so
-// instead, so the right path reaches the right person without the app being told. Limits and the
+// itself or that support has let reset; one that resets through support (a venue owner) gets a
+// WhatsApp message saying so instead, so the right path reaches the right person without the app being told. Limits and the
 // cooldown apply before the lookup so they can't tell numbers apart either.
 // (Timing still differs slightly while sending is synchronous; it moves to the queue with
 // notifications.)
@@ -36,7 +44,7 @@ export const requestPasswordReset = async (
   const account = await store.findByPhone(phone);
   if (account?.status === "ACTIVE") {
     // In the account's language, not the request's: it's their phone.
-    if (await store.selfServiceReset(account)) {
+    if (await resetRoute(store, account)) {
       await issueCode(store, {
         accountId: account.id,
         phone,
@@ -97,7 +105,7 @@ export const verifyPasswordReset = async (
     const account = await store.findByPhone(phone);
     if (!account) throw resetExpired();
     if (account.status !== "ACTIVE") throw accountBlocked(account.status);
-    if (!(await store.selfServiceReset(account))) throw throughSupport();
+    if (!(await resetRoute(store, account))) throw throughSupport();
     await discardVerificationToken(store.type, proof.verificationToken);
     return issueResetToken(store, account);
   }
@@ -106,7 +114,7 @@ export const verifyPasswordReset = async (
   const account = phone ? await store.findByPhone(phone) : null;
   // No account and no open code look the same. Checked again here: someone may have become an owner
   // since the code was sent.
-  if (account?.status !== "ACTIVE" || !(await store.selfServiceReset(account))) throw codeExpired();
+  if (account?.status !== "ACTIVE" || !(await resetRoute(store, account))) throw codeExpired();
   await consumeCode(
     store,
     { accountId: account.id, purpose: "PASSWORD_RESET", code: proof.code },
@@ -125,14 +133,23 @@ export const confirmPasswordReset = async (
   const key = resetTokenKey(store.type, resetToken);
   const accountId = await redis((r) => r.get(key));
   const account = accountId ? await store.findById(accountId) : null;
-  if (account?.status !== "ACTIVE" || !(await store.selfServiceReset(account)))
-    throw resetExpired();
+  const route = account?.status === "ACTIVE" ? await resetRoute(store, account) : null;
+  if (!account || !route) throw resetExpired();
 
   const passwordHash = await hashPassword(newPassword);
+  // Support's grant is good for one reset. Taken before the change, so two resets started while it
+  // stood can't both use it.
+  if (route === "SUPPORT") {
+    const claimed = await redis((r) => r.del(supportResetKey(store.type, account.id)));
+    if (claimed === 0) throw resetExpired();
+  }
   await transaction(async (tx) => {
     await store.update(tx, account.id, { passwordHash });
     await store.sessions.revoke(tx, account.id, clock.now());
-    await store.afterPasswordReset(tx, account, clock);
+    // What follows a reset guards against a recycled number (staff are made read-only). Support
+    // has checked who this is, so there's nothing to guard against, and an owner keeps every venue
+    // and permission they had.
+    if (route === "SELF") await store.afterPasswordReset(tx, account, clock);
   });
   await redis((r) => r.del(key));
 };
