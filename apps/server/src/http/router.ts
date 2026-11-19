@@ -5,9 +5,9 @@ import {
   staffAuthRoutes,
   supportAdminRoutes,
 } from "@/modules/identity";
-import { locationsRoutes, platformAdminRoutes } from "@/modules/locations";
+import { locationsRoutes, platformAdminRoutes, whenAmenityUnplaceable } from "@/modules/locations";
 import { systemRoutes } from "@/modules/system";
-import { venuesAdminRoutes, venuesStaffRoutes } from "@/modules/venues";
+import { removeAmenityFromLayouts, venuesAdminRoutes, venuesStaffRoutes } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
 import { devStorage, localDisk } from "@/http/dev-storage";
@@ -30,8 +30,11 @@ import { createRouter } from "@/platform/http/router";
 // (Separate statements, not a chain: .use() returns a plain Hono type without the OpenAPI methods.)
 export const router = createRouter();
 
-// Admin requests check the admin is still active; identity owns their account (requireAdmin).
+// Hooks that let a lower module reach what another owns, without importing it: admin requests check
+// the admin is still active (identity owns their account), and an amenity made unplaceable leaves
+// every layout (venues owns layouts, and reads locations).
 checkAdminsWith(ensureAdminActive);
+whenAmenityUnplaceable(removeAmenityFromLayouts);
 
 router.use(requestId);
 router.use(requestContext);

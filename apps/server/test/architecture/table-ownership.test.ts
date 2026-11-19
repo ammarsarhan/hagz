@@ -30,13 +30,7 @@ const FILE_OWNERS: Record<string, string> = {
 
 // Crossings that exist today, each with why it's allowed until it's fixed. An entry that no longer
 // matches anything fails too, so the list only shrinks.
-const KNOWN: { file: string; table: string; why: string }[] = [
-  {
-    file: "src/modules/locations/application/admin-amenities.ts",
-    table: "VenueLayoutItem",
-    why: "An amenity made unplaceable takes its tiles off every layout. Locations can't call venues (venues reads locations), so venues should drop them itself.",
-  },
-];
+const KNOWN: { file: string; table: string; why: string }[] = [];
 
 const WRITES = [
   "create",
