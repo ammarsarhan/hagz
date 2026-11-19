@@ -1,4 +1,4 @@
-import type { BanStaff, RemoveMember, SuspendStaff, TransferOwnership } from "@hagz/contracts";
+import type { BanStaff, RemoveMember, SuspendAccount, TransferOwnership } from "@hagz/contracts";
 import { notifyStaff } from "@/modules/notifications";
 import type { VenueStatus } from "@/generated/prisma/enums";
 import { systemClock, type Clock } from "@/platform/clock/clock";
@@ -236,7 +236,7 @@ const keepOut = async (
 export const suspendStaff = async (
   adminId: string,
   staffId: string,
-  { reason }: SuspendStaff,
+  { reason }: SuspendAccount,
   clock: Clock = systemClock,
 ) => {
   await transaction(async (tx) => {

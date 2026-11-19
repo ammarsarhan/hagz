@@ -21,7 +21,7 @@ import {
   SetCommission,
   SetVenueArea,
   StaffInvitation,
-  SuspendStaff,
+  SuspendAccount,
   TransferOwnership,
   UpdateVenueSettings,
   VenueHistoryEvent,
@@ -570,7 +570,7 @@ export const suspendStaff = createRoute({
     "each venue they're on. Suspending again changes nothing.",
   middleware: [requireAdmin] as const,
   security,
-  request: { params: staffParams, body: { required: true, ...json(SuspendStaff) } },
+  request: { params: staffParams, body: { required: true, ...json(SuspendAccount) } },
   responses: {
     204: { description: "Suspended" },
     ...guarded,

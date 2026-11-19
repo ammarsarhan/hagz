@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AdminReason } from "./review";
 import { VenueRole } from "./venues";
 
 // The admin's Support page (plan 2.8): finding staff and customers to help them with their accounts.
@@ -43,7 +44,17 @@ export const AdminStaffAccount = z
 
 export const AdminCustomerAccount = z.object(account).meta({ id: "AdminCustomerAccount" });
 
+// Suspending a customer, staff or admin account.
+export const SuspendAccount = z.object({ reason: AdminReason }).meta({ id: "SuspendAccount" });
+
+// Letting a venue owner reset their password by phone, once support has checked who they are.
+export const GrantPasswordReset = z
+  .object({ reason: AdminReason })
+  .meta({ id: "GrantPasswordReset" });
+
 export type AccountStatus = z.infer<typeof AccountStatus>;
 export type AdminAccountQuery = z.infer<typeof AdminAccountQuery>;
 export type AdminStaffAccount = z.infer<typeof AdminStaffAccount>;
 export type AdminCustomerAccount = z.infer<typeof AdminCustomerAccount>;
+export type SuspendAccount = z.infer<typeof SuspendAccount>;
+export type GrantPasswordReset = z.infer<typeof GrantPasswordReset>;
