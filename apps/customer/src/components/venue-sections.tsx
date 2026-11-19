@@ -180,13 +180,13 @@ const highlightsOf = (venue: PublicVenue) => {
 
 export function Highlights({ venue }: { venue: PublicVenue }) {
   return (
-    <View className="mx-6 mt-6 gap-5 border-y border-border py-5">
+    <View className="mx-6 mt-6 gap-4 border-y border-border py-4">
       {highlightsOf(venue).map(({ icon: Glyph, title, line }) => (
-        <View key={title} className="flex-row items-start gap-3.5">
-          <Glyph size={24} color={colors.ink} strokeWidth={1.75} />
-          <View className="shrink gap-0.5">
-            <Text className="text-subtitle font-medium">{title}</Text>
-            <Text className="text-label text-ink-2">{line}</Text>
+        <View key={title} className="flex-row items-start gap-3">
+          <Glyph size={20} color={colors.ink} strokeWidth={1.75} />
+          <View className="shrink">
+            <Text className="text-body font-medium">{title}</Text>
+            <Text className="text-caption text-ink-2">{line}</Text>
           </View>
         </View>
       ))}
@@ -208,36 +208,44 @@ function GroundPrice({ ground, currency }: { ground: PublicGround; currency: str
   );
 }
 
-// The picked ground under the map (Figma C5 round 2, 75:72): its name and price, what it is, and
-// See times.
-function GroundCard({
+// A ground in the list under the map (Figma C5 round 2, 75:72): its name and price and what it is.
+// Picked, it has the black border and See times, and the map shows it in a darker grey.
+function GroundOption({
   ground,
   currency,
+  picked,
+  onPick,
   onSeeTimes,
 }: {
   ground: PublicGround;
   currency: string;
+  picked: boolean;
+  onPick: () => void;
   onSeeTimes: () => void;
 }) {
   return (
-    <View className="gap-0.5 rounded-2xl border-[1.5px] border-ink px-4 py-3.5">
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: picked }}
+      onPress={onPick}
+      className={`gap-0.5 rounded-2xl px-4 py-3.5 ${picked ? "border-[1.5px] border-ink" : "border border-border"}`}
+    >
       <View className="flex-row items-center justify-between gap-3">
         <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
         <GroundPrice ground={ground} currency={currency} />
       </View>
       <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
-      {ground.status === "ACTIVE" ? (
+      {picked && ground.status === "ACTIVE" ? (
         <View className="mt-1.5 items-start">
           <Link label="See times" onPress={onSeeTimes} />
         </View>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
-// The venue's map with one ground picked (the first active one to start), and its card under the
-// map; tapping another ground picks it. Grounds the owner hasn't put on the map are listed after,
-// and a venue without a map lists them all.
+// The venue's map, and every ground under it to pick from (the first active one to start); the
+// picked one shows on the map. A venue without a map has the list alone.
 export function GroundsSection({
   venue,
   onLayout,
@@ -247,44 +255,33 @@ export function GroundsSection({
   onLayout: (event: LayoutChangeEvent) => void;
   onSeeTimes: () => void;
 }) {
-  const placed = new Set(venue.layout?.grounds.map((ground) => ground.groundId) ?? []);
-  const onMap = venue.grounds.filter((ground) => placed.has(ground.id));
-  const offMap = venue.grounds.filter((ground) => !placed.has(ground.id));
   const [pickedId, setPickedId] = useState<string | null>(
-    () => (onMap.find((ground) => ground.status === "ACTIVE") ?? onMap[0])?.id ?? null,
+    () =>
+      (venue.grounds.find((ground) => ground.status === "ACTIVE") ?? venue.grounds[0])?.id ?? null,
   );
-  const picked = onMap.find((ground) => ground.id === pickedId);
   const currency = venue.marketplace.currency;
   return (
-    <Section title="The grounds" onLayout={onLayout}>
-      {venue.layout && onMap.length > 0 ? (
-        <>
-          <VenueLayout
-            layout={venue.layout}
-            grounds={venue.grounds}
-            amenities={venue.amenities}
-            selectedId={pickedId}
-            onSelect={setPickedId}
+    <Section title="Grounds" onLayout={onLayout}>
+      {venue.layout ? (
+        <VenueLayout
+          layout={venue.layout}
+          grounds={venue.grounds}
+          amenities={venue.amenities}
+          selectedId={pickedId}
+        />
+      ) : null}
+      <View className="gap-2.5">
+        {venue.grounds.map((ground) => (
+          <GroundOption
+            key={ground.id}
+            ground={ground}
+            currency={currency}
+            picked={ground.id === pickedId}
+            onPick={() => setPickedId(ground.id)}
+            onSeeTimes={onSeeTimes}
           />
-          {picked ? (
-            <GroundCard ground={picked} currency={currency} onSeeTimes={onSeeTimes} />
-          ) : null}
-          <Text className="text-label text-unit">Tap a ground on the map to see it here.</Text>
-        </>
-      ) : null}
-      {offMap.length > 0 ? (
-        <Rows>
-          {offMap.map((ground) => (
-            <View key={ground.id} className="flex-row items-center justify-between gap-3 py-3.5">
-              <View className="shrink gap-0.5">
-                <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
-                <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
-              </View>
-              <GroundPrice ground={ground} currency={currency} />
-            </View>
-          ))}
-        </Rows>
-      ) : null}
+        ))}
+      </View>
     </Section>
   );
 }
@@ -377,7 +374,7 @@ export function AmenitiesSection({
             className="h-[38px] flex-row items-center gap-2 rounded-full bg-chip px-3.5"
           >
             <AmenityIcon name={amenity.icon} size={18} color={colors.ink} />
-            <Text className="text-body">
+            <Text className="text-body font-medium">
               {amenity.name}
               {amenity.price !== null ? (
                 <Text className="text-body text-ink-2">
