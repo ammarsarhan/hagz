@@ -1,7 +1,7 @@
 import type { components } from "@hagz/api";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import { Text } from "@/components/text";
 import { api, auth } from "@/lib/api";
@@ -13,7 +13,8 @@ type Customer = components["schemas"]["Customer"];
 
 // Where a guest lands after onboarding. A placeholder until Phase 3's Home: lime and black from the
 // customer theme. It says who's signed in, with Sign out, until the Account tab has them. Development
-// builds can replay onboarding and try the guest sign-in sheet from here.
+// builds can replay onboarding, try the guest sign-in sheet, and open a venue page by its slug (until
+// search lists venues) from here.
 export default function Home() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const { whenSignedIn, sheet } = useSignInSheet("/home");
@@ -60,6 +61,15 @@ export default function Home() {
                     here.
                   </>
                 ),
+              })
+            }
+          />
+          <Link
+            label="Open a venue page"
+            onPress={() =>
+              Alert.prompt("Open a venue page", "The venue's slug, from /venue/[slug].", (slug) => {
+                const trimmed = slug.trim();
+                if (trimmed) router.push({ pathname: "/venue/[slug]", params: { slug: trimmed } });
               })
             }
           />
