@@ -80,29 +80,31 @@ model TournamentPlayer {
 
 // One fixture. Teams are empty until the draw or an earlier round fills them; a knockout winner
 // moves into nextMatchId's nextSide in the same transaction as the result. groundId and startsAt are
-// for display only: ground time is reserved with staff blocks or an ordinary booking. CHECKs: round
-// and position >= 1; the two teams differ; scores >= 0, both set exactly when PLAYED; penalties both
-// or neither, only after a PLAYED draw; nextMatchId and nextSide both or neither; the winner is one
-// of the two teams, required for a WALKOVER, none while PENDING.
+// for display only: ground time is reserved with staff blocks or an ordinary booking.
+// Sport-agnostic: homeScore and awayScore are the sport's main result (goals, points, or sets won),
+// and scoreDetail holds the rest (set scores, football penalties), checked by a Zod schema per sport
+// in @hagz/contracts. Whether a draw is allowed is the API's rule per sport. CHECKs: round and
+// position >= 1; the two teams differ; scores >= 0, both set exactly when PLAYED; scoreDetail only
+// when PLAYED; nextMatchId and nextSide both or neither; the winner is one of the two teams, the side
+// with the higher score when they differ, required for a WALKOVER, none while PENDING.
 model TournamentMatch {
-  id            String                @id @default(uuid(7)) @db.Uuid
-  tournamentId  String                @db.Uuid
-  round         Int                   @db.SmallInt
-  position      Int                   @db.SmallInt // Order within the round.
-  homeTeamId    String?               @db.Uuid
-  awayTeamId    String?               @db.Uuid
-  nextMatchId   String?               @db.Uuid // Knockout: where the winner goes.
-  nextSide      MatchSide?
-  groundId      String?               @db.Uuid
-  startsAt      DateTime?             @db.Timestamptz
-  status        TournamentMatchStatus @default(PENDING)
-  homeScore     Int?                  @db.SmallInt
-  awayScore     Int?                  @db.SmallInt
-  homePenalties Int?                  @db.SmallInt
-  awayPenalties Int?                  @db.SmallInt
-  winnerTeamId  String?               @db.Uuid // Null after a league draw.
-  createdAt     DateTime              @default(now()) @db.Timestamptz
-  updatedAt     DateTime              @updatedAt @db.Timestamptz
+  id           String                @id @default(uuid(7)) @db.Uuid
+  tournamentId String                @db.Uuid
+  round        Int                   @db.SmallInt
+  position     Int                   @db.SmallInt // Order within the round.
+  homeTeamId   String?               @db.Uuid
+  awayTeamId   String?               @db.Uuid
+  nextMatchId  String?               @db.Uuid // Knockout: where the winner goes.
+  nextSide     MatchSide?
+  groundId     String?               @db.Uuid
+  startsAt     DateTime?             @db.Timestamptz
+  status       TournamentMatchStatus @default(PENDING)
+  homeScore    Int?                  @db.SmallInt
+  awayScore    Int?                  @db.SmallInt
+  scoreDetail  Json? // Set scores, or football penalties.
+  winnerTeamId String?               @db.Uuid // Null after a draw, where the sport allows one.
+  createdAt    DateTime              @default(now()) @db.Timestamptz
+  updatedAt    DateTime              @updatedAt @db.Timestamptz
 
   tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
   homeTeam   TournamentTeam?   @relation("HomeTeam", fields: [homeTeamId, tournamentId], references: [id, tournamentId], onDelete: Restrict)

@@ -21,7 +21,7 @@ The first rules:
 | Rule | Meaning | Default |
 |---|---|---|
 | `approval` | `AUTO` (first come, first confirmed) or `ORGANIZER` (each team approved) | `ORGANIZER` |
-| `squadMin`, `squadMax` | Players per team | The ground size's player count, both |
+| `squadMin`, `squadMax` | Players per team | The sport's players per side, both (from the sport and size table in code: 5 for 5-a-side, 2 for padel) |
 | `minReliability` | The lowest "showed up" percentage a player can have, from open games | None |
 
 - **One squad per player per tournament is fixed,** not a rule: a unique index enforces it, because playing for two teams in the same tournament never makes sense.
@@ -31,7 +31,22 @@ The first rules:
 
 ## Formats
 
-Two to start: **knockout** (single elimination, byes when the number of teams isn't a power of two, penalties settle draws) and **league** (everyone plays everyone once; win 3, draw 1, loss 0; ties broken by goal difference, then goals scored). Groups then knockout comes later if organizers ask for it.
+Two to start: **knockout** (single elimination, byes when the number of teams isn't a power of two, and every match needs a winner) and **league** (everyone plays everyone once). Groups then knockout comes later if organizers ask for it.
+
+## Sports
+
+Tournaments work for every sport we have (football, padel, tennis, basketball, volleyball). The tables hold nothing sport-specific (decided on 2026-11-19); what differs is a table per sport in code:
+
+| Sport | Main result (`homeScore`, `awayScore`) | `scoreDetail` | Draws | League points, then tie-breaks |
+|---|---|---|---|---|
+| Football | Goals | `{ "penalties": [4, 3] }` after a knockout draw | League only | Win 3, draw 1; goal difference, goals scored |
+| Padel, tennis | Sets won | Set scores, `[[6, 4], [3, 6], [10, 8]]` | Never | Win 2, loss 0; set difference, game difference |
+| Volleyball | Sets won | Set scores, `[[25, 21], [23, 25], [15, 12]]` | Never | 3–0 or 3–1 win 3, 3–2 win 2, 2–3 loss 1; set ratio, point ratio |
+| Basketball | Points | None (overtime is in the points) | Never | Win 2, loss 1; point difference |
+
+- League points follow each sport's usual federation rules (FIVB for volleyball, FIBA for basketball). Padel and tennis have no standard league table, so theirs is a proposal. All of it lives in code and can change without a migration.
+- `scoreDetail` is checked by a Zod schema per sport in `@hagz/contracts`, and must agree with the main result (the sets in the detail add up to the sets won).
+- The API refuses a draw where the sport has none, and a knockout always needs a winner. The database only holds what's true in every sport: the higher main result wins.
 
 ## Lifecycle
 
@@ -51,7 +66,7 @@ Two to start: **knockout** (single elimination, byes when the number of teams is
 ## Matches
 
 - **A match records which ground and when, for display only:** `groundId?` and `startsAt?`. The venue reserves the time with the staff blocking it already has, and a community member books the ground like any booking. **Nothing in the slot or booking tables changes for tournaments.** If organizers need the calendar to know about matches, that link comes later.
-- **The organizer enters results:** a score, penalties for a knockout draw, or a walkover. A knockout winner fills its place in the next match (`nextMatchId`, `nextSide`) in the same transaction.
+- **The organizer enters results:** the main result with its detail (set scores, or penalties after a football knockout draw), or a walkover. A knockout winner fills its place in the next match (`nextMatchId`, `nextSide`) in the same transaction.
 - **Tables are calculated from results when read,** not stored.
 
 ## Notifications
@@ -74,8 +89,8 @@ Sent once Phase 7's sender exists, and written as `Notification` rows until then
   - Indexed on `(status, startsOn)`, `venueId` and `communityId`.
 - **`TournamentTeam`:** `id`, `tournamentId`, `name`, `captainId`, `status`, `createdAt`, `updatedAt`. Unique on `(tournamentId, name)`, and on `(id, tournamentId)` as the target for players and matches, so neither can point at another tournament's team.
 - **`TournamentPlayer`:** `teamId`, `customerId`, `tournamentId` (copied from the team, and the foreign key on `(teamId, tournamentId)` makes sure it matches), `joinedAt`. Its primary key is `(teamId, customerId)`; unique on `(tournamentId, customerId)` for one squad per player. Leaving deletes the row: there's no history to keep until a tournament starts, and after that squads are frozen.
-- **`TournamentMatch`:** `id`, `tournamentId`, `round`, `position`, `homeTeamId?`, `awayTeamId?`, `nextMatchId?`, `nextSide?` (`MatchSide`: `HOME` / `AWAY`), `groundId?`, `startsAt?`, `status` (`PENDING` / `PLAYED` / `WALKOVER`), `homeScore?`, `awayScore?`, `homePenalties?`, `awayPenalties?`, `winnerTeamId?`. Unique on `(tournamentId, round, position)`. Teams, the winner and the next match are foreign keys with the tournament's id, so a match can't reach outside its tournament.
-  - CHECKs: round and position >= 1; the two teams differ; scores >= 0 and set exactly when `PLAYED`; penalties both or neither, only after a draw; `nextMatchId` and `nextSide` both or neither; the winner is one of the two teams, required for a `WALKOVER` and absent while `PENDING`.
+- **`TournamentMatch`:** `id`, `tournamentId`, `round`, `position`, `homeTeamId?`, `awayTeamId?`, `nextMatchId?`, `nextSide?` (`MatchSide`: `HOME` / `AWAY`), `groundId?`, `startsAt?`, `status` (`PENDING` / `PLAYED` / `WALKOVER`), `homeScore?`, `awayScore?`, `scoreDetail?` (JSON), `winnerTeamId?`. Unique on `(tournamentId, round, position)`. Teams, the winner and the next match are foreign keys with the tournament's id, so a match can't reach outside its tournament.
+  - CHECKs: round and position >= 1; the two teams differ; scores >= 0 and set exactly when `PLAYED`; `scoreDetail` only when `PLAYED`; `nextMatchId` and `nextSide` both or neither; the winner is one of the two teams, the side with the higher score whenever the scores differ, required for a `WALKOVER` and absent while `PENDING`.
 
 Registering and confirming teams lock the `Tournament` row, so `teamCap` holds. Joining a squad locks the team row, so `squadMax` holds. There's no tournament event table. Changes are recorded in the organizer's existing history: `VenueEvent` for a venue tournament, `CommunityEvent` for a community tournament.
 

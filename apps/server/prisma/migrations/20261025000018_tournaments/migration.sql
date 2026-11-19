@@ -77,8 +77,7 @@ CREATE TABLE "TournamentMatch" (
     "status" "TournamentMatchStatus" NOT NULL DEFAULT 'PENDING',
     "homeScore" SMALLINT,
     "awayScore" SMALLINT,
-    "homePenalties" SMALLINT,
-    "awayPenalties" SMALLINT,
+    "scoreDetail" JSONB,
     "winnerTeamId" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
@@ -179,18 +178,20 @@ ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_position_check" CH
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_teams_check" CHECK ("homeTeamId" IS NULL OR "awayTeamId" IS NULL OR "homeTeamId" <> "awayTeamId");
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
--- Scores only for a played match; penalties only settle a knockout draw.
+-- Scores are the sport's main result (goals, points or sets won); the detail only follows a result.
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_score_check" CHECK (
   (status = 'PLAYED') = ("homeScore" IS NOT NULL AND "awayScore" IS NOT NULL)
   AND num_nonnulls("homeScore", "awayScore") IN (0, 2)
   AND "homeScore" >= 0 AND "awayScore" >= 0
-  AND num_nonnulls("homePenalties", "awayPenalties") IN (0, 2)
-  AND ("homePenalties" IS NULL OR ("homeScore" = "awayScore" AND "homePenalties" >= 0 AND "awayPenalties" >= 0))
+  AND ("scoreDetail" IS NULL OR status = 'PLAYED')
 );
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+-- In every sport the higher main result wins; equal results are a draw or settled by the detail.
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_winner_check" CHECK (
   ("winnerTeamId" IS NULL OR "winnerTeamId" IN ("homeTeamId", "awayTeamId"))
+  AND (status <> 'PLAYED' OR "homeScore" = "awayScore"
+    OR "winnerTeamId" IS NOT DISTINCT FROM CASE WHEN "homeScore" > "awayScore" THEN "homeTeamId" ELSE "awayTeamId" END)
   AND (status <> 'WALKOVER' OR "winnerTeamId" IS NOT NULL)
   AND (status <> 'PENDING' OR "winnerTeamId" IS NULL)
 );
