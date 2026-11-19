@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   cancelAnimation,
@@ -22,8 +22,8 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 // so motion runs as native view transforms on the UI thread (react-native-svg's own transform props
 // are turned into a matrix in JavaScript, which animated props would skip).
 //
-// Each layer can drift with the swipe (parallax by depth), loop softly, and drop in when its slide
-// lands. With Reduce Motion on, the drawings stand still.
+// Each layer can drift with the swipe (parallax by depth), loop softly, and drop in the first time
+// its slide lands. With Reduce Motion on, the drawings stand still.
 const W = 345;
 const H = 330;
 
@@ -209,14 +209,18 @@ function Blob({ k, offset, d }: { k: number; offset: SharedValue<number>; d: str
   );
 }
 
-// Plays a spring from 0 to 1 each time the slide lands, and resets once it has left.
+// Plays a spring from 0 to 1 the first time the slide lands, and never again: coming back to the
+// slide finds the part already in place.
 function useEntry(active: boolean) {
   const reduce = useReducedMotion();
   const entry = useSharedValue(reduce ? 1 : 0);
+  const played = useRef(false);
   useEffect(() => {
     if (reduce) entry.value = 1;
-    else if (active) entry.value = withDelay(120, withSpring(1, { damping: 11, stiffness: 140 }));
-    else entry.value = 0;
+    else if (active && !played.current) {
+      played.current = true;
+      entry.value = withDelay(120, withSpring(1, { damping: 11, stiffness: 140 }));
+    }
   }, [active, reduce, entry]);
   return entry;
 }
