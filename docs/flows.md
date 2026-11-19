@@ -125,7 +125,7 @@ flowchart LR
   classDef result fill:#CDF4D3,stroke:#66D575
   classDef danger fill:#FFCDC2,stroke:#FF7556
   s1["1 Ground and time (from C5)"] --> signin["Sign-in sheet if guest (C2)"]:::sheet --> s2["2 Extras: priced amenities (skipped if none)"]
-  s2 --> s3["3 Players (optional): needed, note, cost share"]
+  s2 --> s3["3 Players (optional): needed, note (share and joining fee shown)"]
   s3 --> s4["4 Review and pay: breakdown, VAT, policy, discount code, loyalty reward, payment method"]
   s4 --> pay["Pay: card, wallet, Apple Pay, Google Pay (Paymob fields), Fawry code, or at the venue"]:::sheet
   pay --> confirmed["Confirmed"]:::result
@@ -182,7 +182,7 @@ flowchart LR
   classDef state fill:#FFECBD,stroke:#FFC943
   classDef result fill:#CDF4D3,stroke:#66D575
   classDef danger fill:#FFCDC2,stroke:#FF7556
-  tab["Games: Near me · My games"]:::hub --> filters["Filters: sport, size, date, time, area"]:::sheet --> game["Game detail: spots left, note, cost share, booker's first name"]
+  tab["Games: Near me · My games"]:::hub --> filters["Filters: sport, size, date, time, area"]:::sheet --> game["Game detail: spots left, note, share + joining fee, booker's first name"]
   game --> join["Join (sign-in sheet if guest) + disclaimer"]:::sheet --> joined["Joined: booker's phone, players, reminder"]:::result
   joined --> leave["Leave the game"]:::danger
   tab --> history["C8c My games → Past: who came"] --> report["A no-show report against me"]:::state
