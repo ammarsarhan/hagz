@@ -1,7 +1,7 @@
 import { Redirect, router, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, useWindowDimensions, View, type FlatList } from "react-native";
+import { useWindowDimensions, View, type FlatList } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
@@ -16,8 +16,8 @@ import { Text } from "@/components/text";
 import { hasSeenOnboarding, markOnboardingSeen } from "@/lib/onboarding";
 
 // Customer onboarding: four lime slides (a problem in two words, the fix in one), swiped or
-// advancing gently on their own until touched, with Create account and Sign in on every slide and
-// Skip for browsing as a guest. English only until the customer app gets its translations; the
+// advancing gently on their own until touched, with Get started (browse as a guest) and Create
+// account on every slide; signing in lives inside the account flow. English only until the customer app gets its translations; the
 // Arabic lines need their own wordplay, not a translation.
 const SLIDES = [
   {
@@ -79,17 +79,6 @@ function Onboarding() {
     <View className="flex-1 bg-primary">
       <StatusBar style="dark" />
       <SafeAreaView style={{ flex: 1 }}>
-        <View className="h-11 flex-row items-center justify-end px-6">
-          <Pressable
-            accessibilityRole="button"
-            hitSlop={12}
-            onPress={() => leave("/home")}
-            className="active:opacity-60"
-          >
-            <Text className="text-subtitle font-medium text-on-primary">Skip</Text>
-          </Pressable>
-        </View>
-
         <Animated.FlatList
           ref={pager}
           data={SLIDES}
@@ -104,7 +93,7 @@ function Onboarding() {
           onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
           renderItem={({ item, index: i }) => (
             <View style={{ width }} className="flex-1 px-6">
-              <View className="mt-2 flex-1">
+              <View className="mt-13 flex-1">
                 <OnboardingArt
                   index={i}
                   scene={item.key}
@@ -128,8 +117,8 @@ function Onboarding() {
         </View>
 
         <View className="gap-2.5 px-5 pb-3">
-          <Button label="Create account" variant="ink" onPress={() => leave("/sign-up")} />
-          <Button label="Sign in" variant="white" onPress={() => leave("/sign-in")} />
+          <Button label="Get started" variant="ink" onPress={() => leave("/home")} />
+          <Button label="Create account" variant="white" onPress={() => leave("/sign-up")} />
         </View>
       </SafeAreaView>
     </View>
