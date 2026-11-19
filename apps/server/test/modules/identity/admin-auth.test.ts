@@ -50,6 +50,13 @@ const setCookies = (res: Response) =>
 const jarFrom = (res: Response): Jar =>
   Object.fromEntries(Object.entries(setCookies(res)).map(([name, { value }]) => [name, value]));
 
+// What admins did to accounts, oldest first.
+const accountEvents = () =>
+  prisma.accountEvent.findMany({
+    orderBy: { id: "asc" },
+    select: { adminId: true, subjectAdminId: true, type: true, data: true },
+  });
+
 const currentCode = (secret: string, offset = 0) => totpCode(secret, totpStep(new Date()) + offset);
 
 const signIn = async (email = EMAIL, password = PASSWORD) => {
@@ -508,6 +515,9 @@ describe("admin resets", () => {
     const refresh = await request("POST", "/auth/admin/sessions/refresh", { jar: saraSignedIn });
     expect((await json(refresh)).code).toBe("SESSION_ENDED");
     expect((await signIn("sara@hagz.app")).next).toBe("TOTP_SETUP");
+    expect(await accountEvents()).toEqual([
+      { adminId: omar.id, subjectAdminId: sara.id, type: "ADMIN_AUTHENTICATOR_RESET", data: null },
+    ]);
   });
 
   it("refuse to reset your own authenticator, or an admin that doesn't exist", async () => {
@@ -518,6 +528,7 @@ describe("admin resets", () => {
     const missing = await request("DELETE", `/admin/list/${randomUUID()}/authenticator`, { jar });
     expect((await json(missing)).code).toBe("ADMIN_NOT_FOUND");
     expect((await signIn()).next).toBe("TOTP");
+    expect(await accountEvents()).toEqual([]);
   });
 });
 
@@ -540,6 +551,9 @@ describe("admin password resets", () => {
     expect((await requestReset(jar, sara.id)).status).toBe(204);
     const sent = mailbox.lastResetTo("sara@hagz.app");
     expect(sent?.requestedBy).toBe("Omar");
+    expect(await accountEvents()).toEqual([
+      { adminId: omar.id, subjectAdminId: sara.id, type: "ADMIN_PASSWORD_RESET_SENT", data: null },
+    ]);
     // Like invitations, the token is in the fragment, which never reaches a server.
     expect(sent?.resetUrl).toMatch(/^http:\/\/localhost:3001\/admin\/password\/reset#token=/);
     // Asking changes nothing: the old password still works and she's still signed in.
@@ -578,6 +592,7 @@ describe("admin password resets", () => {
     expect((await json(await requestReset(jar, randomUUID()))).code).toBe("ADMIN_NOT_FOUND");
     expect((await requestReset({}, omar.id)).status).toBe(401);
     expect(mailbox.resets).toHaveLength(0);
+    expect(await accountEvents()).toEqual([]);
     expect((await json(await reset("not-a-token"))).code).toBe("PASSWORD_RESET_INVALID");
   });
 });

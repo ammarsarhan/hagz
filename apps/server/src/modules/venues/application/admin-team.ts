@@ -20,7 +20,8 @@ import { UNFINISHED, unfinishedVenueExists } from "./venue-setup";
 // handing the venue to another member; and on a staff account (the Team tab and Support page):
 // suspending, reactivating and banning it. The venue's own staff run their team in the dashboard
 // app; these are for when they can't (an owner who left, a lost phone, abuse). Each is recorded as a
-// VenueEvent with the admin as the actor and their reason.
+// VenueEvent with the admin as the actor and their reason; the account-wide ones also as an
+// AccountEvent, which keeps them for someone who is on no venue.
 
 const memberNotFound = () =>
   new AppError({
@@ -219,14 +220,16 @@ const keepOut = async (
     where: { staffId, revokedAt: null },
     data: { revokedAt: clock.now(), pushToken: null },
   });
+  const type = to === "BANNED" ? STAFF_BANNED : STAFF_SUSPENDED;
   await tx.venueEvent.createMany({
     data: (await venuesOf(tx, staffId)).map((venueId) => ({
       venueId,
       adminId,
-      type: to === "BANNED" ? STAFF_BANNED : STAFF_SUSPENDED,
+      type,
       data: { staffId, reason },
     })),
   });
+  await tx.accountEvent.create({ data: { adminId, staffId, type, data: { reason } } });
 };
 
 // Until an admin reactivates them. Suspending again changes nothing.
@@ -281,5 +284,6 @@ export const reactivateStaff = async (adminId: string, staffId: string) => {
         data: { staffId },
       })),
     });
+    await tx.accountEvent.create({ data: { adminId, staffId, type: STAFF_REACTIVATED } });
   });
 };
