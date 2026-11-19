@@ -46,6 +46,7 @@ apps/server/src/
   - `http` → `application` → `domain`, never upwards, and module `http` never touches the database;
   - `domain` imports no Prisma, Redis, BullMQ or Hono, and no platform service except errors;
   - `platform` never imports modules or `http`.
+- `test/architecture/table-ownership.test.ts` checks the tables, which lint can't see. Each table belongs to its schema file's module (`FILE_OWNERS`); only that module writes it or locks its rows, and `platform` touches none, reads included. It reads the source for Prisma writes (direct and through a relation) and raw SQL that inserts, updates, deletes or locks, and fails on any crossing that isn't in its `KNOWN` list, each entry with why and how it should be fixed; an entry that no longer happens fails too, so the list only shrinks. A table with no owner yet (bookings, payments, payouts…) can't be touched until its module is added. Reads across modules aren't checked yet.
 - `@hagz/contracts` holds the zod schemas for requests and responses. The OpenAPI spec is generated from them (`@hono/zod-openapi`), and the apps and the web frontend use them as typed clients.
 - Prisma models never leave the server. Every response is an explicit DTO, so new columns (and secrets like `refreshTokenHash`) are never exposed by accident.
 
