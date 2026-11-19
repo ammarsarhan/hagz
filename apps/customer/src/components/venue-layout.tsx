@@ -7,8 +7,7 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 // A venue's map, read only (Figma C5, "The grounds"): the owner's grid at a cell to every
 // `width / columns` points, the venue's outline in ink, each ground drawn top-down with its
 // markings and name, the amenities placed on it as white tiles, and the entrances as black tags on
-// the edge. Grounds under maintenance say so. Tapping a ground picks it (the card under the map shows
-// it; Figma C5 round 2, 75:72).
+// the edge. Grounds under maintenance say so. The ground picked in the list under it is a darker grey.
 
 type Layout = NonNullable<PublicVenue["layout"]>;
 
@@ -16,7 +15,9 @@ const INK = "#0b0b0c";
 const GRID = "#edeef0";
 const TILE = "#e4e6ea";
 const MARK = "#9ea3ab";
-const LIME = "#e9fea0";
+// The picked ground: a grey darker than the rest, its lines darker too.
+const PICKED = "#c9cdd3";
+const PICKED_MARK = "#6f747c";
 const AMENITY_LINE = "#d5d8dd";
 const UNIT = "#737373";
 // Inside a cell's edge, so tiles side by side don't touch.
@@ -130,17 +131,7 @@ function Markings({
 
 // A white pill with the ground's name in the middle of its tile; the status is dropped when the
 // tile is too small for both.
-function Tag({
-  box,
-  name,
-  status,
-  selected,
-}: {
-  box: Box;
-  name: string;
-  status?: string;
-  selected: boolean;
-}) {
+function Tag({ box, name, status }: { box: Box; name: string; status?: string }) {
   const full = status ? `${name} · ${status}` : name;
   const widthOf = (text: string) => text.length * 6.2 + 14;
   const text = widthOf(full) <= box.w - 6 ? full : name;
@@ -149,14 +140,7 @@ function Tag({
   const cy = box.y + box.h / 2;
   return (
     <G>
-      <Rect
-        x={cx - width / 2}
-        y={cy - 9}
-        width={width}
-        height={18}
-        rx={9}
-        fill={selected ? LIME : "#ffffff"}
-      />
+      <Rect x={cx - width / 2} y={cy - 9} width={width} height={18} rx={9} fill="#ffffff" />
       <SvgText x={cx} y={cy + 3.8} textAnchor="middle" fontSize={10.5} fontWeight="600" fill={INK}>
         {text}
       </SvgText>
@@ -169,14 +153,12 @@ export function VenueLayout({
   grounds,
   amenities,
   selectedId,
-  onSelect,
 }: {
   layout: Layout;
   grounds: PublicGround[];
   amenities: PublicVenue["amenities"];
-  // The picked ground: black with lime lines and a lime name tag. Tapping a ground picks it.
+  // The ground picked in the list under the map: a darker grey, with darker lines.
   selectedId?: string | null;
-  onSelect?: (groundId: string) => void;
 }) {
   const [width, setWidth] = useState(0);
   const cell = width / layout.columns;
@@ -262,25 +244,20 @@ export function VenueLayout({
               const box = boxOf(placed.x, placed.y, w, h);
               const selected = ground.id === selectedId;
               return (
-                <G
-                  key={placed.groundId}
-                  onPress={onSelect ? () => onSelect(ground.id) : undefined}
-                  accessibilityLabel={ground.name ?? undefined}
-                >
+                <G key={placed.groundId}>
                   <Rect
                     x={box.x}
                     y={box.y}
                     width={box.w}
                     height={box.h}
                     rx={4}
-                    fill={selected ? INK : TILE}
+                    fill={selected ? PICKED : TILE}
                   />
-                  <Markings sport={ground.sport} box={box} color={selected ? LIME : MARK} />
+                  <Markings sport={ground.sport} box={box} color={selected ? PICKED_MARK : MARK} />
                   <Tag
                     box={box}
                     name={ground.name ?? ""}
                     status={ground.status === "MAINTENANCE" ? "Closed" : undefined}
-                    selected={selected}
                   />
                 </G>
               );
