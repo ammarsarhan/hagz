@@ -9,7 +9,9 @@ const tags = ["Support (admin)"];
 const security = [{ [ADMIN_COOKIE_AUTH]: [] }];
 const guarded = {
   401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in."),
-  403: problemResponse(`ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`),
+  403: problemResponse(
+    `ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`,
+  ),
 };
 
 export const listStaff = createRoute({
