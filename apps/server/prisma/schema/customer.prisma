@@ -31,6 +31,10 @@ model Customer {
   notifications Notification[]
   waitlists     SlotWaitlist[]
   games         ListingPlayer[] // Listings joined.
+  communities   CommunityMember[]      @relation("CommunityMember")
+  decisions     CommunityMember[]      @relation("CommunityDecider") // As a community admin.
+  invites       CommunityInvite[] // Community links created.
+  communityLog  CommunityEvent[]
   history       AccountEvent[] // What admins did to this account.
 }
 

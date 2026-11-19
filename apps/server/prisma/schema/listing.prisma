@@ -2,11 +2,12 @@
 // from it so the feed doesn't join Booking (a booking never changes; a reschedule re-points the listing
 // to the new booking and updates startsAt in the same transaction). playerCount is the number of JOINED
 // players, changed only under a lock on this row, so it never passes neededPlayers; it's final at
-// kick-off. Each joined player owes the booker sharePrice and the venue joinFee, both copied when the
+// kick-off. A community game (communityId) is for members only, joining the
+// public feed at publicAt if set. Each joined player owes the booker sharePrice and the venue joinFee, both copied when the
 // listing opens; the venue records how many came (arrivedCount), and Hagz takes that × joinFee from
 // its balance (LedgerEntry JOIN_FEE). CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, sharePrice and joinFee
 // >= 0, closedAt set exactly when not OPEN; the arrived fields all or none, arrivedCount
-// 0–playerCount.
+// 0–playerCount; publicAt only with communityId.
 model BookingListing {
   id            String        @id @default(uuid(7)) @db.Uuid
   bookingId     String        @db.Uuid
@@ -18,6 +19,8 @@ model BookingListing {
   note          String?
   sharePrice    Int // Per player, minor units, owed to the booker: total ÷ the ground's players, rounded up.
   joinFee       Int // Per player, minor units, owed to the venue: sharePrice × Marketplace.joinFeeRate.
+  communityId   String?       @db.Uuid
+  publicAt      DateTime?     @db.Timestamptz // A community game joins the public feed from here.
   arrivedCount  Int?          @db.SmallInt // Recorded by the venue; null means everyone expected came.
   arrivedAt     DateTime?     @db.Timestamptz // When it was recorded.
   arrivedById   String?       @db.Uuid // Staff who recorded it.
@@ -27,6 +30,7 @@ model BookingListing {
 
   booking    Booking         @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
   venue      Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  community  Community?      @relation(fields: [communityId], references: [id], onDelete: Restrict)
   arrivedBy  Staff?          @relation(fields: [arrivedById], references: [id], onDelete: Restrict)
   players    ListingPlayer[]
   joiningFee LedgerEntry?
@@ -35,6 +39,7 @@ model BookingListing {
   @@unique([id, venueId]) // Ledger relation target.
   @@index([status, startsAt])
   @@index([venueId, startsAt])
+  @@index([communityId, status, startsAt]) // A community's games.
 }
 
 // A customer who joined a listing. Leaving and removal change the status; rows are never deleted, and

@@ -63,13 +63,14 @@ From the Community tab: search by name (`pg_trgm`, the same Arabic and English n
 ## Schema
 
 - **`Community`:** `id`, `slug` (unique), `name`, `description?`, `avatarKey?`, `sport?` (`Sport`), `locationId` (its home area), `policy` (`CommunityPolicy`: `OPEN` / `CLOSED`), `gamesBy` (`MEMBERS` / `ADMINS`: who can list community games), `notice?`, `whatsappLink?`, `status` (`CommunityStatus`: `ACTIVE` / `ARCHIVED` / `HIDDEN`), `memberCount` (kept up to date under a lock on this row, like `playerCount`), `hiddenReason?`, `createdAt`, `updatedAt`.
-  - Indexed for search: a trigram index on the normalized name, and `(status, locationId)`.
-- **`CommunityMember`:** `communityId`, `customerId`, `role` (`CommunityRole`: `OWNER` / `ADMIN` / `MEMBER`), `status` (`CommunityMemberStatus`: `REQUESTED` / `ACTIVE` / `DECLINED` / `LEFT` / `REMOVED` / `BANNED`), `requestedAt?`, `joinedAt?`, `leftAt?`, `decidedById?` (who approved, declined, removed or banned), `muted` (default false).
+  - CHECKs: `memberCount >= 0`; `hiddenReason` set exactly when `HIDDEN`; `whatsappLink` is a `https://chat.whatsapp.com/` invite.
+  - Indexed on `(status, locationId)`. The trigram index on the normalized name comes with 4b.1's search, using 3.1's name normalization.
+- **`CommunityMember`:** `communityId`, `customerId`, `role` (`CommunityRole`: `OWNER` / `ADMIN` / `MEMBER`), `status` (`CommunityMemberStatus`: `REQUESTED` / `ACTIVE` / `DECLINED` / `LEFT` / `REMOVED` / `BANNED`), `muted` (default false), `requestedAt?`, `joinedAt?`, `leftAt?`, and `decidedAt?` with `deciderId?` (the community admin who last approved, declined, removed or banned them).
   - Primary key `(communityId, customerId)`, so rejoining reuses the row. Indexed on `customerId` for "my communities".
-  - A partial unique index allows one `OWNER` per community while `ACTIVE`.
-  - CHECK: `joinedAt` set when `ACTIVE`; `leftAt` set exactly for `LEFT`, `REMOVED` and `BANNED`.
+  - A partial unique index allows one `OWNER` per community, and a CHECK keeps the owner `ACTIVE`, so the owner can't leave without handing over first.
+  - CHECKs: `requestedAt` set when `REQUESTED`, `joinedAt` when `ACTIVE`, `leftAt` exactly when `LEFT`; `DECLINED`, `REMOVED` and `BANNED` have a decider; `decidedAt` and `deciderId` both or neither.
 - **`CommunityInvite`:** `id`, `communityId`, `codeHash` (unique), `createdById`, `expiresAt?`, `maxUses?`, `uses`, `revokedAt?`, `createdAt`. CHECK: `uses <= maxUses`.
-- **`CommunityEvent`:** append-only, like `BookingEvent`: settings changed, member approved, removed, banned or promoted, ownership transferred, hidden or unhidden by an admin. Written in the same transaction as the change.
+- **`CommunityEvent`:** append-only, like `BookingEvent`, with at most one actor (`customerId` or `adminId`; none means the system): settings changed, member approved, removed, banned or promoted, ownership transferred, hidden or unhidden by an admin. Written in the same transaction as the change.
 - **`BookingListing`** gains `communityId?` and `publicAt?`. CHECK: `publicAt` only with `communityId`. Indexed on `(communityId, status, startsAt)`.
 
 Joining, approving, leaving and removing lock the `Community` row. That keeps `memberCount` exact, and no two concurrent changes can leave a community without its owner.

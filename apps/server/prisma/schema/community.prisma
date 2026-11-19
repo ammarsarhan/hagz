@@ -1,0 +1,98 @@
+// A group of players with its own games and tournaments (docs/communities.md). The slug is unique
+// across Hagz (/c/[slug]); the text is the players' own, in one language. memberCount is the number
+// of ACTIVE members, changed only under a lock on this row, as are joins, approvals and removals, so
+// a community never loses its owner. CHECKs: memberCount >= 0; hiddenReason set exactly when HIDDEN;
+// whatsappLink is a WhatsApp group invite.
+model Community {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  slug         String           @unique
+  name         String
+  description  String?
+  avatarKey    String?
+  sport        GroundSport?
+  locationId   String           @db.Uuid // Home area.
+  policy       CommunityPolicy
+  gamesBy      CommunityGamesBy @default(MEMBERS) // Who can list community games.
+  notice       String? // Pinned by admins; members only.
+  whatsappLink String? // Members only.
+  status       CommunityStatus  @default(ACTIVE)
+  memberCount  Int              @default(0)
+  hiddenReason String? // From the Hagz admin who hid it.
+  createdAt    DateTime         @default(now()) @db.Timestamptz
+  updatedAt    DateTime         @updatedAt @db.Timestamptz
+
+  location Location          @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  members  CommunityMember[]
+  invites  CommunityInvite[]
+  events   CommunityEvent[]
+  games    BookingListing[]
+
+  @@index([status, locationId])
+}
+
+// A customer's place in a community, from their first request or join. Never deleted: leaving,
+// declining, removal and bans change the status, and rejoining reuses the row. decidedAt and
+// deciderId record the last approval, decline, removal or ban by a community admin. CHECKs: an OWNER
+// is ACTIVE; requestedAt set when REQUESTED, joinedAt when ACTIVE, leftAt exactly when LEFT;
+// DECLINED, REMOVED and BANNED have a decider; decidedAt and deciderId both or neither.
+model CommunityMember {
+  communityId String                @db.Uuid
+  customerId  String                @db.Uuid
+  role        CommunityRole         @default(MEMBER)
+  status      CommunityMemberStatus
+  muted       Boolean               @default(false) // No notifications about this community.
+  requestedAt DateTime?             @db.Timestamptz // A closed community: when they asked; 7 days must pass after a decline.
+  joinedAt    DateTime?             @db.Timestamptz
+  leftAt      DateTime?             @db.Timestamptz
+  decidedAt   DateTime?             @db.Timestamptz
+  deciderId   String?               @db.Uuid
+  createdAt   DateTime              @default(now()) @db.Timestamptz
+  updatedAt   DateTime              @updatedAt @db.Timestamptz
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  customer  Customer  @relation("CommunityMember", fields: [customerId], references: [id], onDelete: Restrict)
+  decider   Customer? @relation("CommunityDecider", fields: [deciderId], references: [id], onDelete: Restrict)
+
+  @@id([communityId, customerId])
+  @@unique([communityId], map: "CommunityMember_owner_key", where: { role: "OWNER" }) // One owner.
+  @@index([communityId, status]) // Members and the request queue.
+  @@index([customerId])
+}
+
+// A join link (/c/[slug]?invite=code) that skips approval. The code is stored as an HMAC, like staff
+// invitation codes. CHECK: uses >= 0, maxUses >= 1, uses <= maxUses.
+model CommunityInvite {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  communityId String    @db.Uuid
+  codeHash    String    @unique // HMAC-SHA256, so a code can be looked up.
+  creatorId   String    @db.Uuid // A community admin.
+  expiresAt   DateTime? @db.Timestamptz
+  maxUses     Int?
+  uses        Int       @default(0)
+  revokedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  creator   Customer  @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+
+  @@index([communityId])
+}
+
+// Append-only, written with the change: settings, approvals, removals, bans, roles, ownership,
+// archiving, and a Hagz admin hiding or unhiding it. No actor means the system. CHECK: at most one
+// actor.
+model CommunityEvent {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  communityId String   @db.Uuid
+  type        String // Allowed list in the API.
+  customerId  String?  @db.Uuid // A community admin or member.
+  adminId     String?  @db.Uuid // A Hagz admin.
+  data        Json?
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  customer  Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  admin     Admin?    @relation(fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([communityId, createdAt])
+}

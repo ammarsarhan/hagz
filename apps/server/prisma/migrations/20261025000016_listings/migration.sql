@@ -16,6 +16,8 @@ CREATE TABLE "BookingListing" (
     "note" TEXT,
     "sharePrice" INTEGER NOT NULL,
     "joinFee" INTEGER NOT NULL,
+    "communityId" UUID,
+    "publicAt" TIMESTAMPTZ,
     "arrivedCount" SMALLINT,
     "arrivedAt" TIMESTAMPTZ,
     "arrivedById" UUID,
@@ -43,6 +45,9 @@ CREATE INDEX "BookingListing_status_startsAt_idx" ON "BookingListing"("status", 
 
 -- CreateIndex
 CREATE INDEX "BookingListing_venueId_startsAt_idx" ON "BookingListing"("venueId", "startsAt");
+
+-- CreateIndex
+CREATE INDEX "BookingListing_communityId_status_startsAt_idx" ON "BookingListing"("communityId", "status", "startsAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "BookingListing_bookingId_venueId_key" ON "BookingListing"("bookingId", "venueId");
@@ -78,6 +83,10 @@ ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_players_check" CHECK
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_closed_check" CHECK ((status = 'OPEN') = ("closedAt" IS NULL));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+-- A community game can open to everyone at publicAt; a public game has no publicAt.
+ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_public_check" CHECK ("publicAt" IS NULL OR "communityId" IS NOT NULL);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 -- The venue records how many came, never more than joined; null means everyone expected came.

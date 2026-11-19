@@ -249,3 +249,35 @@ enum CancellationActor {
   VENUE
   ADMIN // Support.
 }
+
+// Communities
+enum CommunityPolicy {
+  OPEN // Anyone joins at once.
+  CLOSED // A request an admin approves, or an invite link.
+}
+
+enum CommunityGamesBy {
+  MEMBERS
+  ADMINS
+}
+
+enum CommunityStatus {
+  ACTIVE
+  ARCHIVED // By its owner.
+  HIDDEN // By a Hagz admin.
+}
+
+enum CommunityRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum CommunityMemberStatus {
+  REQUESTED
+  ACTIVE
+  DECLINED
+  LEFT
+  REMOVED // Can rejoin.
+  BANNED // Can't, until an admin lifts it.
+}

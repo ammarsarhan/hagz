@@ -51,6 +51,7 @@ model Location {
   children     Location[]            @relation("Hierarchy")
   translations LocationTranslation[]
   venues       Venue[]
+  communities  Community[] // Home area.
 
   // Parent relation target.
   @@unique([id, marketplaceId])
