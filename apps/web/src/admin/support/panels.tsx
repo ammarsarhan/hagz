@@ -13,9 +13,11 @@ import { dateTime } from "@/admin/venues/history";
 import { venueHref } from "@/admin/venues/sections";
 import { statusLabel, type AccountStatus, type CustomerAccount, type StaffAccount } from "./model";
 
-// The Support page's side panels, opened by clicking a row: a staff member, with their venues and
-// suspend, reactivate or ban; or a customer. Closing slides the panel out first, and onClose (which
-// removes it) runs once it's gone.
+// The Support page's side panels, opened by clicking a row: a staff member, with their venues,
+// suspend, reactivate or ban, and a password reset for an owner; or a customer, with suspend or
+// reactivate. Each action is kept with a reason on the account's record (and, for staff, on each of
+// their venues' History). Closing slides the panel out first, and onClose (which removes it) runs
+// once it's gone.
 
 function Status({ status }: { status: AccountStatus }) {
   return <Tag tone={status === "ACTIVE" ? "on" : "neutral"}>{statusLabel[status]}</Tag>;
@@ -59,8 +61,11 @@ export function StaffAccountPanel({
   onClose: () => void;
 }) {
   const [open, setOpen] = useState(true);
-  const [action, setAction] = useState<"suspend" | "reactivate" | "ban">();
+  const [action, setAction] = useState<"suspend" | "reactivate" | "ban" | "reset">();
   const ownsAVenue = staff.venues.some((venue) => venue.role === "OWNER");
+  // When a reset was allowed while the panel is open: the API doesn't say whether one is open, so
+  // the panel says it until it closes.
+  const [resetUntil, setResetUntil] = useState<Date>();
   const close = () => setAction(undefined);
   return (
     <SidePanel
@@ -123,6 +128,21 @@ export function StaffAccountPanel({
                   onClick={() => setAction("suspend")}
                 />
               )}
+              {/* Owners can't reset their password by themselves (a recycled number would take the
+                  venue with it); members can, so it's only offered to an owner. */}
+              {ownsAVenue && staff.status === "ACTIVE" && resetUntil ? (
+                <p role="status" className="text-label text-ink-2">
+                  Password reset allowed until {dateTime(resetUntil.toISOString())}. Tell them to
+                  use Forgot password in the staff app.
+                </p>
+              ) : ownsAVenue && staff.status === "ACTIVE" ? (
+                <AccessAction
+                  title="Allow a password reset"
+                  description="Once you've checked who they are: they can reset it once in the app, with a code to their phone, within 24 hours. They keep every venue and permission."
+                  action="Allow"
+                  onClick={() => setAction("reset")}
+                />
+              ) : null}
               {/* Not offered to an owner: the API refuses until their venue has another owner. */}
               {ownsAVenue ? null : (
                 <AccessAction
@@ -171,6 +191,26 @@ export function StaffAccountPanel({
           onDone={() => onStatus("BANNED")}
         />
       ) : null}
+      {action === "reset" ? (
+        <ReasonDialog
+          title={`Let ${staff.name} reset their password?`}
+          description="Tell them to use Forgot password in the staff app within 24 hours. A code goes to their phone; nobody at Hagz sees the new password."
+          confirmLabel="Allow reset"
+          danger={false}
+          hint="Kept on their account's record. Say how you checked who they are."
+          placeholder="They called from their number and confirmed …"
+          request={(reason) =>
+            send(
+              api.POST("/v1/admin/staff/{staffId}/password-reset", {
+                params: { path: { staffId: staff.id } },
+                body: { reason },
+              }),
+            )
+          }
+          onClose={close}
+          onDone={() => setResetUntil(new Date(Date.now() + 24 * 60 * 60 * 1000))}
+        />
+      ) : null}
       {action === "reactivate" ? (
         <ConfirmDialog
           title={`Reactivate ${staff.name}'s account?`}
@@ -192,27 +232,92 @@ export function StaffAccountPanel({
   );
 }
 
-// A customer's account, for looking up. Suspending customers isn't in the API yet.
+// A customer's account, and keeping them out of it. Customers can't be banned in v1, so a banned
+// one (none yet) only says so.
 export function CustomerAccountPanel({
   customer,
+  onStatus,
   onClose,
 }: {
   customer: CustomerAccount;
+  // After suspending or reactivating, so the table shows it.
+  onStatus: (status: AccountStatus) => void;
   onClose: () => void;
 }) {
   const [open, setOpen] = useState(true);
+  const [action, setAction] = useState<"suspend" | "reactivate">();
+  const close = () => setAction(undefined);
   return (
     <SidePanel
       open={open}
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
       title="Customer"
-      description="A player's account."
+      description="A player's account, and keeping them out of it."
       compact
     >
-      <PanelSection title="Account">
-        <AccountRows account={customer} />
-      </PanelSection>
+      <div className="flex flex-col gap-6">
+        <PanelSection title="Account">
+          <AccountRows account={customer} />
+        </PanelSection>
+
+        <PanelSection title="Support">
+          {customer.status === "BANNED" ? (
+            <p className="text-label text-ink-2">This account was banned for good.</p>
+          ) : customer.status === "SUSPENDED" ? (
+            <AccessAction
+              title="Reactivate account"
+              description="They can sign in and book again."
+              action="Reactivate"
+              onClick={() => setAction("reactivate")}
+            />
+          ) : (
+            <AccessAction
+              title="Suspend account"
+              description="Signs them out everywhere and keeps them out of the app until it's reactivated."
+              action="Suspend"
+              onClick={() => setAction("suspend")}
+            />
+          )}
+        </PanelSection>
+      </div>
+
+      {action === "suspend" ? (
+        <ReasonDialog
+          title={`Suspend ${customer.name}'s account?`}
+          description="They're signed out everywhere and can't sign in until you reactivate them. An app already open stops working within 10 minutes."
+          confirmLabel="Suspend"
+          hint="Kept on their account's record. Say what happened."
+          placeholder="Reported by a venue for …"
+          request={(reason) =>
+            send(
+              api.POST("/v1/admin/customers/{customerId}/suspend", {
+                params: { path: { customerId: customer.id } },
+                body: { reason },
+              }),
+            )
+          }
+          onClose={close}
+          onDone={() => onStatus("SUSPENDED")}
+        />
+      ) : null}
+      {action === "reactivate" ? (
+        <ConfirmDialog
+          title={`Reactivate ${customer.name}'s account?`}
+          description="They can sign in and book again."
+          confirmLabel="Reactivate"
+          danger={false}
+          request={() =>
+            send(
+              api.POST("/v1/admin/customers/{customerId}/reactivate", {
+                params: { path: { customerId: customer.id } },
+              }),
+            )
+          }
+          onClose={close}
+          onDone={() => onStatus("ACTIVE")}
+        />
+      ) : null}
     </SidePanel>
   );
 }

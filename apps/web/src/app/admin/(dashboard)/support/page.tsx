@@ -21,7 +21,8 @@ import { TabPanel, Tabs } from "@/admin/tabs";
 // Support: finding a staff member or a customer to help them with their account. Two tabs, each the
 // admin's one table under a search that goes to the API (name, or phone typed any way), a page at a
 // time with Show more below. Clicking a row opens the account in a side panel: a staff member's
-// venues and suspend or reactivate, or a customer's details.
+// venues, suspending or reactivating them and an owner's password reset, or a customer's details and
+// suspending or reactivating them.
 
 // Each row's place in the table as it's shown, counting from 1.
 const indexColumn = {
@@ -231,7 +232,7 @@ function StaffTab() {
 
 function CustomersTab() {
   const [query, setQuery] = useState("");
-  const { data, error, loadingMore, loadMore } = useAccounts("customers", query);
+  const { data, error, loadingMore, loadMore, setStatus } = useAccounts("customers", query);
   const [selected, setSelected] = useState<string>();
   const table = useTable({
     features: customerFeatures,
@@ -262,6 +263,7 @@ function CustomersTab() {
         <CustomerAccountPanel
           key={open.id}
           customer={open}
+          onStatus={(status) => setStatus(open.id, status)}
           onClose={() => setSelected(undefined)}
         />
       ) : null}
