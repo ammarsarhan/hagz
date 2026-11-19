@@ -60,7 +60,9 @@ The screens came first, because every later screen sits behind sign-in. 1.U0, 1.
 
 **Done when:** a staff member, a customer and an admin can each sign up or accept an invitation, sign in, and sign out in their app.
 
-## Phase 2: Venues and grounds
+## Phase 2: Venues and grounds ✅
+
+Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin review in the apps. Merged in #131, #132, #135, #138, #147, #154, #157, #158, #161, #165, #170, #171, #174, #177, #180, #183 and #184.
 
 | PR | Scope |
 |---|---|
