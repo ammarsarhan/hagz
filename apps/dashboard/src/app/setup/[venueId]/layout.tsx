@@ -84,7 +84,10 @@ const TRAY_HEIGHT = 124;
 // The chips' row, and the one line ("Everything's on the layout.") in its place once nothing's
 // left: the tray then fits its title and that line.
 const CHIP_ROW = 56;
-const MESSAGE_LINE = 21;
+// The message's line (text-label), and how far it sits up into the title's gap: the 12 the chips
+// need under the title is a lot for one small line.
+const MESSAGE_LINE = 19;
+const MESSAGE_LIFT = 6;
 const TRAY_PADDING = 18;
 // Shrinking to that line and growing back when something comes off the layout.
 const TRAY_CHANGE = { duration: 280, easing: Easing.out(Easing.cubic) };
@@ -207,7 +210,7 @@ function LayoutView({
     height: interpolate(
       emptied.value,
       [0, 1],
-      [TRAY_HEIGHT, TRAY_PADDING * 2 + titleHeight.value + MESSAGE_LINE],
+      [TRAY_HEIGHT, TRAY_PADDING * 2 + titleHeight.value - MESSAGE_LIFT + MESSAGE_LINE],
     ),
   }));
   const trayItems = useAnimatedStyle(() => ({
@@ -802,10 +805,10 @@ function LayoutView({
               pointerEvents="none"
               accessibilityElementsHidden={!trayEmpty}
               importantForAccessibility={trayEmpty ? "auto" : "no-hide-descendants"}
-              className="absolute inset-x-0 top-0 pr-[18px]"
-              style={trayDone}
+              className="absolute inset-x-0 pr-[18px]"
+              style={[{ top: -MESSAGE_LIFT }, trayDone]}
             >
-              <Text className="text-body text-ink-2">{t("screens.setup.layout.allPlaced")}</Text>
+              <Text className="text-label text-ink-2">{t("screens.setup.layout.allPlaced")}</Text>
             </Animated.View>
           </View>
         </View>
