@@ -7,7 +7,8 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 // A venue's map, read only (Figma C5, "The grounds"): the owner's grid at a cell to every
 // `width / columns` points, the venue's outline in ink, each ground drawn top-down with its
 // markings and name, the amenities placed on it as white tiles, and the entrances as black tags on
-// the edge. Grounds under maintenance say so.
+// the edge. Grounds under maintenance say so. Tapping a ground picks it (the card under the map shows
+// it; Figma C5 round 2, 75:72).
 
 type Layout = NonNullable<PublicVenue["layout"]>;
 
@@ -15,6 +16,7 @@ const INK = "#0b0b0c";
 const GRID = "#edeef0";
 const TILE = "#e4e6ea";
 const MARK = "#9ea3ab";
+const LIME = "#e9fea0";
 const AMENITY_LINE = "#d5d8dd";
 const UNIT = "#737373";
 // Inside a cell's edge, so tiles side by side don't touch.
@@ -32,7 +34,15 @@ interface Box {
 }
 
 // The lines of a ground, along the tile's long side.
-function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
+function Markings({
+  sport,
+  box,
+  color,
+}: {
+  sport: PublicGround["sport"];
+  box: Box;
+  color: string;
+}) {
   const { x, y, w, h } = {
     x: box.x + MARGIN,
     y: box.y + MARGIN,
@@ -54,12 +64,12 @@ function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
       height={h}
       rx={1.5}
       fill="none"
-      stroke={MARK}
+      stroke={color}
       strokeWidth={1.2}
     />,
   ];
   if (sport === "FOOTBALL" || sport === "BASKETBALL") {
-    lines.push(<Line key="half" {...mid} stroke={MARK} strokeWidth={1.2} />);
+    lines.push(<Line key="half" {...mid} stroke={color} strokeWidth={1.2} />);
     lines.push(
       <Circle
         key="centre"
@@ -67,7 +77,7 @@ function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
         cy={y + h / 2}
         r={Math.min(short * 0.2, 14)}
         fill="none"
-        stroke={MARK}
+        stroke={color}
         strokeWidth={1.2}
       />,
     );
@@ -84,11 +94,11 @@ function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
           { x: x + (w - span) / 2, y: y + h - depth, width: span, height: depth },
         ];
     ends.forEach((end, i) =>
-      lines.push(<Rect key={`end${i}`} {...end} fill="none" stroke={MARK} strokeWidth={1.2} />),
+      lines.push(<Rect key={`end${i}`} {...end} fill="none" stroke={color} strokeWidth={1.2} />),
     );
   } else {
     // A net across the middle, and service lines either side of it.
-    lines.push(<Line key="net" {...mid} stroke={MARK} strokeWidth={2.2} />);
+    lines.push(<Line key="net" {...mid} stroke={color} strokeWidth={2.2} />);
     for (const k of [0.3, 0.7]) {
       lines.push(
         across ? (
@@ -98,7 +108,7 @@ function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
             y1={y}
             x2={x + w * k}
             y2={y + h}
-            stroke={MARK}
+            stroke={color}
             strokeWidth={1.2}
           />
         ) : (
@@ -108,7 +118,7 @@ function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
             y1={y + h * k}
             x2={x + w}
             y2={y + h * k}
-            stroke={MARK}
+            stroke={color}
             strokeWidth={1.2}
           />
         ),
@@ -120,7 +130,17 @@ function Markings({ sport, box }: { sport: PublicGround["sport"]; box: Box }) {
 
 // A white pill with the ground's name in the middle of its tile; the status is dropped when the
 // tile is too small for both.
-function Tag({ box, name, status }: { box: Box; name: string; status?: string }) {
+function Tag({
+  box,
+  name,
+  status,
+  selected,
+}: {
+  box: Box;
+  name: string;
+  status?: string;
+  selected: boolean;
+}) {
   const full = status ? `${name} · ${status}` : name;
   const widthOf = (text: string) => text.length * 6.2 + 14;
   const text = widthOf(full) <= box.w - 6 ? full : name;
@@ -129,7 +149,14 @@ function Tag({ box, name, status }: { box: Box; name: string; status?: string })
   const cy = box.y + box.h / 2;
   return (
     <G>
-      <Rect x={cx - width / 2} y={cy - 9} width={width} height={18} rx={9} fill="#ffffff" />
+      <Rect
+        x={cx - width / 2}
+        y={cy - 9}
+        width={width}
+        height={18}
+        rx={9}
+        fill={selected ? LIME : "#ffffff"}
+      />
       <SvgText x={cx} y={cy + 3.8} textAnchor="middle" fontSize={10.5} fontWeight="600" fill={INK}>
         {text}
       </SvgText>
@@ -141,10 +168,15 @@ export function VenueLayout({
   layout,
   grounds,
   amenities,
+  selectedId,
+  onSelect,
 }: {
   layout: Layout;
   grounds: PublicGround[];
   amenities: PublicVenue["amenities"];
+  // The picked ground: black with lime lines and a lime name tag. Tapping a ground picks it.
+  selectedId?: string | null;
+  onSelect?: (groundId: string) => void;
 }) {
   const [width, setWidth] = useState(0);
   const cell = width / layout.columns;
@@ -228,14 +260,27 @@ export function VenueLayout({
                   ? [placed.height, placed.width]
                   : [placed.width, placed.height];
               const box = boxOf(placed.x, placed.y, w, h);
+              const selected = ground.id === selectedId;
               return (
-                <G key={placed.groundId}>
-                  <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={TILE} />
-                  <Markings sport={ground.sport} box={box} />
+                <G
+                  key={placed.groundId}
+                  onPress={onSelect ? () => onSelect(ground.id) : undefined}
+                  accessibilityLabel={ground.name ?? undefined}
+                >
+                  <Rect
+                    x={box.x}
+                    y={box.y}
+                    width={box.w}
+                    height={box.h}
+                    rx={4}
+                    fill={selected ? INK : TILE}
+                  />
+                  <Markings sport={ground.sport} box={box} color={selected ? LIME : MARK} />
                   <Tag
                     box={box}
                     name={ground.name ?? ""}
                     status={ground.status === "MAINTENANCE" ? "Closed" : undefined}
+                    selected={selected}
                   />
                 </G>
               );
