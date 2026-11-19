@@ -359,7 +359,11 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         >
           <Tabs tabs={tabs} active={active} onPress={goTo} />
         </Animated.View>
-        <GroundsSection venue={venue} onLayout={recordOffset("grounds")} />
+        <GroundsSection
+          venue={venue}
+          onLayout={recordOffset("grounds")}
+          onSeeTimes={() => hud.show("Booking opens soon")}
+        />
         <BookingSection venue={venue} onLayout={recordOffset("booking")} />
         <CancellationSection venue={venue} />
         {venue.amenities.length > 0 ? (

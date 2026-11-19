@@ -1,6 +1,6 @@
 import { refundBands } from "@hagz/contracts";
 import type { Icon } from "@tabler/icons-react-native";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, View, type LayoutChangeEvent } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { colors } from "@/lib/colors";
@@ -12,6 +12,7 @@ import {
   noticeLabel,
   paymentLabel,
   sportsLine,
+  type PublicGround,
   type PublicVenue,
 } from "@/lib/venue";
 import { AmenityIcon } from "./amenity-icon";
@@ -193,36 +194,97 @@ export function Highlights({ venue }: { venue: PublicVenue }) {
   );
 }
 
+// A ground's hourly price, or that it's closed.
+function GroundPrice({ ground, currency }: { ground: PublicGround; currency: string }) {
+  if (ground.status === "MAINTENANCE") {
+    return <Text className="text-label text-unit">Closed for now</Text>;
+  }
+  if (ground.priceFrom === null) return null;
+  return (
+    <Text className="text-subtitle font-medium">
+      {formatPrice(ground.priceFrom, currency)}
+      <Text className="text-subtitle text-ink-2">/hr</Text>
+    </Text>
+  );
+}
+
+// The picked ground under the map (Figma C5 round 2, 75:72): its name and price, what it is, and
+// See times.
+function GroundCard({
+  ground,
+  currency,
+  onSeeTimes,
+}: {
+  ground: PublicGround;
+  currency: string;
+  onSeeTimes: () => void;
+}) {
+  return (
+    <View className="gap-0.5 rounded-2xl border-[1.5px] border-ink px-4 py-3.5">
+      <View className="flex-row items-center justify-between gap-3">
+        <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
+        <GroundPrice ground={ground} currency={currency} />
+      </View>
+      <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+      {ground.status === "ACTIVE" ? (
+        <View className="mt-1.5 items-start">
+          <Link label="See times" onPress={onSeeTimes} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+// The venue's map with one ground picked (the first active one to start), and its card under the
+// map; tapping another ground picks it. Grounds the owner hasn't put on the map are listed after,
+// and a venue without a map lists them all.
 export function GroundsSection({
   venue,
   onLayout,
+  onSeeTimes,
 }: {
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
+  onSeeTimes: () => void;
 }) {
+  const placed = new Set(venue.layout?.grounds.map((ground) => ground.groundId) ?? []);
+  const onMap = venue.grounds.filter((ground) => placed.has(ground.id));
+  const offMap = venue.grounds.filter((ground) => !placed.has(ground.id));
+  const [pickedId, setPickedId] = useState<string | null>(
+    () => (onMap.find((ground) => ground.status === "ACTIVE") ?? onMap[0])?.id ?? null,
+  );
+  const picked = onMap.find((ground) => ground.id === pickedId);
+  const currency = venue.marketplace.currency;
   return (
     <Section title="The grounds" onLayout={onLayout}>
-      {venue.layout ? (
-        <VenueLayout layout={venue.layout} grounds={venue.grounds} amenities={venue.amenities} />
+      {venue.layout && onMap.length > 0 ? (
+        <>
+          <VenueLayout
+            layout={venue.layout}
+            grounds={venue.grounds}
+            amenities={venue.amenities}
+            selectedId={pickedId}
+            onSelect={setPickedId}
+          />
+          {picked ? (
+            <GroundCard ground={picked} currency={currency} onSeeTimes={onSeeTimes} />
+          ) : null}
+          <Text className="text-label text-unit">Tap a ground on the map to see it here.</Text>
+        </>
       ) : null}
-      <Rows>
-        {venue.grounds.map((ground) => (
-          <View key={ground.id} className="flex-row items-center justify-between gap-3 py-3.5">
-            <View className="shrink gap-0.5">
-              <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
-              <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+      {offMap.length > 0 ? (
+        <Rows>
+          {offMap.map((ground) => (
+            <View key={ground.id} className="flex-row items-center justify-between gap-3 py-3.5">
+              <View className="shrink gap-0.5">
+                <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
+                <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+              </View>
+              <GroundPrice ground={ground} currency={currency} />
             </View>
-            {ground.status === "MAINTENANCE" ? (
-              <Text className="text-label text-unit">Closed for now</Text>
-            ) : ground.priceFrom !== null ? (
-              <Text className="text-label font-medium">
-                {formatPrice(ground.priceFrom, venue.marketplace.currency)}
-                <Text className="text-label text-ink-2">/hr</Text>
-              </Text>
-            ) : null}
-          </View>
-        ))}
-      </Rows>
+          ))}
+        </Rows>
+      ) : null}
     </Section>
   );
 }
