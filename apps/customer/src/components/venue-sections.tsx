@@ -274,7 +274,7 @@ function GroundOption({
     >
       <Animated.View
         pointerEvents="none"
-        className="absolute -inset-px rounded-[17px] border-[1.5px] border-[#c4c8cf]"
+        className="absolute -inset-px rounded-[17px] border-[1.5px] border-[#d5d8dd]"
         style={fade}
       />
       <View className="flex-row items-center justify-between gap-6">
