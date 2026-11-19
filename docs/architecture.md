@@ -165,6 +165,21 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_no_overlap"
 
 The slot constraint closes a real gap (manual slots), and is in the grounds migration (2026-11-18, with `btree_gist` in the first one); the booking one comes with bookings (Phase 4). The booking constraint is a backstop: the slot claim should already prevent overlaps, but if application code ever writes a booking whose range doesn't match its slots, Postgres refuses it. Like the CHECKs, Prisma can't declare these, so they're hand-added to a migration and verified for drift.
 
+### Migrations
+
+Agreed while building the schema (2026-10-25 onwards) and used for every change since.
+
+- **One migration per domain,** matching the schema files (`20261025000000_postgis`, then admins, staff, customers, … listings, communities, tournaments), in dependency order. Each enum is in the first migration that uses it, and each foreign key in the later of its two tables' migrations (so `BookingListing → Community` is in communities).
+- **Until a database outside development has applied them, changes fold into their domain's migration** instead of adding small migrations: a new column, CHECK or index goes with its table. A new domain gets a new migration (communities and tournaments did on 2026-11-19). From the first deployment on, an applied migration is never edited again; every change is a new migration.
+- **Hand-written SQL** for what Prisma can't declare, each marked with a comment saying so: CHECK constraints, exclusion constraints, functions (`fold_name()`) and expression indexes (the trigram index on venue names). Prisma's diff can't see them, so it neither creates nor reports them.
+- **Indexes Prisma declares stay exactly as declared.** Changing one by hand (adding `INCLUDE` columns to the unique `(groundId, startsAt)` index, for example) shows up as drift, and Prisma would rewrite it.
+- **Renames are written by hand** (`ALTER TABLE … RENAME COLUMN`). Prisma's diff turns a rename into dropping and adding the column, which loses the data.
+- **Verifying a change:**
+  1. migrate a fresh database from scratch (`migrate deploy`), and check that `prisma migrate diff` against the schema is empty;
+  2. insert good rows and rows that must be refused, and check each CHECK refuses its bad row;
+  3. compare constraint, index and function definitions (`pg_get_constraintdef`, `pg_indexes`, `pg_get_functiondef`) between that database and the development one, since the diff can't see hand-written SQL.
+- **Updating a development database after a migration was edited in place:** `migrate deploy` skips a migration that's already recorded, so the edit never reaches it. Either reset it (`prisma migrate reset`, then `seed:reference`) when its data doesn't matter, or apply the edited statements by hand and set that migration's `checksum` in `_prisma_migrations` to the SHA-256 of the edited file. `ALTER TYPE … ADD VALUE` must run outside the transaction that uses the new value, with `BEFORE` so the enum's order matches a fresh database.
+
 ## Reliability
 
 | Area | Rule |
@@ -214,7 +229,7 @@ The sorts the player picks (distance, price, rating, soonest available) are appl
 
 ### Search indexes
 
-Measured on 2026-11-19 (PR 3.1) against `seed:scale`: a local `hagz_scale` database with 1,000 live venues, 3,953 grounds and 5.7M slots (2.2 GB with indexes, 82% of slots free). Run `pnpm --filter @hagz/server seed:scale` to rebuild it.
+Measured on 2026-11-19 (PR 3.1) against `seed:scale`: a local `hagz_scale` database with 1,000 live venues, 3,953 grounds and 5.7M slots (2.2 GB with indexes, 82% of slots free). Run `pnpm --filter @hagz/server seed:scale` to rebuild it. It refuses any server that isn't local, and leaves the development database alone. Its data is repeatable (the same seed gives the same venues, so plans compare between runs). Taken slots are stored as `BLOCKED`, not `BOOKED`: a booked slot needs a real booking, and search only asks whether a slot is `AVAILABLE`, so the plans are the same without millions of bookings.
 
 **Names.** `fold_name()` (first migration) folds a name the way `foldName` in `src/platform/text/fold.ts` folds what the player types: case, Latin accents, Arabic diacritics, hamza and madda forms, ى/ي, ة/ه, Arabic-Indic digits, spaces and the invisible marks pasted text carries. A test keeps the two equal. Venue names have a trigram index on `fold_name(name)`, which `LIKE '%part%'` uses. Postgres inlines the function into both the index and the query, so it must stay `IMMUTABLE`, and changing it means a migration that replaces it and rebuilds every index on it.
 
