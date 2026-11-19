@@ -26,7 +26,7 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 | Other joined players' first names | Count only | Yes |
 | The booker's phone number | No | Yes, until 24 hours after kick-off |
 
-The booker sees each joined player's first name, phone number, reliability figure, and when they joined. Phone numbers are only ever shared between the booker and a joined player, never between two joined players. Venue staff see the joined players' names, as a headcount for the booking.
+The booker sees each joined player's first name, phone number, reliability figure, and when they joined. Phone numbers are only ever shared between the booker and a joined player, never between two joined players. Venue staff see the booking marked as an open game expecting n players (the joined count, which is final at kick-off, since nobody can join or leave after it), with their first names.
 
 ## Finding games
 
@@ -42,9 +42,11 @@ Agreed on 2026-11-19.
 - **The share** is the booking's total divided by the ground's player count, rounded up to a whole currency unit. It's copied onto the listing when it opens. Example: 600 EGP on a 5-a-side pitch (10 players) is 60 EGP each. The booker's own spot and any spots left unfilled stay paid for by the booker.
 - **The joining fee** is 10% of the share, rounded to a whole unit: 6 EGP in the example. The rate is `Marketplace.joinFeeRate` (basis points, 1000 by default), copied onto the listing.
 - **At the venue,** the joined player pays the booker their share (60 EGP) and pays the venue the joining fee (6 EGP). The game page and the join button show both amounts and who each one is paid to.
-- **Staff check joined players in** from the booking's player list. Checking a player in records that the venue took their fee. Hagz takes the fee out of the venue's balance (a `JOIN_FEE` ledger entry), settled at the next payout. It works the same way as commission on cash bookings.
+- **The venue sees what to expect:** the booking is flagged "Open game: n players", with their names and the fee each one owes.
+- **Staff record how many came,** one number on the booking, from the kick-off until 24 hours after the end. The fee is that number × the joining fee. Hagz takes it out of the venue's balance (one `JOIN_FEE` ledger entry per game), settled at the next payout. It works the same way as commission on cash bookings.
+- **If staff record nothing,** everyone expected is assumed to have come, minus the players the booker reported as no-shows. Recording a lower number is the venue's claim, so the venue gains nothing by staying silent.
+- **A recorded number lower than expected is noted.** "Expected" is the joined count minus the booker's no-show reports. A shortfall puts a `BookingEvent` on the booking and counts towards the venue's under-recording rate, which admins see per venue. A single game is never an alert (a few pounds), but a venue that's always short is.
 - **A player who doesn't come pays nothing,** and Hagz accepts the loss: they're a small part of a booking that's already paid. Leaving or being removed costs nothing either, because nothing is paid in advance.
-- **The audit compares the two attendance records:** the venue's check-ins and the booker's no-show reports. A player the booker says came but the venue never checked in is flagged to admins, because that's where a fee could go missing.
 
 ## Reliability
 
@@ -63,21 +65,22 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
   - `neededPlayers`;
   - `playerCount`, kept up to date under the same lock as joining, so the feed shows spots left without counting rows;
   - `note?`;
-  - `sharePrice` and `joinFeeRate`, copied when the listing opens (changed on 2026-11-19: replaces the informational `costShare?`). A reschedule keeps them, like the booking's other terms;
+  - `sharePrice` and `joinFee` (minor units, from `Marketplace.joinFeeRate`), copied when the listing opens (changed on 2026-11-19: replaces the informational `costShare?`). A reschedule keeps them, like the booking's other terms;
+  - `arrivedCount?`, `arrivedRecordedAt?` and `arrivedRecorderId?` (staff), recorded by the venue. CHECK: all three or none, and `arrivedCount` between 0 and `neededPlayers`. The shortfall is calculated, not stored;
   - `communityId?` and `publicAt?`, for community games (see [communities.md](communities.md));
   - `createdAt`, `closedAt?`.
 
   Indexed on `(status, startsAt)` and `venueId` for the feed.
-- **`ListingPlayer`:** `listingId`, `customerId`, `status` (`ListingPlayerStatus`: `JOINED` / `LEFT` / `REMOVED`), `joinedAt`, `leftAt?`, `noShowReportedAt?`. Since 2026-11-19 also `feeAmount` (copied at join) and `checkedInAt?` with `checkedInById?` (the staff member who took the fee; CHECK: both or neither, and only for `JOINED`). Its primary key is `(listingId, customerId)`, so rejoining reuses the row; indexed on `customerId` for "my games".
+- **`ListingPlayer`:** `listingId`, `customerId`, `status` (`ListingPlayerStatus`: `JOINED` / `LEFT` / `REMOVED`), `joinedAt`, `leftAt?`, `noShowReportedAt?`. Its primary key is `(listingId, customerId)`, so rejoining reuses the row; indexed on `customerId` for "my games".
 - **Joining, leaving and changing `neededPlayers` lock the `BookingListing` row**, then check that `playerCount` stays at or under `neededPlayers`. Two players can't both take the last spot, the booker can't lower the number below what's joined, and the booking itself is never locked by people joining.
 - **If the booking is cancelled,** its transaction also sets the game to `CANCELLED`.
 - **`Marketplace.joinFeeRate`:** basis points, default 1000 (10%).
-- **`LedgerEntry` type `JOIN_FEE`:** one per checked-in player, unique on `(listingId, customerId)`, taken from the venue's balance (6.3).
+- **`LedgerEntry` type `JOIN_FEE`:** one per game, unique on `listingId`, for the recorded (or assumed) count × `joinFee`. Written when the recording window closes, and taken from the venue's balance (6.3).
 - **`Customer.nearbyGames`:** the "Games near me" opt-in, off by default (used in Phase 7).
 
 ## Open
 
-- Whether the venue keeps part of the joining fee for collecting it. It has to chase strangers for 6 EGP, and a share would make it more likely to check players in.
+- Whether the venue keeps part of the joining fee for collecting it. It has to chase strangers for 6 EGP, and a share would make it more likely to record honestly.
 - VAT on the joining fee: it's Hagz's revenue, so Hagz charges VAT on it once registered (the accountant's question, with commission).
 
 - Whether joined players also become the venue's customers (`VenueCustomer`), so venues can see them in Fill a slot. They play there, but they didn't book.
