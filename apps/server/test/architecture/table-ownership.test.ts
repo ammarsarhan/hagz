@@ -51,11 +51,6 @@ const KNOWN: { file: string; table: string; why: string }[] = [
     table: "Staff",
     why: "Creating a venue locks the creator's staff row, for the same check as transfers.",
   },
-  {
-    file: "src/platform/http/authenticate.ts",
-    table: "Admin",
-    why: "requireAdmin refuses a suspended admin on each request by reading their row. Identity should own that check.",
-  },
 ];
 
 const WRITES = [

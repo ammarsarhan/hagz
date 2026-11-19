@@ -1,6 +1,7 @@
 import {
   adminAuthRoutes,
   customerAuthRoutes,
+  ensureAdminActive,
   staffAuthRoutes,
   supportAdminRoutes,
 } from "@/modules/identity";
@@ -18,6 +19,7 @@ import {
   ADMIN_ACCESS_COOKIE,
   ADMIN_COOKIE_AUTH,
   bearerScheme,
+  checkAdminsWith,
   CUSTOMER_BEARER,
   STAFF_BEARER,
 } from "@/platform/http/authenticate";
@@ -27,6 +29,9 @@ import { createRouter } from "@/platform/http/router";
 // the request id and its context first, so everything after (including errors) can log with it.
 // (Separate statements, not a chain: .use() returns a plain Hono type without the OpenAPI methods.)
 export const router = createRouter();
+
+// Admin requests check the admin is still active; identity owns their account (requireAdmin).
+checkAdminsWith(ensureAdminActive);
 
 router.use(requestId);
 router.use(requestContext);

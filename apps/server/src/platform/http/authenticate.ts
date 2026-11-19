@@ -3,7 +3,6 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import { env } from "@/platform/config/env";
 import { verifyJwt, type Audience } from "@/platform/crypto/jwt";
-import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
 
 export interface CustomerActor {
@@ -122,9 +121,19 @@ export const requireAdminHeader = createMiddleware(async (c, next) => {
   await next();
 });
 
-// Unlike a customer's, an admin's account is read on every request (as staff's is on venue routes),
-// so a suspension stops them at once rather than when their access token expires: an admin can do
-// anything, and there are few enough of them that one lookup by primary key costs nothing.
+// Unlike a customer's, an admin's account is checked on every request (as staff's is on venue
+// routes), so a suspension stops them at once rather than when their access token expires: an admin
+// can do anything, and there are few enough of them that one lookup by primary key costs nothing.
+// Identity owns the account, so the check is its (it throws to refuse); the composition root hands
+// it over (http/router.ts) and platform reads no module's tables. A router without one refuses every
+// admin request rather than let a suspended admin through.
+type AdminCheck = (adminId: string) => Promise<void>;
+let adminCheck: AdminCheck | undefined;
+
+export const checkAdminsWith = (check: AdminCheck) => {
+  adminCheck = check;
+};
+
 export const requireAdmin = createMiddleware<{ Variables: { admin: AdminActor } }>(
   async (c, next) => {
     await requireAdminHeader(c, async () => {
@@ -133,14 +142,9 @@ export const requireAdmin = createMiddleware<{ Variables: { admin: AdminActor } 
         throw new AppError({ code: "UNAUTHENTICATED", status: 401, detail: "Sign in to do this." });
       }
       const { sub, sid } = await verifyJwt(token, "admin");
-      const admin = await prisma.admin.findUnique({ where: { id: sub }, select: { status: true } });
-      if (admin?.status !== "ACTIVE") {
-        throw new AppError({
-          code: "ACCOUNT_SUSPENDED",
-          status: 403,
-          detail: "This account can't sign in. Please contact support.",
-        });
-      }
+      if (!adminCheck)
+        throw new Error("No admin check: http/router.ts sets one (checkAdminsWith).");
+      await adminCheck(sub);
       c.set("admin", { adminId: sub, sessionId: sid });
       await next();
     });
