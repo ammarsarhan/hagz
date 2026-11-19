@@ -23,8 +23,8 @@ The first rules:
 | `approval` | `AUTO` (first come, first confirmed) or `ORGANIZER` (each team approved) | `ORGANIZER` |
 | `squadMin`, `squadMax` | Players per team | The ground size's player count, both |
 | `minReliability` | The lowest "showed up" percentage a player can have, from open games | None |
-| `maxTeamsPerPlayer` | 1 means a player can be in only one squad per tournament | 1 |
 
+- **One squad per player per tournament is fixed,** not a rule: a unique index enforces it, because playing for two teams in the same tournament never makes sense.
 - **The organizer can change the rules freely until the first team registers.** After that they can only loosen them, never tighten. A team that was allowed in can't be pushed out by a rule change.
 - **The rules are shown on the tournament page in plain language,** generated from the JSON, like cancellation policies.
 - Rules that need data we don't have (an age limit needs a date of birth) wait until that data exists.
@@ -69,12 +69,13 @@ Sent once Phase 7's sender exists, and written as `Notification` rows until then
 
 ## Schema
 
-- **`Tournament`:** `id`, `code` (unique, for `/t/[code]`), `venueId?`, `communityId?`, `name`, `description?`, `sport`, `size`, `format` (`KNOCKOUT` / `LEAGUE`), `status`, `teamCap`, `joinRules` (JSON), `entryFee?`, `prizes?`, `registrationClosesAt`, `startsOn`, `createdById` (a staff id or a customer id, according to the organizer), `createdAt`, `updatedAt`.
-  - CHECKs: exactly one of `venueId` and `communityId`; `teamCap >= 2`; `entryFee >= 0`.
+- **`Tournament`:** `id`, `code` (unique, for `/t/[code]`), `venueId?`, `communityId?`, `name`, `description?`, `sport`, `size`, `format` (`KNOCKOUT` / `LEAGUE`), `status`, `teamCap`, `joinRules` (JSON), `entryFee?`, `prizes?`, `registrationClosesAt`, `startsOn`, `staffCreatorId?` (a venue tournament) or `customerCreatorId?` (a community tournament), `createdAt`, `updatedAt`. Two creator columns, not one id that could point at either table, so each has a foreign key.
+  - CHECKs: exactly one organizer, with a creator of its kind; `teamCap >= 2`; `entryFee >= 0`; `joinRules` is a JSON object.
   - Indexed on `(status, startsOn)`, `venueId` and `communityId`.
-- **`TournamentTeam`:** `id`, `tournamentId`, `name`, `captainId`, `status`, `createdAt`. Unique on `(tournamentId, name)`.
-- **`TournamentPlayer`:** `teamId`, `customerId`, `tournamentId` (copied, for the one-squad rule), `joinedAt`. Its primary key is `(teamId, customerId)`. Leaving deletes the row: there's no history to keep until a tournament starts, and after that squads are frozen.
-- **`TournamentMatch`:** `id`, `tournamentId`, `round`, `position`, `homeTeamId?`, `awayTeamId?`, `nextMatchId?`, `nextSide?`, `groundId?`, `startsAt?`, `status` (`PENDING` / `PLAYED` / `WALKOVER`), `homeScore?`, `awayScore?`, `homePenalties?`, `awayPenalties?`, `winnerTeamId?`. Unique on `(tournamentId, round, position)`. CHECKs: the two teams differ, and scores are set exactly when `PLAYED`.
+- **`TournamentTeam`:** `id`, `tournamentId`, `name`, `captainId`, `status`, `createdAt`, `updatedAt`. Unique on `(tournamentId, name)`, and on `(id, tournamentId)` as the target for players and matches, so neither can point at another tournament's team.
+- **`TournamentPlayer`:** `teamId`, `customerId`, `tournamentId` (copied from the team, and the foreign key on `(teamId, tournamentId)` makes sure it matches), `joinedAt`. Its primary key is `(teamId, customerId)`; unique on `(tournamentId, customerId)` for one squad per player. Leaving deletes the row: there's no history to keep until a tournament starts, and after that squads are frozen.
+- **`TournamentMatch`:** `id`, `tournamentId`, `round`, `position`, `homeTeamId?`, `awayTeamId?`, `nextMatchId?`, `nextSide?` (`MatchSide`: `HOME` / `AWAY`), `groundId?`, `startsAt?`, `status` (`PENDING` / `PLAYED` / `WALKOVER`), `homeScore?`, `awayScore?`, `homePenalties?`, `awayPenalties?`, `winnerTeamId?`. Unique on `(tournamentId, round, position)`. Teams, the winner and the next match are foreign keys with the tournament's id, so a match can't reach outside its tournament.
+  - CHECKs: round and position >= 1; the two teams differ; scores >= 0 and set exactly when `PLAYED`; penalties both or neither, only after a draw; `nextMatchId` and `nextSide` both or neither; the winner is one of the two teams, required for a `WALKOVER` and absent while `PENDING`.
 
 Registering and confirming teams lock the `Tournament` row, so `teamCap` holds. Joining a squad locks the team row, so `squadMax` holds. There's no tournament event table. Changes are recorded in the organizer's existing history: `VenueEvent` for a venue tournament, `CommunityEvent` for a community tournament.
 

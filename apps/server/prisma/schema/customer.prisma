@@ -35,6 +35,9 @@ model Customer {
   decisions     CommunityMember[]      @relation("CommunityDecider") // As a community admin.
   invites       CommunityInvite[] // Community links created.
   communityLog  CommunityEvent[]
+  tournaments   Tournament[]           @relation("TournamentCreator") // Created for a community.
+  captaincies   TournamentTeam[]       @relation("TournamentCaptain")
+  squads        TournamentPlayer[]
   history       AccountEvent[] // What admins did to this account.
 }
 

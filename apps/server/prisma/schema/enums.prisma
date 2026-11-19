@@ -281,3 +281,35 @@ enum CommunityMemberStatus {
   REMOVED // Can rejoin.
   BANNED // Can't, until an admin lifts it.
 }
+
+// Tournaments
+enum TournamentFormat {
+  KNOCKOUT
+  LEAGUE
+}
+
+enum TournamentStatus {
+  DRAFT // Organizers only.
+  OPEN // Registration.
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum TournamentTeamStatus {
+  PENDING
+  CONFIRMED
+  WITHDRAWN // By its captain.
+  REJECTED // By the organizer.
+}
+
+enum TournamentMatchStatus {
+  PENDING
+  PLAYED
+  WALKOVER
+}
+
+enum MatchSide {
+  HOME
+  AWAY
+}

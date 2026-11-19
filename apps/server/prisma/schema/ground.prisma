@@ -23,6 +23,7 @@ model Ground {
   bookings     Booking[]
   regulars     VenueRegular[]
   waitlists    SlotWaitlist[]
+  matches      TournamentMatch[] // Shown at this ground.
 
   @@unique([id, venueId]) // GroundSlot and Booking relation target.
   @@index([venueId, position])
