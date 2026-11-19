@@ -218,8 +218,16 @@ function GroundPrice({ ground, currency }: { ground: PublicGround; currency: str
   );
 }
 
-// A ground in the list under the map (Figma C5 round 2, 75:72): its name and price and what it is.
-// Picked, it has the black border and See times, and the map shows it in a darker grey.
+// How long a booking there can be: "Book 1 hour", "Book 1–2 hours".
+const lengthLabel = (ground: PublicGround) =>
+  ground.minimumSlots === ground.maximumSlots
+    ? `Book ${hoursLabel(ground.minimumSlots)}`
+    : `Book ${ground.minimumSlots}–${ground.maximumSlots} hours`;
+
+// A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
+// it is, how long a booking can be, and a black See times button across the bottom. Picking only
+// fades things: the black border over the grey one (which stays, so an unpicked card keeps its 1px
+// edge) and the button, whose room every card keeps. Nothing changes size, so nothing moves.
 function GroundOption({
   ground,
   width,
@@ -235,9 +243,6 @@ function GroundOption({
   onPick: () => void;
   onSeeTimes: () => void;
 }) {
-  // Picking only fades things: the black border over the grey one (which stays, so an unpicked
-  // card keeps its 1px edge) and See times, whose room every card keeps. Nothing changes size, so
-  // nothing moves.
   const shown = useSharedValue(picked ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
@@ -249,7 +254,7 @@ function GroundOption({
       accessibilityRole="radio"
       accessibilityState={{ selected: picked }}
       onPress={onPick}
-      className="gap-0.5 rounded-2xl border border-border px-4 py-3.5"
+      className="gap-0.5 rounded-2xl border border-border px-4 py-4"
       style={{ width }}
     >
       <Animated.View
@@ -264,22 +269,42 @@ function GroundOption({
         <GroundPrice ground={ground} currency={currency} />
       </View>
       <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+      {bookable ? <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text> : null}
       {bookable ? (
         <Animated.View
-          className="mt-auto items-start pt-1.5"
+          className="mt-auto pt-3"
           style={fade}
           pointerEvents={picked ? "auto" : "none"}
           accessibilityElementsHidden={!picked}
         >
-          <Link label="See times" onPress={onSeeTimes} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={onSeeTimes}
+            className="h-10 items-center justify-center rounded-full bg-ink active:opacity-80"
+          >
+            <Text className="text-body font-semibold text-white">See times</Text>
+          </Pressable>
         </Animated.View>
       ) : null}
     </Pressable>
   );
 }
 
-// The venue's map, and every ground in a row under it to pick from (the first active one to
-// start); the picked one shows on the map. A venue without a map has the row alone.
+// Which card is in place, out of how many: a short pill for it, dots for the rest.
+function PageDots({ count, current }: { count: number; current: number }) {
+  if (count < 2) return null;
+  return (
+    <View className="flex-row items-center justify-center gap-1.5" accessible={false}>
+      {Array.from({ length: count }, (_, index) => (
+        <View
+          key={index}
+          className={`h-1.5 rounded-full ${index === current ? "w-3.5 bg-ink" : "w-1.5 bg-grab"}`}
+        />
+      ))}
+    </View>
+  );
+}
+
 // The cards: 80% of the screen, 10 apart, so the next one peeks in.
 const CARD_SHARE = 0.8;
 const CARD_GAP = 10;
@@ -358,6 +383,13 @@ export function GroundsSection({
           />
         ))}
       </ScrollView>
+      <PageDots
+        count={venue.grounds.length}
+        current={Math.max(
+          0,
+          venue.grounds.findIndex((ground) => ground.id === pickedId),
+        )}
+      />
     </Section>
   );
 }
