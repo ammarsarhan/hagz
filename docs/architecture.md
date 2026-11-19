@@ -188,6 +188,27 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 - Paginate with keysets, never `OFFSET`. UUIDv7 ids are time-ordered, so `WHERE id < $cursor` works out of the box.
 - Later, when metrics call for it: a read replica for search, and monthly partitions for `LedgerEntry`, `BookingEvent` and `NotificationDelivery`.
 
+### Search ranking
+
+Agreed on 2026-11-19. **Filters decide which venues appear; the sort decides their order.** A venue that fails a filter never appears, however loyal the player is.
+
+The sorts the player picks (distance, price, rating, soonest available) are applied exactly as named. Only **best match**, the default, is personal. It orders venues by tier first, then by a match score within each tier:
+
+| Tier | The venue is one where the player… | Read from | Card badge |
+|---|---|---|---|
+| 0 | has earned a free booking | their `LoyaltyCard` is `EARNED` | "Free booking ready" |
+| 1 | is collecting stamps | their `LoyaltyCard` is `OPEN` | "2 of 4" |
+| 2 | has played before | `VenueCustomer.bookingCount > 0` | "Played here 3×" |
+| 3 | could collect stamps | `VenueSettings.loyaltyStamps` is set | "Loyalty" |
+| 4 | none of these | | |
+
+- Tiers 0 and 1 come from the player's card, not the venue's settings, because a card stays valid after a venue turns loyalty off.
+- Guests and players with no history only see tiers 3 and 4.
+- **The match score** combines closeness (to the player or the chosen area's centre), rating, and how well the free times fit the requested time. Rating is a Bayesian average: a venue with few reviews is pulled towards the marketplace mean, so three five-star reviews don't beat three hundred four-and-a-half-star ones. The weights are constants in code, tuned on real data after launch.
+- **The query:** the player's own venues come first, from one small CTE over `VenueCustomer` (indexed on `customerId`) joined to their open card. The partial index already allows at most one open or earned card per venue customer. The tier is a `CASE` over that CTE and `VenueSettings`. Pages use a keyset cursor on `(tier, score, venueId)`.
+- **Caching:** guest results can be cached briefly, as above. A signed-in player's best match is computed per request. Their own venues number in the tens, so this costs a few milliseconds and keeps their cards' state exact.
+- **The app says how results are ranked** ("Your venues and loyalty venues first, then by distance, rating and availability"), so the order never looks like paid placement.
+
 ### Why precomputed slots
 
 The alternative to `GroundSlot` is working availability out on the fly: schedule hours, minus live bookings, minus staff blocks. Bookings would still be safe without slots (the `Booking_no_overlap` exclusion constraint prevents double bookings on its own), so the case for slots is speed under load, keeping the time maths in one place, and per-hour state, not correctness.
