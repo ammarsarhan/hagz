@@ -1,13 +1,15 @@
 import { refundBands } from "@hagz/contracts";
 import type { Icon } from "@tabler/icons-react-native";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Linking,
   Platform,
   Pressable,
   ScrollView,
+  useWindowDimensions,
   View,
   type LayoutChangeEvent,
+  type ScrollViewInstance,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -220,12 +222,14 @@ function GroundPrice({ ground, currency }: { ground: PublicGround; currency: str
 // Picked, it has the black border and See times, and the map shows it in a darker grey.
 function GroundOption({
   ground,
+  width,
   currency,
   picked,
   onPick,
   onSeeTimes,
 }: {
   ground: PublicGround;
+  width: number;
   currency: string;
   picked: boolean;
   onPick: () => void;
@@ -245,7 +249,8 @@ function GroundOption({
       accessibilityRole="radio"
       accessibilityState={{ selected: picked }}
       onPress={onPick}
-      className="w-[272px] gap-0.5 rounded-2xl border border-border px-4 py-3.5"
+      className="gap-0.5 rounded-2xl border border-border px-4 py-3.5"
+      style={{ width }}
     >
       <Animated.View
         pointerEvents="none"
@@ -275,6 +280,11 @@ function GroundOption({
 
 // The venue's map, and every ground in a row under it to pick from (the first active one to
 // start); the picked one shows on the map. A venue without a map has the row alone.
+// The cards: 80% of the screen, 10 apart, so the next one peeks in.
+const CARD_SHARE = 0.8;
+const CARD_GAP = 10;
+const GUTTER = 24;
+
 export function GroundsSection({
   venue,
   onLayout,
@@ -284,11 +294,30 @@ export function GroundsSection({
   onLayout: (event: LayoutChangeEvent) => void;
   onSeeTimes: () => void;
 }) {
-  const [pickedId, setPickedId] = useState<string | null>(
-    () =>
-      (venue.grounds.find((ground) => ground.status === "ACTIVE") ?? venue.grounds[0])?.id ?? null,
+  const { width: screen } = useWindowDimensions();
+  const card = Math.round(screen * CARD_SHARE);
+  const step = card + CARD_GAP;
+  const first = Math.max(
+    0,
+    venue.grounds.findIndex((ground) => ground.status === "ACTIVE"),
   );
+  const [pickedId, setPickedId] = useState<string | null>(venue.grounds[first]?.id ?? null);
+  const row = useRef<ScrollViewInstance>(null);
   const currency = venue.marketplace.currency;
+
+  // The card that settles in place is the picked one, so the map follows the swipe; tapping a
+  // card brings it into place.
+  const settle = (x: number) => {
+    const index = Math.min(venue.grounds.length - 1, Math.max(0, Math.round(x / step)));
+    const ground = venue.grounds[index];
+    if (ground) setPickedId(ground.id);
+  };
+  const bringIn = (index: number) => {
+    row.current?.scrollTo({ x: index * step, animated: true });
+    const ground = venue.grounds[index];
+    if (ground) setPickedId(ground.id);
+  };
+
   return (
     <Section title="Grounds" onLayout={onLayout}>
       {venue.layout ? (
@@ -299,21 +328,32 @@ export function GroundsSection({
           selectedId={pickedId}
         />
       ) : null}
-      {/* Swiped sideways, edge to edge: the cards line up with the page's gutter and run under
-          the screen's edge. All as tall as the tallest. */}
+      {/* Edge to edge, snapping each card to the page's gutter. The end padding lets the last card
+          reach the gutter too. All as tall as the tallest. */}
       <ScrollView
+        ref={row}
         horizontal
         showsHorizontalScrollIndicator={false}
+        snapToInterval={step}
+        decelerationRate="fast"
+        disableIntervalMomentum
+        contentOffset={{ x: first * step, y: 0 }}
+        onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
         className="-mx-6"
-        contentContainerClassName="gap-2.5 px-6"
+        contentContainerStyle={{
+          gap: CARD_GAP,
+          paddingLeft: GUTTER,
+          paddingRight: Math.max(GUTTER, screen - GUTTER - card),
+        }}
       >
-        {venue.grounds.map((ground) => (
+        {venue.grounds.map((ground, index) => (
           <GroundOption
             key={ground.id}
             ground={ground}
+            width={card}
             currency={currency}
             picked={ground.id === pickedId}
-            onPick={() => setPickedId(ground.id)}
+            onPick={() => bringIn(index)}
             onSeeTimes={onSeeTimes}
           />
         ))}
