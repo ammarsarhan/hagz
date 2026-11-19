@@ -100,6 +100,7 @@ type Range = readonly [number, number];
 interface Loop {
   period: number;
   delay?: number;
+  x?: Range;
   y?: Range;
   rotate?: Range;
   scale?: Range;
@@ -107,6 +108,10 @@ interface Loop {
 }
 
 const EASE_LOOP = Easing.inOut(Easing.sin);
+
+// The main object on each slide floats on this; parts that sit on it (the pin, the stamps) use the
+// same loop so they move together.
+const FLOAT: Loop = { period: 6400, y: [-5, 5] };
 const EASE_IN_PLACE = Easing.out(Easing.cubic);
 
 // Everything in a scene that doesn't move, drawn once.
@@ -206,6 +211,7 @@ function Part({ k, active, loop, drop, origin, children }: PartProps) {
     return {
       opacity: at(loop?.opacity, 1) * (drop ? Math.min(1, entry * 1.6) : 1),
       transform: [
+        { translateX: at(loop?.x, 0) * k },
         { translateY: (at(loop?.y, 0) - (drop ? drop.from * (1 - entry) : 0)) * k },
         { rotate: `${at(loop?.rotate, 0)}deg` },
         { scale: at(loop?.scale, 1) },
@@ -250,13 +256,16 @@ const BLOB_4 = blob(172, 185, [136, 146, 130, 142, 128, 144, 134, 140, 126, 138]
 
 const Blob = ({ d }: { d: string }) => <Path d={d} fill={BLOB} fillOpacity={BLOB_OPACITY} />;
 
-// 1 · Pitch hunting, handled: a pin comes down onto a pitch while free slots float around it.
+// 1 · Pitch hunting, handled: a pin comes down onto a floating pitch while free slots drift around
+// it.
 function PitchScene({ k, active }: SceneProps) {
   const entry = useEntry(active);
   return (
     <>
       <Still>
         <Blob d={BLOB_1} />
+      </Still>
+      <Part k={k} active={active} loop={FLOAT}>
         <Rect x={62} y={150} width={220} height={140} rx={22} fill={BLACK} />
         <Path
           d="M84 164 H260 Q268 164 268 172 V268 Q268 276 260 276 H84 Q76 276 76 268 V172 Q76 164 84 164Z M172 164 V276 M76 198 H98 V242 H76 M268 198 H246 V242 H268"
@@ -275,9 +284,9 @@ function PitchScene({ k, active }: SceneProps) {
           strokeWidth={3}
           fill="none"
         />
-      </Still>
+      </Part>
       {/* Two groups of slots, floating against each other. */}
-      <Part k={k} active={active} loop={{ period: 5200, y: [-3, 3] }}>
+      <Part k={k} active={active} loop={{ period: 7000, x: [-2, 2], y: [-7, 7] }}>
         <Rect x={30} y={96} width={66} height={30} rx={15} fill={WHITE} />
         <Rect
           x={256}
@@ -291,7 +300,7 @@ function PitchScene({ k, active }: SceneProps) {
           strokeDasharray="5 5"
         />
       </Part>
-      <Part k={k} active={active} loop={{ period: 5800, delay: 600, y: [3, -3] }}>
+      <Part k={k} active={active} loop={{ period: 7800, delay: 400, x: [2, -2], y: [7, -7] }}>
         <Path
           d="M330 22 C340 44 330 64 312 74"
           stroke={BLACK}
@@ -303,12 +312,7 @@ function PitchScene({ k, active }: SceneProps) {
         <Rect x={250} y={78} width={66} height={30} rx={15} fill={GREY} />
         <Rect x={24} y={292} width={66} height={30} rx={15} fill={BLACK} />
       </Part>
-      <Part
-        k={k}
-        active={active}
-        drop={{ from: 40, entry }}
-        loop={{ period: 4400, delay: 900, y: [0, -3] }}
-      >
+      <Part k={k} active={active} drop={{ from: 40, entry }} loop={FLOAT}>
         <Path
           d="M172 214 C160 194 138 168 138 136 A34 34 0 1 1 206 136 C206 168 184 194 172 214Z"
           fill={WHITE}
@@ -357,15 +361,20 @@ function LoyaltyScene({ k, active }: SceneProps) {
     <>
       <Still>
         <Blob d={BLOB_4} />
+      </Still>
+      {/* The card behind floats slower and the other way, for a little depth. */}
+      <Part k={k} active={active} loop={{ period: 7600, x: [1.5, -1.5], y: [4, -4] }}>
         <Rect x={80} y={86} width={232} height={164} rx={20} fill={GREY} />
+      </Part>
+      <Part k={k} active={active} loop={FLOAT}>
         <Rect x={40} y={112} width={250} height={178} rx={22} fill={BLACK} />
         <Rect x={62} y={134} width={96} height={10} rx={5} fill={WHITE} />
         <Rect x={62} y={152} width={60} height={8} rx={4} fill={WHITE} fillOpacity={0.4} />
         {STAMPED.map((at) => (
           <Stamp key={`${at[0]}-${at[1]}`} at={at} />
         ))}
-      </Still>
-      <Part k={k} active={active} loop={{ period: 3600, opacity: [0.45, 1] }}>
+      </Part>
+      <Part k={k} active={active} loop={{ ...FLOAT, opacity: [0.45, 1] }}>
         <Circle
           cx={FREE_SPOT[0]}
           cy={FREE_SPOT[1]}
@@ -377,7 +386,7 @@ function LoyaltyScene({ k, active }: SceneProps) {
         />
         <Path d={star(FREE_SPOT[0], FREE_SPOT[1], 9, 4)} fill={WHITE} />
       </Part>
-      <Part k={k} active={active} drop={{ from: 50, entry }}>
+      <Part k={k} active={active} drop={{ from: 50, entry }} loop={FLOAT}>
         <Stamp at={LAST_STAMP} />
       </Part>
       <Sparks
@@ -447,11 +456,16 @@ function SquadScene({ k, active }: SceneProps) {
     <>
       <Still>
         <Blob d={BLOB_2} />
-        <Player cx={112} cy={110} fill={WHITE} />
-        <Player cx={72} cy={205} fill={BLACK} />
-        <Player cx={172} cy={205} fill={WHITE} />
-        <Player cx={272} cy={205} fill={BLACK} />
       </Still>
+      {/* The squad floats in two groups, against each other. */}
+      <Part k={k} active={active} loop={{ period: 6400, y: [-4, 4] }}>
+        <Player cx={112} cy={110} fill={WHITE} />
+        <Player cx={172} cy={205} fill={WHITE} />
+      </Part>
+      <Part k={k} active={active} loop={{ period: 7200, delay: 500, y: [4, -4] }}>
+        <Player cx={72} cy={205} fill={BLACK} />
+        <Player cx={272} cy={205} fill={BLACK} />
+      </Part>
       <Layer k={k} style={spot}>
         <Player cx={SPOT[0]} cy={SPOT[1]} open />
       </Layer>
@@ -472,7 +486,7 @@ function SquadScene({ k, active }: SceneProps) {
         k={k}
         active={active}
         origin={[122, 300]}
-        loop={{ period: 3000, y: [0, -5], rotate: [0, 18] }}
+        loop={{ period: 4200, y: [3, -8], rotate: [-12, 12] }}
       >
         <Circle cx={122} cy={300} r={20} fill={WHITE} />
         <Path d={star(122, 300, 9.5, 7.7)} fill={BLACK} />
@@ -505,7 +519,7 @@ function TrophyScene({ k, active }: SceneProps) {
         active={active}
         origin={[172, 282]}
         drop={{ from: -16, entry }}
-        loop={{ period: 6000, delay: 800, rotate: [-1.2, 1.2] }}
+        loop={{ ...FLOAT, rotate: [-1.5, 1.5] }}
       >
         <Path
           d="M116 112 C70 112 72 172 128 182"
@@ -537,13 +551,13 @@ function TrophyScene({ k, active }: SceneProps) {
         <Rect x={142} y={260} width={60} height={14} rx={3} fill={GREY} />
       </Part>
       {/* Confetti in two groups, drifting against each other. */}
-      <Part k={k} active={active} loop={{ period: 5000, y: [-4, 4] }}>
+      <Part k={k} active={active} loop={{ period: 6600, x: [-3, 3], y: [-9, 9] }}>
         <Path d="M52 80 l14 -6 l4 9 l-14 6Z" fill={BLACK} />
         <Path d="M296 210 l14 4 l-3 9 l-14 -4Z" fill={BLACK} />
         <Circle cx={96} cy={44} r={5} fill={WHITE} />
         <Circle cx={64} cy={160} r={4} fill={GREY} />
       </Part>
-      <Part k={k} active={active} loop={{ period: 5600, delay: 700, y: [4, -4] }}>
+      <Part k={k} active={active} loop={{ period: 7400, delay: 700, x: [3, -3], y: [9, -9] }}>
         <Path d="M280 58 l10 10 l-7 7 l-10 -10Z" fill={GREY} />
         <Path d="M40 232 l8 -12 l8 5 l-8 12Z" fill={BLACK} />
         <Circle cx={316} cy={124} r={5} fill={WHITE} />
