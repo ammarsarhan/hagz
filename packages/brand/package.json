@@ -6,6 +6,7 @@
   "exports": {
     "./tokens.css": "./theme/tokens.css",
     "./staff.css": "./theme/staff.css",
+    "./customer.css": "./theme/customer.css",
     "./admin.css": "./theme/admin.css"
   },
   "scripts": {

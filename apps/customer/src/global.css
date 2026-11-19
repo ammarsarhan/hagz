@@ -1,0 +1,7 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+/* Palette, type scale and corners shared with the other apps; primary = lime. */
+@import "@hagz/brand/customer.css";

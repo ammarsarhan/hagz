@@ -1,0 +1,16 @@
+/* The customer app: floodlight lime and black, with electric blue as the accent. Text is in the
+   system font (SF Pro, SF Arabic, Roboto), so weight comes from Tailwind's own font-normal,
+   font-medium and font-semibold. Same role names as staff.css, so components port across. */
+@import "./tokens.css";
+
+@theme inline {
+  /* Lime with black on it, as in the customer logo (never blue with black). */
+  --color-primary: var(--color-lime);
+  --color-on-primary: var(--color-black);
+  /* Body text on the lime onboarding slides: 6.9:1 on lime, quieter than the black headline. */
+  --color-on-primary-muted: #52573f;
+  /* Links, selection and small highlights on white. */
+  --color-accent: var(--color-blue);
+  --color-on-accent: var(--color-white);
+  --color-accent-soft: var(--color-blue-mid);
+}

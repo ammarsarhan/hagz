@@ -41,6 +41,7 @@ model Venue {
   regulars      VenueRegular[]
   waitlists     SlotWaitlist[]
   listings      BookingListing[]
+  tournaments   Tournament[]
   reschedulings Rescheduling[]
 
   @@unique([id, marketplaceId])

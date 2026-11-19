@@ -99,6 +99,9 @@ const EGYPT: Place[] = [
       district("sidi-gaber", "Sidi Gaber", "سيدي جابر", [31.2213, 29.9379]),
       district("stanley", "Stanley", "ستانلي", [31.2339, 29.9458]),
       district("miami", "Miami", "ميامي", [31.268, 29.996]),
+      // Added 2026-11-19 (user). Midway between Seyouf Bahary and Seyouf Qebly's centres
+      // (OpenStreetMap), so a pin in north Seyouf is nearer to it than to Miami.
+      district("seyouf", "Seyouf", "السيوف", [31.2473, 29.9914]),
       district("montaza", "Montaza", "المنتزه", [31.3107, 30.0607]),
       district("agami", "Agami", "العجمي", [31.0988, 29.7667]),
       // Added 2026-11-17 (user). The old town's centre (30°55′N 29°32′E); New Borg El Arab, the

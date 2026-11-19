@@ -44,31 +44,34 @@ model Payout {
 }
 
 // A venue's balance with Hagz, append-only: sum of amount; negative means the venue owes Hagz.
-// Each payment, refund, payout and commission enters once. CHECKs: only the type's own reference;
-// COLLECTION > 0; REFUND, COMMISSION, PAYOUT < 0; ADJUSTMENT != 0 with a note; taxAmount only on
-// COMMISSION, between amount and 0.
+// Each payment, refund, payout, commission and open game's joining fees enters once. CHECKs: only the
+// type's own reference; COLLECTION > 0; REFUND, COMMISSION, JOIN_FEE, PAYOUT < 0; ADJUSTMENT != 0
+// with a note; taxAmount only on COMMISSION and JOIN_FEE, between amount and 0.
 model LedgerEntry {
   id        String     @id @default(uuid(7)) @db.Uuid
   venueId   String     @db.Uuid
   type      LedgerType
   amount    Int // Signed, minor units.
-  taxAmount Int        @default(0) // COMMISSION: Hagz's VAT.
+  taxAmount Int        @default(0) // COMMISSION, JOIN_FEE: Hagz's VAT.
   bookingId String?    @db.Uuid // COMMISSION
   paymentId String?    @unique @db.Uuid // COLLECTION
   refundId  String?    @unique @db.Uuid // REFUND
+  listingId String?    @db.Uuid // JOIN_FEE: one per open game.
   payoutId  String?    @db.Uuid // PAYOUT
   adminId   String?    @db.Uuid // ADJUSTMENT
   note      String? // ADJUSTMENT: why.
   createdAt DateTime   @default(now()) @db.Timestamptz
 
-  venue   Venue    @relation(fields: [venueId], references: [id], onDelete: Restrict)
-  booking Booking? @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
-  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  refund  Refund?  @relation(fields: [refundId], references: [id], onDelete: Restrict)
-  payout  Payout?  @relation(fields: [payoutId, venueId], references: [id, venueId], onDelete: Restrict)
-  admin   Admin?   @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  venue   Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  booking Booking?        @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  payment Payment?        @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  refund  Refund?         @relation(fields: [refundId], references: [id], onDelete: Restrict)
+  listing BookingListing? @relation(fields: [listingId, venueId], references: [id, venueId], onDelete: Restrict)
+  payout  Payout?         @relation(fields: [payoutId, venueId], references: [id, venueId], onDelete: Restrict)
+  admin   Admin?          @relation(fields: [adminId], references: [id], onDelete: Restrict)
 
   @@unique([bookingId], map: "LedgerEntry_commission_key", where: { type: "COMMISSION" })
   @@unique([payoutId, venueId]) // One per payout.
+  @@unique([listingId, venueId]) // One per open game.
   @@index([venueId, createdAt])
 }
