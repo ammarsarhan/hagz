@@ -11,6 +11,7 @@ import { ReasonDialog } from "@/admin/reason-dialog";
 import { DetailRow, PanelSection, SidePanel } from "@/admin/side-panel";
 import { dateTime } from "@/admin/venues/history";
 import { venueHref } from "@/admin/venues/sections";
+import { OwnerResetAction } from "./owner-reset";
 import { statusLabel, type AccountStatus, type CustomerAccount, type StaffAccount } from "./model";
 
 // The Support page's side panels, opened by clicking a row: a staff member, with their venues,
@@ -61,11 +62,8 @@ export function StaffAccountPanel({
   onClose: () => void;
 }) {
   const [open, setOpen] = useState(true);
-  const [action, setAction] = useState<"suspend" | "reactivate" | "ban" | "reset">();
+  const [action, setAction] = useState<"suspend" | "reactivate" | "ban">();
   const ownsAVenue = staff.venues.some((venue) => venue.role === "OWNER");
-  // When a reset was allowed while the panel is open: the API doesn't say whether one is open, so
-  // the panel says it until it closes.
-  const [resetUntil, setResetUntil] = useState<Date>();
   const close = () => setAction(undefined);
   return (
     <SidePanel
@@ -113,6 +111,11 @@ export function StaffAccountPanel({
             <p className="text-label text-ink-2">This account was banned for good.</p>
           ) : (
             <div className="flex flex-col gap-6">
+              {/* Owners can't reset their password by themselves (a recycled number would take the
+                  venue with it); members can, so it's only offered to an owner. */}
+              {ownsAVenue && staff.status === "ACTIVE" ? (
+                <OwnerResetAction staffId={staff.id} name={staff.name} />
+              ) : null}
               {staff.status === "SUSPENDED" ? (
                 <AccessAction
                   title="Reactivate account"
@@ -128,21 +131,6 @@ export function StaffAccountPanel({
                   onClick={() => setAction("suspend")}
                 />
               )}
-              {/* Owners can't reset their password by themselves (a recycled number would take the
-                  venue with it); members can, so it's only offered to an owner. */}
-              {ownsAVenue && staff.status === "ACTIVE" && resetUntil ? (
-                <p role="status" className="text-label text-ink-2">
-                  Password reset allowed until {dateTime(resetUntil.toISOString())}. Tell them to
-                  use Forgot password in the staff app.
-                </p>
-              ) : ownsAVenue && staff.status === "ACTIVE" ? (
-                <AccessAction
-                  title="Allow a password reset"
-                  description="Once you've checked who they are: they can reset it once in the app, with a code to their phone, within 24 hours. They keep every venue and permission."
-                  action="Allow"
-                  onClick={() => setAction("reset")}
-                />
-              ) : null}
               {/* Not offered to an owner: the API refuses until their venue has another owner. */}
               {ownsAVenue ? null : (
                 <AccessAction
@@ -189,26 +177,6 @@ export function StaffAccountPanel({
           }
           onClose={close}
           onDone={() => onStatus("BANNED")}
-        />
-      ) : null}
-      {action === "reset" ? (
-        <ReasonDialog
-          title={`Let ${staff.name} reset their password?`}
-          description="Tell them to use Forgot password in the staff app within 24 hours. A code goes to their phone; nobody at Hagz sees the new password."
-          confirmLabel="Allow reset"
-          danger={false}
-          hint="Kept on their account's record. Say how you checked who they are."
-          placeholder="They called from their number and confirmed …"
-          request={(reason) =>
-            send(
-              api.POST("/v1/admin/staff/{staffId}/password-reset", {
-                params: { path: { staffId: staff.id } },
-                body: { reason },
-              }),
-            )
-          }
-          onClose={close}
-          onDone={() => setResetUntil(new Date(Date.now() + 24 * 60 * 60 * 1000))}
         />
       ) : null}
       {action === "reactivate" ? (

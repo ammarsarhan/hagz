@@ -12,6 +12,7 @@ import { send } from "@/admin/errors";
 import { DetailRow, PanelSection, SidePanel } from "@/admin/side-panel";
 import { dateTime } from "./history";
 import { ReasonDialog } from "@/admin/reason-dialog";
+import { OwnerResetAction } from "@/admin/support/owner-reset";
 import { AREAS, levelLabel, type StaffInvitation, type VenueMember } from "./team";
 
 // A venue's Team tab's side panels, opened by clicking a row: a member, or an open invitation. The
@@ -21,8 +22,10 @@ import { AREAS, levelLabel, type StaffInvitation, type VenueMember } from "./tea
 type MemberAction = "owner" | "remove" | "suspend" | "reactivate" | "ban";
 
 // A member with what support can do for them, each asked first in a modal over the panel: make them
-// the owner, take them off the staff (never the owner), suspend their account everywhere (or
-// reactivate it), or ban it for good (not while they own a venue; the API checks their others). Everything but reactivating asks for a reason, kept on the venue's History.
+// the owner, take them off the staff (never the owner), let the owner reset their password once
+// support has checked who they are, suspend their account everywhere (or reactivate it), or ban it
+// for good (not while they own a venue; the API checks their others). Everything but reactivating
+// asks for a reason, kept on the venue's History (a reset on their account's record).
 export function MemberPanel({
   venueId,
   member,
@@ -121,12 +124,18 @@ export function MemberPanel({
                     onClick={() => setAction("reactivate")}
                   />
                 ) : (
-                  <AccessAction
-                    title="Suspend account"
-                    description="Signs them out everywhere and keeps them out of every venue they're on until it's reactivated."
-                    action="Suspend"
-                    onClick={() => setAction("suspend")}
-                  />
+                  <>
+                    {/* The owner can't reset their password by themselves; members can. */}
+                    {owner ? (
+                      <OwnerResetAction staffId={member.staffId} name={member.name} />
+                    ) : null}
+                    <AccessAction
+                      title="Suspend account"
+                      description="Signs them out everywhere and keeps them out of every venue they're on until it's reactivated."
+                      action="Suspend"
+                      onClick={() => setAction("suspend")}
+                    />
+                  </>
                 )}
                 {/* Not offered to the owner: the API refuses until the venue has another owner. */}
                 {owner ? null : (
