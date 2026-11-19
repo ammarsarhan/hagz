@@ -10,19 +10,12 @@ import { consume } from "@/platform/rate-limit/rate-limit";
 import { ADMIN_AUTHENTICATOR_RESET, ADMIN_PASSWORD_RESET_SENT } from "../domain/events";
 import { ADMIN_PASSWORD_RESET_TTL_SECONDS, limits } from "../domain/policy";
 import { adminSessions } from "./accounts";
-import { adminNotFound } from "./admins";
+import { adminNotFound, ownAccount } from "./admins";
 import { redis } from "./verification-codes";
 
 // One admin getting another back into their account. Never on your own: you're signed in, so you
 // don't need it, and a slip would sign you out of the page you're using. Each is recorded as an
 // AccountEvent on theirs.
-
-const ownAccount = () =>
-  new AppError({
-    code: "OWN_ADMIN_ACCOUNT",
-    status: 409,
-    detail: "Ask another admin to do this for your account.",
-  });
 
 // Forgets their authenticator and signs them out everywhere: their next sign-in, after the
 // password, sets up a new one, as on their first.

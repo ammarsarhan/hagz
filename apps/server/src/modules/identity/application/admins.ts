@@ -32,6 +32,15 @@ export const listAdmins = async () => {
 export const adminNotFound = () =>
   new AppError({ code: "ADMIN_NOT_FOUND", status: 404, detail: "No such admin." });
 
+// What one admin does to another's access is never done to your own: you're signed in, so you
+// don't need it, and a slip would lock you out of the page you're using.
+export const ownAccount = () =>
+  new AppError({
+    code: "OWN_ADMIN_ACCOUNT",
+    status: 409,
+    detail: "Ask another admin to do this for your account.",
+  });
+
 // One admin in full: how they joined (who invited them), what they've done with their own invites,
 // and the browsers they're signed in on now. `sessionId` is the asking admin's own session, so it
 // can be marked as the current one.
