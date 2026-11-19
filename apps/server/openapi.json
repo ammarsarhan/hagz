@@ -1204,6 +1204,21 @@
           "current"
         ]
       },
+      "SuspendAccount": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "For the record: what happened and how it was checked.",
+            "example": "The owner called support: he left the business in October."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
       "ResetAdminPassword": {
         "type": "object",
         "properties": {
@@ -5677,21 +5692,6 @@
           "reason"
         ]
       },
-      "SuspendStaff": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 500,
-            "description": "For the record: what happened and how it was checked.",
-            "example": "The owner called support: he left the business in October."
-          }
-        },
-        "required": [
-          "reason"
-        ]
-      },
       "BanStaff": {
         "type": "object",
         "properties": {
@@ -5825,6 +5825,21 @@
           "status",
           "createdAt",
           "lastSignedInAt"
+        ]
+      },
+      "GrantPasswordReset": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "For the record: what happened and how it was checked.",
+            "example": "The owner called support: he left the business in October."
+          }
+        },
+        "required": [
+          "reason"
         ]
       }
     },
@@ -8482,7 +8497,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8541,7 +8556,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8597,7 +8612,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8681,7 +8696,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8738,7 +8753,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8795,7 +8810,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8855,7 +8870,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8925,7 +8940,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8966,6 +8981,166 @@
           },
           "503": {
             "description": "EMAIL_UNAVAILABLE: retry later.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/list/{id}/suspend": {
+      "post": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Suspend another admin",
+        "description": "Signs them out everywhere and stops them at once, until another admin reactivates them; an emailed password reset link stops working. Recorded on their account. Not for your own account, nor the last active admin. Suspending again changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendAccount"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Suspended"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ADMIN_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OWN_ADMIN_ACCOUNT, LAST_ACTIVE_ADMIN, or ACCOUNT_BANNED: closed for good",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/list/{id}/reactivate": {
+      "post": {
+        "tags": [
+          "Admins"
+        ],
+        "summary": "Reactivate a suspended admin",
+        "description": "They can sign in again. Recorded on their account. Reactivating an active admin changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reactivated"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ADMIN_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OWN_ADMIN_ACCOUNT, or ACCOUNT_BANNED: closed for good",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9059,7 +9234,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13189,7 +13364,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13235,7 +13410,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13291,7 +13466,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13360,7 +13535,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13426,7 +13601,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13490,7 +13665,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13587,7 +13762,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13674,7 +13849,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13752,7 +13927,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13837,7 +14012,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13944,7 +14119,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14002,7 +14177,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14089,7 +14264,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14173,7 +14348,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14270,7 +14445,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14328,7 +14503,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14492,7 +14667,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14548,7 +14723,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14604,7 +14779,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14664,7 +14839,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14764,7 +14939,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14854,7 +15029,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14952,7 +15127,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15040,7 +15215,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15117,7 +15292,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15194,7 +15369,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15271,7 +15446,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15348,7 +15523,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15433,7 +15608,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15530,7 +15705,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15607,7 +15782,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15686,7 +15861,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15788,7 +15963,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15876,7 +16051,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15965,7 +16140,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16035,7 +16210,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16115,7 +16290,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16185,7 +16360,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16272,7 +16447,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16389,7 +16564,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16477,7 +16652,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16565,7 +16740,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16654,7 +16829,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16743,7 +16918,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16833,7 +17008,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16893,7 +17068,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SuspendStaff"
+                "$ref": "#/components/schemas/SuspendAccount"
               }
             }
           }
@@ -16923,7 +17098,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17013,7 +17188,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17093,7 +17268,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17232,7 +17407,7 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17351,7 +17526,267 @@
             }
           },
           "403": {
-            "description": "ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/customers/{customerId}/suspend": {
+      "post": {
+        "tags": [
+          "Support (admin)"
+        ],
+        "summary": "Suspend a customer account",
+        "description": "Signs them out everywhere and keeps them out until reactivated; an access token they hold works until it expires, within 10 minutes. Recorded on the account. Suspending again changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendAccount"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Suspended"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ACCOUNT_BANNED: closed for good",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/customers/{customerId}/reactivate": {
+      "post": {
+        "tags": [
+          "Support (admin)"
+        ],
+        "summary": "Reactivate a suspended customer account",
+        "description": "They can sign in again. Recorded on the account. Reactivating an active account changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reactivated"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CUSTOMER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ACCOUNT_BANNED: closed for good",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staff/{staffId}/password-reset": {
+      "post": {
+        "tags": [
+          "Support (admin)"
+        ],
+        "summary": "Let a staff member reset their password",
+        "description": "For venue owners, who can't reset by themselves, once support has checked who is asking. For the next 24 hours they can reset once in the app, with a code sent to their phone; nobody at Hagz sees the password. That reset leaves their venues and permissions as they are. Granting again starts the 24 hours afresh. Recorded on the account.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantPasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Granted"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "STAFF_NOT_ACTIVE (with `staffStatus`): reactivate them first",
             "content": {
               "application/problem+json": {
                 "schema": {

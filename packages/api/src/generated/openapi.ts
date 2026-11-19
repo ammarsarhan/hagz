@@ -2901,7 +2901,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2974,7 +2974,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3027,7 +3027,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3074,7 +3074,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3158,7 +3158,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3217,7 +3217,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3286,7 +3286,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3360,7 +3360,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3398,6 +3398,169 @@ export interface paths {
                 };
                 /** @description EMAIL_UNAVAILABLE: retry later. */
                 503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend another admin
+         * @description Signs them out everywhere and stops them at once, until another admin reactivates them; an emailed password reset link stops working. Recorded on their account. Not for your own account, nor the last active admin. Suspending again changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SuspendAccount"];
+                };
+            };
+            responses: {
+                /** @description Suspended */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWN_ADMIN_ACCOUNT, LAST_ACTIVE_ADMIN, or ACCOUNT_BANNED: closed for good */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/list/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reactivate a suspended admin
+         * @description They can sign in again. Recorded on their account. Reactivating an active admin changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reactivated */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ADMIN_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description OWN_ADMIN_ACCOUNT, or ACCOUNT_BANNED: closed for good */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3513,7 +3676,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7246,7 +7409,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7303,7 +7466,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7369,7 +7532,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7438,7 +7601,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7501,7 +7664,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7557,7 +7720,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7651,7 +7814,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7731,7 +7894,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7801,7 +7964,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7868,7 +8031,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7953,7 +8116,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8030,7 +8193,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8091,7 +8254,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8155,7 +8318,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8231,7 +8394,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8308,7 +8471,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8395,7 +8558,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8451,7 +8614,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8507,7 +8670,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8575,7 +8738,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8672,7 +8835,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8759,7 +8922,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8846,7 +9009,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8925,7 +9088,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9002,7 +9165,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9079,7 +9242,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9156,7 +9319,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9233,7 +9396,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9304,7 +9467,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9389,7 +9552,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9465,7 +9628,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9543,7 +9706,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9623,7 +9786,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9704,7 +9867,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9790,7 +9953,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9865,7 +10028,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9949,7 +10112,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10024,7 +10187,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10108,7 +10271,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10190,7 +10353,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10269,7 +10432,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10348,7 +10511,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10430,7 +10593,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10516,7 +10679,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10603,7 +10766,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10662,7 +10825,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["SuspendStaff"];
+                    "application/json": components["schemas"]["SuspendAccount"];
                 };
             };
             responses: {
@@ -10691,7 +10854,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10779,7 +10942,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10863,7 +11026,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10957,7 +11120,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11035,7 +11198,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11048,6 +11211,266 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/customers/{customerId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend a customer account
+         * @description Signs them out everywhere and keeps them out until reactivated; an access token they hold works until it expires, within 10 minutes. Recorded on the account. Suspending again changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    customerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SuspendAccount"];
+                };
+            };
+            responses: {
+                /** @description Suspended */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CUSTOMER_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_BANNED: closed for good */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/customers/{customerId}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reactivate a suspended customer account
+         * @description They can sign in again. Recorded on the account. Reactivating an active account changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    customerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reactivated */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CUSTOMER_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_BANNED: closed for good */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/staff/{staffId}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let a staff member reset their password
+         * @description For venue owners, who can't reset by themselves, once support has checked who is asking. For the next 24 hours they can reset once in the app, with a code sent to their phone; nobody at Hagz sees the password. That reset leaves their venues and permissions as they are. Granting again starts the 24 hours afresh. Recorded on the account.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    staffId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GrantPasswordReset"];
+                };
+            };
+            responses: {
+                /** @description Granted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description STAFF_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description STAFF_NOT_ACTIVE (with `staffStatus`): reactivate them first */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -11464,6 +11887,13 @@ export interface components {
             lastActiveAt: string;
             /** @description The session making this request. */
             current: boolean;
+        };
+        SuspendAccount: {
+            /**
+             * @description For the record: what happened and how it was checked.
+             * @example The owner called support: he left the business in October.
+             */
+            reason: string;
         };
         ResetAdminPassword: {
             /** @description From the reset link. */
@@ -12884,13 +13314,6 @@ export interface components {
              */
             reason: string;
         };
-        SuspendStaff: {
-            /**
-             * @description For the record: what happened and how it was checked.
-             * @example The owner called support: he left the business in October.
-             */
-            reason: string;
-        };
         BanStaff: {
             /**
              * @description For the record: what happened and how it was checked.
@@ -12934,6 +13357,13 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             lastSignedInAt: string | null;
+        };
+        GrantPasswordReset: {
+            /**
+             * @description For the record: what happened and how it was checked.
+             * @example The owner called support: he left the business in October.
+             */
+            reason: string;
         };
     };
     responses: never;
