@@ -1,18 +1,19 @@
-// A country Hagz operates in. CHECKs: taxRate and commissionRate 0–10000; the boundary is a valid
-// shape.
+// A country Hagz operates in. CHECKs: taxRate, commissionRate and joinFeeRate 0–10000; the boundary
+// is a valid shape.
 model Marketplace {
-  id               String   @id @default(uuid(7)) @db.Uuid
-  code             String   @unique @db.Char(2) // ISO 3166-1 alpha-2
-  currency         String   @db.Char(3) // ISO 4217
-  dialCode         String // E.164 prefix
-  timezone         String // IANA
-  taxRate          Int      @default(0) // VAT in basis points (1400 = 14%).
-  commissionRate   Int      @default(0) // Basis points.
-  isActive         Boolean  @default(false) // Hidden until launch.
+  id             String                                        @id @default(uuid(7)) @db.Uuid
+  code           String                                        @unique @db.Char(2) // ISO 3166-1 alpha-2
+  currency       String                                        @db.Char(3) // ISO 4217
+  dialCode       String // E.164 prefix
+  timezone       String // IANA
+  taxRate        Int                                           @default(0) // VAT in basis points (1400 = 14%).
+  commissionRate Int                                           @default(0) // Basis points.
+  joinFeeRate    Int                                           @default(1000) // Open-game joining fee, basis points of the share.
+  isActive       Boolean                                       @default(false) // Hidden until launch.
   // The country's border: a venue's map pin must fall inside it. Null: no check.
-  boundary         Unsupported("geography(MultiPolygon, 4326)")?
-  createdAt        DateTime @default(now()) @db.Timestamptz
-  updatedAt        DateTime @updatedAt @db.Timestamptz
+  boundary       Unsupported("geography(MultiPolygon, 4326)")?
+  createdAt      DateTime                                      @default(now()) @db.Timestamptz
+  updatedAt      DateTime                                      @updatedAt @db.Timestamptz
 
   translations MarketplaceTranslation[]
   locations    Location[]

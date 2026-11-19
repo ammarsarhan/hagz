@@ -1,9 +1,12 @@
 // A customer's app booking listed as needing players. One per booking; venueId and startsAt are copied
 // from it so the feed doesn't join Booking (a booking never changes; a reschedule re-points the listing
 // to the new booking and updates startsAt in the same transaction). playerCount is the number of JOINED
-// players, changed only under a lock on this row, so it never passes neededPlayers. No money moves
-// through Hagz. CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, costShare >= 0, closedAt
-// set exactly when not OPEN.
+// players, changed only under a lock on this row, so it never passes neededPlayers; it's final at
+// kick-off. Each joined player owes the booker sharePrice and the venue joinFee, both copied when the
+// listing opens; the venue records how many came (arrivedCount), and Hagz takes that × joinFee from
+// its balance (LedgerEntry JOIN_FEE). CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, sharePrice and joinFee
+// >= 0, closedAt set exactly when not OPEN; the arrived fields all or none, arrivedCount
+// 0–playerCount.
 model BookingListing {
   id            String        @id @default(uuid(7)) @db.Uuid
   bookingId     String        @db.Uuid
@@ -13,16 +16,23 @@ model BookingListing {
   neededPlayers Int           @db.SmallInt // Capped by the ground's sport and size (API).
   playerCount   Int           @default(0) @db.SmallInt
   note          String?
-  costShare     Int? // Per player, minor units, paid at the venue; informational only.
+  sharePrice    Int // Per player, minor units, owed to the booker: total ÷ the ground's players, rounded up.
+  joinFee       Int // Per player, minor units, owed to the venue: sharePrice × Marketplace.joinFeeRate.
+  arrivedCount  Int?          @db.SmallInt // Recorded by the venue; null means everyone expected came.
+  arrivedAt     DateTime?     @db.Timestamptz // When it was recorded.
+  arrivedById   String?       @db.Uuid // Staff who recorded it.
   closedAt      DateTime?     @db.Timestamptz
   createdAt     DateTime      @default(now()) @db.Timestamptz
   updatedAt     DateTime      @updatedAt @db.Timestamptz
 
-  booking Booking         @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
-  venue   Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
-  players ListingPlayer[]
+  booking    Booking         @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
+  venue      Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  arrivedBy  Staff?          @relation(fields: [arrivedById], references: [id], onDelete: Restrict)
+  players    ListingPlayer[]
+  joiningFee LedgerEntry?
 
   @@unique([bookingId, venueId]) // One per booking, in the booking's venue.
+  @@unique([id, venueId]) // Ledger relation target.
   @@index([status, startsAt])
   @@index([venueId, startsAt])
 }

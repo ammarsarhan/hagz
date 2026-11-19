@@ -14,7 +14,11 @@ CREATE TABLE "BookingListing" (
     "neededPlayers" SMALLINT NOT NULL,
     "playerCount" SMALLINT NOT NULL DEFAULT 0,
     "note" TEXT,
-    "costShare" INTEGER,
+    "sharePrice" INTEGER NOT NULL,
+    "joinFee" INTEGER NOT NULL,
+    "arrivedCount" SMALLINT,
+    "arrivedAt" TIMESTAMPTZ,
+    "arrivedById" UUID,
     "closedAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
@@ -44,6 +48,9 @@ CREATE INDEX "BookingListing_venueId_startsAt_idx" ON "BookingListing"("venueId"
 CREATE UNIQUE INDEX "BookingListing_bookingId_venueId_key" ON "BookingListing"("bookingId", "venueId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "BookingListing_id_venueId_key" ON "BookingListing"("id", "venueId");
+
+-- CreateIndex
 CREATE INDEX "ListingPlayer_customerId_idx" ON "ListingPlayer"("customerId");
 
 -- AddForeignKey
@@ -53,18 +60,28 @@ ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_bookingId_venueId_fk
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "Venue"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_arrivedById_fkey" FOREIGN KEY ("arrivedById") REFERENCES "Staff"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "BookingListing"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "LedgerEntry" ADD CONSTRAINT "LedgerEntry_listingId_venueId_fkey" FOREIGN KEY ("listingId", "venueId") REFERENCES "BookingListing"("id", "venueId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 -- playerCount never passes neededPlayers, so the booker can only lower it to the number joined.
-ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_players_check" CHECK ("neededPlayers" >= 1 AND "playerCount" BETWEEN 0 AND "neededPlayers" AND ("costShare" IS NULL OR "costShare" >= 0));
+ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_players_check" CHECK ("neededPlayers" >= 1 AND "playerCount" BETWEEN 0 AND "neededPlayers" AND "sharePrice" >= 0 AND "joinFee" >= 0);
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_closed_check" CHECK ((status = 'OPEN') = ("closedAt" IS NULL));
+
+-- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
+-- The venue records how many came, never more than joined; null means everyone expected came.
+ALTER TABLE "BookingListing" ADD CONSTRAINT "BookingListing_arrived_check" CHECK (num_nonnulls("arrivedCount", "arrivedAt", "arrivedById") IN (0, 3) AND ("arrivedCount" IS NULL OR "arrivedCount" BETWEEN 0 AND "playerCount"));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "ListingPlayer" ADD CONSTRAINT "ListingPlayer_status_check" CHECK ((status = 'JOINED') = ("leftAt" IS NULL) AND ("noShowReportedAt" IS NULL OR status = 'JOINED'));

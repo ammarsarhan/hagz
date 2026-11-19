@@ -68,7 +68,7 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
   - `playerCount`, kept up to date under the same lock as joining, so the feed shows spots left without counting rows;
   - `note?`;
   - `sharePrice` and `joinFee` (minor units, from `Marketplace.joinFeeRate`), copied when the listing opens (changed on 2026-11-19: replaces the informational `costShare?`). A reschedule keeps them, like the booking's other terms;
-  - `arrivedCount?`, `arrivedRecordedAt?` and `arrivedRecorderId?` (staff), recorded by the venue. CHECK: all three or none, and `arrivedCount` between 0 and `neededPlayers`. The shortfall is calculated, not stored;
+  - `arrivedCount?`, `arrivedAt?` and `arrivedById?` (staff), recorded by the venue. CHECK: all three or none, and `arrivedCount` between 0 and `playerCount` (never more than joined). The shortfall is calculated, not stored;
   - `communityId?` and `publicAt?`, for community games (see [communities.md](communities.md));
   - `createdAt`, `closedAt?`.
 
@@ -77,7 +77,7 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
 - **Joining, leaving and changing `neededPlayers` lock the `BookingListing` row**, then check that `playerCount` stays at or under `neededPlayers`. Two players can't both take the last spot, the booker can't lower the number below what's joined, and the booking itself is never locked by people joining.
 - **If the booking is cancelled,** its transaction also sets the game to `CANCELLED`.
 - **`Marketplace.joinFeeRate`:** basis points, default 1000 (10%).
-- **`LedgerEntry` type `JOIN_FEE`:** one per game, unique on `listingId`, for the recorded (or assumed) count × `joinFee`. Written when the recording window closes, and taken from the venue's balance (6.3).
+- **`LedgerEntry` type `JOIN_FEE`:** one per game, unique on `listingId` (with `venueId`, so the fee lands on the game's own venue), for the recorded (or assumed) count × `joinFee`. Written when the recording window closes, and taken from the venue's balance (6.3).
 - **`Customer.nearbyGames`:** the "Games near me" opt-in, off by default (used in Phase 7).
 
 ## Open

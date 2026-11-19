@@ -26,6 +26,7 @@ model Staff {
   discounts     VenueDiscount[]
   regulars      VenueRegular[] // Set up.
   reschedulings Rescheduling[]
+  arrivals      BookingListing[] // Open-game arrivals recorded.
   history       AccountEvent[] // What admins did to this account.
 }
 

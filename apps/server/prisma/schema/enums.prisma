@@ -231,6 +231,7 @@ enum LedgerType {
   COLLECTION // Online payment collected.
   REFUND // Online refund.
   COMMISSION
+  JOIN_FEE // Open-game joining fees the venue collected for Hagz.
   PAYOUT
   ADJUSTMENT // By an admin.
 }
