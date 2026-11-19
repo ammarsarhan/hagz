@@ -12049,8 +12049,6 @@ export interface components {
             status: components["schemas"]["PublicVenueStatus"];
             name: string | null;
             description: string | null;
-            /** @example +201001234567 */
-            phone: string | null;
             marketplace: {
                 /** @example EG */
                 code: string;
