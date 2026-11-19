@@ -24,7 +24,7 @@ Flow ids (`C6`, `D11`, `A7b`) match the board. Each diagram uses the same colors
 - **The web is view only:** public venue listings for search engines and exposure, shared links, and sending people to the apps. Nothing is booked on the web.
 - **The dashboard is phone first,** with a tablet layout (one calendar column per ground). On a phone the calendar shows one ground at a time, with ground chips and an all-grounds strip.
 - **Dashboard tabs:** Home · Calendar · Venue · Payments · Account. Long-pressing Venue opens the venue switcher; the dashboard shows one venue at a time. Customers and regulars, Team, Marketing and Setup all live under Venue.
-- **Dashboard Home is Today.** While a venue isn't live, Home is its setup checklist. Moving a booking uses pick mode. A new booking starts from a slot.
+- **Dashboard Home is Today.** The dashboard is only for `LIVE` and `MAINTENANCE` venues. A venue being set up lives in its own setup flow (D5), never in the tabs or the switcher (decided on 2026-11-12). Moving a booking uses pick mode. A new booking starts from a slot.
 - **Changing a regular's time or ground** releases its future `UNCONFIRMED` reservations and re-creates them at the new time; `CONFIRMED` ones stay. To be added to [regulars.md](regulars.md) with PR 4.5.
 - **Negative balances** (commission on cash bookings) are settled by a wire or cash collected in person, then recorded by an admin as an `ADJUSTMENT` whose note gives the method and the reference.
 - **The admin web** is English only, for desktop.
