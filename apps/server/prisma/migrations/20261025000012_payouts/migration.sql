@@ -5,7 +5,7 @@ CREATE TYPE "PayoutMethod" AS ENUM ('BANK_ACCOUNT', 'WALLET', 'INSTAPAY');
 CREATE TYPE "PayoutStatus" AS ENUM ('PENDING', 'PAID', 'FAILED');
 
 -- CreateEnum
-CREATE TYPE "LedgerType" AS ENUM ('COLLECTION', 'REFUND', 'COMMISSION', 'PAYOUT', 'ADJUSTMENT');
+CREATE TYPE "LedgerType" AS ENUM ('COLLECTION', 'REFUND', 'COMMISSION', 'JOIN_FEE', 'PAYOUT', 'ADJUSTMENT');
 
 -- CreateTable
 CREATE TABLE "PayoutDestination" (
@@ -49,6 +49,7 @@ CREATE TABLE "LedgerEntry" (
     "bookingId" UUID,
     "paymentId" UUID,
     "refundId" UUID,
+    "listingId" UUID,
     "payoutId" UUID,
     "adminId" UUID,
     "note" TEXT,
@@ -86,6 +87,9 @@ CREATE UNIQUE INDEX "LedgerEntry_commission_key" ON "LedgerEntry"("bookingId") W
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LedgerEntry_payoutId_venueId_key" ON "LedgerEntry"("payoutId", "venueId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LedgerEntry_listingId_venueId_key" ON "LedgerEntry"("listingId", "venueId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Payout_venueId_idempotencyKey_key" ON "Payout"("venueId", "idempotencyKey");
@@ -131,14 +135,15 @@ ALTER TABLE "Payout" ADD CONSTRAINT "Payout_paid_check" CHECK ((status = 'PAID')
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "LedgerEntry" ADD CONSTRAINT "LedgerEntry_kind_check" CHECK (
-  num_nonnulls("bookingId", "paymentId", "refundId", "payoutId", "adminId") = 1 AND (
+  num_nonnulls("bookingId", "paymentId", "refundId", "listingId", "payoutId", "adminId") = 1 AND (
     (type = 'COLLECTION' AND "paymentId" IS NOT NULL AND amount > 0)
     OR (type = 'REFUND' AND "refundId" IS NOT NULL AND amount < 0)
     OR (type = 'COMMISSION' AND "bookingId" IS NOT NULL AND amount < 0)
+    OR (type = 'JOIN_FEE' AND "listingId" IS NOT NULL AND amount < 0)
     OR (type = 'PAYOUT' AND "payoutId" IS NOT NULL AND amount < 0)
     OR (type = 'ADJUSTMENT' AND "adminId" IS NOT NULL AND note IS NOT NULL AND amount <> 0)
   )
 );
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "LedgerEntry" ADD CONSTRAINT "LedgerEntry_tax_check" CHECK ((type = 'COMMISSION' AND "taxAmount" BETWEEN amount AND 0) OR (type <> 'COMMISSION' AND "taxAmount" = 0));
+ALTER TABLE "LedgerEntry" ADD CONSTRAINT "LedgerEntry_tax_check" CHECK ((type IN ('COMMISSION', 'JOIN_FEE') AND "taxAmount" BETWEEN amount AND 0) OR (type NOT IN ('COMMISSION', 'JOIN_FEE') AND "taxAmount" = 0));

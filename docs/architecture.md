@@ -73,7 +73,7 @@ The proof is a test: 100 parallel requests for the same slot produce exactly one
 
 ### State machines
 
-- Allowed transitions live in a table in code (bookings: `PENDING → HELD → CONFIRMED → COMPLETED | NO_SHOW`, plus `CANCELLED` and `EXPIRED`; payments, refunds, payouts and deliveries likewise).
+- Allowed transitions live in a table in code (bookings: `PENDING → HELD → CONFIRMED → COMPLETED | NO_SHOW`, plus `CANCELLED` and `EXPIRED`; payments, refunds, payouts, deliveries, listings, community members, tournaments and their teams and matches likewise).
 - Every transition is a compare-and-set: `UPDATE ... WHERE id = $1 AND status = $from`. Zero rows means someone else moved it first, so the request returns 409 instead of overwriting their change.
 - The matching `BookingEvent` (or `VenueEvent`) is written in the same transaction.
 
@@ -121,6 +121,7 @@ Side effects are never sent from inside a transaction, and never only through Re
 | Slot generation | `GroundSettings.scheduleVersion` bumped in the edit's transaction | Stale `AVAILABLE` slots (older `scheduleVersion`), plus the nightly roll-forward |
 | Payment confirmation | `Payment` `PENDING` | Reconciliation asks the provider about `PENDING` payments older than N minutes (`@@index([status, createdAt])`) |
 | Refunds, payouts | `PENDING` rows | Same pattern |
+| Open-game joining fees | A `BookingListing` whose booking is `COMPLETED`, more than 24 hours after its end, with no `JOIN_FEE` entry | By `startsAt` on `@@index([status, startsAt])`, checked against the unique `JOIN_FEE` entry per listing |
 
 If Redis is down, requests still succeed and the sweepers catch up when it's back. Nothing is lost.
 
@@ -130,11 +131,13 @@ If Redis is down, requests still succeed and the sweepers catch up when it's bac
 - Webhook handlers are idempotent and handle events arriving out of order (a refund event before its payment's success).
 - Amounts are integer minor units with the currency's ISO 4217 exponent (KWD, BHD and OMR have 3). No floats anywhere in money code.
 - `LedgerEntry` is append-only. Balances are sums in SQL.
+- A balance goes negative when a venue owes Hagz: commission on cash bookings, and open-game joining fees the venue collected. Payouts net it off first. What's left is settled by hand (a wire, or cash collected in person) and recorded by an admin as an `ADJUSTMENT` whose note gives the method and reference. There's no separate settlement type (decided on 2026-10-30).
 - Creating a payout locks the venue's row (`SELECT ... FOR UPDATE`) so two payouts can't spend the same balance. Money transactions that read and then write run with a retry wrapper for serialization failures and deadlocks (`40001`, `40P01`).
 - A nightly audit checks the invariants and alerts on any drift:
   - each booking's `total` equals the sum of its charges;
   - the ledger agrees with payments, refunds and payouts;
-  - no refund exceeds its payment.
+  - no refund exceeds its payment;
+  - every completed open game has exactly one `JOIN_FEE` entry, equal to the recorded (or assumed) player count × the listing's `joinFee`.
 - Provider code sits behind a `PaymentProvider` interface (create, refund, verify webhook, fetch status), matching the provider-neutral schema.
 
 ### Time
@@ -162,6 +165,21 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_no_overlap"
 
 The slot constraint closes a real gap (manual slots), and is in the grounds migration (2026-11-18, with `btree_gist` in the first one); the booking one comes with bookings (Phase 4). The booking constraint is a backstop: the slot claim should already prevent overlaps, but if application code ever writes a booking whose range doesn't match its slots, Postgres refuses it. Like the CHECKs, Prisma can't declare these, so they're hand-added to a migration and verified for drift.
 
+### Migrations
+
+Agreed while building the schema (2026-10-25 onwards) and used for every change since.
+
+- **One migration per domain,** matching the schema files (`20261025000000_postgis`, then admins, staff, customers, … listings, communities, tournaments), in dependency order. Each enum is in the first migration that uses it, and each foreign key in the later of its two tables' migrations (so `BookingListing → Community` is in communities).
+- **Until a database outside development has applied them, changes fold into their domain's migration** instead of adding small migrations: a new column, CHECK or index goes with its table. A new domain gets a new migration (communities and tournaments did on 2026-11-19). From the first deployment on, an applied migration is never edited again; every change is a new migration.
+- **Hand-written SQL** for what Prisma can't declare, each marked with a comment saying so: CHECK constraints, exclusion constraints, functions (`fold_name()`) and expression indexes (the trigram index on venue names). Prisma's diff can't see them, so it neither creates nor reports them.
+- **Indexes Prisma declares stay exactly as declared.** Changing one by hand (adding `INCLUDE` columns to the unique `(groundId, startsAt)` index, for example) shows up as drift, and Prisma would rewrite it.
+- **Renames are written by hand** (`ALTER TABLE … RENAME COLUMN`). Prisma's diff turns a rename into dropping and adding the column, which loses the data.
+- **Verifying a change:**
+  1. migrate a fresh database from scratch (`migrate deploy`), and check that `prisma migrate diff` against the schema is empty;
+  2. insert good rows and rows that must be refused, and check each CHECK refuses its bad row;
+  3. compare constraint, index and function definitions (`pg_get_constraintdef`, `pg_indexes`, `pg_get_functiondef`) between that database and the development one, since the diff can't see hand-written SQL.
+- **Updating a development database after a migration was edited in place:** `migrate deploy` skips a migration that's already recorded, so the edit never reaches it. Either reset it (`prisma migrate reset`, then `seed:reference`) when its data doesn't matter, or apply the edited statements by hand and set that migration's `checksum` in `_prisma_migrations` to the SHA-256 of the edited file. `ALTER TYPE … ADD VALUE` must run outside the transaction that uses the new value, with `BEFORE` so the enum's order matches a fresh database.
+
 ## Reliability
 
 | Area | Rule |
@@ -187,6 +205,46 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 - Past `AVAILABLE` slots are useless, so a nightly job deletes them (bookings keep the history). The table stays near its 90-day size instead of growing forever.
 - Paginate with keysets, never `OFFSET`. UUIDv7 ids are time-ordered, so `WHERE id < $cursor` works out of the box.
 - Later, when metrics call for it: a read replica for search, and monthly partitions for `LedgerEntry`, `BookingEvent` and `NotificationDelivery`.
+
+### Search ranking
+
+Agreed on 2026-11-19. **Filters decide which venues appear; the sort decides their order.** A venue that fails a filter never appears, however loyal the player is.
+
+The sorts the player picks (distance, price, rating, soonest available) are applied exactly as named. Only **best match**, the default, is personal. It orders venues by tier first, then by a match score within each tier:
+
+| Tier | The venue is one where the player… | Read from | Card badge |
+|---|---|---|---|
+| 0 | has earned a free booking | their `LoyaltyCard` is `EARNED` | "Free booking ready" |
+| 1 | is collecting stamps | their `LoyaltyCard` is `OPEN` | "2 of 4" |
+| 2 | has played before | `VenueCustomer.bookingCount > 0` | "Played here 3×" |
+| 3 | could collect stamps | `VenueSettings.loyaltyStamps` is set | "Loyalty" |
+| 4 | none of these | | |
+
+- Tiers 0 and 1 come from the player's card, not the venue's settings, because a card stays valid after a venue turns loyalty off.
+- Guests and players with no history only see tiers 3 and 4.
+- **The match score** combines closeness (to the player or the chosen area's centre), rating, and how well the free times fit the requested time. Rating is a Bayesian average: a venue with few reviews is pulled towards the marketplace mean, so three five-star reviews don't beat three hundred four-and-a-half-star ones. The weights are constants in code, tuned on real data after launch.
+- **The query:** the player's own venues come first, from one small CTE over `VenueCustomer` (indexed on `customerId`) joined to their open card. The partial index already allows at most one open or earned card per venue customer. The tier is a `CASE` over that CTE and `VenueSettings`. Pages use a keyset cursor on `(tier, score, venueId)`.
+- **Caching:** guest results can be cached briefly, as above. A signed-in player's best match is computed per request. Their own venues number in the tens, so this costs a few milliseconds and keeps their cards' state exact.
+- **The app says how results are ranked** ("Your venues and loyalty venues first, then by distance, rating and availability"), so the order never looks like paid placement.
+
+### Search indexes
+
+Measured on 2026-11-19 (PR 3.1) against `seed:scale`: a local `hagz_scale` database with 1,000 live venues, 3,953 grounds and 5.7M slots (2.2 GB with indexes, 82% of slots free). Run `pnpm --filter @hagz/server seed:scale` to rebuild it. It refuses any server that isn't local, and leaves the development database alone. Its data is repeatable (the same seed gives the same venues, so plans compare between runs). Taken slots are stored as `BLOCKED`, not `BOOKED`: a booked slot needs a real booking, and search only asks whether a slot is `AVAILABLE`, so the plans are the same without millions of bookings.
+
+**Names.** `fold_name()` (first migration) folds a name the way `foldName` in `src/platform/text/fold.ts` folds what the player types: case, Latin accents, Arabic diacritics, hamza and madda forms, ى/ي, ة/ه, Arabic-Indic digits, spaces and the invisible marks pasted text carries. A test keeps the two equal. Venue names have a trigram index on `fold_name(name)`, which `LIKE '%part%'` uses. Postgres inlines the function into both the index and the query, so it must stay `IMMUTABLE`, and changing it means a migration that replaces it and rebuilds every index on it.
+
+**Availability: no new index.** Four search shapes, warm cache:
+
+| Shape | Existing indexes | + covering `(groundId, startsAt) INCLUDE (status, price, tier)` | + partial, same `WHERE status = 'AVAILABLE'` |
+|---|---|---|---|
+| Near me (5 km), 5-a-side, free 20:00–22:00 | 0.3 ms, 375 buffers | 0.3 ms, 324 | 0.3 ms, 324 |
+| Whole country, same | 4–8 ms, 9,050 | 4.0 ms, 7,173 | 3.9 ms, 7,180 |
+| Near me, any time that day | 0.5 ms, 430 | 0.4 ms, 335 | 0.4 ms, 330 |
+| Whole country, a 2-hour start between 18:00 and 22:00 | 9 ms, 9,259 | 8.1 ms, 7,264 | 7.7 ms, 7,198 |
+
+- The unique `(groundId, startsAt)` index already answers every shape, with the venue GiST index for "near me". The rest of the reads are one B-tree descent per candidate ground, which no index shape removes.
+- Both candidates allow index-only scans and save about 20% of buffer reads, but cost 320 MB (covering) or 221 MB (partial) and slow every write to the busiest table. Adding the columns to the existing unique index instead isn't possible: Prisma owns that index (slot generation upserts through it) and reports the change as drift.
+- **Revisit** if 3.3's latency budgets fail under load or with a cold cache, which this test didn't cover. Add the partial index first: it's the smaller one, and taken slots never match a search anyway.
 
 ### Why precomputed slots
 
@@ -322,6 +380,7 @@ Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships
 | 2. Venues and grounds | Reference data, venue creation and settings, media (R2), grounds and schedules, layout API, slot generation, go-live review, support tools | DST property tests pass; generation is idempotent; a venue reaches `LIVE` through admin review |
 | 3. Discovery | Venue page, guest browsing, search by area, distance or name with every filter and sort, favorites | Every search shape stays within its query-plan budget on launch-scale data |
 | 4. Bookings | Holds, state machine, charges, approval, expiry sweeper, venue customers and walk-ins | The 100-request race leaves exactly one booking |
+| 4b. Communities and tournaments | Open and closed communities, members-only games, venue and community tournaments with fixtures and results | Concurrent joins never pass a limit; brackets fill correctly through byes and walkovers |
 | 5. Payments | Paymob spike, provider adapter, webhooks, reconciliation, cash | Missing, duplicate and out-of-order webhook tests pass |
 | 6. Money out | Cancellations, refunds, ledger, commission, payouts, nightly audit | The audit shows no drift across randomized simulations |
 | 7. Engagement | Notifications, loyalty, reviews, discounts | Notifications survive a Redis outage |

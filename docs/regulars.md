@@ -13,6 +13,7 @@ Agreed on 2026-10-29:
 - **Priced like any booking:** each weekly reservation copies the slot prices when it's created.
 - **Confirmed by staff or by the regular**, straight to `CONFIRMED`. No payment goes through Hagz: the venue collects it, as with cash.
 - **No commission** on a regular's own reservations. Hagz earns when it re-sells a slot a regular released.
+- **Changing a regular's time or ground** (decided on 2026-10-30): its future `UNCONFIRMED` reservations are released and re-created at the new time, following the top-up rules (a week that's already taken is skipped, and staff are told). `CONFIRMED` ones stay, and staff use Move on them if needed. These releases have their own event type (`REGULAR_CHANGED`), so they don't count against the regular's reliability or the recovered-revenue figures. The customer is told the new time once.
 
 ## How it works
 
@@ -151,5 +152,4 @@ Staff see every reservation's state in the calendar, and who still hasn't answer
 ## Open
 
 - **A regular at a closed hour.** If the venue's schedule later closes that hour, the regular's future weeks can't be reserved. Pause the regular and tell staff, or keep skipping week by week?
-- **Changing a regular's time or ground.** Release its future unconfirmed reservations and re-create them at the new time, or apply the change only from the next horizon week?
 - **A regular who keeps letting deadlines pass.** Whether to pause them automatically after several misses.
