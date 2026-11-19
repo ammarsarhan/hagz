@@ -25,15 +25,16 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 // Each layer can drift with the swipe (parallax by depth), loop softly, and drop in the first time
 // its slide lands. With Reduce Motion on, the drawings stand still.
 //
-// Customer illustrations are black, with blue only as a hint (one or two parts per drawing).
+// Customer illustrations are black, white and grey only, never in a brand colour.
 const W = 345;
 const H = 330;
 
 const BLACK = "#000000";
-const BLUE = "#1F38ED";
+const GREY = "#8E8E8E";
 const WHITE = "#FFFFFF";
-// A shade deeper than the lime background, so the blob reads without a second colour.
-const BLOB = "#D9F27E";
+// A faint grey wash over the lime background, so the blob reads without a colour of its own.
+const BLOB = BLACK;
+const BLOB_OPACITY = 0.07;
 
 // A smooth organic outline: points at varying radii around a centre, joined with Catmull-Rom curves.
 function blob(cx: number, cy: number, radii: number[], turn: number) {
@@ -207,7 +208,7 @@ function Blob({ k, offset, d }: { k: number; offset: SharedValue<number>; d: str
       origin={[172, 185]}
       loop={{ period: 7000, scale: [1, 1.035] }}
     >
-      <Path d={d} fill={BLOB} />
+      <Path d={d} fill={BLOB} fillOpacity={BLOB_OPACITY} />
     </Part>
   );
 }
@@ -276,7 +277,7 @@ function PitchScene({ k, offset, active }: SceneProps) {
           strokeLinecap="round"
           fill="none"
         />
-        <Rect x={250} y={78} width={66} height={30} rx={15} fill={BLUE} />
+        <Rect x={250} y={78} width={66} height={30} rx={15} fill={GREY} />
       </Part>
       <Part k={k} offset={offset} depth={24} loop={{ period: 3900, delay: 900, y: [-3, 3] }}>
         <Rect x={24} y={292} width={66} height={30} rx={15} fill={BLACK} />
@@ -310,22 +311,22 @@ function PitchScene({ k, offset, active }: SceneProps) {
           d="M172 214 C160 194 138 168 138 136 A34 34 0 1 1 206 136 C206 168 184 194 172 214Z"
           fill={WHITE}
         />
-        <Circle cx={172} cy={135} r={13} fill={BLUE} />
+        <Circle cx={172} cy={135} r={13} fill={BLACK} />
       </Part>
       <Spark k={k} offset={offset} at={[40, 196]} size={9} delay={0} />
-      <Spark k={k} offset={offset} at={[314, 176]} size={11} delay={700} color={BLUE} />
+      <Spark k={k} offset={offset} at={[314, 176]} size={11} delay={700} color={GREY} />
       <Spark k={k} offset={offset} at={[124, 62]} size={6} delay={1300} />
       <Spark k={k} offset={offset} at={[306, 246]} size={6} delay={400} />
     </>
   );
 }
 
-// The open spot the blue player flies into, and where the player starts (smaller, top right).
+// The open spot the grey player flies into, and where the player starts (smaller, top right).
 const SPOT = [232, 110] as const;
 const START = { x: 300 - SPOT[0], y: 46 - SPOT[1], scale: 0.8 };
 const JOIN_MS = 5200;
 
-// 2 · Short squads, solved: a blue player flies into the squad's dashed open spot, stays a beat,
+// 2 · Short squads, solved: a grey player flies into the squad's dashed open spot, stays a beat,
 // and the loop starts again.
 function SquadScene({ k, offset, active }: SceneProps) {
   const reduce = useReducedMotion();
@@ -415,7 +416,7 @@ function SquadScene({ k, offset, active }: SceneProps) {
           fill="none"
         />,
       )}
-      {layer(joiner, <Player cx={SPOT[0]} cy={SPOT[1]} fill={BLUE} />)}
+      {layer(joiner, <Player cx={SPOT[0]} cy={SPOT[1]} fill={GREY} />)}
       <Part
         k={k}
         offset={offset}
@@ -450,7 +451,7 @@ const CONFETTI: {
   },
   {
     d: "M280 58 l10 10 l-7 7 l-10 -10Z",
-    fill: BLUE,
+    fill: GREY,
     origin: [281, 66],
     loop: { period: 3600, delay: 500, y: [-5, 5], rotate: [20, -30] },
   },
@@ -480,7 +481,7 @@ const CONFETTI: {
   },
   {
     circle: [64, 160, 4],
-    fill: BLUE,
+    fill: GREY,
     origin: [64, 160],
     loop: { period: 2900, delay: 200, y: [-3, 5] },
   },
@@ -518,7 +519,7 @@ function TrophyScene({ k, offset, active }: SceneProps) {
         <Rect x={160} y={200} width={24} height={38} fill={BLACK} />
         <Path d="M112 92 H232 V148 A60 60 0 0 1 112 148 Z" fill={WHITE} />
         <Rect x={104} y={82} width={136} height={16} rx={8} fill={BLACK} />
-        <Path d={star(172, 142, 22, 9)} fill={BLUE} />
+        <Path d={star(172, 142, 22, 9)} fill={BLACK} />
         <Rect x={134} y={234} width={76} height={20} rx={6} fill={WHITE} />
         <Rect x={114} y={252} width={116} height={30} rx={10} fill={BLACK} />
       </Part>
