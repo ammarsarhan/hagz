@@ -36,16 +36,6 @@ const KNOWN: { file: string; table: string; why: string }[] = [
     table: "VenueLayoutItem",
     why: "An amenity made unplaceable takes its tiles off every layout. Locations can't call venues (venues reads locations), so venues should drop them itself.",
   },
-  {
-    file: "src/modules/venues/application/admin-team.ts",
-    table: "Staff",
-    why: "Transferring ownership locks the new owner's staff row to serialise the one-unfinished-venue check. An advisory lock on the staff id would do it without identity's row.",
-  },
-  {
-    file: "src/modules/venues/application/venue-setup.ts",
-    table: "Staff",
-    why: "Creating a venue locks the creator's staff row, for the same check as transfers.",
-  },
 ];
 
 const WRITES = [

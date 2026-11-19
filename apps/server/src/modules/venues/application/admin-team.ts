@@ -8,7 +8,7 @@ import { OWNERSHIP_TRANSFERRED, STAFF_REMOVED } from "../domain/events";
 import { ALL_PERMISSIONS } from "../domain/permissions";
 import { venueNotFound } from "./access";
 import { revokeInvitation } from "./invitations";
-import { UNFINISHED, unfinishedVenueExists } from "./venue-setup";
+import { lockOwnedVenues, UNFINISHED, unfinishedVenueExists } from "./venue-setup";
 
 // Admin support on a venue's team (the Team tab): removing a member, revoking an invitation and
 // handing the venue to another member. The venue's own staff run their team in the dashboard app;
@@ -99,8 +99,7 @@ export const revokeInvitationAsAdmin = (adminId: string, venueId: string, invita
 // To an existing member (docs/onboarding.md, "Transfer ownership"), after support has checked who
 // they are: ownership controls payouts. The old owner stays on as a member who can manage
 // everything; both are told. A venue that isn't live yet counts as the new owner's one unfinished
-// venue, so it's refused when they already own another (their staff row is locked for that check,
-// as when creating a venue).
+// venue, so it's refused when they already own another (under the same lock as creating one).
 export const transferOwnership = async (
   adminId: string,
   venueId: string,
@@ -116,7 +115,7 @@ export const transferOwnership = async (
       throw staffNotActive(member.staff.status);
     }
     if (UNFINISHED.includes(status)) {
-      await tx.$queryRaw`SELECT id FROM "Staff" WHERE id = ${staffId}::uuid FOR UPDATE`;
+      await lockOwnedVenues(tx, staffId);
       const other = await tx.venue.findFirst({
         where: {
           id: { not: venueId },
