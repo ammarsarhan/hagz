@@ -256,11 +256,6 @@ enum CommunityPolicy {
   CLOSED // A request an admin approves, or an invite link.
 }
 
-enum CommunityGamesBy {
-  MEMBERS
-  ADMINS
-}
-
 enum CommunityStatus {
   ACTIVE
   ARCHIVED // By its owner.

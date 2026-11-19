@@ -17,8 +17,8 @@ An invite link joins without approval, for either kind. Admins create and revoke
 ## Roles
 
 - **Owner:** exactly one per community, and the one who created it. Changes settings, appoints and removes admins, transfers ownership, archives the community. The owner can't leave without transferring ownership first or archiving.
-- **Admin:** approves and declines requests, removes and bans members, manages invite links, edits the notice, runs the community's tournaments.
-- **Member:** plays in its games and tournaments, can list their own bookings as community games (unless the owner limits that to admins), and can leave at any time.
+- **Admin:** approves and declines requests, removes and bans members, manages invite links, edits the notice, lists community games, runs the community's tournaments. The owner can do all of this too.
+- **Member:** plays in its games and tournaments, and can leave at any time.
 
 ## Rules
 
@@ -32,7 +32,7 @@ An invite link joins without approval, for either kind. Admins create and revoke
 
 ## Community games
 
-A member lists their booking as a community game. It's an ordinary [listing](listings.md) with a `communityId`, following the same rules and money: prepaid, share to the booker, 10% joining fee at the venue.
+The owner or an admin lists their own booking as a community game (decided on 2026-11-19: members can't, so a community's games are always its organizers'). It's an ordinary [listing](listings.md) with a `communityId`, following the same rules and money: prepaid, share to the booker, 10% joining fee at the venue.
 
 - **Members only** until `publicAt`, if the booker sets one (for example, "open to everyone 24 hours before kick-off if it isn't full"). From then on it's in the public feed as well. Without `publicAt` it stays members-only.
 - It shows on the community's page and in members' Games feed, marked with the community's name.
@@ -62,7 +62,7 @@ From the Community tab: search by name (`pg_trgm`, the same Arabic and English n
 
 ## Schema
 
-- **`Community`:** `id`, `slug` (unique), `name`, `description?`, `avatarKey?`, `sport?` (`Sport`), `locationId` (its home area), `policy` (`CommunityPolicy`: `OPEN` / `CLOSED`), `gamesBy` (`MEMBERS` / `ADMINS`: who can list community games), `notice?`, `whatsappLink?`, `status` (`CommunityStatus`: `ACTIVE` / `ARCHIVED` / `HIDDEN`), `memberCount` (kept up to date under a lock on this row, like `playerCount`), `hiddenReason?`, `createdAt`, `updatedAt`.
+- **`Community`:** `id`, `slug` (unique), `name`, `description?`, `avatarKey?`, `sport?` (`Sport`), `locationId` (its home area), `policy` (`CommunityPolicy`: `OPEN` / `CLOSED`), `notice?`, `whatsappLink?`, `status` (`CommunityStatus`: `ACTIVE` / `ARCHIVED` / `HIDDEN`), `memberCount` (kept up to date under a lock on this row, like `playerCount`), `hiddenReason?`, `createdAt`, `updatedAt`.
   - CHECKs: `memberCount >= 0`; `hiddenReason` set exactly when `HIDDEN`; `whatsappLink` is a `https://chat.whatsapp.com/` invite.
   - Indexed on `(status, locationId)`. The trigram index on the normalized name comes with 4b.1's search, using 3.1's name normalization.
 - **`CommunityMember`:** `communityId`, `customerId`, `role` (`CommunityRole`: `OWNER` / `ADMIN` / `MEMBER`), `status` (`CommunityMemberStatus`: `REQUESTED` / `ACTIVE` / `DECLINED` / `LEFT` / `REMOVED` / `BANNED`), `muted` (default false), `requestedAt?`, `joinedAt?`, `leftAt?`, and `decidedAt?` with `deciderId?` (the community admin who last approved, declined, removed or banned them).

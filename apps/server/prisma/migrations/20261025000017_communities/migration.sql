@@ -2,9 +2,6 @@
 CREATE TYPE "CommunityPolicy" AS ENUM ('OPEN', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "CommunityGamesBy" AS ENUM ('MEMBERS', 'ADMINS');
-
--- CreateEnum
 CREATE TYPE "CommunityStatus" AS ENUM ('ACTIVE', 'ARCHIVED', 'HIDDEN');
 
 -- CreateEnum
@@ -23,7 +20,6 @@ CREATE TABLE "Community" (
     "sport" "GroundSport",
     "locationId" UUID NOT NULL,
     "policy" "CommunityPolicy" NOT NULL,
-    "gamesBy" "CommunityGamesBy" NOT NULL DEFAULT 'MEMBERS',
     "notice" TEXT,
     "whatsappLink" TEXT,
     "status" "CommunityStatus" NOT NULL DEFAULT 'ACTIVE',

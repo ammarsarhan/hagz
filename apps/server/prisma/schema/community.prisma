@@ -4,22 +4,21 @@
 // a community never loses its owner. CHECKs: memberCount >= 0; hiddenReason set exactly when HIDDEN;
 // whatsappLink is a WhatsApp group invite.
 model Community {
-  id           String           @id @default(uuid(7)) @db.Uuid
-  slug         String           @unique
+  id           String          @id @default(uuid(7)) @db.Uuid
+  slug         String          @unique
   name         String
   description  String?
   avatarKey    String?
   sport        GroundSport?
-  locationId   String           @db.Uuid // Home area.
+  locationId   String          @db.Uuid // Home area.
   policy       CommunityPolicy
-  gamesBy      CommunityGamesBy @default(MEMBERS) // Who can list community games.
   notice       String? // Pinned by admins; members only.
   whatsappLink String? // Members only.
-  status       CommunityStatus  @default(ACTIVE)
-  memberCount  Int              @default(0)
+  status       CommunityStatus @default(ACTIVE)
+  memberCount  Int             @default(0)
   hiddenReason String? // From the Hagz admin who hid it.
-  createdAt    DateTime         @default(now()) @db.Timestamptz
-  updatedAt    DateTime         @updatedAt @db.Timestamptz
+  createdAt    DateTime        @default(now()) @db.Timestamptz
+  updatedAt    DateTime        @updatedAt @db.Timestamptz
 
   location    Location          @relation(fields: [locationId], references: [id], onDelete: Restrict)
   members     CommunityMember[]
