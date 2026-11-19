@@ -63,7 +63,7 @@ apps/server/src/
    Fewer rows than requested means a slot was taken: roll back and return `409 SLOT_UNAVAILABLE`. Concurrent requests queue on the row locks. When the winner commits, Postgres re-checks each waiting row, finds it no longer `AVAILABLE`, and drops it, so every loser gets the 409 without writing anything.
 2. Only then insert the `Booking` and mark the locked slots `HELD` with its id.
 3. Rows are always locked in a fixed order (`startsAt` ascending) so overlapping requests can't deadlock.
-4. **Proposed:** exclusion constraints as a database backstop (see [Exclusion constraints](#exclusion-constraints-proposed)).
+4. Exclusion constraints as a database backstop: overlapping slots are refused now, overlapping bookings from Phase 4 (see [Exclusion constraints](#exclusion-constraints)).
 
 Don't insert the booking first and claim the slots after. Every contender's insert then waits on the others' uncommitted bookings in the `Booking_no_overlap` constraint, so a popular slot turns into lock timeouts and deadlocks, and the stuck transactions hold the whole connection pool (see [Why precomputed slots](#why-precomputed-slots)).
 
@@ -329,6 +329,5 @@ Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships
 
 ## Open decisions
 
-- Whether to add the [exclusion constraints](#exclusion-constraints-proposed).
 - Where the API and worker run: Railway or a VPS. The trade-offs, and the contract any host must meet, are in [deployment.md](deployment.md). Decided before Phase 9; until then nothing new depends on Railway.
 - Moving the API and the database into one region. Staging on Railway runs in `europe-west4` (Netherlands) and Neon in Frankfurt. Settled by the hosting decision above.
