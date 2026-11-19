@@ -1,30 +1,18 @@
+import { refundBands } from "@hagz/contracts";
 import type { ReactNode } from "react";
-import {
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  View,
-  type LayoutChangeEvent,
-} from "react-native";
+import { Linking, Platform, Pressable, View, type LayoutChangeEvent } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
-import { COUNTRY_CODE, displayPhone, PHONE_DIGITS } from "@/lib/phone";
 import {
-  cheapestHour,
-  dayLabel,
-  freeCancellationHours,
   groundLine,
+  hoursLabel,
   kindOf,
   noticeLabel,
   paymentLabel,
   sportsLine,
-  startTimes,
-  timeOfDay,
   type PublicVenue,
-  type VenueAvailability,
 } from "@/lib/venue";
-import { colors } from "@/lib/colors";
 import { AmenityIcon } from "./amenity-icon";
 import { IconStarFilled } from "./icons";
 import { Text } from "./text";
@@ -101,15 +89,29 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-// Name, where it is, what's played, and its rating.
-export function VenueHeader({ venue }: { venue: PublicVenue }) {
-  const place = [venue.location.area, sportsLine(venue)].filter(Boolean).join(" · ");
+// Name, where it is, what's played, and its rating. `onTitleLayout` says where the name sits, so
+// the bar can show it once it has scrolled under.
+export function VenueHeader({
+  venue,
+  onTitleLayout,
+}: {
+  venue: PublicVenue;
+  onTitleLayout: (event: LayoutChangeEvent) => void;
+}) {
+  const sports = sportsLine(venue);
   return (
-    <View className="gap-1.5 px-6 pt-5">
-      <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+    <View className="gap-1.5 px-6 pt-7">
+      <Text
+        accessibilityRole="header"
+        className="text-title font-semibold tracking-[-0.4px]"
+        onLayout={onTitleLayout}
+      >
         {venue.name ?? "Venue"}
       </Text>
-      {place ? <Text className="text-body text-ink-2">{place}</Text> : null}
+      {venue.location.area ? (
+        <Text className="text-body text-ink-2">{venue.location.area}</Text>
+      ) : null}
+      {sports ? <Text className="text-body text-ink-2">{sports}</Text> : null}
       <View className="mt-1 flex-row items-center gap-1.5">
         {venue.rating.average !== null ? (
           <>
@@ -124,133 +126,6 @@ export function VenueHeader({ venue }: { venue: PublicVenue }) {
           <Text className="text-body text-ink-2">No reviews yet</Text>
         )}
       </View>
-    </View>
-  );
-}
-
-// Three big figures: the cheapest hour, how many grounds, how long cancelling stays free.
-export function Figures({ venue }: { venue: PublicVenue }) {
-  const cheapest = cheapestHour(venue);
-  const free = freeCancellationHours(venue);
-  const figures = [
-    {
-      value: cheapest === null ? "—" : formatPrice(cheapest, venue.marketplace.currency),
-      label: "from, per hour",
-    },
-    {
-      value: String(venue.grounds.length),
-      label: venue.grounds.length === 1 ? "ground" : "grounds",
-    },
-    {
-      value: free === null ? "None" : `${free} h`,
-      label: "free cancellation",
-    },
-  ];
-  return (
-    <View className="mx-6 mt-5 flex-row border-y border-border py-4">
-      {figures.map((figure, index) => (
-        <View
-          key={figure.label}
-          className={`flex-1 gap-0.5 ${index > 0 ? "border-l border-border pl-4" : ""}`}
-        >
-          <Text className="text-[20px] leading-[26px] font-medium">{figure.value}</Text>
-          <Text className="text-caption text-unit">{figure.label}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// Today's start times per ground, as chips (Fresha's results), or tomorrow's once today has none
-// left. Tapping one is where booking will start.
-export function FreeToday({
-  venue,
-  availability,
-  onPick,
-}: {
-  venue: PublicVenue;
-  availability: VenueAvailability | null;
-  onPick: () => void;
-}) {
-  if (venue.status === "MAINTENANCE") {
-    return (
-      <View className="gap-2 px-6 pt-6">
-        <GroupHeading>Paused for now</GroupHeading>
-        <Text className="text-body text-ink-2">
-          The venue isn’t taking bookings at the moment. Bookings already made still stand.
-        </Text>
-      </View>
-    );
-  }
-  const timezone = venue.marketplace.timezone;
-  const rows = venue.grounds
-    .filter((ground) => ground.status === "ACTIVE")
-    .map((ground) => ({
-      ground,
-      starts: availability ? startTimes(availability.slots, ground) : [],
-    }))
-    .filter((row) => row.starts.length > 0);
-
-  return (
-    <View className="gap-4 pt-6">
-      <View className="px-6">
-        <GroupHeading
-          action={
-            availability ? (
-              <Text className="text-label text-ink-2">{dayLabel(availability.date)}</Text>
-            ) : undefined
-          }
-        >
-          {!availability || availability.date === availability.days.first
-            ? "Free today"
-            : "Free tomorrow"}
-        </GroupHeading>
-      </View>
-      {rows.length === 0 ? (
-        <Text className="px-6 text-body text-ink-2">
-          {availability ? "Nothing left today or tomorrow." : "Couldn’t load today’s times."}
-        </Text>
-      ) : (
-        rows.map(({ ground, starts }, index) => (
-          <View key={ground.id} className="gap-2.5">
-            {index > 0 ? (
-              <View className="mx-6 mb-2">
-                <Hairline />
-              </View>
-            ) : null}
-            <View className="flex-row items-center justify-between px-6">
-              <Text className="text-subtitle font-medium">
-                {ground.name ?? kindOf(ground)}{" "}
-                <Text className="text-subtitle text-ink-2">· {kindOf(ground)}</Text>
-              </Text>
-              {ground.priceFrom !== null ? (
-                <Text className="text-label text-ink-2">
-                  from {formatPrice(ground.priceFrom, venue.marketplace.currency)}
-                </Text>
-              ) : null}
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerClassName="gap-2 px-6"
-            >
-              {starts.map((slot) => (
-                <Pressable
-                  key={slot.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${ground.name ?? kindOf(ground)} at ${timeOfDay(slot.startsAt, timezone)}`}
-                  onPress={onPick}
-                  className="h-9 items-center justify-center rounded-full border border-border px-3.5 active:bg-chip"
-                >
-                  <Text className="text-body font-medium">
-                    {timeOfDay(slot.startsAt, timezone)}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        ))
-      )}
     </View>
   );
 }
@@ -306,37 +181,58 @@ export function BookingSection({
     { label: "Payment", value: paymentLabel(booking.payment) },
   ];
   if (booking.loyalty) {
-    facts.push({
-      label: "Regulars",
-      value: `1 free after ${booking.loyalty.stamps} bookings`,
-    });
+    facts.push({ label: "Loyalty", value: `1 free after ${booking.loyalty.stamps} bookings` });
   }
-  const summary = booking.cancellation?.summary ?? [];
-  // The last line is the venue's own promise (a full refund if it cancels): a note, not a rule.
-  const rules = summary.slice(0, -1);
-  const note = summary.at(-1);
   return (
-    <>
-      <Section title="How booking works" onLayout={onLayout}>
-        <Rows>
-          {facts.map((fact) => (
-            <FactRow key={fact.label} {...fact} />
-          ))}
-        </Rows>
-      </Section>
-      {rules.length > 0 ? (
-        <Section title="If you cancel">
-          <Rows>
-            {rules.map((line) => (
-              <Text key={line} className="py-3.5 text-body">
-                {line}
+    <Section title="How booking works" onLayout={onLayout}>
+      <Rows>
+        {facts.map((fact) => (
+          <FactRow key={fact.label} {...fact} />
+        ))}
+      </Rows>
+    </Section>
+  );
+}
+
+// "24 hours or more", "6 to 24 hours", "Under 6 hours": a band of notice before the start.
+const bandLabel = (from: number, to: number | null) =>
+  to === null
+    ? `${hoursLabel(from)} or more`
+    : from === 0
+      ? `Under ${hoursLabel(to)}`
+      : `${from} to ${hoursLabel(to)}`;
+
+// The policy as a table: how much notice, and how much comes back (the same bands the server's
+// plain-words summary is written from). A venue cancelling always refunds in full.
+export function CancellationSection({ venue }: { venue: PublicVenue }) {
+  const cancellation = venue.booking.cancellation;
+  if (!cancellation) return null;
+  const bands = refundBands(cancellation.tiers);
+  return (
+    <Section title="Cancellation policy">
+      <View className="overflow-hidden rounded-field border border-border">
+        <View className="flex-row items-center justify-between bg-chip px-4 py-2.5">
+          <Text className="text-caption font-medium text-ink-2">Cancel before it starts</Text>
+          <Text className="text-caption font-medium text-ink-2">You get back</Text>
+        </View>
+        {bands.map((band, index) => (
+          <View key={band.from}>
+            {index > 0 ? <Hairline /> : null}
+            <View className="flex-row items-center justify-between gap-4 px-4 py-3.5">
+              <Text className="text-body">{bandLabel(band.from, band.to)}</Text>
+              <Text className={`text-body ${band.refundPercent > 0 ? "font-medium" : "text-unit"}`}>
+                {band.refundPercent === 100
+                  ? "Everything"
+                  : band.refundPercent === 0
+                    ? "Nothing"
+                    : `${band.refundPercent}%`}
               </Text>
-            ))}
-          </Rows>
-          {note ? <Text className="text-label text-unit">{note}</Text> : null}
-        </Section>
-      ) : null}
-    </>
+            </View>
+          </View>
+        ))}
+      </View>
+      <Text className="text-label text-unit">If the venue cancels, you get everything back.</Text>
+    </Section>
   );
 }
 
@@ -408,12 +304,6 @@ export function ReviewsSection({
   );
 }
 
-// "+20 100 123 4567" for a mobile in the app's country; anything else (a landline) as stored.
-const readablePhone = (e164: string) => {
-  const local = e164.startsWith(COUNTRY_CODE) ? e164.slice(COUNTRY_CODE.length) : null;
-  return local && local.length === PHONE_DIGITS ? displayPhone(local) : e164;
-};
-
 // Opens the phone's maps app with directions to the venue.
 const openDirections = (latitude: number, longitude: number, name: string) => {
   const label = encodeURIComponent(name);
@@ -424,6 +314,7 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
   );
 };
 
+// The map and address. No phone: players get the venue's number with a booking there.
 export function WhereSection({
   venue,
   onLayout,
@@ -453,37 +344,22 @@ export function WhereSection({
           </MapView>
         </View>
       ) : null}
-      <Rows>
-        {[
-          <View key="address" className="flex-row items-center justify-between gap-4 py-3.5">
-            <View className="shrink gap-0.5">
-              <Text className="text-subtitle font-medium">
-                {address ?? area ?? "Address not given"}
-              </Text>
-              {address && area ? <Text className="text-label text-ink-2">{area}</Text> : null}
-            </View>
-            {coordinates ? (
-              <Link
-                label="Directions"
-                onPress={() =>
-                  openDirections(coordinates.latitude, coordinates.longitude, venue.name ?? "")
-                }
-              />
-            ) : null}
-          </View>,
-          ...(venue.phone
-            ? [
-                <View key="phone" className="flex-row items-center justify-between gap-4 py-3.5">
-                  <View className="gap-0.5">
-                    <Text className="text-subtitle font-medium">{readablePhone(venue.phone)}</Text>
-                    <Text className="text-label text-ink-2">The venue’s phone</Text>
-                  </View>
-                  <Link label="Call" onPress={() => void Linking.openURL(`tel:${venue.phone}`)} />
-                </View>,
-              ]
-            : []),
-        ]}
-      </Rows>
+      <View className="flex-row items-center justify-between gap-4">
+        <View className="shrink gap-0.5">
+          <Text className="text-subtitle font-medium">
+            {address ?? area ?? "Address not given"}
+          </Text>
+          {address && area ? <Text className="text-label text-ink-2">{area}</Text> : null}
+        </View>
+        {coordinates ? (
+          <Link
+            label="Directions"
+            onPress={() =>
+              openDirections(coordinates.latitude, coordinates.longitude, venue.name ?? "")
+            }
+          />
+        ) : null}
+      </View>
     </Section>
   );
 }
