@@ -242,7 +242,7 @@ flowchart LR
   classDef danger fill:#FFCDC2,stroke:#FF7556
   welcome["Welcome"] --> signup["Sign up: phone → WhatsApp code → name + password"] --> done["Signed up"]:::result
   welcome --> signin["Sign in: phone + password"] --> twofa["Two-factor code (if on)"]:::sheet
-  welcome --> forgot["Forgot password"] --> reset["Owner → contact support; member → read-only warning → code → new password"]:::state
+  welcome --> forgot["Forgot password"] --> reset["Owner → contact support, who grant one reset → code → new password; member → read-only warning → code → new password"]:::state
   done & twofa --> next["First run (D2) or Home (D6)"]
   signin --> blocked["D1b Suspended or banned: contact support"]:::danger
   twofa --> readonly["D1b Read-only on every venue after a reset: banner until the owner restores"]:::state
