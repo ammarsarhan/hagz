@@ -14,11 +14,12 @@ const decimalsOf = (currency: string) => {
   }
 };
 
-// 60000 EGP → "EGP 600", 155000 → "EGP 1,550": the code first, as Egyptian prices are written.
-export const formatPrice = (minor: number, currency: string) => {
+// 60000 EGP → "600", 155000 → "1,550".
+export const formatAmount = (minor: number, currency: string) => {
   const decimals = decimalsOf(currency);
-  const amount = (minor / 10 ** decimals).toLocaleString("en-US", {
-    maximumFractionDigits: decimals,
-  });
-  return `${currency} ${amount}`;
+  return (minor / 10 ** decimals).toLocaleString("en-US", { maximumFractionDigits: decimals });
 };
+
+// 60000 EGP → "600 EGP": the amount first, as the user writes prices (2026-11-19).
+export const formatPrice = (minor: number, currency: string) =>
+  `${formatAmount(minor, currency)} ${currency}`;
