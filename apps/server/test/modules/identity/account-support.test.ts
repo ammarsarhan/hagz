@@ -361,6 +361,22 @@ describe("a password reset support lets an owner do", () => {
     expect(await code(await confirm(tokens[1]))).toBe("RESET_TOKEN_INVALID");
   });
 
+  it("is cancelled by a suspension, and stays cancelled once they're reactivated", async () => {
+    const { owner } = await anOwner();
+    await admin("POST", `/admin/staff/${owner.id}/password-reset`, REASON);
+    expect((await admin("POST", `/admin/staff/${owner.id}/suspend`, REASON)).status).toBe(204);
+    expect((await admin("POST", `/admin/staff/${owner.id}/reactivate`)).status).toBe(204);
+
+    // Back to support, as for any owner: the check the grant stood for was made before.
+    expect(await code(await resetByPhone())).toBe("CODE_EXPIRED");
+    expect(outbox.supportNotices).toHaveLength(1);
+    expect((await accountEvents()).map((event) => event.type)).toEqual([
+      "STAFF_PASSWORD_RESET_GRANTED",
+      "STAFF_SUSPENDED",
+      "STAFF_REACTIVATED",
+    ]);
+  });
+
   it("refuses an account that isn't active, or doesn't exist", async () => {
     const { owner } = await anOwner();
     await prisma.staff.update({ where: { id: owner.id }, data: { status: "SUSPENDED" } });
