@@ -1,16 +1,16 @@
 import { refundBands } from "@hagz/contracts";
 import type { Icon } from "@tabler/icons-react-native";
 import { useEffect, useState, type ReactNode } from "react";
-import { Linking, Platform, Pressable, View, type LayoutChangeEvent } from "react-native";
+import {
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import Animated, {
-  FadeIn,
-  FadeOut,
-  LinearTransition,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
 import {
@@ -231,47 +231,50 @@ function GroundOption({
   onPick: () => void;
   onSeeTimes: () => void;
 }) {
-  // The black border fades in over the grey one (which stays, so an unpicked card keeps its
-  // 1px edge), and See times fades in as the card grows, the cards under it sliding down.
+  // Picking only fades things: the black border over the grey one (which stays, so an unpicked
+  // card keeps its 1px edge) and See times, whose room every card keeps. Nothing changes size, so
+  // nothing moves.
   const shown = useSharedValue(picked ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
   }, [picked, shown]);
-  const ring = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const fade = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const bookable = ground.status === "ACTIVE";
   return (
-    <Animated.View layout={LinearTransition.duration(200)}>
-      <Pressable
-        accessibilityRole="radio"
-        accessibilityState={{ selected: picked }}
-        onPress={onPick}
-        className="gap-0.5 rounded-2xl border border-border px-4 py-3.5"
-      >
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: picked }}
+      onPress={onPick}
+      className="w-[272px] gap-0.5 rounded-2xl border border-border px-4 py-3.5"
+    >
+      <Animated.View
+        pointerEvents="none"
+        className="absolute -inset-px rounded-[17px] border-[1.5px] border-ink"
+        style={fade}
+      />
+      <View className="flex-row items-center justify-between gap-6">
+        <Text className="shrink text-subtitle font-medium" numberOfLines={1}>
+          {ground.name ?? kindOf(ground)}
+        </Text>
+        <GroundPrice ground={ground} currency={currency} />
+      </View>
+      <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+      {bookable ? (
         <Animated.View
-          pointerEvents="none"
-          className="absolute -inset-px rounded-[17px] border-[1.5px] border-ink"
-          style={ring}
-        />
-        <View className="flex-row items-center justify-between gap-3">
-          <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
-          <GroundPrice ground={ground} currency={currency} />
-        </View>
-        <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
-        {picked && ground.status === "ACTIVE" ? (
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(120)}
-            className="mt-1.5 items-start"
-          >
-            <Link label="See times" onPress={onSeeTimes} />
-          </Animated.View>
-        ) : null}
-      </Pressable>
-    </Animated.View>
+          className="mt-auto items-start pt-1.5"
+          style={fade}
+          pointerEvents={picked ? "auto" : "none"}
+          accessibilityElementsHidden={!picked}
+        >
+          <Link label="See times" onPress={onSeeTimes} />
+        </Animated.View>
+      ) : null}
+    </Pressable>
   );
 }
 
-// The venue's map, and every ground under it to pick from (the first active one to start); the
-// picked one shows on the map. A venue without a map has the list alone.
+// The venue's map, and every ground in a row under it to pick from (the first active one to
+// start); the picked one shows on the map. A venue without a map has the row alone.
 export function GroundsSection({
   venue,
   onLayout,
@@ -296,7 +299,14 @@ export function GroundsSection({
           selectedId={pickedId}
         />
       ) : null}
-      <View className="gap-2.5">
+      {/* Swiped sideways, edge to edge: the cards line up with the page's gutter and run under
+          the screen's edge. All as tall as the tallest. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="-mx-6"
+        contentContainerClassName="gap-2.5 px-6"
+      >
         {venue.grounds.map((ground) => (
           <GroundOption
             key={ground.id}
@@ -307,7 +317,7 @@ export function GroundsSection({
             onSeeTimes={onSeeTimes}
           />
         ))}
-      </View>
+      </ScrollView>
     </Section>
   );
 }
