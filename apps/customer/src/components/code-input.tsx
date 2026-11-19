@@ -9,18 +9,13 @@ const LENGTH = 6;
 interface CodeInputProps {
   value: string;
   onChangeText: (code: string) => void;
-    error?: string;
+  error?: string;
   // Locked after too many attempts: grey boxes, no typing.
   disabled?: boolean;
 }
 
 // Six boxes driven by one hidden input, so typing, pasting and iOS's code autofill all work.
-export function CodeInput({
-  value,
-  onChangeText,
-  error,
-  disabled = false,
-}: CodeInputProps) {
+export function CodeInput({ value, onChangeText, error, disabled = false }: CodeInputProps) {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   const [focused, setFocused] = useState(false);
   const clean = (text: string) => text.replace(/\D/g, "").slice(0, LENGTH);

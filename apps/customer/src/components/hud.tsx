@@ -184,11 +184,7 @@ function Hud({
   }, [progress, onHidden]);
 
   return (
-    <View
-      pointerEvents="none"
-      className="absolute inset-x-0 items-center"
-      style={{ bottom }}
-    >
+    <View pointerEvents="none" className="absolute inset-x-0 items-center" style={{ bottom }}>
       <Animated.View
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"

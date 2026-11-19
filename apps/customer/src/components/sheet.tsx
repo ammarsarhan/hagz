@@ -27,7 +27,7 @@ interface SheetProps {
   onClose: () => void;
   // Called once it has slid away.
   onHidden?: () => void;
-    // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
+  // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
   // its own under it.
   header?: ReactNode;
   children: ReactNode;

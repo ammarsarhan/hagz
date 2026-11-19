@@ -66,12 +66,7 @@ export default function ResetNewPassword() {
       <Title subtitle="You’ll use it to sign in. Every device signed in now will be signed out.">
         Choose a new password
       </Title>
-      <PasswordField
-        label="New password"
-        value={password}
-        onChangeText={setPassword}
-        isNew
-      />
+      <PasswordField label="New password" value={password} onChangeText={setPassword} isNew />
       <PasswordRule password={password} />
     </Screen>
   );

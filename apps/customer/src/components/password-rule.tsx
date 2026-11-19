@@ -18,9 +18,7 @@ export function PasswordRule({ password }: { password: string }) {
       ) : (
         <IconCircleCheck size={16} color={colors.ink3} strokeWidth={2} />
       )}
-      <Text className={`text-label ${met ? "text-ink" : "text-ink-2"}`}>
-        At least 8 characters
-      </Text>
+      <Text className={`text-label ${met ? "text-ink" : "text-ink-2"}`}>At least 8 characters</Text>
     </View>
   );
 }

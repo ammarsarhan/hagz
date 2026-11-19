@@ -29,9 +29,7 @@ export function ResendCode({
     return (
       <View className="flex-row items-center gap-1.5">
         <IconClock size={16} color={colors.ink3} strokeWidth={2} />
-        <Text className="text-body text-ink-2">
-          Resend code in {clock(left)}
-        </Text>
+        <Text className="text-body text-ink-2">Resend code in {clock(left)}</Text>
       </View>
     );
   }
