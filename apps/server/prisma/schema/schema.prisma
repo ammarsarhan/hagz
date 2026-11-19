@@ -6,5 +6,5 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  extensions = [postgis, btree_gist]
+  extensions = [postgis, btree_gist, pg_trgm]
 }
