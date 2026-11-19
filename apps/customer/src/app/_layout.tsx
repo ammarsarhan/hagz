@@ -1,6 +1,11 @@
 import "../global.css";
 import { Stack } from "expo-router";
+import { HudProvider } from "@/components/hud";
 
 export default function RootLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <HudProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </HudProvider>
+  );
 }
