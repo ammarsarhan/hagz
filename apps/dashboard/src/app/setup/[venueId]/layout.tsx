@@ -81,15 +81,7 @@ type Amenity = components["schemas"]["Amenity"];
 
 // The tray: its padding, title and one row of 56-high chips.
 const TRAY_HEIGHT = 124;
-// The chips' row, and the one line ("Everything's on the layout.") in its place once nothing's
-// left: the tray then fits its title and that line.
-const CHIP_ROW = 56;
-// The message's line (text-caption), and how far it sits up into the title's gap: the 12 the chips
-// need under the title is a lot for one small line.
-const MESSAGE_LINE = 18;
-const MESSAGE_LIFT = 6;
-const TRAY_PADDING = 18;
-// Shrinking to that line and growing back when something comes off the layout.
+// Leaving once nothing's left to place, and coming back when something comes off the layout.
 const TRAY_CHANGE = { duration: 280, easing: Easing.out(Easing.cubic) };
 // Gliding to something picked from the list.
 const GLIDE = { duration: 320 };
@@ -150,9 +142,11 @@ function LayoutView({
   const [previewing, setPreviewing] = useState(false);
   // The venue's size while one of its edges is being dragged.
   const [sizing, setSizing] = useState<{ columns: number; rows: number } | null>(null);
-  const trayFade = useAnimatedStyle(() => ({
-    opacity: withTiming(previewing ? 0 : 1, { duration: 200 }),
-  }));
+  // 1 normally, 0 in the preview.
+  const unpreviewed = useSharedValue(1);
+  useEffect(() => {
+    unpreviewed.value = withTiming(previewing ? 0 : 1, { duration: 200 });
+  }, [previewing, unpreviewed]);
   const [lifted, setLifted] = useState<{ key: string; art: React.ReactNode; name: string } | null>(
     null,
   );
@@ -197,29 +191,19 @@ function LayoutView({
   const placeable = layout.placeableOptionIds.flatMap((id) => amenitiesById.get(id) ?? []);
   const needsEntrance = plan.entrances.length === 0;
   const trayEmpty = unplaced.length === 0 && placeable.length === 0 && !needsEntrance;
-  // 0 with things to place, 1 with none: the tray shrinks to its title and one line, the chips
-  // fading and scaling down as the line fades in and settles to its size. Starts where it is,
-  // unanimated.
+  // 0 with things to place, 1 with none: the tray leaves, fading, scaling down and dropping a
+  // little, and comes back the same way. Starts where it is, unanimated.
   const emptied = useSharedValue(trayEmpty ? 1 : 0);
-  // The title with its gap below, once measured; about a line of 16 until then.
-  const titleHeight = useSharedValue(31);
   useEffect(() => {
     emptied.value = withTiming(trayEmpty ? 1 : 0, TRAY_CHANGE);
   }, [trayEmpty, emptied]);
-  const trayHeight = useAnimatedStyle(() => ({
-    height: interpolate(
-      emptied.value,
-      [0, 1],
-      [TRAY_HEIGHT, TRAY_PADDING * 2 + titleHeight.value - MESSAGE_LIFT + MESSAGE_LINE],
-    ),
-  }));
-  const trayItems = useAnimatedStyle(() => ({
-    opacity: 1 - emptied.value,
-    transform: [{ scale: interpolate(emptied.value, [0, 1], [1, 0.94]) }],
-  }));
-  const trayDone = useAnimatedStyle(() => ({
-    opacity: emptied.value,
-    transform: [{ scale: interpolate(emptied.value, [0, 1], [1.04, 1]) }],
+  // Hidden by either: the preview fades it, an empty tray takes it away.
+  const trayShown = useAnimatedStyle(() => ({
+    opacity: unpreviewed.value * (1 - emptied.value),
+    transform: [
+      { translateY: interpolate(emptied.value, [0, 1], [0, 16]) },
+      { scale: interpolate(emptied.value, [0, 1], [1, 0.94]) },
+    ],
   }));
 
   const middle = { x: screen.width / 2, y: (area.top + screen.height - area.bottom) / 2 };
@@ -665,153 +649,121 @@ function LayoutView({
 
       {/* What can go on the layout: grounds not on it yet, the venue's assets (as many of each as
           it likes) and an entrance. Tap one to put it in the middle of the view, or drag it into
-          place. It fades out for the preview, and shrinks to its title and one line once
-          everything's placed.
-          The shadow is on the outside: the inside clips, and a view that clips loses its shadow
-          on iOS. */}
+          place. It fades out for the preview, and leaves once there's nothing left to place. */}
       <Animated.View
-        pointerEvents={previewing ? "none" : "auto"}
-        className="absolute inset-x-3 rounded-[24px] bg-white"
+        pointerEvents={previewing || trayEmpty ? "none" : "auto"}
+        accessibilityElementsHidden={trayEmpty}
+        importantForAccessibility={trayEmpty ? "no-hide-descendants" : "auto"}
+        className="absolute inset-x-3 rounded-[24px] bg-white py-[18px] pl-[18px]"
         style={[
           {
             bottom: insets.bottom,
+            height: TRAY_HEIGHT,
             shadowColor: colors.ink,
             shadowOpacity: 0.14,
             shadowRadius: 14,
             shadowOffset: { width: 0, height: 8 },
           },
-          trayHeight,
-          trayFade,
+          trayShown,
         ]}
       >
-        <View className="flex-1 overflow-hidden rounded-[24px] py-[18px] pl-[18px]">
-          {/* Measured, as the system font sets its height (taller in Arabic): the tray shrinks to
-              it and the message under it. */}
-          <Text
-            className="pb-3 text-[16px] font-medium"
-            onLayout={(event) => {
-              titleHeight.value = event.nativeEvent.layout.height;
-            }}
-          >
-            {t("screens.setup.layout.tray")}
-          </Text>
-          {/* The chips' row, and the message in its place once nothing's left: the chips fade and
-              scale down as the message fades in and settles to its size. */}
-          <View style={{ height: CHIP_ROW }}>
-            <Animated.View
-              pointerEvents={trayEmpty ? "none" : "auto"}
-              accessibilityElementsHidden={trayEmpty}
-              importantForAccessibility={trayEmpty ? "no-hide-descendants" : "auto"}
-              style={trayItems}
-            >
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 10, paddingRight: 18 }}
-              >
-                {unplaced.map((ground) => {
-                  const key = `g:${ground.id}`;
-                  const size = footprintOf(ground, "HORIZONTAL");
-                  return (
-                    <TrayItem
-                      key={key}
-                      label={nameOf(ground)}
-                      size={size}
-                      lifted={lifted?.key === key}
-                      onTap={() => placeGround(ground)}
-                      onLift={() =>
-                        setLifted({
-                          key,
-                          name: nameOf(ground),
-                          art: (
-                            <GroundArt
-                              name={nameOf(ground)}
-                              width={size.width * CELL}
-                              height={size.height * CELL}
-                            />
-                          ),
-                        })
-                      }
-                      onDrop={(x, y) => dropGround(ground, x, y)}
-                      {...drag}
-                    >
-                      <GroundChip ground={ground} />
-                    </TrayItem>
-                  );
-                })}
-                {placeable.map((amenity) => {
-                  const key = `a:${amenity.id}`;
-                  return (
-                    <TrayItem
-                      key={key}
-                      label={amenity.name}
-                      size={NEW_AMENITY}
-                      lifted={lifted?.key === key}
-                      onTap={() => placeAmenity(amenity)}
-                      onLift={() =>
-                        setLifted({
-                          key,
-                          name: amenity.name,
-                          art: (
-                            <AmenityArt
-                              amenity={amenity}
-                              width={NEW_AMENITY.width * CELL}
-                              height={NEW_AMENITY.height * CELL}
-                            />
-                          ),
-                        })
-                      }
-                      onDrop={(x, y) => dropAmenity(amenity, x, y)}
-                      {...drag}
-                    >
-                      <Chip
-                        icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
-                        label={amenity.name}
+        <Text className="pb-3 text-[16px] font-medium">{t("screens.setup.layout.tray")}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10, paddingRight: 18 }}
+        >
+          {unplaced.map((ground) => {
+            const key = `g:${ground.id}`;
+            const size = footprintOf(ground, "HORIZONTAL");
+            return (
+              <TrayItem
+                key={key}
+                label={nameOf(ground)}
+                size={size}
+                lifted={lifted?.key === key}
+                onTap={() => placeGround(ground)}
+                onLift={() =>
+                  setLifted({
+                    key,
+                    name: nameOf(ground),
+                    art: (
+                      <GroundArt
+                        name={nameOf(ground)}
+                        width={size.width * CELL}
+                        height={size.height * CELL}
                       />
-                    </TrayItem>
-                  );
-                })}
-                {/* An entrance goes on an edge rather than in a cell: dragged out, it snaps to the
-                  nearest edge cell. */}
-                {needsEntrance ? (
-                  <EntranceTrayItem
-                    label={t("screens.setup.layout.entrance")}
-                    camera={camera}
-                    spot={entranceSpot}
-                    columns={plan.columns}
-                    rows={plan.rows}
-                    taken={plan.entrances.map(
-                      (e) => `${String(SIDES.indexOf(e.side))}:${String(e.offset)}`,
-                    )}
-                    trayTop={trayTop}
-                    lifted={entranceLifted}
-                    onTap={() => placeEntrance()}
-                    onLift={() => setEntranceLifted(true)}
-                    onDrop={(side, offset) => {
-                      const named = SIDES[side];
-                      if (named) dropEntrance(named, offset);
-                    }}
-                    onLand={() => setEntranceLifted(false)}
-                  >
-                    <Chip
-                      icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
-                      label={t("screens.setup.layout.entrance")}
-                    />
-                  </EntranceTrayItem>
-                ) : null}
-              </ScrollView>
-            </Animated.View>
-            <Animated.View
-              pointerEvents="none"
-              accessibilityElementsHidden={!trayEmpty}
-              importantForAccessibility={trayEmpty ? "auto" : "no-hide-descendants"}
-              className="absolute inset-x-0 pr-[18px]"
-              style={[{ top: -MESSAGE_LIFT }, trayDone]}
+                    ),
+                  })
+                }
+                onDrop={(x, y) => dropGround(ground, x, y)}
+                {...drag}
+              >
+                <GroundChip ground={ground} />
+              </TrayItem>
+            );
+          })}
+          {placeable.map((amenity) => {
+            const key = `a:${amenity.id}`;
+            return (
+              <TrayItem
+                key={key}
+                label={amenity.name}
+                size={NEW_AMENITY}
+                lifted={lifted?.key === key}
+                onTap={() => placeAmenity(amenity)}
+                onLift={() =>
+                  setLifted({
+                    key,
+                    name: amenity.name,
+                    art: (
+                      <AmenityArt
+                        amenity={amenity}
+                        width={NEW_AMENITY.width * CELL}
+                        height={NEW_AMENITY.height * CELL}
+                      />
+                    ),
+                  })
+                }
+                onDrop={(x, y) => dropAmenity(amenity, x, y)}
+                {...drag}
+              >
+                <Chip
+                  icon={<AmenityIcon name={amenity.icon} size={24} color={colors.ink} />}
+                  label={amenity.name}
+                />
+              </TrayItem>
+            );
+          })}
+          {/* An entrance goes on an edge rather than in a cell: dragged out, it snaps to the
+              nearest edge cell. */}
+          {needsEntrance ? (
+            <EntranceTrayItem
+              label={t("screens.setup.layout.entrance")}
+              camera={camera}
+              spot={entranceSpot}
+              columns={plan.columns}
+              rows={plan.rows}
+              taken={plan.entrances.map(
+                (e) => `${String(SIDES.indexOf(e.side))}:${String(e.offset)}`,
+              )}
+              trayTop={trayTop}
+              lifted={entranceLifted}
+              onTap={() => placeEntrance()}
+              onLift={() => setEntranceLifted(true)}
+              onDrop={(side, offset) => {
+                const named = SIDES[side];
+                if (named) dropEntrance(named, offset);
+              }}
+              onLand={() => setEntranceLifted(false)}
             >
-              <Text className="text-caption text-ink-2">{t("screens.setup.layout.allPlaced")}</Text>
-            </Animated.View>
-          </View>
-        </View>
+              <Chip
+                icon={<IconDoor size={24} color={colors.ink} strokeWidth={1.75} />}
+                label={t("screens.setup.layout.entrance")}
+              />
+            </EntranceTrayItem>
+          ) : null}
+        </ScrollView>
       </Animated.View>
 
       <LayoutList
