@@ -9,6 +9,7 @@ import {
   ScrollView,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
 import Animated, {
   interpolate,
@@ -30,8 +31,7 @@ import {
   AboutSection,
   AmenitiesSection,
   BookingSection,
-  Figures,
-  FreeToday,
+  CancellationSection,
   GroundsSection,
   ReviewsSection,
   VenueHeader,
@@ -40,20 +40,26 @@ import {
 import { api, reachable } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { formatPrice } from "@/lib/money";
-import { cheapestHour, paymentLabel, type PublicVenue, type VenueAvailability } from "@/lib/venue";
+import { formatAmount } from "@/lib/money";
+import { cheapestHour, paymentShort, type PublicVenue } from "@/lib/venue";
 
 // The venue page (Figma C5, frames 59:2 and 60:2; PR 3.2): photos edge to edge under the status
-// bar, then the venue, today's free times, and every section a player checks before booking, with
-// Book pinned to the bottom. Public, so guests see all of it.
+// bar, then the venue and every section a player checks before booking, with Book pinned to the
+// bottom. Public, so guests see all of it.
 //
-// As the photos scroll away, a white bar fades in behind the back button; once the tabs reach it,
-// they stay there, and tapping one scrolls to its section. Booking itself (the day and time sheet,
-// the ground picker) comes next, so Book and the time chips say so for now.
+// As the photos scroll away a white bar fades in behind the back button, and the venue's name rises
+// into it beside the button as the big name goes under (the staff app's compact title). The tabs
+// stick under the bar the moment they reach it: they're moved on the UI thread with the scroll, so
+// they never lag behind it. Booking itself (the day and time sheet, the ground picker) comes next,
+// so Book says so for now.
 
 const PHOTO_HEIGHT = 320;
 const BAR = 56;
 const TABS = 46;
+// The compact name fades in over the last stretch of the big one going under the bar, rising as it
+// does.
+const FADE = 24;
+const RISE = 6;
 
 type Tab = "grounds" | "booking" | "amenities" | "reviews" | "map";
 const TAB_LABELS: Record<Tab, string> = {
@@ -64,18 +70,11 @@ const TAB_LABELS: Record<Tab, string> = {
   map: "Map",
 };
 
-// The local date after this one (YYYY-MM-DD).
-const nextDate = (date: string) => {
-  const day = new Date(`${date}T12:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + 1);
-  return day.toISOString().slice(0, 10);
-};
-
 type Loaded =
   | { state: "loading" }
   | { state: "missing" }
   | { state: "failed"; message: string }
-  | { state: "ready"; venue: PublicVenue; availability: VenueAvailability | null };
+  | { state: "ready"; venue: PublicVenue };
 
 export default function VenuePage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -85,38 +84,18 @@ export default function VenuePage() {
   useEffect(() => {
     let active = true;
     void (async () => {
-      const [venue, availability] = await Promise.all([
-        send(api.GET("/v1/venues/{slug}", { params: { path: { slug } } })),
-        send(api.GET("/v1/venues/{slug}/availability", { params: { path: { slug } } })),
-      ]);
+      const venue = await send(api.GET("/v1/venues/{slug}", { params: { path: { slug } } }));
       if (!active) return;
-      if (venue.ok) {
-        // Late in the day there's often nothing left: show tomorrow's times instead of an empty row.
-        let day = availability.ok ? availability.data : null;
-        if (day && day.slots.length === 0 && venue.data.status === "LIVE") {
-          const next = await send(
-            api.GET("/v1/venues/{slug}/availability", {
-              params: { path: { slug }, query: { date: nextDate(day.date) } },
-            }),
-          );
-          if (!active) return;
-          if (next.ok) day = next.data;
-        }
-        setLoaded({ state: "ready", venue: venue.data, availability: day });
-      } else if (problem(venue.error)?.code === "VENUE_NOT_FOUND") {
-        setLoaded({ state: "missing" });
-      } else {
-        setLoaded({ state: "failed", message: hudMessage(venue.error) });
-      }
+      if (venue.ok) setLoaded({ state: "ready", venue: venue.data });
+      else if (problem(venue.error)?.code === "VENUE_NOT_FOUND") setLoaded({ state: "missing" });
+      else setLoaded({ state: "failed", message: hudMessage(venue.error) });
     })();
     return () => {
       active = false;
     };
   }, [slug, attempt]);
 
-  if (loaded.state === "ready") {
-    return <VenueView venue={loaded.venue} availability={loaded.availability} />;
-  }
+  if (loaded.state === "ready") return <VenueView venue={loaded.venue} />;
   return (
     <Waiting
       loaded={loaded}
@@ -259,14 +238,9 @@ function Tabs({
   );
 }
 
-function VenueView({
-  venue,
-  availability,
-}: {
-  venue: PublicVenue;
-  availability: VenueAvailability | null;
-}) {
+function VenueView({ venue }: { venue: PublicVenue }) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const hud = useHud();
   const scroll = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0);
@@ -279,14 +253,17 @@ function VenueView({
     "reviews",
     "map",
   ];
-  // Where each section and the tabs start in the scroll, from their layouts.
+  // Where each section starts in the scroll, from their layouts.
   const offsets = useRef<Partial<Record<Tab, number>>>({});
-  const [tabsAt, setTabsAt] = useState(Number.POSITIVE_INFINITY);
   const [active, setActive] = useState<Tab>("grounds");
   const [darkStatus, setDarkStatus] = useState(false);
-  const recordOffset = (tab: Tab) => (event: { nativeEvent: { layout: { y: number } } }) => {
+  const recordOffset = (tab: Tab) => (event: LayoutChangeEvent) => {
     offsets.current[tab] = event.nativeEvent.layout.y;
   };
+
+  // Where the tabs sit in the scroll, and where the big name ends, both on the UI thread.
+  const tabsAt = useSharedValue(Number.POSITIVE_INFINITY);
+  const titleEnd = useSharedValue(Number.POSITIVE_INFINITY);
 
   // The bottom bar: the HUD sits just above it.
   const [footer, setFooter] = useState(0);
@@ -316,18 +293,19 @@ function VenueView({
       if (dark !== previous) runOnJS(setDarkStatus)(dark);
     },
   );
-  // The tabs stick under the bar once they reach it.
-  const [stuck, setStuck] = useState(false);
-  useAnimatedReaction(
-    () => scrollY.value >= tabsAt - header,
-    (now, previous) => {
-      if (now !== previous) runOnJS(setStuck)(now);
-    },
-    [tabsAt, header],
-  );
   const barStyle = useAnimatedStyle(() => ({ opacity: barProgress.value }));
+  const compactStyle = useAnimatedStyle(() => {
+    const gone = titleEnd.value - header;
+    const progress = interpolate(scrollY.value, [gone - FADE, gone], [0, 1], "clamp");
+    return { opacity: progress, transform: [{ translateY: (1 - progress) * RISE }] };
+  });
+  // Pinned under the bar: once the tabs reach it, they move down with the scroll by as much as
+  // they'd otherwise go up.
+  const stickStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(0, scrollY.value - (tabsAt.value - header)) }],
+  }));
 
-  // Which section is under the stuck tabs.
+  // Which section is under the tabs.
   const pickActive = (y: number) => {
     let current: Tab = tabs[0] ?? "grounds";
     for (const tab of tabs) {
@@ -350,7 +328,6 @@ function VenueView({
     setActive(tab);
   };
 
-  const soon = () => hud.show("Booking opens soon");
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";
 
@@ -364,14 +341,25 @@ function VenueView({
         contentContainerStyle={{ paddingBottom: footer + 32 }}
       >
         <Photos venue={venue} />
-        <VenueHeader venue={venue} />
-        <Figures venue={venue} />
-        <FreeToday venue={venue} availability={availability} onPick={soon} />
-        <View className="mt-8" onLayout={(event) => setTabsAt(event.nativeEvent.layout.y)}>
+        <VenueHeader
+          venue={venue}
+          onTitleLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            titleEnd.value = PHOTO_HEIGHT + y + height;
+          }}
+        />
+        <Animated.View
+          className="mt-8"
+          style={[{ zIndex: 10 }, stickStyle]}
+          onLayout={(event) => {
+            tabsAt.value = event.nativeEvent.layout.y;
+          }}
+        >
           <Tabs tabs={tabs} active={active} onPress={goTo} />
-        </View>
+        </Animated.View>
         <GroundsSection venue={venue} onLayout={recordOffset("grounds")} />
         <BookingSection venue={venue} onLayout={recordOffset("booking")} />
+        <CancellationSection venue={venue} />
         {venue.amenities.length > 0 ? (
           <AmenitiesSection venue={venue} onLayout={recordOffset("amenities")} />
         ) : null}
@@ -380,8 +368,8 @@ function VenueView({
         <WhereSection venue={venue} onLayout={recordOffset("map")} />
       </Animated.ScrollView>
 
-      {/* The bar over the top: white behind the back button once the photo has gone, then the
-          tabs under it. */}
+      {/* The bar over the top: white behind the back button once the photo has gone, with the
+          venue's name beside the button once the big one is under it. */}
       <View className="absolute top-0 right-0 left-0" pointerEvents="box-none">
         <Animated.View
           pointerEvents="none"
@@ -389,17 +377,26 @@ function VenueView({
           style={[{ height: header }, barStyle]}
         />
         <View
-          className="flex-row items-center px-5"
+          className="flex-row items-center gap-3 px-5"
           style={{ paddingTop: insets.top, height: header }}
           pointerEvents="box-none"
         >
           <BackButton progress={barProgress} />
+          <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[compactStyle, { maxWidth: width - 40 - 40 - 12 }]}
+          >
+            <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
+              {venue.name ?? ""}
+            </Text>
+          </Animated.View>
         </View>
-        {stuck ? <Tabs tabs={tabs} active={active} onPress={goTo} /> : null}
       </View>
 
       <View
-        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-4 border-t border-border bg-white px-5 pt-3.5"
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
         style={{ paddingBottom: insets.bottom + 8 }}
         onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
       >
@@ -407,18 +404,17 @@ function VenueView({
           <Text className="text-button font-medium">
             {cheapest === null
               ? "Prices vary"
-              : `from ${formatPrice(cheapest, venue.marketplace.currency)}`}
+              : `from ${formatAmount(cheapest, venue.marketplace.currency)} ${venue.marketplace.currency}/hr`}
           </Text>
-          <Text className="text-caption text-unit">
-            per hour · {paymentLabel(venue.booking.payment).toLowerCase()}
-          </Text>
+          <Text className="text-caption text-unit">{paymentShort(venue.booking.payment)}</Text>
         </View>
-        <View className="w-[150px]">
+        <View className="w-[128px]">
           <Button
             label={paused ? "Paused" : "Book"}
             variant="moment"
+            size="small"
             disabled={paused}
-            onPress={soon}
+            onPress={() => hud.show("Booking opens soon")}
           />
         </View>
       </View>
