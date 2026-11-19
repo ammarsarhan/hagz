@@ -78,9 +78,9 @@ The admin side (`/v1/admin/venues`):
   - check the tax number (`POST …/tax-number-check`, recorded as an event);
   - set a commission override if agreed (PR 2.8);
   - adjust photos if needed (later).
-- **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. **Slot generation (PR 2.6) is deferred**, so going live doesn't yet wait for `generatedUntil`; that condition returns with 2.6.
+- **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. Going live queues slot generation for each of its grounds (PR 2.6) and doesn't wait for it (decided 2026-11-19): a venue's generation takes about a second, and a live venue with no slots yet matches no availability search, so the only effect is that it's missing from results for that second.
 - **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
-- **Transfer ownership** to an existing, active member (`POST /admin/venues/{id}/owner`, with a reason). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified (`OWNERSHIP_TRANSFERRED`). Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one. Revert is still to come.
+- **Transfer ownership** to an existing, active member (`POST /admin/venues/{id}/owner`, with a reason). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified (`OWNERSHIP_TRANSFERRED`). Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one. There's no revert in v1 (decided 2026-11-18): transferring back is another transfer.
 
 ### Team support
 
