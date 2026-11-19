@@ -590,17 +590,8 @@ function TrophyScene({ k, offset, active }: SceneProps) {
         <Rect x={150} y={212} width={44} height={10} rx={5} fill={BLACK} />
         <Path d="M112 92 H232 V148 A60 60 0 0 1 112 148 Z" fill={BLACK} />
         <Rect x={104} y={82} width={136} height={16} rx={8} fill={BLACK} />
-        {/* The lip under the rim, a shine down the bowl, and the star in a ring like an emblem. */}
+        {/* The lip under the rim, and the star. */}
         <Rect x={112} y={98} width={120} height={3} fill={WHITE} fillOpacity={0.25} />
-        <Path
-          d="M128 108 V146 C128 166 136 180 150 190"
-          stroke={WHITE}
-          strokeOpacity={0.35}
-          strokeWidth={5}
-          strokeLinecap="round"
-          fill="none"
-        />
-        <Circle cx={172} cy={142} r={30} stroke={WHITE} strokeWidth={2.5} fill="none" />
         <Path d={star(172, 142, 18, 7.5)} fill={WHITE} />
         <Rect x={134} y={234} width={76} height={20} rx={6} fill={BLACK} />
         <Rect x={114} y={252} width={116} height={30} rx={10} fill={BLACK} />
