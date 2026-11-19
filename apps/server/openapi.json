@@ -5692,21 +5692,6 @@
           "reason"
         ]
       },
-      "BanStaff": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 500,
-            "description": "For the record: what happened and how it was checked.",
-            "example": "The owner called support: he left the business in October."
-          }
-        },
-        "required": [
-          "reason"
-        ]
-      },
       "AdminStaffAccount": {
         "type": "object",
         "properties": {
@@ -5825,6 +5810,21 @@
           "status",
           "createdAt",
           "lastSignedInAt"
+        ]
+      },
+      "BanStaff": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "For the record: what happened and how it was checked.",
+            "example": "The owner called support: he left the business in October."
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "GrantPasswordReset": {
@@ -17040,266 +17040,6 @@
         }
       }
     },
-    "/v1/admin/staff/{staffId}/suspend": {
-      "post": {
-        "tags": [
-          "Venues (admin)"
-        ],
-        "summary": "Suspend a staff account",
-        "description": "Signs them out everywhere and keeps them out of every venue until reactivated. Recorded on each venue they're on. Suspending again changes nothing.",
-        "security": [
-          {
-            "adminCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "staffId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SuspendAccount"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Suspended"
-          },
-          "400": {
-            "description": "VALIDATION_FAILED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "STAFF_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "ACCOUNT_BANNED: closed for good",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/admin/staff/{staffId}/ban": {
-      "post": {
-        "tags": [
-          "Venues (admin)"
-        ],
-        "summary": "Ban a staff account for good",
-        "description": "Signs them out everywhere and keeps them out for good: it can't be reactivated. Not while they own a venue (transfer it first). Recorded on each venue they're on. Banning again changes nothing.",
-        "security": [
-          {
-            "adminCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "staffId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BanStaff"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Banned"
-          },
-          "400": {
-            "description": "VALIDATION_FAILED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "STAFF_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "OWNS_A_VENUE (with `venueIds`): transfer them first",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/admin/staff/{staffId}/reactivate": {
-      "post": {
-        "tags": [
-          "Venues (admin)"
-        ],
-        "summary": "Reactivate a suspended staff account",
-        "description": "They can sign in again. Reactivating an active account changes nothing.",
-        "security": [
-          {
-            "adminCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "staffId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Reactivated"
-          },
-          "400": {
-            "description": "VALIDATION_FAILED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "STAFF_NOT_FOUND",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "ACCOUNT_BANNED: closed for good",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/admin/staff": {
       "get": {
         "tags": [
@@ -17687,6 +17427,266 @@
           },
           "404": {
             "description": "CUSTOMER_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ACCOUNT_BANNED: closed for good",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staff/{staffId}/suspend": {
+      "post": {
+        "tags": [
+          "Support (admin)"
+        ],
+        "summary": "Suspend a staff account",
+        "description": "Signs them out everywhere and keeps them out of every venue until reactivated, and cancels a password reset support allowed. Recorded on the account and on each venue they're on. Suspending again changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendAccount"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Suspended"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ACCOUNT_BANNED: closed for good",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staff/{staffId}/ban": {
+      "post": {
+        "tags": [
+          "Support (admin)"
+        ],
+        "summary": "Ban a staff account for good",
+        "description": "Signs them out everywhere and keeps them out for good: it can't be reactivated. Not while they own a venue (transfer it first). Cancels a password reset support allowed. Recorded on the account and on each venue they're on. Banning again changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BanStaff"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Banned"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OWNS_A_VENUE (with `venueIds`): transfer them first",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staff/{staffId}/reactivate": {
+      "post": {
+        "tags": [
+          "Support (admin)"
+        ],
+        "summary": "Reactivate a suspended staff account",
+        "description": "They can sign in again. Recorded on the account and on each venue they're on. Reactivating an active account changes nothing.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "staffId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reactivated"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {
