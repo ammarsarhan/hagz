@@ -56,3 +56,7 @@ export { default as IconUmbrella } from "@tabler/icons-react-native/IconUmbrella
 export { default as IconVideo } from "@tabler/icons-react-native/IconVideo";
 export { default as IconWheelchair } from "@tabler/icons-react-native/IconWheelchair";
 export { default as IconWifi } from "@tabler/icons-react-native/IconWifi";
+
+// The venue page's highlights: confirmation, cancellation and payment.
+export { default as IconBolt } from "@tabler/icons-react-native/IconBolt";
+export { default as IconCalendarX } from "@tabler/icons-react-native/IconCalendarX";

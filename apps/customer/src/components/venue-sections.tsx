@@ -1,4 +1,5 @@
 import { refundBands } from "@hagz/contracts";
+import type { Icon } from "@tabler/icons-react-native";
 import type { ReactNode } from "react";
 import { Linking, Platform, Pressable, View, type LayoutChangeEvent } from "react-native";
 import MapView, { Marker } from "react-native-maps";
@@ -14,7 +15,7 @@ import {
   type PublicVenue,
 } from "@/lib/venue";
 import { AmenityIcon } from "./amenity-icon";
-import { IconStarFilled } from "./icons";
+import { IconBolt, IconCalendarX, IconCash, IconClock, IconStarFilled } from "./icons";
 import { Text } from "./text";
 import { VenueLayout } from "./venue-layout";
 
@@ -126,6 +127,68 @@ export function VenueHeader({
           <Text className="text-body text-ink-2">No reviews yet</Text>
         )}
       </View>
+    </View>
+  );
+}
+
+// What booking here is like, in three rows under the name (Airbnb's listing highlights, the user's
+// pick on 2026-11-19): how it's confirmed, how long cancelling is free, and how you pay.
+const highlightsOf = (venue: PublicVenue) => {
+  const { booking } = venue;
+  const rows: { icon: Icon; title: string; line: string }[] = [
+    booking.instantConfirmation
+      ? {
+          icon: IconBolt,
+          title: "Instant confirmation",
+          line: "No waiting for the venue to accept.",
+        }
+      : { icon: IconClock, title: "Confirmed by the venue", line: "They accept each booking." },
+  ];
+  const cancellation = booking.cancellation;
+  if (cancellation) {
+    const bands = refundBands(cancellation.tiers);
+    const [first, next] = bands;
+    if (first && first.refundPercent > 0) {
+      rows.push({
+        icon: IconCalendarX,
+        title:
+          first.refundPercent === 100
+            ? `Free cancellation up to ${hoursLabel(first.from)} before`
+            : `${first.refundPercent}% back up to ${hoursLabel(first.from)} before`,
+        line:
+          next && next.refundPercent > 0
+            ? `${next.refundPercent}% back up to ${hoursLabel(next.from)} before.`
+            : "No refund after that.",
+      });
+    }
+  }
+  const { payment } = booking;
+  rows.push(
+    payment.mode === "DEPOSIT"
+      ? {
+          icon: IconCash,
+          title: `${payment.depositPercent ?? 0}% online deposit`,
+          line: "The rest at the venue.",
+        }
+      : payment.mode === "PLATFORM"
+        ? { icon: IconCash, title: "Pay online", line: "In full when you book." }
+        : { icon: IconCash, title: "Pay at the venue", line: "In cash, when you play." },
+  );
+  return rows;
+};
+
+export function Highlights({ venue }: { venue: PublicVenue }) {
+  return (
+    <View className="mx-6 mt-6 gap-5 border-y border-border py-5">
+      {highlightsOf(venue).map(({ icon: Glyph, title, line }) => (
+        <View key={title} className="flex-row items-start gap-3.5">
+          <Glyph size={24} color={colors.ink} strokeWidth={1.75} />
+          <View className="shrink gap-0.5">
+            <Text className="text-subtitle font-medium">{title}</Text>
+            <Text className="text-label text-ink-2">{line}</Text>
+          </View>
+        </View>
+      ))}
     </View>
   );
 }

@@ -33,6 +33,7 @@ import {
   BookingSection,
   CancellationSection,
   GroundsSection,
+  Highlights,
   ReviewsSection,
   VenueHeader,
   WhereSection,
@@ -348,6 +349,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
             titleEnd.value = PHOTO_HEIGHT + y + height;
           }}
         />
+        <Highlights venue={venue} />
         <Animated.View
           className="mt-8"
           style={[{ zIndex: 10 }, stickStyle]}
