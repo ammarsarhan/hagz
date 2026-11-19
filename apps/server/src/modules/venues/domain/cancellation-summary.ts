@@ -1,5 +1,4 @@
-import type { CancellationTier } from "@hagz/contracts";
-import type { Language } from "@/generated/prisma/enums";
+import type { CancellationTier, Language } from "@hagz/contracts";
 
 // A cancellation policy in plain words for the venue page (PR 3.2), one sentence a line, so the app
 // and the web say it the same way. Tiers come most notice first, refunds never rising
@@ -21,7 +20,7 @@ export const refundBands = (tiers: readonly CancellationTier[]): Band[] => {
   let to: number | null = null;
   for (const tier of [...tiers, { hours: 0, refundPercent: 0 }]) {
     const last = bands.at(-1);
-    if (last && last.refundPercent === tier.refundPercent) last.from = tier.hours;
+    if (last?.refundPercent === tier.refundPercent) last.from = tier.hours;
     else bands.push({ from: tier.hours, to, refundPercent: tier.refundPercent });
     to = tier.hours;
   }
@@ -65,7 +64,9 @@ export const cancellationSummary = (
   const lines = refundBands(tiers).map(({ from, to, refundPercent: p }) => {
     if (to === null) {
       if (from === 0) return say.never;
-      return p === 100 ? say.free(hoursIn(from, language)) : say.atLeast(p, hoursIn(from, language));
+      return p === 100
+        ? say.free(hoursIn(from, language))
+        : say.atLeast(p, hoursIn(from, language));
     }
     if (p === 0) return say.none(hoursIn(to, language));
     return say.between(p, from, hoursIn(to, language));
