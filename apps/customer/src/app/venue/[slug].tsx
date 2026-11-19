@@ -1,3 +1,4 @@
+import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -25,7 +26,8 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconChevronLeft } from "@/components/icons";
+import { IconChevronLeft, IconShare } from "@/components/icons";
+import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
 import {
   AboutSection,
@@ -41,6 +43,7 @@ import {
 import { api, reachable } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { webLinks } from "@/lib/links";
 import { formatAmount } from "@/lib/money";
 import { cheapestHour, paymentShort, type PublicVenue } from "@/lib/venue";
 
@@ -144,8 +147,18 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
   );
 }
 
-// The round back button: white over the photo, the usual grey once the bar is behind it.
-function BackButton({ progress }: { progress: SharedValue<number> | null }) {
+// A round button in the top bar: white over the photo, the usual grey once the bar is behind it.
+function BarButton({
+  icon: Glyph,
+  label,
+  onPress,
+  progress,
+}: {
+  icon: Icon;
+  label: string;
+  onPress: () => void;
+  progress: SharedValue<number> | null;
+}) {
   const style = useAnimatedStyle(() => ({
     backgroundColor: progress
       ? interpolateColor(progress.value, [0, 1], ["#ffffff", "#f2f3f5"])
@@ -154,16 +167,22 @@ function BackButton({ progress }: { progress: SharedValue<number> | null }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back"
+      accessibilityLabel={label}
       hitSlop={8}
-      onPress={() => (router.canGoBack() ? router.back() : router.replace("/home"))}
+      onPress={onPress}
       className="active:opacity-70"
     >
       <Animated.View className="size-10 items-center justify-center rounded-full" style={style}>
-        <IconChevronLeft size={20} color={colors.ink} strokeWidth={2} />
+        <Glyph size={20} color={colors.ink} strokeWidth={2} />
       </Animated.View>
     </Pressable>
   );
+}
+
+const goBack = () => (router.canGoBack() ? router.back() : router.replace("/home"));
+
+function BackButton({ progress }: { progress: SharedValue<number> | null }) {
+  return <BarButton icon={IconChevronLeft} label="Back" onPress={goBack} progress={progress} />;
 }
 
 function Photos({ venue }: { venue: PublicVenue }) {
@@ -262,8 +281,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
     offsets.current[tab] = event.nativeEvent.layout.y;
   };
 
-  // Where the tabs sit in the scroll, and where the big name ends, both on the UI thread.
-  const tabsAt = useSharedValue(Number.POSITIVE_INFINITY);
+  // Where the big name ends, on the UI thread.
   const titleEnd = useSharedValue(Number.POSITIVE_INFINITY);
 
   // The bottom bar: the HUD sits just above it.
@@ -300,14 +318,11 @@ function VenueView({ venue }: { venue: PublicVenue }) {
     const progress = interpolate(scrollY.value, [gone - FADE, gone], [0, 1], "clamp");
     return { opacity: progress, transform: [{ translateY: (1 - progress) * RISE }] };
   });
-  // Pinned under the bar: once the tabs reach it, they move down with the scroll by as much as
-  // they'd otherwise go up.
-  const stickStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: Math.max(0, scrollY.value - (tabsAt.value - header)) }],
-  }));
-
-  // Which section is under the tabs.
+  // Which section is under the tabs. Not while a tapped tab scrolls to its section: the tabs it
+  // passes would light up on the way.
+  const jumpingUntil = useRef(0);
   const pickActive = (y: number) => {
+    if (Date.now() < jumpingUntil.current) return;
     let current: Tab = tabs[0] ?? "grounds";
     for (const tab of tabs) {
       const at = offsets.current[tab];
@@ -325,10 +340,13 @@ function VenueView({ venue }: { venue: PublicVenue }) {
   const goTo = (tab: Tab) => {
     const at = offsets.current[tab];
     if (at === undefined) return;
+    jumpingUntil.current = Date.now() + 600;
     scroll.current?.scrollTo({ y: Math.max(0, at - header - TABS + 1), animated: true });
     setActive(tab);
   };
 
+  // Null in a build without the web app's address: no Share then.
+  const link = webLinks?.venue(venue.slug) ?? null;
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";
 
@@ -338,6 +356,8 @@ function VenueView({ venue }: { venue: PublicVenue }) {
       <Animated.ScrollView
         ref={scroll}
         onScroll={onScroll}
+        // The tabs (the fourth child) stick natively, so they never trail the scroll.
+        stickyHeaderIndices={[3]}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: footer + 32 }}
       >
@@ -350,15 +370,12 @@ function VenueView({ venue }: { venue: PublicVenue }) {
           }}
         />
         <Highlights venue={venue} />
-        <Animated.View
-          className="mt-8"
-          style={[{ zIndex: 10 }, stickStyle]}
-          onLayout={(event) => {
-            tabsAt.value = event.nativeEvent.layout.y;
-          }}
-        >
+        {/* A sticky header sticks at the very top, which is under our bar: a clear spacer the bar's
+            height goes above the tabs, pulled up over the content before it so the gap stays 32. */}
+        <View style={{ marginTop: 32 - header }} pointerEvents="box-none">
+          <View style={{ height: header }} pointerEvents="none" />
           <Tabs tabs={tabs} active={active} onPress={goTo} />
-        </Animated.View>
+        </View>
         <GroundsSection
           venue={venue}
           onLayout={recordOffset("grounds")}
@@ -383,21 +400,34 @@ function VenueView({ venue }: { venue: PublicVenue }) {
           style={[{ height: header }, barStyle]}
         />
         <View
-          className="flex-row items-center gap-3 px-5"
+          className="flex-row items-center justify-between gap-3 px-5"
           style={{ paddingTop: insets.top, height: header }}
           pointerEvents="box-none"
         >
-          <BackButton progress={barProgress} />
-          <Animated.View
-            pointerEvents="none"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            style={[compactStyle, { maxWidth: width - 40 - 40 - 12 }]}
-          >
-            <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
-              {venue.name ?? ""}
-            </Text>
-          </Animated.View>
+          <View className="shrink flex-row items-center gap-3" pointerEvents="box-none">
+            <BackButton progress={barProgress} />
+            <Animated.View
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              // The gutters, both buttons and the gaps: a long name ends in "…".
+              style={[compactStyle, { maxWidth: width - 40 - 40 - 12 - 40 - 12 }]}
+            >
+              <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
+                {venue.name ?? ""}
+              </Text>
+            </Animated.View>
+          </View>
+          {link ? (
+            <BarButton
+              icon={IconShare}
+              label="Copy the venue's link"
+              progress={barProgress}
+              onPress={() => {
+                void Clipboard.setStringAsync(link).then(() => hud.show("Link copied"));
+              }}
+            />
+          ) : null}
         </View>
       </View>
 
