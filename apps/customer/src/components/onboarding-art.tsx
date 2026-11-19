@@ -10,22 +10,24 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
-  withSpring,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 
-// The three onboarding illustrations from the approved Figma slides (customer file
+// The four onboarding illustrations from the approved Figma slides (customer file
 // YdkY80zjQpKEBCIcxDsxCq, page "C1 · Auth", section "Onboarding · slideshow"), drawn on a 345 × 330
-// canvas and animated. Every moving part is its own layer: a full-canvas Svg inside an Animated.View,
-// so motion runs as native view transforms on the UI thread (react-native-svg's own transform props
-// are turned into a matrix in JavaScript, which animated props would skip).
+// canvas and animated.
 //
-// Each layer can drift with the swipe (parallax by depth), loop softly, and drop in the first time
-// its slide lands. With Reduce Motion on, the drawings stand still.
+// Kept light on purpose: everything that stands still is drawn once in a single Svg, and only the
+// few moving parts get a layer of their own (a full-canvas Svg in an Animated.View, rasterised, so
+// motion is a native transform of a cached bitmap; react-native-svg's own transform props become a
+// matrix in JavaScript, which animated props would skip). Loops run only on the slide on screen,
+// the whole drawing drifts a little with the swipe, and intros ease in once with no overshoot. With
+// Reduce Motion on, the drawings stand still.
 //
 // Customer illustrations are black, white and grey only, never in a brand colour.
+
 const W = 345;
 const H = 330;
 
@@ -93,71 +95,45 @@ function Player({
   );
 }
 
-// A soft back-and-forth: 0 → 1 → 0, forever. Each part gets its own period and delay so nothing
-// moves in step.
+// A soft back-and-forth between two values, 0 → 1 → 0, while the slide is on screen.
 type Range = readonly [number, number];
 interface Loop {
   period: number;
   delay?: number;
-  x?: Range;
   y?: Range;
   rotate?: Range;
   scale?: Range;
   opacity?: Range;
 }
 
-interface PartProps {
-  k: number;
-  offset: SharedValue<number>;
-  // How far the part drifts against the swipe, in points per page: 0 moves with the slide, more
-  // lags behind it.
-  depth?: number;
-  loop?: Loop;
-  // Drops in from this many canvas units above when the slide lands.
-  drop?: { from: number; entry: SharedValue<number> };
-  // The point it rotates and scales around, in canvas units.
-  origin?: readonly [number, number];
-  children: ReactNode;
+const EASE_LOOP = Easing.inOut(Easing.sin);
+const EASE_IN_PLACE = Easing.out(Easing.cubic);
+
+// Everything in a scene that doesn't move, drawn once.
+function Still({ children }: { children: ReactNode }) {
+  return (
+    <Svg style={StyleSheet.absoluteFill} viewBox={`0 0 ${W} ${H}`}>
+      {children}
+    </Svg>
+  );
 }
 
-function Part({ k, offset, depth = 16, loop, drop, origin = [W / 2, H / 2], children }: PartProps) {
-  const reduce = useReducedMotion();
-  const t = useSharedValue(0);
-
-  useEffect(() => {
-    if (!loop || reduce) return;
-    t.value = withDelay(
-      loop.delay ?? 0,
-      withRepeat(
-        withTiming(1, { duration: loop.period / 2, easing: Easing.inOut(Easing.sin) }),
-        -1,
-        true,
-      ),
-    );
-    return () => cancelAnimation(t);
-    // The loop is fixed for the part's life.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduce]);
-
-  const style = useAnimatedStyle(() => {
-    const p = t.value;
-    const at = (range: Range | undefined, rest: number) =>
-      range ? range[0] + (range[1] - range[0]) * p : rest;
-    const entry = drop ? drop.entry.value : 1;
-    return {
-      opacity: at(loop?.opacity, 1) * (drop ? Math.min(1, entry * 2) : 1),
-      transform: [
-        { translateX: offset.value * depth + at(loop?.x, 0) * k },
-        { translateY: (at(loop?.y, 0) - (drop ? drop.from * (1 - entry) : 0)) * k },
-        { rotate: `${at(loop?.rotate, 0)}deg` },
-        { scale: at(loop?.scale, 1) },
-      ],
-    };
-  });
-
+function Layer({
+  k,
+  origin = [W / 2, H / 2],
+  style,
+  children,
+}: {
+  k: number;
+  origin?: readonly [number, number];
+  style: ReturnType<typeof useAnimatedStyle>;
+  children: ReactNode;
+}) {
   return (
     <Animated.View
       pointerEvents="none"
+      shouldRasterizeIOS
+      renderToHardwareTextureAndroid
       style={[
         StyleSheet.absoluteFill,
         { transformOrigin: [origin[0] * k, origin[1] * k, 0] },
@@ -171,50 +147,29 @@ function Part({ k, offset, depth = 16, loop, drop, origin = [W / 2, H / 2], chil
   );
 }
 
-function Spark({
-  k,
-  offset,
-  at,
-  size,
-  delay,
-  color = BLACK,
-}: {
-  k: number;
-  offset: SharedValue<number>;
-  at: readonly [number, number];
-  size: number;
-  delay: number;
-  color?: string;
-}) {
-  return (
-    <Part
-      k={k}
-      offset={offset}
-      depth={28}
-      origin={at}
-      loop={{ period: 2400, delay, scale: [0.55, 1], opacity: [0.5, 1] }}
-    >
-      <Path d={spark(at[0], at[1], size)} fill={color} />
-    </Part>
-  );
+// Runs a loop's 0 → 1 → 0 only while `active`, and parks it at 0 otherwise.
+function useLoop(loop: Loop | undefined, active: boolean) {
+  const reduce = useReducedMotion();
+  const t = useSharedValue(0);
+  const period = loop?.period;
+  const delay = loop?.delay ?? 0;
+  useEffect(() => {
+    if (!period || reduce || !active) {
+      cancelAnimation(t);
+      t.value = 0;
+      return;
+    }
+    t.value = withDelay(
+      delay,
+      withRepeat(withTiming(1, { duration: period / 2, easing: EASE_LOOP }), -1, true),
+    );
+    return () => cancelAnimation(t);
+  }, [period, delay, reduce, active, t]);
+  return t;
 }
 
-function Blob({ k, offset, d }: { k: number; offset: SharedValue<number>; d: string }) {
-  return (
-    <Part
-      k={k}
-      offset={offset}
-      depth={6}
-      origin={[172, 185]}
-      loop={{ period: 7000, scale: [1, 1.035] }}
-    >
-      <Path d={d} fill={BLOB} fillOpacity={BLOB_OPACITY} />
-    </Part>
-  );
-}
-
-// Plays a spring from 0 to 1 the first time the slide lands, and never again: coming back to the
-// slide finds the part already in place.
+// Eases from 0 to 1 the first time the slide lands, and never again: coming back to the slide finds
+// the part already in place.
 function useEntry(active: boolean) {
   const reduce = useReducedMotion();
   const entry = useSharedValue(reduce ? 1 : 0);
@@ -223,29 +178,85 @@ function useEntry(active: boolean) {
     if (reduce) entry.value = 1;
     else if (active && !played.current) {
       played.current = true;
-      entry.value = withDelay(120, withSpring(1, { damping: 11, stiffness: 140 }));
+      entry.value = withDelay(150, withTiming(1, { duration: 650, easing: EASE_IN_PLACE }));
     }
   }, [active, reduce, entry]);
   return entry;
 }
 
+interface PartProps {
+  k: number;
+  active: boolean;
+  loop?: Loop;
+  // Comes into place from this many canvas units above (negative: below) the first time the slide
+  // lands.
+  drop?: { from: number; entry: SharedValue<number> };
+  // The point it rotates and scales around, in canvas units.
+  origin?: readonly [number, number];
+  children: ReactNode;
+}
+
+function Part({ k, active, loop, drop, origin, children }: PartProps) {
+  const t = useLoop(loop, active);
+  const style = useAnimatedStyle(() => {
+    const p = t.value;
+    const at = (range: Range | undefined, rest: number) =>
+      range ? range[0] + (range[1] - range[0]) * p : rest;
+    const entry = drop ? drop.entry.value : 1;
+    return {
+      opacity: at(loop?.opacity, 1) * (drop ? Math.min(1, entry * 1.6) : 1),
+      transform: [
+        { translateY: (at(loop?.y, 0) - (drop ? drop.from * (1 - entry) : 0)) * k },
+        { rotate: `${at(loop?.rotate, 0)}deg` },
+        { scale: at(loop?.scale, 1) },
+      ],
+    };
+  });
+  return (
+    <Layer k={k} origin={origin} style={style}>
+      {children}
+    </Layer>
+  );
+}
+
+// A scene's sparkles, twinkling together in one layer.
+function Sparks({
+  k,
+  active,
+  at,
+}: {
+  k: number;
+  active: boolean;
+  at: readonly (readonly [number, number, number, string?])[];
+}) {
+  return (
+    <Part k={k} active={active} loop={{ period: 3200, opacity: [0.35, 1] }}>
+      {at.map(([x, y, size, color], i) => (
+        <Path key={i} d={spark(x, y, size)} fill={color ?? BLACK} />
+      ))}
+    </Part>
+  );
+}
+
 interface SceneProps {
   k: number;
-  offset: SharedValue<number>;
   active: boolean;
 }
 
 const BLOB_1 = blob(172, 190, [138, 128, 145, 132, 140, 126, 146, 134, 130, 142], 0.3);
 const BLOB_2 = blob(172, 180, [134, 144, 128, 140, 132, 146, 130, 138, 142, 128], 1.1);
 const BLOB_3 = blob(172, 180, [140, 130, 146, 128, 142, 134, 138, 126, 144, 132], 0.6);
+const BLOB_4 = blob(172, 185, [136, 146, 130, 142, 128, 144, 134, 140, 126, 138], 0.9);
 
-// 1 · Pitch hunting, handled: a pin drops onto a pitch while free slots float around it.
-function PitchScene({ k, offset, active }: SceneProps) {
+const Blob = ({ d }: { d: string }) => <Path d={d} fill={BLOB} fillOpacity={BLOB_OPACITY} />;
+
+// 1 · Pitch hunting, handled: a pin comes down onto a pitch while free slots float around it.
+function PitchScene({ k, active }: SceneProps) {
   const entry = useEntry(active);
   return (
     <>
-      <Blob k={k} offset={offset} d={BLOB_1} />
-      <Part k={k} offset={offset} depth={10}>
+      <Still>
+        <Blob d={BLOB_1} />
         <Rect x={62} y={150} width={220} height={140} rx={22} fill={BLACK} />
         <Path
           d="M84 164 H260 Q268 164 268 172 V268 Q268 276 260 276 H84 Q76 276 76 268 V172 Q76 164 84 164Z M172 164 V276 M76 198 H98 V242 H76 M268 198 H246 V242 H268"
@@ -264,30 +275,10 @@ function PitchScene({ k, offset, active }: SceneProps) {
           strokeWidth={3}
           fill="none"
         />
-      </Part>
-      <Part k={k} offset={offset} depth={30} loop={{ period: 3600, y: [-4, 4] }}>
+      </Still>
+      {/* Two groups of slots, floating against each other. */}
+      <Part k={k} active={active} loop={{ period: 5200, y: [-3, 3] }}>
         <Rect x={30} y={96} width={66} height={30} rx={15} fill={WHITE} />
-      </Part>
-      <Part k={k} offset={offset} depth={36} loop={{ period: 4200, delay: 500, y: [4, -4] }}>
-        <Path
-          d="M330 22 C340 44 330 64 312 74"
-          stroke={BLACK}
-          strokeOpacity={0.35}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          fill="none"
-        />
-        <Rect x={250} y={78} width={66} height={30} rx={15} fill={GREY} />
-      </Part>
-      <Part k={k} offset={offset} depth={24} loop={{ period: 3900, delay: 900, y: [-3, 3] }}>
-        <Rect x={24} y={292} width={66} height={30} rx={15} fill={BLACK} />
-      </Part>
-      <Part
-        k={k}
-        offset={offset}
-        depth={24}
-        loop={{ period: 3300, delay: 300, y: [3, -3], opacity: [1, 0.55] }}
-      >
         <Rect
           x={256}
           y={294}
@@ -300,12 +291,23 @@ function PitchScene({ k, offset, active }: SceneProps) {
           strokeDasharray="5 5"
         />
       </Part>
+      <Part k={k} active={active} loop={{ period: 5800, delay: 600, y: [3, -3] }}>
+        <Path
+          d="M330 22 C340 44 330 64 312 74"
+          stroke={BLACK}
+          strokeOpacity={0.35}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          fill="none"
+        />
+        <Rect x={250} y={78} width={66} height={30} rx={15} fill={GREY} />
+        <Rect x={24} y={292} width={66} height={30} rx={15} fill={BLACK} />
+      </Part>
       <Part
         k={k}
-        offset={offset}
-        depth={20}
-        drop={{ from: 70, entry }}
-        loop={{ period: 2600, delay: 900, y: [0, -6] }}
+        active={active}
+        drop={{ from: 40, entry }}
+        loop={{ period: 4400, delay: 900, y: [0, -3] }}
       >
         <Path
           d="M172 214 C160 194 138 168 138 136 A34 34 0 1 1 206 136 C206 168 184 194 172 214Z"
@@ -313,17 +315,22 @@ function PitchScene({ k, offset, active }: SceneProps) {
         />
         <Circle cx={172} cy={135} r={13} fill={BLACK} />
       </Part>
-      <Spark k={k} offset={offset} at={[40, 196]} size={9} delay={0} />
-      <Spark k={k} offset={offset} at={[314, 176]} size={11} delay={700} color={GREY} />
-      <Spark k={k} offset={offset} at={[124, 62]} size={6} delay={1300} />
-      <Spark k={k} offset={offset} at={[306, 246]} size={6} delay={400} />
+      <Sparks
+        k={k}
+        active={active}
+        at={[
+          [40, 196, 9],
+          [314, 176, 11, GREY],
+          [124, 62, 6],
+          [306, 246, 6],
+        ]}
+      />
     </>
   );
 }
 
 // A venue's punch card, with the same 22 of padding above the title and below the stamps: stamps
 // for the bookings played, the last one landing, and the free booking waiting in the final spot.
-const CARD_LOOP: Loop = { period: 3800, y: [0, -4] };
 const STAMPED = [
   [92, 200],
   [165, 200],
@@ -332,7 +339,6 @@ const STAMPED = [
 ] as const;
 const LAST_STAMP = [165, 248] as const;
 const FREE_SPOT = [238, 248] as const;
-const BLOB_4 = blob(172, 185, [136, 146, 130, 142, 128, 144, 134, 140, 126, 138], 0.9);
 
 function Stamp({ at }: { at: readonly [number, number] }) {
   return (
@@ -343,31 +349,23 @@ function Stamp({ at }: { at: readonly [number, number] }) {
   );
 }
 
-// 2 · Frequent fixtures, free: the last stamp drops onto the card the first time the slide lands,
-// and the free booking's spot pulses softly.
-function LoyaltyScene({ k, offset, active }: SceneProps) {
+// 2 · Frequent fixtures, free: the last stamp comes down onto the card the first time the slide
+// lands, and the free booking's spot glows softly.
+function LoyaltyScene({ k, active }: SceneProps) {
   const entry = useEntry(active);
   return (
     <>
-      <Blob k={k} offset={offset} d={BLOB_4} />
-      <Part k={k} offset={offset} depth={6} loop={{ period: 3800, delay: 400, y: [0, -3] }}>
+      <Still>
+        <Blob d={BLOB_4} />
         <Rect x={80} y={86} width={232} height={164} rx={20} fill={GREY} />
-      </Part>
-      <Part k={k} offset={offset} depth={12} loop={CARD_LOOP}>
         <Rect x={40} y={112} width={250} height={178} rx={22} fill={BLACK} />
         <Rect x={62} y={134} width={96} height={10} rx={5} fill={WHITE} />
         <Rect x={62} y={152} width={60} height={8} rx={4} fill={WHITE} fillOpacity={0.4} />
         {STAMPED.map((at) => (
           <Stamp key={`${at[0]}-${at[1]}`} at={at} />
         ))}
-      </Part>
-      <Part
-        k={k}
-        offset={offset}
-        depth={12}
-        origin={FREE_SPOT}
-        loop={{ ...CARD_LOOP, scale: [1, 1.08], opacity: [0.55, 1] }}
-      >
+      </Still>
+      <Part k={k} active={active} loop={{ period: 3600, opacity: [0.45, 1] }}>
         <Circle
           cx={FREE_SPOT[0]}
           cy={FREE_SPOT[1]}
@@ -379,25 +377,31 @@ function LoyaltyScene({ k, offset, active }: SceneProps) {
         />
         <Path d={star(FREE_SPOT[0], FREE_SPOT[1], 9, 4)} fill={WHITE} />
       </Part>
-      <Part k={k} offset={offset} depth={12} drop={{ from: 90, entry }} loop={CARD_LOOP}>
+      <Part k={k} active={active} drop={{ from: 50, entry }}>
         <Stamp at={LAST_STAMP} />
       </Part>
-      <Spark k={k} offset={offset} at={[30, 96]} size={8} delay={0} />
-      <Spark k={k} offset={offset} at={[324, 76]} size={10} delay={700} color={GREY} />
-      <Spark k={k} offset={offset} at={[60, 306]} size={6} delay={1300} />
-      <Spark k={k} offset={offset} at={[310, 296]} size={7} delay={400} />
+      <Sparks
+        k={k}
+        active={active}
+        at={[
+          [30, 96, 8],
+          [324, 76, 10, GREY],
+          [60, 306, 6],
+          [310, 296, 7],
+        ]}
+      />
     </>
   );
 }
 
-// The open spot the grey player flies into, and where the player starts (smaller, top right).
+// The open spot the grey player walks into, and where the player starts (smaller, top right).
 const SPOT = [232, 110] as const;
 const START = { x: 300 - SPOT[0], y: 46 - SPOT[1], scale: 0.8 };
-const JOIN_MS = 5200;
+const JOIN_MS = 6400;
 
-// 3 · Short squads, solved: a grey player flies into the squad's dashed open spot, stays a beat,
+// 3 · Short squads, solved: a grey player glides into the squad's dashed open spot, stays a beat,
 // and the loop starts again.
-function SquadScene({ k, offset, active }: SceneProps) {
+function SquadScene({ k, active }: SceneProps) {
   const reduce = useReducedMotion();
   const t = useSharedValue(0);
 
@@ -415,9 +419,10 @@ function SquadScene({ k, offset, active }: SceneProps) {
     return () => cancelAnimation(t);
   }, [active, reduce, t]);
 
-  // 0–0.3 waits at the start, 0.3–0.55 flies in, 0.55–0.82 stays, 0.82–1 fades out and comes back.
+  // 0–0.25 waits at the start, 0.25–0.5 glides in, 0.5–0.82 stays, 0.82–1 fades out and comes
+  // back.
   const flight = useDerivedValue(() =>
-    Easing.inOut(Easing.cubic)(interpolate(t.value, [0.3, 0.55], [0, 1], "clamp")),
+    Easing.inOut(Easing.quad)(interpolate(t.value, [0.25, 0.5], [0, 1], "clamp")),
   );
   const joiner = useAnimatedStyle(() => {
     const f = flight.value;
@@ -425,57 +430,32 @@ function SquadScene({ k, offset, active }: SceneProps) {
     return {
       opacity: reduce ? 1 : opacity,
       transform: [
-        { translateX: offset.value * 36 + START.x * (1 - f) * k },
+        { translateX: START.x * (1 - f) * k },
         { translateY: START.y * (1 - f) * k },
         { scale: START.scale + (1 - START.scale) * f },
       ],
     };
   });
   const trail = useAnimatedStyle(() => ({
-    opacity: reduce ? 1 : interpolate(t.value, [0, 0.08, 0.3, 0.4], [0, 1, 1, 0], "clamp"),
-    transform: [{ translateX: offset.value * 40 }],
+    opacity: reduce ? 1 : interpolate(t.value, [0, 0.08, 0.25, 0.35], [0, 1, 1, 0], "clamp"),
   }));
   const spot = useAnimatedStyle(() => ({
-    opacity: interpolate(t.value, [0.46, 0.55, 0.88, 0.98], [1, 0, 0, 1], "clamp"),
-    transform: [{ translateX: offset.value * 18 }],
+    opacity: interpolate(t.value, [0.42, 0.5, 0.88, 0.98], [1, 0, 0, 1], "clamp"),
   }));
-  const layer = (
-    style: ReturnType<typeof useAnimatedStyle>,
-    children: ReactNode,
-    origin = SPOT,
-  ) => (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        StyleSheet.absoluteFill,
-        { transformOrigin: [origin[0] * k, origin[1] * k, 0] },
-        style,
-      ]}
-    >
-      <Svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
-        {children}
-      </Svg>
-    </Animated.View>
-  );
 
   return (
     <>
-      <Blob k={k} offset={offset} d={BLOB_2} />
-      <Part k={k} offset={offset} depth={18} loop={{ period: 3000, y: [0, -3] }}>
+      <Still>
+        <Blob d={BLOB_2} />
         <Player cx={112} cy={110} fill={WHITE} />
-      </Part>
-      {layer(spot, <Player cx={SPOT[0]} cy={SPOT[1]} open />)}
-      <Part k={k} offset={offset} depth={14} loop={{ period: 3400, delay: 400, y: [0, -3] }}>
         <Player cx={72} cy={205} fill={BLACK} />
-      </Part>
-      <Part k={k} offset={offset} depth={14} loop={{ period: 2800, delay: 900, y: [0, -3] }}>
         <Player cx={172} cy={205} fill={WHITE} />
-      </Part>
-      <Part k={k} offset={offset} depth={14} loop={{ period: 3200, delay: 200, y: [0, -3] }}>
         <Player cx={272} cy={205} fill={BLACK} />
-      </Part>
-      {layer(
-        trail,
+      </Still>
+      <Layer k={k} style={spot}>
+        <Player cx={SPOT[0]} cy={SPOT[1]} open />
+      </Layer>
+      <Layer k={k} style={trail}>
         <Path
           d="M343 4 C338 22 328 32 316 38"
           stroke={BLACK}
@@ -483,93 +463,49 @@ function SquadScene({ k, offset, active }: SceneProps) {
           strokeWidth={2.5}
           strokeLinecap="round"
           fill="none"
-        />,
-      )}
-      {layer(joiner, <Player cx={SPOT[0]} cy={SPOT[1]} fill={GREY} />)}
+        />
+      </Layer>
+      <Layer k={k} origin={SPOT} style={joiner}>
+        <Player cx={SPOT[0]} cy={SPOT[1]} fill={GREY} />
+      </Layer>
       <Part
         k={k}
-        offset={offset}
-        depth={26}
+        active={active}
         origin={[122, 300]}
-        loop={{ period: 1400, y: [0, -10], rotate: [0, 40] }}
+        loop={{ period: 3000, y: [0, -5], rotate: [0, 18] }}
       >
         <Circle cx={122} cy={300} r={20} fill={WHITE} />
         <Path d={star(122, 300, 9.5, 7.7)} fill={BLACK} />
       </Part>
-      <Spark k={k} offset={offset} at={[30, 150]} size={8} delay={200} />
-      <Spark k={k} offset={offset} at={[322, 150]} size={10} delay={900} />
-      <Spark k={k} offset={offset} at={[230, 300]} size={6} delay={1500} />
-      <Spark k={k} offset={offset} at={[178, 40]} size={6} delay={600} />
+      <Sparks
+        k={k}
+        active={active}
+        at={[
+          [30, 150, 8],
+          [322, 150, 10],
+          [230, 300, 6],
+          [178, 40, 6],
+        ]}
+      />
     </>
   );
 }
 
-// Confetti pieces: shape, colour, and how each one drifts.
-const CONFETTI: {
-  d?: string;
-  circle?: readonly [number, number, number];
-  fill: string;
-  loop: Loop;
-  origin: readonly [number, number];
-}[] = [
-  {
-    d: "M52 80 l14 -6 l4 9 l-14 6Z",
-    fill: BLACK,
-    origin: [61, 81],
-    loop: { period: 3000, y: [-4, 6], rotate: [-25, 20] },
-  },
-  {
-    d: "M280 58 l10 10 l-7 7 l-10 -10Z",
-    fill: GREY,
-    origin: [281, 66],
-    loop: { period: 3600, delay: 500, y: [-5, 5], rotate: [20, -30] },
-  },
-  {
-    d: "M296 210 l14 4 l-3 9 l-14 -4Z",
-    fill: BLACK,
-    origin: [301, 216],
-    loop: { period: 3300, delay: 900, y: [-3, 7], rotate: [-15, 25] },
-  },
-  {
-    d: "M40 232 l8 -12 l8 5 l-8 12Z",
-    fill: BLACK,
-    origin: [48, 231],
-    loop: { period: 2800, delay: 300, y: [5, -5], rotate: [30, -10] },
-  },
-  {
-    circle: [96, 44, 5],
-    fill: WHITE,
-    origin: [96, 44],
-    loop: { period: 2600, delay: 700, y: [-4, 4] },
-  },
-  {
-    circle: [316, 124, 5],
-    fill: WHITE,
-    origin: [316, 124],
-    loop: { period: 3100, delay: 1100, y: [4, -4] },
-  },
-  {
-    circle: [64, 160, 4],
-    fill: GREY,
-    origin: [64, 160],
-    loop: { period: 2900, delay: 200, y: [-3, 5] },
-  },
-];
-
-// 4 · Kickabout crews, crowned: an all-black cup with a white star springs up when the slide lands, then sways gently in
-// floating confetti.
-function TrophyScene({ k, offset, active }: SceneProps) {
+// 4 · Kickabout crews, crowned: an all-black cup with a white star rises into place the first time
+// the slide lands, then sways very slightly among drifting confetti.
+function TrophyScene({ k, active }: SceneProps) {
   const entry = useEntry(active);
   return (
     <>
-      <Blob k={k} offset={offset} d={BLOB_3} />
+      <Still>
+        <Blob d={BLOB_3} />
+      </Still>
       <Part
         k={k}
-        offset={offset}
-        depth={14}
+        active={active}
         origin={[172, 282]}
-        drop={{ from: -24, entry }}
-        loop={{ period: 3600, delay: 800, rotate: [-2, 2] }}
+        drop={{ from: -16, entry }}
+        loop={{ period: 6000, delay: 800, rotate: [-1.2, 1.2] }}
       >
         <Path
           d="M116 112 C70 112 72 172 128 182"
@@ -600,24 +536,28 @@ function TrophyScene({ k, offset, active }: SceneProps) {
         <Rect x={120} y={252} width={104} height={2} fill={WHITE} fillOpacity={0.25} />
         <Rect x={142} y={260} width={60} height={14} rx={3} fill={GREY} />
       </Part>
-      {CONFETTI.map((piece, i) => (
-        <Part key={i} k={k} offset={offset} depth={30} origin={piece.origin} loop={piece.loop}>
-          {piece.d ? (
-            <Path d={piece.d} fill={piece.fill} />
-          ) : (
-            <Circle
-              cx={piece.circle![0]}
-              cy={piece.circle![1]}
-              r={piece.circle![2]}
-              fill={piece.fill}
-            />
-          )}
-        </Part>
-      ))}
-      <Spark k={k} offset={offset} at={[250, 40]} size={10} delay={0} />
-      <Spark k={k} offset={offset} at={[36, 118]} size={7} delay={800} />
-      <Spark k={k} offset={offset} at={[300, 270]} size={8} delay={400} />
-      <Spark k={k} offset={offset} at={[70, 290]} size={6} delay={1200} />
+      {/* Confetti in two groups, drifting against each other. */}
+      <Part k={k} active={active} loop={{ period: 5000, y: [-4, 4] }}>
+        <Path d="M52 80 l14 -6 l4 9 l-14 6Z" fill={BLACK} />
+        <Path d="M296 210 l14 4 l-3 9 l-14 -4Z" fill={BLACK} />
+        <Circle cx={96} cy={44} r={5} fill={WHITE} />
+        <Circle cx={64} cy={160} r={4} fill={GREY} />
+      </Part>
+      <Part k={k} active={active} loop={{ period: 5600, delay: 700, y: [4, -4] }}>
+        <Path d="M280 58 l10 10 l-7 7 l-10 -10Z" fill={GREY} />
+        <Path d="M40 232 l8 -12 l8 5 l-8 12Z" fill={BLACK} />
+        <Circle cx={316} cy={124} r={5} fill={WHITE} />
+      </Part>
+      <Sparks
+        k={k}
+        active={active}
+        at={[
+          [250, 40, 10],
+          [36, 118, 7],
+          [300, 270, 8],
+          [70, 290, 6],
+        ]}
+      />
     </>
   );
 }
@@ -631,7 +571,7 @@ const SCENES = {
 export type OnboardingScene = keyof typeof SCENES;
 
 interface OnboardingArtProps {
-  // Which slide this is, and the pager's scroll position, for the parallax.
+  // Which slide this is, and the pager's scroll position, for the drift with the swipe.
   index: number;
   scene: OnboardingScene;
   scrollX: SharedValue<number>;
@@ -639,12 +579,17 @@ interface OnboardingArtProps {
   active: boolean;
 }
 
+// How far the drawing lags behind its slide during a swipe, in points per page.
+const DRIFT = 28;
+
 // Fills the space it's given, keeping the canvas's proportions, centred.
 export function OnboardingArt({ index, scene, scrollX, pageWidth, active }: OnboardingArtProps) {
   const [box, setBox] = useState<{ width: number; height: number } | null>(null);
-  const offset = useDerivedValue(() => scrollX.value / pageWidth - index);
   const Scene = SCENES[scene];
   const k = box ? Math.min(box.width / W, box.height / H) : 0;
+  const drift = useAnimatedStyle(() => ({
+    transform: [{ translateX: (scrollX.value / pageWidth - index) * DRIFT }],
+  }));
 
   return (
     <View
@@ -652,9 +597,9 @@ export function OnboardingArt({ index, scene, scrollX, pageWidth, active }: Onbo
       onLayout={(e) => setBox(e.nativeEvent.layout)}
     >
       {k > 0 ? (
-        <View style={{ width: W * k, height: H * k }}>
-          <Scene k={k} offset={offset} active={active} />
-        </View>
+        <Animated.View style={[{ width: W * k, height: H * k }, drift]}>
+          <Scene k={k} active={active} />
+        </Animated.View>
       ) : null}
     </View>
   );
