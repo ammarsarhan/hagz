@@ -556,7 +556,7 @@ const CONFETTI: {
   },
 ];
 
-// 4 · Kickabout crews, crowned: the cup springs up when the slide lands, then sways gently in
+// 4 · Kickabout crews, crowned: an all-black cup with a white star springs up when the slide lands, then sways gently in
 // floating confetti.
 function TrophyScene({ k, offset, active }: SceneProps) {
   const entry = useEntry(active);
@@ -573,14 +573,14 @@ function TrophyScene({ k, offset, active }: SceneProps) {
       >
         <Path
           d="M116 112 C70 112 72 172 128 182"
-          stroke={WHITE}
+          stroke={BLACK}
           strokeWidth={14}
           strokeLinecap="round"
           fill="none"
         />
         <Path
           d="M228 112 C274 112 272 172 216 182"
-          stroke={WHITE}
+          stroke={BLACK}
           strokeWidth={14}
           strokeLinecap="round"
           fill="none"
@@ -589,7 +589,7 @@ function TrophyScene({ k, offset, active }: SceneProps) {
         <Path d="M112 92 H232 V148 A60 60 0 0 1 112 148 Z" fill={BLACK} />
         <Rect x={104} y={82} width={136} height={16} rx={8} fill={BLACK} />
         <Path d={star(172, 142, 22, 9)} fill={WHITE} />
-        <Rect x={134} y={234} width={76} height={20} rx={6} fill={WHITE} />
+        <Rect x={134} y={234} width={76} height={20} rx={6} fill={BLACK} />
         <Rect x={114} y={252} width={116} height={30} rx={10} fill={BLACK} />
       </Part>
       {CONFETTI.map((piece, i) => (
