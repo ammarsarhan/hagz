@@ -28,6 +28,8 @@ interface ButtonProps {
   loading?: boolean;
   // An icon before the label (WhatsApp on Contact support).
   icon?: ReactNode;
+  // `small`: 48 high with a 16 label, beside other content in a bar (the venue page's Book).
+  size?: "regular" | "small";
 }
 
 export function Button({
@@ -37,6 +39,7 @@ export function Button({
   disabled = false,
   loading = false,
   icon,
+  size = "regular",
 }: ButtonProps) {
   const style = variants[variant];
   const look = disabled ? { box: "bg-chip", label: "text-ink-3" } : style;
@@ -50,14 +53,18 @@ export function Button({
         Keyboard.dismiss();
         onPress?.();
       }}
-      className={`h-14 items-center justify-center rounded-full px-6 active:opacity-80 ${look.box}`}
+      className={`${size === "small" ? "h-12 px-5" : "h-14 px-6"} items-center justify-center rounded-full active:opacity-80 ${look.box}`}
     >
       {loading ? (
         <ActivityIndicator color={style.spinner} />
       ) : (
         <View className="flex-row items-center gap-2">
           {icon}
-          <Text className={`text-center text-button font-semibold ${look.label}`}>{label}</Text>
+          <Text
+            className={`text-center ${size === "small" ? "text-subtitle" : "text-button"} font-semibold ${look.label}`}
+          >
+            {label}
+          </Text>
         </View>
       )}
     </Pressable>
