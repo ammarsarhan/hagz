@@ -7,20 +7,15 @@ import { email as mail } from "@/platform/email/email";
 import { AppError } from "@/platform/errors/app-error";
 import { webLinks } from "@/platform/http/links";
 import { consume } from "@/platform/rate-limit/rate-limit";
+import { ADMIN_AUTHENTICATOR_RESET, ADMIN_PASSWORD_RESET_SENT } from "../domain/events";
 import { ADMIN_PASSWORD_RESET_TTL_SECONDS, limits } from "../domain/policy";
 import { adminSessions } from "./accounts";
-import { adminNotFound } from "./admins";
+import { adminNotFound, ownAccount } from "./admins";
 import { redis } from "./verification-codes";
 
 // One admin getting another back into their account. Never on your own: you're signed in, so you
-// don't need it, and a slip would sign you out of the page you're using.
-
-const ownAccount = () =>
-  new AppError({
-    code: "OWN_ADMIN_ACCOUNT",
-    status: 409,
-    detail: "Ask another admin to do this for your account.",
-  });
+// don't need it, and a slip would sign you out of the page you're using. Each is recorded as an
+// AccountEvent on theirs.
 
 // Forgets their authenticator and signs them out everywhere: their next sign-in, after the
 // password, sets up a new one, as on their first.
@@ -36,6 +31,9 @@ export const resetAdminAuthenticator = async (
     });
     if (count === 0) throw adminNotFound();
     await adminSessions.sessions.revoke(tx, adminId, clock.now());
+    await tx.accountEvent.create({
+      data: { adminId: by, subjectAdminId: adminId, type: ADMIN_AUTHENTICATOR_RESET },
+    });
   });
 };
 
@@ -103,6 +101,10 @@ export const requestAdminPasswordReset = async (
     await redis((r) => r.del(resetKey(hash), openKey(adminId))).catch(() => undefined);
     throw error;
   }
+  // Once it's sent: a link that never left isn't worth a record.
+  await prisma.accountEvent.create({
+    data: { adminId: by, subjectAdminId: adminId, type: ADMIN_PASSWORD_RESET_SENT },
+  });
 };
 
 // An admin who changed their password themselves no longer needs a link another admin sent: it stops

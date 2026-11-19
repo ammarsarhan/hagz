@@ -57,8 +57,7 @@ export const venueSections: VenueSection[] = [
     icon: IconSoccerField,
     phase: "Phase 2",
     when: "always",
-    description:
-      "Each ground with its prices and schedule: generated until, the last run, stale or drifted slots, and Regenerate.",
+    description: "Each ground on the venue's layout, with its prices and weekly schedule.",
   },
   {
     slug: "slots",
@@ -67,7 +66,7 @@ export const venueSections: VenueSection[] = [
     phase: "Phase 2",
     when: "always",
     description:
-      "The bookable hours generated from each ground's schedule, a day at a time: price, tier and whether they're free, held, booked or blocked.",
+      "The bookable hours generated from each ground's schedule, a week of one ground at a time: price, tier and whether they're free, held, booked or blocked, with Regenerate.",
   },
   {
     slug: "bookings",

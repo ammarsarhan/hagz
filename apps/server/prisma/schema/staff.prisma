@@ -26,6 +26,7 @@ model Staff {
   discounts     VenueDiscount[]
   regulars      VenueRegular[] // Set up.
   reschedulings Rescheduling[]
+  history       AccountEvent[] // What admins did to this account.
 }
 
 // Same as AdminSession, plus the device's push token.

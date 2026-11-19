@@ -2,10 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { api } from "@/admin/api";
 import { Skeleton } from "@/admin/data-table";
-import { message, send } from "@/admin/errors";
-import { useHud } from "@/admin/hud";
 import { useVenueAmenities } from "@/admin/venues/amenities";
 import { GroundModal } from "@/admin/venues/ground-modal";
 import { useVenueGrounds } from "@/admin/venues/grounds";
@@ -18,23 +15,7 @@ import { useFillHeight } from "@/admin/venues/use-fill-height";
 // later. A venue with one ground needs no layout, so it says so instead.
 export default function VenueGrounds() {
   const { venueId } = useParams<{ venueId: string }>();
-  const { data, error, reload } = useVenueGrounds(venueId);
-  const hud = useHud();
-  // Queues a run, gives it a moment (one ground takes well under a second), then reads its status
-  // again.
-  const regenerate = async (groundId: string) => {
-    const result = await send(
-      api.POST("/v1/admin/venues/{id}/grounds/{groundId}/regenerate", {
-        params: { path: { id: venueId, groundId } },
-      }),
-    );
-    if (!result.ok) {
-      hud(message(result.error));
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    await reload();
-  };
+  const { data, error } = useVenueGrounds(venueId);
   // The layout's amenity tiles show their icons and names.
   const { data: amenities } = useVenueAmenities(venueId);
   const drawn = data?.layout.saved && data.layout.grounds.length > 0;
@@ -70,7 +51,6 @@ export default function VenueGrounds() {
           tile={data.layout.grounds.find((tile) => tile.groundId === ground.id)}
           currency={data.currency}
           slotsHref={venueHref(venueId, "slots")}
-          onRegenerate={() => regenerate(ground.id)}
           onClose={() => setSelected(undefined)}
         />
       ) : null}

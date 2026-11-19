@@ -114,6 +114,33 @@ export function Skeleton({ className = "" }: { className?: string }) {
   );
 }
 
+// A line of text standing in while it loads: set in the text's own style, so it's exactly as tall
+// as the line that replaces it (a zero-width space holds the line), with a bar across it. Nothing
+// moves when the text arrives. The width goes in className.
+const textStyle = {
+  title: { line: "text-title", bar: "h-6" },
+  subtitle: { line: "text-subtitle", bar: "h-4" },
+  body: { line: "text-body", bar: "h-3.5" },
+  label: { line: "text-label", bar: "h-3" },
+  caption: { line: "text-caption", bar: "h-3" },
+} as const;
+
+export function SkeletonText({
+  size,
+  className = "",
+}: {
+  size: keyof typeof textStyle;
+  className?: string;
+}) {
+  const { line, bar } = textStyle[size];
+  return (
+    <span aria-hidden className={`flex items-center ${line} ${className}`}>
+      <Skeleton className={`w-full ${bar}`} />
+      {"​"}
+    </span>
+  );
+}
+
 // Bar widths per row, so the stand-in rows look like text of different lengths, not a grid.
 const lengths = ["w-3/5", "w-2/5", "w-1/2", "w-1/3", "w-3/4", "w-2/5"];
 

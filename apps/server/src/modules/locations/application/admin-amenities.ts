@@ -6,7 +6,7 @@ import {
 } from "@hagz/contracts";
 import { isForeignKeyViolation, violatedUniqueIndex } from "@/platform/db/errors";
 import { prisma } from "@/platform/db/prisma";
-import { transaction } from "@/platform/db/transaction";
+import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
 import { logger } from "@/platform/logger/logger";
 import { marketplaceNotFound } from "./admin-marketplaces";
@@ -80,6 +80,16 @@ export const createAmenity = async (
   }
 };
 
+// What making an option unplaceable does to the layouts it's drawn on is venues' business, and
+// venues reads locations, so the composition root hands its hook over (http/router.ts). Without one
+// the change is refused, rather than leave tiles of an option that can't be placed.
+type UnplaceableHook = (tx: Tx, optionId: string) => Promise<void>;
+let onUnplaceable: UnplaceableHook | undefined;
+
+export const whenAmenityUnplaceable = (hook: UnplaceableHook) => {
+  onUnplaceable = hook;
+};
+
 export const updateAmenity = async (
   id: string,
   input: UpdateAmenity,
@@ -96,7 +106,8 @@ export const updateAmenity = async (
     }
     // No longer drawn on layouts: off every one it was on, as a deleted ground is.
     if (input.placeable === false) {
-      await tx.venueLayoutItem.deleteMany({ where: { optionId: id } });
+      if (!onUnplaceable) throw new Error("No amenity hook: http/router.ts sets one.");
+      await onUnplaceable(tx, id);
     }
     if (input.names) {
       await upsertNames(

@@ -1,5 +1,6 @@
 import type { Session } from "@hagz/api";
 import { auth } from "./api";
+import { chosenVenue } from "./current-venue";
 import { leaveToOnboarding, resetTo } from "./navigation";
 import { queries } from "./queries";
 import { queryClient } from "./query";
@@ -17,6 +18,8 @@ export const landing = async (): Promise<"/venue" | "/home"> => {
     queryClient.fetchQuery(queries.venues),
     queryClient.fetchQuery(queries.me),
     queryClient.fetchQuery(queries.invitations),
+    // Which of them the tabs open on.
+    queryClient.fetchQuery(chosenVenue),
   ]).then(([venues]) => venues);
   const timedOut = new Promise<undefined>((resolve) => setTimeout(resolve, LANDING_WAIT_MS));
   const venues = await Promise.race([loaded.catch(() => undefined), timedOut]);

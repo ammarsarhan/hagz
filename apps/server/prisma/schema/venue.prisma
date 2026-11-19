@@ -165,6 +165,9 @@ model VenueMedia {
   size        Int // Bytes, as declared when the upload was asked for; checked on confirm. CHECK: > 0.
   status      MediaStatus @default(PENDING)
   position    Int
+  // A tiny JPEG of the photo (about 64 px), made by the app before uploading and sent with the
+  // confirm, for small places like the dashboard's venue switcher. CHECK: at most 4 KB.
+  preview     Bytes?
   createdAt   DateTime    @default(now()) @db.Timestamptz
   updatedAt   DateTime    @updatedAt @db.Timestamptz
 

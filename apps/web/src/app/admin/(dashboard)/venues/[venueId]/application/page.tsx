@@ -8,7 +8,7 @@ import { api } from "@/admin/api";
 import { ago } from "@/admin/admins/model";
 import { AccessAction } from "@/admin/admins/panels";
 import { Button } from "@/admin/button";
-import { Skeleton, Tag } from "@/admin/data-table";
+import { Skeleton, SkeletonText, Tag } from "@/admin/data-table";
 import { ConfirmDialog, Modal } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { TextAreaField } from "@/admin/field";
@@ -345,9 +345,11 @@ function GoLiveActions({
   );
 }
 
+const FACTS = ["Owner", "Phone", "Area", "Grounds", "Created"] as const;
+
 // Who runs it and where it is, beside the journey: what a reviewer checks the application against.
 function Facts({ venueId, venue }: { venueId: string; venue: AdminVenue }) {
-  const rows: [string, ReactNode][] = [
+  const rows: [(typeof FACTS)[number], ReactNode][] = [
     [
       "Owner",
       venue.owner ? (
@@ -395,12 +397,42 @@ function Muted({ children }: { children: ReactNode }) {
   return <span className="text-ink-3">{children}</span>;
 }
 
+// The journey's five steps and the facts beside it, as they'll stand: what each step says depends
+// on the venue's status, so only their shape shows.
 function Loading() {
+  const widths = ["w-20", "w-28", "w-24", "w-28", "w-12"];
   return (
-    <div aria-busy className="flex flex-col gap-3 lg:w-1/2">
-      {["w-1/4", "w-3/4", "w-2/3", "w-1/2", "w-3/5"].map((width) => (
-        <Skeleton key={width} className={`h-3.5 ${width}`} />
-      ))}
+    <div aria-busy className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-20">
+      <ol aria-hidden className="min-w-0 lg:max-w-[43.75rem] lg:flex-1">
+        {widths.map((width, index) => {
+          const last = index === widths.length - 1;
+          return (
+            <li key={width + String(index)} className="flex gap-4">
+              <div className="flex w-[1.375rem] shrink-0 flex-col items-center">
+                <Skeleton className="size-[1.375rem] rounded-full" />
+                {last ? null : <span className="my-1 w-[1.5px] flex-1 bg-border" />}
+              </div>
+              <div className={`-mt-0.5 min-w-0 flex-1 ${last ? "" : "pb-8"}`}>
+                <SkeletonText size="subtitle" className={`leading-[1.375rem] ${width}`} />
+                <SkeletonText size="label" className="mt-0.5 w-2/3" />
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <aside className="shrink-0 lg:w-[19.5rem]">
+        <h2 className="text-subtitle font-semibold text-ink">Venue</h2>
+        <dl className="mt-4 flex flex-col gap-4">
+          {FACTS.map((label) => (
+            <div key={label}>
+              <dt className="text-caption text-ink-2">{label}</dt>
+              <dd className="mt-0.5">
+                <SkeletonText size="body" className="w-36" />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </aside>
     </div>
   );
 }

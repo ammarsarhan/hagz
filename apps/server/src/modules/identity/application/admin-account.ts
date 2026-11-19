@@ -19,6 +19,13 @@ const activeAdmin = async (adminId: string) => {
   return admin;
 };
 
+// Every admin request's check (platform's requireAdmin, handed it by http/router.ts): refuses an
+// admin who has been suspended or banned since their token was issued.
+export const ensureAdminActive = async (adminId: string) => {
+  const admin = await prisma.admin.findUnique({ where: { id: adminId }, select: { status: true } });
+  if (admin?.status !== "ACTIVE") throw accountSuspended();
+};
+
 export const updateAdminProfile = async (
   adminId: string,
   { name }: UpdateAdminProfile,

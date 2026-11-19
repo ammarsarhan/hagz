@@ -21,7 +21,7 @@ export const STAFF_JOINED = "STAFF_JOINED";
 export const STAFF_REMOVED = "STAFF_REMOVED";
 export const OWNERSHIP_TRANSFERRED = "OWNERSHIP_TRANSFERRED";
 // A staff account suspended or reactivated by an admin. Account-wide, so it's recorded on every venue
-// they're a member of, where each venue's admins look.
+// they're a member of, where each venue's admins look, and as an AccountEvent of the same type.
 export const STAFF_SUSPENDED = "STAFF_SUSPENDED";
 export const STAFF_REACTIVATED = "STAFF_REACTIVATED";
 // Banned for good by an admin, recorded the same way.

@@ -95,9 +95,11 @@ export interface AccountStore extends SessionStore {
   findByPhone(phone: string): Promise<Account | null>;
   findById(id: string): Promise<Account | null>;
   update(db: Db, id: string, changes: AccountChanges): Promise<unknown>;
-  // Whether the account may reset its own password with a code to its phone.
+  // Whether the account may reset its own password with a code to its phone. Support can let one
+  // that may not reset once (account-support.ts).
   selfServiceReset(account: Account): Promise<boolean>;
-  // Runs in the reset's transaction, after the new password and the sign-out of every session.
+  // Runs in the reset's transaction, after the new password and the sign-out of every session. Not
+  // after a reset support let through.
   afterPasswordReset(tx: Tx, account: Account, clock: Clock): Promise<void>;
   codes: {
     // The newest code for the purpose, open or not: the resend cooldown runs from it.

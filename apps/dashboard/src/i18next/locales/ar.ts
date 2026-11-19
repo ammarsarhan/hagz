@@ -12,6 +12,18 @@ const ar: ArabicTranslations = {
         payments: "المدفوعات",
         account: "الحساب",
       },
+      venueSwitcher: {
+        title: "تبديل الملعب",
+        close: "إغلاق",
+        owner: "المالك",
+        member: "عضو في الفريق",
+        paused: "متوقف",
+        current: "مفتوح الآن",
+        createVenue: "أنشئ ملعبك",
+        continueSetup: "أكمل الإعداد",
+        switched: "أنت الآن على {{name}}",
+        untitled: "ملعبك",
+      },
       invitationCard: {
         invitedBy: "دعاك {{name}}",
         grounds_zero: "لا ملاعب",

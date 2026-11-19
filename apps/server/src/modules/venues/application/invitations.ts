@@ -6,7 +6,7 @@ import type {
 } from "@hagz/contracts";
 import { Prisma } from "@/generated/prisma/client";
 import type { Language, VenueStatus } from "@/generated/prisma/enums";
-import { notifyStaff } from "@/modules/notifications";
+import { notifyStaff, withdrawNotifications } from "@/modules/notifications";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { generateJoinCode, hashCode, normalizeJoinCode } from "@/platform/crypto/codes";
 import { violatedUniqueIndex } from "@/platform/db/errors";
@@ -181,11 +181,9 @@ export const inviteStaff = async (
   } catch (error) {
     // Nothing was sent: leave nothing behind that looks sent.
     await transaction(async (tx) => {
-      await tx.notification.deleteMany({
-        where: {
-          type: "STAFF_INVITED",
-          data: { path: ["invitationId"], equals: created.invitation.id },
-        },
+      await withdrawNotifications(tx, "STAFF_INVITED", {
+        field: "invitationId",
+        equals: created.invitation.id,
       });
       await tx.venueEvent.deleteMany({
         where: {

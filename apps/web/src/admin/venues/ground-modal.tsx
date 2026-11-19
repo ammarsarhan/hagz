@@ -2,9 +2,6 @@
 
 import { FOOTPRINTS, type PlacedGround, type PriceTier } from "@hagz/contracts";
 import Link from "next/link";
-import { useState } from "react";
-import { Button } from "@/admin/button";
-import { ago } from "@/admin/home/model";
 import { Tag } from "@/admin/data-table";
 import { Dialog } from "@/admin/dialog";
 import { formatMoney } from "@/admin/money";
@@ -16,9 +13,9 @@ import { hourLabel, weekOf } from "./week";
 // A ground's details, opened from its pitch on the venue's layout, read only (the owner changes it
 // all in the staff app): Figma A7, option 2 "Programme" (97:208), picked 2026-11-18. The ground in
 // one line under its name, then its week read like a TV guide: a row a day, its hours left to right
-// (only the hours it uses, a late night carrying on in its evening's row), each run of a price tier
-// a block with the price printed in it. Base light grey, peak dark, discount dashed; closed hours a
-// faint fill, a day closed throughout a hairline.
+// (always 12 am through the 11 pm hour, user 2026-11-19), each run of a price tier a block with the
+// price printed in it. Base light grey, peak dark, discount dashed; closed hours an empty gap, a day
+// closed throughout a hairline.
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TIER = { BASE: "base", PEAK: "peak", DISCOUNT: "discount" } as const;
@@ -53,7 +50,6 @@ export function GroundModal({
   tile,
   currency,
   slotsHref,
-  onRegenerate,
   onClose,
 }: {
   ground: AdminGround;
@@ -62,8 +58,6 @@ export function GroundModal({
   currency: string;
   // The venue's Slots tab, where this week's hours are the bookable slots.
   slotsHref: string;
-  // Queues a generation run for it, and resolves once its status has been read again.
-  onRegenerate: () => Promise<void>;
   onClose: () => void;
 }) {
   const footprint = tile ?? FOOTPRINTS[ground.sport][ground.size] ?? { width: 4, height: 2 };
@@ -79,7 +73,6 @@ export function GroundModal({
   };
   // Where an hour falls along the timeline, as a share of it.
   const x = (offset: number) => `${String((offset / week.hours) * 100)}%`;
-  const midnight = (offset: number) => offset > 0 && (week.start + offset) % 24 === 0;
   const bookings =
     ground.minimumSlots === ground.maximumSlots
       ? hours(ground.minimumSlots)
@@ -125,8 +118,6 @@ export function GroundModal({
           </div>
         </header>
 
-        <Generation generation={ground.generation} onRegenerate={onRegenerate} />
-
         <div className="px-8 pt-7 pb-7">
           {week.hours === 0 ? (
             <p className="py-10 text-center text-body text-ink-3">No opening hours yet.</p>
@@ -147,19 +138,19 @@ export function GroundModal({
               </div>
 
               <div className="relative min-w-0 flex-1">
-                {/* The hours along the top, every other one, and a line at each. Midnight is the
-                    day's turn, so its line and label are a step darker. */}
+                {/* The hours along the top, every other one, and a line at each. Noon, halfway, is
+                    a step darker. */}
                 <div className="relative h-9">
                   {Array.from({ length: week.hours + 1 }, (_, offset) =>
-                    offset % 2 === 0 || midnight(offset) ? (
+                    offset % 2 === 0 ? (
                       <span
                         key={offset}
                         className={`absolute top-0 -translate-x-1/2 text-caption whitespace-nowrap ${
-                          midnight(offset) ? "font-medium text-ink-2" : "text-ink-3"
+                          offset === 12 ? "font-medium text-ink-2" : "text-ink-3"
                         }`}
                         style={{ left: x(offset) }}
                       >
-                        {hourLabel(week.start + offset)}
+                        {hourLabel(offset)}
                       </span>
                     ) : null,
                   )}
@@ -168,7 +159,7 @@ export function GroundModal({
                   {Array.from({ length: week.hours + 1 }, (_, offset) => (
                     <span
                       key={offset}
-                      className={`absolute inset-y-0 w-px ${midnight(offset) ? "bg-[#c9cdd3]" : "bg-[#f1f2f4]"}`}
+                      className={`absolute inset-y-0 w-px ${offset === 12 ? "bg-[#c9cdd3]" : "bg-[#f1f2f4]"}`}
                       style={{ left: x(offset) }}
                     />
                   ))}
@@ -189,19 +180,10 @@ export function GroundModal({
                           left: `calc(${x(run.from)} + 2px)`,
                           width: `calc(${x(run.length)} - 4px)`,
                         };
-                        if (run.tier === null) {
-                          return (
-                            <div
-                              key={run.from}
-                              className="absolute top-0 h-[2.875rem] rounded-[0.375rem] bg-[#f8f8f9]"
-                              style={style}
-                            />
-                          );
-                        }
+                        // Closed hours stay an empty gap.
+                        if (run.tier === null) return null;
                         const tone = block[run.tier];
-                        const label = `${hourLabel(week.start + run.from)} – ${hourLabel(
-                          week.start + run.from + run.length,
-                        )} · ${TIER[run.tier]} · ${currency} ${price(run.tier)} an hour`;
+                        const label = `${hourLabel(run.from)} – ${hourLabel(run.from + run.length)} · ${TIER[run.tier]} · ${currency} ${price(run.tier)} an hour`;
                         return (
                           <div
                             key={run.from}
@@ -233,8 +215,7 @@ export function GroundModal({
 
         <footer className="flex items-center justify-between gap-6 border-t border-border px-8 py-[1.125rem]">
           <p className="text-caption text-ink-3">
-            {currency} per hour, printed on each block. Hours past midnight belong to the day they
-            start on.
+            {currency} per hour, printed on each block. Hours past midnight show on the next day.
           </p>
           <p className="shrink-0 text-caption font-medium text-ink-2">
             {ground.openHours === 0 ? "No hours yet" : `${hours(ground.openHours)} a week`}
@@ -242,58 +223,5 @@ export function GroundModal({
         </footer>
       </div>
     </Dialog>
-  );
-}
-
-// How its slots stand against its schedule (PR 2.6), with Regenerate: how far ahead they're
-// generated and when, and anything out of line, in weight rather than colour.
-function Generation({
-  generation,
-  onRegenerate,
-}: {
-  generation: AdminGround["generation"];
-  onRegenerate: () => Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-  const { generatedUntil, generatedAt, stale, drift } = generation;
-  const now = Date.now();
-  const day = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const issues = [
-    stale > 0 ? `${String(stale)} from an older schedule` : null,
-    drift.missing > 0 ? `${String(drift.missing)} missing` : null,
-    drift.extra > 0 ? `${String(drift.extra)} not on the schedule` : null,
-    drift.wrong > 0 ? `${String(drift.wrong)} with the wrong price` : null,
-  ].filter((issue): issue is string => issue !== null);
-
-  return (
-    <div className="flex items-center justify-between gap-6 border-b border-border bg-[#fafafa] px-8 py-3">
-      <p className="min-w-0 truncate text-label text-ink-2">
-        <span className="font-medium text-ink">Slots</span>
-        {" · "}
-        {generatedUntil
-          ? `to ${day(generatedUntil)}${generatedAt ? `, generated ${ago(generatedAt, now)}` : ""}`
-          : "none generated: a venue's slots come once it's live"}
-        {" · "}
-        {issues.length > 0 ? (
-          <span className="font-medium text-ink underline underline-offset-4">
-            {issues.join(", ")}
-          </span>
-        ) : (
-          "in line with the schedule"
-        )}
-      </p>
-      <Button
-        size="small"
-        variant="secondary"
-        loading={busy}
-        onClick={() => {
-          setBusy(true);
-          void onRegenerate().finally(() => setBusy(false));
-        }}
-      >
-        Regenerate
-      </Button>
-    </div>
   );
 }

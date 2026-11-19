@@ -5,10 +5,16 @@ import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 // to the signed URL the API hands out. The API only checks what arrived.
 const LONG_SIDE = 2048;
 const QUALITY = 0.82;
+// The preview sent with the confirm, for places too small to load the photo (the venue switcher's
+// covers): about 64 px, soft JPEG, a couple of KB. The API refuses more than 4 KB.
+const PREVIEW_LONG_SIDE = 64;
+const PREVIEW_QUALITY = 0.6;
 
 export interface PreparedPhoto {
   uri: string;
   blob: Blob;
+  // Base64 JPEG.
+  preview: string;
 }
 
 export const preparePhoto = async (asset: {
@@ -33,7 +39,15 @@ export const preparePhoto = async (asset: {
   );
   // The bytes, to know their exact size before asking for the upload, and to send.
   const blob = await (await fetch(resized.uri)).blob();
-  return { uri: resized.uri, blob };
+  // From the resized copy, which is already decoded small enough to be quick.
+  const wide = resized.width >= resized.height;
+  const small = await manipulateAsync(
+    resized.uri,
+    [{ resize: wide ? { width: PREVIEW_LONG_SIDE } : { height: PREVIEW_LONG_SIDE } }],
+    { compress: PREVIEW_QUALITY, format: SaveFormat.JPEG, base64: true },
+  );
+  if (!small.base64) throw new Error("Couldn't make the photo's preview");
+  return { uri: resized.uri, blob, preview: small.base64 };
 };
 
 // fetch has no upload progress; XMLHttpRequest does, which is what the tile's percentage is.
