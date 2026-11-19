@@ -116,10 +116,11 @@ const ENVIRONMENTS: Record<PublicGround["environment"], string> = {
   COVERED: "Covered",
 };
 
-// "5-a-side" for football, "Padel" for the rest.
-export const kindOf = (ground: PublicGround) => SIZES[ground.size] || SPORTS[ground.sport];
+// "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
+export const kindOf = (ground: PublicGround) =>
+  SIZES[ground.size] ? `${SIZES[ground.size]} football` : SPORTS[ground.sport];
 
-// "5-a-side · Artificial turf · Outdoor".
+// "7-a-side football · Artificial turf · Outdoor".
 export const groundLine = (ground: PublicGround) =>
   [kindOf(ground), SURFACES[ground.surface], ENVIRONMENTS[ground.environment]].join(" · ");
 
