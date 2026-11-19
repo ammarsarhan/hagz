@@ -1,6 +1,6 @@
-import { CANCELLATION_PRESETS } from "@hagz/contracts";
+import { CANCELLATION_PRESETS, refundBands } from "@hagz/contracts";
 import { describe, expect, it } from "vitest";
-import { cancellationSummary, refundBands } from "@/modules/venues/domain/cancellation-summary";
+import { cancellationSummary } from "@/modules/venues/domain/cancellation-summary";
 
 // The venue page's plain-words cancellation policy (PR 3.2).
 
