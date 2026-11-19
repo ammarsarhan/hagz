@@ -66,7 +66,7 @@ export const venueSections: VenueSection[] = [
     phase: "Phase 2",
     when: "always",
     description:
-      "The bookable hours generated from each ground's schedule, a day at a time: price, tier and whether they're free, held, booked or blocked.",
+      "The bookable hours generated from each ground's schedule, a week of one ground at a time: price, tier and whether they're free, held, booked or blocked, with Regenerate.",
   },
   {
     slug: "bookings",

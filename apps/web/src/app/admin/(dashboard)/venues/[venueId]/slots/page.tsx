@@ -7,10 +7,14 @@ import {
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { api } from "@/admin/api";
 import { Skeleton, SkeletonText } from "@/admin/data-table";
+import { message, send } from "@/admin/errors";
+import { useHud } from "@/admin/hud";
 import { formatMoney } from "@/admin/money";
 import { sizeLabel, sportLabel } from "@/admin/venues/grounds";
 import {
@@ -30,8 +34,10 @@ import { DAY_NAMES } from "@/admin/venues/week";
 // the tabs: the week's days across with today circled, the hours of the venue's local day down the
 // side, and each slot a block at its time, with its price and tier, filled by whether it's free,
 // held, booked or blocked. A line marks now. Floating at the foot: the month picker with ‹ this week
-// › on the left, the ground in the middle and the key on the right. Read only. Weeks move within the ones that have slots; days outside them are greyed. Until any
-// are generated, a single line in the middle says that going live generates them.
+// › on the left, the ground in the middle with Regenerate beside it (user, 2026-11-19), and the key
+// on the right. Otherwise read only. Weeks move within the ones that have slots; days outside them
+// are greyed. Until any are generated, a single line in the middle says that going live generates
+// them.
 
 // An hour's height, and the time column's width.
 const ROW = 56;
@@ -105,7 +111,7 @@ export default function VenueSlotsTab() {
   const { venueId } = useParams<{ venueId: string }>();
   // The Sunday the week shown starts on: unknown until the first read says which day to open on.
   const [week, setWeek] = useState<string>();
-  const { data, error, loading } = useVenueSlots(venueId, week, 7);
+  const { data, error, loading, reload } = useVenueSlots(venueId, week, 7);
   // Right to the foot of the window: the planner runs off the page's bottom padding too.
   const { ref, height } = useFillHeight(0);
 
@@ -135,7 +141,14 @@ export default function VenueSlotsTab() {
           </p>
         </Centre>
       ) : (
-        <Planner data={data} days={data.days} loading={loading} onWeek={setWeek} />
+        <Planner
+          venueId={venueId}
+          data={data}
+          days={data.days}
+          loading={loading}
+          onWeek={setWeek}
+          onRegenerated={reload}
+        />
       )}
     </section>
   );
@@ -216,16 +229,21 @@ function Centre({ children }: { children: ReactNode }) {
 }
 
 function Planner({
+  venueId,
   data,
   days,
   loading,
   onWeek,
+  onRegenerated,
 }: {
+  venueId: string;
   data: VenueSlots;
   // The first and last days with slots: the weeks it moves between.
   days: { first: string; last: string };
   loading: boolean;
   onWeek: (week: string) => void;
+  // After a ground's slots were regenerated: read the week again.
+  onRegenerated: () => Promise<void>;
 }) {
   const { date: week, timezone, grounds, slots, currency } = data;
   const [picked, setPicked] = useState<string>();
@@ -367,6 +385,15 @@ function Planner({
                 stroke={1.75}
               />
             </span>
+            {/* Regenerate acts on the ground picked beside it. */}
+            <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+            <Regenerate
+              key={ground.id}
+              venueId={venueId}
+              groundId={ground.id}
+              name={ground.name ?? "Ground"}
+              onDone={onRegenerated}
+            />
           </div>
         ) : null}
 
@@ -603,6 +630,59 @@ function Key() {
         </li>
       ))}
     </ul>
+  );
+}
+
+// Queues a generation run for the ground (runs for a ground never overlap), gives it a moment (one
+// ground takes well under a second), then reads the week again. Only free slots that staff haven't
+// set are touched, so it's safe to press any time: it asks nothing first. The icon spins meanwhile.
+function Regenerate({
+  venueId,
+  groundId,
+  name,
+  onDone,
+}: {
+  venueId: string;
+  groundId: string;
+  name: string;
+  onDone: () => Promise<void>;
+}) {
+  const hud = useHud();
+  const [busy, setBusy] = useState(false);
+  const label = `Regenerate ${name}'s slots`;
+
+  const regenerate = async () => {
+    setBusy(true);
+    const result = await send(
+      api.POST("/v1/admin/venues/{id}/grounds/{groundId}/regenerate", {
+        params: { path: { id: venueId, groundId } },
+      }),
+    );
+    if (result.ok) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await onDone();
+    } else {
+      hud(message(result.error));
+    }
+    setBusy(false);
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      aria-busy={busy}
+      disabled={busy}
+      onClick={() => void regenerate()}
+      className="flex size-10 cursor-pointer items-center justify-center rounded-full text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default"
+    >
+      <IconRefresh
+        size={18}
+        className={`size-[1.125rem] ${busy ? "animate-spin" : ""}`}
+        stroke={1.75}
+      />
+    </button>
   );
 }
 
