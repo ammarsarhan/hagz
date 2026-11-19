@@ -24,7 +24,7 @@ Flow ids (`C6`, `D11`, `A7b`) match the board. Each diagram uses the same colors
 - **The web is view only:** public venue listings for search engines and exposure, shared links, and sending people to the apps. Nothing is booked on the web.
 - **The dashboard is phone first,** with a tablet layout (one calendar column per ground). On a phone the calendar shows one ground at a time, with ground chips and an all-grounds strip.
 - **Dashboard tabs:** Home · Calendar · Venue · Payments · Account. Long-pressing Venue opens the venue switcher; the dashboard shows one venue at a time. Customers and regulars, Team, Marketing and Setup all live under Venue.
-- **Dashboard Home is Today.** While a venue isn't live, Home is its setup checklist. Moving a booking uses pick mode. A new booking starts from a slot.
+- **Dashboard Home is Today.** The dashboard is only for `LIVE` and `MAINTENANCE` venues. A venue being set up lives in its own setup flow (D5), never in the tabs or the switcher (decided on 2026-11-12). Moving a booking uses pick mode. A new booking starts from a slot.
 - **Changing a regular's time or ground** releases its future `UNCONFIRMED` reservations and re-creates them at the new time; `CONFIRMED` ones stay. To be added to [regulars.md](regulars.md) with PR 4.5.
 - **Negative balances** (commission on cash bookings) are settled by a wire or cash collected in person, then recorded by an admin as an `ADJUSTMENT` whose note gives the method and the reference.
 - **The admin web** is English only, for desktop.
@@ -125,7 +125,7 @@ flowchart LR
   classDef result fill:#CDF4D3,stroke:#66D575
   classDef danger fill:#FFCDC2,stroke:#FF7556
   s1["1 Ground and time (from C5)"] --> signin["Sign-in sheet if guest (C2)"]:::sheet --> s2["2 Extras: priced amenities (skipped if none)"]
-  s2 --> s3["3 Players (optional): needed, note, cost share"]
+  s2 --> s3["3 Players (optional): needed, note (share and joining fee shown)"]
   s3 --> s4["4 Review and pay: breakdown, VAT, policy, discount code, loyalty reward, payment method"]
   s4 --> pay["Pay: card, wallet, Apple Pay, Google Pay (Paymob fields), Fawry code, or at the venue"]:::sheet
   pay --> confirmed["Confirmed"]:::result
@@ -182,7 +182,7 @@ flowchart LR
   classDef state fill:#FFECBD,stroke:#FFC943
   classDef result fill:#CDF4D3,stroke:#66D575
   classDef danger fill:#FFCDC2,stroke:#FF7556
-  tab["Games: Near me · My games"]:::hub --> filters["Filters: sport, size, date, time, area"]:::sheet --> game["Game detail: spots left, note, cost share, booker's first name"]
+  tab["Games: Near me · My games"]:::hub --> filters["Filters: sport, size, date, time, area"]:::sheet --> game["Game detail: spots left, note, share + joining fee, booker's first name"]
   game --> join["Join (sign-in sheet if guest) + disclaimer"]:::sheet --> joined["Joined: booker's phone, players, reminder"]:::result
   joined --> leave["Leave the game"]:::danger
   tab --> history["C8c My games → Past: who came"] --> report["A no-show report against me"]:::state

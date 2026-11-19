@@ -16,6 +16,7 @@ model Admin {
   invites       AdminInvitation[] @relation("InvitedBy")
   invitation    AdminInvitation?  @relation("AcceptedAs")
   events        VenueEvent[]
+  communityLog  CommunityEvent[]
   bookingEvents BookingEvent[]
   payouts       Payout[]
   adjustments   LedgerEntry[]

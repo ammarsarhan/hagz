@@ -231,6 +231,7 @@ enum LedgerType {
   COLLECTION // Online payment collected.
   REFUND // Online refund.
   COMMISSION
+  JOIN_FEE // Open-game joining fees the venue collected for Hagz.
   PAYOUT
   ADJUSTMENT // By an admin.
 }
@@ -247,4 +248,63 @@ enum CancellationActor {
   CUSTOMER
   VENUE
   ADMIN // Support.
+}
+
+// Communities
+enum CommunityPolicy {
+  OPEN // Anyone joins at once.
+  CLOSED // A request an admin approves, or an invite link.
+}
+
+enum CommunityStatus {
+  ACTIVE
+  ARCHIVED // By its owner.
+  HIDDEN // By a Hagz admin.
+}
+
+enum CommunityRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum CommunityMemberStatus {
+  REQUESTED
+  ACTIVE
+  DECLINED
+  LEFT
+  REMOVED // Can rejoin.
+  BANNED // Can't, until an admin lifts it.
+}
+
+// Tournaments
+enum TournamentFormat {
+  KNOCKOUT
+  LEAGUE
+}
+
+enum TournamentStatus {
+  DRAFT // Organizers only.
+  OPEN // Registration.
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum TournamentTeamStatus {
+  PENDING
+  CONFIRMED
+  WITHDRAWN // By its captain.
+  REJECTED // By the organizer.
+}
+
+enum TournamentMatchStatus {
+  PENDING
+  PLAYED
+  WALKOVER
+}
+
+enum MatchSide {
+  HOME
+  AWAY
 }

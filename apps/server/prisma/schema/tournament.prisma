@@ -1,0 +1,119 @@
+// Kept minimal on purpose (docs/tournaments.md): venue tournaments are still an unknown feature, so
+// only what every tournament needs is here. Run by a venue (public, created by its staff) or a
+// community (members only, created by a member). Who can join is joinRules, a JSON object validated
+// by a Zod schema in @hagz/contracts, so a new kind of rule needs no migration. Registering and
+// confirming teams lock this row, so teamCap holds. CHECKs: exactly one organizer, with a creator of
+// its kind; teamCap >= 2; entryFee >= 0; joinRules is an object.
+model Tournament {
+  id                   String           @id @default(uuid(7)) @db.Uuid
+  code                 String           @unique // Share link, /t/[code].
+  venueId              String?          @db.Uuid
+  communityId          String?          @db.Uuid
+  name                 String
+  description          String?
+  sport                GroundSport
+  size                 GroundSize
+  format               TournamentFormat
+  status               TournamentStatus @default(DRAFT)
+  teamCap              Int              @db.SmallInt
+  joinRules            Json
+  entryFee             Int? // Per team, minor units; paid to the organizer, outside Hagz.
+  prizes               String? // Text only.
+  registrationClosesAt DateTime         @db.Timestamptz
+  startsOn             DateTime         @db.Date
+  staffCreatorId       String?          @db.Uuid // A venue tournament.
+  customerCreatorId    String?          @db.Uuid // A community tournament.
+  createdAt            DateTime         @default(now()) @db.Timestamptz
+  updatedAt            DateTime         @updatedAt @db.Timestamptz
+
+  venue           Venue?            @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  community       Community?        @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  staffCreator    Staff?            @relation(fields: [staffCreatorId], references: [id], onDelete: Restrict)
+  customerCreator Customer?         @relation("TournamentCreator", fields: [customerCreatorId], references: [id], onDelete: Restrict)
+  teams           TournamentTeam[]
+  matches         TournamentMatch[]
+
+  @@index([status, startsOn]) // The Tournaments feed.
+  @@index([venueId])
+  @@index([communityId])
+}
+
+// A team registered by its captain. Never deleted: withdrawing and rejection change the status.
+model TournamentTeam {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  tournamentId String               @db.Uuid
+  name         String
+  captainId    String               @db.Uuid
+  status       TournamentTeamStatus @default(PENDING)
+  createdAt    DateTime             @default(now()) @db.Timestamptz
+  updatedAt    DateTime             @updatedAt @db.Timestamptz
+
+  tournament Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  captain    Customer           @relation("TournamentCaptain", fields: [captainId], references: [id], onDelete: Restrict)
+  players    TournamentPlayer[]
+  home       TournamentMatch[]  @relation("HomeTeam")
+  away       TournamentMatch[]  @relation("AwayTeam")
+  wins       TournamentMatch[]  @relation("WinnerTeam")
+
+  @@unique([tournamentId, name])
+  @@unique([id, tournamentId]) // Relation target, so players and matches stay in the same tournament.
+  @@index([captainId])
+}
+
+// A player in a team's squad. tournamentId is copied from the team (the foreign key makes sure), so
+// a player can be in only one squad per tournament. Leaving deletes the row: squads are frozen once
+// the tournament runs, so there's no history to keep. Joining locks the team row, so the squad size
+// in joinRules holds.
+model TournamentPlayer {
+  teamId       String   @db.Uuid
+  customerId   String   @db.Uuid
+  tournamentId String   @db.Uuid
+  joinedAt     DateTime @default(now()) @db.Timestamptz
+
+  team     TournamentTeam @relation(fields: [teamId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@id([teamId, customerId])
+  @@unique([tournamentId, customerId]) // One squad per player per tournament.
+  @@index([customerId]) // "My tournaments".
+}
+
+// One fixture. Teams are empty until the draw or an earlier round fills them; a knockout winner
+// moves into nextMatchId's nextSide in the same transaction as the result. groundId and startsAt are
+// for display only: ground time is reserved with staff blocks or an ordinary booking.
+// Sport-agnostic: homeScore and awayScore are the sport's main result (goals, points, or sets won),
+// and scoreDetail holds the rest (set scores, football penalties), checked by a Zod schema per sport
+// in @hagz/contracts. Whether a draw is allowed is the API's rule per sport. CHECKs: round and
+// position >= 1; the two teams differ; scores >= 0, both set exactly when PLAYED; scoreDetail only
+// when PLAYED; nextMatchId and nextSide both or neither; the winner is one of the two teams, the side
+// with the higher score when they differ, required for a WALKOVER, none while PENDING.
+model TournamentMatch {
+  id           String                @id @default(uuid(7)) @db.Uuid
+  tournamentId String                @db.Uuid
+  round        Int                   @db.SmallInt
+  position     Int                   @db.SmallInt // Order within the round.
+  homeId       String?               @db.Uuid
+  awayId       String?               @db.Uuid
+  nextMatchId  String?               @db.Uuid // Knockout: where the winner goes.
+  nextSide     MatchSide?
+  groundId     String?               @db.Uuid
+  startsAt     DateTime?             @db.Timestamptz
+  status       TournamentMatchStatus @default(PENDING)
+  homeScore    Int?                  @db.SmallInt
+  awayScore    Int?                  @db.SmallInt
+  scoreDetail  Json? // Set scores, or football penalties.
+  winnerId     String?               @db.Uuid // Null after a draw, where the sport allows one.
+  createdAt    DateTime              @default(now()) @db.Timestamptz
+  updatedAt    DateTime              @updatedAt @db.Timestamptz
+
+  tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  home       TournamentTeam?   @relation("HomeTeam", fields: [homeId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  away       TournamentTeam?   @relation("AwayTeam", fields: [awayId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  winner     TournamentTeam?   @relation("WinnerTeam", fields: [winnerId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  next       TournamentMatch?  @relation("Bracket", fields: [nextMatchId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  feeders    TournamentMatch[] @relation("Bracket")
+  ground     Ground?           @relation(fields: [groundId], references: [id], onDelete: Restrict)
+
+  @@unique([tournamentId, round, position])
+  @@unique([id, tournamentId]) // Bracket relation target.
+}

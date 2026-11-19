@@ -216,6 +216,10 @@ CREATE UNIQUE INDEX "Venue_id_marketplaceId_key" ON "Venue"("id", "marketplaceId
 -- CreateIndex
 CREATE INDEX "VenueTranslation_language_name_idx" ON "VenueTranslation"("language", "name");
 
+-- CreateIndex (hand-added: Prisma cannot declare expression indexes)
+-- Name search: a trigram index on the folded name, for LIKE '%part%' and similarity in either language.
+CREATE INDEX "VenueTranslation_name_trgm_idx" ON "VenueTranslation" USING gin (fold_name(name) gin_trgm_ops);
+
 -- CreateIndex
 CREATE INDEX "VenueMembership_staffId_idx" ON "VenueMembership"("staffId");
 

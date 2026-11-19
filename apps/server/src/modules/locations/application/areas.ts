@@ -2,6 +2,7 @@ import type { Area, AreaQuery, NearestAreaQuery } from "@hagz/contracts";
 import { Prisma } from "@/generated/prisma/client";
 import type { Language } from "@/generated/prisma/enums";
 import { prisma } from "@/platform/db/prisma";
+import { foldName, foldNameSql, likeLiteral } from "@/platform/text/fold";
 import { activeMarketplaceId } from "./public-reference";
 import { nameIn } from "./names";
 
@@ -15,34 +16,6 @@ import { nameIn } from "./names";
 // Neighbourhood centres are 1–3 km apart in the cities, so this is generous there and still says
 // "not near anything we cover" out in the governorates.
 export const SUGGEST_WITHIN_METRES = 8000;
-
-// Same place, different spelling: case, Arabic diacritics and the interchangeable letters (أ/ا,
-// ى/ي, ة/ه), spaces, hyphens and apostrophes. Done the same way on both sides, here for the query
-// and in SQL for the names, so "smouha", "Smouha" and "سموحه" all find سموحة.
-const IGNORED = "[\\u064B-\\u0652\\u0670\\s'’.-]";
-const LETTERS: [string, string][] = [
-  ["أ", "ا"],
-  ["إ", "ا"],
-  ["آ", "ا"],
-  ["ى", "ي"],
-  ["ئ", "ي"],
-  ["ؤ", "و"],
-  ["ة", "ه"],
-];
-const FROM = LETTERS.map(([from]) => from).join("");
-const TO = LETTERS.map(([, to]) => to).join("");
-
-export const fold = (text: string) =>
-  LETTERS.reduce(
-    (folded, [from, to]) => folded.replaceAll(from, to),
-    text.toLowerCase().replace(new RegExp(IGNORED, "gu"), ""),
-  );
-
-const foldSql = (column: Prisma.Sql) =>
-  Prisma.sql`translate(regexp_replace(lower(${column}), ${IGNORED}, '', 'g'), ${FROM}, ${TO})`;
-
-// % and _ are wildcards to LIKE.
-const literal = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
 
 interface Point {
   latitude: number;
@@ -58,12 +31,12 @@ const findAreas = async (
   language: Language,
   { q, point, limit, within }: { q: string; point?: Point; limit: number; within?: number },
 ) => {
-  const typed = fold(q);
+  const typed = foldName(q);
   const nameMatch = typed
     ? Prisma.sql`AND EXISTS (
         SELECT 1 FROM "LocationTranslation" t
         WHERE t."locationId" = l.id
-          AND ${foldSql(Prisma.sql`t.name`)} LIKE ${`%${literal(typed)}%`})`
+          AND ${foldNameSql(Prisma.sql`t.name`)} LIKE ${`%${likeLiteral(typed)}%`})`
     : Prisma.empty;
   const near =
     point && within !== undefined

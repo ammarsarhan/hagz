@@ -2,8 +2,8 @@ import { Area, list } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { router } from "@/http/router";
-import { fold } from "@/modules/locations/application/areas";
 import { prisma } from "@/platform/db/prisma";
+import { foldName } from "@/platform/text/fold";
 import { resetDatabase } from "../../support/database";
 import { createMarketplace } from "../../support/factories";
 
@@ -140,8 +140,8 @@ describe("searching areas", () => {
 
 describe("folding names", () => {
   it("ignores case, diacritics, spaces and the letters Arabic writes either way", () => {
-    expect(fold("Sidi Gaber")).toBe("sidigaber");
-    expect(fold("الإسكندرية")).toBe(fold("الاسكندريه"));
-    expect(fold("سَمُوحَة")).toBe("سموحه");
+    expect(foldName("Sidi Gaber")).toBe("sidigaber");
+    expect(foldName("الإسكندرية")).toBe(foldName("الاسكندريه"));
+    expect(foldName("سَمُوحَة")).toBe("سموحه");
   });
 });
