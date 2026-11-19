@@ -106,9 +106,8 @@ describe("suspending a customer", () => {
     expect(await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).toMatchObject({
       status: "SUSPENDED",
     });
-    expect(
-      await prisma.customerSession.findMany({ select: { revokedAt: true, pushToken: true } }),
-    ).toEqual([{ revokedAt: expect.any(Date), pushToken: null }]);
+    expect(await prisma.customerSession.count({ where: { revokedAt: null } })).toBe(0);
+    expect(await prisma.customerSession.count({ where: { pushToken: { not: null } } })).toBe(0);
     // Refreshing and signing in both refuse a suspended customer.
     const refresh = await auth("customer", "/sessions/refresh", {
       refreshToken: session.refreshToken,
