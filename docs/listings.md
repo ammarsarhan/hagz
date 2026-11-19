@@ -7,6 +7,7 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 ## Rules
 
 - **Who can list:** the customer who booked through the app (`creatorId` is null), while the booking is `CONFIRMED`, **fully paid online**, and hasn't started. At a deposit venue the booker pays the rest online first; cash-only venues can't host open games. Staff-entered bookings and `PENDING`, `HELD` or `UNCONFIRMED` ones can't be listed. The fully-paid check lands with online payments (5.2). Until then, which is before launch, any confirmed app booking can be listed.
+- **At checkout** (decided on 2026-10-30): the booker can ask for players while booking (step 3 of the booking flow). The listing opens by itself once the booking is `CONFIRMED` and fully paid, under the rule above. If the booking never gets there, no listing is made.
 - **How many:** the booker sets `neededPlayers`. The ground's sport and size cap it: a 5-a-side pitch holds 10, so at most 9 others can join. A table in code maps each sport and size to its player count.
 - **Raising and lowering:** the booker can raise it at any time up to the cap, and **lower it only down to the number already joined**. Setting it to the joined count closes the listing. Turning the listing off is only possible while nobody has joined, or after removing the joined players.
 - **Joining:** any signed-in customer, from the feed or a shared link. Not the booker, not twice, not when it's full, not after kick-off, and not into two games that overlap in time.
@@ -46,6 +47,7 @@ Agreed on 2026-11-19.
 - **Staff record how many came,** one number on the booking, from the kick-off until 24 hours after the end. The fee is that number × the joining fee. Hagz takes it out of the venue's balance (one `JOIN_FEE` ledger entry per game), settled at the next payout. It works the same way as commission on cash bookings.
 - **If staff record nothing,** everyone expected is assumed to have come, minus the players the booker reported as no-shows. Recording a lower number is the venue's claim, so the venue gains nothing by staying silent.
 - **A recorded number lower than expected is noted.** "Expected" is the joined count minus the booker's no-show reports. A shortfall puts a `BookingEvent` on the booking and counts towards the venue's under-recording rate, which admins see per venue. A single game is never an alert (a few pounds), but a venue that's always short is.
+- **Only a game that took place is charged:** the fee is written when the booking is `COMPLETED`. If the venue marks the booking `NO_SHOW` or it's cancelled, there's no fee.
 - **A player who doesn't come pays nothing,** and Hagz accepts the loss: they're a small part of a booking that's already paid. Leaving or being removed costs nothing either, because nothing is paid in advance.
 
 ## Reliability
