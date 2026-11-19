@@ -111,6 +111,11 @@ export function StaffAccountPanel({
             <p className="text-label text-ink-2">This account was banned for good.</p>
           ) : (
             <div className="flex flex-col gap-6">
+              {/* Owners can't reset their password by themselves (a recycled number would take the
+                  venue with it); members can, so it's only offered to an owner. */}
+              {ownsAVenue && staff.status === "ACTIVE" ? (
+                <OwnerResetAction staffId={staff.id} name={staff.name} />
+              ) : null}
               {staff.status === "SUSPENDED" ? (
                 <AccessAction
                   title="Reactivate account"
@@ -126,11 +131,6 @@ export function StaffAccountPanel({
                   onClick={() => setAction("suspend")}
                 />
               )}
-              {/* Owners can't reset their password by themselves (a recycled number would take the
-                  venue with it); members can, so it's only offered to an owner. */}
-              {ownsAVenue && staff.status === "ACTIVE" ? (
-                <OwnerResetAction staffId={staff.id} name={staff.name} />
-              ) : null}
               {/* Not offered to an owner: the API refuses until their venue has another owner. */}
               {ownsAVenue ? null : (
                 <AccessAction
