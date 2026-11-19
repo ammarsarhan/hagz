@@ -47,6 +47,9 @@ const aDraft = async () => {
 };
 
 const JPEG = { contentType: "image/jpeg", size: 4 };
+// What the app sends with a confirm: a preview that starts like a JPEG.
+const PREVIEW = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2]);
+const CONFIRM = { preview: Buffer.from(PREVIEW).toString("base64") };
 const keyOf = (photoId: string) =>
   prisma.venueMedia.findUniqueOrThrow({ where: { id: photoId } }).then((media) => media.key);
 
@@ -56,7 +59,7 @@ const addPhoto = async (owner: string, path: string) => {
     await (await call(owner, "POST", `${path}/photos`, JPEG)).json(),
   );
   store.put(await keyOf(photo.id), new Uint8Array([1, 2, 3, 4]), "image/jpeg");
-  const res = await call(owner, "POST", `${path}/photos/${photo.id}/confirm`);
+  const res = await call(owner, "POST", `${path}/photos/${photo.id}/confirm`, CONFIRM);
   expect(res.status).toBe(200);
   return VenuePhoto.parse(await res.json());
 };
@@ -81,20 +84,53 @@ describe("uploading a photo", () => {
     const key = await keyOf(photo.id);
     expect(key).toMatch(new RegExp(`^venues/${venueId}/[0-9a-f-]{36}\\.jpg$`));
 
-    const early = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`);
+    const early = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, CONFIRM);
     expect(early.status).toBe(409);
     expect(await problem(early)).toMatchObject({ code: "UPLOAD_NOT_FOUND" });
 
     store.put(key, new Uint8Array([1, 2, 3, 4]), "image/jpeg");
     const confirmed = VenuePhoto.parse(
-      await (await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`)).json(),
+      await (await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, CONFIRM)).json(),
     );
     expect(confirmed).toMatchObject({ id: photo.id, status: "READY", url: `memory://${key}` });
 
+    const stored = await prisma.venueMedia.findUniqueOrThrow({ where: { id: photo.id } });
+    expect(stored.preview).toEqual(PREVIEW);
+
     // Confirming twice is harmless and records the photo once.
-    expect((await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`)).status).toBe(200);
+    expect(
+      (await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, CONFIRM)).status,
+    ).toBe(200);
     expect(await prisma.venueEvent.count({ where: { venueId, type: "VENUE_PHOTO_ADDED" } })).toBe(
       1,
+    );
+  });
+
+  it("refuses a preview that isn't a small JPEG", async () => {
+    const { owner, path } = await aDraft();
+    const { photo } = PhotoUpload.parse(
+      await (await call(owner.id, "POST", `${path}/photos`, JPEG)).json(),
+    );
+    store.put(await keyOf(photo.id), new Uint8Array([1, 2, 3, 4]), "image/jpeg");
+    const confirm = (bytes: Uint8Array) =>
+      call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, {
+        preview: Buffer.from(bytes).toString("base64"),
+      });
+
+    const png = await confirm(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    expect(png.status).toBe(400);
+    expect(await problem(png)).toMatchObject({ code: "INVALID_PREVIEW" });
+
+    const tooBig = new Uint8Array(4097).fill(1);
+    tooBig.set(PREVIEW);
+    const big = await confirm(tooBig);
+    expect(big.status).toBe(400);
+    expect(await problem(big)).toMatchObject({ code: "INVALID_PREVIEW" });
+
+    const missing = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, {});
+    expect(missing.status).toBe(400);
+    expect((await prisma.venueMedia.findUniqueOrThrow({ where: { id: photo.id } })).status).toBe(
+      "PENDING",
     );
   });
 
@@ -105,7 +141,7 @@ describe("uploading a photo", () => {
     );
     const key = await keyOf(photo.id);
     store.put(key, new Uint8Array([1, 2, 3, 4]), "text/html");
-    const res = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`);
+    const res = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, CONFIRM);
     expect(res.status).toBe(422);
     expect(await problem(res)).toMatchObject({ code: "UPLOAD_MISMATCH" });
     expect(await store.head(key)).toBeNull();
@@ -118,7 +154,7 @@ describe("uploading a photo", () => {
     );
     const key = await keyOf(photo.id);
     store.put(key, new Uint8Array([1, 2, 3, 4, 5, 6]), "image/jpeg");
-    const res = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`);
+    const res = await call(owner.id, "POST", `${path}/photos/${photo.id}/confirm`, CONFIRM);
     expect(res.status).toBe(422);
     expect(await problem(res)).toMatchObject({ code: "UPLOAD_MISMATCH" });
     expect(await store.head(key)).toBeNull();

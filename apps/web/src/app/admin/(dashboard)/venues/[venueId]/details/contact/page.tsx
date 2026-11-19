@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { Skeleton, Tag } from "@/admin/data-table";
+import { SkeletonText, Tag } from "@/admin/data-table";
 import { useVenueContact } from "@/admin/venues/contact";
 import { dateTime } from "@/admin/venues/history";
 import { TaxCheckDialog } from "@/admin/venues/tax-check-dialog";
@@ -35,7 +35,7 @@ export default function VenueContact() {
           <DetailsBlock title="Contact">
             <DetailsRow label="Phone">
               {!data ? (
-                <Skeleton className="h-4 w-36" />
+                <SkeletonText size="body" className="w-36" />
               ) : data.phone ? (
                 <span className="text-body text-ink tabular-nums">{data.phone}</span>
               ) : (
@@ -60,7 +60,7 @@ export default function VenueContact() {
           >
             <DetailsRow label="Number">
               {!data ? (
-                <Skeleton className="h-4 w-28" />
+                <SkeletonText size="body" className="w-28" />
               ) : data.taxNumber.value ? (
                 <span className="text-body text-ink tabular-nums">{data.taxNumber.value}</span>
               ) : (

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { Skeleton, Tag } from "@/admin/data-table";
+import { Skeleton, SkeletonText, Tag } from "@/admin/data-table";
 import { LinkTabs } from "@/admin/tabs";
 import { statusLabel } from "@/admin/venues/model";
 import { defaultSlug, venueHref, visibleSections } from "@/admin/venues/sections";
@@ -60,7 +60,11 @@ function VenueFrame({ venueId, children }: { venueId: string; children: ReactNod
         ) : error ? (
           <p className="text-body text-ink-2">{error}</p>
         ) : (
-          <Skeleton className="h-8 w-64" />
+          // The name, then the area under it (most venues have one).
+          <>
+            <SkeletonText size="title" className="w-64" />
+            <SkeletonText size="body" className="mt-1 w-32" />
+          </>
         )}
         {venue?.area ? <p className="mt-1 text-body text-ink-2">{venue.area}</p> : null}
       </header>
@@ -76,7 +80,12 @@ function VenueFrame({ venueId, children }: { venueId: string; children: ReactNod
             }))}
           />
         ) : (
-          <Skeleton className="h-8 w-96" />
+          // The tabs on their hairline: how many depends on the venue's status.
+          <div aria-hidden className="flex gap-6 border-b border-border">
+            {["w-20", "w-14", "w-16", "w-12", "w-14"].map((width, i) => (
+              <SkeletonText key={i} size="label" className={`mb-2.5 ${width}`} />
+            ))}
+          </div>
         )}
       </div>
 
@@ -97,7 +106,7 @@ function Breadcrumb({ current }: { current?: string }) {
           {current}
         </span>
       ) : (
-        <Skeleton className="h-3 w-24" />
+        <SkeletonText size="label" className="w-24" />
       )}
     </nav>
   );

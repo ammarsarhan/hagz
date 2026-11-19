@@ -121,6 +121,19 @@ export const requireAdminHeader = createMiddleware(async (c, next) => {
   await next();
 });
 
+// Unlike a customer's, an admin's account is checked on every request (as staff's is on venue
+// routes), so a suspension stops them at once rather than when their access token expires: an admin
+// can do anything, and there are few enough of them that one lookup by primary key costs nothing.
+// Identity owns the account, so the check is its (it throws to refuse); the composition root hands
+// it over (http/router.ts) and platform reads no module's tables. A router without one refuses every
+// admin request rather than let a suspended admin through.
+type AdminCheck = (adminId: string) => Promise<void>;
+let adminCheck: AdminCheck | undefined;
+
+export const checkAdminsWith = (check: AdminCheck) => {
+  adminCheck = check;
+};
+
 export const requireAdmin = createMiddleware<{ Variables: { admin: AdminActor } }>(
   async (c, next) => {
     await requireAdminHeader(c, async () => {
@@ -129,6 +142,9 @@ export const requireAdmin = createMiddleware<{ Variables: { admin: AdminActor } 
         throw new AppError({ code: "UNAUTHENTICATED", status: 401, detail: "Sign in to do this." });
       }
       const { sub, sid } = await verifyJwt(token, "admin");
+      if (!adminCheck)
+        throw new Error("No admin check: http/router.ts sets one (checkAdminsWith).");
+      await adminCheck(sub);
       c.set("admin", { adminId: sub, sessionId: sid });
       await next();
     });

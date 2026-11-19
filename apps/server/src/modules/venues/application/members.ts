@@ -37,6 +37,14 @@ export const staffVenueSelect = {
   translations: { select: { language: true, name: true } },
   location: { select: { ...place, parent: { select: place } } },
   requestedArea: true,
+  // The cover's preview: the first ready photo's, in the order the venue page shows them. A photo
+  // confirmed before previews existed has none, and then there's no preview.
+  media: {
+    where: { type: "IMAGE", status: "READY" },
+    orderBy: [{ position: "asc" }, { id: "asc" }],
+    take: 1,
+    select: { preview: true },
+  },
 } as const satisfies Prisma.VenueSelect;
 
 type StaffVenueRow = Prisma.VenueGetPayload<{ select: typeof staffVenueSelect }>;
@@ -62,6 +70,10 @@ const lastActivityOf = async (venueIds: string[]) => {
   return latest;
 };
 
+// Inline, so a list of venues needs no more requests to show their covers.
+const previewUri = (preview: Uint8Array | null | undefined) =>
+  preview ? `data:image/jpeg;base64,${Buffer.from(preview).toString("base64")}` : null;
+
 const toStaffVenue = (
   { role, permissions, venue }: MembershipRow,
   lastActivity: Map<string, Date>,
@@ -75,6 +87,7 @@ const toStaffVenue = (
   location: placeOf(venue.location, language) ?? venue.requestedArea,
   // Every venue has its VENUE_CREATED event; createdAt is only a fallback.
   lastActivityAt: (lastActivity.get(venue.id) ?? venue.createdAt).toISOString(),
+  coverPreview: previewUri(venue.media[0]?.preview),
   role,
   permissions: effectivePermissions(role, permissions),
 });

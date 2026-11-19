@@ -39,7 +39,8 @@ export function useVenueSlots(venueId: string, date: string | undefined, span = 
     void load();
   }, [load]);
 
-  return { data, error, loading };
+  // Reads the same days again (after a regeneration).
+  return { data, error, loading, reload: load };
 }
 
 // A local date moved by whole days ("2026-11-19" + 1 → "2026-11-20"), as a calendar date: no

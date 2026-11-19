@@ -74,3 +74,6 @@ export const ADMIN_INVITATION_TTL_SECONDS = 48 * 60 * 60;
 
 // How long an emailed admin password reset link works.
 export const ADMIN_PASSWORD_RESET_TTL_SECONDS = 24 * 60 * 60;
+
+// How long support's go-ahead lets a venue owner reset their password by phone.
+export const SUPPORT_RESET_TTL_SECONDS = 24 * 60 * 60;

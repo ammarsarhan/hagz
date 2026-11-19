@@ -30,6 +30,14 @@ export const StaffVenue = z
         "settings, team or review status (its newest change history entry, else when it was " +
         "created).",
     }),
+    coverPreview: z
+      .string()
+      .nullable()
+      .meta({
+        description:
+          "The cover's preview (its first ready photo's, about 64 px) as a `data:image/jpeg` URI, " +
+          "or null when there's none.",
+      }),
     role: VenueRole,
     permissions: StaffPermissions.meta({
       description: "What the signed-in member may do here; all `manage` for the owner.",

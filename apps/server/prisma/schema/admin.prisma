@@ -20,6 +20,8 @@ model Admin {
   payouts       Payout[]
   adjustments   LedgerEntry[]
   notifications Notification[]
+  actions       AccountEvent[]    @relation("ActedBy") // On accounts, as support.
+  history       AccountEvent[]    @relation("AdminHistory") // Done to this account.
 }
 
 // One per device. SHA-256 of the refresh token, rotated on every refresh.
@@ -55,4 +57,27 @@ model AdminInvitation {
   admin   Admin? @relation("AcceptedAs", fields: [adminId], references: [id])
 
   @@index([email])
+}
+
+// What admins did to an account (support): suspending, reactivating, resetting access. One subject
+// per row (CHECK): a customer, a staff member or another admin. VenueEvent records a venue's own
+// history; this covers accounts, which may be on no venue at all.
+model AccountEvent {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  adminId        String   @db.Uuid // Who acted.
+  customerId     String?  @db.Uuid
+  staffId        String?  @db.Uuid
+  subjectAdminId String?  @db.Uuid
+  type           String // Allowed list in the API.
+  data           Json?
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  admin        Admin     @relation("ActedBy", fields: [adminId], references: [id], onDelete: Restrict)
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  staff        Staff?    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  subjectAdmin Admin?    @relation("AdminHistory", fields: [subjectAdminId], references: [id], onDelete: Restrict)
+
+  @@index([customerId, createdAt])
+  @@index([staffId, createdAt])
+  @@index([subjectAdminId, createdAt])
 }

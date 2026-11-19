@@ -2,7 +2,7 @@
 
 import { IconStar } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
-import { Skeleton } from "@/admin/data-table";
+import { Skeleton, SkeletonText } from "@/admin/data-table";
 import { amenityIcons } from "@/admin/platform/amenity-icons";
 import { formatAmenityPrice, useVenueAmenities } from "@/admin/venues/amenities";
 
@@ -46,10 +46,14 @@ export default function VenueAmenities() {
           {!data
             ? [0, 1, 2].map((i) => (
                 <div key={i} className={`${GRID} border-b border-border py-4`}>
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-12" />
-                  <Skeleton className="ml-auto h-4 w-20" />
+                  {/* The icon beside the name, then each column's text at its own height. */}
+                  <span className="flex items-center gap-3">
+                    <Skeleton className="size-5 shrink-0" />
+                    <SkeletonText size="body" className="w-36" />
+                  </span>
+                  <SkeletonText size="body" className="w-24" />
+                  <SkeletonText size="body" className="w-12" />
+                  <SkeletonText size="body" className="ml-auto w-20" />
                 </div>
               ))
             : data.amenities.map((amenity) => {

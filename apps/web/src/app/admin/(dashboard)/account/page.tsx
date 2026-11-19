@@ -14,7 +14,7 @@ import { api } from "@/admin/api";
 import { Avatar } from "@/admin/avatar";
 import { ago, day, device, useAdminDetails } from "@/admin/admins/model";
 import { Button } from "@/admin/button";
-import { Skeleton, Tag } from "@/admin/data-table";
+import { Skeleton, SkeletonText, Tag } from "@/admin/data-table";
 import { ConfirmDialog } from "@/admin/dialog";
 import { message, notTheirFault, problemCode, send } from "@/admin/errors";
 import { Field } from "@/admin/field";
@@ -167,7 +167,7 @@ function ProfileTab({ details }: { details: AdminDetails | undefined }) {
               </span>
             </p>
           ) : (
-            <Skeleton className="h-4 w-56" />
+            <SkeletonText size="label" className="w-56" />
           )}
         </Section>
 
@@ -294,7 +294,8 @@ function SecurityTab({
               <Tag>Off</Tag>
             )
           ) : (
-            <Skeleton className="h-5 w-9" />
+            // A Tag's height: its caption line and border.
+            <Skeleton className="h-[1.375rem] w-9" />
           )}
         </div>
         <p className="mt-4 text-caption text-ink-2">
@@ -354,18 +355,22 @@ function BrowsersTab({
   };
 
   if (!details) {
+    // The section as it'll stand, its browsers as rows like BrowserRow's, each with its button.
     return (
-      <ul>
-        {Array.from({ length: 3 }, (_, i) => (
-          <li key={i} className="flex items-center gap-3 border-b border-border py-3">
-            <Skeleton className="size-9" />
-            <div className="flex-1">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="mt-1.5 h-3 w-28" />
-            </div>
-          </li>
-        ))}
-      </ul>
+      <Section title="Signed in on" description="Sign out of any browser you don't recognise.">
+        <ul aria-busy className="border-t border-border">
+          {Array.from({ length: 3 }, (_, i) => (
+            <li key={i} className="flex items-center gap-3 border-b border-border py-3">
+              <Skeleton className="size-9 shrink-0 rounded-[0.625rem]" />
+              <div className="min-w-0 flex-1">
+                <SkeletonText size="label" className="w-36" />
+                <SkeletonText size="caption" className="mt-0.5 w-48" />
+              </div>
+              <Skeleton className="h-10 w-24 shrink-0 rounded-full" />
+            </li>
+          ))}
+        </ul>
+      </Section>
     );
   }
 

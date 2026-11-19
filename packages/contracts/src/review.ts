@@ -24,8 +24,8 @@ export const RejectVenue = z
   })
   .meta({ id: "RejectVenue" });
 
-// Why an admin acted on a venue's team or a staff account, kept with the event for audit.
-const AdminReason = z.string().trim().min(10).max(500).meta({
+// Why an admin acted on a venue's team or an account, kept with the event for audit.
+export const AdminReason = z.string().trim().min(10).max(500).meta({
   description: "For the record: what happened and how it was checked.",
   example: "The owner called support: he left the business in October.",
 });
@@ -38,8 +38,6 @@ export const TransferOwnership = z
     reason: AdminReason,
   })
   .meta({ id: "TransferOwnership" });
-
-export const SuspendStaff = z.object({ reason: AdminReason }).meta({ id: "SuspendStaff" });
 
 export const BanStaff = z.object({ reason: AdminReason }).meta({ id: "BanStaff" });
 
@@ -96,7 +94,6 @@ export type RejectVenue = z.infer<typeof RejectVenue>;
 export type GoLiveGap = z.infer<typeof GoLiveGap>;
 export type RemoveMember = z.infer<typeof RemoveMember>;
 export type TransferOwnership = z.infer<typeof TransferOwnership>;
-export type SuspendStaff = z.infer<typeof SuspendStaff>;
 export type BanStaff = z.infer<typeof BanStaff>;
 export type CheckTaxNumber = z.infer<typeof CheckTaxNumber>;
 export type ReviewVenue = z.infer<typeof ReviewVenue>;

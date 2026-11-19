@@ -6,7 +6,7 @@ import { Modal } from "@/admin/dialog";
 import { TextAreaField } from "@/admin/field";
 import { useSubmit } from "@/admin/submit";
 
-// The API keeps a reason with every support action (RemoveMember, TransferOwnership, SuspendStaff):
+// The API keeps a reason with every support action (RemoveMember, TransferOwnership, SuspendAccount):
 // 10 to 500 characters.
 const MIN = 10;
 const MAX = 500;

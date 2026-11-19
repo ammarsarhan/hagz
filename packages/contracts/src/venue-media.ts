@@ -45,6 +45,20 @@ export const PhotoUpload = z
       .meta({ description: "Upload the file here, then confirm it." }),
   })
   .meta({ id: "PhotoUpload" });
+// The photo's preview: a tiny JPEG the app makes alongside the upload (about 64 px on its long side),
+// for places too small to load the photo itself. At most 4 KB, so this many base64 characters.
+export const MAXIMUM_PREVIEW_BYTES = 4096;
+
+export const ConfirmPhoto = z
+  .object({
+    preview: z
+      .base64()
+      .max(Math.ceil(MAXIMUM_PREVIEW_BYTES / 3) * 4)
+      .meta({
+        description: "A JPEG of the photo about 64 px on its long side, base64, 4 KB at most.",
+      }),
+  })
+  .meta({ id: "ConfirmPhoto" });
 
 export const ReorderPhotos = z
   .object({
@@ -59,4 +73,5 @@ export type RequestPhotoUpload = z.infer<typeof RequestPhotoUpload>;
 export type PhotoStatus = z.infer<typeof PhotoStatus>;
 export type VenuePhoto = z.infer<typeof VenuePhoto>;
 export type PhotoUpload = z.infer<typeof PhotoUpload>;
+export type ConfirmPhoto = z.infer<typeof ConfirmPhoto>;
 export type ReorderPhotos = z.infer<typeof ReorderPhotos>;

@@ -30,6 +30,7 @@ import {
   requestAdminPasswordReset,
   resetAdminAuthenticator,
 } from "../application/admin-resets";
+import { reactivateAdmin, suspendAdmin } from "../application/admin-access";
 import { getAdmin, listAdmins } from "../application/admins";
 import { refreshSession, revokeByRefreshToken } from "../application/sessions";
 import { device } from "./route-helpers";
@@ -110,6 +111,15 @@ export const adminAuthRoutes = createRouter()
   })
   .openapi(route.requestPasswordReset, async (c) => {
     await requestAdminPasswordReset({ adminId: c.req.valid("param").id, by: c.var.admin.adminId });
+    return c.body(null, 204);
+  })
+  .openapi(route.suspendAdmin, async (c) => {
+    const by = c.var.admin.adminId;
+    await suspendAdmin({ adminId: c.req.valid("param").id, by }, c.req.valid("json"));
+    return c.body(null, 204);
+  })
+  .openapi(route.reactivateAdmin, async (c) => {
+    await reactivateAdmin({ adminId: c.req.valid("param").id, by: c.var.admin.adminId });
     return c.body(null, 204);
   })
   .openapi(route.resetPassword, async (c) => {

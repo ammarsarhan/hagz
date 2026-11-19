@@ -16,6 +16,7 @@ import {
   WeekSchedule,
   CreateVenue,
   PhotoUpload,
+  ConfirmPhoto,
   ReorderPhotos,
   RequestPhotoUpload,
   VenuePhoto,
@@ -277,16 +278,18 @@ export const confirmPhoto = createRoute({
   tags,
   summary: "Confirm an upload, putting the photo on the venue",
   description:
-    "Needs `venue: manage`. Checks the stored file is the type and size that were declared.",
+    "Needs `venue: manage`. Checks the stored file is the type and size that were declared, " +
+    "and keeps the preview the app made of it.",
   middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
   security,
-  request: { params: photoParams },
+  request: { params: photoParams, body: { required: true, ...json(ConfirmPhoto) } },
   responses: {
     200: { description: "The photo, now ready", ...json(VenuePhoto) },
     401: unauthenticated,
     403: denied,
     404: problemResponse("VENUE_NOT_FOUND or PHOTO_NOT_FOUND"),
     409: problemResponse("UPLOAD_NOT_FOUND, or VENUE_STATUS_CONFLICT (with `venueStatus`)"),
+    400: problemResponse("VALIDATION_FAILED, or INVALID_PREVIEW (not a JPEG of 4 KB or less)"),
     422: problemResponse("UPLOAD_MISMATCH: ask for a new upload."),
   },
 });
