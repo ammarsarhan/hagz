@@ -12,6 +12,7 @@ Agreed on 2026-10-27, on top of the product and schema decisions already made:
 - **Media goes to Cloudflare R2** through a `StorageProvider` (like `MessagingProvider`), with presigned uploads.
 - **Discovery is Postgres only:** PostGIS for distance, `pg_trgm` and full-text search for names, indexed `GroundSlot` for availability. No separate search engine, so availability is always exact.
 - **Every v1 feature ships before launch**, loyalty, reviews and discounts included.
+- **Social features are v1** (decided on 2026-11-19, replacing "no social features in v1"): open games, communities and tournaments, built straight after bookings in Phase 4b. Still no chat or posts. Training academies are out of v1.
 - **Hosting stays platform-agnostic until Phase 9** (added on 2026-11-08). Staging is on Railway and a VPS is being considered for production. The app is written against the host contract in [deployment.md](deployment.md), and nothing new depends on Railway.
 - **The Expo apps run as development builds, made with EAS Build** (changed on 2026-11-13 from Expo Go). Each app's `eas.json` has `development` (the dev client, against a local Metro), `preview` (staging) and `production` profiles. Native modules outside Expo Go are fair game: Google Maps on both platforms now, and a native Paymob SDK is an option for 5.1. A new native module or config plugin means a new development build; JavaScript changes don't. **EAS builds are capped at 14 a month** (added on 2026-11-13), so native changes are planned and batched: see [Native builds](#native-builds).
 - **Payments: Paymob, through its styled embedded card fields** (Pixel or a native SDK). The card number goes from the device to Paymob and never reaches Hagz, so PCI scope stays at SAQ A. Hagz designs the checkout; Paymob owns the card inputs.
@@ -110,6 +111,22 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 **Screens:** customer app: the layout-first booking flow, my bookings, listings (feed, join, leave). Dashboard: the calendar, approvals, walk-in and phone bookings, regulars and their weekly reservations, Fill a slot, move, swap and hold. Web: the shared booking page (`/b/[code]`).
 **Admin slice:** look up any booking and its events.
 **Done when:** the 100-request race leaves exactly one booking, and a customer books and staff manage it end to end in the apps.
+
+## Phase 4b: Communities and tournaments
+
+Decided on 2026-11-19 to come straight after bookings: it needs listings (4.7) and slots, not payments. Designed in [communities.md](communities.md) and [tournaments.md](tournaments.md).
+
+| PR | Scope |
+|---|---|
+| 4b.1 Communities | `Community`, `CommunityMember`, `CommunityInvite` and `CommunityEvent`. Create (at most 5 owned), settings, open and closed, join, request, approve and decline, invite links, leave, remove, ban, admins, ownership transfer, archive. `memberCount` kept under a lock on the community. Search by name, area and sport |
+| 4b.2 Community games | `BookingListing.communityId` and `publicAt`: members-only games that can go public at a set time. Same rules and money as open games. A community's games page, and community games in members' feed |
+| 4b.3 Tournaments | `Tournament`, `TournamentTeam`, `TournamentPlayer` and `TournamentEvent`. Venue tournaments (public) and community tournaments (members only). The lifecycle, team registration, squad invite links, confirmation, the waitlist and withdrawals, under locks on the tournament and team |
+| 4b.4 Fixtures and results | `TournamentMatch` and `GroundSlot.matchId`. Knockout (with byes), league, and groups then knockout. Random or seeded draws. Venue matches block slots; community matches link a member's booking. Results, penalties, walkovers, bracket advancement in one transaction, and tables calculated on read |
+
+**Screens:** customer app: the Community tab (my communities, discover, tournaments), a community's page (members, games, tournaments, notice, WhatsApp link), creating and running a community, requests and invites, tournament pages (bracket, table, fixtures, teams), registering a team and joining a squad. Staff app: creating and running venue tournaments (teams, draw, scheduling matches on grounds, results), with matches shown on the calendar. Web: `/c/[slug]` and `/t/[code]`, which open the app.
+**Admin slice:** look up communities and tournaments, hide and unhide a community with a reason, see a community's or tournament's events.
+**Done when:** concurrent joins never pass a community's or a tournament's limits, no community is ever left without an owner, a knockout bracket fills correctly through byes and walkovers, and a venue runs a tournament from draw to final in the apps.
+**Decide at the start of 4b.3:** the rules for public venue tournaments, and entry fees (see [tournaments.md](tournaments.md#open)).
 
 ## Phase 5: Payments
 
