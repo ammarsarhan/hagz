@@ -26,7 +26,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconChevronLeft, IconShare } from "@/components/icons";
+import { IconChevronLeft, IconCircleCheckFilled, IconShare } from "@/components/icons";
 import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
 import {
@@ -424,7 +424,12 @@ function VenueView({ venue }: { venue: PublicVenue }) {
               label="Copy the venue's link"
               progress={barProgress}
               onPress={() => {
-                void Clipboard.setStringAsync(link).then(() => hud.show("Link copied"));
+                // Done, not a problem: a check in place of the HUD's alert.
+                void Clipboard.setStringAsync(link).then(() =>
+                  hud.show("Link copied", {
+                    leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
+                  }),
+                );
               }}
             />
           ) : null}
