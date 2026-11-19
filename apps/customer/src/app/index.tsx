@@ -15,7 +15,7 @@ import { OnboardingArt } from "@/components/onboarding-art";
 import { Text } from "@/components/text";
 import { hasSeenOnboarding, markOnboardingSeen } from "@/lib/onboarding";
 
-// Customer onboarding: three lime slides (a problem in two words, the fix in one), swiped or
+// Customer onboarding: four lime slides (a problem in two words, the fix in one), swiped or
 // advancing gently on their own until touched, with Create account and Sign in on every slide and
 // Skip for browsing as a guest. English only until the customer app gets its translations; the
 // Arabic lines need their own wordplay, not a translation.
@@ -24,6 +24,11 @@ const SLIDES = [
     key: "pitches",
     title: "Pitch hunting,\nhandled.",
     body: "See free slots at venues near you and book in a few taps. No more calling around.",
+  },
+  {
+    key: "free",
+    title: "Frequent fixtures,\nfree.",
+    body: "Venues reward their regulars: keep booking and your stamps add up to a free game.",
   },
   {
     key: "squads",
@@ -100,7 +105,13 @@ function Onboarding() {
           renderItem={({ item, index: i }) => (
             <View style={{ width }} className="flex-1 px-6">
               <View className="mt-2 flex-1">
-                <OnboardingArt index={i} scrollX={scrollX} pageWidth={width} active={i === index} />
+                <OnboardingArt
+                  index={i}
+                  scene={item.key}
+                  scrollX={scrollX}
+                  pageWidth={width}
+                  active={i === index}
+                />
               </View>
               <Text className="mt-8 text-display font-semibold tracking-[-0.8px] text-on-primary">
                 {item.title}

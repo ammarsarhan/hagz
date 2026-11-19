@@ -321,12 +321,81 @@ function PitchScene({ k, offset, active }: SceneProps) {
   );
 }
 
+// A venue's punch card: stamps for the bookings played, the last one landing, and the free booking
+// waiting in the final spot.
+const CARD_LOOP: Loop = { period: 3800, y: [0, -4] };
+const STAMPED = [
+  [92, 200],
+  [165, 200],
+  [238, 200],
+  [92, 248],
+] as const;
+const LAST_STAMP = [165, 248] as const;
+const FREE_SPOT = [238, 248] as const;
+const BLOB_4 = blob(172, 185, [136, 146, 130, 142, 128, 144, 134, 140, 126, 138], 0.9);
+
+function Stamp({ at }: { at: readonly [number, number] }) {
+  return (
+    <>
+      <Circle cx={at[0]} cy={at[1]} r={20} fill={WHITE} />
+      <Path d={star(at[0], at[1], 8, 6.5)} fill={BLACK} />
+    </>
+  );
+}
+
+// 2 · Frequent fixtures, free: the last stamp drops onto the card the first time the slide lands,
+// and the free booking's spot pulses softly.
+function LoyaltyScene({ k, offset, active }: SceneProps) {
+  const entry = useEntry(active);
+  return (
+    <>
+      <Blob k={k} offset={offset} d={BLOB_4} />
+      <Part k={k} offset={offset} depth={6} loop={{ period: 3800, delay: 400, y: [0, -3] }}>
+        <Rect x={80} y={86} width={232} height={164} rx={20} fill={GREY} />
+      </Part>
+      <Part k={k} offset={offset} depth={12} loop={CARD_LOOP}>
+        <Rect x={40} y={112} width={250} height={168} rx={22} fill={BLACK} />
+        <Rect x={62} y={134} width={96} height={10} rx={5} fill={WHITE} />
+        <Rect x={62} y={152} width={60} height={8} rx={4} fill={WHITE} fillOpacity={0.4} />
+        {STAMPED.map((at) => (
+          <Stamp key={`${at[0]}-${at[1]}`} at={at} />
+        ))}
+      </Part>
+      <Part
+        k={k}
+        offset={offset}
+        depth={12}
+        origin={FREE_SPOT}
+        loop={{ ...CARD_LOOP, scale: [1, 1.08], opacity: [0.55, 1] }}
+      >
+        <Circle
+          cx={FREE_SPOT[0]}
+          cy={FREE_SPOT[1]}
+          r={20}
+          fill="none"
+          stroke={WHITE}
+          strokeWidth={2}
+          strokeDasharray="5 5"
+        />
+        <Path d={star(FREE_SPOT[0], FREE_SPOT[1], 9, 4)} fill={WHITE} />
+      </Part>
+      <Part k={k} offset={offset} depth={12} drop={{ from: 90, entry }} loop={CARD_LOOP}>
+        <Stamp at={LAST_STAMP} />
+      </Part>
+      <Spark k={k} offset={offset} at={[30, 96]} size={8} delay={0} />
+      <Spark k={k} offset={offset} at={[324, 76]} size={10} delay={700} color={GREY} />
+      <Spark k={k} offset={offset} at={[60, 306]} size={6} delay={1300} />
+      <Spark k={k} offset={offset} at={[310, 296]} size={7} delay={400} />
+    </>
+  );
+}
+
 // The open spot the grey player flies into, and where the player starts (smaller, top right).
 const SPOT = [232, 110] as const;
 const START = { x: 300 - SPOT[0], y: 46 - SPOT[1], scale: 0.8 };
 const JOIN_MS = 5200;
 
-// 2 · Short squads, solved: a grey player flies into the squad's dashed open spot, stays a beat,
+// 3 · Short squads, solved: a grey player flies into the squad's dashed open spot, stays a beat,
 // and the loop starts again.
 function SquadScene({ k, offset, active }: SceneProps) {
   const reduce = useReducedMotion();
@@ -487,7 +556,7 @@ const CONFETTI: {
   },
 ];
 
-// 3 · Kickabout crews, crowned: the cup springs up when the slide lands, then sways gently in
+// 4 · Kickabout crews, crowned: the cup springs up when the slide lands, then sways gently in
 // floating confetti.
 function TrophyScene({ k, offset, active }: SceneProps) {
   const entry = useEntry(active);
@@ -545,21 +614,28 @@ function TrophyScene({ k, offset, active }: SceneProps) {
   );
 }
 
-const SCENES = [PitchScene, SquadScene, TrophyScene];
+const SCENES = {
+  pitches: PitchScene,
+  free: LoyaltyScene,
+  squads: SquadScene,
+  crews: TrophyScene,
+};
+export type OnboardingScene = keyof typeof SCENES;
 
 interface OnboardingArtProps {
   // Which slide this is, and the pager's scroll position, for the parallax.
   index: number;
+  scene: OnboardingScene;
   scrollX: SharedValue<number>;
   pageWidth: number;
   active: boolean;
 }
 
 // Fills the space it's given, keeping the canvas's proportions, centred.
-export function OnboardingArt({ index, scrollX, pageWidth, active }: OnboardingArtProps) {
+export function OnboardingArt({ index, scene, scrollX, pageWidth, active }: OnboardingArtProps) {
   const [box, setBox] = useState<{ width: number; height: number } | null>(null);
   const offset = useDerivedValue(() => scrollX.value / pageWidth - index);
-  const Scene = SCENES[index];
+  const Scene = SCENES[scene];
   const k = box ? Math.min(box.width / W, box.height / H) : 0;
 
   return (
@@ -567,7 +643,7 @@ export function OnboardingArt({ index, scrollX, pageWidth, active }: OnboardingA
       className="flex-1 items-center justify-center"
       onLayout={(e) => setBox(e.nativeEvent.layout)}
     >
-      {Scene && k > 0 ? (
+      {k > 0 ? (
         <View style={{ width: W * k, height: H * k }}>
           <Scene k={k} offset={offset} active={active} />
         </View>
