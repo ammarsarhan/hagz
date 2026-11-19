@@ -159,7 +159,6 @@ describe("reading a venue", () => {
       status: "LIVE",
       name: "Wadi Degla",
       description: "Lit pitches.",
-      phone: "+201001234567",
       marketplace: { currency: "EGP", timezone: "Africa/Cairo" },
       location: {
         area: "Maadi, Cairo",
@@ -183,6 +182,8 @@ describe("reading a venue", () => {
         loyalty: null,
       },
     });
+    // The phone comes with a booking, not the public page.
+    expect(page).not.toHaveProperty("phone");
     // Ready photos only, cover first.
     expect(page.photos.map((p) => p.url)).toEqual([
       storage.publicUrl(`a-${venue.id}`),

@@ -1292,13 +1292,6 @@
               "null"
             ]
           },
-          "phone": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "+201001234567"
-          },
           "marketplace": {
             "type": "object",
             "properties": {
@@ -1556,7 +1549,6 @@
           "status",
           "name",
           "description",
-          "phone",
           "marketplace",
           "location",
           "photos",
