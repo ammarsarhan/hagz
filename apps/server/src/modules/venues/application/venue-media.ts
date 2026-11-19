@@ -2,6 +2,8 @@ import {
   MAXIMUM_VENUE_PHOTOS,
   type PhotoUpload,
   type ReorderPhotos,
+  MAXIMUM_PREVIEW_BYTES,
+  type ConfirmPhoto,
   type RequestPhotoUpload,
   type VenuePhoto,
 } from "@hagz/contracts";
@@ -53,6 +55,16 @@ const uploadMismatch = () =>
     status: 422,
     detail: "The file isn't the type or size that was declared. Ask for a new upload.",
   });
+
+const invalidPreview = () =>
+  new AppError({
+    code: "INVALID_PREVIEW",
+    status: 400,
+    detail: "The preview isn't a JPEG of 4 KB or less.",
+  });
+
+// A JPEG starts with its start-of-image marker and the next marker's first byte.
+const isJpeg = (bytes: Uint8Array) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
 
 const invalidPhotoOrder = () =>
   new AppError({
@@ -117,7 +129,15 @@ export const requestPhotoUpload = async (
 
 // Checks the file that arrived is the one declared, its type and its size, so an upload can't be
 // swapped for something else.
-export const confirmPhoto = async (actor: VenueAccess, photoId: string): Promise<VenuePhoto> => {
+export const confirmPhoto = async (
+  actor: VenueAccess,
+  photoId: string,
+  input: ConfirmPhoto,
+): Promise<VenuePhoto> => {
+  // The contract caps the base64's length, which is a few bytes either side of 4 KB once decoded.
+  const preview = Buffer.from(input.preview, "base64");
+  if (preview.length > MAXIMUM_PREVIEW_BYTES || !isJpeg(preview)) throw invalidPreview();
+
   const media = await prisma.venueMedia.findFirst({
     where: { id: photoId, venueId: actor.venueId, type: "IMAGE" },
     select: { id: true, key: true, status: true, position: true, contentType: true, size: true },
@@ -139,7 +159,7 @@ export const confirmPhoto = async (actor: VenueAccess, photoId: string): Promise
     await lockForEdit(tx, actor.venueId, "listing");
     const confirmed = await tx.venueMedia.updateMany({
       where: { id: media.id, status: "PENDING" },
-      data: { status: "READY" },
+      data: { status: "READY", preview },
     });
     if (confirmed.count === 1) {
       await tx.venueEvent.create({

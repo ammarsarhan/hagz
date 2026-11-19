@@ -736,6 +736,17 @@ describe("admin support on a venue's team", () => {
     expect(
       await prisma.venueEvent.findFirst({ where: { venueId, type: "STAFF_REACTIVATED" } }),
     ).toMatchObject({ adminId, data: { staffId: member.id } });
+    // Also on the account itself, once each.
+    expect(
+      await prisma.accountEvent.findMany({
+        where: { staffId: member.id },
+        orderBy: { id: "asc" },
+        select: { adminId: true, type: true, data: true },
+      }),
+    ).toEqual([
+      { adminId, type: "STAFF_SUSPENDED", data: REASON },
+      { adminId, type: "STAFF_REACTIVATED", data: null },
+    ]);
     expect((await admin("POST", `/staff/${randomUUID()}/suspend`, REASON)).status).toBe(404);
   });
 
@@ -753,6 +764,12 @@ describe("admin support on a venue's team", () => {
     expect(
       await prisma.venueEvent.findFirst({ where: { venueId, type: "STAFF_BANNED" } }),
     ).toMatchObject({ adminId, data: { staffId: member.id, reason: REASON.reason } });
+    expect(
+      await prisma.accountEvent.findMany({
+        where: { staffId: { in: [owner.id, member.id] } },
+        select: { staffId: true, adminId: true, type: true, data: true },
+      }),
+    ).toEqual([{ staffId: member.id, adminId, type: "STAFF_BANNED", data: REASON }]);
     // There's no way back.
     for (const action of ["reactivate", "suspend"]) {
       const res = await admin("POST", `/staff/${member.id}/${action}`, REASON);

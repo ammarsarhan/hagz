@@ -4,7 +4,7 @@ import { IconExternalLink } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { ButtonLink } from "@/admin/button";
-import { Skeleton } from "@/admin/data-table";
+import { SkeletonText } from "@/admin/data-table";
 import { Flag } from "@/admin/flag";
 import { formatCenter, mapsLink } from "@/admin/platform/geo";
 import { AreaDialog } from "@/admin/venues/area-dialog";
@@ -58,7 +58,7 @@ export default function VenueLocation() {
                   </span>
                 </span>
               ) : (
-                <Skeleton className="h-4 w-32" />
+                <SkeletonText size="body" className="w-32" />
               )}
             </DetailsRow>
             {data?.requestedArea ? (
@@ -80,7 +80,7 @@ export default function VenueLocation() {
           <DetailsBlock title="Pin">
             <DetailsRow label="Coordinates" center={Boolean(data?.coordinates)}>
               {!data ? (
-                <Skeleton className="h-4 w-40" />
+                <SkeletonText size="body" className="w-40" />
               ) : data.coordinates ? (
                 <div className="flex items-center justify-between gap-6">
                   <span className="text-body text-ink tabular-nums">
@@ -132,7 +132,7 @@ function Value({
   text?: string | null;
   arabic?: boolean;
 }) {
-  if (loading) return <Skeleton className={`h-4 w-48 ${arabic ? "ml-auto" : ""}`} />;
+  if (loading) return <SkeletonText size="body" className={`w-48 ${arabic ? "ml-auto" : ""}`} />;
   return text ? (
     <p
       dir={arabic ? "rtl" : undefined}

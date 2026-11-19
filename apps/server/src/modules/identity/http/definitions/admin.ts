@@ -14,6 +14,7 @@ import {
   list,
   ResetAdminPassword,
   StartTotpSetup,
+  SuspendAccount,
   TotpSetup,
   UpdateAdminProfile,
 } from "@hagz/contracts";
@@ -190,7 +191,7 @@ export const signOutBrowser = createRoute({
   responses: {
     204: { description: "Signed out" },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
     404: problemResponse("SESSION_NOT_FOUND: not yours, or already signed out"),
     409: problemResponse("CURRENT_SESSION: the browser asking"),
   },
@@ -207,7 +208,7 @@ export const signOutOtherBrowsers = createRoute({
   responses: {
     204: { description: "Signed out" },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
   },
 });
 
@@ -222,7 +223,7 @@ export const admins = createRoute({
   responses: {
     200: { description: "The admins", ...json(list(AdminListEntry)) },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
   },
 });
 
@@ -239,7 +240,7 @@ export const admin = createRoute({
   responses: {
     200: { description: "The admin", ...json(AdminDetails) },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
     404: problemResponse("ADMIN_NOT_FOUND"),
   },
 });
@@ -257,7 +258,7 @@ export const resetAuthenticator = createRoute({
   responses: {
     204: { description: "Reset" },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
     404: problemResponse("ADMIN_NOT_FOUND"),
     409: problemResponse("OWN_ADMIN_ACCOUNT"),
   },
@@ -276,11 +277,57 @@ export const requestPasswordReset = createRoute({
   responses: {
     204: { description: "Sent" },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
     404: problemResponse("ADMIN_NOT_FOUND"),
     409: problemResponse("OWN_ADMIN_ACCOUNT"),
     429: rateLimited,
     503: problemResponse("EMAIL_UNAVAILABLE: retry later."),
+  },
+});
+
+export const suspendAdmin = createRoute({
+  method: "post",
+  path: "/admin/list/{id}/suspend",
+  tags: ["Admins"],
+  summary: "Suspend another admin",
+  description:
+    "Signs them out everywhere and stops them at once, until another admin reactivates them; an " +
+    "emailed password reset link stops working. Recorded on their account. Not for your own " +
+    "account, nor the last active admin. Suspending again changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: { required: true, ...json(SuspendAccount) },
+  },
+  responses: {
+    204: { description: "Suspended" },
+    400: problemResponse("VALIDATION_FAILED"),
+    401: unauthenticated,
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+    404: problemResponse("ADMIN_NOT_FOUND"),
+    409: problemResponse(
+      "OWN_ADMIN_ACCOUNT, LAST_ACTIVE_ADMIN, or ACCOUNT_BANNED: closed for good",
+    ),
+  },
+});
+
+export const reactivateAdmin = createRoute({
+  method: "post",
+  path: "/admin/list/{id}/reactivate",
+  tags: ["Admins"],
+  summary: "Reactivate a suspended admin",
+  description:
+    "They can sign in again. Recorded on their account. Reactivating an active admin changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Reactivated" },
+    401: unauthenticated,
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
+    404: problemResponse("ADMIN_NOT_FOUND"),
+    409: problemResponse("OWN_ADMIN_ACCOUNT, or ACCOUNT_BANNED: closed for good"),
   },
 });
 
@@ -297,7 +344,7 @@ export const invite = createRoute({
   responses: {
     201: { description: "Invitation sent", ...json(AdminInvitation) },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
     409: problemResponse("ADMIN_ALREADY_EXISTS"),
     429: rateLimited,
     503: problemResponse("EMAIL_UNAVAILABLE: retry later."),
@@ -314,7 +361,7 @@ export const invitations = createRoute({
   responses: {
     200: { description: "Not yet used, revoked or expired", ...json(list(AdminInvitation)) },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
   },
 });
 
@@ -330,7 +377,7 @@ export const revokeInvitation = createRoute({
   responses: {
     204: { description: "Revoked" },
     401: unauthenticated,
-    403: problemResponse(headerMissing),
+    403: problemResponse(`ACCOUNT_SUSPENDED, or ${headerMissing}`),
     404: problemResponse("INVITATION_NOT_FOUND"),
     409: problemResponse("INVITATION_ALREADY_ACCEPTED"),
   },

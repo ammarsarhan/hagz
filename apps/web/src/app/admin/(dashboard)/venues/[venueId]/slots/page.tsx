@@ -7,10 +7,14 @@ import {
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Skeleton } from "@/admin/data-table";
+import { api } from "@/admin/api";
+import { Skeleton, SkeletonText } from "@/admin/data-table";
+import { message, send } from "@/admin/errors";
+import { useHud } from "@/admin/hud";
 import { formatMoney } from "@/admin/money";
 import { sizeLabel, sportLabel } from "@/admin/venues/grounds";
 import {
@@ -30,8 +34,10 @@ import { DAY_NAMES } from "@/admin/venues/week";
 // the tabs: the week's days across with today circled, the hours of the venue's local day down the
 // side, and each slot a block at its time, with its price and tier, filled by whether it's free,
 // held, booked or blocked. A line marks now. Floating at the foot: the month picker with ‹ this week
-// › on the left, the ground in the middle and the key on the right. Read only. Weeks move within the ones that have slots; days outside them are greyed. Until any
-// are generated, a single line in the middle says that going live generates them.
+// › on the left, the ground in the middle with Regenerate beside it (user, 2026-11-19), and the key
+// on the right. Otherwise read only. Weeks move within the ones that have slots; days outside them
+// are greyed. Until any are generated, a single line in the middle says that going live generates
+// them.
 
 // An hour's height, and the time column's width.
 const ROW = 56;
@@ -58,6 +64,9 @@ const FLOAT =
   "absolute bottom-5 z-20 flex items-center gap-1 rounded-full border border-border bg-white p-1 whitespace-nowrap shadow-[0_8px_24px_rgba(11,11,12,0.12)]";
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+// A hairline at each hour, down a day's column.
+const HOUR_LINES = `repeating-linear-gradient(to bottom, transparent 0 ${String(ROW - 1)}px, #f1f2f4 ${String(ROW - 1)}px ${String(ROW)}px)`;
+const COLUMNS = `${String(TIME)}px repeat(7, minmax(7.5rem, 1fr))`;
 
 // "7 pm", "7:30 pm", from minutes into the day.
 const timeLabel = (minutes: number) => {
@@ -102,7 +111,7 @@ export default function VenueSlotsTab() {
   const { venueId } = useParams<{ venueId: string }>();
   // The Sunday the week shown starts on: unknown until the first read says which day to open on.
   const [week, setWeek] = useState<string>();
-  const { data, error, loading } = useVenueSlots(venueId, week, 7);
+  const { data, error, loading, reload } = useVenueSlots(venueId, week, 7);
   // Right to the foot of the window: the planner runs off the page's bottom padding too.
   const { ref, height } = useFillHeight(0);
 
@@ -123,7 +132,7 @@ export default function VenueSlotsTab() {
           <p className="text-body text-ink-2">{error}</p>
         </Centre>
       ) : !data || !week || midWeek ? (
-        <Skeleton className="size-full rounded-none" />
+        <PlannerLoading />
       ) : !data.days ? (
         <Centre>
           <p className="text-body font-medium text-ink">No slots yet</p>
@@ -132,9 +141,86 @@ export default function VenueSlotsTab() {
           </p>
         </Centre>
       ) : (
-        <Planner data={data} days={data.days} loading={loading} onWeek={setWeek} />
+        <Planner
+          venueId={venueId}
+          data={data}
+          days={data.days}
+          loading={loading}
+          onWeek={setWeek}
+          onRegenerated={reload}
+        />
       )}
     </section>
+  );
+}
+
+// The planner as it'll stand while the week loads: the days across with their names and dates
+// greyed, the hours down the side from where an unknown ground's day opens (8 am, as the planner
+// scrolls to with no slots to go by), the hour lines, and the floating bars, the key as it is.
+const LOADING_FROM = 8;
+
+function PlannerLoading() {
+  return (
+    <div aria-busy className="flex min-h-0 flex-1 flex-col">
+      <div className="relative min-h-0 flex-1">
+        <div aria-hidden className="flex size-full flex-col overflow-hidden">
+          <div className="grid min-w-fit" style={{ gridTemplateColumns: COLUMNS }}>
+            <div className="border-b border-border" />
+            {Array.from({ length: 7 }, (_, day) => (
+              <div
+                key={day}
+                className="flex flex-col items-center gap-1 border-b border-border pt-3 pb-2.5"
+              >
+                <SkeletonText size="caption" className="w-7" />
+                <Skeleton className="size-9 rounded-full" />
+              </div>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <div
+              className="grid min-w-fit"
+              style={{ gridTemplateColumns: COLUMNS, marginTop: -LOADING_FROM * ROW }}
+            >
+              <div className="relative" style={{ height: 24 * ROW }}>
+                {HOURS.slice(1).map((hour) => (
+                  <span
+                    key={hour}
+                    className="absolute right-3 -translate-y-1/2 text-caption text-ink-3 tabular-nums"
+                    style={{ top: hour * ROW }}
+                  >
+                    {hourLabel(hour)}
+                  </span>
+                ))}
+              </div>
+              {Array.from({ length: 7 }, (_, day) => (
+                <div
+                  key={day}
+                  className="border-l border-[#f1f2f4]"
+                  style={{ height: 24 * ROW, backgroundImage: HOUR_LINES }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div aria-hidden className={`left-5 ${FLOAT}`}>
+          <span className="flex h-10 items-center px-3.5">
+            <Skeleton className="h-3 w-28" />
+          </span>
+          {[0, 1, 2].map((step) => (
+            <span key={step} className="flex size-10 items-center justify-center">
+              <Skeleton className="size-[1.125rem]" />
+            </span>
+          ))}
+        </div>
+        <div aria-hidden className={`left-1/2 -translate-x-1/2 ${FLOAT}`}>
+          <span className="flex h-10 items-center px-3.5">
+            <Skeleton className="h-3 w-40" />
+          </span>
+        </div>
+        <Key />
+      </div>
+    </div>
   );
 }
 
@@ -143,16 +229,21 @@ function Centre({ children }: { children: ReactNode }) {
 }
 
 function Planner({
+  venueId,
   data,
   days,
   loading,
   onWeek,
+  onRegenerated,
 }: {
+  venueId: string;
   data: VenueSlots;
   // The first and last days with slots: the weeks it moves between.
   days: { first: string; last: string };
   loading: boolean;
   onWeek: (week: string) => void;
+  // After a ground's slots were regenerated: read the week again.
+  onRegenerated: () => Promise<void>;
 }) {
   const { date: week, timezone, grounds, slots, currency } = data;
   const [picked, setPicked] = useState<string>();
@@ -192,8 +283,6 @@ function Planner({
     scroller.current?.scrollTo({ top: Math.max(0, firstHour - 1) * ROW });
   }, [ground, firstHour]);
 
-  const columns = `${String(TIME)}px repeat(7, minmax(7.5rem, 1fr))`;
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative min-h-0 flex-1">
@@ -206,7 +295,7 @@ function Planner({
             ref={scroller}
             className={`size-full overflow-auto pb-24 transition-opacity ${loading ? "opacity-60" : ""}`}
           >
-            <div className="grid min-w-fit" style={{ gridTemplateColumns: columns }}>
+            <div className="grid min-w-fit" style={{ gridTemplateColumns: COLUMNS }}>
               {/* The days across the top, staying put as the hours scroll. */}
               <div className="sticky top-0 z-20 border-b border-border bg-white" />
               {dates.map((date) => (
@@ -296,6 +385,15 @@ function Planner({
                 stroke={1.75}
               />
             </span>
+            {/* Regenerate acts on the ground picked beside it. */}
+            <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+            <Regenerate
+              key={ground.id}
+              venueId={venueId}
+              groundId={ground.id}
+              name={ground.name ?? "Ground"}
+              onDone={onRegenerated}
+            />
           </div>
         ) : null}
 
@@ -344,8 +442,7 @@ function Day({
       className={`relative border-l border-[#f1f2f4] ${outside ? "bg-[#fafafa]" : ""}`}
       style={{
         height: 24 * ROW,
-        // A hairline at each hour.
-        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0 ${String(ROW - 1)}px, #f1f2f4 ${String(ROW - 1)}px ${String(ROW)}px)`,
+        backgroundImage: HOUR_LINES,
       }}
     >
       {slots.map(({ slot, from, to }) => {
@@ -533,6 +630,59 @@ function Key() {
         </li>
       ))}
     </ul>
+  );
+}
+
+// Queues a generation run for the ground (runs for a ground never overlap), gives it a moment (one
+// ground takes well under a second), then reads the week again. Only free slots that staff haven't
+// set are touched, so it's safe to press any time: it asks nothing first. The icon spins meanwhile.
+function Regenerate({
+  venueId,
+  groundId,
+  name,
+  onDone,
+}: {
+  venueId: string;
+  groundId: string;
+  name: string;
+  onDone: () => Promise<void>;
+}) {
+  const hud = useHud();
+  const [busy, setBusy] = useState(false);
+  const label = `Regenerate ${name}'s slots`;
+
+  const regenerate = async () => {
+    setBusy(true);
+    const result = await send(
+      api.POST("/v1/admin/venues/{id}/grounds/{groundId}/regenerate", {
+        params: { path: { id: venueId, groundId } },
+      }),
+    );
+    if (result.ok) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await onDone();
+    } else {
+      hud(message(result.error));
+    }
+    setBusy(false);
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      aria-busy={busy}
+      disabled={busy}
+      onClick={() => void regenerate()}
+      className="flex size-10 cursor-pointer items-center justify-center rounded-full text-ink outline-none hover:bg-chip focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-default"
+    >
+      <IconRefresh
+        size={18}
+        className={`size-[1.125rem] ${busy ? "animate-spin" : ""}`}
+        stroke={1.75}
+      />
+    </button>
   );
 }
 

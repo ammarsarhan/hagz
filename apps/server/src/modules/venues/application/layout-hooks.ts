@@ -49,3 +49,10 @@ export const afterFootprintChange = async (tx: Tx, groundId: string) => {
     await tx.venueLayoutItem.update({ where: { id: item.id }, data: size });
   }
 };
+
+// An amenity option an admin made unplaceable leaves every layout it was drawn on, as a deleted
+// ground does. Run in locations' transaction, through the hook the composition root hands it
+// (http/router.ts): locations can't import venues, which reads it.
+export const removeAmenityFromLayouts = async (tx: Tx, optionId: string) => {
+  await tx.venueLayoutItem.deleteMany({ where: { optionId } });
+};

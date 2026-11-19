@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { AccessAction } from "@/admin/admins/panels";
-import { Skeleton } from "@/admin/data-table";
+import { Skeleton, SkeletonText } from "@/admin/data-table";
 import { ConfirmDialog } from "@/admin/dialog";
 import { send } from "@/admin/errors";
 import { DetailsBlock } from "@/admin/venues/details-block";
@@ -67,7 +67,7 @@ export default function VenueSettingsPage() {
       {error && !data ? (
         <p className="text-body text-ink-2">{error}</p>
       ) : !props ? (
-        <Skeleton className="h-72 w-full rounded-card" />
+        <SettingsLoading />
       ) : (
         <>
           <CommissionSection {...props} />
@@ -100,5 +100,46 @@ export default function VenueSettingsPage() {
         />
       ) : null}
     </section>
+  );
+}
+
+// The sections under their titles, each with the toggles and fields it always shows (a deposit, a
+// custom policy's rules or loyalty's numbers only come with the saved settings).
+const LOADING: { title: string; fields: ("toggle" | "field" | "field-hint")[] }[] = [
+  { title: "Commission", fields: ["toggle"] },
+  { title: "Booking rules", fields: ["toggle", "field-hint"] },
+  { title: "Payments", fields: ["field"] },
+  { title: "Cancellation", fields: ["field-hint"] },
+  { title: "Loyalty", fields: ["toggle"] },
+];
+
+function SettingsLoading() {
+  // Blocks straight in the section, which takes the first one's top margin away.
+  return (
+    <>
+      {LOADING.map(({ title, fields }) => (
+        <DetailsBlock key={title} title={title}>
+          <div aria-hidden className="flex flex-col gap-5 py-5">
+            {fields.map((kind, index) =>
+              kind === "toggle" ? (
+                <div key={index} className="flex items-center justify-between gap-6">
+                  <span className="flex flex-col">
+                    <SkeletonText size="body" className="w-48" />
+                    <SkeletonText size="caption" className="w-72" />
+                  </span>
+                  <Skeleton className="h-6 w-10 shrink-0 rounded-full" />
+                </div>
+              ) : (
+                <div key={index} className="flex w-[calc(50%-0.375rem)] flex-col gap-2">
+                  <SkeletonText size="label" className="w-28" />
+                  <Skeleton className="h-12 w-full rounded-field" />
+                  {kind === "field-hint" ? <SkeletonText size="caption" className="w-3/4" /> : null}
+                </div>
+              ),
+            )}
+          </div>
+        </DetailsBlock>
+      ))}
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { IconCalendar, IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
 import { Button } from "@/admin/button";
 import { AvailabilityStrip, Legend, LineChart, OverviewChart, type Series } from "@/admin/charts";
-import { Skeleton } from "@/admin/data-table";
+import { Skeleton, SkeletonText } from "@/admin/data-table";
 import { Dot, Section, ShareTable, Stat } from "@/admin/home/blocks";
 import { JobsSections, useJobs } from "@/admin/home/jobs";
 import {
@@ -94,13 +94,30 @@ export default function AdminHome() {
         {error ? (
           <p className="mt-8 rounded-field bg-red/10 px-4 py-3 text-label text-red">{error}</p>
         ) : (
-          <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-6">
-            {Array.from({ length: 7 }, (_, i) => (
-              <div key={i}>
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="mt-3 h-7 w-20" />
-              </div>
-            ))}
+          // The figures under their labels (known before the status is), then the overview chart.
+          <div aria-busy>
+            <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-6">
+              {[
+                "Services up",
+                `Availability · ${range.short}`,
+                "Server uptime",
+                "Worker uptime",
+                ...DEPENDENCIES.map(({ label }) => label),
+              ].map((label) => (
+                <div key={label} className="min-w-0">
+                  <p className="truncate text-caption text-ink-2">{label}</p>
+                  <SkeletonText size="title" className="mt-1.5 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="mt-10">
+              <Section
+                title="Response times & downtime"
+                description="Every dependency on one scale. Red bars are minutes something was down."
+              >
+                <Skeleton className="h-64 w-full rounded-card" />
+              </Section>
+            </div>
           </div>
         )}
       </>

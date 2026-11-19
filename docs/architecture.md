@@ -40,12 +40,14 @@ apps/server/src/
   - `http` parses and validates input (zod) and serializes output.
   - `application` holds the use cases. They own transactions.
   - `domain` holds pure functions: pricing, VAT, cancellation tiers, state transitions, slot maths.
-- Modules talk through each other's public `index.ts`, never through each other's tables or internals.
+- Modules talk through each other's public `index.ts`, never through each other's internals. Each table belongs to one module, and only it writes the table or locks its rows. Reading another module's tables is allowed, read-only, as joins or lookups (decided 2026-11-19): one Postgres, and joins are the point of a modular monolith; routing every read through another module's functions would cost queries and duplicate shapes for nothing.
+- When a module must change what another owns and can't import it (the import would go the wrong way), it declares a hook and the composition root (`src/http/router.ts`) hands it the owner's function: identity's active-admin check for platform's `requireAdmin`, venues' layout clean-up for an amenity locations makes unplaceable. A hook that isn't set refuses the change rather than skip it.
 - `eslint-plugin-boundaries` enforces this in `pnpm lint` (`apps/server/eslint.config.js`):
   - another module is reachable only through its `index.ts`, and a module's own layers never import that `index.ts`;
   - `http` → `application` → `domain`, never upwards, and module `http` never touches the database;
   - `domain` imports no Prisma, Redis, BullMQ or Hono, and no platform service except errors;
   - `platform` never imports modules or `http`.
+- `test/architecture/table-ownership.test.ts` checks the tables, which lint can't see. Each table belongs to its schema file's module (`FILE_OWNERS`); only that module writes it or locks its rows, and `platform` touches none, reads included. It reads the source for Prisma writes (direct and through a relation) and raw SQL that inserts, updates, deletes or locks, and fails on any crossing that isn't in its `KNOWN` list (empty since 2026-11-19), each entry with why and how it should be fixed; an entry that no longer happens fails too, so the list only shrinks. A table with no owner yet (bookings, payments, payouts…) can't be touched until its module is added. Reads across modules are allowed, so they aren't checked.
 - `@hagz/contracts` holds the zod schemas for requests and responses. The OpenAPI spec is generated from them (`@hono/zod-openapi`), and the apps and the web frontend use them as typed clients.
 - Prisma models never leave the server. Every response is an explicit DTO, so new columns (and secrets like `refreshTokenHash`) are never exposed by accident.
 
@@ -63,7 +65,7 @@ apps/server/src/
    Fewer rows than requested means a slot was taken: roll back and return `409 SLOT_UNAVAILABLE`. Concurrent requests queue on the row locks. When the winner commits, Postgres re-checks each waiting row, finds it no longer `AVAILABLE`, and drops it, so every loser gets the 409 without writing anything.
 2. Only then insert the `Booking` and mark the locked slots `HELD` with its id.
 3. Rows are always locked in a fixed order (`startsAt` ascending) so overlapping requests can't deadlock.
-4. **Proposed:** exclusion constraints as a database backstop (see [Exclusion constraints](#exclusion-constraints-proposed)).
+4. Exclusion constraints as a database backstop: overlapping slots are refused now, overlapping bookings from Phase 4 (see [Exclusion constraints](#exclusion-constraints)).
 
 Don't insert the booking first and claim the slots after. Every contender's insert then waits on the others' uncommitted bookings in the `Booking_no_overlap` constraint, so a popular slot turns into lock timeouts and deadlocks, and the stuck transactions hold the whole connection pool (see [Why precomputed slots](#why-precomputed-slots)).
 
@@ -329,6 +331,5 @@ Each phase is broken into pull requests in [plan.md](plan.md). Every phase ships
 
 ## Open decisions
 
-- Whether to add the [exclusion constraints](#exclusion-constraints-proposed).
 - Where the API and worker run: Railway or a VPS. The trade-offs, and the contract any host must meet, are in [deployment.md](deployment.md). Decided before Phase 9; until then nothing new depends on Railway.
 - Moving the API and the database into one region. Staging on Railway runs in `europe-west4` (Netherlands) and Neon in Frankfurt. Settled by the hosting decision above.

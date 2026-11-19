@@ -20,7 +20,9 @@ export const status = createRoute({
       content: { "application/json": { schema: SystemStatus } },
     },
     401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in."),
-    403: problemResponse(`ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`),
+    403: problemResponse(
+      `ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`,
+    ),
   },
 });
 
@@ -37,7 +39,9 @@ export const history = createRoute({
   responses: {
     200: { description: "The samples", content: { "application/json": { schema: SystemHistory } } },
     401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in."),
-    403: problemResponse(`ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`),
+    403: problemResponse(
+      `ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`,
+    ),
     503: problemResponse("SERVICE_UNAVAILABLE: the queue Redis, where the history lives, is down."),
   },
 });
@@ -56,7 +60,9 @@ export const jobs = createRoute({
   responses: {
     200: { description: "The queues now", content: { "application/json": { schema: JobsStatus } } },
     401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in."),
-    403: problemResponse(`ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`),
+    403: problemResponse(
+      `ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`,
+    ),
   },
 });
 
@@ -73,7 +79,9 @@ export const retryJob = createRoute({
     204: { description: "Queued again" },
     400: problemResponse("VALIDATION_FAILED: not one of the queues"),
     401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in."),
-    403: problemResponse(`ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`),
+    403: problemResponse(
+      `ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send \`${ADMIN_CSRF_HEADER}: 1\`.`,
+    ),
     404: problemResponse("JOB_NOT_FOUND: no failed job with that id there"),
   },
 });

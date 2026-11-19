@@ -78,9 +78,9 @@ The admin side (`/v1/admin/venues`):
   - check the tax number (`POST …/tax-number-check`, recorded as an event);
   - set a commission override if agreed (PR 2.8);
   - adjust photos if needed (later).
-- **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. **Slot generation (PR 2.6) is deferred**, so going live doesn't yet wait for `generatedUntil`; that condition returns with 2.6.
+- **Go live** (`PROVISIONING` → `LIVE`) once Arabic and English each have a name, description and address, and the venue has at least one `ACTIVE` ground (see [A live venue always has a ground](#a-live-venue-always-has-a-ground)); otherwise `422 GO_LIVE_BLOCKED` lists what's `missing`. Going live queues slot generation for each of its grounds (PR 2.6) and doesn't wait for it (decided 2026-11-19): a venue's generation takes about a second, and a live venue with no slots yet matches no availability search, so the only effect is that it's missing from results for that second.
 - **Pause and resume** any live venue. Resuming (`MAINTENANCE` → `LIVE`, by the owner or an admin) needs an `ACTIVE` ground too, or it answers `409 NO_ACTIVE_GROUND`.
-- **Transfer ownership** to an existing, active member (`POST /admin/venues/{id}/owner`, with a reason). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified (`OWNERSHIP_TRANSFERRED`). Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one. Revert is still to come.
+- **Transfer ownership** to an existing, active member (`POST /admin/venues/{id}/owner`, with a reason). In one transaction, the old owner becomes a `MEMBER` with full permissions, and both people are notified (`OWNERSHIP_TRANSFERRED`). Transferring an unfinished venue locks the new owner's staff row and is refused with `409 UNFINISHED_VENUE_EXISTS` if they already own one. There's no revert in v1 (decided 2026-11-18): transferring back is another transfer.
 
 ### Team support
 
@@ -88,8 +88,17 @@ The venue's staff run their own team in the dashboard app; admins step in from t
 
 - **Remove a member** (`POST /admin/venues/{id}/members/{staffId}/remove`): never the owner (`409 OWNER_CANT_BE_REMOVED`; transfer first). The membership goes; their account and their name on past events stay. They're notified (`STAFF_REMOVED`) and lose access at once, since venue routes read the membership on every request.
 - **Revoke an invitation** (`DELETE /admin/venues/{id}/invitations/{invitationId}`): the same as the staff's revoke, with the admin recorded.
-- **Suspend or reactivate a staff account** (`POST /admin/staff/{staffId}/suspend`, `/reactivate`): account-wide. Suspending revokes every session (and push token) and keeps them out of every venue at once (`403 ACCOUNT_SUSPENDED`); reactivating lets them sign in afresh. With no account-level log yet, it's recorded on every venue they're a member of (`STAFF_SUSPENDED`, `STAFF_REACTIVATED`). A banned account can't be either (`409 ACCOUNT_BANNED`).
+- **Suspend or reactivate a staff account** (`POST /admin/staff/{staffId}/suspend`, `/reactivate`): account-wide. Suspending revokes every session (and push token) and keeps them out of every venue at once (`403 ACCOUNT_SUSPENDED`); reactivating lets them sign in afresh. Recorded as an `AccountEvent` on the account, and on every venue they're a member of (`STAFF_SUSPENDED`, `STAFF_REACTIVATED`). A banned account can't be either (`409 ACCOUNT_BANNED`).
 - **Ban a staff account** (`POST /admin/staff/{staffId}/ban`): for good, with no way back; signed out and kept out as with suspending, recorded as `STAFF_BANNED`. Refused while they own a venue (`409 OWNS_A_VENUE`, with `venueIds`), which would be left with an owner who can never sign in: transfer it first.
+- **Grant an owner a password reset** (`POST /admin/staff/{staffId}/password-reset`, with a reason): owners can't reset their password by themselves (`403 PASSWORD_RESET_THROUGH_SUPPORT`), because ownership controls payouts and a phone number can be recycled. Once support has checked who they are, this lets them reset it once, within 24 hours, through the app's usual forgot-password flow with the WhatsApp code to their phone. No admin picks or sees the password. A reset made this way keeps every venue and permission they have (a member's own reset turns their other venues to view-only). Refused for an account that isn't active (`409 STAFF_NOT_ACTIVE`).
+
+### Account support
+
+Every admin action on an account, whoever it belongs to, is an `AccountEvent`: the admin, the customer, staff member or admin it was done to (exactly one), the type and the reason. A staff action is also recorded on each of their venues, as above.
+
+- **Suspend or reactivate a customer** (`POST /admin/customers/{customerId}/suspend`, `/reactivate`): suspending revokes every session and push token; sign-in and refreshing refuse them at once, and an access token they hold runs out within 10 minutes. There's no ban for customers in v1.
+- **Suspend or reactivate an admin** (`POST /admin/list/{id}/suspend`, `/reactivate`): never your own account (`409 OWN_ADMIN_ACCOUNT`), and never the last active admin (`409 LAST_ACTIVE_ADMIN`, checked with every active admin locked, so two can't suspend each other at once). Suspending revokes their sessions and any open reset link, and every admin request checks the admin is still active, so it takes effect at once (`403 ACCOUNT_SUSPENDED`).
+- **Reset another admin's authenticator, or send them a password reset link**, both recorded.
 - **Deleting an account** isn't an admin action. `deletedAt` and the nullable phone are in the schema for in-app deletion (plan 8.2), which anonymizes and keeps bookings and money records.
 
 ## Edits after going live

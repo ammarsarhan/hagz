@@ -3,7 +3,7 @@
 import type { VenueTranslation } from "@hagz/contracts";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { Skeleton } from "@/admin/data-table";
+import { SkeletonText } from "@/admin/data-table";
 import { canTranslate, LANGUAGES } from "@/admin/venues/detail-sections";
 import { useVenueTranslations } from "@/admin/venues/translations";
 import { TranslationsPanel } from "@/admin/venues/translations-panel";
@@ -103,7 +103,8 @@ function Value({
   field: Field;
 }) {
   const arabic = language === "AR";
-  if (!translations) return <Skeleton className={`h-4 w-3/4 ${arabic ? "ml-auto" : ""}`} />;
+  if (!translations)
+    return <SkeletonText size="body" className={`w-3/4 ${arabic ? "ml-auto" : ""}`} />;
   const text = textOf(translations, language, field);
   return text ? (
     <p

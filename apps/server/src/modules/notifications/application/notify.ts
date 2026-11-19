@@ -35,3 +35,16 @@ export const notifyAdmins = async (tx: Tx, notifications: AdminNotification[]) =
     await tx.notification.create({ data: { adminId, venueId, type, data } });
   }
 };
+
+// Takes back the notifications of a type about one thing (an invitation whose message never went),
+// in the caller's transaction, with their deliveries: as if they'd never been made. `about` is the
+// data field naming the thing, and its value.
+export const withdrawNotifications = async (
+  tx: Tx,
+  type: NotificationType,
+  about: { field: string; equals: string },
+) => {
+  await tx.notification.deleteMany({
+    where: { type, data: { path: [about.field], equals: about.equals } },
+  });
+};

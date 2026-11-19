@@ -31,6 +31,7 @@ model Customer {
   notifications Notification[]
   waitlists     SlotWaitlist[]
   games         ListingPlayer[] // Listings joined.
+  history       AccountEvent[] // What admins did to this account.
 }
 
 // Same as StaffSession.

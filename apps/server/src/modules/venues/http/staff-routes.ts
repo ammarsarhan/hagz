@@ -91,7 +91,8 @@ export const venuesStaffRoutes = createRouter()
     return c.json(await requestPhotoUpload(c.var.venue, c.req.valid("json")), 201);
   })
   .openapi(route.confirmPhoto, async (c) => {
-    return c.json(await confirmPhoto(c.var.venue, c.req.valid("param").photoId), 200);
+    const { photoId } = c.req.valid("param");
+    return c.json(await confirmPhoto(c.var.venue, photoId, c.req.valid("json")), 200);
   })
   .openapi(route.reorderPhotos, async (c) => {
     return c.json({ data: await reorderPhotos(c.var.venue, c.req.valid("json")) }, 200);

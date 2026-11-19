@@ -4,9 +4,10 @@ import type { AdminInvitation, AdminListEntry } from "@hagz/contracts";
 import { useState } from "react";
 import { api } from "@/admin/api";
 import { Button } from "@/admin/button";
-import { Skeleton, Tag } from "@/admin/data-table";
+import { Skeleton, SkeletonText, Tag } from "@/admin/data-table";
 import { ConfirmDialog } from "@/admin/dialog";
 import { send } from "@/admin/errors";
+import { ReasonDialog } from "@/admin/reason-dialog";
 import { DetailRow, PanelSection, SidePanel } from "@/admin/side-panel";
 import { useSubmit } from "@/admin/submit";
 import { ago, day, device, expiresIn, useAdminDetails } from "./model";
@@ -68,7 +69,7 @@ export function AdminPanel({
   onClose: () => void;
 }) {
   const [open, setOpen] = useState(true);
-  const [confirm, setConfirm] = useState<"password" | "authenticator">();
+  const [confirm, setConfirm] = useState<"password" | "authenticator" | "suspend" | "reactivate">();
   const { details, reload } = useAdminDetails(admin.id);
   const changed = () => {
     reload();
@@ -81,7 +82,7 @@ export function AdminPanel({
       onRequestClose={() => setOpen(false)}
       onExited={onClose}
       title="Admin"
-      description="Their account here, how they sign in, and resetting their access."
+      description="Their account here, how they sign in, and resetting or suspending their access."
       compact
     >
       {details ? (
@@ -163,6 +164,8 @@ export function AdminPanel({
               <p className="text-label text-ink-2">
                 To reset your own password or authenticator, ask another admin.
               </p>
+            ) : details.status === "BANNED" ? (
+              <p className="text-label text-ink-2">This account was banned for good.</p>
             ) : (
               <div className="flex flex-col gap-6">
                 <AccessAction
@@ -177,12 +180,27 @@ export function AdminPanel({
                   action="Reset"
                   onClick={() => setConfirm("authenticator")}
                 />
+                {details.status === "SUSPENDED" ? (
+                  <AccessAction
+                    title="Reactivate account"
+                    description="They can sign in to the admin again."
+                    action="Reactivate"
+                    onClick={() => setConfirm("reactivate")}
+                  />
+                ) : (
+                  <AccessAction
+                    title="Suspend account"
+                    description="Signs them out everywhere and refuses their next request, until it's reactivated. Never the last active admin."
+                    action="Suspend"
+                    onClick={() => setConfirm("suspend")}
+                  />
+                )}
               </div>
             )}
           </PanelSection>
         </div>
       ) : (
-        <DetailsLoading />
+        <DetailsLoading admin={admin} self={self} />
       )}
 
       {confirm === "password" ? (
@@ -194,6 +212,42 @@ export function AdminPanel({
           request={() =>
             send(
               api.POST("/v1/admin/list/{id}/password-reset", {
+                params: { path: { id: admin.id } },
+              }),
+            )
+          }
+          onClose={() => setConfirm(undefined)}
+          onDone={changed}
+        />
+      ) : null}
+      {confirm === "suspend" ? (
+        <ReasonDialog
+          title={`Suspend ${admin.name}'s account?`}
+          description="They're signed out everywhere now, and anything they try next is refused. They can't sign in until you reactivate them."
+          confirmLabel="Suspend"
+          hint="Kept on their account's record. Say what happened."
+          placeholder="Left Hagz on …"
+          request={(reason) =>
+            send(
+              api.POST("/v1/admin/list/{id}/suspend", {
+                params: { path: { id: admin.id } },
+                body: { reason },
+              }),
+            )
+          }
+          onClose={() => setConfirm(undefined)}
+          onDone={changed}
+        />
+      ) : null}
+      {confirm === "reactivate" ? (
+        <ConfirmDialog
+          title={`Reactivate ${admin.name}'s account?`}
+          description="They can sign in to the admin again."
+          confirmLabel="Reactivate"
+          danger={false}
+          request={() =>
+            send(
+              api.POST("/v1/admin/list/{id}/reactivate", {
                 params: { path: { id: admin.id } },
               }),
             )
@@ -268,13 +322,60 @@ export function AccessAction({
   );
 }
 
-// Grey bars where the sections will be, while the admin loads.
-function DetailsLoading() {
+// The panel's sections as they'll stand while the admin loads: the name and email are known from
+// the list, the rest wait under their labels.
+function DetailsLoading({ admin, self }: { admin: AdminListEntry; self: boolean }) {
+  const waiting = <SkeletonText size="label" className="w-24" />;
   return (
-    <div aria-busy className="flex flex-col gap-3">
-      {["w-1/3", "w-3/4", "w-2/3", "w-1/2", "w-3/5", "w-2/5"].map((width) => (
-        <Skeleton key={width} className={`h-3.5 ${width}`} />
-      ))}
+    <div aria-busy className="flex flex-col gap-6">
+      <PanelSection title="Account">
+        <div>
+          <DetailRow label="Name" value={admin.name} />
+          <DetailRow label="Email" value={admin.email} />
+          {["Status", "Admin since", "Invited by", "Invitations sent"].map((label) => (
+            <DetailRow key={label} label={label} value={waiting} />
+          ))}
+        </div>
+      </PanelSection>
+      <PanelSection title="Sign-in">
+        <div>
+          <DetailRow label="Authenticator" value={waiting} />
+          <DetailRow label="Last signed in" value={waiting} />
+        </div>
+      </PanelSection>
+      <PanelSection title="Signed in on">
+        <ul aria-hidden>
+          {[0, 1].map((i) => (
+            <li
+              key={i}
+              className="flex items-center justify-between gap-4 border-b border-border/75 py-2.5 last:border-b-0"
+            >
+              <div className="min-w-0">
+                <SkeletonText size="label" className="w-32" />
+                <SkeletonText size="caption" className="mt-0.5 w-48" />
+              </div>
+              <SkeletonText size="caption" className="w-20" />
+            </li>
+          ))}
+        </ul>
+      </PanelSection>
+      <PanelSection title="Access">
+        {self ? (
+          <SkeletonText size="label" className="w-3/4" />
+        ) : (
+          <div aria-hidden className="flex flex-col gap-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center justify-between gap-12">
+                <div className="min-w-0 flex-1">
+                  <SkeletonText size="label" className="w-32" />
+                  <SkeletonText size="caption" className="mt-0.5 w-full" />
+                </div>
+                <Skeleton className="h-10 w-24 shrink-0 rounded-full" />
+              </div>
+            ))}
+          </div>
+        )}
+      </PanelSection>
     </div>
   );
 }

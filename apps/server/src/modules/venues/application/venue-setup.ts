@@ -18,6 +18,13 @@ import { approvedAtOf, latestRejection, sectionsToChange, submittedAtOf } from "
 // number of live venues is fine.
 export const UNFINISHED: VenueStatus[] = ["DRAFT", "SUBMITTED", "PROVISIONING"];
 
+// Serialises everything that could give one person a second unfinished venue (creating one, being
+// handed one), so two at once can't both pass the check. A transaction-scoped advisory lock on the
+// person: venues' own, where locking their staff row would reach into identity's table. Two ids
+// that hash alike only wait on each other a moment.
+export const lockOwnedVenues = (tx: Tx, staffId: string) =>
+  tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`owned-venues:${staffId}`}))`;
+
 export const unfinishedVenueExists = (venue: { id: string; status: VenueStatus }) =>
   new AppError({
     code: "UNFINISHED_VENUE_EXISTS",
@@ -93,11 +100,13 @@ export const createVenue = async (
   language: Language,
 ): Promise<VenueSetup> => {
   const venueId = await transaction(async (tx) => {
-    // Locking the staff row serialises two creations by the same person, so both can't pass the
-    // one-unfinished-venue check below. Transfers of ownership take the same lock (PR 2.7).
-    const [staff] = await tx.$queryRaw<
-      { status: string; deletedAt: Date | null; language: Language }[]
-    >`SELECT status, "deletedAt", language FROM "Staff" WHERE id = ${staffId}::uuid FOR UPDATE`;
+    // So two creations by the same person can't both pass the one-unfinished-venue check below.
+    // Transfers of ownership take the same lock (PR 2.7).
+    await lockOwnedVenues(tx, staffId);
+    const staff = await tx.staff.findUnique({
+      where: { id: staffId },
+      select: { status: true, deletedAt: true, language: true },
+    });
     if (staff?.status !== "ACTIVE" || staff.deletedAt !== null) throw accountSuspended();
 
     const unfinished = await tx.venueMembership.findFirst({
