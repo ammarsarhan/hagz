@@ -121,6 +121,7 @@ Side effects are never sent from inside a transaction, and never only through Re
 | Slot generation | `GroundSettings.scheduleVersion` bumped in the edit's transaction | Stale `AVAILABLE` slots (older `scheduleVersion`), plus the nightly roll-forward |
 | Payment confirmation | `Payment` `PENDING` | Reconciliation asks the provider about `PENDING` payments older than N minutes (`@@index([status, createdAt])`) |
 | Refunds, payouts | `PENDING` rows | Same pattern |
+| Open-game joining fees | A `BookingListing` whose booking is `COMPLETED`, more than 24 hours after its end, with no `JOIN_FEE` entry | By `startsAt` on `@@index([status, startsAt])`, checked against the unique `JOIN_FEE` entry per listing |
 
 If Redis is down, requests still succeed and the sweepers catch up when it's back. Nothing is lost.
 
@@ -130,11 +131,13 @@ If Redis is down, requests still succeed and the sweepers catch up when it's bac
 - Webhook handlers are idempotent and handle events arriving out of order (a refund event before its payment's success).
 - Amounts are integer minor units with the currency's ISO 4217 exponent (KWD, BHD and OMR have 3). No floats anywhere in money code.
 - `LedgerEntry` is append-only. Balances are sums in SQL.
+- A balance goes negative when a venue owes Hagz: commission on cash bookings, and open-game joining fees the venue collected. Payouts net it off first. What's left is settled by hand (a wire, or cash collected in person) and recorded by an admin as an `ADJUSTMENT` whose note gives the method and reference. There's no separate settlement type (decided on 2026-10-30).
 - Creating a payout locks the venue's row (`SELECT ... FOR UPDATE`) so two payouts can't spend the same balance. Money transactions that read and then write run with a retry wrapper for serialization failures and deadlocks (`40001`, `40P01`).
 - A nightly audit checks the invariants and alerts on any drift:
   - each booking's `total` equals the sum of its charges;
   - the ledger agrees with payments, refunds and payouts;
-  - no refund exceeds its payment.
+  - no refund exceeds its payment;
+  - every completed open game has exactly one `JOIN_FEE` entry, equal to the recorded (or assumed) player count × the listing's `joinFee`.
 - Provider code sits behind a `PaymentProvider` interface (create, refund, verify webhook, fetch status), matching the provider-neutral schema.
 
 ### Time

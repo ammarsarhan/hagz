@@ -108,7 +108,7 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 | 4.8 Rescheduling | Designed in [rescheduling.md](rescheduling.md). Staff move a booking to another time or ground, or swap two, in one transaction: the old booking ends `RESCHEDULED`, the new one keeps the original's terms at the new slots' prices, and a `Rescheduling` records it (refills use it too). Listings follow the booking. Picking a free target slot holds it automatically until the move is confirmed, and the move releases the hold in the same transaction. Staff holds: a staff `HELD` booking that expires after `staffHoldMinutes`, with confirm, extend and release |
 | 4.7 Listings | Designed in [listings.md](listings.md). A `BookingListing` per listed app booking, with `neededPlayers` capped by the ground's size and only lowered down to the joined count. `ListingPlayer` for joining, leaving and removal under a lock on the listing. The "games needing players" feed and share link, the disclaimer, phone numbers shared after joining, and no-show reports with a reliability figure. Money (2026-11-19): only fully prepaid bookings can be listed; each player owes the booker the share (total ÷ the ground's players), plus a 10% joining fee that the venue collects. The venue sees the booking flagged with the expected players and records how many came. A shortfall against expected is noted, and the fee for that count is taken at payout |
 
-**Screens:** customer app: the layout-first booking flow, my bookings, listings (feed, join, leave). Dashboard: the calendar, approvals, walk-in and phone bookings, regulars and their weekly reservations, Fill a slot, move, swap and hold. Web: the shared booking page (`/b/[code]`).
+**Screens:** customer app: the layout-first booking flow, my bookings, listings (feed, join, leave). Dashboard: the calendar (open games flagged with their expected players, and recording how many came), approvals, walk-in and phone bookings, regulars and their weekly reservations, Fill a slot, move, swap and hold. Web: the shared booking page (`/b/[code]`).
 **Admin slice:** look up any booking and its events.
 **Done when:** the 100-request race leaves exactly one booking, and a customer books and staff manage it end to end in the apps.
 
@@ -149,10 +149,10 @@ Decided on 2026-11-19 to come straight after bookings: it needs listings (4.7) a
 | 6.2 Refunds | Refunds through Paymob, with their webhooks and retries |
 | 6.3 Ledger and commission | `LedgerEntry` for collections, refunds, commission, joining fees (one per open game, for the players the venue recorded), payouts and adjustments. Commission on what the venue keeps, recorded once at the final state. Cash commission makes the balance negative |
 | 6.4 Payouts | Payout destinations (bank, wallet, InstaPay; one active per venue). Payout runs, statuses, the VAT invoice for Hagz's commission |
-| 6.5 Nightly audit | The ledger reconciled against payments, refunds and payouts. Any drift alerts |
+| 6.5 Nightly audit | The ledger reconciled against payments, refunds and payouts, and joining fees against recorded open-game counts. Any drift alerts |
 
-**Screens:** customer app: cancelling with the policy summary and refund amount. Dashboard: cancellations, refunds, the ledger and earnings, payout destinations and payouts. Admin web: payout runs and adjustments.
-**Admin slice:** payouts, ledger adjustments, cancelling with any refund.
+**Screens:** customer app: cancelling with the policy summary and refund amount. Dashboard: cancellations, refunds, the ledger and earnings, payout destinations and payouts, and a "You owe Hagz" card when the balance is negative. Admin web: payout runs and adjustments, negative balances with "Record settlement".
+**Admin slice:** payouts, ledger adjustments, settling negative balances, cancelling with any refund, and each venue's open-game under-recording rate.
 **Done when:** the audit shows no drift across randomized simulations.
 **Decide at the start:** whether commission is on the VAT-inclusive total or net of VAT, and when it's charged (`COMPLETED` / `NO_SHOW`).
 
