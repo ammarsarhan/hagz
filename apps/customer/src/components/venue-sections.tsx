@@ -1,8 +1,16 @@
 import { refundBands } from "@hagz/contracts";
 import type { Icon } from "@tabler/icons-react-native";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Linking, Platform, Pressable, View, type LayoutChangeEvent } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
 import {
@@ -223,24 +231,42 @@ function GroundOption({
   onPick: () => void;
   onSeeTimes: () => void;
 }) {
+  // The black border fades in over the grey one (which stays, so an unpicked card keeps its
+  // 1px edge), and See times fades in as the card grows, the cards under it sliding down.
+  const shown = useSharedValue(picked ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
+  }, [picked, shown]);
+  const ring = useAnimatedStyle(() => ({ opacity: shown.value }));
   return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected: picked }}
-      onPress={onPick}
-      className={`gap-0.5 rounded-2xl px-4 py-3.5 ${picked ? "border-[1.5px] border-ink" : "border border-border"}`}
-    >
-      <View className="flex-row items-center justify-between gap-3">
-        <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
-        <GroundPrice ground={ground} currency={currency} />
-      </View>
-      <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
-      {picked && ground.status === "ACTIVE" ? (
-        <View className="mt-1.5 items-start">
-          <Link label="See times" onPress={onSeeTimes} />
+    <Animated.View layout={LinearTransition.duration(200)}>
+      <Pressable
+        accessibilityRole="radio"
+        accessibilityState={{ selected: picked }}
+        onPress={onPick}
+        className="gap-0.5 rounded-2xl border border-border px-4 py-3.5"
+      >
+        <Animated.View
+          pointerEvents="none"
+          className="absolute -inset-px rounded-[17px] border-[1.5px] border-ink"
+          style={ring}
+        />
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
+          <GroundPrice ground={ground} currency={currency} />
         </View>
-      ) : null}
-    </Pressable>
+        <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+        {picked && ground.status === "ACTIVE" ? (
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(120)}
+            className="mt-1.5 items-start"
+          >
+            <Link label="See times" onPress={onSeeTimes} />
+          </Animated.View>
+        ) : null}
+      </Pressable>
+    </Animated.View>
   );
 }
 

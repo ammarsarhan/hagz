@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { PublicGround, PublicVenue } from "@/lib/venue";
 
@@ -129,6 +130,32 @@ function Markings({
   return <G>{lines}</G>;
 }
 
+const AnimatedG = Animated.createAnimatedComponent(G);
+
+// The picked look laid over a ground (darker grey, darker lines), fading in and out as the pick
+// moves, rather than the colours snapping.
+function PickedOverlay({
+  sport,
+  box,
+  picked,
+}: {
+  sport: PublicGround["sport"];
+  box: Box;
+  picked: boolean;
+}) {
+  const shown = useSharedValue(picked ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
+  }, [picked, shown]);
+  const props = useAnimatedProps(() => ({ opacity: shown.value }));
+  return (
+    <AnimatedG animatedProps={props}>
+      <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={PICKED} />
+      <Markings sport={sport} box={box} color={PICKED_MARK} />
+    </AnimatedG>
+  );
+}
+
 // A white pill with the ground's name in the middle of its tile; the status is dropped when the
 // tile is too small for both.
 function Tag({ box, name, status }: { box: Box; name: string; status?: string }) {
@@ -245,15 +272,9 @@ export function VenueLayout({
               const selected = ground.id === selectedId;
               return (
                 <G key={placed.groundId}>
-                  <Rect
-                    x={box.x}
-                    y={box.y}
-                    width={box.w}
-                    height={box.h}
-                    rx={4}
-                    fill={selected ? PICKED : TILE}
-                  />
-                  <Markings sport={ground.sport} box={box} color={selected ? PICKED_MARK : MARK} />
+                  <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={TILE} />
+                  <Markings sport={ground.sport} box={box} color={MARK} />
+                  <PickedOverlay sport={ground.sport} box={box} picked={selected} />
                   <Tag
                     box={box}
                     name={ground.name ?? ""}
