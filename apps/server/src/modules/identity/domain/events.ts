@@ -10,5 +10,10 @@ export const ADMIN_REACTIVATED = "ADMIN_REACTIVATED";
 // Another admin's authenticator forgotten, and a password reset link emailed to them.
 export const ADMIN_AUTHENTICATOR_RESET = "ADMIN_AUTHENTICATOR_RESET";
 export const ADMIN_PASSWORD_RESET_SENT = "ADMIN_PASSWORD_RESET_SENT";
+// A staff account suspended, banned (for good) or reactivated by an admin. Also recorded on each
+// venue they're on, under the same names.
+export const STAFF_SUSPENDED = "STAFF_SUSPENDED";
+export const STAFF_BANNED = "STAFF_BANNED";
+export const STAFF_REACTIVATED = "STAFF_REACTIVATED";
 // A venue owner let reset their password by phone, once support had checked who they are.
 export const STAFF_PASSWORD_RESET_GRANTED = "STAFF_PASSWORD_RESET_GRANTED";

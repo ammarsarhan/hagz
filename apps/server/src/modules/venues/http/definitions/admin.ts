@@ -10,7 +10,6 @@ import {
   VenueSlotsQuery,
   AdminVenueOverview,
   AdminVenueQuery,
-  BanStaff,
   CheckTaxNumber,
   Language,
   list,
@@ -21,7 +20,6 @@ import {
   SetCommission,
   SetVenueArea,
   StaffInvitation,
-  SuspendAccount,
   TransferOwnership,
   UpdateVenueSettings,
   VenueHistoryEvent,
@@ -557,65 +555,5 @@ export const transferOwnership = createRoute({
       "ALREADY_OWNER, STAFF_NOT_ACTIVE (with `staffStatus`), or UNFINISHED_VENUE_EXISTS (they own " +
         "another venue that isn't live; with `venueId` and `venueStatus`)",
     ),
-  },
-});
-
-const staffParams = z.object({ staffId: z.uuid() });
-
-export const suspendStaff = createRoute({
-  method: "post",
-  path: "/admin/staff/{staffId}/suspend",
-  tags,
-  summary: "Suspend a staff account",
-  description:
-    "Signs them out everywhere and keeps them out of every venue until reactivated. Recorded on " +
-    "each venue they're on. Suspending again changes nothing.",
-  middleware: [requireAdmin] as const,
-  security,
-  request: { params: staffParams, body: { required: true, ...json(SuspendAccount) } },
-  responses: {
-    204: { description: "Suspended" },
-    ...guarded,
-    400: problemResponse("VALIDATION_FAILED"),
-    404: problemResponse("STAFF_NOT_FOUND"),
-    409: problemResponse("ACCOUNT_BANNED: closed for good"),
-  },
-});
-
-export const banStaff = createRoute({
-  method: "post",
-  path: "/admin/staff/{staffId}/ban",
-  tags,
-  summary: "Ban a staff account for good",
-  description:
-    "Signs them out everywhere and keeps them out for good: it can't be reactivated. Not while they " +
-    "own a venue (transfer it first). Recorded on each venue they're on. Banning again changes nothing.",
-  middleware: [requireAdmin] as const,
-  security,
-  request: { params: staffParams, body: { required: true, ...json(BanStaff) } },
-  responses: {
-    204: { description: "Banned" },
-    ...guarded,
-    400: problemResponse("VALIDATION_FAILED"),
-    404: problemResponse("STAFF_NOT_FOUND"),
-    409: problemResponse("OWNS_A_VENUE (with `venueIds`): transfer them first"),
-  },
-});
-
-export const reactivateStaff = createRoute({
-  method: "post",
-  path: "/admin/staff/{staffId}/reactivate",
-  tags,
-  summary: "Reactivate a suspended staff account",
-  description: "They can sign in again. Reactivating an active account changes nothing.",
-  middleware: [requireAdmin] as const,
-  security,
-  request: { params: staffParams },
-  responses: {
-    204: { description: "Reactivated" },
-    ...guarded,
-    400: problemResponse("VALIDATION_FAILED"),
-    404: problemResponse("STAFF_NOT_FOUND"),
-    409: problemResponse("ACCOUNT_BANNED: closed for good"),
   },
 });

@@ -3,6 +3,7 @@ import {
   AdminAccountQuery,
   AdminCustomerAccount,
   AdminStaffAccount,
+  BanStaff,
   GrantPasswordReset,
   page,
   SuspendAccount,
@@ -11,7 +12,7 @@ import { ADMIN_COOKIE_AUTH, ADMIN_CSRF_HEADER, requireAdmin } from "@/platform/h
 import { json, problemResponse } from "@/platform/http/definitions";
 
 // Admin routes for the Support page: the staff and customer accounts, to find someone to help and
-// look after their access. Staff suspensions and bans are with the venues' admin routes.
+// look after their access: suspending, reactivating and banning, and an owner's password reset.
 
 const tags = ["Support (admin)"];
 const security = [{ [ADMIN_COOKIE_AUTH]: [] }];
@@ -97,6 +98,70 @@ export const reactivateCustomer = createRoute({
   },
 });
 
+const staffParams = z.object({ staffId: z.uuid() });
+
+export const suspendStaff = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/suspend",
+  tags,
+  summary: "Suspend a staff account",
+  description:
+    "Signs them out everywhere and keeps them out of every venue until reactivated, and cancels " +
+    "a password reset support allowed. Recorded on the account and on each venue they're on. " +
+    "Suspending again changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: staffParams, body: { required: true, ...json(SuspendAccount) } },
+  responses: {
+    204: { description: "Suspended" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("ACCOUNT_BANNED: closed for good"),
+  },
+});
+
+export const banStaff = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/ban",
+  tags,
+  summary: "Ban a staff account for good",
+  description:
+    "Signs them out everywhere and keeps them out for good: it can't be reactivated. Not while they " +
+    "own a venue (transfer it first). Cancels a password reset support allowed. Recorded on the " +
+    "account and on each venue they're on. Banning again changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: staffParams, body: { required: true, ...json(BanStaff) } },
+  responses: {
+    204: { description: "Banned" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("OWNS_A_VENUE (with `venueIds`): transfer them first"),
+  },
+});
+
+export const reactivateStaff = createRoute({
+  method: "post",
+  path: "/admin/staff/{staffId}/reactivate",
+  tags,
+  summary: "Reactivate a suspended staff account",
+  description:
+    "They can sign in again. Recorded on the account and on each venue they're on. Reactivating " +
+    "an active account changes nothing.",
+  middleware: [requireAdmin] as const,
+  security,
+  request: { params: staffParams },
+  responses: {
+    204: { description: "Reactivated" },
+    ...guarded,
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("STAFF_NOT_FOUND"),
+    409: problemResponse("ACCOUNT_BANNED: closed for good"),
+  },
+});
+
 export const grantStaffPasswordReset = createRoute({
   method: "post",
   path: "/admin/staff/{staffId}/password-reset",
@@ -110,7 +175,7 @@ export const grantStaffPasswordReset = createRoute({
   middleware: [requireAdmin] as const,
   security,
   request: {
-    params: z.object({ staffId: z.uuid() }),
+    params: staffParams,
     body: { required: true, ...json(GrantPasswordReset) },
   },
   responses: {

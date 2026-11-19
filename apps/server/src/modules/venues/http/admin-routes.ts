@@ -27,11 +27,8 @@ import {
   venueOverview,
 } from "../application/review";
 import {
-  banStaff,
-  reactivateStaff,
   removeMember,
   revokeInvitationAsAdmin,
-  suspendStaff,
   transferOwnership,
 } from "../application/admin-team";
 import {
@@ -146,17 +143,5 @@ export const venuesAdminRoutes = createRouter()
   })
   .openapi(route.transferOwnership, async (c) => {
     await transferOwnership(c.var.admin.adminId, c.req.valid("param").id, c.req.valid("json"));
-    return c.body(null, 204);
-  })
-  .openapi(route.suspendStaff, async (c) => {
-    await suspendStaff(c.var.admin.adminId, c.req.valid("param").staffId, c.req.valid("json"));
-    return c.body(null, 204);
-  })
-  .openapi(route.banStaff, async (c) => {
-    await banStaff(c.var.admin.adminId, c.req.valid("param").staffId, c.req.valid("json"));
-    return c.body(null, 204);
-  })
-  .openapi(route.reactivateStaff, async (c) => {
-    await reactivateStaff(c.var.admin.adminId, c.req.valid("param").staffId);
     return c.body(null, 204);
   });

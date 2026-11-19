@@ -1,27 +1,21 @@
-import type { BanStaff, RemoveMember, SuspendAccount, TransferOwnership } from "@hagz/contracts";
+import type { RemoveMember, TransferOwnership } from "@hagz/contracts";
 import { notifyStaff } from "@/modules/notifications";
 import type { VenueStatus } from "@/generated/prisma/enums";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
-import {
-  OWNERSHIP_TRANSFERRED,
-  STAFF_BANNED,
-  STAFF_REACTIVATED,
-  STAFF_REMOVED,
-  STAFF_SUSPENDED,
-} from "../domain/events";
+import { OWNERSHIP_TRANSFERRED, STAFF_REMOVED } from "../domain/events";
 import { ALL_PERMISSIONS } from "../domain/permissions";
 import { venueNotFound } from "./access";
 import { revokeInvitation } from "./invitations";
 import { UNFINISHED, unfinishedVenueExists } from "./venue-setup";
 
 // Admin support on a venue's team (the Team tab): removing a member, revoking an invitation and
-// handing the venue to another member; and on a staff account (the Team tab and Support page):
-// suspending, reactivating and banning it. The venue's own staff run their team in the dashboard
-// app; these are for when they can't (an owner who left, a lost phone, abuse). Each is recorded as a
-// VenueEvent with the admin as the actor and their reason; the account-wide ones also as an
-// AccountEvent, which keeps them for someone who is on no venue.
+// handing the venue to another member. The venue's own staff run their team in the dashboard app;
+// these are for when they can't (an owner who left, a lost phone, abuse). Each is recorded as a
+// VenueEvent with the admin as the actor and their reason. Suspending, reactivating and banning a
+// staff account are identity's (account-support.ts), which records them here through
+// staff-account-changes.ts.
 
 const memberNotFound = () =>
   new AppError({
@@ -29,9 +23,6 @@ const memberNotFound = () =>
     status: 404,
     detail: "This person isn't a member of the venue.",
   });
-
-const staffNotFound = () =>
-  new AppError({ code: "STAFF_NOT_FOUND", status: 404, detail: "There's no such staff account." });
 
 const ownerCantBeRemoved = () =>
   new AppError({
@@ -49,21 +40,6 @@ const staffNotActive = (status: string) =>
     status: 409,
     detail: "Their account is suspended or closed, so they can't be made the owner.",
     extensions: { staffStatus: status },
-  });
-
-const ownsVenues = (venueIds: string[]) =>
-  new AppError({
-    code: "OWNS_A_VENUE",
-    status: 409,
-    detail: "They own a venue. Transfer it to another member before banning them.",
-    extensions: { venueIds },
-  });
-
-const accountBanned = () =>
-  new AppError({
-    code: "ACCOUNT_BANNED",
-    status: 409,
-    detail: "This account was closed for good; it can't be suspended or reactivated.",
   });
 
 // The venue, locked so team changes can't race each other or a submission. Its status, for the
@@ -187,103 +163,5 @@ export const transferOwnership = async (
       })),
       clock,
     );
-  });
-};
-
-// Every venue they're on, for recording an account-wide change where each venue's admins look.
-const venuesOf = async (tx: Tx, staffId: string) =>
-  (await tx.venueMembership.findMany({ where: { staffId }, select: { venueId: true } })).map(
-    (m) => m.venueId,
-  );
-
-const lockStaff = async (tx: Tx, staffId: string) => {
-  const [staff] = await tx.$queryRaw<{ status: string; deletedAt: Date | null }[]>`
-    SELECT status, "deletedAt" FROM "Staff" WHERE id = ${staffId}::uuid FOR UPDATE`;
-  if (staff?.deletedAt !== null) throw staffNotFound();
-  return staff.status;
-};
-
-// Signs them out and records why on every venue they're on. Sign-in and refreshing a session refuse
-// an account that isn't active, and every venue route checks the account on each request, so even
-// a token they still hold stops working there at once.
-const keepOut = async (
-  tx: Tx,
-  adminId: string,
-  staffId: string,
-  to: "SUSPENDED" | "BANNED",
-  reason: string,
-  clock: Clock,
-) => {
-  await tx.staff.update({ where: { id: staffId }, data: { status: to } });
-  // As identity's session store revokes: the push token goes too, so nothing is sent there.
-  await tx.staffSession.updateMany({
-    where: { staffId, revokedAt: null },
-    data: { revokedAt: clock.now(), pushToken: null },
-  });
-  const type = to === "BANNED" ? STAFF_BANNED : STAFF_SUSPENDED;
-  await tx.venueEvent.createMany({
-    data: (await venuesOf(tx, staffId)).map((venueId) => ({
-      venueId,
-      adminId,
-      type,
-      data: { staffId, reason },
-    })),
-  });
-  await tx.accountEvent.create({ data: { adminId, staffId, type, data: { reason } } });
-};
-
-// Until an admin reactivates them. Suspending again changes nothing.
-export const suspendStaff = async (
-  adminId: string,
-  staffId: string,
-  { reason }: SuspendAccount,
-  clock: Clock = systemClock,
-) => {
-  await transaction(async (tx) => {
-    const status = await lockStaff(tx, staffId);
-    if (status === "BANNED") throw accountBanned();
-    if (status === "SUSPENDED") return;
-    await keepOut(tx, adminId, staffId, "SUSPENDED", reason, clock);
-  });
-};
-
-// For good: a banned account can't be reactivated (sign-in answers ACCOUNT_BANNED). Not while they
-// own a venue, which would be left with an owner who can never sign in: transfer it first. A
-// suspended account can be banned; banning again changes nothing.
-export const banStaff = async (
-  adminId: string,
-  staffId: string,
-  { reason }: BanStaff,
-  clock: Clock = systemClock,
-) => {
-  await transaction(async (tx) => {
-    const status = await lockStaff(tx, staffId);
-    if (status === "BANNED") return;
-    const owned = await tx.venueMembership.findMany({
-      where: { staffId, role: "OWNER" },
-      select: { venueId: true },
-    });
-    if (owned.length > 0) throw ownsVenues(owned.map((m) => m.venueId));
-    await keepOut(tx, adminId, staffId, "BANNED", reason, clock);
-  });
-};
-
-// Lets them sign in again. Their sessions stay revoked, so they sign in afresh. Reactivating an
-// active account changes nothing.
-export const reactivateStaff = async (adminId: string, staffId: string) => {
-  await transaction(async (tx) => {
-    const status = await lockStaff(tx, staffId);
-    if (status === "BANNED") throw accountBanned();
-    if (status === "ACTIVE") return;
-    await tx.staff.update({ where: { id: staffId }, data: { status: "ACTIVE" } });
-    await tx.venueEvent.createMany({
-      data: (await venuesOf(tx, staffId)).map((venueId) => ({
-        venueId,
-        adminId,
-        type: STAFF_REACTIVATED,
-        data: { staffId },
-      })),
-    });
-    await tx.accountEvent.create({ data: { adminId, staffId, type: STAFF_REACTIVATED } });
   });
 };
