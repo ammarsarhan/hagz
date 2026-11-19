@@ -6,12 +6,51 @@ import {
   type Environment,
 } from "@hagz/contracts";
 import type { ExpoConfig } from "expo/config";
+import { withXcodeProject, type ConfigPlugin } from "expo/config-plugins";
 
 // Built once per environment (APP_ENV, set by the EAS profile in eas.json), so staging and
 // production install side by side. Runs as a development build (expo-dev-client), not in Expo Go.
 const env = (process.env.APP_ENV ?? "development") as Environment;
 if (!ENVIRONMENTS.includes(env)) throw new Error(`Unknown APP_ENV: ${env}`);
 
+// Google Maps is compiled in on both platforms (venues near me, a venue's location). Each platform
+// has its own key, locked to this app's bundle id or package. They're read when the app is prebuilt
+// (EAS environment variables, or .env.local for a local build); an EAS build without one would
+// draw an empty map, so it fails instead. `expo start` doesn't need them.
+const mapsKeys = {
+  ios: process.env.GOOGLE_MAPS_IOS_KEY,
+  android: process.env.GOOGLE_MAPS_ANDROID_KEY,
+};
+if (process.env.EAS_BUILD === "true") {
+  const platform = process.env.EAS_BUILD_PLATFORM as keyof typeof mapsKeys | undefined;
+  if (platform && !mapsKeys[platform]) {
+    throw new Error(
+      `GOOGLE_MAPS_${platform.toUpperCase()}_KEY is not set for this EAS environment.`,
+    );
+  }
+}
+
+// Xcode's user script sandboxing (on in the generated project) stops React Native's bundling script
+// writing the Mac's address into a device build (ip.txt, how the dev client finds Metro), so a build
+// for a plugged-in iPhone fails while a simulator build passes. Off for the app's own targets.
+const withoutScriptSandboxing: ConfigPlugin = (expo) =>
+  withXcodeProject(expo, (project) => {
+    // Entries are build configurations, plus "<id>_comment" strings alongside them.
+    const configurations = project.modResults.pbxXCBuildConfigurationSection() as Record<
+      string,
+      { buildSettings?: Record<string, string> } | string
+    >;
+    for (const entry of Object.values(configurations)) {
+      if (typeof entry !== "string" && entry.buildSettings) {
+        entry.buildSettings.ENABLE_USER_SCRIPT_SANDBOXING = "NO";
+      }
+    }
+    return project;
+  });
+
+// The native layer is the customer baseline (docs/plan.md "Native builds"): every native module the
+// plan needs before payments is here, so Phase 1.U2 to 4 are JavaScript only. A module that's in
+// the build but not used yet costs nothing; adding one later costs a build.
 const config: ExpoConfig = {
   name: appNameFor("customer", env),
   slug: "hagz-customer",
@@ -32,10 +71,48 @@ const config: ExpoConfig = {
       backgroundColor: "#E9FEA0",
     },
   },
-  plugins: ["expo-router", "expo-dev-client", "expo-secure-store", "expo-status-bar"],
+  plugins: [
+    "expo-router",
+    "expo-dev-client",
+    "expo-secure-store",
+    "expo-status-bar",
+    // Held while the app decides where it opens: the customer logo on lime.
+    [
+      "expo-splash-screen",
+      { image: "./assets/adaptive-icon.png", imageWidth: 160, backgroundColor: "#E9FEA0" },
+    ],
+    // Builds lay Arabic out right-to-left natively (I18nManager), as the staff app does.
+    ["expo-localization", { supportsRTL: true, supportedLocales: ["en", "ar"] }],
+    // Only while the app is open, to sort and map venues near the customer; never in the background.
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission: "Hagz uses your location to show venues near you.",
+        isAndroidBackgroundLocationEnabled: false,
+      },
+    ],
+    // A profile picture, picked from the library or taken there and then, resized in the app before
+    // upload (expo-image-manipulator, no plugin), shown with expo-image.
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Hagz uses your photos so you can choose a profile picture.",
+        cameraPermission: "Hagz uses the camera so you can take a profile picture.",
+        microphonePermission: false,
+      },
+    ],
+    "expo-image",
+    // react-native-maps' own plugin: Expo's built-in maps settings (ios.config.googleMapsApiKey,
+    // android.config.googleMaps) are skipped once a package ships a plugin, so the keys go here. The
+    // iOS key is also what adds Google's SDK to the Podfile.
+    [
+      "react-native-maps",
+      { iosGoogleMapsApiKey: mapsKeys.ios, androidGoogleMapsApiKey: mapsKeys.android },
+    ],
+  ],
   experiments: {
     typedRoutes: true,
   },
 };
 
-export default config;
+export default withoutScriptSandboxing(config);
