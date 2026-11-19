@@ -48,6 +48,14 @@ A member lists their booking as a community game. It's an ordinary [listing](lis
 | Games and tournaments | Open communities only | Yes |
 | Notice and WhatsApp link | No | Yes |
 
+## Notifications
+
+Sent once Phase 7's sender exists. Until then they're written as `Notification` rows, like every phase before it.
+
+- **Admins:** a new join request.
+- **The player:** their request was approved or declined, they were made an admin, they were removed or banned, ownership was transferred to them.
+- **Members:** a new community game or tournament, and the community being archived. Each member can mute a community.
+
 ## Finding communities
 
 From the Community tab: search by name (`pg_trgm`, the same Arabic and English normalization as venues), with area and sport filters. Ranked by name match, then distance from the community's area, then member count. Communities that have played recently rank above inactive ones.
@@ -56,7 +64,7 @@ From the Community tab: search by name (`pg_trgm`, the same Arabic and English n
 
 - **`Community`:** `id`, `slug` (unique), `name`, `description?`, `avatarKey?`, `sport?` (`Sport`), `locationId` (its home area), `policy` (`CommunityPolicy`: `OPEN` / `CLOSED`), `gamesBy` (`MEMBERS` / `ADMINS`: who can list community games), `notice?`, `whatsappLink?`, `status` (`CommunityStatus`: `ACTIVE` / `ARCHIVED` / `HIDDEN`), `memberCount` (kept up to date under a lock on this row, like `playerCount`), `hiddenReason?`, `createdAt`, `updatedAt`.
   - Indexed for search: a trigram index on the normalized name, and `(status, locationId)`.
-- **`CommunityMember`:** `communityId`, `customerId`, `role` (`CommunityRole`: `OWNER` / `ADMIN` / `MEMBER`), `status` (`CommunityMemberStatus`: `REQUESTED` / `ACTIVE` / `DECLINED` / `LEFT` / `REMOVED` / `BANNED`), `requestedAt?`, `joinedAt?`, `leftAt?`, `decidedById?` (who approved, declined, removed or banned).
+- **`CommunityMember`:** `communityId`, `customerId`, `role` (`CommunityRole`: `OWNER` / `ADMIN` / `MEMBER`), `status` (`CommunityMemberStatus`: `REQUESTED` / `ACTIVE` / `DECLINED` / `LEFT` / `REMOVED` / `BANNED`), `requestedAt?`, `joinedAt?`, `leftAt?`, `decidedById?` (who approved, declined, removed or banned), `muted` (default false).
   - Primary key `(communityId, customerId)`, so rejoining reuses the row. Indexed on `customerId` for "my communities".
   - A partial unique index allows one `OWNER` per community while `ACTIVE`.
   - CHECK: `joinedAt` set when `ACTIVE`; `leftAt` set exactly for `LEFT`, `REMOVED` and `BANNED`.

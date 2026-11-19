@@ -166,7 +166,7 @@ Decided on 2026-11-19 to come straight after bookings: it needs listings (4.7) a
 | 7.3 Reviews | One per customer per venue, tied to a completed booking, editable. `averageRating` and `reviewCount` recalculated in the same transaction |
 | 7.4 Discounts | Venue discount codes: percent or amount, uses, expiry, revoking |
 
-**Screens:** both apps: the notification inbox and push permission. Customer app: loyalty cards, reviews, discount codes at checkout, the waitlist, offer and nearby-game opt-ins. Dashboard: loyalty and discount settings, fill-a-slot alerts. Web: the regular's confirm or release page (reminder link).
+**Screens:** both apps: the notification inbox and push permission. Customer app: loyalty cards, reviews, discount codes at checkout, the waitlist, offer and nearby-game opt-ins, community and tournament notifications (muting a community). Dashboard: loyalty and discount settings, fill-a-slot alerts. Web: the regular's confirm or release page (reminder link).
 **Admin slice:** hiding reviews, notification delivery logs.
 **Done when:** notifications survive a Redis outage, and a push reaches a real device.
 **Decide at the start:** per-customer limits on a discount code, and whether a code applies to a free loyalty booking.

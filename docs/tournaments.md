@@ -54,6 +54,14 @@ Two to start: **knockout** (single elimination, byes when the number of teams is
 - **The organizer enters results:** a score, penalties for a knockout draw, or a walkover. A knockout winner fills its place in the next match (`nextMatchId`, `nextSide`) in the same transaction.
 - **Tables are calculated from results when read,** not stored.
 
+## Notifications
+
+Sent once Phase 7's sender exists, and written as `Notification` rows until then.
+
+- **Organizers:** a team registered, or withdrew.
+- **Captains:** their team was confirmed or rejected, and the draw is out.
+- **Squad players:** their next match's time and ground, and a reminder before it; the tournament being cancelled.
+
 ## Money
 
 - **Entry fee:** `entryFee?`, shown on the tournament and paid to the organizer, outside Hagz. Whether Hagz handles or takes part of it is decided later.

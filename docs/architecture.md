@@ -73,7 +73,7 @@ The proof is a test: 100 parallel requests for the same slot produce exactly one
 
 ### State machines
 
-- Allowed transitions live in a table in code (bookings: `PENDING → HELD → CONFIRMED → COMPLETED | NO_SHOW`, plus `CANCELLED` and `EXPIRED`; payments, refunds, payouts and deliveries likewise).
+- Allowed transitions live in a table in code (bookings: `PENDING → HELD → CONFIRMED → COMPLETED | NO_SHOW`, plus `CANCELLED` and `EXPIRED`; payments, refunds, payouts, deliveries, listings, community members, tournaments and their teams and matches likewise).
 - Every transition is a compare-and-set: `UPDATE ... WHERE id = $1 AND status = $from`. Zero rows means someone else moved it first, so the request returns 409 instead of overwriting their change.
 - The matching `BookingEvent` (or `VenueEvent`) is written in the same transaction.
 
