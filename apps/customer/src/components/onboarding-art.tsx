@@ -24,12 +24,13 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 //
 // Each layer can drift with the swipe (parallax by depth), loop softly, and drop in the first time
 // its slide lands. With Reduce Motion on, the drawings stand still.
+//
+// Customer illustrations are black, with blue only as a hint (one or two parts per drawing).
 const W = 345;
 const H = 330;
 
-const DEEP = "#1F38ED";
-const MID = "#527CF7";
-const SOFT = "#A0BCFF";
+const BLACK = "#000000";
+const BLUE = "#1F38ED";
 const WHITE = "#FFFFFF";
 // A shade deeper than the lime background, so the blob reads without a second colour.
 const BLOB = "#D9F27E";
@@ -81,7 +82,7 @@ function Player({
   const bottom = cy + 62;
   const body = `M${cx - 28} ${bottom - 4} L${cx - 28} ${top} A28 22 0 0 1 ${cx + 28} ${top} L${cx + 28} ${bottom - 4} Q${cx + 28} ${bottom} ${cx + 24} ${bottom} L${cx - 24} ${bottom} Q${cx - 28} ${bottom} ${cx - 28} ${bottom - 4}Z`;
   const paint = open
-    ? { fill: "none", stroke: DEEP, strokeWidth: 2, strokeDasharray: "5 5" }
+    ? { fill: "none", stroke: BLACK, strokeWidth: 2, strokeDasharray: "5 5" }
     : { fill };
   return (
     <>
@@ -175,12 +176,14 @@ function Spark({
   at,
   size,
   delay,
+  color = BLACK,
 }: {
   k: number;
   offset: SharedValue<number>;
   at: readonly [number, number];
   size: number;
   delay: number;
+  color?: string;
 }) {
   return (
     <Part
@@ -190,7 +193,7 @@ function Spark({
       origin={at}
       loop={{ period: 2400, delay, scale: [0.55, 1], opacity: [0.5, 1] }}
     >
-      <Path d={spark(at[0], at[1], size)} fill={DEEP} />
+      <Path d={spark(at[0], at[1], size)} fill={color} />
     </Part>
   );
 }
@@ -242,15 +245,24 @@ function PitchScene({ k, offset, active }: SceneProps) {
     <>
       <Blob k={k} offset={offset} d={BLOB_1} />
       <Part k={k} offset={offset} depth={10}>
-        <Rect x={62} y={150} width={220} height={140} rx={22} fill={DEEP} />
+        <Rect x={62} y={150} width={220} height={140} rx={22} fill={BLACK} />
         <Path
           d="M84 164 H260 Q268 164 268 172 V268 Q268 276 260 276 H84 Q76 276 76 268 V172 Q76 164 84 164Z M172 164 V276 M76 198 H98 V242 H76 M268 198 H246 V242 H268"
-          stroke={SOFT}
+          stroke={WHITE}
+          strokeOpacity={0.4}
           strokeWidth={3}
           strokeLinejoin="round"
           fill="none"
         />
-        <Circle cx={172} cy={220} r={22} stroke={SOFT} strokeWidth={3} fill="none" />
+        <Circle
+          cx={172}
+          cy={220}
+          r={22}
+          stroke={WHITE}
+          strokeOpacity={0.4}
+          strokeWidth={3}
+          fill="none"
+        />
       </Part>
       <Part k={k} offset={offset} depth={30} loop={{ period: 3600, y: [-4, 4] }}>
         <Rect x={30} y={96} width={66} height={30} rx={15} fill={WHITE} />
@@ -258,16 +270,16 @@ function PitchScene({ k, offset, active }: SceneProps) {
       <Part k={k} offset={offset} depth={36} loop={{ period: 4200, delay: 500, y: [4, -4] }}>
         <Path
           d="M330 22 C340 44 330 64 312 74"
-          stroke={DEEP}
-          strokeOpacity={0.45}
+          stroke={BLACK}
+          strokeOpacity={0.35}
           strokeWidth={2.5}
           strokeLinecap="round"
           fill="none"
         />
-        <Rect x={250} y={78} width={66} height={30} rx={15} fill={SOFT} />
+        <Rect x={250} y={78} width={66} height={30} rx={15} fill={BLUE} />
       </Part>
       <Part k={k} offset={offset} depth={24} loop={{ period: 3900, delay: 900, y: [-3, 3] }}>
-        <Rect x={24} y={292} width={66} height={30} rx={15} fill={MID} />
+        <Rect x={24} y={292} width={66} height={30} rx={15} fill={BLACK} />
       </Part>
       <Part
         k={k}
@@ -282,7 +294,7 @@ function PitchScene({ k, offset, active }: SceneProps) {
           height={30}
           rx={15}
           fill="none"
-          stroke={DEEP}
+          stroke={BLACK}
           strokeWidth={2}
           strokeDasharray="5 5"
         />
@@ -298,10 +310,10 @@ function PitchScene({ k, offset, active }: SceneProps) {
           d="M172 214 C160 194 138 168 138 136 A34 34 0 1 1 206 136 C206 168 184 194 172 214Z"
           fill={WHITE}
         />
-        <Circle cx={172} cy={135} r={13} fill={DEEP} />
+        <Circle cx={172} cy={135} r={13} fill={BLUE} />
       </Part>
       <Spark k={k} offset={offset} at={[40, 196]} size={9} delay={0} />
-      <Spark k={k} offset={offset} at={[314, 176]} size={11} delay={700} />
+      <Spark k={k} offset={offset} at={[314, 176]} size={11} delay={700} color={BLUE} />
       <Spark k={k} offset={offset} at={[124, 62]} size={6} delay={1300} />
       <Spark k={k} offset={offset} at={[306, 246]} size={6} delay={400} />
     </>
@@ -384,26 +396,26 @@ function SquadScene({ k, offset, active }: SceneProps) {
       </Part>
       {layer(spot, <Player cx={SPOT[0]} cy={SPOT[1]} open />)}
       <Part k={k} offset={offset} depth={14} loop={{ period: 3400, delay: 400, y: [0, -3] }}>
-        <Player cx={72} cy={205} fill={SOFT} />
+        <Player cx={72} cy={205} fill={BLACK} />
       </Part>
       <Part k={k} offset={offset} depth={14} loop={{ period: 2800, delay: 900, y: [0, -3] }}>
         <Player cx={172} cy={205} fill={WHITE} />
       </Part>
       <Part k={k} offset={offset} depth={14} loop={{ period: 3200, delay: 200, y: [0, -3] }}>
-        <Player cx={272} cy={205} fill={SOFT} />
+        <Player cx={272} cy={205} fill={BLACK} />
       </Part>
       {layer(
         trail,
         <Path
           d="M343 4 C338 22 328 32 316 38"
-          stroke={DEEP}
-          strokeOpacity={0.45}
+          stroke={BLACK}
+          strokeOpacity={0.35}
           strokeWidth={2.5}
           strokeLinecap="round"
           fill="none"
         />,
       )}
-      {layer(joiner, <Player cx={SPOT[0]} cy={SPOT[1]} fill={DEEP} />)}
+      {layer(joiner, <Player cx={SPOT[0]} cy={SPOT[1]} fill={BLUE} />)}
       <Part
         k={k}
         offset={offset}
@@ -412,7 +424,7 @@ function SquadScene({ k, offset, active }: SceneProps) {
         loop={{ period: 1400, y: [0, -10], rotate: [0, 40] }}
       >
         <Circle cx={122} cy={300} r={20} fill={WHITE} />
-        <Path d={star(122, 300, 9.5, 7.7)} fill={DEEP} />
+        <Path d={star(122, 300, 9.5, 7.7)} fill={BLACK} />
       </Part>
       <Spark k={k} offset={offset} at={[30, 150]} size={8} delay={200} />
       <Spark k={k} offset={offset} at={[322, 150]} size={10} delay={900} />
@@ -432,25 +444,25 @@ const CONFETTI: {
 }[] = [
   {
     d: "M52 80 l14 -6 l4 9 l-14 6Z",
-    fill: DEEP,
+    fill: BLACK,
     origin: [61, 81],
     loop: { period: 3000, y: [-4, 6], rotate: [-25, 20] },
   },
   {
     d: "M280 58 l10 10 l-7 7 l-10 -10Z",
-    fill: MID,
+    fill: BLUE,
     origin: [281, 66],
     loop: { period: 3600, delay: 500, y: [-5, 5], rotate: [20, -30] },
   },
   {
     d: "M296 210 l14 4 l-3 9 l-14 -4Z",
-    fill: DEEP,
+    fill: BLACK,
     origin: [301, 216],
     loop: { period: 3300, delay: 900, y: [-3, 7], rotate: [-15, 25] },
   },
   {
     d: "M40 232 l8 -12 l8 5 l-8 12Z",
-    fill: MID,
+    fill: BLACK,
     origin: [48, 231],
     loop: { period: 2800, delay: 300, y: [5, -5], rotate: [30, -10] },
   },
@@ -468,7 +480,7 @@ const CONFETTI: {
   },
   {
     circle: [64, 160, 4],
-    fill: DEEP,
+    fill: BLUE,
     origin: [64, 160],
     loop: { period: 2900, delay: 200, y: [-3, 5] },
   },
@@ -491,24 +503,24 @@ function TrophyScene({ k, offset, active }: SceneProps) {
       >
         <Path
           d="M116 112 C70 112 72 172 128 182"
-          stroke={SOFT}
+          stroke={BLACK}
           strokeWidth={14}
           strokeLinecap="round"
           fill="none"
         />
         <Path
           d="M228 112 C274 112 272 172 216 182"
-          stroke={SOFT}
+          stroke={BLACK}
           strokeWidth={14}
           strokeLinecap="round"
           fill="none"
         />
-        <Rect x={160} y={200} width={24} height={38} fill={SOFT} />
+        <Rect x={160} y={200} width={24} height={38} fill={BLACK} />
         <Path d="M112 92 H232 V148 A60 60 0 0 1 112 148 Z" fill={WHITE} />
-        <Rect x={104} y={82} width={136} height={16} rx={8} fill={SOFT} />
-        <Path d={star(172, 142, 22, 9)} fill={DEEP} />
-        <Rect x={134} y={234} width={76} height={20} rx={6} fill={MID} />
-        <Rect x={114} y={252} width={116} height={30} rx={10} fill={DEEP} />
+        <Rect x={104} y={82} width={136} height={16} rx={8} fill={BLACK} />
+        <Path d={star(172, 142, 22, 9)} fill={BLUE} />
+        <Rect x={134} y={234} width={76} height={20} rx={6} fill={WHITE} />
+        <Rect x={114} y={252} width={116} height={30} rx={10} fill={BLACK} />
       </Part>
       {CONFETTI.map((piece, i) => (
         <Part key={i} k={k} offset={offset} depth={30} origin={piece.origin} loop={piece.loop}>
