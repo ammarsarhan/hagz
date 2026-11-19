@@ -68,8 +68,8 @@ CREATE TABLE "TournamentMatch" (
     "tournamentId" UUID NOT NULL,
     "round" SMALLINT NOT NULL,
     "position" SMALLINT NOT NULL,
-    "homeTeamId" UUID,
-    "awayTeamId" UUID,
+    "homeId" UUID,
+    "awayId" UUID,
     "nextMatchId" UUID,
     "nextSide" "MatchSide",
     "groundId" UUID,
@@ -78,7 +78,7 @@ CREATE TABLE "TournamentMatch" (
     "homeScore" SMALLINT,
     "awayScore" SMALLINT,
     "scoreDetail" JSONB,
-    "winnerTeamId" UUID,
+    "winnerId" UUID,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
@@ -146,13 +146,13 @@ ALTER TABLE "TournamentPlayer" ADD CONSTRAINT "TournamentPlayer_customerId_fkey"
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_tournamentId_fkey" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_homeTeamId_tournamentId_fkey" FOREIGN KEY ("homeTeamId", "tournamentId") REFERENCES "TournamentTeam"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_homeId_tournamentId_fkey" FOREIGN KEY ("homeId", "tournamentId") REFERENCES "TournamentTeam"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_awayTeamId_tournamentId_fkey" FOREIGN KEY ("awayTeamId", "tournamentId") REFERENCES "TournamentTeam"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_awayId_tournamentId_fkey" FOREIGN KEY ("awayId", "tournamentId") REFERENCES "TournamentTeam"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_winnerTeamId_tournamentId_fkey" FOREIGN KEY ("winnerTeamId", "tournamentId") REFERENCES "TournamentTeam"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_winnerId_tournamentId_fkey" FOREIGN KEY ("winnerId", "tournamentId") REFERENCES "TournamentTeam"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_nextMatchId_tournamentId_fkey" FOREIGN KEY ("nextMatchId", "tournamentId") REFERENCES "TournamentMatch"("id", "tournamentId") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -175,7 +175,7 @@ ALTER TABLE "Tournament" ADD CONSTRAINT "Tournament_terms_check" CHECK ("teamCap
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_position_check" CHECK ("round" >= 1 AND "position" >= 1 AND ("nextMatchId" IS NULL) = ("nextSide" IS NULL));
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
-ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_teams_check" CHECK ("homeTeamId" IS NULL OR "awayTeamId" IS NULL OR "homeTeamId" <> "awayTeamId");
+ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_teams_check" CHECK ("homeId" IS NULL OR "awayId" IS NULL OR "homeId" <> "awayId");
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 -- Scores are the sport's main result (goals, points or sets won); the detail only follows a result.
@@ -189,9 +189,9 @@ ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_score_check" CHECK
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 -- In every sport the higher main result wins; equal results are a draw or settled by the detail.
 ALTER TABLE "TournamentMatch" ADD CONSTRAINT "TournamentMatch_winner_check" CHECK (
-  ("winnerTeamId" IS NULL OR "winnerTeamId" IN ("homeTeamId", "awayTeamId"))
+  ("winnerId" IS NULL OR "winnerId" IN ("homeId", "awayId"))
   AND (status <> 'PLAYED' OR "homeScore" = "awayScore"
-    OR "winnerTeamId" IS NOT DISTINCT FROM CASE WHEN "homeScore" > "awayScore" THEN "homeTeamId" ELSE "awayTeamId" END)
-  AND (status <> 'WALKOVER' OR "winnerTeamId" IS NOT NULL)
-  AND (status <> 'PENDING' OR "winnerTeamId" IS NULL)
+    OR "winnerId" IS NOT DISTINCT FROM CASE WHEN "homeScore" > "awayScore" THEN "homeId" ELSE "awayId" END)
+  AND (status <> 'WALKOVER' OR "winnerId" IS NOT NULL)
+  AND (status <> 'PENDING' OR "winnerId" IS NULL)
 );

@@ -92,8 +92,8 @@ model TournamentMatch {
   tournamentId String                @db.Uuid
   round        Int                   @db.SmallInt
   position     Int                   @db.SmallInt // Order within the round.
-  homeTeamId   String?               @db.Uuid
-  awayTeamId   String?               @db.Uuid
+  homeId       String?               @db.Uuid
+  awayId       String?               @db.Uuid
   nextMatchId  String?               @db.Uuid // Knockout: where the winner goes.
   nextSide     MatchSide?
   groundId     String?               @db.Uuid
@@ -102,14 +102,14 @@ model TournamentMatch {
   homeScore    Int?                  @db.SmallInt
   awayScore    Int?                  @db.SmallInt
   scoreDetail  Json? // Set scores, or football penalties.
-  winnerTeamId String?               @db.Uuid // Null after a draw, where the sport allows one.
+  winnerId     String?               @db.Uuid // Null after a draw, where the sport allows one.
   createdAt    DateTime              @default(now()) @db.Timestamptz
   updatedAt    DateTime              @updatedAt @db.Timestamptz
 
   tournament Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
-  homeTeam   TournamentTeam?   @relation("HomeTeam", fields: [homeTeamId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
-  awayTeam   TournamentTeam?   @relation("AwayTeam", fields: [awayTeamId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
-  winner     TournamentTeam?   @relation("WinnerTeam", fields: [winnerTeamId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  home       TournamentTeam?   @relation("HomeTeam", fields: [homeId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  away       TournamentTeam?   @relation("AwayTeam", fields: [awayId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
+  winner     TournamentTeam?   @relation("WinnerTeam", fields: [winnerId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
   next       TournamentMatch?  @relation("Bracket", fields: [nextMatchId, tournamentId], references: [id, tournamentId], onDelete: Restrict)
   feeders    TournamentMatch[] @relation("Bracket")
   ground     Ground?           @relation(fields: [groundId], references: [id], onDelete: Restrict)
