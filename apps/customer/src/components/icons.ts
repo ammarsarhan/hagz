@@ -62,3 +62,4 @@ export { default as IconBolt } from "@tabler/icons-react-native/IconBolt";
 export { default as IconCalendarX } from "@tabler/icons-react-native/IconCalendarX";
 export { default as IconShare } from "@tabler/icons-react-native/IconShare";
 export { default as IconCircleCheckFilled } from "@tabler/icons-react-native/IconCircleCheckFilled";
+export { default as IconArrowRight } from "@tabler/icons-react-native/IconArrowRight";

@@ -28,7 +28,14 @@ import {
   type PublicVenue,
 } from "@/lib/venue";
 import { AmenityIcon } from "./amenity-icon";
-import { IconBolt, IconCalendarX, IconCash, IconClock, IconStarFilled } from "./icons";
+import {
+  IconArrowRight,
+  IconBolt,
+  IconCalendarX,
+  IconCash,
+  IconClock,
+  IconStarFilled,
+} from "./icons";
 import { Text } from "./text";
 import { VenueLayout } from "./venue-layout";
 
@@ -234,8 +241,8 @@ const lengthLabel = (ground: PublicGround) =>
 
 // A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
 // it is, how long a booking can be, and a See times button across the bottom. Picking only fades
-// things: the black border over the grey one (which stays, so an unpicked card keeps its 1px edge)
-// and the button from grey to black. Nothing changes size, so nothing moves.
+// things: a darker grey border over the light one (which stays, so an unpicked card keeps its 1px
+// edge) and the button from grey to lime (user, 2026-11-20). Nothing changes size, so nothing moves.
 function GroundOption({
   ground,
   width,
@@ -267,7 +274,7 @@ function GroundOption({
     >
       <Animated.View
         pointerEvents="none"
-        className="absolute -inset-px rounded-[17px] border-[1.5px] border-ink"
+        className="absolute -inset-px rounded-[17px] border-[1.5px] border-ink-3"
         style={fade}
       />
       <View className="flex-row items-center justify-between gap-6">
@@ -279,8 +286,8 @@ function GroundOption({
       <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
       {bookable ? <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text> : null}
       {bookable ? (
-        // On every card: grey, and black once it's the picked one, the black laid over the grey
-        // and faded in. Pressed on a card that isn't picked, it picks it too.
+        // On every card: grey, and lime once it's the picked one, the lime laid over the grey and
+        // faded in. Pressed on a card that isn't picked, it picks it too.
         <View className="mt-auto pt-3">
           <Pressable
             accessibilityRole="button"
@@ -291,18 +298,28 @@ function GroundOption({
             }}
             className="h-10 items-center justify-center rounded-full bg-chip active:opacity-80"
           >
-            <Text className="text-body font-semibold">See times</Text>
+            <SeeTimesLabel />
             <Animated.View
               pointerEvents="none"
-              className="absolute inset-0 items-center justify-center rounded-full bg-ink"
+              className="absolute inset-0 items-center justify-center rounded-full bg-primary"
               style={fade}
             >
-              <Text className="text-body font-semibold text-white">See times</Text>
+              <SeeTimesLabel />
             </Animated.View>
           </Pressable>
         </View>
       ) : null}
     </Pressable>
+  );
+}
+
+// "See times →", in ink on both the grey button and the lime one.
+function SeeTimesLabel() {
+  return (
+    <View className="flex-row items-center gap-1.5">
+      <Text className="text-body font-semibold">See times</Text>
+      <IconArrowRight size={16} color={colors.ink} strokeWidth={2.25} />
+    </View>
   );
 }
 
