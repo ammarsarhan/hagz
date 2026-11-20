@@ -260,7 +260,7 @@ export function VenueMapCard({
               </Text>
               <Rating card={card} />
             </View>
-            <View className="mt-1.5 gap-0.5">
+            <View className="mt-0.5 gap-0.5">
               <Text className="text-body text-ink-2" numberOfLines={1}>
                 {placeText(card)}
               </Text>
