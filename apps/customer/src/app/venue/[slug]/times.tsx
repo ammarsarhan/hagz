@@ -626,7 +626,8 @@ function HoursSkeleton() {
   );
 }
 
-// An hour: its start and price. Picked, black; next to a pick that's still short, a dashed outline.
+// An hour: its start and price. Picked, its black (with white words) fades in over the white one,
+// like the day tiles; next to a pick that's still short, a dashed outline.
 function Slot({
   time,
   price,
@@ -639,23 +640,38 @@ function Slot({
   onPress: () => void;
 }) {
   const on = state === "on";
-  const box: ViewStyle =
+  const shown = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(on ? 1 : 0, { duration: 160 });
+  }, [on, shown]);
+  const fill = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const edge: ViewStyle =
     state === "next"
       ? { borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.ink }
-      : on
-        ? { borderWidth: 1, borderColor: colors.ink, backgroundColor: colors.ink }
-        : { borderWidth: 1, borderColor: "#ebebeb" };
+      : { borderWidth: 1, borderColor: "#ebebeb" };
+  const words = (white: boolean) => (
+    <>
+      <Text className={`text-subtitle font-medium ${white ? "text-white" : ""}`}>{time}</Text>
+      <Text className={`text-[12px] leading-4 ${white ? "text-white" : "text-unit"}`}>{price}</Text>
+    </>
+  );
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       accessibilityLabel={`${time}, ${price}`}
       onPress={onPress}
-      className="h-[54px] w-[76px] items-center justify-center gap-px rounded-[14px] active:opacity-70"
-      style={box}
+      className="h-[54px] w-[76px] items-center justify-center gap-px rounded-[14px] bg-white"
+      style={edge}
     >
-      <Text className={`text-subtitle font-medium ${on ? "text-white" : ""}`}>{time}</Text>
-      <Text className={`text-[12px] leading-4 ${on ? "text-white" : "text-unit"}`}>{price}</Text>
+      {words(false)}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute -inset-[1.5px] items-center justify-center gap-px rounded-[14px] bg-ink"
+        style={fill}
+      >
+        {words(true)}
+      </Animated.View>
     </Pressable>
   );
 }
