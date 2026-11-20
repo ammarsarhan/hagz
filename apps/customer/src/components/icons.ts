@@ -63,3 +63,14 @@ export { default as IconCalendarX } from "@tabler/icons-react-native/IconCalenda
 export { default as IconShare } from "@tabler/icons-react-native/IconShare";
 export { default as IconCircleCheckFilled } from "@tabler/icons-react-native/IconCircleCheckFilled";
 export { default as IconArrowRight } from "@tabler/icons-react-native/IconArrowRight";
+export { default as IconHome } from "@tabler/icons-react-native/IconHome";
+export { default as IconSearch } from "@tabler/icons-react-native/IconSearch";
+export { default as IconUsersGroup } from "@tabler/icons-react-native/IconUsersGroup";
+export { default as IconTicket } from "@tabler/icons-react-native/IconTicket";
+export { default as IconUserCircle } from "@tabler/icons-react-native/IconUserCircle";
+export { default as IconList } from "@tabler/icons-react-native/IconList";
+export { default as IconMap } from "@tabler/icons-react-native/IconMap";
+export { default as IconArrowsSort } from "@tabler/icons-react-native/IconArrowsSort";
+export { default as IconAdjustmentsHorizontal } from "@tabler/icons-react-native/IconAdjustmentsHorizontal";
+export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayoutGrid";
+export { default as IconLayoutList } from "@tabler/icons-react-native/IconLayoutList";
