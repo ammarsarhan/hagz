@@ -96,11 +96,11 @@ const groundFilters = (query: Filters, g: string) => {
   if (query.size) parts.push(Prisma.sql`AND ${ground}.size = ${query.size}::"GroundSize"`);
   if (query.surface) {
     const surfaces = query.surface.split(",");
-    parts.push(Prisma.sql`AND ${ground}.surface::text IN (${Prisma.join(surfaces)})`);
+    parts.push(Prisma.sql`AND ${ground}.surface = ANY(${surfaces}::"GroundSurface"[])`);
   }
   if (query.setting) {
     const settings = query.setting.split(",");
-    parts.push(Prisma.sql`AND ${ground}.environment::text IN (${Prisma.join(settings)})`);
+    parts.push(Prisma.sql`AND ${ground}.environment = ANY(${settings}::"GroundEnvironment"[])`);
   }
   return parts.length > 0 ? Prisma.join(parts, " ") : Prisma.empty;
 };
@@ -280,10 +280,12 @@ export const searchVenues = async (
       : sort === "RATING"
         ? Prisma.sql`coalesce(-v."averageRating"::float8, 1)`
         : Prisma.sql`NULL::float8`;
+  // The earliest start is the first by time, so its read stops there; the cheapest needs them all.
   const startKey =
     sort === "PRICE"
       ? Prisma.sql`min(free.price)::float8 / ${query.hours}`
-      : Prisma.sql`min(extract(epoch FROM s."startsAt"))::float8`;
+      : Prisma.sql`extract(epoch FROM s."startsAt")::float8`;
+  const startLimit = sort === "SOONEST" ? Prisma.sql`ORDER BY s."startsAt" LIMIT 1` : Prisma.empty;
   // The price range, per hour, on the whole game's price.
   const price = Prisma.sql`${
     query.priceMin !== undefined
@@ -337,7 +339,7 @@ export const searchVenues = async (
             Prisma.sql`SELECT c.id, c.distance, m.key, c.latitude, c.longitude, count(*) OVER ()::int AS total
               FROM candidates c
               CROSS JOIN LATERAL (
-                SELECT ${startKey} AS key FROM ${startsOf(Prisma.raw("c.id"))} ${atStart}
+                SELECT ${startKey} AS key FROM ${startsOf(Prisma.raw("c.id"))} ${atStart} ${startLimit}
               ) m
               WHERE m.key IS NOT NULL`
           : Prisma.sql`SELECT c.*, count(*) OVER ()::int AS total
