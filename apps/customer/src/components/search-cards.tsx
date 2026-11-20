@@ -104,7 +104,7 @@ export function VenueCardLarge({
 }) {
   return (
     <View className="gap-3">
-      <Pressable accessibilityRole="button" onPress={() => openVenue(card)} className="gap-3">
+      <Pressable accessibilityRole="button" onPress={() => openVenue(card)} className="gap-4">
         <Cover card={card} style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: 16 }} />
         <View className="gap-0.5">
           <View className="flex-row items-center justify-between gap-3">
@@ -114,9 +114,8 @@ export function VenueCardLarge({
             <Rating card={card} />
           </View>
           <Text className="text-body text-ink-2">{placeText(card)}</Text>
-          <Text className="text-body text-ink-2">
-            {sportsText(card.sports)} · <Price card={card} currency={currency} />
-          </Text>
+          <Text className="text-body text-ink-2">{sportsText(card.sports)}</Text>
+          <Price card={card} currency={currency} />
         </View>
       </Pressable>
       <TimeChips card={card} timezone={timezone} inset={24} />
