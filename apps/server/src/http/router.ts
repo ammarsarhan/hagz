@@ -7,7 +7,12 @@ import {
 } from "@/modules/identity";
 import { locationsRoutes, platformAdminRoutes, whenAmenityUnplaceable } from "@/modules/locations";
 import { systemRoutes } from "@/modules/system";
-import { removeAmenityFromLayouts, venuesAdminRoutes, venuesStaffRoutes } from "@/modules/venues";
+import {
+  removeAmenityFromLayouts,
+  venuesAdminRoutes,
+  venuesPublicRoutes,
+  venuesStaffRoutes,
+} from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
 import { appVersion } from "@/http/app-version";
 import { devStorage, localDisk } from "@/http/dev-storage";
@@ -48,6 +53,7 @@ router.route("/v1", locationsRoutes);
 router.route("/v1", customerAuthRoutes);
 router.route("/v1", staffAuthRoutes);
 router.route("/v1", adminAuthRoutes);
+router.route("/v1", venuesPublicRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);

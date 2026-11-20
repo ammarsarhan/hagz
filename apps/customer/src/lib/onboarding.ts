@@ -11,8 +11,3 @@ export function hasSeenOnboarding(): boolean {
 export function markOnboardingSeen() {
   SecureStore.setItem(KEY, "1");
 }
-
-// Development only: show onboarding again on the next visit to the start screen.
-export function resetOnboarding() {
-  SecureStore.setItem(KEY, "0");
-}
