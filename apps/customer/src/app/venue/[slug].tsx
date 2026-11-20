@@ -454,6 +454,10 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         // The tabs (the fourth child) stick natively, so they never trail the scroll.
         stickyHeaderIndices={[3]}
         scrollEventThrottle={16}
+        // The photos are the top of the page: it never pulls down past them (user, 2026-11-20).
+        // iOS can't stop the bounce at the top alone, so the bottom doesn't bounce either.
+        bounces={false}
+        overScrollMode="never"
         contentContainerStyle={{ paddingBottom: footer + 32 }}
       >
         <Photos venue={venue} />
