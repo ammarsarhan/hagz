@@ -29,8 +29,8 @@ export const startTimes = (slots: FreeSlot[], ground: PublicGround): FreeSlot[] 
   });
 };
 
-// "9 pm", "9:30 pm", "12 am", at the venue's clock whatever the phone's timezone.
-export const timeOfDay = (iso: string, timezone: string) => {
+// A time at the venue's clock, whatever the phone's timezone: "9" or "9:30", and its half of the day.
+const timeParts = (iso: string, timezone: string) => {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     hour: "numeric",
@@ -39,12 +39,48 @@ export const timeOfDay = (iso: string, timezone: string) => {
   }).formatToParts(new Date(iso));
   const hour = parts.find((part) => part.type === "hour")?.value ?? "";
   const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
-  const period = parts.find((part) => part.type === "dayPeriod")?.value ?? "";
-  return i18n.t("formats.time", {
-    time: `${hour}${minute === "00" ? "" : `:${minute}`}`,
-    period: i18n.t(period.toUpperCase() === "AM" ? "formats.am" : "formats.pm"),
-  });
+  const pm = (parts.find((part) => part.type === "dayPeriod")?.value ?? "").toUpperCase() === "PM";
+  return { time: `${hour}${minute === "00" ? "" : `:${minute}`}`, pm };
 };
+
+const withPeriod = ({ time, pm }: { time: string; pm: boolean }) =>
+  i18n.t("formats.time", { time, period: i18n.t(pm ? "formats.pm" : "formats.am") });
+
+// "9 pm", "9:30 pm", "12 am".
+export const timeOfDay = (iso: string, timezone: string) => withPeriod(timeParts(iso, timezone));
+
+// "9 – 11 pm" within one half of the day, "11 am – 1 pm" across it.
+export const timeRange = (from: string, to: string, timezone: string) => {
+  const start = timeParts(from, timezone);
+  const end = timeParts(to, timezone);
+  return `${start.pm === end.pm ? start.time : withPeriod(start)} – ${withPeriod(end)}`;
+};
+
+// The hour (0–23) a time falls in at the venue.
+export const hourAt = (iso: string, timezone: string) =>
+  Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date(iso))
+      .find((part) => part.type === "hour")?.value ?? 0,
+  );
+
+// The day after a date (YYYY-MM-DD), as a date.
+export const nextDate = (date: string) =>
+  new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+// A playing day runs from 5 am to 5 am: the hours after midnight are the night before's
+// ("Friday, 12 am" is Friday night, not Friday's small hours).
+export const DAY_STARTS = 5;
+
+// Which part of the playing day an hour is in.
+export const partOfDay = (hour: number) =>
+  hour < DAY_STARTS
+    ? ("lateNight" as const)
+    : hour < 12
+      ? ("morning" as const)
+      : hour < 18
+        ? ("afternoon" as const)
+        : ("evening" as const);
 
 // 1 → "1 hour", 24 → "24 hours".
 export const hoursLabel = (hours: number) => i18n.t("formats.hours", { count: hours });

@@ -86,3 +86,4 @@ export { default as IconChevronRight } from "@tabler/icons-react-native/IconChev
 export { default as IconExternalLink } from "@tabler/icons-react-native/IconExternalLink";
 export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
 export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";
+export { default as IconInfoCircle } from "@tabler/icons-react-native/IconInfoCircle";
