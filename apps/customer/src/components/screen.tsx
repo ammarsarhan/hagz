@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Keyboard, Pressable, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardHeight } from "@/hooks/use-keyboard-height";
+import { isRTL } from "@/lib/language";
 import { useHudAnchor } from "./hud";
 
 // Every screen: white, clear of the notch and home indicator, with the Figma screens' 20px gutters,
@@ -12,6 +13,11 @@ import { useHudAnchor } from "./hud";
 // Tapping anywhere that isn't a field or button closes the keyboard. The gutters sit on inner Views
 // because SafeAreaView is native and sets its own side padding from the insets, which would
 // overwrite them.
+//
+// The direction is set here too, as in the staff app: the app is right-to-left natively in Arabic
+// (expo-localization's supportsRTL), and Yoga's `direction` pins every screen to the app's language
+// (lib/language.ts) whatever I18nManager says. It's absolute, so the two agree rather than flipping
+// twice.
 
 // The footer's top padding (pt-3).
 const FOOTER_TOP = 12;
@@ -45,7 +51,7 @@ export function Screen({ children, footer }: { children: ReactNode; footer?: Rea
         accessible={false}
         disabled={keyboard === 0}
         onPress={Keyboard.dismiss}
-        style={{ flex: 1 }}
+        style={{ flex: 1, direction: isRTL ? "rtl" : "ltr" }}
       >
         <View className="flex-1 px-5">{children}</View>
         {footer ? (

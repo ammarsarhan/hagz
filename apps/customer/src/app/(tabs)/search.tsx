@@ -1,5 +1,7 @@
+import type { Icon } from "@tabler/icons-react-native";
 import { StatusBar } from "expo-status-bar";
 import { memo, useCallback, useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +11,6 @@ import {
   View,
 } from "react-native";
 import Animated, {
-  Easing,
   type DerivedValue,
   FadeIn,
   FadeOut,
@@ -28,19 +29,19 @@ import {
   IconAdjustmentsHorizontal,
   IconX,
   IconArrowsSort,
-  IconLayoutGrid,
-  IconLayoutList,
   IconMap,
   IconSearch,
 } from "@/components/icons";
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
 import { SearchWhen } from "@/components/search-when";
-import { SearchFilters, SORT_NAMES } from "@/components/search-filters";
+import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
+import { SPORT_ICONS } from "@/components/sport-icons";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
+import { isRTL } from "@/lib/language";
 import {
   ANY_TIME,
   appliedFilters,
@@ -48,12 +49,12 @@ import {
   filterQuery,
   type Filters,
   NO_FILTERS,
-  SIZE_NAMES,
   type GroundSize,
   useAmenities,
   MAX_RADIUS,
   dayText,
   hourLabel,
+  sizeName,
   sportName,
   useCoverage,
   useVenueSearch,
@@ -66,30 +67,23 @@ import {
   type VenueCard,
 } from "@/lib/search";
 
-// Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20, built behind
-// one switch to compare on the phone): venues free today near the player (or, when the phone can't
-// say where it is, in the governorate with the most venues), narrowed by sport. Results come as big cards
-// (option 1) or compact rows (option 2), or on a map with price pins (option 3). Changing where and
-// when (options 4 and 5) isn't built yet, so the search bar says so.
+// Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20): venues free
+// today near the player (or, when the phone can't say where it is, in the governorate with the most
+// venues), narrowed by sport. Results come as big cards (option 1) or on a map with price pins
+// (option 3); the compact rows (option 2) were dropped after trying them on the phone (user,
+// 2026-11-20). Where and when (options 4 and 5) open from the search bar.
 //
 // The page scrolls as one, like the venue page: the big title rises into a white bar as it goes
 // under it, and the search bar docks in the header (user, 2026-11-20). Changes animate, kept light:
 // a chip's black fades, the order's label cross-fades and its arrow turns, results stay on screen
-// until the new ones arrive and new ones fade in, cards ⟷ rows morphs each card (cover into
-// thumbnail, words sliding beside it), and the list and the map cross-fade.
+// until the new ones arrive and new ones fade in, and the list and the map cross-fade.
 
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
-const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
+// Tennis after basketball: padel and tennis share a ball, so they aren't side by side (user,
+// 2026-11-20).
+const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "BASKETBALL", "TENNIS", "VOLLEYBALL"];
 const FOOTBALL_SIZES: GroundSize[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
-// What a sport is played on, for "No padel courts have a free hour left today."
-const SPORT_PLACES: Record<Sport, string> = {
-  FOOTBALL: "football pitches",
-  PADEL: "padel courts",
-  TENNIS: "tennis courts",
-  BASKETBALL: "basketball courts",
-  VOLLEYBALL: "volleyball courts",
-};
 
 const shadow = {
   shadowColor: "#0b0b0c",
@@ -100,7 +94,8 @@ const shadow = {
 } as const;
 
 // A chip in the row under the bar (Figma B2, 133:2): picked, its black (with white words) fades in
-// over the white one; an applied filter carries an × that takes it off. Memoised with an id and one
+// over the white one; a sport leads with its ball, and an applied filter carries an × that takes it
+// off. Memoised with an id and one
 // stable handler, so a tap re-renders only the chips that change.
 const Chip = memo(function Chip({
   id,
@@ -108,6 +103,7 @@ const Chip = memo(function Chip({
   on,
   removable = false,
   icon,
+  ball: Ball,
   onSelect,
 }: {
   id: string;
@@ -115,8 +111,11 @@ const Chip = memo(function Chip({
   on: boolean;
   removable?: boolean;
   icon?: ReactNode;
+  // A sport's ball before its name, ink on white and white on black.
+  ball?: Icon;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const shown = useSharedValue(on ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(on ? 1 : 0, { duration: 180 });
@@ -126,18 +125,20 @@ const Chip = memo(function Chip({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      accessibilityLabel={removable ? `Remove ${label}` : label}
+      accessibilityLabel={removable ? t("screens.search.remove", { label }) : label}
       onPress={() => onSelect(id)}
       className={`h-10 flex-row items-center gap-1.5 rounded-full border bg-white px-4 ${icon ? "border-ink" : "border-border"}`}
     >
       {icon}
+      {Ball ? <Ball size={16} color={colors.ink} strokeWidth={2} /> : null}
       <Text className="text-body font-medium">{label}</Text>
       {removable ? <IconX size={14} color={colors.ink} strokeWidth={2.25} /> : null}
       <Animated.View
         pointerEvents="none"
-        className="absolute -inset-px items-center justify-center rounded-full bg-ink"
+        className="absolute -inset-px flex-row items-center justify-center gap-1.5 rounded-full bg-ink"
         style={fill}
       >
+        {Ball ? <Ball size={16} color={colors.white} strokeWidth={2} /> : null}
         <Text className="text-body font-medium text-white">{label}</Text>
       </Animated.View>
     </Pressable>
@@ -147,10 +148,12 @@ const Chip = memo(function Chip({
 // The order the list is in ("Nearest", "Cheapest"…): the words cross-fade when it changes, and a
 // tap opens Filters, where it's picked.
 function SortLabel({ sort, onPress }: { sort: SearchSort; onPress: () => void }) {
+  const { t } = useTranslation();
+  const name = t(`screens.search.filtersSheet.sortNames.${sort}`);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Sorted: ${SORT_NAMES[sort]}`}
+      accessibilityLabel={t("screens.search.sorted", { sort: name })}
       hitSlop={8}
       onPress={onPress}
       className="flex-row items-center gap-1 active:opacity-60"
@@ -158,7 +161,7 @@ function SortLabel({ sort, onPress }: { sort: SearchSort; onPress: () => void })
       <IconArrowsSort size={16} color={colors.ink} strokeWidth={2} />
       <Animated.View layout={LinearTransition.duration(200)}>
         <Animated.View key={sort} entering={FadeIn.duration(180)} exiting={FadeOut.duration(100)}>
-          <Text className="text-body font-medium">{SORT_NAMES[sort]}</Text>
+          <Text className="text-body font-medium">{name}</Text>
         </Animated.View>
       </Animated.View>
     </Pressable>
@@ -187,6 +190,7 @@ function SearchPill({
   badge: number;
   docked: DerivedValue<number> | null;
 }) {
+  const { t } = useTranslation();
   const box = useAnimatedStyle(() => ({
     height: docked ? interpolate(docked.value, [0, 1], [60, 48]) : 60,
     shadowOpacity: docked ? interpolate(docked.value, [0, 1], [0.08, 0.05]) : 0.08,
@@ -222,7 +226,11 @@ function SearchPill({
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={badge > 0 ? `Filters, ${badge} on` : "Filters"}
+          accessibilityLabel={
+            badge > 0
+              ? t("screens.search.filtersOn", { count: badge })
+              : t("screens.search.filters")
+          }
           hitSlop={6}
           onPress={onFilter}
         >
@@ -244,6 +252,7 @@ function SearchPill({
 }
 
 export default function SearchTab() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const phone = useHere();
   // Where and when, set from the search bar (options 4 and 5): near the player and today, any time,
@@ -268,20 +277,8 @@ export default function SearchTab() {
   // the tap never waits on the list.
   const searchedSport = useDeferredValue(sport);
   const [sortChoice, setSortChoice] = useState<SearchSort | undefined>(undefined);
-  // The list or the map, cross-faded; and how the list shows venues.
+  // The list or the map, cross-faded.
   const [mode, setMode] = useState<"list" | "map">("list");
-  const [layout, setLayout] = useState<"cards" | "rows">("cards");
-  // Cards ⟷ rows: every card on screen morphs (its photo shrinking into a thumbnail, the words
-  // sliding beside it), driven by this one value on the UI thread.
-  const compact = useSharedValue(0);
-  const toggleLayout = () => {
-    const next = layout === "cards" ? "rows" : "cards";
-    setLayout(next);
-    compact.value = withTiming(next === "rows" ? 1 : 0, {
-      duration: 320,
-      easing: Easing.inOut(Easing.cubic),
-    });
-  };
   const [header, setHeader] = useState(0);
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
@@ -348,9 +345,9 @@ export default function SearchTab() {
     total === null
       ? " "
       : // The count found: the search bar already says where and when (user, 2026-11-20).
-        `${total} ${total === 1 ? "venue" : "venues"} found`;
+        t("screens.search.found", { count: total });
 
-  const whereLabel = here ? "Near me" : where?.kind === "area" ? where.name : " ";
+  const whereLabel = here ? t("screens.search.nearMe") : where?.kind === "area" ? where.name : " ";
   const whenLabel = whenText(when, search.timezone);
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");
@@ -391,7 +388,11 @@ export default function SearchTab() {
       >
         <Chip
           id="filters"
-          label={applied.length > 0 ? `Filters · ${applied.length}` : "Filters"}
+          label={
+            applied.length > 0
+              ? t("screens.search.filtersCount", { count: applied.length })
+              : t("screens.search.filters")
+          }
           on={false}
           icon={<IconAdjustmentsHorizontal size={16} color={colors.ink} strokeWidth={2} />}
           onSelect={onChip}
@@ -401,6 +402,7 @@ export default function SearchTab() {
             key={each}
             id={`sport:${each}`}
             label={sportName(each)}
+            ball={SPORT_ICONS[each]}
             on={sport === each}
             onSelect={onChip}
           />
@@ -410,7 +412,7 @@ export default function SearchTab() {
               <Chip
                 key={size}
                 id={`size:${size}`}
-                label={SIZE_NAMES[size]}
+                label={sizeName(size)}
                 on={filters.size === size}
                 onSelect={onChip}
               />
@@ -468,10 +470,10 @@ export default function SearchTab() {
   const renderItem = useCallback(
     ({ item }: { item: VenueCard }) => (
       <Animated.View entering={FadeIn.duration(200)}>
-        <VenueListCard card={item} currency={currency} timezone={timezone} compact={compact} />
+        <VenueListCard card={item} currency={currency} timezone={timezone} />
       </Animated.View>
     ),
-    [currency, timezone, compact],
+    [currency, timezone],
   );
 
   const empty = search.loading ? (
@@ -481,28 +483,37 @@ export default function SearchTab() {
   ) : search.error ? (
     <View className="items-start gap-4 pt-10">
       <Text className="text-subtitle text-ink-2">{search.error}</Text>
-      <Button label="Try again" size="small" onPress={search.refresh} />
+      <Button label={t("common.actions.tryAgain")} size="small" onPress={search.refresh} />
     </View>
   ) : (
     // "Lights out" (Figma 114:2): what wasn't found, and the one way out.
     <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">
       <LightsOutArt />
-      <Text className="mt-3 text-heading font-semibold">Uh oh!</Text>
+      <Text className="mt-3 text-heading font-semibold">{t("screens.search.empty.title")}</Text>
       <Text className="mt-2 text-center text-subtitle text-ink-2">
-        {`No ${searchedSport ? SPORT_PLACES[searchedSport] : "venues"}${
-          here ? ` within ${radius} km` : where?.kind === "area" ? ` in ${where.name}` : ""
-        } ${
-          when.start
-            ? `are free ${dayText(when.date, search.timezone).toLowerCase()} at ${hourLabel(Number(when.start.slice(0, 2)))}`
+        {t("screens.search.empty.sentence", {
+          what: searchedSport
+            ? t(`screens.search.empty.places.${searchedSport}`)
+            : t("screens.search.empty.venues"),
+          where: here
+            ? t("screens.search.empty.within", { km: radius })
+            : where?.kind === "area"
+              ? t("screens.search.empty.in", { area: where.name })
+              : "",
+          when: when.start
+            ? t("screens.search.empty.freeAt", {
+                day: dayText(when.date, search.timezone).toLowerCase(),
+                hour: hourLabel(Number(when.start.slice(0, 2))),
+              })
             : when.date
-              ? `have a free hour on ${dayText(when.date, search.timezone)}`
-              : "have a free hour left today"
-        }.`}
+              ? t("screens.search.empty.freeOn", { day: dayText(when.date, search.timezone) })
+              : t("screens.search.empty.freeToday"),
+        })}
       </Text>
       {applied.length > 0 || filters.size ? (
         <View className="mt-6">
           <Button
-            label="Clear filters"
+            label={t("screens.search.clearFilters")}
             size="small"
             quietLabel
             onPress={() => setFilters(NO_FILTERS)}
@@ -511,7 +522,7 @@ export default function SearchTab() {
       ) : here && radius !== null && radius < MAX_RADIUS ? (
         <View className="mt-6">
           <Button
-            label={`Search within ${MAX_RADIUS} km`}
+            label={t("common.searchWithin", { km: MAX_RADIUS })}
             size="small"
             quietLabel
             onPress={() => setWhereChoice({ kind: "near", radius: MAX_RADIUS })}
@@ -520,7 +531,7 @@ export default function SearchTab() {
       ) : sport ? (
         <View className="mt-6">
           <Button
-            label="Show all sports"
+            label={t("screens.search.showAllSports")}
             size="small"
             quietLabel
             onPress={() => setSport(undefined)}
@@ -544,7 +555,7 @@ export default function SearchTab() {
         ListHeaderComponent={
           <View className="gap-4 pb-5">
             <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-              Search
+              {t("screens.search.title")}
             </Text>
             {/* The bar's slot: the bar itself floats over it (below), so it can dock. */}
             <View
@@ -556,22 +567,7 @@ export default function SearchTab() {
             {chips}
             <View className="flex-row items-center justify-between">
               <Text className="text-body text-ink-2">{summary}</Text>
-              <View className="flex-row items-center gap-4">
-                <SortLabel sort={sort} onPress={openFilters} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={layout === "cards" ? "Show as rows" : "Show as cards"}
-                  hitSlop={8}
-                  onPress={toggleLayout}
-                  className="active:opacity-60"
-                >
-                  {layout === "cards" ? (
-                    <IconLayoutList size={20} color={colors.ink} strokeWidth={2} />
-                  ) : (
-                    <IconLayoutGrid size={20} color={colors.ink} strokeWidth={2} />
-                  )}
-                </Pressable>
-              </View>
+              <SortLabel sort={sort} onPress={openFilters} />
             </View>
           </View>
         }
@@ -645,7 +641,7 @@ export default function SearchTab() {
           pointerEvents="box-none"
         >
           <MapToggle
-            label="Map"
+            label={t("screens.search.map")}
             icon={<IconMap size={18} color={colors.white} strokeWidth={2} />}
             onPress={() => setMode("map")}
           />
@@ -655,9 +651,9 @@ export default function SearchTab() {
   );
 
   // The list and the map fade over each other; where covers both while it's being chosen, and when
-  // is a sheet over them.
+  // is a sheet over them. Not a Screen, so it sets the direction itself.
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       {mode === "map" ? (
         <Animated.View
           key="map"

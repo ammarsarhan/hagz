@@ -22,13 +22,14 @@ interface PhoneFieldProps {
   error?: string;
 }
 
-// The country code sits before the number in grey, like a unit.
+// The country code sits before the number in grey, like a unit. Phone numbers read left to right
+// in Arabic too, so the box keeps that direction.
 export function PhoneField({ value, onChangeText, label, error }: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
   return (
     <View className={error ? "" : "mb-4"}>
       {label ? <FieldLabel>{label}</FieldLabel> : null}
-      <FieldBox focused={focused} error={Boolean(error)}>
+      <FieldBox focused={focused} error={Boolean(error)} ltr>
         <View className="flex-row items-center gap-0.5">
           <Text className="text-[16px] text-unit">+20</Text>
           <IconChevronDown size={16} color={colors.unit} strokeWidth={2} />
@@ -46,6 +47,7 @@ export function PhoneField({ value, onChangeText, label, error }: PhoneFieldProp
           autoComplete="tel"
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          style={{ textAlign: "left", writingDirection: "ltr" }}
         />
       </FieldBox>
       {error ? <FieldError>{error}</FieldError> : null}

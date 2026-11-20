@@ -1,12 +1,14 @@
 import type { components } from "@hagz/api";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { Text } from "@/components/text";
 import { api, auth } from "@/lib/api";
 import { send } from "@/lib/api-errors";
+import { isRTL } from "@/lib/language";
 import { signOut } from "@/lib/session";
 
 type Customer = components["schemas"]["Customer"];
@@ -15,6 +17,7 @@ type Customer = components["schemas"]["Customer"];
 // Create account (lime, a big moment) and Sign in. Read again each time the tab is opened, so it
 // follows signing in elsewhere.
 export default function AccountTab() {
+  const { t } = useTranslation();
   // Undefined while checking; null for a guest.
   const [customer, setCustomer] = useState<Customer | null | undefined>(undefined);
 
@@ -36,16 +39,20 @@ export default function AccountTab() {
   );
 
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-white px-6">
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-white px-6"
+      style={{ direction: isRTL ? "rtl" : "ltr" }}
+    >
       <View className="mt-6 gap-2">
         <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-          Account
+          {t("screens.account.title")}
         </Text>
         {customer === undefined ? null : (
           <Text className="text-subtitle text-ink-2">
             {customer
-              ? `Signed in as ${customer.name}.`
-              : "Create an account or sign in to book and keep your bookings."}
+              ? t("screens.account.signedInAs", { name: customer.name })
+              : t("screens.account.guest")}
           </Text>
         )}
       </View>
@@ -53,18 +60,22 @@ export default function AccountTab() {
         <View className="mt-8 gap-2.5">
           {customer ? (
             <Button
-              label="Sign out"
+              label={t("common.actions.signOut")}
               variant="secondary"
               onPress={() => void signOut().then(() => setCustomer(null))}
             />
           ) : (
             <>
               <Button
-                label="Create account"
+                label={t("common.actions.createAccount")}
                 variant="moment"
                 onPress={() => router.push("/sign-up")}
               />
-              <Button label="Sign in" variant="secondary" onPress={() => router.push("/sign-in")} />
+              <Button
+                label={t("common.actions.signIn")}
+                variant="secondary"
+                onPress={() => router.push("/sign-in")}
+              />
             </>
           )}
         </View>

@@ -1,6 +1,7 @@
 import { createApiClient } from "@hagz/api";
 import { secureSessionStore } from "@hagz/api/secure-store";
 import Constants from "expo-constants";
+import { language } from "./language";
 import { resetTo } from "./navigation";
 
 // EXPO_PUBLIC_API_URL in builds. In development, the machine Metro serves from, so simulators,
@@ -22,8 +23,8 @@ export const reachable = (url: string) =>
 export const { api, auth } = createApiClient({
   baseUrl,
   audience: "customer",
-  // English only until the app gets its translations; problem messages follow.
-  language: () => "en",
+  // Problem messages and venue names come back in the app's language.
+  language: () => language,
   store: secureSessionStore(),
   app: { name: "customer", version: Constants.expoConfig?.version ?? "0.0.0" },
   // Signed out by the server (the session was revoked, expired or its account is gone): browsing

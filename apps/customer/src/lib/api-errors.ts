@@ -1,7 +1,5 @@
 import { errorMessage, isProblem, shortErrorMessage, type Problem } from "@hagz/api";
-
-// The customer app is English only until it gets its translations (like onboarding).
-const LANGUAGE = "en";
+import { language } from "./language";
 
 // openapi-fetch answers { data } or { error }, and throws when there's no answer at all (offline).
 // `send` folds all three into one shape, so screens handle every failure in one place.
@@ -21,8 +19,8 @@ export const send = async <T>(
 export const problem = (error: unknown): Problem | undefined =>
   isProblem(error) ? error : undefined;
 
-// For under a field: problems the person can fix.
-export const fieldMessage = (error: unknown) => errorMessage(error, LANGUAGE);
+// For under a field, in the app's language: problems the person can fix.
+export const fieldMessage = (error: unknown) => errorMessage(error, language);
 
 // For the HUD: a few words, for problems that aren't the person's fault.
-export const hudMessage = (error: unknown) => shortErrorMessage(error, LANGUAGE);
+export const hudMessage = (error: unknown) => shortErrorMessage(error, language);

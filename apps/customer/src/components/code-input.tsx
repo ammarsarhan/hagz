@@ -14,7 +14,8 @@ interface CodeInputProps {
   disabled?: boolean;
 }
 
-// Six boxes driven by one hidden input, so typing, pasting and iOS's code autofill all work.
+// Six boxes driven by one hidden input, so typing, pasting and iOS's code autofill all work. Codes
+// read left to right in Arabic too.
 export function CodeInput({ value, onChangeText, error, disabled = false }: CodeInputProps) {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   const [focused, setFocused] = useState(false);
@@ -27,6 +28,7 @@ export function CodeInput({ value, onChangeText, error, disabled = false }: Code
         onPress={() => input.current?.focus()}
         disabled={disabled}
         className="flex-row gap-2"
+        style={{ direction: "ltr" }}
       >
         {Array.from({ length: LENGTH }, (_, i) => {
           const char = value[i];

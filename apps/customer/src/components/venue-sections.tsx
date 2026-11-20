@@ -1,6 +1,7 @@
 import { refundBands } from "@hagz/contracts";
 import type { Icon } from "@tabler/icons-react-native";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Linking,
   Platform,
@@ -15,7 +16,9 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { SvgXml } from "react-native-svg";
 import { MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import i18n from "@/i18next/i18next";
 import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
 import { formatPrice } from "@/lib/money";
 import {
   groundLine,
@@ -40,7 +43,7 @@ import { Text } from "./text";
 import { VenueLayout } from "./venue-layout";
 
 // The venue page's parts (Figma C5, frames 59:2 and 60:2), top to bottom. Rows follow Public's
-// pattern: grey label on the left, the value on the right, hairlines between.
+// pattern: grey label at the start, the value at the end, hairlines between (mirrored in Arabic).
 
 export const Hairline = () => <View className="h-px bg-border" />;
 
@@ -122,6 +125,7 @@ export function VenueHeader({
   distance: string | null;
   onTitleLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const { t } = useTranslation();
   const sports = sportsLine(venue);
   return (
     <View className="gap-1.5 px-6 pt-7">
@@ -130,7 +134,7 @@ export function VenueHeader({
         className="text-title font-semibold tracking-[-0.4px]"
         onLayout={onTitleLayout}
       >
-        {venue.name ?? "Venue"}
+        {venue.name ?? t("screens.venue.fallbackName")}
       </Text>
       {venue.location.area ? (
         <Text className="text-body text-ink-2">
@@ -146,11 +150,11 @@ export function VenueHeader({
             <Text className="text-body font-medium">{venue.rating.average.toFixed(2)}</Text>
             <Text className="text-body text-ink-2">·</Text>
             <Text className="text-body text-ink-2">
-              {venue.rating.count} {venue.rating.count === 1 ? "review" : "reviews"}
+              {t("screens.venue.reviews", { count: venue.rating.count })}
             </Text>
           </>
         ) : (
-          <Text className="text-body text-ink-2">No reviews yet</Text>
+          <Text className="text-body text-ink-2">{t("screens.venue.noReviews")}</Text>
         )}
       </View>
     </View>
@@ -165,10 +169,14 @@ const highlightsOf = (venue: PublicVenue) => {
     booking.instantConfirmation
       ? {
           icon: IconBolt,
-          title: "Instant confirmation",
-          line: "No waiting for the venue to accept.",
+          title: i18n.t("screens.venue.highlights.instant"),
+          line: i18n.t("screens.venue.highlights.instantLine"),
         }
-      : { icon: IconClock, title: "Confirmed by the venue", line: "They accept each booking." },
+      : {
+          icon: IconClock,
+          title: i18n.t("screens.venue.highlights.venueConfirms"),
+          line: i18n.t("screens.venue.highlights.venueConfirmsLine"),
+        },
   ];
   const cancellation = booking.cancellation;
   if (cancellation) {
@@ -179,12 +187,20 @@ const highlightsOf = (venue: PublicVenue) => {
         icon: IconCalendarX,
         title:
           first.refundPercent === 100
-            ? `Free cancellation up to ${hoursLabel(first.from)} before`
-            : `${first.refundPercent}% back up to ${hoursLabel(first.from)} before`,
+            ? i18n.t("screens.venue.highlights.freeCancellation", {
+                hours: hoursLabel(first.from),
+              })
+            : i18n.t("screens.venue.highlights.partBack", {
+                percent: first.refundPercent,
+                hours: hoursLabel(first.from),
+              }),
         line:
           next && next.refundPercent > 0
-            ? `${next.refundPercent}% back up to ${hoursLabel(next.from)} before.`
-            : "No refund after that.",
+            ? i18n.t("screens.venue.highlights.nextBack", {
+                percent: next.refundPercent,
+                hours: hoursLabel(next.from),
+              })
+            : i18n.t("screens.venue.highlights.noRefundAfter"),
       });
     }
   }
@@ -193,12 +209,22 @@ const highlightsOf = (venue: PublicVenue) => {
     payment.mode === "DEPOSIT"
       ? {
           icon: IconCash,
-          title: `${payment.depositPercent ?? 0}% online deposit`,
-          line: "The rest at the venue.",
+          title: i18n.t("screens.venue.highlights.deposit", {
+            percent: payment.depositPercent ?? 0,
+          }),
+          line: i18n.t("screens.venue.highlights.depositLine"),
         }
       : payment.mode === "PLATFORM"
-        ? { icon: IconCash, title: "Pay online", line: "In full when you book." }
-        : { icon: IconCash, title: "Pay at the venue", line: "In cash, when you play." },
+        ? {
+            icon: IconCash,
+            title: i18n.t("screens.venue.highlights.payOnline"),
+            line: i18n.t("screens.venue.highlights.payOnlineLine"),
+          }
+        : {
+            icon: IconCash,
+            title: i18n.t("screens.venue.highlights.payAtVenue"),
+            line: i18n.t("screens.venue.highlights.payAtVenueLine"),
+          },
   );
   return rows;
 };
@@ -221,14 +247,15 @@ export function Highlights({ venue }: { venue: PublicVenue }) {
 
 // A ground's hourly price, or that it's closed.
 function GroundPrice({ ground, currency }: { ground: PublicGround; currency: string }) {
+  const { t } = useTranslation();
   if (ground.status === "MAINTENANCE") {
-    return <Text className="text-label text-unit">Closed for now</Text>;
+    return <Text className="text-label text-unit">{t("screens.venue.grounds.closed")}</Text>;
   }
   if (ground.priceFrom === null) return null;
   return (
     <Text className="text-subtitle font-medium">
       {formatPrice(ground.priceFrom, currency)}
-      <Text className="text-subtitle text-ink-2">/hr</Text>
+      <Text className="text-subtitle text-ink-2">{t("formats.perHour")}</Text>
     </Text>
   );
 }
@@ -236,8 +263,11 @@ function GroundPrice({ ground, currency }: { ground: PublicGround; currency: str
 // How long a booking there can be: "Book 1 hour", "Book 1–2 hours".
 const lengthLabel = (ground: PublicGround) =>
   ground.minimumSlots === ground.maximumSlots
-    ? `Book ${hoursLabel(ground.minimumSlots)}`
-    : `Book ${ground.minimumSlots}–${ground.maximumSlots} hours`;
+    ? i18n.t("screens.venue.grounds.book", { hours: hoursLabel(ground.minimumSlots) })
+    : i18n.t("screens.venue.grounds.bookRange", {
+        min: ground.minimumSlots,
+        max: ground.maximumSlots,
+      });
 
 // A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
 // it is, how long a booking can be, and a See times button across the bottom. Picking only fades
@@ -258,6 +288,7 @@ function GroundOption({
   onPick: () => void;
   onSeeTimes: () => void;
 }) {
+  const { t } = useTranslation();
   const shown = useSharedValue(picked ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
@@ -291,7 +322,9 @@ function GroundOption({
         <View className="mt-auto pt-3">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`See times for ${ground.name ?? kindOf(ground)}`}
+            accessibilityLabel={t("screens.venue.grounds.seeTimesFor", {
+              name: ground.name ?? kindOf(ground),
+            })}
             onPress={() => {
               if (!picked) onPick();
               onSeeTimes();
@@ -313,12 +346,19 @@ function GroundOption({
   );
 }
 
-// "See times →", in ink on both the grey button and the lime one.
+// "See times →", in ink on both the grey button and the lime one. The arrow points forward: left
+// in Arabic.
 function SeeTimesLabel() {
+  const { t } = useTranslation();
   return (
     <View className="flex-row items-center gap-1.5">
-      <Text className="text-body font-semibold">See times</Text>
-      <IconArrowRight size={16} color={colors.ink} strokeWidth={2.25} />
+      <Text className="text-body font-semibold">{t("screens.venue.grounds.seeTimes")}</Text>
+      <IconArrowRight
+        size={16}
+        color={colors.ink}
+        strokeWidth={2.25}
+        style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+      />
     </View>
   );
 }
@@ -352,6 +392,7 @@ export function GroundsSection({
   onLayout: (event: LayoutChangeEvent) => void;
   onSeeTimes: () => void;
 }) {
+  const { t } = useTranslation();
   const { width: screen } = useWindowDimensions();
   const card = Math.round(screen * CARD_SHARE);
   const step = card + CARD_GAP;
@@ -386,7 +427,7 @@ export function GroundsSection({
   };
 
   return (
-    <Section title="Grounds" onLayout={onLayout}>
+    <Section title={t("screens.venue.grounds.title")} onLayout={onLayout}>
       {venue.layout ? (
         <VenueLayout
           layout={venue.layout}
@@ -442,20 +483,26 @@ export function BookingSection({
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const { t } = useTranslation();
   const { booking } = venue;
   const facts = [
     {
-      label: "Confirmation",
-      value: booking.instantConfirmation ? "Instant" : "The venue confirms",
+      label: t("screens.venue.booking.confirmation"),
+      value: booking.instantConfirmation
+        ? t("screens.venue.booking.instant")
+        : t("screens.venue.booking.venueConfirms"),
     },
-    { label: "Book up to", value: noticeLabel(booking.minimumNotice) },
-    { label: "Payment", value: paymentLabel(booking.payment) },
+    { label: t("screens.venue.booking.bookUpTo"), value: noticeLabel(booking.minimumNotice) },
+    { label: t("screens.venue.booking.payment"), value: paymentLabel(booking.payment) },
   ];
   if (booking.loyalty) {
-    facts.push({ label: "Loyalty", value: `1 free after ${booking.loyalty.stamps} bookings` });
+    facts.push({
+      label: t("screens.venue.booking.loyalty"),
+      value: t("screens.venue.booking.loyaltyValue", { count: booking.loyalty.stamps }),
+    });
   }
   return (
-    <Section title="How booking works" onLayout={onLayout}>
+    <Section title={t("screens.venue.booking.title")} onLayout={onLayout}>
       <Rows>
         {facts.map((fact) => (
           <FactRow key={fact.label} {...fact} />
@@ -468,23 +515,28 @@ export function BookingSection({
 // "24 hours or more", "6 to 24 hours", "Under 6 hours": a band of notice before the start.
 const bandLabel = (from: number, to: number | null) =>
   to === null
-    ? `${hoursLabel(from)} or more`
+    ? i18n.t("screens.venue.cancellation.orMore", { hours: hoursLabel(from) })
     : from === 0
-      ? `Under ${hoursLabel(to)}`
-      : `${from} to ${hoursLabel(to)}`;
+      ? i18n.t("screens.venue.cancellation.under", { hours: hoursLabel(to) })
+      : i18n.t("screens.venue.cancellation.between", { from, hours: hoursLabel(to) });
 
 // The policy as a table: how much notice, and how much comes back (the same bands the server's
 // plain-words summary is written from). A venue cancelling always refunds in full.
 export function CancellationSection({ venue }: { venue: PublicVenue }) {
+  const { t } = useTranslation();
   const cancellation = venue.booking.cancellation;
   if (!cancellation) return null;
   const bands = refundBands(cancellation.tiers);
   return (
-    <Section title="Cancellation policy">
+    <Section title={t("screens.venue.cancellation.title")}>
       <View className="overflow-hidden rounded-field border border-border">
         <View className="flex-row items-center justify-between bg-chip px-4 py-2.5">
-          <Text className="text-caption font-medium text-ink-2">Cancel before it starts</Text>
-          <Text className="text-caption font-medium text-ink-2">You get back</Text>
+          <Text className="text-caption font-medium text-ink-2">
+            {t("screens.venue.cancellation.before")}
+          </Text>
+          <Text className="text-caption font-medium text-ink-2">
+            {t("screens.venue.cancellation.back")}
+          </Text>
         </View>
         {bands.map((band, index) => (
           <View key={band.from}>
@@ -493,16 +545,16 @@ export function CancellationSection({ venue }: { venue: PublicVenue }) {
               <Text className="text-body">{bandLabel(band.from, band.to)}</Text>
               <Text className={`text-body ${band.refundPercent > 0 ? "font-medium" : "text-unit"}`}>
                 {band.refundPercent === 100
-                  ? "Everything"
+                  ? t("screens.venue.cancellation.everything")
                   : band.refundPercent === 0
-                    ? "Nothing"
-                    : `${band.refundPercent}%`}
+                    ? t("screens.venue.cancellation.nothing")
+                    : t("formats.percent", { percent: band.refundPercent })}
               </Text>
             </View>
           </View>
         ))}
       </View>
-      <Text className="text-label text-unit">If the venue cancels, you get everything back.</Text>
+      <Text className="text-label text-unit">{t("screens.venue.cancellation.venueCancels")}</Text>
     </Section>
   );
 }
@@ -514,8 +566,9 @@ export function AmenitiesSection({
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Section title="What’s here" onLayout={onLayout}>
+    <Section title={t("screens.venue.amenities")} onLayout={onLayout}>
       <View className="flex-row flex-wrap gap-2">
         {venue.amenities.map((amenity) => (
           <View
@@ -529,7 +582,7 @@ export function AmenitiesSection({
                 <Text className="text-label text-ink-2">
                   {" · "}
                   {formatPrice(amenity.price, venue.marketplace.currency)}
-                  {amenity.pricing === "PER_HOUR" ? "/hr" : ""}
+                  {amenity.pricing === "PER_HOUR" ? t("formats.perHour") : ""}
                 </Text>
               ) : null}
             </Text>
@@ -541,8 +594,9 @@ export function AmenitiesSection({
 }
 
 export function AboutSection({ description }: { description: string }) {
+  const { t } = useTranslation();
   return (
-    <Section title="About">
+    <Section title={t("screens.venue.about")}>
       <Text className="text-body">{description}</Text>
     </Section>
   );
@@ -555,21 +609,20 @@ export function ReviewsSection({
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Section title="Reviews" onLayout={onLayout}>
+    <Section title={t("screens.venue.reviewsTitle")} onLayout={onLayout}>
       {venue.rating.average !== null ? (
         <View className="flex-row items-end gap-3">
           <Text className="text-[40px] leading-[44px] font-medium tracking-[-0.6px]">
             {venue.rating.average.toFixed(2)}
           </Text>
           <Text className="pb-1.5 text-label text-ink-2">
-            from {venue.rating.count} {venue.rating.count === 1 ? "player" : "players"}
+            {t("screens.venue.fromPlayers", { count: venue.rating.count })}
           </Text>
         </View>
       ) : (
-        <Text className="text-body text-ink-2">
-          No reviews yet. Players can review a venue after they’ve played there.
-        </Text>
+        <Text className="text-body text-ink-2">{t("screens.venue.noReviewsBody")}</Text>
       )}
     </Section>
   );
@@ -595,9 +648,10 @@ export function WhereSection({
   distance: string | null;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const { t } = useTranslation();
   const { coordinates, address, area } = venue.location;
   return (
-    <Section title="Where it is" onLayout={onLayout}>
+    <Section title={t("screens.venue.where")} onLayout={onLayout}>
       {coordinates ? (
         <View className="h-[180px] overflow-hidden rounded-2xl" pointerEvents="none">
           <MapView
@@ -622,7 +676,7 @@ export function WhereSection({
       <View className="flex-row items-center justify-between gap-4">
         <View className="shrink gap-0.5">
           <Text className="text-subtitle font-medium">
-            {address ?? area ?? "Address not given"}
+            {address ?? area ?? t("screens.venue.noAddress")}
           </Text>
           {address && area ? (
             <Text className="text-label text-ink-2">
@@ -633,7 +687,7 @@ export function WhereSection({
         </View>
         {coordinates ? (
           <Link
-            label="Directions"
+            label={t("screens.venue.directions")}
             onPress={() =>
               openDirections(coordinates.latitude, coordinates.longitude, venue.name ?? "")
             }

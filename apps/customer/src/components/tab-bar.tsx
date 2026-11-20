@@ -1,9 +1,11 @@
 import type { Icon } from "@tabler/icons-react-native";
 import type { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
 import { IconHome, IconSearch, IconTicket, IconUserCircle, IconUsersGroup } from "./icons";
 import { Text } from "./text";
 
@@ -15,26 +17,31 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 // the big moments.
 const ROW = 49;
 
-const TABS: Record<string, { icon: Icon; label: string }> = {
-  home: { icon: IconHome, label: "Home" },
-  search: { icon: IconSearch, label: "Search" },
-  community: { icon: IconUsersGroup, label: "Community" },
-  bookings: { icon: IconTicket, label: "Bookings" },
-  account: { icon: IconUserCircle, label: "Account" },
+// Each tab's strings live under components.tabs.<tab>. In Arabic the row runs right to left, Home
+// on the right.
+type Tab = "home" | "search" | "community" | "bookings" | "account";
+const TABS: Record<Tab, Icon> = {
+  home: IconHome,
+  search: IconSearch,
+  community: IconUsersGroup,
+  bookings: IconTicket,
+  account: IconUserCircle,
 };
+const isTab = (name: string): name is Tab => name in TABS;
 
 export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   return (
     <View
       className="flex-row border-t border-hairline bg-white"
-      style={{ paddingBottom: insets.bottom }}
+      style={{ paddingBottom: insets.bottom, direction: isRTL ? "rtl" : "ltr" }}
     >
       {state.routes.map((route, index) => {
-        const tab = TABS[route.name];
-        if (!tab) return null;
+        if (!isTab(route.name)) return null;
+        const label = t(`components.tabs.${route.name}`);
         const focused = state.index === index;
-        const Glyph = tab.icon;
+        const Glyph = TABS[route.name];
         const press = () => {
           const event = emitter.emit({
             type: "tabPress",
@@ -47,7 +54,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
           <Pressable
             key={route.key}
             accessibilityRole="tab"
-            accessibilityLabel={tab.label}
+            accessibilityLabel={label}
             accessibilityState={{ selected: focused }}
             onPress={press}
             className="flex-1 items-center gap-[3px] pt-[7px]"
@@ -61,7 +68,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
             <Text
               className={`text-[11px] leading-[13px] ${focused ? "font-semibold text-ink" : "font-medium text-ink-3"}`}
             >
-              {tab.label}
+              {label}
             </Text>
           </Pressable>
         );

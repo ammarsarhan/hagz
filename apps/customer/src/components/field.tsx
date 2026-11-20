@@ -10,10 +10,13 @@ export function FieldBox({
   focused,
   error,
   children,
+  ltr = false,
 }: {
   focused: boolean;
   error: boolean;
   children: ReactNode;
+  // Left to right in Arabic too (phone numbers).
+  ltr?: boolean;
 }) {
   const border = error
     ? "border-[1.5px] border-red px-[15.5px]"
@@ -21,7 +24,10 @@ export function FieldBox({
       ? "border-[1.5px] border-ink px-[15.5px]"
       : "border border-border px-4";
   return (
-    <View className={`h-14 flex-row items-center gap-2.5 rounded-field bg-white ${border}`}>
+    <View
+      className={`h-14 flex-row items-center gap-2.5 rounded-field bg-white ${border}`}
+      style={ltr ? { direction: "ltr" } : undefined}
+    >
       {children}
     </View>
   );

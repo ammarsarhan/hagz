@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
@@ -13,6 +14,7 @@ import { isCompletePhone, toE164 } from "@/lib/phone";
 // Reset, step 1: the number (filled in from sign in when there was one). The API answers the same
 // for every number, so nobody can tell from here whether one has an account.
 export default function ResetPhone() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ phone?: string }>();
   const [phone, setPhone] = useState(params.phone ?? "");
   const [error, setError] = useState<string>();
@@ -44,7 +46,7 @@ export default function ResetPhone() {
     <Screen
       footer={
         <Button
-          label="Send code"
+          label={t("common.actions.sendCode")}
           disabled={!isCompletePhone(phone)}
           loading={loading}
           onPress={() => void sendCode()}
@@ -52,8 +54,8 @@ export default function ResetPhone() {
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title subtitle="Enter your mobile number and we’ll send a code on WhatsApp.">
-        Reset your password
+      <Title subtitle={t("screens.forgotPassword.phone.subtitle")}>
+        {t("screens.forgotPassword.phone.title")}
       </Title>
       <PhoneField
         value={phone}

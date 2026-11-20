@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
@@ -15,6 +16,7 @@ import { isCompletePhone, toE164 } from "@/lib/phone";
 // (no enumeration); an existing account only shows up after the code is confirmed. Signing in is
 // reached from here, for anyone who already has an account.
 export default function SignUpPhone() {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
@@ -46,20 +48,24 @@ export default function SignUpPhone() {
       footer={
         <>
           <Text className="pb-1 text-center text-body text-ink-2">
-            Already have an account?{" "}
-            <Text
-              accessibilityRole="link"
-              className="font-medium text-ink underline"
-              onPress={() => router.push({ pathname: "/sign-in", params: { phone } })}
-            >
-              Sign in
-            </Text>
+            <Trans
+              i18nKey="screens.signUp.phone.haveAccount"
+              components={{
+                link: (
+                  <Text
+                    accessibilityRole="link"
+                    className="font-medium text-ink underline"
+                    onPress={() => router.push({ pathname: "/sign-in", params: { phone } })}
+                  />
+                ),
+              }}
+            />
           </Text>
           <Text className="mx-3 text-center text-caption text-unit">
-            By continuing you agree to Hagz’s Terms and Privacy Policy.
+            {t("screens.signUp.phone.terms")}
           </Text>
           <Button
-            label="Send code"
+            label={t("common.actions.sendCode")}
             disabled={!isCompletePhone(phone)}
             loading={loading}
             onPress={() => void sendCode()}
@@ -68,9 +74,7 @@ export default function SignUpPhone() {
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title subtitle="We’ll send a code on WhatsApp to confirm it’s yours.">
-        What’s your mobile number?
-      </Title>
+      <Title subtitle={t("screens.signUp.phone.subtitle")}>{t("screens.signUp.phone.title")}</Title>
       <PhoneField
         value={phone}
         onChangeText={(digits) => {
