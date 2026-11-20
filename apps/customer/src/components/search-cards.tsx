@@ -1,7 +1,14 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, useWindowDimensions, View, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
+} from "react-native";
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
@@ -103,7 +110,7 @@ function Cover({ card, style }: { card: VenueCard; style: ViewStyle }) {
 const THUMB = 84;
 const BESIDE = 14;
 const UNDER = 16;
-const CHIPS_GAP = 12;
+const CHIPS_GAP = 16;
 const GUTTER = 24;
 
 export function VenueListCard({
@@ -155,45 +162,58 @@ export function VenueListCard({
 
   return (
     <Animated.View style={box}>
-      <Animated.View className="absolute top-0 left-0 overflow-hidden bg-[#c4c8cf]" style={photo}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${card.name ?? "the venue"}`}
-          onPress={() => openVenue(card)}
-          style={{ flex: 1 }}
-        >
-          {card.cover ? (
-            <Image
-              source={{ uri: reachable(card.cover.url) }}
-              style={{ width: "100%", height: "100%" }}
-              contentFit="cover"
-              transition={150}
+      {/* The whole card is one button; the free times inside it are their own. A press tints a
+          very light grey a little past the card's edges, so the tap shows. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${card.name ?? "the venue"}`}
+        onPress={() => openVenue(card)}
+        style={StyleSheet.absoluteFill}
+      >
+        {({ pressed }) => (
+          <>
+            <View
+              className="absolute -inset-3 rounded-2xl bg-[#f5f6f7]"
+              style={{ opacity: pressed ? 1 : 0 }}
             />
-          ) : null}
-        </Pressable>
-      </Animated.View>
-      <Animated.View className="absolute top-0 left-0" style={words}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => openVenue(card)}
-          onLayout={(event) => setWordsHeight(Math.round(event.nativeEvent.layout.height))}
-          className="gap-0.5"
-        >
-          <View className="flex-row items-center justify-between gap-3">
-            <Text className="shrink text-[17px] leading-[22px] font-medium" numberOfLines={1}>
-              {card.name ?? "Venue"}
-            </Text>
-            <Rating card={card} />
-          </View>
-          <Text className="text-body text-ink-2" numberOfLines={1}>
-            {placeText(card)}
-          </Text>
-          <Text className="text-body text-ink-2" numberOfLines={1}>
-            {sportsText(card.sports)}
-          </Text>
-          <Price card={card} currency={currency} />
-        </Pressable>
-      </Animated.View>
+            <Animated.View className="absolute top-0 left-0" style={words}>
+              <View
+                onLayout={(event) => setWordsHeight(Math.round(event.nativeEvent.layout.height))}
+              >
+                <View className="flex-row items-center justify-between gap-3">
+                  <Text className="shrink text-[18px] leading-6 font-medium" numberOfLines={1}>
+                    {card.name ?? "Venue"}
+                  </Text>
+                  <Rating card={card} />
+                </View>
+                <View className="mt-1.5 gap-0.5">
+                  <Text className="text-body text-ink-2" numberOfLines={1}>
+                    {placeText(card)}
+                  </Text>
+                  <Text className="text-body text-ink-2" numberOfLines={1}>
+                    {sportsText(card.sports)}
+                  </Text>
+                  <Price card={card} currency={currency} />
+                </View>
+              </View>
+            </Animated.View>
+            {/* After the words, so as the photo shrinks the words slide in under it, not over. */}
+            <Animated.View
+              className="absolute top-0 left-0 overflow-hidden bg-[#c4c8cf]"
+              style={photo}
+            >
+              {card.cover ? (
+                <Image
+                  source={{ uri: reachable(card.cover.url) }}
+                  style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                  transition={150}
+                />
+              ) : null}
+            </Animated.View>
+          </>
+        )}
+      </Pressable>
       <Animated.View
         className="absolute top-0 right-0 left-0"
         style={chips}
