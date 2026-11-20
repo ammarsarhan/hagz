@@ -19,6 +19,7 @@ import {
   IconPhoto,
   IconTrash,
 } from "@/components/icons";
+import { NoNameArt } from "@/components/no-name-art";
 import { ResendCode } from "@/components/resend-code";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
@@ -43,8 +44,7 @@ const TAB_ROW = 49;
 // The Account tab. Signed in (Figma C7, 154:2; the user, 2026-11-20): the staff app's account, with
 // the player's photo (tap to change), name and number, then their favorites, security, the app,
 // Sign out and the version. Rows for what isn't built yet (loyalty cards, notifications, the terms,
-// deleting the account) come with their phases. A guest keeps the plain sign-in prompt until its
-// own design. Read again each time the tab is opened, so it follows signing in elsewhere.
+// deleting the account) come with their phases. A guest gets an "Uh oh!" with a way in. Read again each time the tab is opened, so it follows signing in elsewhere.
 export default function AccountTab() {
   // Undefined while checking; null for a guest.
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
@@ -81,17 +81,21 @@ export default function AccountTab() {
   );
 }
 
+// A guest (Figma C7, 170:2, "No name on the shirt"; the user's pick, 2026-11-20): Search's "Uh oh!"
+// empty state for the Account tab, the shirt with no name, then Create account (lime, a big moment)
+// and Sign in.
 function Guest() {
   const { t } = useTranslation();
   return (
-    <View className="px-6">
-      <View className="mt-6 gap-2">
-        <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-          {t("screens.account.title")}
-        </Text>
-        <Text className="text-subtitle text-ink-2">{t("screens.account.guest")}</Text>
-      </View>
-      <View className="mt-8 gap-2.5">
+    <View className="flex-1 items-center justify-center px-8 pb-6">
+      <NoNameArt />
+      <Text accessibilityRole="header" className="mt-3 text-heading font-semibold">
+        {t("screens.account.guestTitle")}
+      </Text>
+      <Text className="mt-2 text-center text-subtitle text-ink-2">
+        {t("screens.account.guest")}
+      </Text>
+      <View className="mt-6 gap-2.5 self-stretch">
         <Button
           label={t("common.actions.createAccount")}
           variant="moment"

@@ -226,7 +226,9 @@ const en = {
       },
       account: {
         title: "Account",
-        guest: "Create an account or sign in to book and keep your bookings.",
+        guestTitle: "Uh oh!",
+        guest:
+          "You’re not signed in. Sign in or create an account to book, keep your favorites and collect free bookings.",
         yourHagz: "Your Hagz",
         favorites: {
           title: "Favorites",
