@@ -7,7 +7,7 @@ import { resetDatabase } from "../../support/database";
 import { createMarketplace } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
-// Search, first slice (PR 3.3): where, when, sport and size, ordering and pages.
+// Search (PR 3.3): where, when, the filters, ordering and pages.
 
 const MAADI = { latitude: 29.96, longitude: 31.25 };
 const DOKKI = { latitude: 30.04, longitude: 31.21 };
@@ -290,6 +290,123 @@ describe("filters and order", () => {
   });
 });
 
+describe("more filters", () => {
+  const ids = async (params: Record<string, string | number>) =>
+    (await found(params)).data.map((card) => card.id);
+
+  it("finds by surface and setting, either of several", async () => {
+    const { nile, padel } = await setup();
+    await prisma.ground.update({
+      where: { id: padel.groundId },
+      data: { surface: "HARD_COURT", environment: "INDOOR" },
+    });
+    expect(await ids({ surface: "HARD_COURT" })).toEqual([padel.id]);
+    expect(await ids({ setting: "OUTDOOR" })).toEqual([nile.id]);
+    expect(await ids({ setting: "INDOOR,OUTDOOR" })).toEqual([nile.id, padel.id]);
+    expect((await search({ surface: "LAVA" })).status).toBe(400);
+  });
+
+  it("finds venues with enough matching grounds", async () => {
+    const { nile, padel } = await setup();
+    await prisma.ground.create({
+      data: {
+        venueId: nile.id,
+        sport: "FOOTBALL",
+        size: "FIVE_A_SIDE",
+        surface: "ARTIFICIAL_TURF",
+        environment: "OUTDOOR",
+        position: 1,
+        basePrice: 60000,
+        peakPrice: 75000,
+      },
+    });
+    expect(await ids({ grounds: 2 })).toEqual([nile.id]);
+    expect(await ids({ grounds: 1 })).toEqual([nile.id, padel.id]);
+    // The ground filters count too: Wadi Padel's one ground isn't football.
+    expect(await ids({ grounds: 1, sport: "FOOTBALL" })).toEqual([nile.id]);
+  });
+
+  it("finds by the price of a free time, per hour", async () => {
+    const { nile, padel } = await setup();
+    await prisma.groundSlot.updateMany({
+      where: { groundId: padel.groundId },
+      data: { price: 30000 },
+    });
+    expect(await ids({ priceMax: 40000 })).toEqual([padel.id]);
+    expect(await ids({ priceMin: 50000 })).toEqual([nile.id]);
+    // Per hour, so a two-hour game at 300 EGP an hour is still under 400.
+    expect(await ids({ priceMax: 40000, hours: 2 })).toEqual([padel.id]);
+  });
+
+  it("finds venues with every amenity asked for", async () => {
+    const { nile, padel } = await setup();
+    const [parking, cafe] = await Promise.all(
+      ["parking", "cafe"].map((key) =>
+        prisma.amenityOption.create({
+          data: { marketplaceId: nile.marketplaceId, key, icon: key },
+        }),
+      ),
+    );
+    if (!parking || !cafe) throw new Error("No amenities.");
+    await prisma.venueAmenity.createMany({
+      data: [
+        { venueId: nile.id, optionId: parking.id, marketplaceId: nile.marketplaceId },
+        { venueId: nile.id, optionId: cafe.id, marketplaceId: nile.marketplaceId },
+        { venueId: padel.id, optionId: parking.id, marketplaceId: nile.marketplaceId },
+      ],
+    });
+    expect(await ids({ amenities: parking.id })).toEqual([nile.id, padel.id]);
+    expect(await ids({ amenities: `${parking.id},${cafe.id}` })).toEqual([nile.id]);
+  });
+
+  it("finds by rating and by how booking works", async () => {
+    const { nile, padel } = await setup();
+    expect(await ids({ rating: 4.5 })).toEqual([nile.id]);
+    await prisma.venueSettings.update({
+      where: { venueId: nile.id },
+      data: {
+        autoConfirm: false,
+        paymentMode: "PLATFORM",
+        cancellationPolicy: "STRICT",
+        loyaltyStamps: 5,
+        loyaltyWindow: 60,
+      },
+    });
+    await prisma.venueSettings.update({
+      where: { venueId: padel.id },
+      data: {
+        cancellationPolicy: "CUSTOM",
+        cancellationTiers: [{ hours: 12, refundPercent: 100 }],
+      },
+    });
+    expect(await ids({ instant: "true" })).toEqual([padel.id]);
+    expect(await ids({ instant: "false" })).toEqual([nile.id, padel.id]);
+    expect(await ids({ payment: "CASH" })).toEqual([padel.id]);
+    expect(await ids({ payment: "ONLINE" })).toEqual([nile.id]);
+    expect(await ids({ flexible: "true" })).toEqual([padel.id]);
+    expect(await ids({ loyalty: "true" })).toEqual([nile.id]);
+  });
+
+  it("sorts by the cheapest hour or the soonest start", async () => {
+    const { nile, padel } = await setup();
+    await prisma.groundSlot.updateMany({
+      where: { groundId: padel.groundId },
+      data: { price: 30000 },
+    });
+    expect(await ids({ sort: "PRICE" })).toEqual([padel.id, nile.id]);
+    // Midnight to 9 am taken at Wadi Padel: Nile Kickoff is free sooner.
+    await prisma.$executeRaw`
+      UPDATE "GroundSlot" SET status = 'BLOCKED'
+      WHERE "groundId" = ${padel.groundId}::uuid
+        AND "startsAt" < ((${tomorrow()}::date + '09:00'::time)::timestamp AT TIME ZONE 'Africa/Cairo')`;
+    const sooner = await found({ sort: "SOONEST", limit: 1 });
+    expect(sooner.data.map((card) => card.id)).toEqual([nile.id]);
+    expect(sooner.total).toBe(2);
+    const next = await found({ sort: "SOONEST", limit: 1, cursor: sooner.nextCursor ?? "" });
+    expect(next.data.map((card) => card.id)).toEqual([padel.id]);
+  });
+});
+
 describe("free hours", () => {
   it("counts the venues free to start each hour of a day, by the search's where and what", async () => {
     const { nile } = await setup();
@@ -324,6 +441,11 @@ describe("free hours", () => {
       radius: "3",
     });
     expect(near.hours.find((h) => h.hour === 20)?.venues).toBe(1);
+    // And by the other filters: from 8 pm both charge the peak 750 EGP, before it 600.
+    const cheap = await get({ priceMax: "70000" });
+    expect(cheap.hours.find((h) => h.hour === 20)?.venues).toBe(0);
+    expect(cheap.hours.find((h) => h.hour === 19)?.venues).toBe(2);
+    expect((await get({ rating: "4" })).hours.find((h) => h.hour === 19)?.venues).toBe(1);
   });
 });
 

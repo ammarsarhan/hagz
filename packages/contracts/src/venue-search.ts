@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { GroundSize, GroundSport } from "./grounds";
+import { GroundEnvironment, GroundSize, GroundSport, GroundSurface } from "./grounds";
 
-// Search (PR 3.3, first slice): live venues found by where (an area, near a point, or a name) with
-// a ground free when (a day, or a start time and length), as cards with their next free times.
-// Filters beyond sport and size, the other sorts and best match come in later slices.
+// Search (PR 3.3): live venues found by where (an area, near a point, or a name) with a ground free
+// when (a day, or a start time and length), narrowed by the ground, the venue, how booking works and
+// the price, as cards with their next free times. Best match comes in a later slice.
 
 const LocalDate = z.iso
   .date()
@@ -14,12 +14,81 @@ export const SEARCH_PAGE = { default: 20, max: 50 } as const;
 // The next free start times a card shows.
 export const NEXT_TIMES = 4;
 
-export const VenueSearchSort = z.enum(["DISTANCE", "RATING"]).meta({
+export const VenueSearchSort = z.enum(["DISTANCE", "RATING", "PRICE", "SOONEST"]).meta({
   id: "VenueSearchSort",
   description:
     "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. " +
-    "Left out: `DISTANCE` with a point, else `RATING`.",
+    "`PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free " +
+    "start first. Left out: `DISTANCE` with a point, else `RATING`.",
 });
+
+export const PaymentFilter = z.enum(["CASH", "ONLINE"]).meta({
+  id: "PaymentFilter",
+  description:
+    "`CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be " +
+    "paid online (a deposit, or in full).",
+});
+
+// A comma-separated list of an enum's values, as one query parameter ("A,B").
+const listOf = <T extends string>(values: readonly T[], description: string) =>
+  z
+    .string()
+    .refine(
+      (text) => text.split(",").every((part) => (values as readonly string[]).includes(part)),
+      { message: `A comma-separated list of: ${values.join(", ")}.` },
+    )
+    .optional()
+    .meta({ description, example: values.slice(0, 2).join(",") });
+
+// "true" or "false" in a query string (z.coerce.boolean would read "false" as true).
+const flag = (description: string) =>
+  z
+    .enum(["true", "false"])
+    .optional()
+    .meta({ description: `${description} \`true\` to ask for it.` });
+
+// What narrows a search besides where and when: the ground, the venue, how booking works, the price.
+// The search and its free hours take the same, so the When sheet's bars count what's searched.
+export const searchFilters = {
+  sport: GroundSport.optional(),
+  size: GroundSize.optional(),
+  surface: listOf(GroundSurface.options, "Any of these surfaces."),
+  setting: listOf(GroundEnvironment.options, "Any of these: indoor, outdoor or covered."),
+  grounds: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional()
+    .meta({ description: "At least this many active grounds (of the sport, size… asked for)." }),
+  priceMin: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .meta({ description: "Per hour, in minor units: a free time at least this much." }),
+  priceMax: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .meta({ description: "Per hour, in minor units: a free time at most this much." }),
+  amenities: z
+    .string()
+    .regex(/^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,19}$/)
+    .optional()
+    .meta({ description: "Amenity option ids, comma-separated: the venue has all of them." }),
+  rating: z.coerce
+    .number()
+    .min(1)
+    .max(5)
+    .optional()
+    .meta({ description: "Rated at least this (unrated venues are left out)." }),
+  instant: flag("Booked without the venue approving it."),
+  payment: PaymentFilter.optional(),
+  flexible: flag("A full refund up to 24 hours before, or later."),
+  loyalty: flag("The venue rewards regulars with free bookings."),
+};
 
 export const VenueSearchQuery = z
   .object({
@@ -61,8 +130,7 @@ export const VenueSearchQuery = z
       .max(6)
       .default(1)
       .meta({ description: "How long the game is: a ground must be free all of it." }),
-    sport: GroundSport.optional(),
-    size: GroundSize.optional(),
+    ...searchFilters,
     sort: VenueSearchSort.optional(),
     cursor: z
       .string()
@@ -148,8 +216,7 @@ export const VenueFreeHoursQuery = z
     radius: z.coerce.number().min(0.5).max(SEARCH_RADIUS_KM.max).default(SEARCH_RADIUS_KM.default),
     q: z.string().trim().min(1).max(100).optional(),
     date: LocalDate.optional().meta({ description: "In the venue's timezone. Left out: today." }),
-    sport: GroundSport.optional(),
-    size: GroundSize.optional(),
+    ...searchFilters,
   })
   .refine((query) => (query.latitude === undefined) === (query.longitude === undefined), {
     message: "Send latitude and longitude together.",

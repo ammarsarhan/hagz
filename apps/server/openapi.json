@@ -1468,13 +1468,23 @@
         ],
         "description": "`STANDARD` for sports without size variants."
       },
+      "PaymentFilter": {
+        "type": "string",
+        "enum": [
+          "CASH",
+          "ONLINE"
+        ],
+        "description": "`CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full)."
+      },
       "VenueSearchSort": {
         "type": "string",
         "enum": [
           "DISTANCE",
-          "RATING"
+          "RATING",
+          "PRICE",
+          "SOONEST"
         ],
-        "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`."
+        "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`."
       },
       "VenueFreeHours": {
         "type": "object",
@@ -10198,10 +10208,146 @@
           },
           {
             "schema": {
+              "type": "string",
+              "description": "Any of these surfaces.",
+              "example": "NATURAL_GRASS,ARTIFICIAL_TURF"
+            },
+            "required": false,
+            "description": "Any of these surfaces.",
+            "name": "surface",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any of these: indoor, outdoor or covered.",
+              "example": "INDOOR,OUTDOOR"
+            },
+            "required": false,
+            "description": "Any of these: indoor, outdoor or covered.",
+            "name": "setting",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "description": "At least this many active grounds (of the sport, size… asked for)."
+            },
+            "required": false,
+            "description": "At least this many active grounds (of the sport, size… asked for).",
+            "name": "grounds",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Per hour, in minor units: a free time at least this much."
+            },
+            "required": false,
+            "description": "Per hour, in minor units: a free time at least this much.",
+            "name": "priceMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Per hour, in minor units: a free time at most this much."
+            },
+            "required": false,
+            "description": "Per hour, in minor units: a free time at most this much.",
+            "name": "priceMax",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,19}$",
+              "description": "Amenity option ids, comma-separated: the venue has all of them."
+            },
+            "required": false,
+            "description": "Amenity option ids, comma-separated: the venue has all of them.",
+            "name": "amenities",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Rated at least this (unrated venues are left out)."
+            },
+            "required": false,
+            "description": "Rated at least this (unrated venues are left out).",
+            "name": "rating",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Booked without the venue approving it. `true` to ask for it."
+            },
+            "required": false,
+            "description": "Booked without the venue approving it. `true` to ask for it.",
+            "name": "instant",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PaymentFilter"
+            },
+            "required": false,
+            "description": "`CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full).",
+            "name": "payment",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "A full refund up to 24 hours before, or later. `true` to ask for it."
+            },
+            "required": false,
+            "description": "A full refund up to 24 hours before, or later. `true` to ask for it.",
+            "name": "flexible",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "The venue rewards regulars with free bookings. `true` to ask for it."
+            },
+            "required": false,
+            "description": "The venue rewards regulars with free bookings. `true` to ask for it.",
+            "name": "loyalty",
+            "in": "query"
+          },
+          {
+            "schema": {
               "$ref": "#/components/schemas/VenueSearchSort"
             },
             "required": false,
-            "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`.",
+            "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`.",
             "name": "sort",
             "in": "query"
           },
@@ -10372,6 +10518,142 @@
             "required": false,
             "description": "`STANDARD` for sports without size variants.",
             "name": "size",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any of these surfaces.",
+              "example": "NATURAL_GRASS,ARTIFICIAL_TURF"
+            },
+            "required": false,
+            "description": "Any of these surfaces.",
+            "name": "surface",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any of these: indoor, outdoor or covered.",
+              "example": "INDOOR,OUTDOOR"
+            },
+            "required": false,
+            "description": "Any of these: indoor, outdoor or covered.",
+            "name": "setting",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "description": "At least this many active grounds (of the sport, size… asked for)."
+            },
+            "required": false,
+            "description": "At least this many active grounds (of the sport, size… asked for).",
+            "name": "grounds",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Per hour, in minor units: a free time at least this much."
+            },
+            "required": false,
+            "description": "Per hour, in minor units: a free time at least this much.",
+            "name": "priceMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Per hour, in minor units: a free time at most this much."
+            },
+            "required": false,
+            "description": "Per hour, in minor units: a free time at most this much.",
+            "name": "priceMax",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,19}$",
+              "description": "Amenity option ids, comma-separated: the venue has all of them."
+            },
+            "required": false,
+            "description": "Amenity option ids, comma-separated: the venue has all of them.",
+            "name": "amenities",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Rated at least this (unrated venues are left out)."
+            },
+            "required": false,
+            "description": "Rated at least this (unrated venues are left out).",
+            "name": "rating",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Booked without the venue approving it. `true` to ask for it."
+            },
+            "required": false,
+            "description": "Booked without the venue approving it. `true` to ask for it.",
+            "name": "instant",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PaymentFilter"
+            },
+            "required": false,
+            "description": "`CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full).",
+            "name": "payment",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "A full refund up to 24 hours before, or later. `true` to ask for it."
+            },
+            "required": false,
+            "description": "A full refund up to 24 hours before, or later. `true` to ask for it.",
+            "name": "flexible",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "The venue rewards regulars with free bookings. `true` to ask for it."
+            },
+            "required": false,
+            "description": "The venue rewards regulars with free bookings. `true` to ask for it.",
+            "name": "loyalty",
             "in": "query"
           }
         ],

@@ -72,18 +72,93 @@ interface Row {
   longitude: number | null;
 }
 
+// What a search asks of a ground and a venue, besides where and when.
+type Filters = Pick<
+  VenueSearchQuery,
+  | "sport"
+  | "size"
+  | "surface"
+  | "setting"
+  | "grounds"
+  | "amenities"
+  | "rating"
+  | "instant"
+  | "payment"
+  | "flexible"
+  | "loyalty"
+>;
+
+// A ground's filters on the ground aliased `g`: its sport, size, surface and setting.
+const groundFilters = (query: Filters, g: string) => {
+  const ground = Prisma.raw(g);
+  const parts: Prisma.Sql[] = [];
+  if (query.sport) parts.push(Prisma.sql`AND ${ground}.sport = ${query.sport}::"GroundSport"`);
+  if (query.size) parts.push(Prisma.sql`AND ${ground}.size = ${query.size}::"GroundSize"`);
+  if (query.surface) {
+    const surfaces = query.surface.split(",");
+    parts.push(Prisma.sql`AND ${ground}.surface::text IN (${Prisma.join(surfaces)})`);
+  }
+  if (query.setting) {
+    const settings = query.setting.split(",");
+    parts.push(Prisma.sql`AND ${ground}.environment::text IN (${Prisma.join(settings)})`);
+  }
+  return parts.length > 0 ? Prisma.join(parts, " ") : Prisma.empty;
+};
+
+// The venue's own filters on "Venue" v: its rating, how booking works there (its settings), every
+// amenity asked for, and enough grounds matching the ground filters.
+const venueFilters = (query: Filters) => {
+  const parts: Prisma.Sql[] = [];
+  if (query.rating !== undefined) {
+    parts.push(Prisma.sql`AND v."averageRating" >= ${query.rating}`);
+  }
+  const settings: Prisma.Sql[] = [];
+  if (query.instant === "true") settings.push(Prisma.sql`AND vs."autoConfirm"`);
+  if (query.payment === "CASH") {
+    settings.push(Prisma.sql`AND vs."paymentMode"::text IN ('MANUAL', 'DEPOSIT')`);
+  }
+  if (query.payment === "ONLINE") {
+    settings.push(Prisma.sql`AND vs."paymentMode"::text IN ('DEPOSIT', 'PLATFORM')`);
+  }
+  if (query.flexible === "true") {
+    // Everything back up to 24 hours before (or later): the flexible and moderate presets, or the
+    // venue's own rules with such a tier.
+    settings.push(Prisma.sql`AND (
+      vs."cancellationPolicy"::text IN ('FLEXIBLE', 'MODERATE')
+      OR (vs."cancellationPolicy"::text = 'CUSTOM' AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(vs."cancellationTiers") tier
+        WHERE (tier->>'refundPercent')::int = 100 AND (tier->>'hours')::int <= 24)))`);
+  }
+  if (query.loyalty === "true") settings.push(Prisma.sql`AND vs."loyaltyStamps" IS NOT NULL`);
+  if (settings.length > 0) {
+    parts.push(Prisma.sql`AND EXISTS (
+      SELECT 1 FROM "VenueSettings" vs WHERE vs."venueId" = v.id ${Prisma.join(settings, " ")})`);
+  }
+  for (const option of query.amenities?.split(",") ?? []) {
+    parts.push(Prisma.sql`AND EXISTS (
+      SELECT 1 FROM "VenueAmenity" a WHERE a."venueId" = v.id AND a."optionId" = ${option}::uuid)`);
+  }
+  if (query.grounds !== undefined) {
+    parts.push(Prisma.sql`AND (
+      SELECT count(*) FROM "Ground" g2
+      WHERE g2."venueId" = v.id AND g2.status = 'ACTIVE' ${groundFilters(query, "g2")}) >= ${query.grounds}`);
+  }
+  return parts.length > 0 ? Prisma.join(parts, " ") : Prisma.empty;
+};
+
 // The search's where and what, as SQL pieces over "Venue" v and "Ground" g: an area and everything
-// under it, near a point (within the radius), part of the name in either language, a sport and a
-// size. Shared by the search and the free hours, so the timeline counts what the search finds.
-const filtersFor = (query: {
-  area?: string;
-  latitude?: number;
-  longitude?: number;
-  radius: number;
-  q?: string;
-  sport?: VenueSearchQuery["sport"];
-  size?: VenueSearchQuery["size"];
-}) => {
+// under it, near a point (within the radius), part of the name in either language, and the ground
+// and venue filters. Shared by the search and the free hours, so the timeline counts what the
+// search finds.
+const filtersFor = (
+  query: Filters & {
+    area?: string;
+    latitude?: number;
+    longitude?: number;
+    radius: number;
+    q?: string;
+  },
+) => {
   const point =
     query.latitude !== undefined && query.longitude !== undefined
       ? Prisma.sql`ST_SetSRID(ST_MakePoint(${query.longitude}, ${query.latitude}), 4326)::geography`
@@ -109,8 +184,8 @@ const filtersFor = (query: {
           WHERE t."venueId" = v.id
             AND ${foldNameSql(Prisma.sql`t.name`)} LIKE ${`%${likeLiteral(typed)}%`})`
       : Prisma.empty,
-    sport: query.sport ? Prisma.sql`AND g.sport = ${query.sport}::"GroundSport"` : Prisma.empty,
-    size: query.size ? Prisma.sql`AND g.size = ${query.size}::"GroundSize"` : Prisma.empty,
+    venue: venueFilters(query),
+    ground: groundFilters(query, "g"),
   };
 };
 
@@ -141,17 +216,21 @@ export const freeHours = async (
            ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
     FROM d`;
   if (!day) throw new Error("Postgres returned no day.");
-  const { area, near, name, sport, size } = filtersFor(query);
+  const { area, near, name, venue, ground } = filtersFor(query);
+  // The price range, on the hour's own slot.
+  const price = Prisma.sql`${query.priceMin !== undefined ? Prisma.sql`AND s.price >= ${query.priceMin}` : Prisma.empty} ${
+    query.priceMax !== undefined ? Prisma.sql`AND s.price <= ${query.priceMax}` : Prisma.empty
+  }`;
   const rows = await prisma.$queryRaw<{ hour: number; venues: number }[]>`
     SELECT extract(hour FROM (s."startsAt" AT TIME ZONE ${timezone}))::int AS hour,
            count(DISTINCT s."venueId")::int AS venues
     FROM "Venue" v
     JOIN "GroundSlot" s ON s."venueId" = v.id
-    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${sport} ${size}
+    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${ground}
     LEFT JOIN "VenueSettings" st ON st."venueId" = v.id
     WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplaceId}::uuid
-      ${area} ${near} ${name}
-      AND s.status = 'AVAILABLE'
+      ${area} ${near} ${name} ${venue}
+      AND s.status = 'AVAILABLE' ${price}
       AND s."startsAt" >= ${day.from} AND s."startsAt" < ${day.to}
       AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
     GROUP BY 1`;
@@ -184,7 +263,7 @@ export const searchVenues = async (
     FROM d`;
   if (!window) throw new Error("Postgres returned no search window.");
 
-  const { point, area, near, name, sport, size } = filtersFor(query);
+  const { point, area, near, name, venue, ground } = filtersFor(query);
   const sort = query.sort ?? (point ? "DISTANCE" : "RATING");
   const seconds = query.hours * 3600;
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
@@ -192,11 +271,25 @@ export const searchVenues = async (
   const distance = point
     ? Prisma.sql`round(ST_Distance(v.coordinates, ${point}))::int`
     : Prisma.sql`NULL::int`;
-  // Ascending in both: nearest first, or best rated first with the unrated after everyone.
+  // Ascending in all: nearest first, best rated first (the unrated after everyone), or (from the
+  // venue's bookable starts, below) the cheapest hour or the earliest start first.
+  const fromStarts = sort === "PRICE" || sort === "SOONEST";
   const key =
     sort === "DISTANCE"
       ? Prisma.sql`ST_Distance(v.coordinates, ${point ?? Prisma.sql`NULL`})::float8`
-      : Prisma.sql`coalesce(-v."averageRating"::float8, 1)`;
+      : sort === "RATING"
+        ? Prisma.sql`coalesce(-v."averageRating"::float8, 1)`
+        : Prisma.sql`NULL::float8`;
+  const startKey =
+    sort === "PRICE"
+      ? Prisma.sql`min(free.price)::float8 / ${query.hours}`
+      : Prisma.sql`min(extract(epoch FROM s."startsAt"))::float8`;
+  // The price range, per hour, on the whole game's price.
+  const price = Prisma.sql`${
+    query.priceMin !== undefined
+      ? Prisma.sql`AND free.price >= ${query.priceMin * query.hours}`
+      : Prisma.empty
+  } ${query.priceMax !== undefined ? Prisma.sql`AND free.price <= ${query.priceMax * query.hours}` : Prisma.empty}`;
   const after = cursor
     ? Prisma.sql`WHERE (r.key, r.id) > (${cursor.key}::float8, ${cursor.id}::uuid)`
     : Prisma.empty;
@@ -207,7 +300,7 @@ export const searchVenues = async (
   // the few slots in the length, not every slot to the horizon.
   const startsOf = (venue: Prisma.Sql) => Prisma.sql`
     "GroundSlot" s
-    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${sport} ${size}
+    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${ground}
     LEFT JOIN "VenueSettings" st ON st."venueId" = s."venueId"
     CROSS JOIN LATERAL (
       SELECT sum(extract(epoch FROM x."endsAt" - x."startsAt")) AS seconds, sum(x.price) AS price
@@ -221,7 +314,8 @@ export const searchVenues = async (
       AND s.status = 'AVAILABLE'
       AND s."startsAt" >= ${window.from} AND s."startsAt" < ${window.to}
       AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
-      AND free.seconds = ${seconds}`;
+      AND free.seconds = ${seconds}
+      ${price}`;
   // With a start asked for, the venue must have a ground free from exactly then.
   const atStart = query.start ? Prisma.sql`AND s."startsAt" = ${window.from}` : Prisma.empty;
 
@@ -234,12 +328,22 @@ export const searchVenues = async (
              ST_Y(v.coordinates::geometry) AS latitude, ST_X(v.coordinates::geometry) AS longitude
       FROM "Venue" v
       WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplace.id}::uuid
-        ${area} ${near} ${name}
+        ${area} ${near} ${name} ${venue}
     ),
     ranked AS (
-      SELECT c.*, count(*) OVER ()::int AS total
-      FROM candidates c
-      WHERE EXISTS (SELECT 1 FROM ${startsOf(Prisma.raw("c.id"))} ${atStart})
+      ${
+        fromStarts
+          ? // Keyed by the venue's cheapest or earliest bookable start; none means no match.
+            Prisma.sql`SELECT c.id, c.distance, m.key, c.latitude, c.longitude, count(*) OVER ()::int AS total
+              FROM candidates c
+              CROSS JOIN LATERAL (
+                SELECT ${startKey} AS key FROM ${startsOf(Prisma.raw("c.id"))} ${atStart}
+              ) m
+              WHERE m.key IS NOT NULL`
+          : Prisma.sql`SELECT c.*, count(*) OVER ()::int AS total
+              FROM candidates c
+              WHERE EXISTS (SELECT 1 FROM ${startsOf(Prisma.raw("c.id"))} ${atStart})`
+      }
     ),
     page AS (
       SELECT r.* FROM ranked r

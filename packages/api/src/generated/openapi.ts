@@ -3813,7 +3813,29 @@ export interface paths {
                     sport?: components["schemas"]["GroundSport"];
                     /** @description `STANDARD` for sports without size variants. */
                     size?: components["schemas"]["GroundSize"];
-                    /** @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`. */
+                    /** @description Any of these surfaces. */
+                    surface?: string;
+                    /** @description Any of these: indoor, outdoor or covered. */
+                    setting?: string;
+                    /** @description At least this many active grounds (of the sport, size… asked for). */
+                    grounds?: number;
+                    /** @description Per hour, in minor units: a free time at least this much. */
+                    priceMin?: number | null;
+                    /** @description Per hour, in minor units: a free time at most this much. */
+                    priceMax?: number | null;
+                    /** @description Amenity option ids, comma-separated: the venue has all of them. */
+                    amenities?: string;
+                    /** @description Rated at least this (unrated venues are left out). */
+                    rating?: number;
+                    /** @description Booked without the venue approving it. `true` to ask for it. */
+                    instant?: "true" | "false";
+                    /** @description `CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full). */
+                    payment?: components["schemas"]["PaymentFilter"];
+                    /** @description A full refund up to 24 hours before, or later. `true` to ask for it. */
+                    flexible?: "true" | "false";
+                    /** @description The venue rewards regulars with free bookings. `true` to ask for it. */
+                    loyalty?: "true" | "false";
+                    /** @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`. */
                     sort?: components["schemas"]["VenueSearchSort"];
                     /** @description `nextCursor` from the last page. */
                     cursor?: string;
@@ -3896,6 +3918,28 @@ export interface paths {
                     sport?: components["schemas"]["GroundSport"];
                     /** @description `STANDARD` for sports without size variants. */
                     size?: components["schemas"]["GroundSize"];
+                    /** @description Any of these surfaces. */
+                    surface?: string;
+                    /** @description Any of these: indoor, outdoor or covered. */
+                    setting?: string;
+                    /** @description At least this many active grounds (of the sport, size… asked for). */
+                    grounds?: number;
+                    /** @description Per hour, in minor units: a free time at least this much. */
+                    priceMin?: number | null;
+                    /** @description Per hour, in minor units: a free time at most this much. */
+                    priceMax?: number | null;
+                    /** @description Amenity option ids, comma-separated: the venue has all of them. */
+                    amenities?: string;
+                    /** @description Rated at least this (unrated venues are left out). */
+                    rating?: number;
+                    /** @description Booked without the venue approving it. `true` to ask for it. */
+                    instant?: "true" | "false";
+                    /** @description `CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full). */
+                    payment?: components["schemas"]["PaymentFilter"];
+                    /** @description A full refund up to 24 hours before, or later. `true` to ask for it. */
+                    flexible?: "true" | "false";
+                    /** @description The venue rewards regulars with free bookings. `true` to ask for it. */
+                    loyalty?: "true" | "false";
                 };
                 header?: never;
                 path?: never;
@@ -12266,10 +12310,15 @@ export interface components {
          */
         GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
         /**
-         * @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`.
+         * @description `CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full).
          * @enum {string}
          */
-        VenueSearchSort: "DISTANCE" | "RATING";
+        PaymentFilter: "CASH" | "ONLINE";
+        /**
+         * @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`.
+         * @enum {string}
+         */
+        VenueSearchSort: "DISTANCE" | "RATING" | "PRICE" | "SOONEST";
         VenueFreeHours: {
             /**
              * Format: date
