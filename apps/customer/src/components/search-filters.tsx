@@ -33,7 +33,8 @@ import { Text } from "./text";
 // Filters (Figma "C3 · Tabs & Search" A1, 127:2 and 128:2; the user's pick on 2026-11-20): one long
 // sheet from the search bar's round button. Sort, the price per hour as a range over a chart of how
 // many venues charge each (the When sheet's language), the ground, the venue, how booking works,
-// perks. A draft, applied with Show N venues, which counts it as it changes; Clear all empties it.
+// perks. A draft, applied with Show N venues, which counts it as it changes; Clear all clears every
+// filter and the order and closes.
 //
 // Each group is its own memoised section given only its part of the draft, so a tap (or a step of
 // the price handles) re-renders that group alone, not the whole sheet.
@@ -521,7 +522,8 @@ export function SearchFilters({
         <Pressable
           accessibilityRole="button"
           hitSlop={8}
-          onPress={() => setDraft(NO_FILTERS)}
+          // Clears everything, the order back to best match, and closes on the cleared search.
+          onPress={() => onApply(NO_FILTERS, "BEST_MATCH")}
           className="active:opacity-60"
         >
           <Text className="text-subtitle font-medium underline">Clear all</Text>
