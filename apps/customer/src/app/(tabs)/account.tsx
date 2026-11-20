@@ -1,36 +1,66 @@
 import type { components } from "@hagz/api";
+import type { Icon } from "@tabler/icons-react-native";
+import Constants from "expo-constants";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Linking, ScrollView, Switch, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
+import { CodeInput } from "@/components/code-input";
+import { useHud, useHudAnchor } from "@/components/hud";
+import {
+  IconCamera,
+  IconChevronRight,
+  IconExternalLink,
+  IconLogout,
+  IconPhoto,
+  IconTrash,
+} from "@/components/icons";
+import { ResendCode } from "@/components/resend-code";
+import { SettingsHeading, SettingsRow } from "@/components/settings-row";
+import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
 import { api, auth } from "@/lib/api";
-import { send } from "@/lib/api-errors";
-import { isRTL } from "@/lib/language";
+import { fieldMessage, hudMessage, problem, retryAfter, send } from "@/lib/api-errors";
+import { colors } from "@/lib/colors";
+import { useFavoriteIds } from "@/lib/favorites";
+import { isRTL, language } from "@/lib/language";
+import { displayPhone, isolate, maskedPhone } from "@/lib/phone";
+import { preparePhoto, putPhoto } from "@/lib/photos";
 import { signOut } from "@/lib/session";
+import { contactSupport, hasSupport } from "@/lib/support";
 
-type Customer = components["schemas"]["Customer"];
+type Profile = components["schemas"]["CustomerProfile"];
 
-// The Account tab until its screens are designed: who's signed in with Sign out, or, for a guest,
-// Create account (lime, a big moment) and Sign in. Read again each time the tab is opened, so it
-// follows signing in elsewhere.
+const localDigits = (phone: string) => phone.replace(/^\+20/, "");
+const direction = isRTL ? "rtl" : "ltr";
+// The tab bar's row (components/tab-bar.tsx), which the HUD sits on.
+const TAB_ROW = 49;
+
+// The Account tab. Signed in (Figma C7, 154:2; the user, 2026-11-20): the staff app's account, with
+// the player's photo (tap to change), name and number, then their favorites, security, the app,
+// Sign out and the version. Rows for what isn't built yet (loyalty cards, notifications, the terms,
+// deleting the account) come with their phases. A guest keeps the plain sign-in prompt until its
+// own design. Read again each time the tab is opened, so it follows signing in elsewhere.
 export default function AccountTab() {
-  const { t } = useTranslation();
   // Undefined while checking; null for a guest.
-  const [customer, setCustomer] = useState<Customer | null | undefined>(undefined);
+  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const insets = useSafeAreaInsets();
+  useHudAnchor(TAB_ROW + insets.bottom);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       void (async () => {
         if (!(await auth.isSignedIn())) {
-          if (active) setCustomer(null);
+          if (active) setProfile(null);
           return;
         }
         const result = await send(api.GET("/v1/customers/me"));
-        if (active) setCustomer(result.ok ? result.data : null);
+        if (active) setProfile(result.ok ? result.data : null);
       })();
       return () => {
         active = false;
@@ -39,47 +69,455 @@ export default function AccountTab() {
   );
 
   return (
-    <SafeAreaView
-      edges={["top"]}
-      className="flex-1 bg-white px-6"
-      style={{ direction: isRTL ? "rtl" : "ltr" }}
-    >
+    <SafeAreaView edges={["top"]} className="flex-1 bg-white" style={{ direction }}>
+      {profile === undefined ? null : profile ? (
+        <SignedIn profile={profile} onProfile={setProfile} onSignedOut={() => setProfile(null)} />
+      ) : (
+        <Guest />
+      )}
+    </SafeAreaView>
+  );
+}
+
+function Guest() {
+  const { t } = useTranslation();
+  return (
+    <View className="px-6">
       <View className="mt-6 gap-2">
         <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
           {t("screens.account.title")}
         </Text>
-        {customer === undefined ? null : (
-          <Text className="text-subtitle text-ink-2">
-            {customer
-              ? t("screens.account.signedInAs", { name: customer.name })
-              : t("screens.account.guest")}
-          </Text>
-        )}
+        <Text className="text-subtitle text-ink-2">{t("screens.account.guest")}</Text>
       </View>
-      {customer === undefined ? null : (
-        <View className="mt-8 gap-2.5">
-          {customer ? (
-            <Button
-              label={t("common.actions.signOut")}
-              variant="secondary"
-              onPress={() => void signOut().then(() => setCustomer(null))}
-            />
-          ) : (
-            <>
-              <Button
-                label={t("common.actions.createAccount")}
-                variant="moment"
-                onPress={() => router.push("/sign-up")}
-              />
-              <Button
-                label={t("common.actions.signIn")}
-                variant="secondary"
-                onPress={() => router.push("/sign-in")}
-              />
-            </>
-          )}
+      <View className="mt-8 gap-2.5">
+        <Button
+          label={t("common.actions.createAccount")}
+          variant="moment"
+          onPress={() => router.push("/sign-up")}
+        />
+        <Button
+          label={t("common.actions.signIn")}
+          variant="secondary"
+          onPress={() => router.push("/sign-in")}
+        />
+      </View>
+    </View>
+  );
+}
+
+function SignedIn({
+  profile,
+  onProfile,
+  onSignedOut,
+}: {
+  profile: Profile;
+  onProfile: (profile: Profile) => void;
+  onSignedOut: () => void;
+}) {
+  const { t } = useTranslation();
+  const hud = useHud();
+  const favorites = useFavoriteIds().size;
+  const phone = localDigits(profile.phone);
+  // The switch shows where it's going while the code is asked for.
+  const [pending, setPending] = useState<boolean | null>(null);
+  const [codeSheet, setCodeSheet] = useState<{ enable: boolean; resendAfter: number } | null>(null);
+  const [codeSheetOpen, setCodeSheetOpen] = useState(false);
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  // What the photo sheet asked for, done once it has slid away (a picker can't open over it).
+  const [photoChoice, setPhotoChoice] = useState<"library" | "camera" | "remove" | null>(null);
+
+  const requestCode = async (enable: boolean) => {
+    setPending(enable);
+    const result = await send(api.POST("/v1/auth/customer/two-factor/codes"));
+    let wait: number | undefined;
+    if (result.ok) wait = result.data.resendAfter;
+    // A code already on its way: the sheet opens on it, with the wait left.
+    else if (problem(result.error)?.codeSent === true) wait = retryAfter(result.error);
+    if (wait === undefined) {
+      setPending(null);
+      if (!result.ok) hud.show(hudMessage(result.error));
+      return;
+    }
+    setCodeSheet({ enable, resendAfter: wait });
+    setCodeSheetOpen(true);
+  };
+
+  // Asked for an upload, the photo sent straight to storage, then confirmed: only then is it theirs.
+  const upload = async (asset: ImagePicker.ImagePickerAsset) => {
+    setUploading(true);
+    try {
+      const photo = await preparePhoto(asset);
+      const target = await send(
+        api.POST("/v1/customers/me/avatar", {
+          body: { contentType: "image/jpeg", size: photo.blob.size },
+        }),
+      );
+      if (!target.ok) {
+        hud.show(hudMessage(target.error));
+        return;
+      }
+      await putPhoto(target.data, photo.blob);
+      const confirmed = await send(api.POST("/v1/customers/me/avatar/confirm"));
+      if (!confirmed.ok) {
+        hud.show(hudMessage(confirmed.error));
+        return;
+      }
+      onProfile(confirmed.data);
+    } catch {
+      hud.show(t("screens.account.photo.failed"));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const choosePhoto = async (choice: "library" | "camera" | "remove") => {
+    if (choice === "remove") {
+      setUploading(true);
+      const result = await send(api.DELETE("/v1/customers/me/avatar"));
+      setUploading(false);
+      if (result.ok) onProfile({ ...profile, avatarUrl: null });
+      else hud.show(hudMessage(result.error));
+      return;
+    }
+    try {
+      if (choice === "camera") {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+          hud.show(t("screens.account.photo.cameraBlocked"));
+          return;
+        }
+      }
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      };
+      const picked =
+        choice === "camera"
+          ? await ImagePicker.launchCameraAsync(options)
+          : await ImagePicker.launchImageLibraryAsync(options);
+      const asset = picked.canceled ? undefined : picked.assets[0];
+      if (asset) await upload(asset);
+    } catch {
+      hud.show(t("screens.account.photo.failed"));
+    }
+  };
+
+  const chevron = (
+    <IconChevronRight
+      size={18}
+      color={colors.unit}
+      strokeWidth={2}
+      style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+    />
+  );
+  const external = <IconExternalLink size={18} color={colors.unit} strokeWidth={2} />;
+
+  return (
+    <>
+      <ScrollView
+        alwaysBounceVertical
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}
+      >
+        <View className="items-center">
+          <Avatar
+            name={profile.name}
+            url={profile.avatarUrl}
+            busy={uploading}
+            label={t("screens.account.photo.change")}
+            onPress={() => setPhotoSheetOpen(true)}
+          />
+          <Text className="mt-3.5 text-[22px] leading-[1.27] font-semibold">{profile.name}</Text>
+          <Text className="mt-1 text-body text-ink-2">{isolate(displayPhone(phone))}</Text>
         </View>
-      )}
-    </SafeAreaView>
+
+        <SettingsHeading first>{t("screens.account.yourHagz")}</SettingsHeading>
+        <SettingsRow
+          title={t("screens.account.favorites.title")}
+          body={
+            favorites > 0
+              ? t("screens.account.favorites.count", { count: favorites })
+              : t("screens.account.favorites.none")
+          }
+          trailing={chevron}
+          onPress={() => router.push("/favorites")}
+        />
+
+        <SettingsHeading>{t("screens.account.security")}</SettingsHeading>
+        <SettingsRow
+          title={t("screens.account.twoFactor.title")}
+          body={
+            profile.twoFactorEnabled
+              ? t("screens.account.twoFactor.on")
+              : t("screens.account.twoFactor.off")
+          }
+          trailing={
+            <Switch
+              accessibilityLabel={t("screens.account.twoFactor.title")}
+              value={pending ?? profile.twoFactorEnabled}
+              disabled={pending !== null}
+              onValueChange={(enable) => void requestCode(enable)}
+              trackColor={{ true: colors.ink }}
+            />
+          }
+        />
+        <SettingsRow
+          title={t("screens.account.password.title")}
+          body={t("screens.account.password.body")}
+          trailing={chevron}
+          onPress={() => router.push({ pathname: "/forgot-password", params: { phone } })}
+        />
+
+        <SettingsHeading>{t("screens.account.app")}</SettingsHeading>
+        <SettingsRow
+          title={t("screens.account.language.title")}
+          body={t("screens.account.language.body", {
+            language: t(`screens.account.language.${language}`),
+          })}
+          trailing={external}
+          onPress={() => void Linking.openSettings()}
+        />
+        {hasSupport ? (
+          <SettingsRow
+            title={t("common.actions.contactSupport")}
+            body={t("screens.account.support")}
+            trailing={external}
+            onPress={contactSupport}
+          />
+        ) : null}
+
+        <View className="mt-2">
+          <SettingsRow
+            title={t("common.actions.signOut")}
+            trailing={<IconLogout size={18} color={colors.unit} strokeWidth={2} />}
+            onPress={() => setSignOutOpen(true)}
+            divider={false}
+          />
+        </View>
+        <Text className="mt-3.5 text-center text-caption text-ink-3">
+          {t("screens.account.version", { version: Constants.expoConfig?.version ?? "" })}
+        </Text>
+      </ScrollView>
+
+      <PhotoSheet
+        visible={photoSheetOpen}
+        hasPhoto={profile.avatarUrl !== null}
+        onChoose={(choice) => {
+          setPhotoChoice(choice);
+          setPhotoSheetOpen(false);
+        }}
+        onClose={() => setPhotoSheetOpen(false)}
+        onHidden={() => {
+          const choice = photoChoice;
+          setPhotoChoice(null);
+          if (choice) void choosePhoto(choice);
+        }}
+      />
+
+      {codeSheet ? (
+        <TwoFactorSheet
+          enable={codeSheet.enable}
+          phone={phone}
+          resendAfter={codeSheet.resendAfter}
+          visible={codeSheetOpen}
+          onClose={() => setCodeSheetOpen(false)}
+          onHidden={() => {
+            setCodeSheet(null);
+            setPending(null);
+          }}
+          onChanged={(enabled) => {
+            onProfile({ ...profile, twoFactorEnabled: enabled });
+            setCodeSheetOpen(false);
+          }}
+        />
+      ) : null}
+
+      <SignOutSheet
+        visible={signOutOpen}
+        onClose={() => setSignOutOpen(false)}
+        onSignedOut={onSignedOut}
+      />
+    </>
+  );
+}
+
+// Changing the photo: from the library or the camera, or taking it off.
+function PhotoSheet({
+  visible,
+  hasPhoto,
+  onChoose,
+  onClose,
+  onHidden,
+}: {
+  visible: boolean;
+  hasPhoto: boolean;
+  onChoose: (choice: "library" | "camera" | "remove") => void;
+  onClose: () => void;
+  onHidden: () => void;
+}) {
+  const { t } = useTranslation();
+  const choices: { key: "library" | "camera" | "remove"; icon: Icon; label: string }[] = [
+    { key: "library", icon: IconPhoto, label: t("screens.account.photo.library") },
+    { key: "camera", icon: IconCamera, label: t("screens.account.photo.camera") },
+    ...(hasPhoto
+      ? [{ key: "remove" as const, icon: IconTrash, label: t("screens.account.photo.remove") }]
+      : []),
+  ];
+  return (
+    <Sheet visible={visible} onClose={onClose} onHidden={onHidden}>
+      <Text className="mb-2 text-heading font-semibold">{t("screens.account.photo.title")}</Text>
+      {choices.map(({ key, icon: Glyph, label }, index) => (
+        <SettingsRow
+          key={key}
+          title={label}
+          trailing={<Glyph size={20} color={colors.ink} strokeWidth={1.75} />}
+          onPress={() => onChoose(key)}
+          divider={index < choices.length - 1}
+        />
+      ))}
+    </Sheet>
+  );
+}
+
+// The WhatsApp code that turns two-factor on or off, as the staff app asks for it.
+function TwoFactorSheet({
+  enable,
+  phone,
+  resendAfter: firstResendAfter,
+  visible,
+  onClose,
+  onHidden,
+  onChanged,
+}: {
+  enable: boolean;
+  phone: string;
+  resendAfter: number;
+  visible: boolean;
+  onClose: () => void;
+  onHidden: () => void;
+  onChanged: (enabled: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const hud = useHud();
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string>();
+  const [locked, setLocked] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [sent, setSent] = useState({ count: 0, resendAfter: firstResendAfter });
+
+  const save = async () => {
+    setSaving(true);
+    const result = await send(
+      api.PUT("/v1/auth/customer/two-factor", { body: { enabled: enable, code } }),
+    );
+    setSaving(false);
+    if (result.ok) {
+      onChanged(result.data.enabled);
+      return;
+    }
+    const failure = problem(result.error)?.code;
+    if (failure === "INVALID_CODE" || failure === "CODE_EXPIRED") {
+      setError(fieldMessage(result.error));
+    } else if (failure === "RATE_LIMITED") {
+      setLocked(true);
+      setError(fieldMessage(result.error));
+    } else {
+      onClose();
+      hud.show(hudMessage(result.error));
+    }
+  };
+
+  const resend = async () => {
+    setResending(true);
+    const result = await send(api.POST("/v1/auth/customer/two-factor/codes"));
+    setResending(false);
+    if (!result.ok) {
+      hud.show(hudMessage(result.error));
+      return;
+    }
+    setCode("");
+    setError(undefined);
+    setLocked(false);
+    setSent((previous) => ({ count: previous.count + 1, resendAfter: result.data.resendAfter }));
+  };
+
+  return (
+    <Sheet visible={visible} onClose={onClose} onHidden={onHidden}>
+      <Text className="mb-1.5 text-heading font-semibold">
+        {enable
+          ? t("screens.account.twoFactor.turnOnTitle")
+          : t("screens.account.twoFactor.turnOffTitle")}
+      </Text>
+      <Text className="mb-[22px] text-subtitle text-ink-2">
+        {t("screens.account.twoFactor.subtitle", { phone: isolate(maskedPhone(phone)) })}
+      </Text>
+      <CodeInput
+        value={code}
+        onChangeText={(next) => {
+          setCode(next);
+          setError(undefined);
+        }}
+        error={error}
+        disabled={locked}
+      />
+      <View className="mt-1">
+        <ResendCode
+          key={sent.count}
+          resendAfter={sent.resendAfter}
+          onResend={() => void resend()}
+          sending={resending}
+        />
+      </View>
+      <View className="mt-[22px]">
+        <Button
+          label={
+            enable ? t("screens.account.twoFactor.turnOn") : t("screens.account.twoFactor.turnOff")
+          }
+          disabled={code.length < 6 || Boolean(error) || locked}
+          loading={saving}
+          onPress={() => void save()}
+        />
+      </View>
+    </Sheet>
+  );
+}
+
+// Asked once more, so a stray tap doesn't sign them out.
+function SignOutSheet({
+  visible,
+  onClose,
+  onSignedOut,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSignedOut: () => void;
+}) {
+  const { t } = useTranslation();
+  const [signingOut, setSigningOut] = useState(false);
+  return (
+    <Sheet visible={visible} onClose={onClose}>
+      <Text className="mb-1.5 text-heading font-semibold">
+        {t("screens.account.signOut.title")}
+      </Text>
+      <Text className="mb-[26px] text-subtitle text-ink-2">
+        {t("screens.account.signOut.body")}
+      </Text>
+      <View className="gap-2.5">
+        <Button
+          label={t("common.actions.signOut")}
+          loading={signingOut}
+          onPress={() => {
+            setSigningOut(true);
+            void signOut().then(onSignedOut);
+          }}
+        />
+        <Button label={t("screens.account.signOut.cancel")} variant="ghost" onPress={onClose} />
+      </View>
+    </Sheet>
   );
 }
