@@ -26,6 +26,8 @@ interface State {
   timezone: string;
   cursor: string | null;
   loading: boolean;
+  // Loading the next page, rather than the search again.
+  loadingMore: boolean;
   error: string | null;
 }
 
@@ -36,6 +38,7 @@ const EMPTY: State = {
   timezone: "Africa/Cairo",
   cursor: null,
   loading: true,
+  loadingMore: false,
   error: null,
 };
 
@@ -49,7 +52,14 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
   const fetchPage = useCallback(
     async (cursor: string | null, reset: boolean) => {
       const mine = generation.current;
-      setState((previous) => ({ ...(reset ? EMPTY : previous), loading: true, error: null }));
+      // Searching again keeps the results on screen until the new ones arrive, so a change (a
+      // sport, the order) moves the list rather than blanking it.
+      setState((previous) => ({
+        ...previous,
+        loading: true,
+        loadingMore: !reset,
+        error: null,
+      }));
       const result = await send(
         api.GET("/v1/venues", {
           params: {
@@ -63,7 +73,13 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
       );
       if (mine !== generation.current) return;
       if (!result.ok) {
-        setState((previous) => ({ ...previous, loading: false, error: hudMessage(result.error) }));
+        setState((previous) => ({
+          ...previous,
+          ...(reset ? { cards: [], total: null, cursor: null } : {}),
+          loading: false,
+          loadingMore: false,
+          error: hudMessage(result.error),
+        }));
         return;
       }
       const page = result.data;
@@ -74,6 +90,7 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
         timezone: page.timezone,
         cursor: page.nextCursor,
         loading: false,
+        loadingMore: false,
         error: null,
       }));
     },
