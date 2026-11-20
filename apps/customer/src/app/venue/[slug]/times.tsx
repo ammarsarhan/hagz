@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -30,6 +30,7 @@ import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
+import { localTimeOf } from "@/lib/ground-filter";
 import { intlLocale, isRTL } from "@/lib/language";
 import { formatPrice, fromPerHour } from "@/lib/money";
 import {
@@ -116,11 +117,19 @@ const tapped = (picked: FreeSlot[], slot: FreeSlot, longest: number): FreeSlot[]
 };
 
 export default function Times() {
-  const { slug, ground: groundId } = useLocalSearchParams<{ slug: string; ground: string }>();
+  // From the venue page, possibly with a search's day, start and length (lib/ground-filter.ts).
+  const params = useLocalSearchParams<{
+    slug: string;
+    ground: string;
+    date?: string;
+    start?: string;
+    hours?: string;
+  }>();
+  const { slug, ground: groundId } = params;
   const [venue, setVenue] = useState<Loaded<PublicVenue>>({ state: "loading" });
   // The day asked for (none: today), the one on screen, and the days there are: these stay while
   // another day loads, so only the hours change.
-  const [date, setDate] = useState<string | undefined>(undefined);
+  const [date, setDate] = useState<string | undefined>(params.date);
   const [shown, setShown] = useState<string | undefined>(undefined);
   const [days, setDays] = useState<{ first: string; last: string } | null>(null);
   const [day, setDay] = useState<Loaded<Day>>({ state: "loading" });
@@ -201,6 +210,11 @@ export default function Times() {
       on={date ?? shown}
       day={day.state === "ready" ? day.data : null}
       dayError={day.state === "failed" ? day.message : null}
+      asked={
+        params.date && params.start
+          ? { date: params.date, start: params.start, hours: Number(params.hours ?? 1) }
+          : null
+      }
       onDate={setDate}
       onRetry={() => setAttempt((n) => n + 1)}
     />
@@ -253,6 +267,7 @@ function Picker({
   on,
   day,
   dayError,
+  asked,
   onDate,
   onRetry,
 }: {
@@ -264,6 +279,8 @@ function Picker({
   // Null while the day's hours load (or didn't).
   day: Day | null;
   dayError: string | null;
+  // The search's game, picked when its day first shows (if it's still free).
+  asked: { date: string; start: string; hours: number } | null;
   onDate: (date: string) => void;
   onRetry: () => void;
 }) {
@@ -277,6 +294,23 @@ function Picker({
 
   // A new day starts with nothing picked.
   useEffect(() => setPicked([]), [on]);
+  // The search's game, once, when its day's hours are in: the slot at its start and the ones after
+  // it, as many as it asked for (up to the ground's longest).
+  const applied = useRef(false);
+  useEffect(() => {
+    if (applied.current || !asked || !day || day.date !== asked.date) return;
+    applied.current = true;
+    const own = day.slots;
+    const first = own.find((slot) => localTimeOf(slot.startsAt, day.timezone) === asked.start);
+    if (!first) return;
+    const run = [first];
+    while (run.length < Math.min(asked.hours, ground.maximumSlots)) {
+      const following = own.find((slot) => slot.startsAt === run.at(-1)?.endsAt);
+      if (!following) break;
+      run.push(following);
+    }
+    setPicked(run);
+  }, [asked, day, ground.maximumSlots]);
 
   const shortest = ground.minimumSlots;
   const longest = ground.maximumSlots;
