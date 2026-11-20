@@ -136,7 +136,7 @@ export function SearchWhen({
       </ScrollView>
 
       <View className="mt-8 flex-row items-baseline justify-between">
-        <Text className="text-[20px] leading-[26px] font-medium">
+        <Text className="text-[20px] leading-[26px] font-semibold">
           {run ? runLabel(run) : "Any time"}
         </Text>
         {run ? (
