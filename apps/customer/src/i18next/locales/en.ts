@@ -290,14 +290,6 @@ const en = {
           action: "Find venues",
         },
       },
-      bookings: {
-        title: "Bookings",
-        line: "Your upcoming and past bookings. Coming soon.",
-      },
-      community: {
-        title: "Community",
-        line: "Open games near you, and players looking for one more. Coming soon.",
-      },
       search: {
         title: "Search",
         nearMe: "Near me",
