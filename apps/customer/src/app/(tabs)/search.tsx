@@ -264,7 +264,8 @@ export default function SearchTab() {
   const summary =
     total === null
       ? " "
-      : `${total} ${total === 1 ? "venue" : "venues"} free today${here ? "" : " in Egypt"}`;
+      : // Just the count: the search bar already says where and when (user, 2026-11-20).
+        `${total} ${total === 1 ? "venue" : "venues"}`;
 
   const where = here ? "Near me" : "All of Egypt";
   const when = "Today · any time · 1 hour";
