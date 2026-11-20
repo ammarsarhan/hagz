@@ -69,7 +69,9 @@ export default function AccountTab() {
   );
 
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-white" style={{ direction }}>
+    // SafeAreaView is native and className doesn't reach it: its white is a style, or the window's
+    // grey shows through.
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.white, direction }}>
       {profile === undefined ? null : profile ? (
         <SignedIn profile={profile} onProfile={setProfile} onSignedOut={() => setProfile(null)} />
       ) : (
@@ -221,8 +223,10 @@ function SignedIn({
       <ScrollView
         alwaysBounceVertical
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
       >
+        {/* Where the staff app's account keeps its back button's row, so the photo sits as low. */}
+        <View className="mb-[22px] h-10" />
         <View className="items-center">
           <Avatar
             name={profile.name}
@@ -369,7 +373,6 @@ function PhotoSheet({
   ];
   return (
     <Sheet visible={visible} onClose={onClose} onHidden={onHidden}>
-      <Text className="mb-2 text-heading font-semibold">{t("screens.account.photo.title")}</Text>
       {choices.map(({ key, icon: Glyph, label }, index) => (
         <SettingsRow
           key={key}

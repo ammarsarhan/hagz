@@ -259,7 +259,6 @@ const en = {
         support: "Message the Hagz team on WhatsApp.",
         photo: {
           change: "Change your photo",
-          title: "Your photo",
           library: "Choose from library",
           camera: "Take a photo",
           remove: "Remove photo",

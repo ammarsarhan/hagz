@@ -39,8 +39,8 @@ export function Avatar({
       className="active:opacity-80"
     >
       <View
-        className="items-center justify-center overflow-hidden rounded-full bg-chip"
-        style={{ width: SIZE, height: SIZE }}
+        className="items-center justify-center overflow-hidden rounded-full"
+        style={{ width: SIZE, height: SIZE, backgroundColor: colors.chip }}
       >
         {url ? (
           <Image
