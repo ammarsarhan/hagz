@@ -247,8 +247,6 @@ const en = {
         sorted: "Sorted: {{sort}}",
         found_one: "{{count}} venue found",
         found_other: "{{count}} venues found",
-        showRows: "Show as rows",
-        showCards: "Show as cards",
         map: "Map",
         list: "List",
         clearFilters: "Clear filters",

@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import Animated, {
-  Easing,
   type DerivedValue,
   FadeIn,
   FadeOut,
@@ -29,8 +28,6 @@ import {
   IconAdjustmentsHorizontal,
   IconX,
   IconArrowsSort,
-  IconLayoutGrid,
-  IconLayoutList,
   IconMap,
   IconSearch,
 } from "@/components/icons";
@@ -68,17 +65,16 @@ import {
   type VenueCard,
 } from "@/lib/search";
 
-// Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20, built behind
-// one switch to compare on the phone): venues free today near the player (or, when the phone can't
-// say where it is, in the governorate with the most venues), narrowed by sport. Results come as big cards
-// (option 1) or compact rows (option 2), or on a map with price pins (option 3). Changing where and
-// when (options 4 and 5) isn't built yet, so the search bar says so.
+// Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20): venues free
+// today near the player (or, when the phone can't say where it is, in the governorate with the most
+// venues), narrowed by sport. Results come as big cards (option 1) or on a map with price pins
+// (option 3); the compact rows (option 2) were dropped after trying them on the phone (user,
+// 2026-11-20). Where and when (options 4 and 5) open from the search bar.
 //
 // The page scrolls as one, like the venue page: the big title rises into a white bar as it goes
 // under it, and the search bar docks in the header (user, 2026-11-20). Changes animate, kept light:
 // a chip's black fades, the order's label cross-fades and its arrow turns, results stay on screen
-// until the new ones arrive and new ones fade in, cards ⟷ rows morphs each card (cover into
-// thumbnail, words sliding beside it), and the list and the map cross-fade.
+// until the new ones arrive and new ones fade in, and the list and the map cross-fade.
 
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
@@ -271,20 +267,8 @@ export default function SearchTab() {
   // the tap never waits on the list.
   const searchedSport = useDeferredValue(sport);
   const [sortChoice, setSortChoice] = useState<SearchSort | undefined>(undefined);
-  // The list or the map, cross-faded; and how the list shows venues.
+  // The list or the map, cross-faded.
   const [mode, setMode] = useState<"list" | "map">("list");
-  const [layout, setLayout] = useState<"cards" | "rows">("cards");
-  // Cards ⟷ rows: every card on screen morphs (its photo shrinking into a thumbnail, the words
-  // sliding beside it), driven by this one value on the UI thread.
-  const compact = useSharedValue(0);
-  const toggleLayout = () => {
-    const next = layout === "cards" ? "rows" : "cards";
-    setLayout(next);
-    compact.value = withTiming(next === "rows" ? 1 : 0, {
-      duration: 320,
-      easing: Easing.inOut(Easing.cubic),
-    });
-  };
   const [header, setHeader] = useState(0);
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
@@ -475,10 +459,10 @@ export default function SearchTab() {
   const renderItem = useCallback(
     ({ item }: { item: VenueCard }) => (
       <Animated.View entering={FadeIn.duration(200)}>
-        <VenueListCard card={item} currency={currency} timezone={timezone} compact={compact} />
+        <VenueListCard card={item} currency={currency} timezone={timezone} />
       </Animated.View>
     ),
-    [currency, timezone, compact],
+    [currency, timezone],
   );
 
   const empty = search.loading ? (
@@ -572,26 +556,7 @@ export default function SearchTab() {
             {chips}
             <View className="flex-row items-center justify-between">
               <Text className="text-body text-ink-2">{summary}</Text>
-              <View className="flex-row items-center gap-4">
-                <SortLabel sort={sort} onPress={openFilters} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    layout === "cards"
-                      ? t("screens.search.showRows")
-                      : t("screens.search.showCards")
-                  }
-                  hitSlop={8}
-                  onPress={toggleLayout}
-                  className="active:opacity-60"
-                >
-                  {layout === "cards" ? (
-                    <IconLayoutList size={20} color={colors.ink} strokeWidth={2} />
-                  ) : (
-                    <IconLayoutGrid size={20} color={colors.ink} strokeWidth={2} />
-                  )}
-                </Pressable>
-              </View>
+              <SortLabel sort={sort} onPress={openFilters} />
             </View>
           </View>
         }

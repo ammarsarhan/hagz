@@ -1,37 +1,22 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { memo, useState } from "react";
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
-} from "react-native";
-import Animated, {
-  FadeIn,
-  FadeOut,
-  interpolate,
-  useAnimatedStyle,
-  type SharedValue,
-} from "react-native-reanimated";
+import { Pressable, ScrollView, View, type ViewStyle } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import i18n from "@/i18next/i18next";
 import { reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { formatDistance } from "@/lib/distance";
-import { isRTL } from "@/lib/language";
 import { fromPerHour } from "@/lib/money";
 import { groundsText, sportsText, type VenueCard } from "@/lib/search";
 import { timeOfDay } from "@/lib/venue";
 import { IconStarFilled } from "./icons";
 import { Text } from "./text";
 
-// A venue in Search's results (Figma "C3 · Tabs & Search"): the list's card, morphing between the
-// big card (option 1, 96:2) and the compact row (option 2, 97:2), and the map's card (option 3,
-// 98:2), all with the venue's next free start times as chips (Fresha's results pattern). Tapping
-// any of it opens the venue page.
+// A venue in Search's results (Figma "C3 · Tabs & Search"): the list's card (option 1, 96:2) and
+// the map's card (option 3, 98:2), both with the venue's next free start times as chips (Fresha's
+// results pattern). Tapping any of it opens the venue page.
 
 const openVenue = (card: VenueCard) =>
   router.push({ pathname: "/venue/[slug]", params: { slug: card.slug } });
@@ -118,19 +103,9 @@ function Cover({ card, style }: { card: VenueCard; style: ViewStyle }) {
   );
 }
 
-// Options 1 and 2 as one card that morphs between them (user, 2026-11-20): `compact` runs 0 → 1
-// from the cover layout (photo across the top, the venue under it) to the row (an 84 point photo
-// with the venue beside it). The photo's box shrinks and re-crops, the words slide up beside it,
-// the free times rise under it, and the card's height follows, all on the UI thread. Each line is
-// one line at either width, so the words' height doesn't change as they narrow.
-const THUMB = 84;
-const BESIDE = 14;
-const UNDER = 16;
-const CHIPS_GAP = 12;
+// The list's gutter, which the free times scroll edge to edge from.
 const GUTTER = 24;
 
-// Memoised: a card re-renders only when its own venue, the currency, the timezone or the shared
-// morph value change, not every time Search does (a sport tap was redrawing every card).
 // The card's badge (docs/architecture.md, "Search ranking"): the player's own standing there first,
 // then a free time that came free again, then the venue's loyalty. Null for nothing to say.
 export const badgeOf = (card: VenueCard): { label: string; moment: boolean } | null => {
@@ -176,63 +151,24 @@ function CoverBadge({ badge }: { badge: { label: string; moment: boolean } }) {
   );
 }
 
+// The list's card (option 1): the cover across the top with its badge, the venue under it, then
+// its free times. The compact row (option 2) was dropped once the cards had proved themselves on
+// the phone (user, 2026-11-20). Memoised: a card re-renders only when its own venue, the currency
+// or the timezone change, not every time Search does (a sport tap was redrawing every card).
 export const VenueListCard = memo(function VenueListCard({
   card,
   currency,
   timezone,
-  compact,
 }: {
   card: VenueCard;
   currency: string;
   timezone: string;
-  compact: SharedValue<number>;
 }) {
   const { t } = useTranslation();
-  const { width: screen } = useWindowDimensions();
-  const inner = screen - 2 * GUTTER;
-  const coverHeight = Math.round((inner * 9) / 16);
-  // Measured once laid out; a first guess until then.
-  const [wordsHeight, setWordsHeight] = useState(88);
-  const [chipsHeight, setChipsHeight] = useState(50);
-
-  const box = useAnimatedStyle(() => {
-    const open = coverHeight + UNDER + wordsHeight + CHIPS_GAP + chipsHeight;
-    const shut = Math.max(THUMB, wordsHeight) + CHIPS_GAP + chipsHeight;
-    return { height: interpolate(compact.value, [0, 1], [open, shut]) };
-  });
-  const photo = useAnimatedStyle(() => ({
-    width: interpolate(compact.value, [0, 1], [inner, THUMB]),
-    height: interpolate(compact.value, [0, 1], [coverHeight, THUMB]),
-    borderRadius: interpolate(compact.value, [0, 1], [16, 14]),
-  }));
-  const words = useAnimatedStyle(() => ({
-    width: interpolate(compact.value, [0, 1], [inner, inner - THUMB - BESIDE]),
-    transform: [
-      // Beside the photo: to its right, or to its left in Arabic.
-      { translateX: interpolate(compact.value, [0, 1], [0, (THUMB + BESIDE) * (isRTL ? -1 : 1)]) },
-      { translateY: interpolate(compact.value, [0, 1], [coverHeight + UNDER, 0]) },
-    ],
-  }));
-  // The badge belongs to the cover: it fades out over the first part of the shrink into a row.
-  const badgeFade = useAnimatedStyle(() => ({
-    opacity: interpolate(compact.value, [0, 0.4], [1, 0], "clamp"),
-  }));
   const badge = badgeOf(card);
-  const chips = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(
-          compact.value,
-          [0, 1],
-          [coverHeight + UNDER + wordsHeight + CHIPS_GAP, Math.max(THUMB, wordsHeight) + CHIPS_GAP],
-        ),
-      },
-    ],
-  }));
-
   return (
-    <Animated.View style={box}>
-      {/* The whole card is one button; the free times inside it are their own. No press tint
+    <View>
+      {/* The whole card is one button; the free times under it are their own. No press tint
           (user, 2026-11-20). */}
       <Pressable
         accessibilityRole="button"
@@ -242,32 +178,8 @@ export const VenueListCard = memo(function VenueListCard({
             : t("screens.search.card.openVenue")
         }
         onPress={() => openVenue(card)}
-        style={StyleSheet.absoluteFill}
       >
-        <Animated.View className="absolute top-0 left-0" style={words}>
-          <View onLayout={(event) => setWordsHeight(Math.round(event.nativeEvent.layout.height))}>
-            <View className="flex-row items-center justify-between gap-3">
-              <Text className="shrink text-[18px] leading-6 font-medium" numberOfLines={1}>
-                {card.name ?? t("screens.venue.fallbackName")}
-              </Text>
-              <Rating card={card} />
-            </View>
-            <View className="mt-1 gap-0.5">
-              <Text className="text-body text-ink-2" numberOfLines={1}>
-                {placeText(card)}
-              </Text>
-              <Text className="text-body text-ink-2" numberOfLines={1}>
-                {sportsText(card.sports)}
-              </Text>
-              {/* A little more room above the price, setting it apart from the grey lines. */}
-              <View className="mt-1">
-                <Price card={card} currency={currency} />
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-        {/* After the words, so as the photo shrinks the words slide in under it, not over. */}
-        <Animated.View className="absolute top-0 left-0 overflow-hidden bg-[#c4c8cf]" style={photo}>
+        <View className="overflow-hidden rounded-2xl bg-[#c4c8cf]" style={{ aspectRatio: 16 / 9 }}>
           {card.cover ? (
             <Image
               source={{ uri: reachable(card.cover.url) }}
@@ -276,21 +188,37 @@ export const VenueListCard = memo(function VenueListCard({
               transition={150}
             />
           ) : null}
-        </Animated.View>
-        {badge ? (
-          <Animated.View pointerEvents="none" className="absolute top-3 right-3" style={badgeFade}>
-            <CoverBadge badge={badge} />
-          </Animated.View>
-        ) : null}
+          {badge ? (
+            <View pointerEvents="none" className="absolute top-3 right-3">
+              <CoverBadge badge={badge} />
+            </View>
+          ) : null}
+        </View>
+        <View className="mt-4">
+          <View className="flex-row items-center justify-between gap-3">
+            <Text className="shrink text-[18px] leading-6 font-medium" numberOfLines={1}>
+              {card.name ?? t("screens.venue.fallbackName")}
+            </Text>
+            <Rating card={card} />
+          </View>
+          <View className="mt-1 gap-0.5">
+            <Text className="text-body text-ink-2" numberOfLines={1}>
+              {placeText(card)}
+            </Text>
+            <Text className="text-body text-ink-2" numberOfLines={1}>
+              {sportsText(card.sports)}
+            </Text>
+            {/* A little more room above the price, setting it apart from the grey lines. */}
+            <View className="mt-1">
+              <Price card={card} currency={currency} />
+            </View>
+          </View>
+        </View>
       </Pressable>
-      <Animated.View
-        className="absolute top-0 right-0 left-0"
-        style={chips}
-        onLayout={(event) => setChipsHeight(Math.round(event.nativeEvent.layout.height))}
-      >
+      <View className="mt-3">
         <TimeChips card={card} timezone={timezone} inset={GUTTER} />
-      </Animated.View>
-    </Animated.View>
+      </View>
+    </View>
   );
 });
 

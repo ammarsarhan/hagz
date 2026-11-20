@@ -270,8 +270,6 @@ const ar: ArabicTranslations = {
         found_few: "تم العثور على {{count}} ملاعب",
         found_many: "تم العثور على {{count}} ملعبًا",
         found_other: "تم العثور على {{count}} ملعب",
-        showRows: "اعرض كصفوف",
-        showCards: "اعرض كبطاقات",
         map: "الخريطة",
         list: "القائمة",
         clearFilters: "امسح الفلاتر",
