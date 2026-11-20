@@ -1,4 +1,5 @@
 import {
+  JUST_FREED,
   NEXT_TIMES,
   PRICE_STEP,
   SEARCH_RADIUS_KM,
@@ -70,7 +71,8 @@ interface Row {
   id: string;
   distance: number | null;
   key: number;
-  next: { startsAt: string; grounds: number }[];
+  next: { startsAt: string; grounds: number; justFreed: boolean }[];
+  justFreed: boolean;
   cheapest: number;
   // Every venue found, not just this page's.
   total: number;
@@ -308,9 +310,24 @@ export const freeHours = async (
   };
 };
 
+// Best match (docs/architecture.md, "Search ranking"): a tier from the player's own history, then a
+// score in [0, 1] from closeness, rating and fit. The weights are constants, to tune on real data.
+const MATCH = {
+  closeness: 0.45,
+  rating: 0.35,
+  fit: 0.2,
+  // Closeness halves about every 3.5 km from the point or the area's centre.
+  closenessKm: 5,
+  // A venue's rating counts as this many reviews at the marketplace's mean, plus its own.
+  priorReviews: 10,
+  // Free times counted for fit, at most.
+  fitStarts: 12,
+} as const;
+
 export const searchVenues = async (
   query: VenueSearchQuery,
   language: Language,
+  customerId: string | null = null,
   clock: Clock = systemClock,
 ): Promise<VenueSearchResults> => {
   const marketplace = await activeMarketplace(query.marketplace);
@@ -319,15 +336,38 @@ export const searchVenues = async (
 
   const { window, startsOf, atStart } = await bookable(query, timezone, now);
   const { point, area, near, name, venue } = filtersFor(query);
-  const sort = query.sort ?? (point ? "DISTANCE" : "RATING");
+  const sort = query.sort ?? "BEST_MATCH";
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
 
   const distance = point
     ? Prisma.sql`round(ST_Distance(v.coordinates, ${point}))::int`
     : Prisma.sql`NULL::int`;
   // Ascending in all: nearest first, best rated first (the unrated after everyone), or (from the
-  // venue's bookable starts, below) the cheapest hour or the earliest start first.
+  // venue's bookable starts, below) the cheapest hour, the earliest start or the best match first.
   const fromStarts = sort === "PRICE" || sort === "SOONEST";
+  // Best match's closeness: from the point, or the area's centre; by name alone, the same for all.
+  const centre =
+    point ??
+    (query.area
+      ? Prisma.sql`(SELECT center FROM "Location" WHERE id = ${query.area}::uuid)`
+      : null);
+  const closeness = centre
+    ? Prisma.sql`coalesce(exp(-ST_Distance(v.coordinates, ${centre}) / ${MATCH.closenessKm * 1000}), 0.5)`
+    : Prisma.sql`0.5`;
+  // The rating pulled towards the marketplace's mean by a prior of a few reviews, out of 1.
+  const rating = Prisma.sql`(
+    (${MATCH.priorReviews} * mean.value + coalesce(v."averageRating", 0) * v."reviewCount")
+    / (${MATCH.priorReviews} + v."reviewCount") / 5.0)`;
+  // The player's own venues: played at, and the loyalty card being filled or with a free booking.
+  const mine = customerId
+    ? Prisma.sql`SELECT vc."venueId", max(vc."bookingCount") AS played,
+                        bool_or(lc.status = 'EARNED') AS earned, bool_or(lc.status = 'OPEN') AS open
+                 FROM "VenueCustomer" vc
+                 LEFT JOIN "LoyaltyCard" lc ON lc."customerId" = vc.id
+                   AND lc.status IN ('OPEN', 'EARNED') AND lc."expiresAt" > ${now}
+                 WHERE vc."customerId" = ${customerId}::uuid
+                 GROUP BY vc."venueId"`
+    : Prisma.sql`SELECT NULL::uuid AS "venueId", 0 AS played, false AS earned, false AS open WHERE false`;
   const key =
     sort === "DISTANCE"
       ? Prisma.sql`ST_Distance(v.coordinates, ${point ?? Prisma.sql`NULL`})::float8`
@@ -348,24 +388,48 @@ export const searchVenues = async (
   // (EXISTS stops at the first bookable start), their order and how many; then the next free
   // times and the cheapest price for the page's venues only.
   const rows = await prisma.$queryRaw<Row[]>`
-    WITH candidates AS (
+    WITH mean AS (
+      SELECT coalesce(sum(v."averageRating" * v."reviewCount") / nullif(sum(v."reviewCount"), 0), 4)::float8 AS value
+      FROM "Venue" v WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplace.id}::uuid
+    ),
+    mine AS (${mine}),
+    candidates AS (
       SELECT v.id, ${distance} AS distance, ${key} AS key,
+             ${closeness}::float8 AS closeness, ${rating}::float8 AS rating,
              ST_Y(v.coordinates::geometry) AS latitude, ST_X(v.coordinates::geometry) AS longitude
-      FROM "Venue" v
+      FROM "Venue" v CROSS JOIN mean
       WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplace.id}::uuid
         ${area} ${near} ${name} ${venue}
     ),
     ranked AS (
       ${
-        fromStarts
-          ? // Keyed by the venue's cheapest or earliest bookable start; none means no match.
-            Prisma.sql`SELECT c.id, c.distance, m.key, c.latitude, c.longitude, count(*) OVER ()::int AS total
+        sort === "BEST_MATCH"
+          ? // Tier first (each tier 10 apart), then the score: the higher the score, the lower the key.
+            // Counting up to a few free times both checks the venue matches and measures fit.
+            Prisma.sql`SELECT c.id, c.distance, c.latitude, c.longitude,
+                (CASE WHEN m.earned THEN 0 WHEN m.open THEN 1 WHEN m.played > 0 THEN 2
+                      WHEN vs."loyaltyStamps" IS NOT NULL THEN 3 ELSE 4 END) * 10
+                  + 1 - (${MATCH.closeness} * c.closeness + ${MATCH.rating} * c.rating
+                         + ${MATCH.fit} * least(f.n, ${MATCH.fitStarts})::float8 / ${MATCH.fitStarts}) AS key,
+                count(*) OVER ()::int AS total
+              FROM candidates c
+              CROSS JOIN LATERAL (
+                SELECT count(*) AS n FROM (
+                  SELECT 1 FROM ${startsOf(Prisma.raw("c.id"))} ${atStart} LIMIT ${MATCH.fitStarts}
+                ) x
+              ) f
+              LEFT JOIN mine m ON m."venueId" = c.id
+              LEFT JOIN "VenueSettings" vs ON vs."venueId" = c.id
+              WHERE f.n > 0`
+          : fromStarts
+            ? // Keyed by the venue's cheapest or earliest bookable start; none means no match.
+              Prisma.sql`SELECT c.id, c.distance, m.key, c.latitude, c.longitude, count(*) OVER ()::int AS total
               FROM candidates c
               CROSS JOIN LATERAL (
                 SELECT ${startKey} AS key FROM ${startsOf(Prisma.raw("c.id"))} ${atStart} ${startLimit}
               ) m
               WHERE m.key IS NOT NULL`
-          : Prisma.sql`SELECT c.*, count(*) OVER ()::int AS total
+            : Prisma.sql`SELECT c.id, c.distance, c.key, c.latitude, c.longitude, count(*) OVER ()::int AS total
               FROM candidates c
               WHERE EXISTS (SELECT 1 FROM ${startsOf(Prisma.raw("c.id"))} ${atStart})`
       }
@@ -376,14 +440,18 @@ export const searchVenues = async (
       ORDER BY r.key, r.id
       LIMIT ${query.limit + 1}
     )
-    SELECT p.id, p.distance, p.key, p.total, p.latitude, p.longitude, d.next, d.cheapest
+    SELECT p.id, p.distance, p.key, p.total, p.latitude, p.longitude, d.next, d.cheapest,
+           d."justFreed"
     FROM page p
     CROSS JOIN LATERAL (
-      SELECT json_agg(json_build_object('startsAt', t."startsAt", 'grounds', t.grounds)
+      SELECT json_agg(json_build_object('startsAt', t."startsAt", 'grounds', t.grounds,
+                                        'justFreed', t."justFreed")
                ORDER BY t."startsAt") FILTER (WHERE t.n <= ${NEXT_TIMES}) AS next,
-             min(t.price)::int AS cheapest
+             min(t.price)::int AS cheapest, coalesce(bool_or(t."justFreed"), false) AS "justFreed"
       FROM (
         SELECT s."startsAt", count(DISTINCT s."groundId")::int AS grounds, min(free.price) AS price,
+               coalesce(bool_or(s."freedAt" >= ${now}::timestamptz - make_interval(hours => ${JUST_FREED.freedWithinHours})
+                 AND s."startsAt" < ${now}::timestamptz + make_interval(hours => ${JUST_FREED.startsWithinHours})), false) AS "justFreed",
                row_number() OVER (ORDER BY s."startsAt") AS n
         FROM ${startsOf(Prisma.raw("p.id"))}
         GROUP BY s."startsAt"
@@ -402,7 +470,7 @@ export const searchVenues = async (
     currency,
     // Counted before the cursor: on a later page the rows left are fewer, so ask the first page.
     total: query.cursor ? null : (rows[0]?.total ?? 0),
-    data: await cards(page, query.hours, language),
+    data: await cards(page, query.hours, language, customerId, now),
     nextCursor,
   };
 };
@@ -410,7 +478,37 @@ export const searchVenues = async (
 const names = { translations: { select: { language: true, name: true } } } as const;
 
 // The page's venues as cards, in the order found.
-const cards = async (rows: Row[], hours: number, language: Language): Promise<VenueCard[]> => {
+const cards = async (
+  rows: Row[],
+  hours: number,
+  language: Language,
+  customerId: string | null,
+  now: Date,
+): Promise<VenueCard[]> => {
+  const ids = rows.map((row) => row.id);
+  // The signed-in player and these venues: saved, played at, and their loyalty card there.
+  const [favorites, customers] = customerId
+    ? await Promise.all([
+        prisma.venueFavorite.findMany({
+          where: { customerId, venueId: { in: ids } },
+          select: { venueId: true },
+        }),
+        prisma.venueCustomer.findMany({
+          where: { customerId, venueId: { in: ids } },
+          select: {
+            venueId: true,
+            bookingCount: true,
+            cards: {
+              where: { status: { in: ["OPEN", "EARNED"] }, expiresAt: { gt: now } },
+              select: { status: true, requiredStamps: true, _count: { select: { stamps: true } } },
+              take: 1,
+            },
+          },
+        }),
+      ])
+    : [[], []];
+  const saved = new Set(favorites.map((favorite) => favorite.venueId));
+  const played = new Map(customers.map((customer) => [customer.venueId, customer]));
   const venues = await prisma.venue.findMany({
     where: { id: { in: rows.map((row) => row.id) } },
     select: {
@@ -427,6 +525,7 @@ const cards = async (rows: Row[], hours: number, language: Language): Promise<Ve
         select: { key: true },
       },
       grounds: { where: { status: "ACTIVE" }, select: { sport: true }, distinct: ["sport"] },
+      settings: { select: { loyaltyStamps: true } },
     },
   });
   const byId = new Map(venues.map((venue) => [venue.id, venue]));
@@ -456,10 +555,43 @@ const cards = async (rows: Row[], hours: number, language: Language): Promise<Ve
         nextTimes: row.next.map((time) => ({
           startsAt: new Date(time.startsAt).toISOString(),
           grounds: time.grounds,
+          justFreed: time.justFreed,
         })),
+        justFreed: row.justFreed,
+        loyalty: venue.settings?.loyaltyStamps != null,
+        you: customerId ? youAt(venue.id, saved, played) : null,
       },
     ];
   });
+};
+
+// The signed-in player at a venue, for its card's badge ("Free booking ready", "2 of 4", "Played
+// here 3×") and heart.
+const youAt = (
+  venueId: string,
+  saved: Set<string>,
+  played: Map<
+    string,
+    {
+      bookingCount: number;
+      cards: {
+        status: "OPEN" | "EARNED" | "REDEEMED" | "EXPIRED";
+        requiredStamps: number;
+        _count: { stamps: number };
+      }[];
+    }
+  >,
+): NonNullable<VenueCard["you"]> => {
+  const customer = played.get(venueId);
+  const card = customer?.cards[0];
+  return {
+    favorite: saved.has(venueId),
+    played: customer?.bookingCount ?? 0,
+    card:
+      card && (card.status === "OPEN" || card.status === "EARNED")
+        ? { status: card.status, stamps: card._count.stamps, required: card.requiredStamps }
+        : null,
+  };
 };
 
 // How the venues a search finds spread over price and distance: the Filters sheet's price chart

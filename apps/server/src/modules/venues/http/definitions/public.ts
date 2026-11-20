@@ -12,10 +12,14 @@ import {
   VenueSpread,
   VenueSpreadQuery,
 } from "@hagz/contracts";
+import { CUSTOMER_BEARER, optionalCustomer } from "@/platform/http/authenticate";
 import { json, problemResponse } from "@/platform/http/definitions";
 
 // The venue page (PR 3.2). Public: guests browse everything, and the web renders it for search
 // engines.
+
+// Either a customer's token or none (a guest): the empty requirement makes the token optional.
+const guestOrCustomer: Record<string, string[]>[] = [{ [CUSTOMER_BEARER]: [] }, {}];
 
 const slug = z.object({
   slug: z
@@ -72,12 +76,16 @@ export const searchVenues = createRoute({
   description:
     "Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) " +
     "with a ground free when asked: from `start` for `hours`, or any time on `date`, of the " +
-    "`sport` and `size` asked for. Each card has its next free times. Nearest first with a point, " +
-    "else best rated. Names follow `Accept-Language`. Public.",
+    "`sport` and `size` asked for, and the other filters. Each card has its next free times. " +
+    "Best match first unless `sort` says otherwise. Names follow `Accept-Language`. Public; " +
+    "signed in, best match puts the player's own venues first and cards carry `you`.",
+  middleware: [optionalCustomer] as const,
+  security: guestOrCustomer,
   request: { query: VenueSearchQuery },
   responses: {
     200: { description: "A page of venues", ...json(VenueSearchResults) },
     400: problemResponse("VALIDATION_FAILED, or INVALID_CURSOR: search again."),
+    401: problemResponse("TOKEN_EXPIRED or UNAUTHENTICATED: a token was sent and isn't good."),
     404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),
   },

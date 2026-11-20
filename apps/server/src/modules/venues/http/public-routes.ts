@@ -6,7 +6,11 @@ import * as route from "./definitions/public";
 
 export const venuesPublicRoutes = createRouter()
   .openapi(route.searchVenues, async (c) => {
-    return c.json(await searchVenues(c.req.valid("query"), requestLanguage(c)), 200);
+    const customer = c.get("customer");
+    return c.json(
+      await searchVenues(c.req.valid("query"), requestLanguage(c), customer?.customerId ?? null),
+      200,
+    );
   })
   // These three before /venues/{slug}, which would otherwise take their names for slugs.
   .openapi(route.freeHours, async (c) => {

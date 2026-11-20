@@ -1,10 +1,12 @@
 import { VenueCoverage, VenueFreeHours, VenueSearchResults, VenueSpread } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
 import { router } from "@/http/router";
+import { signJwt } from "@/platform/crypto/jwt";
 import { reconcileGround } from "@/modules/venues/application/slot-generation";
 import { prisma } from "@/platform/db/prisma";
 import { resetDatabase } from "../../support/database";
-import { createMarketplace } from "../../support/factories";
+import { createCustomer, createMarketplace } from "../../support/factories";
 import { resetRedis } from "../../support/redis";
 
 // Search (PR 3.3): where, when, the filters, ordering and pages.
@@ -25,7 +27,11 @@ const placed = (params: Record<string, string | number>) =>
     ? params
     : { ...MAADI, radius: 50, sort: "RATING", ...params };
 
-const search = async (params: Record<string, string | number>, language = "en") => {
+const search = async (
+  params: Record<string, string | number>,
+  language = "en",
+  token: string | null = null,
+) => {
   const all: Record<string, string | number> = {
     marketplace: "EG",
     date: tomorrow(),
@@ -35,7 +41,10 @@ const search = async (params: Record<string, string | number>, language = "en") 
     Object.entries(all).map(([key, value]): [string, string] => [key, `${value}`]),
   );
   return router.request(`/v1/venues?${query.toString()}`, {
-    headers: { "Accept-Language": language },
+    headers: {
+      "Accept-Language": language,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   });
 };
 
@@ -246,6 +255,7 @@ describe("when", () => {
     expect(card.nextTimes[0]).toEqual({
       startsAt: new Date(`${tomorrow()}T22:00:00+02:00`).toISOString(),
       grounds: 1,
+      justFreed: false,
     });
     expect(card.priceFrom).toBe(75000);
   });
@@ -471,6 +481,97 @@ describe("free hours", () => {
     expect(cheap.hours.find((h) => h.hour === 20)?.venues).toBe(0);
     expect(cheap.hours.find((h) => h.hour === 19)?.venues).toBe(2);
     expect((await get({ rating: "4" })).hours.find((h) => h.hour === 19)?.venues).toBe(1);
+  });
+});
+
+describe("best match and just freed", () => {
+  const signedIn = async () => {
+    const customer = await createCustomer();
+    const token = await signJwt(
+      { sub: customer.id, sid: randomUUID() },
+      { audience: "customer", ttlSeconds: 600 },
+    );
+    return { customer, token };
+  };
+  const order = async (params: Record<string, string | number>, token: string | null = null) => {
+    const res = await search(params, "en", token);
+    expect(res.status).toBe(200);
+    return VenueSearchResults.parse(await res.json());
+  };
+  // Best match is the default: no sort.
+  const near = { ...MAADI, radius: 50 };
+
+  it("ranks by closeness and rating for a guest, loyalty venues first", async () => {
+    const { nile, padel } = await setup();
+    const guest = await order(near);
+    expect(guest.data.map((card) => card.id)).toEqual([nile.id, padel.id]);
+    expect(guest.data[0]?.you).toBeNull();
+    // Loyalty lifts Wadi Padel over the nearer, better rated venue.
+    await prisma.venueSettings.update({
+      where: { venueId: padel.id },
+      data: { loyaltyStamps: 4, loyaltyWindow: 60 },
+    });
+    const loyal = await order(near);
+    expect(loyal.data.map((card) => card.id)).toEqual([padel.id, nile.id]);
+    expect(loyal.data[0]?.loyalty).toBe(true);
+  });
+
+  it("puts the player's own venues first: a free booking ready, then stamps, then played at", async () => {
+    const { nile, padel } = await setup();
+    const { customer, token } = await signedIn();
+    const at = (venueId: string, bookingCount: number) =>
+      prisma.venueCustomer.create({
+        data: { venueId, customerId: customer.id, name: "Ahmed", bookingCount },
+      });
+    await at(nile.id, 3);
+    const padelCustomer = await at(padel.id, 1);
+    await prisma.loyaltyCard.create({
+      data: {
+        customerId: padelCustomer.id,
+        status: "EARNED",
+        requiredStamps: 4,
+        expiresAt: new Date(Date.now() + 30 * 86_400_000),
+      },
+    });
+    await prisma.venueFavorite.create({ data: { customerId: customer.id, venueId: nile.id } });
+
+    const mine = await order(near, token);
+    expect(mine.data.map((card) => card.id)).toEqual([padel.id, nile.id]);
+    expect(mine.data[0]?.you).toEqual({
+      favorite: false,
+      played: 1,
+      card: { status: "EARNED", stamps: 0, required: 4 },
+    });
+    expect(mine.data[1]?.you).toEqual({ favorite: true, played: 3, card: null });
+    // A guest sees the usual order.
+    expect((await order(near)).data.map((card) => card.id)).toEqual([nile.id, padel.id]);
+  });
+
+  it("refuses a token that isn't good, rather than searching as a guest", async () => {
+    await setup();
+    const res = await search(near, "en", "not-a-token");
+    expect(res.status).toBe(401);
+  });
+
+  it("marks free times that came free again near kick-off", async () => {
+    const { nile } = await setup();
+    const at10 = await slotAt(nile.groundId, "22:00");
+    const at11 = await slotAt(nile.groundId, "23:00");
+    await prisma.groundSlot.update({
+      where: { id: at10 },
+      data: { freedAt: new Date(Date.now() - 3_600_000) },
+    });
+    // Freed two days ago: no longer news.
+    await prisma.groundSlot.update({
+      where: { id: at11 },
+      data: { freedAt: new Date(Date.now() - 48 * 3_600_000) },
+    });
+    const card = page0(await found({ q: "nile", start: "22:00" }));
+    expect(card.nextTimes[0]?.justFreed).toBe(true);
+    expect(card.justFreed).toBe(true);
+    const later = page0(await found({ q: "nile", start: "23:00" }));
+    expect(later.nextTimes[0]?.justFreed).toBe(false);
+    expect(later.justFreed).toBe(false);
   });
 });
 

@@ -14,13 +14,23 @@ export const SEARCH_PAGE = { default: 20, max: 50 } as const;
 // The next free start times a card shows.
 export const NEXT_TIMES = 4;
 
-export const VenueSearchSort = z.enum(["DISTANCE", "RATING", "PRICE", "SOONEST"]).meta({
-  id: "VenueSearchSort",
-  description:
-    "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. " +
-    "`PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free " +
-    "start first. Left out: `DISTANCE` with a point, else `RATING`.",
-});
+export const VenueSearchSort = z
+  .enum(["BEST_MATCH", "DISTANCE", "RATING", "PRICE", "SOONEST"])
+  .meta({
+    id: "VenueSearchSort",
+    description:
+      "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then " +
+      "stamps being collected, then venues played at), then venues with loyalty, then the rest; " +
+      "within each, by closeness, rating (pulled towards the marketplace's mean when there are " +
+      "few reviews) and how many free times fit. Guests see only the last two groups. " +
+      "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. " +
+      "`PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free " +
+      "start first.",
+  });
+
+// A free time is "just freed" when its slot came free again (a booking cancelled, a regular's
+// reservation released) in the last day and it starts within two days (docs/regulars.md).
+export const JUST_FREED = { freedWithinHours: 24, startsWithinHours: 48 } as const;
 
 export const PaymentFilter = z.enum(["CASH", "ONLINE"]).meta({
   id: "PaymentFilter",
@@ -175,6 +185,7 @@ export const NextFreeTime = z
       .int()
       .min(1)
       .meta({ description: "How many grounds are free then, for the length." }),
+    justFreed: z.boolean().meta({ description: "A ground came free again then, near kick-off." }),
   })
   .meta({ id: "NextFreeTime" });
 
@@ -208,6 +219,27 @@ export const VenueCard = z
     nextTimes: z.array(NextFreeTime).max(NEXT_TIMES).meta({
       description: "The first free start times found, earliest first.",
     }),
+    justFreed: z.boolean().meta({
+      description: "Any of its free times found came free again near kick-off.",
+    }),
+    loyalty: z.boolean().meta({ description: "It rewards regulars with free bookings." }),
+    you: z
+      .object({
+        favorite: z.boolean(),
+        played: z.int().min(0).meta({ description: "Bookings completed there." }),
+        card: z
+          .object({
+            status: z.enum(["OPEN", "EARNED"]),
+            stamps: z.int().min(0),
+            required: z.int().min(2),
+          })
+          .nullable()
+          .meta({
+            description: 'The loyalty card being filled ("2 of 4") or with a free booking.',
+          }),
+      })
+      .nullable()
+      .meta({ description: "The signed-in player and this venue; null for guests." }),
   })
   .meta({ id: "VenueCard" });
 
@@ -310,6 +342,28 @@ export const VenueCoverage = z
   })
   .meta({ id: "VenueCoverage" });
 
+// Favorites (PR 3.4): venues a player saved, most recent first.
+export const FavoriteVenue = z
+  .object({
+    id: z.uuid(),
+    slug: z.string(),
+    name: z.string().nullable(),
+    area: z.string().nullable(),
+    cover: z.object({ url: z.string() }).nullable(),
+    rating: z.object({ average: z.number().nullable(), count: z.int().min(0) }),
+    sports: z.array(GroundSport),
+    status: z.enum(["LIVE", "MAINTENANCE", "UNAVAILABLE"]).meta({
+      description:
+        "`MAINTENANCE`: paused, taking no bookings. `UNAVAILABLE`: no longer listed (kept so the " +
+        "player sees it went).",
+    }),
+    savedAt: z.iso.datetime(),
+  })
+  .meta({ id: "FavoriteVenue" });
+export const FavoriteVenues = z
+  .object({ data: z.array(FavoriteVenue) })
+  .meta({ id: "FavoriteVenues" });
+
 export type VenueSearchSort = z.infer<typeof VenueSearchSort>;
 export type VenueSearchQuery = z.infer<typeof VenueSearchQuery>;
 export type NextFreeTime = z.infer<typeof NextFreeTime>;
@@ -321,3 +375,5 @@ export type VenueSpreadQuery = z.infer<typeof VenueSpreadQuery>;
 export type VenueSpread = z.infer<typeof VenueSpread>;
 export type VenueCoverageQuery = z.infer<typeof VenueCoverageQuery>;
 export type VenueCoverage = z.infer<typeof VenueCoverage>;
+export type FavoriteVenue = z.infer<typeof FavoriteVenue>;
+export type FavoriteVenues = z.infer<typeof FavoriteVenues>;
