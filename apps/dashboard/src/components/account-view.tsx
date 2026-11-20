@@ -69,8 +69,8 @@ export function AccountView({ tabbed = false }: { tabbed?: boolean }) {
   };
 
   const back = tabbed ? (
-    // In place of the back button's row, so the page starts at the same height.
-    <View className="mb-[22px] h-10" />
+    // In place of the back button's row, a little tighter under it (user, 2026-11-20).
+    <View className="mb-3 h-10" />
   ) : (
     <NavBar
       start={<BackButton label={t("components.shared.nav.back")} onPress={() => router.back()} />}

@@ -2,7 +2,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -55,10 +55,16 @@ import { api, reachable } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useDistanceTo } from "@/lib/distance";
+import {
+  describeFilter,
+  groundFilterOf,
+  matchingGrounds,
+  type GroundFilter,
+} from "@/lib/ground-filter";
 import { isRTL } from "@/lib/language";
 import { webLinks } from "@/lib/links";
 import { fromPerHour } from "@/lib/money";
-import { cheapestHour, paymentShort, type PublicVenue } from "@/lib/venue";
+import { cheapestHour, nextDate, paymentShort, type PublicVenue } from "@/lib/venue";
 
 // The venue page (Figma C5, frames 59:2 and 60:2; PR 3.2): photos edge to edge under the status
 // bar, then the venue and every section a player checks before booking, with Book pinned to the
@@ -88,7 +94,13 @@ type Loaded =
   | { state: "ready"; venue: PublicVenue };
 
 export default function VenuePage() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, ...rest } = useLocalSearchParams<{ slug: string } & Record<string, string>>();
+  // Opened from a search: what it asked of the grounds (lib/ground-filter.ts). Kept by value.
+  const restKey = JSON.stringify(rest);
+  const filter = useMemo(
+    () => groundFilterOf(JSON.parse(restKey) as Record<string, string>),
+    [restKey],
+  );
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -106,7 +118,7 @@ export default function VenuePage() {
     };
   }, [slug, attempt]);
 
-  if (loaded.state === "ready") return <VenueView venue={loaded.venue} />;
+  if (loaded.state === "ready") return <VenueView venue={loaded.venue} filter={filter} />;
   return (
     <Waiting
       loaded={loaded}
@@ -271,19 +283,33 @@ function BackButton({ progress }: { progress: SharedValue<number> | null }) {
   );
 }
 
-// Pulled down past the top (iOS's bounce), the photo stretches to fill the gap, Airbnb's way: it
-// zooms by however far it's pulled, its bottom edge staying put and its top on the screen's top
-// edge, so there's never white above it (user, 2026-11-20). The counter isn't stretched.
+// Pulled down past the top (iOS's bounce), the photo stays pinned to the screen's top edge and
+// zooms by half as much as it's pulled, while the page under it pulls away: a white band opens
+// between the photo and the venue's name (user, 2026-11-20, over a full Airbnb stretch, which
+// zoomed too far). The counter rides on the photo's bottom edge, unzoomed.
+const ZOOM = 0.5;
+
 function Photos({ venue, scrollY }: { venue: PublicVenue; scrollY: SharedValue<number> }) {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  // Pulled `p` down, the page (and this box) sits `p` lower. The photo goes back up by `p` to the
+  // screen's top, then grows by ZOOM·p from that top edge (a scale grows from the middle, so it
+  // comes down by half of that again).
   const stretch = useAnimatedStyle(() => {
     const pulled = Math.max(0, -scrollY.value);
+    const grown = ZOOM * pulled;
     return {
-      transform: [{ translateY: -pulled / 2 }, { scale: (PHOTO_HEIGHT + pulled) / PHOTO_HEIGHT }],
+      transform: [
+        { translateY: -pulled + grown / 2 },
+        { scale: (PHOTO_HEIGHT + grown) / PHOTO_HEIGHT },
+      ],
     };
   });
+  // The photo's bottom edge ends up (1 − ZOOM)·p above where the box's is.
+  const counter = useAnimatedStyle(() => ({
+    transform: [{ translateY: -(1 - ZOOM) * Math.max(0, -scrollY.value) }],
+  }));
   if (venue.photos.length === 0) {
     return <Animated.View className="bg-[#c4c8cf]" style={[{ height: PHOTO_HEIGHT }, stretch]} />;
   }
@@ -315,11 +341,14 @@ function Photos({ venue, scrollY }: { venue: PublicVenue; scrollY: SharedValue<n
         />
       </Animated.View>
       {venue.photos.length > 1 ? (
-        <View className="absolute right-4 bottom-4 h-[26px] justify-center rounded-full bg-[#000000a0] px-2.5">
+        <Animated.View
+          className="absolute right-4 bottom-4 h-[26px] justify-center rounded-full bg-[#000000a0] px-2.5"
+          style={counter}
+        >
           <Text className="text-caption font-medium text-white">
             {t("screens.venue.photoCount", { index: index + 1, count: venue.photos.length })}
           </Text>
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -361,8 +390,47 @@ function Tabs({
   );
 }
 
-function VenueView({ venue }: { venue: PublicVenue }) {
+// A search's grounds on this venue: the day's free slots read (and the next day's, for a game that
+// runs past midnight), then each ground judged as the search judges it. Null without a search, or
+// until the slots are back (nothing is greyed out before it's known).
+function useSearchedGrounds(venue: PublicVenue, filter: GroundFilter | null) {
+  const [searched, setSearched] = useState<{
+    date: string;
+    matches: ReadonlySet<string>;
+    note: string;
+  } | null>(null);
+  useEffect(() => {
+    if (!filter) return;
+    let active = true;
+    void (async () => {
+      const read = (date?: string) =>
+        send(
+          api.GET("/v1/venues/{slug}/availability", {
+            params: { path: { slug: venue.slug }, query: date ? { date } : {} },
+          }),
+        );
+      const day = await read(filter.date);
+      if (!active || !day.ok) return;
+      const { date, timezone, currency, days } = day.data;
+      const next = date < days.last ? await read(nextDate(date)) : null;
+      if (!active) return;
+      const slots = [...day.data.slots, ...(next?.ok === true ? next.data.slots : [])];
+      setSearched({
+        date,
+        matches: matchingGrounds(venue.grounds, slots, filter, date, timezone),
+        note: describeFilter(filter, date, timezone, currency),
+      });
+    })();
+    return () => {
+      active = false;
+    };
+  }, [venue, filter]);
+  return searched;
+}
+
+function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter | null }) {
   const { t } = useTranslation();
+  const searched = useSearchedGrounds(venue, filter);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const hud = useHud();
@@ -455,6 +523,24 @@ function VenueView({ venue }: { venue: PublicVenue }) {
   const distance = useDistanceTo(venue.location.coordinates);
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";
+  // The ground picked in the row under the map (the first open one to begin with): Book opens its
+  // free hours, as its own See times does.
+  const pickedGround = useRef(
+    venue.grounds.find((ground) => ground.status === "ACTIVE")?.id ?? venue.grounds[0]?.id,
+  );
+  // See times opens on the search's day, with its start and length picked when there was one.
+  const openTimes = (groundId: string | undefined) => {
+    if (!groundId) return;
+    router.push({
+      pathname: "/venue/[slug]/times",
+      params: {
+        slug: venue.slug,
+        ground: groundId,
+        ...(searched ? { date: searched.date } : {}),
+        ...(filter?.start ? { start: filter.start, hours: String(filter.hours) } : {}),
+      },
+    });
+  };
 
   return (
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
@@ -486,7 +572,12 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         <GroundsSection
           venue={venue}
           onLayout={recordOffset("grounds")}
-          onSeeTimes={() => hud.show(t("screens.venue.bookingSoon"))}
+          onSeeTimes={openTimes}
+          onPick={(groundId) => {
+            pickedGround.current = groundId;
+          }}
+          matches={searched?.matches ?? null}
+          note={searched?.note}
         />
         <BookingSection venue={venue} onLayout={recordOffset("booking")} />
         <CancellationSection venue={venue} />
@@ -583,7 +674,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
             variant="moment"
             size="small"
             disabled={paused}
-            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
+            onPress={() => openTimes(pickedGround.current)}
           />
         </View>
       </View>

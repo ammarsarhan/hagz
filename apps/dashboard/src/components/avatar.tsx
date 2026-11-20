@@ -9,12 +9,12 @@ const initialsOf = (name: string) => {
 };
 
 // Staff have no photo: their initials on the same grey as the round buttons. Small (40, one initial)
-// beside the round buttons in the nav bar; large (76, both initials) atop the account screen.
+// beside the round buttons in the nav bar; large (88, both initials) atop the account screen.
 export function Avatar({ name, size = "small" }: { name: string; size?: "small" | "large" }) {
   if (size === "large") {
     return (
-      <View className="size-[76px] items-center justify-center rounded-full bg-chip">
-        <Text className="text-[26px] font-semibold">{initialsOf(name)}</Text>
+      <View className="size-[88px] items-center justify-center rounded-full bg-chip">
+        <Text className="text-[30px] font-semibold">{initialsOf(name)}</Text>
       </View>
     );
   }

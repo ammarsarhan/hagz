@@ -14,6 +14,11 @@ export const SEARCH_PAGE = { default: 20, max: 50 } as const;
 // The next free start times a card shows.
 export const NEXT_TIMES = 4;
 
+// A rating counts (for the RATING sort and a minimum rating) only once this many players have
+// reviewed the venue: a single 5★ shouldn't outrank 200 reviews at 4.8 (user, 2026-11-20). A guess
+// until there are real reviews (Phase 7); best match weighs them instead.
+export const MIN_REVIEWS = 5;
+
 export const VenueSearchSort = z
   .enum(["BEST_MATCH", "DISTANCE", "RATING", "PRICE", "SOONEST"])
   .meta({
@@ -23,7 +28,9 @@ export const VenueSearchSort = z
       "stamps being collected, then venues played at), then venues with loyalty, then the rest; " +
       "within each, by closeness, rating (pulled towards the marketplace's mean when there are " +
       "few reviews) and how many free times fit. Guests see only the last two groups. " +
-      "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. " +
+      "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with " +
+      `at least ${MIN_REVIEWS} reviews, then those with fewer (best rated first), then the ` +
+      "unrated. " +
       "`PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free " +
       "start first.",
   });
@@ -92,7 +99,9 @@ export const searchFilters = {
     .min(1)
     .max(5)
     .optional()
-    .meta({ description: "Rated at least this (unrated venues are left out)." }),
+    .meta({
+      description: `Rated at least this, from at least ${MIN_REVIEWS} reviews (venues with fewer are left out).`,
+    }),
   instant: flag("Booked without the venue approving it."),
   payment: PaymentFilter.optional(),
   flexible: flag("A full refund up to 24 hours before, or later."),

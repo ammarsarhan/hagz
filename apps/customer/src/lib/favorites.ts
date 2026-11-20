@@ -56,6 +56,21 @@ export const useIsFavorite = (venueId: string) => {
   return useSyncExternalStore(subscribe, () => saved.has(venueId));
 };
 
+// Every saved venue's id, for the Favorites list (a venue un-hearted there leaves it at once) and
+// the Account row's count; reads the list the first time it's asked.
+export const useFavoriteIds = () => {
+  useEffect(() => {
+    if (!loaded) void load();
+  }, []);
+  return useSyncExternalStore(subscribe, () => saved);
+};
+
+// The Favorites screen read the whole list fresh: every heart follows it.
+export const syncFavorites = (ids: string[]) => {
+  loaded = true;
+  publish(new Set(ids));
+};
+
 // Saves or removes a venue; on failure the heart goes back and the reason comes back for the HUD.
 export const toggleFavorite = async (venueId: string): Promise<string | null> => {
   const was = saved.has(venueId);

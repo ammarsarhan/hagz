@@ -42,7 +42,8 @@ const SPARK_SMALL =
 const EASE = Easing.inOut(Easing.sin);
 
 // A value running 0 → 1 → 0 forever over `period`, after `delay`; parked at 0 with Reduce Motion.
-function useLoop(period: number, delay = 0) {
+// Shared with the other empty-state scenes (no-name-art.tsx).
+export function useLoop(period: number, delay = 0) {
   const reduce = useReducedMotion();
   const t = useSharedValue(0);
   useEffect(() => {
@@ -57,7 +58,7 @@ function useLoop(period: number, delay = 0) {
 }
 
 // A moving part: the whole canvas in its own rasterised layer, so only its bitmap moves.
-function Layer({
+export function Layer({
   style,
   children,
 }: {

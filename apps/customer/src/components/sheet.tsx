@@ -36,6 +36,9 @@ interface SheetProps {
   // A sheet that scrolls and has no fields: its content isn't wrapped in the tap that closes the
   // keyboard, which would take the touch before the scroll view could start scrolling.
   scrolls?: boolean;
+  // Without the close button's row (a short list of choices, user 2026-11-20): the grab handle, the
+  // backdrop and Android's back button still close it.
+  closeButton?: boolean;
   children: ReactNode;
 }
 
@@ -45,6 +48,7 @@ export function Sheet({
   onHidden,
   header,
   scrolls = false,
+  closeButton = true,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -114,14 +118,16 @@ export function Sheet({
             {/* Tapping the panel outside a field or button closes the keyboard. */}
             <Wrapper accessible={false} onPress={Keyboard.dismiss}>
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
-              <View className="h-10 flex-row items-center justify-end">
-                {header ? (
-                  <View pointerEvents="none" className="absolute inset-x-12 items-center">
-                    {header}
-                  </View>
-                ) : null}
-                <CloseButton onPress={onClose} />
-              </View>
+              {closeButton ? (
+                <View className="h-10 flex-row items-center justify-end">
+                  {header ? (
+                    <View pointerEvents="none" className="absolute inset-x-12 items-center">
+                      {header}
+                    </View>
+                  ) : null}
+                  <CloseButton onPress={onClose} />
+                </View>
+              ) : null}
               {children}
             </Wrapper>
           </Animated.View>

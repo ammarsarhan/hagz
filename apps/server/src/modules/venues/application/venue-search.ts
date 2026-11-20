@@ -1,5 +1,6 @@
 import {
   JUST_FREED,
+  MIN_REVIEWS,
   NEXT_TIMES,
   PRICE_STEP,
   SEARCH_RADIUS_KM,
@@ -118,7 +119,9 @@ const groundFilters = (query: Filters, g: string) => {
 const venueFilters = (query: Filters) => {
   const parts: Prisma.Sql[] = [];
   if (query.rating !== undefined) {
-    parts.push(Prisma.sql`AND v."averageRating" >= ${query.rating}`);
+    parts.push(
+      Prisma.sql`AND v."averageRating" >= ${query.rating} AND v."reviewCount" >= ${MIN_REVIEWS}`,
+    );
   }
   const settings: Prisma.Sql[] = [];
   if (query.instant === "true") settings.push(Prisma.sql`AND vs."autoConfirm"`);
@@ -372,7 +375,12 @@ export const searchVenues = async (
     sort === "DISTANCE"
       ? Prisma.sql`ST_Distance(v.coordinates, ${point ?? Prisma.sql`NULL`})::float8`
       : sort === "RATING"
-        ? Prisma.sql`coalesce(-v."averageRating"::float8, 1)`
+        ? // Ratings from enough reviews first, best first (−5 to −1); then ratings from too few,
+          // still best first (0.5 to 0.9); then the unrated (1).
+          Prisma.sql`CASE
+            WHEN v."reviewCount" >= ${MIN_REVIEWS} THEN -v."averageRating"::float8
+            ELSE 1 - coalesce(v."averageRating"::float8, 0) / 10
+          END`
         : Prisma.sql`NULL::float8`;
   // The earliest start is the first by time, so its read stops there; the cheapest needs them all.
   const startKey =

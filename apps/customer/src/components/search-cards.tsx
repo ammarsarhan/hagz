@@ -6,6 +6,7 @@ import { Pressable, ScrollView, View, type ViewStyle } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import i18n from "@/i18next/i18next";
 import { reachable } from "@/lib/api";
+import { localDateOf, localTimeOf } from "@/lib/ground-filter";
 import { colors } from "@/lib/colors";
 import { formatDistance } from "@/lib/distance";
 import { fromPerHour } from "@/lib/money";
@@ -18,8 +19,11 @@ import { Text } from "./text";
 // the map's card (option 3, 98:2), both with the venue's next free start times as chips (Fresha's
 // results pattern). Tapping any of it opens the venue page.
 
-const openVenue = (card: VenueCard) =>
-  router.push({ pathname: "/venue/[slug]", params: { slug: card.slug } });
+// The venue page, with what the search asked of its grounds (lib/ground-filter.ts), so the ones that
+// don't match are greyed out there.
+type Params = Record<string, string>;
+const openVenue = (card: VenueCard, params: Params) =>
+  router.push({ pathname: "/venue/[slug]", params: { ...params, slug: card.slug } });
 
 function Rating({ card }: { card: VenueCard }) {
   if (card.rating.average === null) return null;
@@ -46,10 +50,12 @@ function Price({ card, currency }: { card: VenueCard; currency: string }) {
 export function TimeChips({
   card,
   timezone,
+  params,
   inset = 0,
 }: {
   card: VenueCard;
   timezone: string;
+  params: Params;
   // Gutter the row scrolls from and to, when it runs edge to edge.
   inset?: number;
 }) {
@@ -69,7 +75,14 @@ export function TimeChips({
             venue: card.name ?? t("screens.venue.fallbackName"),
             time: timeOfDay(time.startsAt, timezone),
           })}
-          onPress={() => openVenue(card)}
+          // A time asks for the grounds free from exactly then.
+          onPress={() =>
+            openVenue(card, {
+              ...params,
+              date: localDateOf(time.startsAt, timezone),
+              start: localTimeOf(time.startsAt, timezone),
+            })
+          }
           className="min-w-[72px] items-center justify-center rounded-xl border border-border px-3 py-1.5"
         >
           <Text className="text-subtitle font-medium">{timeOfDay(time.startsAt, timezone)}</Text>
@@ -159,10 +172,13 @@ export const VenueListCard = memo(function VenueListCard({
   card,
   currency,
   timezone,
+  params,
 }: {
   card: VenueCard;
   currency: string;
   timezone: string;
+  // What the search asked of the grounds, for the venue page's link.
+  params: Params;
 }) {
   const { t } = useTranslation();
   const badge = badgeOf(card);
@@ -177,7 +193,7 @@ export const VenueListCard = memo(function VenueListCard({
             ? t("screens.search.card.open", { name: card.name })
             : t("screens.search.card.openVenue")
         }
-        onPress={() => openVenue(card)}
+        onPress={() => openVenue(card, params)}
       >
         <View className="overflow-hidden rounded-2xl bg-[#c4c8cf]" style={{ aspectRatio: 16 / 9 }}>
           {card.cover ? (
@@ -216,7 +232,7 @@ export const VenueListCard = memo(function VenueListCard({
         </View>
       </Pressable>
       <View className="mt-3">
-        <TimeChips card={card} timezone={timezone} inset={GUTTER} />
+        <TimeChips card={card} timezone={timezone} params={params} inset={GUTTER} />
       </View>
     </View>
   );
@@ -227,10 +243,13 @@ export function VenueMapCard({
   card,
   currency,
   timezone,
+  params,
 }: {
   card: VenueCard;
   currency: string;
   timezone: string;
+  // What the search asked of the grounds, for the venue page's link.
+  params: Params;
 }) {
   const { t } = useTranslation();
   return (
@@ -254,7 +273,7 @@ export function VenueMapCard({
       >
         <Pressable
           accessibilityRole="button"
-          onPress={() => openVenue(card)}
+          onPress={() => openVenue(card, params)}
           className="flex-row gap-3.5"
         >
           <Cover card={card} style={{ width: 64, height: 64, borderRadius: 12 }} />
@@ -274,7 +293,7 @@ export function VenueMapCard({
           </View>
         </Pressable>
         {/* Under the card's padding to its edges, starting at the padding. */}
-        <TimeChips card={card} timezone={timezone} inset={16} />
+        <TimeChips card={card} timezone={timezone} params={params} inset={16} />
       </Animated.View>
     </View>
   );
