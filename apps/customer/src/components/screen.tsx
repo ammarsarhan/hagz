@@ -1,0 +1,65 @@
+import { StatusBar } from "expo-status-bar";
+import { useState, type ReactNode } from "react";
+import { Keyboard, Pressable, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useKeyboardHeight } from "@/hooks/use-keyboard-height";
+import { useHudAnchor } from "./hud";
+
+// Every screen: white, clear of the notch and home indicator, with the Figma screens' 20px gutters,
+// and an optional footer for the buttons pinned to the bottom. The footer sits on the home
+// indicator, or on top of the keyboard when it's open (including one already open when the screen
+// arrives). Dark status bar text on the white (onboarding's lime takes it back when popped).
+// Tapping anywhere that isn't a field or button closes the keyboard. The gutters sit on inner Views
+// because SafeAreaView is native and sets its own side padding from the insets, which would
+// overwrite them.
+
+// The footer's top padding (pt-3).
+const FOOTER_TOP = 12;
+
+export function Screen({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardHeight();
+  // How much of the screen the keyboard or home indicator covers.
+  const bottom = keyboard > 0 ? keyboard : insets.bottom;
+
+  // Where the HUD sits on, from the phone's bottom edge: the top of the pinned buttons (the footer
+  // less its 12px top padding), or the keyboard or home indicator when there are none. Only
+  // the screen in view says.
+  const [footerHeight, setFooterHeight] = useState(0);
+  const lowestEdge =
+    keyboard > 0 && !footer
+      ? keyboard
+      : footer
+        ? Math.max(footerHeight - FOOTER_TOP, bottom)
+        : bottom;
+  useHudAnchor(lowestEdge);
+
+  return (
+    <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <StatusBar style="dark" />
+      {/* Only while the keyboard is up. A Pressable that takes the touch is the JS responder, and a
+          scroll view under a responder won't scroll (RN's RCTScrollViewComponentView checks its
+          ancestors): a drag on anything that isn't its own button (text, the photo tiles) went
+          nowhere. Disabled, it never asks for the touch. */}
+      <Pressable
+        accessible={false}
+        disabled={keyboard === 0}
+        onPress={Keyboard.dismiss}
+        style={{ flex: 1 }}
+      >
+        <View className="flex-1 px-5">{children}</View>
+        {footer ? (
+          <View
+            className="gap-2.5 px-5 pt-3"
+            style={{ paddingBottom: bottom + 12 }}
+            onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          >
+            {footer}
+          </View>
+        ) : (
+          <View style={{ height: insets.bottom }} />
+        )}
+      </Pressable>
+    </SafeAreaView>
+  );
+}

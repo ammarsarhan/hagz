@@ -1265,6 +1265,801 @@
           "password"
         ]
       },
+      "PublicVenue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Permanent: /venue/[slug].",
+            "example": "k7m2x9pq"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PublicVenueStatus"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "+201001234567"
+          },
+          "marketplace": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "EG"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217; prices are in its minor units.",
+                "example": "EGP"
+              },
+              "timezone": {
+                "type": "string",
+                "description": "The venue's IANA timezone.",
+                "example": "Africa/Cairo"
+              }
+            },
+            "required": [
+              "code",
+              "currency",
+              "timezone"
+            ]
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Its area and the place above it.",
+                "example": "Maadi, Cairo"
+              },
+              "address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "coordinates": {
+                "$ref": "#/components/schemas/Coordinates"
+              }
+            },
+            "required": [
+              "area",
+              "address",
+              "coordinates"
+            ]
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "url"
+              ]
+            },
+            "description": "In the venue's order; the first is the cover."
+          },
+          "rating": {
+            "type": "object",
+            "properties": {
+              "average": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 5,
+                "description": "Of visible reviews, to two decimals; null until the first.",
+                "example": 4.62
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "average",
+              "count"
+            ]
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicAmenity"
+            }
+          },
+          "grounds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicGround"
+            },
+            "description": "In the venue's order."
+          },
+          "layout": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "columns": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "grounds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PlacedGround"
+                }
+              },
+              "amenities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PlacedAmenity"
+                }
+              },
+              "entrances": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Entrance"
+                }
+              }
+            },
+            "required": [
+              "columns",
+              "rows",
+              "grounds",
+              "amenities",
+              "entrances"
+            ],
+            "description": "The venue's map, about 10 m a cell; null when the venue hasn't drawn one, so the app lists the grounds instead."
+          },
+          "booking": {
+            "type": "object",
+            "properties": {
+              "instantConfirmation": {
+                "type": "boolean",
+                "description": "False: the venue approves each booking."
+              },
+              "minimumNotice": {
+                "$ref": "#/components/schemas/MinimumNotice"
+              },
+              "payment": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "$ref": "#/components/schemas/PaymentMode"
+                  },
+                  "depositPercent": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Set for `DEPOSIT`."
+                  }
+                },
+                "required": [
+                  "mode",
+                  "depositPercent"
+                ]
+              },
+              "cancellation": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "policy": {
+                    "$ref": "#/components/schemas/CancellationPolicy"
+                  },
+                  "tiers": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CancellationTier"
+                    },
+                    "description": "Most notice first. Less notice than the last tier refunds nothing."
+                  },
+                  "summary": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "description": "The policy in plain words, a sentence a line, in `Accept-Language`.",
+                    "example": [
+                      "Free cancellation up to 24 hours before it starts.",
+                      "50% back if you cancel 6 to 24 hours before.",
+                      "No refund with less than 6 hours' notice.",
+                      "If the venue cancels, you get everything back."
+                    ]
+                  }
+                },
+                "required": [
+                  "policy",
+                  "tiers",
+                  "summary"
+                ],
+                "description": "Null only for a venue that never chose one."
+              },
+              "loyalty": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "stamps": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 20,
+                    "description": "Bookings per free one."
+                  },
+                  "windowDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "description": "Days the stamps last."
+                  }
+                },
+                "required": [
+                  "stamps",
+                  "windowDays"
+                ],
+                "description": "Null: no loyalty rewards."
+              }
+            },
+            "required": [
+              "instantConfirmation",
+              "minimumNotice",
+              "payment",
+              "cancellation",
+              "loyalty"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "status",
+          "name",
+          "description",
+          "phone",
+          "marketplace",
+          "location",
+          "photos",
+          "rating",
+          "amenities",
+          "grounds",
+          "layout",
+          "booking"
+        ]
+      },
+      "PublicVenueStatus": {
+        "type": "string",
+        "enum": [
+          "LIVE",
+          "MAINTENANCE"
+        ],
+        "description": "`MAINTENANCE`: paused by the venue. The page shows, but nothing can be booked."
+      },
+      "Coordinates": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "description": "A point in degrees (WGS 84)."
+      },
+      "PublicAmenity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The amenity option's id, as the layout's tiles name it."
+          },
+          "key": {
+            "type": "string",
+            "example": "parking"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icon": {
+            "$ref": "#/components/schemas/AmenityIcon"
+          },
+          "price": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Minor units; null when free."
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/AmenityPricing"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name",
+          "icon",
+          "price",
+          "pricing"
+        ]
+      },
+      "AmenityPricing": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "PER_HOUR",
+          "PER_BOOKING",
+          null
+        ]
+      },
+      "PublicGround": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sport": {
+            "$ref": "#/components/schemas/GroundSport"
+          },
+          "size": {
+            "$ref": "#/components/schemas/GroundSize"
+          },
+          "surface": {
+            "$ref": "#/components/schemas/GroundSurface"
+          },
+          "environment": {
+            "$ref": "#/components/schemas/GroundEnvironment"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "MAINTENANCE"
+            ],
+            "description": "`MAINTENANCE`: shown greyed out, with no free times."
+          },
+          "priceFrom": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The cheapest hour in its weekly hours, per hour in minor units; null until it has hours."
+          },
+          "minimumSlots": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Shortest booking, in hours."
+          },
+          "maximumSlots": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Longest booking, in hours."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sport",
+          "size",
+          "surface",
+          "environment",
+          "status",
+          "priceFrom",
+          "minimumSlots",
+          "maximumSlots"
+        ]
+      },
+      "GroundSport": {
+        "type": "string",
+        "enum": [
+          "FOOTBALL",
+          "PADEL",
+          "TENNIS",
+          "BASKETBALL",
+          "VOLLEYBALL"
+        ]
+      },
+      "GroundSize": {
+        "type": "string",
+        "enum": [
+          "FIVE_A_SIDE",
+          "SEVEN_A_SIDE",
+          "ELEVEN_A_SIDE",
+          "STANDARD"
+        ],
+        "description": "`STANDARD` for sports without size variants."
+      },
+      "GroundSurface": {
+        "type": "string",
+        "enum": [
+          "NATURAL_GRASS",
+          "ARTIFICIAL_TURF",
+          "HARD_WOOD",
+          "HARD_COURT",
+          "CLAY",
+          "SAND",
+          "OTHER"
+        ]
+      },
+      "GroundEnvironment": {
+        "type": "string",
+        "enum": [
+          "INDOOR",
+          "OUTDOOR",
+          "COVERED"
+        ],
+        "description": "`COVERED`: a roof with open sides."
+      },
+      "PlacedGround": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "orientation": {
+            "$ref": "#/components/schemas/Orientation"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Breadth in cells, as if HORIZONTAL."
+          }
+        },
+        "required": [
+          "groundId",
+          "x",
+          "y",
+          "orientation",
+          "width",
+          "height"
+        ],
+        "description": "Top-left cell, and the ground's size on the grid."
+      },
+      "Orientation": {
+        "type": "string",
+        "enum": [
+          "HORIZONTAL",
+          "VERTICAL"
+        ],
+        "description": "`VERTICAL` swaps the footprint's width and height."
+      },
+      "PlacedAmenity": {
+        "type": "object",
+        "properties": {
+          "optionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "One of the venue's amenities whose option is placeable. It can go down more than once."
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "Any size that fits on the grid without overlapping."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          }
+        },
+        "required": [
+          "optionId",
+          "x",
+          "y",
+          "width",
+          "height"
+        ]
+      },
+      "Entrance": {
+        "type": "object",
+        "properties": {
+          "side": {
+            "$ref": "#/components/schemas/EntranceSide"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59,
+            "description": "Cells from the side's start (left or top)."
+          }
+        },
+        "required": [
+          "side",
+          "offset"
+        ]
+      },
+      "EntranceSide": {
+        "type": "string",
+        "enum": [
+          "TOP",
+          "RIGHT",
+          "BOTTOM",
+          "LEFT"
+        ]
+      },
+      "MinimumNotice": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [
+              0
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              30
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              60
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              120
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              180
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              360
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              720
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              1440
+            ]
+          }
+        ],
+        "description": "Minutes before kick-off that booking closes."
+      },
+      "PaymentMode": {
+        "type": "string",
+        "enum": [
+          "MANUAL",
+          "DEPOSIT",
+          "PLATFORM"
+        ],
+        "description": "`MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online."
+      },
+      "CancellationPolicy": {
+        "type": "string",
+        "enum": [
+          "FLEXIBLE",
+          "MODERATE",
+          "STRICT",
+          "CUSTOM"
+        ]
+      },
+      "CancellationTier": {
+        "type": "object",
+        "properties": {
+          "hours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 336
+          },
+          "refundPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "hours",
+          "refundPercent"
+        ]
+      },
+      "VenueAvailability": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "A local date, YYYY-MM-DD.",
+            "example": "2026-11-19"
+          },
+          "days": {
+            "type": "object",
+            "properties": {
+              "first": {
+                "type": "string",
+                "format": "date",
+                "description": "A local date, YYYY-MM-DD.",
+                "example": "2026-11-19"
+              },
+              "last": {
+                "type": "string",
+                "format": "date",
+                "description": "A local date, YYYY-MM-DD.",
+                "example": "2026-11-19"
+              }
+            },
+            "required": [
+              "first",
+              "last"
+            ],
+            "description": "The days that can have free times: today, to as far ahead as slots go."
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Cairo"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FreeSlot"
+            },
+            "description": "Bookable now: free, on an active ground, starting after the venue's notice. Empty while the venue is paused. By start, then ground."
+          }
+        },
+        "required": [
+          "date",
+          "days",
+          "timezone",
+          "currency",
+          "slots"
+        ]
+      },
+      "FreeSlot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/PriceTier"
+          },
+          "price": {
+            "type": "integer",
+            "description": "In minor units."
+          }
+        },
+        "required": [
+          "id",
+          "groundId",
+          "startsAt",
+          "endsAt",
+          "tier",
+          "price"
+        ]
+      },
+      "PriceTier": {
+        "type": "string",
+        "enum": [
+          "BASE",
+          "PEAK",
+          "DISCOUNT"
+        ]
+      },
       "StaffVenue": {
         "type": "object",
         "properties": {
@@ -1788,29 +2583,6 @@
           "amenities"
         ]
       },
-      "Coordinates": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "properties": {
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          }
-        },
-        "required": [
-          "latitude",
-          "longitude"
-        ],
-        "description": "A point in degrees (WGS 84)."
-      },
       "VenueTranslation": {
         "type": "object",
         "properties": {
@@ -1931,87 +2703,6 @@
           "loyalty"
         ]
       },
-      "MinimumNotice": {
-        "anyOf": [
-          {
-            "type": "number",
-            "enum": [
-              0
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              30
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              60
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              120
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              180
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              360
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              720
-            ]
-          },
-          {
-            "type": "number",
-            "enum": [
-              1440
-            ]
-          }
-        ],
-        "description": "Minutes before kick-off that booking closes."
-      },
-      "PaymentMode": {
-        "type": "string",
-        "enum": [
-          "MANUAL",
-          "DEPOSIT",
-          "PLATFORM"
-        ],
-        "description": "`MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online."
-      },
-      "CancellationTier": {
-        "type": "object",
-        "properties": {
-          "hours": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 336
-          },
-          "refundPercent": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 100
-          }
-        },
-        "required": [
-          "hours",
-          "refundPercent"
-        ]
-      },
       "VenueAmenity": {
         "type": "object",
         "properties": {
@@ -2035,17 +2726,6 @@
           "optionId",
           "price",
           "pricing"
-        ]
-      },
-      "AmenityPricing": {
-        "type": [
-          "string",
-          "null"
-        ],
-        "enum": [
-          "PER_HOUR",
-          "PER_BOOKING",
-          null
         ]
       },
       "UpdateVenue": {
@@ -2162,15 +2842,6 @@
             "$ref": "#/components/schemas/Loyalty"
           }
         }
-      },
-      "CancellationPolicy": {
-        "type": "string",
-        "enum": [
-          "FLEXIBLE",
-          "MODERATE",
-          "STRICT",
-          "CUSTOM"
-        ]
       },
       "CancellationTiers": {
         "type": [
@@ -2430,47 +3101,6 @@
           "openHours"
         ]
       },
-      "GroundSport": {
-        "type": "string",
-        "enum": [
-          "FOOTBALL",
-          "PADEL",
-          "TENNIS",
-          "BASKETBALL",
-          "VOLLEYBALL"
-        ]
-      },
-      "GroundSize": {
-        "type": "string",
-        "enum": [
-          "FIVE_A_SIDE",
-          "SEVEN_A_SIDE",
-          "ELEVEN_A_SIDE",
-          "STANDARD"
-        ],
-        "description": "`STANDARD` for sports without size variants."
-      },
-      "GroundSurface": {
-        "type": "string",
-        "enum": [
-          "NATURAL_GRASS",
-          "ARTIFICIAL_TURF",
-          "HARD_WOOD",
-          "HARD_COURT",
-          "CLAY",
-          "SAND",
-          "OTHER"
-        ]
-      },
-      "GroundEnvironment": {
-        "type": "string",
-        "enum": [
-          "INDOOR",
-          "OUTDOOR",
-          "COVERED"
-        ],
-        "description": "`COVERED`: a roof with open sides."
-      },
       "GroundStatus": {
         "type": "string",
         "enum": [
@@ -2683,14 +3313,6 @@
           "tier"
         ]
       },
-      "PriceTier": {
-        "type": "string",
-        "enum": [
-          "BASE",
-          "PEAK",
-          "DISCOUNT"
-        ]
-      },
       "CopySchedule": {
         "type": "object",
         "properties": {
@@ -2772,122 +3394,6 @@
           "saved",
           "unplacedGroundIds",
           "placeableOptionIds"
-        ]
-      },
-      "PlacedGround": {
-        "type": "object",
-        "properties": {
-          "groundId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "x": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 59
-          },
-          "y": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 59
-          },
-          "orientation": {
-            "$ref": "#/components/schemas/Orientation"
-          },
-          "width": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 60,
-            "description": "Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES."
-          },
-          "height": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 60,
-            "description": "Breadth in cells, as if HORIZONTAL."
-          }
-        },
-        "required": [
-          "groundId",
-          "x",
-          "y",
-          "orientation",
-          "width",
-          "height"
-        ],
-        "description": "Top-left cell, and the ground's size on the grid."
-      },
-      "Orientation": {
-        "type": "string",
-        "enum": [
-          "HORIZONTAL",
-          "VERTICAL"
-        ],
-        "description": "`VERTICAL` swaps the footprint's width and height."
-      },
-      "PlacedAmenity": {
-        "type": "object",
-        "properties": {
-          "optionId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "One of the venue's amenities whose option is placeable. It can go down more than once."
-          },
-          "x": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 59
-          },
-          "y": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 59
-          },
-          "width": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 60,
-            "description": "Any size that fits on the grid without overlapping."
-          },
-          "height": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 60
-          }
-        },
-        "required": [
-          "optionId",
-          "x",
-          "y",
-          "width",
-          "height"
-        ]
-      },
-      "Entrance": {
-        "type": "object",
-        "properties": {
-          "side": {
-            "$ref": "#/components/schemas/EntranceSide"
-          },
-          "offset": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 59,
-            "description": "Cells from the side's start (left or top)."
-          }
-        },
-        "required": [
-          "side",
-          "offset"
-        ]
-      },
-      "EntranceSide": {
-        "type": "string",
-        "enum": [
-          "TOP",
-          "RIGHT",
-          "BOTTOM",
-          "LEFT"
         ]
       },
       "VenueLayout": {
@@ -9316,6 +9822,140 @@
           },
           "429": {
             "description": "RATE_LIMITED: see `retryAfter`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venues/{slug}": {
+      "get": {
+        "tags": [
+          "Venues"
+        ],
+        "summary": "A venue's page",
+        "description": "Details, photos, amenities, grounds, map, rating, and how booking works there, including the cancellation policy in plain words. Text follows `Accept-Language` (`ar` or `en`, Arabic by default), else the language the venue wrote it in. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "The venue's permanent slug.",
+              "example": "k7m2x9pq"
+            },
+            "required": true,
+            "description": "The venue's permanent slug.",
+            "name": "slug",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The venue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVenue"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: no live or paused venue has that slug (drafts and venues in review aren't public).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venues/{slug}/availability": {
+      "get": {
+        "tags": [
+          "Venues"
+        ],
+        "summary": "A venue's free times on a day",
+        "description": "Every bookable slot that day, on every ground. A booking is back-to-back slots on one ground (each starting where the last ends), between the ground's shortest and longest booking. Read it fresh: booking checks again. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "The venue's permanent slug.",
+              "example": "k7m2x9pq"
+            },
+            "required": true,
+            "description": "The venue's permanent slug.",
+            "name": "slug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "The day, in the venue's timezone. Left out: today.",
+              "example": "2026-11-19"
+            },
+            "required": false,
+            "description": "The day, in the venue's timezone. Left out: today.",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The day's free times",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueAvailability"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: no live or paused venue has that slug (drafts and venues in review aren't public).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
             "content": {
               "application/problem+json": {
                 "schema": {

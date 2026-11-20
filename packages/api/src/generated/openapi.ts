@@ -3780,6 +3780,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/venues/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A venue's page
+         * @description Details, photos, amenities, grounds, map, rating, and how booking works there, including the cancellation policy in plain words. Text follows `Accept-Language` (`ar` or `en`, Arabic by default), else the language the venue wrote it in. Public.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The venue's permanent slug. */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The venue */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicVenue"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: no live or paused venue has that slug (drafts and venues in review aren't public). */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/venues/{slug}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A venue's free times on a day
+         * @description Every bookable slot that day, on every ground. A booking is back-to-back slots on one ground (each starting where the last ends), between the ground's shortest and longest booking. Read it fresh: booking checks again. Public.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The day, in the venue's timezone. Left out: today. */
+                    date?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description The venue's permanent slug. */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's free times */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueAvailability"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: no live or paused venue has that slug (drafts and venues in review aren't public). */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues": {
         parameters: {
             query?: never;
@@ -11906,6 +12038,254 @@ export interface components {
             name: string;
             password: string;
         };
+        PublicVenue: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Permanent: /venue/[slug].
+             * @example k7m2x9pq
+             */
+            slug: string;
+            status: components["schemas"]["PublicVenueStatus"];
+            name: string | null;
+            description: string | null;
+            /** @example +201001234567 */
+            phone: string | null;
+            marketplace: {
+                /** @example EG */
+                code: string;
+                /**
+                 * @description ISO 4217; prices are in its minor units.
+                 * @example EGP
+                 */
+                currency: string;
+                /**
+                 * @description The venue's IANA timezone.
+                 * @example Africa/Cairo
+                 */
+                timezone: string;
+            };
+            location: {
+                /**
+                 * @description Its area and the place above it.
+                 * @example Maadi, Cairo
+                 */
+                area: string | null;
+                address: string | null;
+                coordinates: components["schemas"]["Coordinates"];
+            };
+            /** @description In the venue's order; the first is the cover. */
+            photos: {
+                /** Format: uuid */
+                id: string;
+                url: string;
+            }[];
+            rating: {
+                /**
+                 * @description Of visible reviews, to two decimals; null until the first.
+                 * @example 4.62
+                 */
+                average: number | null;
+                count: number;
+            };
+            amenities: components["schemas"]["PublicAmenity"][];
+            /** @description In the venue's order. */
+            grounds: components["schemas"]["PublicGround"][];
+            /** @description The venue's map, about 10 m a cell; null when the venue hasn't drawn one, so the app lists the grounds instead. */
+            layout: {
+                columns: number;
+                rows: number;
+                grounds: components["schemas"]["PlacedGround"][];
+                amenities: components["schemas"]["PlacedAmenity"][];
+                entrances: components["schemas"]["Entrance"][];
+            } | null;
+            booking: {
+                /** @description False: the venue approves each booking. */
+                instantConfirmation: boolean;
+                minimumNotice: components["schemas"]["MinimumNotice"];
+                payment: {
+                    mode: components["schemas"]["PaymentMode"];
+                    /** @description Set for `DEPOSIT`. */
+                    depositPercent: number | null;
+                };
+                /** @description Null only for a venue that never chose one. */
+                cancellation: {
+                    policy: components["schemas"]["CancellationPolicy"];
+                    /** @description Most notice first. Less notice than the last tier refunds nothing. */
+                    tiers: components["schemas"]["CancellationTier"][];
+                    /**
+                     * @description The policy in plain words, a sentence a line, in `Accept-Language`.
+                     * @example [
+                     *       "Free cancellation up to 24 hours before it starts.",
+                     *       "50% back if you cancel 6 to 24 hours before.",
+                     *       "No refund with less than 6 hours' notice.",
+                     *       "If the venue cancels, you get everything back."
+                     *     ]
+                     */
+                    summary: string[];
+                } | null;
+                /** @description Null: no loyalty rewards. */
+                loyalty: {
+                    /** @description Bookings per free one. */
+                    stamps: number;
+                    /** @description Days the stamps last. */
+                    windowDays: number;
+                } | null;
+            };
+        };
+        /**
+         * @description `MAINTENANCE`: paused by the venue. The page shows, but nothing can be booked.
+         * @enum {string}
+         */
+        PublicVenueStatus: "LIVE" | "MAINTENANCE";
+        /** @description A point in degrees (WGS 84). */
+        Coordinates: {
+            latitude: number;
+            longitude: number;
+        } | null;
+        PublicAmenity: {
+            /**
+             * Format: uuid
+             * @description The amenity option's id, as the layout's tiles name it.
+             */
+            id: string;
+            /** @example parking */
+            key: string;
+            name: string | null;
+            icon: components["schemas"]["AmenityIcon"];
+            /** @description Minor units; null when free. */
+            price: number | null;
+            pricing: components["schemas"]["AmenityPricing"];
+        };
+        /** @enum {string|null} */
+        AmenityPricing: "PER_HOUR" | "PER_BOOKING" | null;
+        PublicGround: {
+            /** Format: uuid */
+            id: string;
+            name: string | null;
+            sport: components["schemas"]["GroundSport"];
+            size: components["schemas"]["GroundSize"];
+            surface: components["schemas"]["GroundSurface"];
+            environment: components["schemas"]["GroundEnvironment"];
+            /**
+             * @description `MAINTENANCE`: shown greyed out, with no free times.
+             * @enum {string}
+             */
+            status: "ACTIVE" | "MAINTENANCE";
+            /** @description The cheapest hour in its weekly hours, per hour in minor units; null until it has hours. */
+            priceFrom: number | null;
+            /** @description Shortest booking, in hours. */
+            minimumSlots: number;
+            /** @description Longest booking, in hours. */
+            maximumSlots: number;
+        };
+        /** @enum {string} */
+        GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
+        /**
+         * @description `STANDARD` for sports without size variants.
+         * @enum {string}
+         */
+        GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
+        /** @enum {string} */
+        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "SAND" | "OTHER";
+        /**
+         * @description `COVERED`: a roof with open sides.
+         * @enum {string}
+         */
+        GroundEnvironment: "INDOOR" | "OUTDOOR" | "COVERED";
+        /** @description Top-left cell, and the ground's size on the grid. */
+        PlacedGround: {
+            /** Format: uuid */
+            groundId: string;
+            x: number;
+            y: number;
+            orientation: components["schemas"]["Orientation"];
+            /** @description Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES. */
+            width: number;
+            /** @description Breadth in cells, as if HORIZONTAL. */
+            height: number;
+        };
+        /**
+         * @description `VERTICAL` swaps the footprint's width and height.
+         * @enum {string}
+         */
+        Orientation: "HORIZONTAL" | "VERTICAL";
+        PlacedAmenity: {
+            /**
+             * Format: uuid
+             * @description One of the venue's amenities whose option is placeable. It can go down more than once.
+             */
+            optionId: string;
+            x: number;
+            y: number;
+            /** @description Any size that fits on the grid without overlapping. */
+            width: number;
+            height: number;
+        };
+        Entrance: {
+            side: components["schemas"]["EntranceSide"];
+            /** @description Cells from the side's start (left or top). */
+            offset: number;
+        };
+        /** @enum {string} */
+        EntranceSide: "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
+        /** @description Minutes before kick-off that booking closes. */
+        MinimumNotice: 0 | 30 | 60 | 120 | 180 | 360 | 720 | 1440;
+        /**
+         * @description `MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online.
+         * @enum {string}
+         */
+        PaymentMode: "MANUAL" | "DEPOSIT" | "PLATFORM";
+        /** @enum {string} */
+        CancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM";
+        CancellationTier: {
+            hours: number;
+            refundPercent: number;
+        };
+        VenueAvailability: {
+            /**
+             * Format: date
+             * @description A local date, YYYY-MM-DD.
+             * @example 2026-11-19
+             */
+            date: string;
+            /** @description The days that can have free times: today, to as far ahead as slots go. */
+            days: {
+                /**
+                 * Format: date
+                 * @description A local date, YYYY-MM-DD.
+                 * @example 2026-11-19
+                 */
+                first: string;
+                /**
+                 * Format: date
+                 * @description A local date, YYYY-MM-DD.
+                 * @example 2026-11-19
+                 */
+                last: string;
+            };
+            /** @example Africa/Cairo */
+            timezone: string;
+            /** @example EGP */
+            currency: string;
+            /** @description Bookable now: free, on an active ground, starting after the venue's notice. Empty while the venue is paused. By start, then ground. */
+            slots: components["schemas"]["FreeSlot"][];
+        };
+        FreeSlot: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            groundId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            tier: components["schemas"]["PriceTier"];
+            /** @description In minor units. */
+            price: number;
+        };
+        /** @enum {string} */
+        PriceTier: "BASE" | "PEAK" | "DISCOUNT";
         StaffVenue: {
             /** Format: uuid */
             id: string;
@@ -12092,11 +12472,6 @@ export interface components {
             settings: components["schemas"]["VenueSettings"];
             amenities: components["schemas"]["VenueAmenity"][];
         };
-        /** @description A point in degrees (WGS 84). */
-        Coordinates: {
-            latitude: number;
-            longitude: number;
-        } | null;
         VenueTranslation: {
             name: string;
             description: string | null;
@@ -12125,17 +12500,6 @@ export interface components {
                 windowDays: number;
             } | null;
         };
-        /** @description Minutes before kick-off that booking closes. */
-        MinimumNotice: 0 | 30 | 60 | 120 | 180 | 360 | 720 | 1440;
-        /**
-         * @description `MANUAL`: players pay at the venue. `DEPOSIT`: a share online, the rest at the venue. `PLATFORM`: everything online.
-         * @enum {string}
-         */
-        PaymentMode: "MANUAL" | "DEPOSIT" | "PLATFORM";
-        CancellationTier: {
-            hours: number;
-            refundPercent: number;
-        };
         VenueAmenity: {
             /** Format: uuid */
             optionId: string;
@@ -12143,8 +12507,6 @@ export interface components {
             price: number | null;
             pricing: components["schemas"]["AmenityPricing"];
         };
-        /** @enum {string|null} */
-        AmenityPricing: "PER_HOUR" | "PER_BOOKING" | null;
         UpdateVenue: {
             /** @description Shown to players. International format; landlines are fine. */
             phone?: string | null;
@@ -12180,8 +12542,6 @@ export interface components {
             cancellationTiers?: components["schemas"]["CancellationTiers"];
             loyalty?: components["schemas"]["Loyalty"];
         };
-        /** @enum {string} */
-        CancellationPolicy: "FLEXIBLE" | "MODERATE" | "STRICT" | "CUSTOM";
         CancellationTiers: components["schemas"]["CancellationTier"][] | null;
         Loyalty: {
             /** @description Bookings per free one. */
@@ -12253,20 +12613,6 @@ export interface components {
             /** @description Open hours in its week; 0 until set. */
             openHours: number;
         };
-        /** @enum {string} */
-        GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
-        /**
-         * @description `STANDARD` for sports without size variants.
-         * @enum {string}
-         */
-        GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
-        /** @enum {string} */
-        GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "SAND" | "OTHER";
-        /**
-         * @description `COVERED`: a roof with open sides.
-         * @enum {string}
-         */
-        GroundEnvironment: "INDOOR" | "OUTDOOR" | "COVERED";
         /**
          * @description `MAINTENANCE`: temporarily unbookable.
          * @enum {string}
@@ -12325,8 +12671,6 @@ export interface components {
             hour: number;
             tier: components["schemas"]["PriceTier"];
         };
-        /** @enum {string} */
-        PriceTier: "BASE" | "PEAK" | "DISCOUNT";
         CopySchedule: {
             groundIds: string[];
         };
@@ -12343,42 +12687,6 @@ export interface components {
             /** @description The venue's amenities that can go on the layout, placed or not. */
             placeableOptionIds: string[];
         };
-        /** @description Top-left cell, and the ground's size on the grid. */
-        PlacedGround: {
-            /** Format: uuid */
-            groundId: string;
-            x: number;
-            y: number;
-            orientation: components["schemas"]["Orientation"];
-            /** @description Length in cells, as if HORIZONTAL: within the ground's FOOTPRINT_RANGES. */
-            width: number;
-            /** @description Breadth in cells, as if HORIZONTAL. */
-            height: number;
-        };
-        /**
-         * @description `VERTICAL` swaps the footprint's width and height.
-         * @enum {string}
-         */
-        Orientation: "HORIZONTAL" | "VERTICAL";
-        PlacedAmenity: {
-            /**
-             * Format: uuid
-             * @description One of the venue's amenities whose option is placeable. It can go down more than once.
-             */
-            optionId: string;
-            x: number;
-            y: number;
-            /** @description Any size that fits on the grid without overlapping. */
-            width: number;
-            height: number;
-        };
-        Entrance: {
-            side: components["schemas"]["EntranceSide"];
-            /** @description Cells from the side's start (left or top). */
-            offset: number;
-        };
-        /** @enum {string} */
-        EntranceSide: "TOP" | "RIGHT" | "BOTTOM" | "LEFT";
         VenueLayout: {
             columns: number;
             rows: number;

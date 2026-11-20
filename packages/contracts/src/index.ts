@@ -12,6 +12,7 @@ export * from "./permissions";
 export * from "./platform";
 export * from "./venue-edit";
 export * from "./venue-media";
+export * from "./venue-page";
 export * from "./venue-setup";
 export * from "./venues";
 export * from "./problem";

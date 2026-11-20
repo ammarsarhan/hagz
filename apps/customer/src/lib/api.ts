@@ -1,6 +1,7 @@
 import { createApiClient } from "@hagz/api";
 import { secureSessionStore } from "@hagz/api/secure-store";
 import Constants from "expo-constants";
+import { resetTo } from "./navigation";
 
 // EXPO_PUBLIC_API_URL in builds. In development, the machine Metro serves from, so simulators,
 // emulators and phones on the same network all reach the local API without configuration.
@@ -12,9 +13,20 @@ const devApiUrl = () => {
 const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? devApiUrl() : undefined);
 if (!baseUrl) throw new Error("EXPO_PUBLIC_API_URL is not set.");
 
+// Local dev storage (the API with no storage configured) hands out http://localhost:3000 links, which
+// only the machine running it can open. In development they're pointed at the API's address as the
+// app sees it, so a phone on the network loads venue photos too (as in the staff app).
+export const reachable = (url: string) =>
+  __DEV__ ? url.replace(/^http:\/\/localhost:\d+/, baseUrl) : url;
+
 export const { api, auth } = createApiClient({
   baseUrl,
   audience: "customer",
+  // English only until the app gets its translations; problem messages follow.
+  language: () => "en",
   store: secureSessionStore(),
   app: { name: "customer", version: Constants.expoConfig?.version ?? "0.0.0" },
+  // Signed out by the server (the session was revoked, expired or its account is gone): browsing
+  // as a guest again, on Home, with nothing signed-in left underneath.
+  onSessionEnded: () => resetTo("/home"),
 });
