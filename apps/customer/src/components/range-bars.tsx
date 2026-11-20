@@ -183,3 +183,25 @@ export function RangeBars({
     </GestureDetector>
   );
 }
+
+// The chart with nothing to chart (no venue has a price for this search, or the prices are still
+// on their way): the same height as RangeBars, its bars flat and grey over the bare track, with no
+// handles, so the section keeps its shape instead of leaving a gap.
+const EMPTY_BANDS = 20;
+
+export function EmptyBars() {
+  return (
+    <View accessible={false}>
+      <View className="flex-row items-end" style={{ height: BARS }}>
+        {Array.from({ length: EMPTY_BANDS }, (_, i) => (
+          <View key={i} className="flex-1" style={{ paddingHorizontal: 1.5 }}>
+            <View style={{ height: 3, borderRadius: 2, backgroundColor: OFF }} />
+          </View>
+        ))}
+      </View>
+      <View style={{ height: HANDLE + 8, justifyContent: "center" }}>
+        <View className="h-1 rounded-full bg-chip" />
+      </View>
+    </View>
+  );
+}

@@ -27,7 +27,7 @@ import {
 } from "@/lib/search";
 import { AmenityIcon } from "./amenity-icon";
 import { Button } from "./button";
-import { RangeBars, type Range } from "./range-bars";
+import { EmptyBars, RangeBars, type Range } from "./range-bars";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
 
@@ -250,7 +250,7 @@ const PriceSection = memo(function PriceSection({
           onChange={setRange}
         />
       ) : (
-        <View style={{ height: 90 }} />
+        <EmptyBars />
       )}
     </Group>
   );
