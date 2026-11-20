@@ -238,7 +238,7 @@ const PriceSection = memo(function PriceSection({
             : `${Math.round(low / 100)} – ${priceText(high, currency)}`}
         </Text>
         <Text className="text-label text-ink-2">
-          {axis && empty ? "No venues with these filters" : "per hour"}
+          {axis && empty ? "No venue results" : "per hour"}
         </Text>
       </View>
       {bands.length > 0 ? (
@@ -532,6 +532,8 @@ export function SearchFilters({
               count === null ? "Show venues" : `Show ${count} ${count === 1 ? "venue" : "venues"}`
             }
             size="small"
+            // Nothing to show: grey, until a change finds something.
+            disabled={count === 0}
             onPress={() => onApply(draft, draftSort)}
           />
         </View>
