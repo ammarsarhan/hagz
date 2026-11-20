@@ -257,7 +257,7 @@ export default function SearchTab() {
             key={each}
             label={sportName(each)}
             on={sport === each}
-            onPress={() => setSport(sport === each ? undefined : each)}
+            onPress={() => setSport(each)}
           />
         ))}
       </ScrollView>
