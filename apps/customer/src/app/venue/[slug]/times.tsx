@@ -11,10 +11,14 @@ import {
   type ViewStyle,
 } from "react-native";
 import Animated, {
+  Easing,
+  FadeIn,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
@@ -114,7 +118,11 @@ const tapped = (picked: FreeSlot[], slot: FreeSlot, longest: number): FreeSlot[]
 export default function Times() {
   const { slug, ground: groundId } = useLocalSearchParams<{ slug: string; ground: string }>();
   const [venue, setVenue] = useState<Loaded<PublicVenue>>({ state: "loading" });
+  // The day asked for (none: today), the one on screen, and the days there are: these stay while
+  // another day loads, so only the hours change.
   const [date, setDate] = useState<string | undefined>(undefined);
+  const [shown, setShown] = useState<string | undefined>(undefined);
+  const [days, setDays] = useState<{ first: string; last: string } | null>(null);
   const [day, setDay] = useState<Loaded<Day>>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -150,6 +158,8 @@ export default function Times() {
         setDay({ state: "failed", message: hudMessage(result.error) });
         return;
       }
+      setDays(result.data.days);
+      setShown(result.data.date);
       const { timezone } = result.data;
       const following =
         result.data.date < result.data.days.last ? await read(nextDate(result.data.date)) : null;
@@ -173,12 +183,11 @@ export default function Times() {
   const ground =
     venue.state === "ready" ? venue.data.grounds.find((each) => each.id === groundId) : undefined;
 
-  if (venue.state === "failed" || day.state === "failed" || (venue.state === "ready" && !ground)) {
+  // Only the venue's own failure takes the page; a day that doesn't load says so in its place.
+  if (venue.state === "failed" || (venue.state === "ready" && !ground)) {
     return (
       <Failed
-        message={
-          venue.state === "failed" ? venue.message : day.state === "failed" ? day.message : ""
-        }
+        message={venue.state === "failed" ? venue.message : ""}
         onRetry={() => setAttempt((n) => n + 1)}
       />
     );
@@ -188,8 +197,12 @@ export default function Times() {
     <Picker
       venue={venue.data}
       ground={ground}
+      days={days}
+      on={date ?? shown}
       day={day.state === "ready" ? day.data : null}
+      dayError={day.state === "failed" ? day.message : null}
       onDate={setDate}
+      onRetry={() => setAttempt((n) => n + 1)}
     />
   );
 }
@@ -236,14 +249,23 @@ function Failed({
 function Picker({
   venue,
   ground,
+  days,
+  on,
   day,
+  dayError,
   onDate,
+  onRetry,
 }: {
   venue: PublicVenue;
   ground: PublicGround;
-  // Null while the day's hours load.
+  // The days there are, and the one picked; null and undefined until the first day comes back.
+  days: { first: string; last: string } | null;
+  on: string | undefined;
+  // Null while the day's hours load (or didn't).
   day: Day | null;
+  dayError: string | null;
   onDate: (date: string) => void;
+  onRetry: () => void;
 }) {
   const { t } = useTranslation();
   const hud = useHud();
@@ -254,8 +276,7 @@ function Picker({
   useHudAnchor(footer);
 
   // A new day starts with nothing picked.
-  const dayKey = day?.date;
-  useEffect(() => setPicked([]), [dayKey]);
+  useEffect(() => setPicked([]), [on]);
 
   const shortest = ground.minimumSlots;
   const longest = ground.maximumSlots;
@@ -353,33 +374,38 @@ function Picker({
           {name}
         </Title>
 
-        {day ? (
+        {days && on ? (
           <DayTiles
-            days={daysFrom(day.days.first, day.days.last)}
-            today={day.days.first}
-            on={day.date}
+            days={daysFrom(days.first, days.last)}
+            today={days.first}
+            on={on}
             onPick={onDate}
           />
-        ) : null}
+        ) : (
+          <TilesSkeleton />
+        )}
 
         <View className="mt-7 mb-3.5 flex-row items-center justify-between">
           <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
             {t("screens.times.heading")}
           </Text>
-          {day ? <Text className="text-label text-ink-2">{dayLabel(day.date)}</Text> : null}
+          {on ? <Text className="text-label text-ink-2">{dayLabel(on)}</Text> : null}
         </View>
 
-        {!day ? (
-          <View className="items-center py-16">
-            <ActivityIndicator color={colors.ink} />
+        {dayError && !day ? (
+          <View className="items-start gap-4 py-6">
+            <Text className="text-subtitle text-ink-2">{dayError}</Text>
+            <Button label={t("common.actions.tryAgain")} size="small" onPress={onRetry} />
           </View>
+        ) : !day ? (
+          <HoursSkeleton />
         ) : groups.length === 0 ? (
           <View className="gap-1 py-6">
             <Text className="text-subtitle font-medium">{t("screens.times.none")}</Text>
             <Text className="text-subtitle text-ink-2">{t("screens.times.noneHint")}</Text>
           </View>
         ) : (
-          <>
+          <Animated.View key={day.date} entering={FadeIn.duration(220)}>
             <View className="gap-4">
               {groups.map(({ part, slots }) => (
                 <View key={part} className="gap-2">
@@ -407,7 +433,7 @@ function Picker({
                 {note.text}
               </Text>
             </View>
-          </>
+          </Animated.View>
         )}
       </Animated.ScrollView>
 
@@ -469,7 +495,8 @@ function Picker({
   );
 }
 
-// Today and the days after it, as tiles: the weekday (or Today) over the date.
+// Today and the days after it, as tiles: the weekday (or Today) over the date. The picked day's
+// black fades in as the last one's fades out (Search's chips do the same).
 function DayTiles({
   days,
   today,
@@ -481,7 +508,6 @@ function DayTiles({
   on: string;
   onPick: (date: string) => void;
 }) {
-  const { t } = useTranslation();
   return (
     <ScrollView
       horizontal
@@ -489,33 +515,114 @@ function DayTiles({
       style={{ marginHorizontal: -24 }}
       contentContainerStyle={{ gap: 8, paddingHorizontal: 24 }}
     >
-      {days.map((date) => {
-        const at = new Date(`${date}T12:00:00Z`);
-        const picked = date === on;
-        return (
-          <Pressable
-            key={date}
-            accessibilityRole="button"
-            accessibilityState={{ selected: picked }}
-            onPress={() => onPick(date)}
-            className={`h-[72px] w-[58px] items-center justify-center gap-0.5 rounded-[14px] ${picked ? "bg-ink" : "border border-border bg-white"}`}
-          >
-            <Text className={`text-caption ${picked ? "text-white" : "text-ink-2"}`}>
-              {date === today
-                ? t("formats.today")
-                : new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "short" }).format(
-                    at,
-                  )}
-            </Text>
-            <Text
-              className={`text-[20px] leading-6 font-medium ${picked ? "text-white" : "text-ink"}`}
-            >
-              {at.getUTCDate()}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {days.map((date) => (
+        <DayTile
+          key={date}
+          date={date}
+          today={date === today}
+          picked={date === on}
+          onPress={() => onPick(date)}
+        />
+      ))}
     </ScrollView>
+  );
+}
+
+const TILE = "h-[72px] w-[58px] items-center justify-center gap-0.5 rounded-[14px]";
+
+function DayTile({
+  date,
+  today,
+  picked,
+  onPress,
+}: {
+  date: string;
+  today: boolean;
+  picked: boolean;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const shown = useSharedValue(picked ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(picked ? 1 : 0, { duration: 180 });
+  }, [picked, shown]);
+  const fill = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const at = new Date(`${date}T12:00:00Z`);
+  const weekday = today
+    ? t("formats.today")
+    : new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "short" }).format(at);
+  const words = (white: boolean) => (
+    <>
+      <Text className={`text-caption ${white ? "text-white" : "text-ink-2"}`}>{weekday}</Text>
+      <Text className={`text-[20px] leading-6 font-medium ${white ? "text-white" : "text-ink"}`}>
+        {at.getUTCDate()}
+      </Text>
+    </>
+  );
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: picked }}
+      onPress={onPress}
+      className={`${TILE} border border-border bg-white`}
+    >
+      {words(false)}
+      <Animated.View
+        pointerEvents="none"
+        className={`absolute -inset-px ${TILE} bg-ink`}
+        style={fill}
+      >
+        {words(true)}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// A grey stand-in, gently pulsing, in a real piece's exact size, so nothing moves when it arrives.
+function Bone({ className }: { className: string }) {
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withTiming(0.45, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+  }, [pulse]);
+  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  return <Animated.View className={`bg-chip ${className}`} style={style} />;
+}
+
+// The day tiles before the first day comes back.
+function TilesSkeleton() {
+  return (
+    <View className="-mx-6 flex-row gap-2 overflow-hidden px-6">
+      {Array.from({ length: 6 }, (_, i) => (
+        <Bone key={i} className="h-[72px] w-[58px] rounded-[14px]" />
+      ))}
+    </View>
+  );
+}
+
+// A day's hours on their way: two groups of chips and the note's line, in their real sizes.
+function HoursSkeleton() {
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      className="gap-4"
+    >
+      {[2, 6].map((count, group) => (
+        <View key={group} className="gap-2">
+          <Bone className="h-[14px] w-16 rounded-full" />
+          <View className="flex-row flex-wrap gap-2">
+            {Array.from({ length: count }, (_, i) => (
+              <Bone key={i} className="h-[54px] w-[76px] rounded-[14px]" />
+            ))}
+          </View>
+        </View>
+      ))}
+      <Bone className="mt-1 h-[14px] w-56 rounded-full" />
+    </View>
   );
 }
 
