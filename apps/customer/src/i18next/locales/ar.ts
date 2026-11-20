@@ -203,7 +203,7 @@ const ar: ArabicTranslations = {
         phone: {
           title: "ما رقم موبايلك؟",
           subtitle: "سنرسل رمزًا على واتساب للتأكد من أنه رقمك.",
-          haveAccount: "لديك حساب بالفعل؟ <link>سجّل الدخول</link>",
+          haveAccount: "لديك حساب بالفعل؟ <signIn>سجّل الدخول</signIn>",
           terms: "بالمتابعة، أنت توافق على شروط حجز وسياسة الخصوصية.",
         },
         code: {

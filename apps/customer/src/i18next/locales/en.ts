@@ -1,6 +1,8 @@
 // English strings, grouped by where they're used: components, screens, common words shared by
 // several screens, and formats (sports, sizes, times, prices) that the lib helpers put together.
 // Placeholders use i18next's {{name}}; <tag>…</tag> marks a styled part (react-i18next's Trans).
+// Never name a tag after an HTML void element (link, img, br, input…): Trans parses the string as
+// HTML, so <link>Sign in</link> comes out empty with "Sign in" outside it, and the tap does nothing.
 // Western digits only (decided 2026-10-30), as in the staff app.
 const en = {
   translation: {
@@ -184,7 +186,7 @@ const en = {
         phone: {
           title: "What’s your mobile number?",
           subtitle: "We’ll send a code on WhatsApp to confirm it’s yours.",
-          haveAccount: "Already have an account? <link>Sign in</link>",
+          haveAccount: "Already have an account? <signIn>Sign in</signIn>",
           terms: "By continuing you agree to Hagz’s Terms and Privacy Policy.",
         },
         code: {
