@@ -15,9 +15,90 @@ export const MARKETPLACE = "EG";
 export interface SearchParams {
   latitude?: number;
   longitude?: number;
+  area?: string;
+  date?: string;
+  start?: string;
+  hours?: number;
   sport?: Sport;
   sort?: SearchSort;
+  limit?: number;
 }
+
+// Where the player is looking: near them, in an area (and everything under it), or anywhere.
+export type Where =
+  | { kind: "near" }
+  | { kind: "everywhere" }
+  | { kind: "area"; id: string; name: string; within: string | null };
+
+// When: a day (null for today), a start (HH:mm, null for any time) and how long.
+export interface When {
+  date: string | null;
+  start: string | null;
+  hours: number;
+}
+
+export const ANY_TIME: When = { date: null, start: null, hours: 1 };
+
+// The local date in a timezone (YYYY-MM-DD), `days` from today.
+export const localDate = (timezone: string, days = 0) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(
+    new Date(Date.now() + days * 86_400_000),
+  );
+
+// "9 pm" for 21, "12 am" for 0.
+export const hourLabel = (hour: number) =>
+  `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "am" : "pm"}`;
+
+// "Today", "Tomorrow", "Fri 21".
+export const dayText = (date: string | null, timezone: string) => {
+  if (date === null || date === localDate(timezone)) return "Today";
+  if (date === localDate(timezone, 1)) return "Tomorrow";
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric" })
+    .format(new Date(`${date}T12:00:00Z`))
+    .replace(",", "");
+};
+
+// The search bar's second line: "Today · any time · 1 hour", "Fri 21 · 9–11 pm".
+export const whenText = (when: When, timezone: string) => {
+  const day = dayText(when.date, timezone);
+  if (!when.start)
+    return `${day} · any time · ${when.hours === 1 ? "1 hour" : `${when.hours} hours`}`;
+  const from = Number(when.start.slice(0, 2));
+  const to = (from + when.hours) % 24;
+  const range =
+    from < 12 === to < 12 && to !== 0
+      ? `${hourLabel(from).replace(/ [ap]m$/, "")}–${hourLabel(to)}`
+      : `${hourLabel(from)}–${hourLabel(to)}`;
+  return `${day} · ${range}`;
+};
+
+// How many venues a search would find, for "Show 24 venues": one card asked for, the total read,
+// a moment after the choices stop changing.
+export const useVenueCount = (params: SearchParams, enabled: boolean) => {
+  const [count, setCount] = useState<number | null>(null);
+  const key = JSON.stringify(params);
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      void (async () => {
+        const result = await send(
+          api.GET("/v1/venues", {
+            params: {
+              query: { marketplace: MARKETPLACE, ...(JSON.parse(key) as SearchParams), limit: 1 },
+            },
+          }),
+        );
+        if (active) setCount(result.ok ? result.data.total : null);
+      })();
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [key, enabled]);
+  return count;
+};
 
 interface State {
   cards: VenueCard[];
