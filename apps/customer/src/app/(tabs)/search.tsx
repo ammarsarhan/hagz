@@ -2,12 +2,14 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import Animated, {
+  type DerivedValue,
   FadeIn,
   FadeOut,
   interpolate,
   LinearTransition,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
@@ -124,6 +126,62 @@ function SortToggle({
   );
 }
 
+// The where/when bar. In the list it floats and docks in the header as the page scrolls (Airbnb's
+// pattern, user 2026-11-20): `docked` runs 0 → 1 as it arrives, shrinking it from 60 to 48 and
+// folding its two lines into one. On the map it stays as it is.
+function SearchPill({
+  where,
+  when,
+  onPress,
+  docked,
+}: {
+  where: string;
+  when: string;
+  onPress: () => void;
+  docked: DerivedValue<number> | null;
+}) {
+  const box = useAnimatedStyle(() => ({
+    height: docked ? interpolate(docked.value, [0, 1], [60, 48]) : 60,
+    shadowOpacity: docked ? interpolate(docked.value, [0, 1], [0.08, 0.05]) : 0.08,
+  }));
+  const full = useAnimatedStyle(() => ({ opacity: docked ? 1 - docked.value : 1 }));
+  const compact = useAnimatedStyle(() => ({ opacity: docked ? docked.value : 0 }));
+  const button = useAnimatedStyle(() => ({
+    transform: [{ scale: docked ? interpolate(docked.value, [0, 1], [1, 0.85]) : 1 }],
+  }));
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${where}, ${when}`}
+      onPress={onPress}
+    >
+      <Animated.View
+        className="flex-row items-center gap-3 rounded-full border border-border bg-white pr-2 pl-5"
+        style={[shadow, box]}
+      >
+        <IconSearch size={20} color={colors.ink} strokeWidth={2} />
+        <View className="flex-1 justify-center self-stretch overflow-hidden">
+          <Animated.View style={full}>
+            <Text className="text-subtitle font-semibold">{where}</Text>
+            <Text className="text-label text-ink-2">{when}</Text>
+          </Animated.View>
+          <Animated.View className="absolute inset-0 justify-center" style={compact}>
+            <Text className="text-body font-semibold" numberOfLines={1}>
+              {where} <Text className="text-body text-ink-2">· {when}</Text>
+            </Text>
+          </Animated.View>
+        </View>
+        <Animated.View
+          className="size-10 items-center justify-center rounded-full border border-border"
+          style={button}
+        >
+          <IconAdjustmentsHorizontal size={18} color={colors.ink} strokeWidth={2} />
+        </Animated.View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export default function SearchTab() {
   const insets = useSafeAreaInsets();
   const hud = useHud();
@@ -139,15 +197,18 @@ export default function SearchTab() {
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
-  // Where the big title ends in the scroll; the bar's title is in once it has gone under.
-  const [titleEnd, setTitleEnd] = useState(0);
-  const barStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [titleEnd - 28, titleEnd], [0, 1], "clamp"),
+  // The bar: where it starts in the page (its slot under the title), and where it docks, just
+  // under the status bar. It follows the page up until it docks, then stays.
+  const pillStart = useSharedValue(insets.top + 16 + 50);
+  const dockAt = insets.top + 6;
+  // 0 while the bar is in the page, 1 once docked, over its last 24 points up.
+  const docked = useDerivedValue(() =>
+    interpolate(pillStart.value - scrollY.value, [dockAt + 24, dockAt], [0, 1], "clamp"),
+  );
+  const pillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(dockAt, pillStart.value - scrollY.value) }],
   }));
-  const compactStyle = useAnimatedStyle(() => {
-    const progress = interpolate(scrollY.value, [titleEnd - 24, titleEnd], [0, 1], "clamp");
-    return { opacity: progress, transform: [{ translateY: (1 - progress) * 6 }] };
-  });
+  const headerStyle = useAnimatedStyle(() => ({ opacity: docked.value }));
 
   // Nearest first when the phone knows where it is; best rated otherwise.
   const sort: SearchSort = here ? (sortChoice ?? "DISTANCE") : "RATING";
@@ -167,23 +228,10 @@ export default function SearchTab() {
       ? " "
       : `${total} ${total === 1 ? "venue" : "venues"} free today${here ? "" : " in Egypt"}`;
 
-  const bar = (
-    <View className="gap-3">
-      <Pressable
-        accessibilityRole="button"
-        onPress={soon}
-        className="h-[60px] flex-row items-center gap-3 rounded-full border border-border bg-white pr-2 pl-5"
-        style={shadow}
-      >
-        <IconSearch size={20} color={colors.ink} strokeWidth={2} />
-        <View className="flex-1">
-          <Text className="text-subtitle font-semibold">{here ? "Near me" : "All of Egypt"}</Text>
-          <Text className="text-label text-ink-2">Today · any time · 1 hour</Text>
-        </View>
-        <View className="size-10 items-center justify-center rounded-full border border-border">
-          <IconAdjustmentsHorizontal size={18} color={colors.ink} strokeWidth={2} />
-        </View>
-      </Pressable>
+  const where = here ? "Near me" : "All of Egypt";
+  const when = "Today · any time · 1 hour";
+  const chips = (
+    <View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -221,7 +269,10 @@ export default function SearchTab() {
           onLayout={(event) => setHeader(event.nativeEvent.layout.height + insets.top + 8)}
           pointerEvents="box-none"
         >
-          {bar}
+          <View className="gap-3">
+            <SearchPill where={where} when={when} onPress={soon} docked={null} />
+            {chips}
+          </View>
           <View className="mt-3 items-end">
             <Pressable
               accessibilityRole="button"
@@ -286,17 +337,17 @@ export default function SearchTab() {
         ItemSeparatorComponent={() => <View className="my-6 h-px bg-border" />}
         ListHeaderComponent={
           <View className="gap-4 pb-5">
-            <Text
-              accessibilityRole="header"
-              className="text-title font-semibold tracking-[-0.4px]"
-              onLayout={(event) => {
-                const { y, height } = event.nativeEvent.layout;
-                setTitleEnd(y + height);
-              }}
-            >
+            <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
               Search
             </Text>
-            {bar}
+            {/* The bar's slot: the bar itself floats over it (below), so it can dock. */}
+            <View
+              className="h-[60px]"
+              onLayout={(event) => {
+                pillStart.value = insets.top + 16 + event.nativeEvent.layout.y;
+              }}
+            />
+            {chips}
             <View className="flex-row items-center justify-between">
               <Text className="text-body text-ink-2">{summary}</Text>
               <View className="flex-row items-center gap-4">
@@ -341,21 +392,15 @@ export default function SearchTab() {
         onRefresh={search.refresh}
       />
 
-      {/* The bar over the top: white with the title in it once the big title has scrolled under. */}
-      <View className="absolute top-0 right-0 left-0" pointerEvents="none">
-        <Animated.View
-          className="border-b border-hairline bg-white"
-          style={[{ height: insets.top + 44 }, barStyle]}
-        />
-        <Animated.View
-          className="absolute right-0 left-0 px-6"
-          style={[{ top: insets.top + 12 }, compactStyle]}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          <Text className="text-body font-semibold">Search</Text>
-        </Animated.View>
-      </View>
+      {/* The header the bar docks in: white, fading in as the bar arrives. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
+        style={[{ height: dockAt + 48 + 10 }, headerStyle]}
+      />
+      <Animated.View className="absolute top-0 right-6 left-6" style={pillStyle}>
+        <SearchPill where={where} when={when} onPress={soon} docked={docked} />
+      </Animated.View>
 
       {search.cards.length > 0 ? (
         <View
