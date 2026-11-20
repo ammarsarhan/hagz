@@ -17,6 +17,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
+import { LightsOutArt } from "@/components/lights-out-art";
 import {
   IconAdjustmentsHorizontal,
   IconArrowsSort,
@@ -51,6 +52,14 @@ import {
 // thumbnail, words sliding beside it), and the list and the map cross-fade.
 
 const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
+// What a sport is played on, for "No padel courts have a free hour left today."
+const SPORT_PLACES: Record<Sport, string> = {
+  FOOTBALL: "football pitches",
+  PADEL: "padel courts",
+  TENNIS: "tennis courts",
+  BASKETBALL: "basketball courts",
+  VOLLEYBALL: "volleyball courts",
+};
 
 const shadow = {
   shadowColor: "#0b0b0c",
@@ -299,19 +308,15 @@ export default function SearchTab() {
       <Button label="Try again" size="small" onPress={search.refresh} />
     </View>
   ) : (
-    <View className="items-start gap-2 pt-10">
-      <Text className="text-heading font-semibold">
-        {here ? "Nothing free near you today" : "Nothing free today"}
-      </Text>
-      <Text className="text-subtitle text-ink-2">
-        {here
-          ? "Nothing within 10 km has a free hour left today."
-          : sport
-            ? "Try another sport, or all of them."
-            : "Check back later today."}
+    // "Lights out" (Figma 114:2): what wasn't found, and the one way out.
+    <Animated.View entering={FadeIn.duration(260)} className="items-center px-2 pt-6">
+      <LightsOutArt />
+      <Text className="mt-3 text-heading font-semibold">Uh oh!</Text>
+      <Text className="mt-2 text-center text-subtitle text-ink-2">
+        {`No ${sport ? SPORT_PLACES[sport] : "venues"}${here ? " within 10 km" : ""} have a free hour left today.`}
       </Text>
       {here ? (
-        <View className="mt-4">
+        <View className="mt-6">
           <Button
             label="Search all of Egypt"
             size="small"
@@ -319,8 +324,17 @@ export default function SearchTab() {
             onPress={() => setEverywhere(true)}
           />
         </View>
+      ) : sport ? (
+        <View className="mt-6">
+          <Button
+            label="Show all sports"
+            size="small"
+            quietLabel
+            onPress={() => setSport(undefined)}
+          />
+        </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 
   const listView = (
