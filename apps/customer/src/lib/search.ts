@@ -58,11 +58,11 @@ export const dayText = (date: string | null, timezone: string) => {
     .replace(",", "");
 };
 
-// The search bar's second line: "Today · any time · 1 hour", "Fri 21 · 9–11 pm".
+// The search bar's second line: "Today · any time", "Fri 21 · 9–11 pm".
 export const whenText = (when: When, timezone: string) => {
   const day = dayText(when.date, timezone);
-  if (!when.start)
-    return `${day} · any time · ${when.hours === 1 ? "1 hour" : `${when.hours} hours`}`;
+  // A length only comes with a start (the start is a run of hours).
+  if (!when.start) return `${day} · any time`;
   const from = Number(when.start.slice(0, 2));
   const to = (from + when.hours) % 24;
   const range =
