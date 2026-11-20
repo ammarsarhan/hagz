@@ -183,6 +183,20 @@ const SortSection = memo(function SortSection({
   );
 });
 
+// The chart never has fewer than this many bands: a few venues' prices (one, at the least) would
+// otherwise fill the width as a block or two of black. Empty bands go either side of the real ones,
+// never below zero, so the prices sit in the middle as slim bars.
+const MIN_BANDS = 12;
+
+const padBands = (bands: number[], step: number) => {
+  const first = bands[0];
+  if (first === undefined || bands.length >= MIN_BANDS) return bands;
+  const missing = MIN_BANDS - bands.length;
+  const before = Math.min(Math.floor(missing / 2), Math.floor(first / step));
+  const start = first - before * step;
+  return Array.from({ length: MIN_BANDS }, (_, i) => start + i * step);
+};
+
 // The price chart: its bands (the axis) come from the search without the filters, so they stay put
 // as filters change; the bars count what the other filters leave, flat when that's nothing.
 const PriceSection = memo(function PriceSection({
@@ -201,8 +215,9 @@ const PriceSection = memo(function PriceSection({
   set: SetFilters;
 }) {
   const { t } = useTranslation();
-  const bands = axis ?? [];
-  const step = bands.length > 1 ? (bands[1] ?? 0) - (bands[0] ?? 0) : 5000;
+  const real = axis ?? [];
+  const step = real.length > 1 ? (real[1] ?? 0) - (real[0] ?? 0) : 5000;
+  const bands = padBands(real, step);
   const bandOf = (price: number) =>
     Math.max(
       0,
@@ -222,8 +237,10 @@ const PriceSection = memo(function PriceSection({
           },
     );
   };
-  const low = bands[range.from];
-  const highFrom = bands[range.to - 1];
+  // Untouched, the label says the real prices, not the empty bands either side of them.
+  const whole = range.from === 0 && range.to === bands.length;
+  const low = whole ? real[0] : bands[range.from];
+  const highFrom = whole ? real.at(-1) : bands[range.to - 1];
   const high = highFrom === undefined ? undefined : highFrom + step;
   const empty = [...counts.values()].every((count) => count === 0);
   return (
