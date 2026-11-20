@@ -264,6 +264,7 @@ const en = {
           remove: "Remove photo",
           cameraBlocked: "Allow camera access in Settings to take a photo.",
           failed: "Couldn’t open your photos. Try again.",
+          uploadFailed: "Couldn’t upload your photo. Try again.",
         },
         signOut: {
           title: "Sign out?",

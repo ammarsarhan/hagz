@@ -287,6 +287,7 @@ const ar: ArabicTranslations = {
           remove: "احذف الصورة",
           cameraBlocked: "اسمح باستخدام الكاميرا من الإعدادات لالتقاط صورة.",
           failed: "تعذّر فتح صورك. حاول مرة أخرى.",
+          uploadFailed: "تعذّر رفع صورتك. حاول مرة أخرى.",
         },
         signOut: {
           title: "تسجيل الخروج؟",

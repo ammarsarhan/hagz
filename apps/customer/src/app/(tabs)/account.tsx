@@ -23,7 +23,7 @@ import { ResendCode } from "@/components/resend-code";
 import { SettingsHeading, SettingsRow } from "@/components/settings-row";
 import { Sheet } from "@/components/sheet";
 import { Text } from "@/components/text";
-import { api, auth } from "@/lib/api";
+import { api, auth, reachable } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, retryAfter, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useFavoriteIds } from "@/lib/favorites";
@@ -160,7 +160,9 @@ function SignedIn({
         hud.show(hudMessage(target.error));
         return;
       }
-      await putPhoto(target.data, photo.blob);
+      // In development storage answers on the computer's localhost, which the phone reaches by
+      // the API's address (lib/api.ts), as the staff app's photo uploads do.
+      await putPhoto({ ...target.data, url: reachable(target.data.url) }, photo.blob);
       const confirmed = await send(api.POST("/v1/customers/me/avatar/confirm"));
       if (!confirmed.ok) {
         hud.show(hudMessage(confirmed.error));
@@ -168,7 +170,7 @@ function SignedIn({
       }
       onProfile(confirmed.data);
     } catch {
-      hud.show(t("screens.account.photo.failed"));
+      hud.show(t("screens.account.photo.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -373,15 +375,17 @@ function PhotoSheet({
   ];
   return (
     <Sheet visible={visible} onClose={onClose} onHidden={onHidden}>
-      {choices.map(({ key, icon: Glyph, label }, index) => (
-        <SettingsRow
-          key={key}
-          title={label}
-          trailing={<Glyph size={20} color={colors.ink} strokeWidth={1.75} />}
-          onPress={() => onChoose(key)}
-          divider={index < choices.length - 1}
-        />
-      ))}
+      <View className="mt-3">
+        {choices.map(({ key, icon: Glyph, label }, index) => (
+          <SettingsRow
+            key={key}
+            title={label}
+            trailing={<Glyph size={20} color={colors.ink} strokeWidth={1.75} />}
+            onPress={() => onChoose(key)}
+            divider={index < choices.length - 1}
+          />
+        ))}
+      </View>
     </Sheet>
   );
 }
