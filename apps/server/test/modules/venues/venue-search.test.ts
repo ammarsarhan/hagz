@@ -294,11 +294,11 @@ describe("filters and order", () => {
   });
 
   it("ranks a rating from fewer than 5 reviews after the ones that have them, and leaves it out of a minimum", async () => {
-    const { nile, padel } = await setup();
+    const { maadi, nile, padel } = await setup();
     // A perfect score from two reviews: after Nile's 4.6 from ten, though still before the unrated.
     const lucky = await venue({
       marketplaceId: nile.marketplaceId,
-      locationId: nile.locationId,
+      locationId: maadi.id,
       name: "Lucky Pitch",
       arabic: "ملعب محظوظ",
       at: MAADI,
