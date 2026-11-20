@@ -215,7 +215,7 @@ export const whenText = (when: When, timezone: string) => {
 };
 
 // How many venues a search would find, for "Show 24 venues": one card asked for, the total read,
-// a moment after the choices stop changing.
+// once the choices have rested a moment (a handle dragged across a chart asks once, not per step).
 export const useVenueCount = (params: SearchParams, enabled: boolean) => {
   const [count, setCount] = useState<number | null>(null);
   const key = JSON.stringify(params);
@@ -233,7 +233,7 @@ export const useVenueCount = (params: SearchParams, enabled: boolean) => {
         );
         if (active) setCount(result.ok ? result.data.total : null);
       })();
-    }, 250);
+    }, 400);
     return () => {
       active = false;
       clearTimeout(timer);
