@@ -1,5 +1,6 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { BackHandler, View } from "react-native";
 import { Button } from "@/components/button";
 import { IconAlertCircle, IconBrandWhatsapp } from "@/components/icons";
@@ -8,23 +9,14 @@ import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { contactSupport, hasSupport } from "@/lib/support";
 
-const COPY = {
-  suspended: {
-    title: "Your account is suspended",
-    body: "You can’t sign in for now. If you think this is a mistake, contact our support team.",
-  },
-  banned: {
-    title: "This account can’t be used",
-    body: "It was closed for breaking Hagz’s terms. If you think this is a mistake, contact our support team.",
-  },
-} as const;
-
 // A suspended (temporary) or banned (permanent) account, after the right password: no way back in
 // from here, only support. A grey alert icon sits over the title where other screens have the back
-// button (the one icon allowed above a title, from the staff app's D1).
+// button (the one icon allowed above a title, from the staff app's D1). Its strings live under
+// screens.blocked.<kind>.
 export default function Blocked() {
   const { kind } = useLocalSearchParams<{ kind: "suspended" | "banned" }>();
-  const copy = COPY[kind === "banned" ? "banned" : "suspended"];
+  const { t } = useTranslation();
+  const copy = kind === "banned" ? "banned" : "suspended";
 
   // Only the buttons leave: no swipe back on iOS, and Android's back button does nothing here.
   useFocusEffect(
@@ -40,13 +32,13 @@ export default function Blocked() {
         <>
           {hasSupport ? (
             <Button
-              label="Contact support"
+              label={t("common.actions.contactSupport")}
               icon={<IconBrandWhatsapp size={20} color={colors.white} strokeWidth={2} />}
               onPress={contactSupport}
             />
           ) : null}
           <Button
-            label="Back to sign in"
+            label={t("common.actions.backToSignIn")}
             variant={hasSupport ? "ghost" : "secondary"}
             onPress={() => router.dismissTo("/sign-in")}
           />
@@ -59,9 +51,9 @@ export default function Blocked() {
         <IconAlertCircle size={32} color={colors.unit} strokeWidth={2} />
       </View>
       <Text accessibilityRole="header" className="mb-2 text-title font-semibold tracking-[-0.4px]">
-        {copy.title}
+        {t(`screens.blocked.${copy}.title`)}
       </Text>
-      <Text className="text-subtitle text-ink-2">{copy.body}</Text>
+      <Text className="text-subtitle text-ink-2">{t(`screens.blocked.${copy}.body`)}</Text>
     </Screen>
   );
 }
