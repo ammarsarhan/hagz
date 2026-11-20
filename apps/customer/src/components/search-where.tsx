@@ -80,6 +80,9 @@ export function SearchWhere({
   const [q, setQ] = useState("");
   const [areas, setAreas] = useState<Area[]>([]);
   const [venues, setVenues] = useState<VenueCard[]>([]);
+  // What the results on screen are for, so "no match" waits until the lookup for what's typed has
+  // come back (not while it's still on its way).
+  const [answered, setAnswered] = useState("");
 
   useEffect(() => {
     const typed = q.trim();
@@ -106,6 +109,7 @@ export function SearchWhere({
         if (!active) return;
         setAreas(foundAreas.ok ? foundAreas.data.data : []);
         setVenues(foundVenues.ok ? foundVenues.data.data : []);
+        setAnswered(typed);
       });
     }, DEBOUNCE);
     return () => {
@@ -199,7 +203,7 @@ export function SearchWhere({
             ))}
           </>
         ) : null}
-        {q.trim() && areas.length === 0 && venues.length === 0 ? (
+        {q.trim() && answered === q.trim() && areas.length === 0 && venues.length === 0 ? (
           <Text className="mt-6 text-subtitle text-ink-2">
             No areas or venues match “{q.trim()}”.
           </Text>
