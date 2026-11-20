@@ -86,6 +86,7 @@ CREATE TABLE "GroundSlot" (
     "isManual" BOOLEAN NOT NULL DEFAULT false,
     "scheduleVersion" INTEGER NOT NULL,
     "bookingId" UUID,
+    "freedAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,
 
