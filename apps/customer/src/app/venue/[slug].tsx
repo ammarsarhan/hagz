@@ -26,7 +26,8 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconChevronLeft, IconCircleCheckFilled, IconShare } from "@/components/icons";
+import { IconChevronLeft, IconCircleCheckFilled, IconHeart, IconShare } from "@/components/icons";
+import { useSignInSheet } from "@/components/sign-in-sheet";
 import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
 import {
@@ -263,6 +264,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const hud = useHud();
+  const { whenSignedIn, sheet } = useSignInSheet(`/venue/${venue.slug}`);
   const scroll = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0);
   const header = insets.top + BAR;
@@ -413,31 +415,47 @@ function VenueView({ venue }: { venue: PublicVenue }) {
               pointerEvents="none"
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
-              // The gutters, both buttons and the gaps: a long name ends in "…".
-              style={[compactStyle, { maxWidth: width - 40 - 40 - 12 - 40 - 12 }]}
+              // The gutters, the three buttons and the gaps: a long name ends in "…".
+              style={[compactStyle, { maxWidth: width - 40 - 40 - 12 - 40 - 10 - 40 - 12 }]}
             >
               <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
                 {venue.name ?? ""}
               </Text>
             </Animated.View>
           </View>
-          {link ? (
+          <View className="flex-row items-center gap-2.5" pointerEvents="box-none">
+            {link ? (
+              <BarButton
+                icon={IconShare}
+                label="Copy the venue's link"
+                progress={barProgress}
+                onPress={() => {
+                  // Done, not a problem: a check in place of the HUD's alert.
+                  void Clipboard.setStringAsync(link).then(() =>
+                    hud.show("Link copied", {
+                      leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
+                    }),
+                  );
+                }}
+              />
+            ) : null}
+            {/* Saving venues is PR 3.4: a guest is asked to sign in first, as everywhere a choice
+                needs an account; signed in, it says it's coming. */}
             <BarButton
-              icon={IconShare}
-              label="Copy the venue's link"
+              icon={IconHeart}
+              label="Save this venue"
               progress={barProgress}
-              onPress={() => {
-                // Done, not a problem: a check in place of the HUD's alert.
-                void Clipboard.setStringAsync(link).then(() =>
-                  hud.show("Link copied", {
-                    leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
-                  }),
-                );
-              }}
+              onPress={() =>
+                void whenSignedIn(() => hud.show("Saving venues comes next"), {
+                  title: "Sign in to save venues",
+                  body: "Create an account or sign in to keep the venues you like in one place.",
+                })
+              }
             />
-          ) : null}
+          </View>
         </View>
       </View>
+      {sheet}
 
       <View
         className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
