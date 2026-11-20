@@ -30,6 +30,8 @@ interface ButtonProps {
   icon?: ReactNode;
   // `small`: 48 high with a 16 label, beside other content in a bar (the venue page's Book).
   size?: "regular" | "small";
+  // A quieter label in a button of the same size (14 rather than 16 or 17).
+  quietLabel?: boolean;
 }
 
 export function Button({
@@ -40,6 +42,7 @@ export function Button({
   loading = false,
   icon,
   size = "regular",
+  quietLabel = false,
 }: ButtonProps) {
   const style = variants[variant];
   const look = disabled ? { box: "bg-chip", label: "text-ink-3" } : style;
@@ -61,7 +64,7 @@ export function Button({
         <View className="flex-row items-center gap-2">
           {icon}
           <Text
-            className={`text-center ${size === "small" ? "text-subtitle" : "text-button"} font-semibold ${look.label}`}
+            className={`text-center ${quietLabel ? "text-label" : size === "small" ? "text-subtitle" : "text-button"} font-semibold ${look.label}`}
           >
             {label}
           </Text>
