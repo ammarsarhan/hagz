@@ -147,7 +147,7 @@ function List({ venues }: { venues: Favorite[] }) {
         }}
       >
         <Title
-          subtitle={t("screens.favorites.count", { count: venues.length })}
+          subtitle={t("screens.favorites.subtitle")}
           onTitleLayout={(event) => {
             const { y, height } = event.nativeEvent.layout;
             titleEnd.value = y + height;
@@ -165,6 +165,13 @@ function List({ venues }: { venues: Favorite[] }) {
             <FavoriteRow venue={venue} />
           </Animated.View>
         ))}
+        {/* How many, at the end of the list (user, 2026-11-20), quiet like Account's version line;
+            it slides up with the rows when one is taken off. */}
+        <Animated.View layout={LinearTransition.duration(240)}>
+          <Text className="mt-5 text-center text-caption text-ink-3">
+            {t("screens.favorites.count", { count: venues.length })}
+          </Text>
+        </Animated.View>
       </Animated.ScrollView>
 
       <View

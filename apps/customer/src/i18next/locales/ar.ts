@@ -297,6 +297,7 @@ const ar: ArabicTranslations = {
       },
       favorites: {
         title: "المفضلة",
+        subtitle: "الملاعب التي حفظتها، الأحدث أولًا.",
         count_zero: "لا ملاعب",
         count_one: "ملعب واحد",
         count_two: "ملعبان",
