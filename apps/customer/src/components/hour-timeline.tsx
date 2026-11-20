@@ -1,6 +1,12 @@
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { hourLabel } from "@/lib/search";
@@ -9,8 +15,9 @@ import { Text } from "./text";
 // The When sheet's timeline (Figma "C3 · Tabs & Search", section "Search · When sheet", option 4,
 // 122:2; the user's pick on 2026-11-20): the day from 6 am to midnight as bars, one an hour, as
 // tall as the number of venues free to start then, over a track with the game's run between two
-// handles. Drag a handle to move that end an hour at a time (with a tick); tap the timeline to move
-// the run there (or, with nothing picked, to pick that hour). The run is 1 to 6 hours.
+// handles. Drag a handle to move that end an hour at a time (with a tick), or press between the
+// handles of a run two or more hours long and drag to slide it; tap the timeline to move the run
+// there (or, with nothing picked, to pick that hour). The run is 1 to 6 hours.
 
 export interface Run {
   from: number; // First hour, 0–23.
@@ -37,16 +44,35 @@ export const runLabel = (run: Run) => {
 };
 
 // An hour's bar: grey (faint when past), its black fading in as the run takes it in and out as it
-// leaves, so moving a handle sweeps rather than snaps.
-function Bar({ height, picked, past }: { height: number; picked: boolean; past: boolean }) {
+// leaves, so moving a handle sweeps rather than snaps. Its height follows the day's count: growing
+// after `delay` (so a new day's bars rise left to right), shrinking at once.
+function Bar({
+  height,
+  picked,
+  past,
+  delay,
+}: {
+  height: number;
+  picked: boolean;
+  past: boolean;
+  delay: number;
+}) {
   const shown = useSharedValue(picked ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(picked ? 1 : 0, { duration: 160 });
   }, [picked, shown]);
+  const tall = useSharedValue(height);
+  useEffect(() => {
+    tall.value =
+      height > tall.value
+        ? withDelay(delay, withTiming(height, { duration: 320, easing: Easing.out(Easing.cubic) }))
+        : withTiming(height, { duration: 120 });
+  }, [height, delay, tall]);
   const fill = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const size = useAnimatedStyle(() => ({ height: tall.value }));
   return (
-    <View
-      style={{ height, borderRadius: 2, backgroundColor: past ? PAST : OFF, overflow: "hidden" }}
+    <Animated.View
+      style={[{ borderRadius: 2, backgroundColor: past ? PAST : OFF, overflow: "hidden" }, size]}
     >
       <Animated.View
         style={[
@@ -54,9 +80,14 @@ function Bar({ height, picked, past }: { height: number; picked: boolean; past: 
           fill,
         ]}
       />
-    </View>
+    </Animated.View>
   );
 }
+
+// Each bar of a new day starts growing this long after the one before it.
+const GROW_STAGGER = 22;
+// How close to a handle a touch has to land to take it, rather than the run between them.
+const GRAB = HANDLE / 2 + 10;
 
 export function HourTimeline({
   counts,
@@ -79,7 +110,9 @@ export function HourTimeline({
   const lowest = Math.max(FIRST, earliest);
 
   // Which end is being dragged, and the run when the drag began.
-  const dragging = useRef<{ end: "from" | "to"; run: Run } | null>(null);
+  // What's held: an end (its handle), or the whole run (pressed between the handles, when it's at
+  // least two hours wide), with the run and where the finger was when the drag began.
+  const dragging = useRef<{ held: "from" | "to" | "run"; run: Run; startX: number } | null>(null);
   const last = useRef<Run | null>(null);
   const set = (next: Run) => {
     if (last.current && last.current.from === next.from && last.current.to === next.to) return;
@@ -93,17 +126,28 @@ export function HourTimeline({
     .minDistance(2)
     .onBegin((event) => {
       if (!run) return;
-      // The nearer handle.
-      const end =
-        Math.abs(event.x - xOf(run.from)) <= Math.abs(event.x - xOf(run.to)) ? "from" : "to";
-      dragging.current = { end, run };
+      const toFrom = Math.abs(event.x - xOf(run.from));
+      const toTo = Math.abs(event.x - xOf(run.to));
+      const inside = event.x > xOf(run.from) && event.x < xOf(run.to);
+      const nearer = toFrom <= toTo ? "from" : "to";
+      const held =
+        inside && run.to - run.from >= 2 && Math.min(toFrom, toTo) > GRAB ? "run" : nearer;
+      dragging.current = { held, run, startX: event.x };
       last.current = run;
     })
     .onUpdate((event) => {
       const held = dragging.current;
       if (!held) return;
+      if (held.held === "run") {
+        // The whole run slides by the hours the finger has moved, its length kept.
+        const length = held.run.to - held.run.from;
+        const moved = Math.round((event.x - held.startX) / cell);
+        const from = Math.min(Math.max(held.run.from + moved, lowest), LAST - length);
+        set({ from, to: from + length });
+        return;
+      }
       const hour = hourAt(event.x);
-      if (held.end === "from") {
+      if (held.held === "from") {
         const from = Math.min(Math.max(hour, lowest, held.run.to - LONGEST), held.run.to - 1);
         set({ from, to: held.run.to });
       } else {
@@ -149,6 +193,7 @@ export function HourTimeline({
                     height={counts ? Math.max(3, (venues / most) * BARS) : 3}
                     picked={picked && !past}
                     past={past}
+                    delay={i * GROW_STAGGER}
                   />
                 </View>
               );
