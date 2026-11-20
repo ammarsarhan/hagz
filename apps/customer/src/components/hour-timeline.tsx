@@ -1,7 +1,8 @@
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -104,59 +105,114 @@ export function HourTimeline({
 }) {
   const [width, setWidth] = useState(0);
   const cell = width / SPAN;
-  const xOf = (hour: number) => (hour - FIRST) * cell;
-  const hourAt = (x: number) => Math.round(x / cell) + FIRST;
   const most = Math.max(1, ...(counts ?? []).slice(FIRST, LAST));
   const lowest = Math.max(FIRST, earliest);
 
-  // Which end is being dragged, and the run when the drag began.
-  // What's held: an end (its handle), or the whole run (pressed between the handles, when it's at
-  // least two hours wide), with the run and where the finger was when the drag began.
-  const dragging = useRef<{ held: "from" | "to" | "run"; run: Run; startX: number } | null>(null);
-  const last = useRef<Run | null>(null);
-  const set = (next: Run) => {
-    if (last.current && last.current.from === next.from && last.current.to === next.to) return;
-    last.current = next;
+  // The run's ends in points, moved on the UI thread: with the finger while it drags (no snapping
+  // mid-drag), gliding to whole hours when it lets go or when the run changes from outside (a tap,
+  // a new day). The run itself, which the bars, the label and the search read, changes once per
+  // hour crossed.
+  const fromX = useSharedValue(0);
+  const toX = useSharedValue(0);
+  const shown = useSharedValue(run ? 1 : 0);
+  const cellSV = useSharedValue(cell);
+  const lowestSV = useSharedValue(lowest);
+  const dragging = useSharedValue(false);
+  useEffect(() => {
+    cellSV.value = cell;
+    lowestSV.value = lowest;
+  }, [cell, lowest, cellSV, lowestSV]);
+  useEffect(() => {
+    shown.value = run ? 1 : 0;
+    if (!run || cell === 0 || dragging.value) return;
+    const from = (run.from - FIRST) * cell;
+    const to = (run.to - FIRST) * cell;
+    // The first time there's a run to show, it's simply there; after that it glides.
+    if (toX.value === 0) {
+      fromX.value = from;
+      toX.value = to;
+      return;
+    }
+    const glide = { duration: 140, easing: Easing.out(Easing.cubic) };
+    fromX.value = withTiming(from, glide);
+    toX.value = withTiming(to, glide);
+    // `run` is read through its two numbers, so a new object for the same run doesn't glide.
+  }, [run?.from, run?.to, cell]);
+
+  const commit = (from: number, to: number) => {
     void Haptics.selectionAsync();
-    onChange(next);
+    onChange({ from, to });
   };
 
+  // What's held: 1 the start's handle, 2 the end's, 3 the whole run (pressed between the handles
+  // of a run two hours or more wide). Where it all was when the finger went down, and the run last
+  // committed.
+  const held = useSharedValue(0);
+  const startX = useSharedValue(0);
+  const startFrom = useSharedValue(0);
+  const startTo = useSharedValue(0);
+  const lastFrom = useSharedValue(0);
+  const lastTo = useSharedValue(0);
+
   const drag = Gesture.Pan()
-    .runOnJS(true)
     .minDistance(2)
     .onBegin((event) => {
-      if (!run) return;
-      const toFrom = Math.abs(event.x - xOf(run.from));
-      const toTo = Math.abs(event.x - xOf(run.to));
-      const inside = event.x > xOf(run.from) && event.x < xOf(run.to);
-      const nearer = toFrom <= toTo ? "from" : "to";
-      const held =
-        inside && run.to - run.from >= 2 && Math.min(toFrom, toTo) > GRAB ? "run" : nearer;
-      dragging.current = { held, run, startX: event.x };
-      last.current = run;
-    })
-    .onUpdate((event) => {
-      const held = dragging.current;
-      if (!held) return;
-      if (held.held === "run") {
-        // The whole run slides by the hours the finger has moved, its length kept.
-        const length = held.run.to - held.run.from;
-        const moved = Math.round((event.x - held.startX) / cell);
-        const from = Math.min(Math.max(held.run.from + moved, lowest), LAST - length);
-        set({ from, to: from + length });
+      const c = cellSV.value;
+      if (shown.value === 0 || c === 0) {
+        held.value = 0;
         return;
       }
-      const hour = hourAt(event.x);
-      if (held.held === "from") {
-        const from = Math.min(Math.max(hour, lowest, held.run.to - LONGEST), held.run.to - 1);
-        set({ from, to: held.run.to });
+      const toFrom = Math.abs(event.x - fromX.value);
+      const toTo = Math.abs(event.x - toX.value);
+      const inside = event.x > fromX.value && event.x < toX.value;
+      const wide = Math.round((toX.value - fromX.value) / c) >= 2;
+      held.value = inside && wide && Math.min(toFrom, toTo) > GRAB ? 3 : toFrom <= toTo ? 1 : 2;
+      startX.value = event.x;
+      startFrom.value = fromX.value;
+      startTo.value = toX.value;
+      lastFrom.value = Math.round(fromX.value / c) + FIRST;
+      lastTo.value = Math.round(toX.value / c) + FIRST;
+      dragging.value = true;
+    })
+    .onUpdate((event) => {
+      const c = cellSV.value;
+      if (held.value === 0 || c === 0) return;
+      const dx = event.x - startX.value;
+      const least = (lowestSV.value - FIRST) * c;
+      const end = SPAN * c;
+      if (held.value === 3) {
+        const span = startTo.value - startFrom.value;
+        const from = Math.min(Math.max(startFrom.value + dx, least), end - span);
+        fromX.value = from;
+        toX.value = from + span;
+      } else if (held.value === 1) {
+        fromX.value = Math.min(
+          Math.max(startFrom.value + dx, least, toX.value - LONGEST * c),
+          toX.value - c,
+        );
       } else {
-        const to = Math.max(Math.min(hour, LAST, held.run.from + LONGEST), held.run.from + 1);
-        set({ from: held.run.from, to });
+        toX.value = Math.max(
+          Math.min(startTo.value + dx, end, fromX.value + LONGEST * c),
+          fromX.value + c,
+        );
+      }
+      const from = Math.round(fromX.value / c) + FIRST;
+      const to = Math.round(toX.value / c) + FIRST;
+      if (from !== lastFrom.value || to !== lastTo.value) {
+        lastFrom.value = from;
+        lastTo.value = to;
+        runOnJS(commit)(from, to);
       }
     })
     .onFinalize(() => {
-      dragging.current = null;
+      const c = cellSV.value;
+      if (held.value !== 0) {
+        const glide = { duration: 140, easing: Easing.out(Easing.cubic) };
+        fromX.value = withTiming((lastFrom.value - FIRST) * c, glide);
+        toX.value = withTiming((lastTo.value - FIRST) * c, glide);
+      }
+      held.value = 0;
+      dragging.value = false;
     });
 
   const tap = Gesture.Tap()
@@ -166,10 +222,30 @@ export function HourTimeline({
       const length = run ? run.to - run.from : 1;
       const from = Math.min(hour, LAST - length);
       if (from < lowest) return;
-      last.current = { from, to: from + length };
-      void Haptics.selectionAsync();
-      onChange({ from, to: from + length });
+      commit(from, from + length);
     });
+
+  const segment = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    left: fromX.value,
+    width: toX.value - fromX.value,
+  }));
+  const startHandle = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    left: fromX.value - HANDLE / 2,
+  }));
+  const endHandle = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    left: toX.value - HANDLE / 2,
+  }));
+  const handle = {
+    width: HANDLE,
+    height: HANDLE,
+    shadowColor: INK,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  };
 
   return (
     // Sized by what's in it: the root view flexes by default, and in a sheet sized by its content
@@ -202,29 +278,15 @@ export function HourTimeline({
           {/* The track and the run on it, with its handles. */}
           <View style={{ height: HANDLE + 8, justifyContent: "center" }}>
             <View className="h-1 rounded-full bg-chip" />
-            {run && width > 0 ? (
-              <>
-                <View
-                  className="absolute h-1 rounded-full bg-ink"
-                  style={{ left: xOf(run.from), width: xOf(run.to) - xOf(run.from) }}
-                />
-                {[run.from, run.to].map((hour, k) => (
-                  <View
-                    key={k}
-                    className="absolute rounded-full border-2 border-ink bg-white"
-                    style={{
-                      width: HANDLE,
-                      height: HANDLE,
-                      left: xOf(hour) - HANDLE / 2,
-                      shadowColor: INK,
-                      shadowOpacity: 0.12,
-                      shadowRadius: 4,
-                      shadowOffset: { width: 0, height: 2 },
-                    }}
-                  />
-                ))}
-              </>
-            ) : null}
+            <Animated.View className="absolute h-1 rounded-full bg-ink" style={segment} />
+            <Animated.View
+              className="absolute rounded-full border-2 border-ink bg-white"
+              style={[handle, startHandle]}
+            />
+            <Animated.View
+              className="absolute rounded-full border-2 border-ink bg-white"
+              style={[handle, endHandle]}
+            />
           </View>
           <View className="flex-row justify-between">
             {[6, 12, 18, 24].map((hour) => (
