@@ -274,7 +274,7 @@ const en = {
       },
       favorites: {
         title: "Favorites",
-        subtitle: "The venues you’ve saved, newest first.",
+        subtitle: "Your favorite venues in one place.",
         count_one: "{{count}} venue",
         count_other: "{{count}} venues",
         gone: "No longer on Hagz",

@@ -160,6 +160,8 @@ function List({ venues }: { venues: Favorite[] }) {
             key={venue.id}
             layout={LinearTransition.duration(240)}
             exiting={FadeOut.duration(180)}
+            // With more than one, the list starts a little closer to the subtitle (user, 2026-11-20).
+            style={index === 0 && venues.length > 1 ? { marginTop: -10 } : undefined}
           >
             {index > 0 ? <View className="h-px bg-border" /> : null}
             <FavoriteRow venue={venue} />
