@@ -1,5 +1,11 @@
 import {
   NEXT_TIMES,
+  PRICE_STEP,
+  SEARCH_RADIUS_KM,
+  type VenueCoverage,
+  type VenueCoverageQuery,
+  type VenueSpread,
+  type VenueSpreadQuery,
   type VenueFreeHours,
   type VenueFreeHoursQuery,
   type VenueCard,
@@ -201,6 +207,66 @@ const activeMarketplace = async (code: string) => {
 // How many venues have a ground free to start each hour of a day (the When sheet's timeline): a
 // free slot on an active ground of the sport and size asked for, after the venue's notice. One
 // slot is enough to count: the hour's bar says something can start then, not for how long.
+// A venue's bookable starts for a search's when and ground filters: the day's window, in the
+// marketplace's time, from the start asked for (or the day's first minute) to its end, and the SQL
+// for the starts in it. `priced: false` leaves the price range out (for the price chart).
+const bookable = async (
+  query: Pick<VenueSearchQuery, "date" | "start" | "hours" | "priceMin" | "priceMax"> & Filters,
+  timezone: string,
+  now: Date,
+  { priced = true }: { priced?: boolean } = {},
+) => {
+  // The day and the window, in the marketplace's time: from the start asked for (or the day's
+  // first minute) to the end of the day.
+  const [window] = await prisma.$queryRaw<{ date: string; from: Date; to: Date }[]>`
+    WITH d AS (
+      SELECT coalesce(${query.date ?? null}::date, (${now}::timestamptz AT TIME ZONE ${timezone})::date) AS day
+    )
+    SELECT day::text AS date,
+           ((day + coalesce(${query.start ?? null}::time, '00:00'::time))::timestamp AT TIME ZONE ${timezone}) AS "from",
+           ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
+    FROM d`;
+  if (!window) throw new Error("Postgres returned no search window.");
+
+  const ground = groundFilters(query, "g");
+  const seconds = query.hours * 3600;
+  // The price range, per hour, on the whole game's price.
+  const price = !priced
+    ? Prisma.empty
+    : Prisma.sql`${
+        query.priceMin !== undefined
+          ? Prisma.sql`AND free.price >= ${query.priceMin * query.hours}`
+          : Prisma.empty
+      } ${query.priceMax !== undefined ? Prisma.sql`AND free.price <= ${query.priceMax * query.hours}` : Prisma.empty}`;
+
+  // A venue's bookable starts in the window: each free slot on an active ground (of the sport and
+  // size asked for), after the venue's notice, whose ground's free slots fill the length from it.
+  // The inner read is bounded on startsAt both ways, so the (groundId, startsAt) index reads only
+  // the few slots in the length, not every slot to the horizon.
+  const startsOf = (venue: Prisma.Sql) => Prisma.sql`
+    "GroundSlot" s
+    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${ground}
+    LEFT JOIN "VenueSettings" st ON st."venueId" = s."venueId"
+    CROSS JOIN LATERAL (
+      SELECT sum(extract(epoch FROM x."endsAt" - x."startsAt")) AS seconds, sum(x.price) AS price
+      FROM "GroundSlot" x
+      WHERE x."groundId" = s."groundId" AND x.status = 'AVAILABLE'
+        AND x."startsAt" >= s."startsAt"
+        AND x."startsAt" < s."startsAt" + make_interval(secs => ${seconds})
+        AND x."endsAt" <= s."startsAt" + make_interval(secs => ${seconds})
+    ) free
+    WHERE s."venueId" = ${venue}
+      AND s.status = 'AVAILABLE'
+      AND s."startsAt" >= ${window.from} AND s."startsAt" < ${window.to}
+      AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
+      AND free.seconds = ${seconds}
+      ${price}`;
+  // With a start asked for, the venue must have a ground free from exactly then.
+  const atStart = query.start ? Prisma.sql`AND s."startsAt" = ${window.from}` : Prisma.empty;
+
+  return { window, startsOf, atStart };
+};
+
 export const freeHours = async (
   query: VenueFreeHoursQuery,
   clock: Clock = systemClock,
@@ -251,21 +317,9 @@ export const searchVenues = async (
   const { timezone, currency } = marketplace;
   const now = clock.now();
 
-  // The day and the window, in the marketplace's time: from the start asked for (or the day's
-  // first minute) to the end of the day.
-  const [window] = await prisma.$queryRaw<{ date: string; from: Date; to: Date }[]>`
-    WITH d AS (
-      SELECT coalesce(${query.date ?? null}::date, (${now}::timestamptz AT TIME ZONE ${timezone})::date) AS day
-    )
-    SELECT day::text AS date,
-           ((day + coalesce(${query.start ?? null}::time, '00:00'::time))::timestamp AT TIME ZONE ${timezone}) AS "from",
-           ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
-    FROM d`;
-  if (!window) throw new Error("Postgres returned no search window.");
-
-  const { point, area, near, name, venue, ground } = filtersFor(query);
+  const { window, startsOf, atStart } = await bookable(query, timezone, now);
+  const { point, area, near, name, venue } = filtersFor(query);
   const sort = query.sort ?? (point ? "DISTANCE" : "RATING");
-  const seconds = query.hours * 3600;
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
 
   const distance = point
@@ -286,40 +340,9 @@ export const searchVenues = async (
       ? Prisma.sql`min(free.price)::float8 / ${query.hours}`
       : Prisma.sql`extract(epoch FROM s."startsAt")::float8`;
   const startLimit = sort === "SOONEST" ? Prisma.sql`ORDER BY s."startsAt" LIMIT 1` : Prisma.empty;
-  // The price range, per hour, on the whole game's price.
-  const price = Prisma.sql`${
-    query.priceMin !== undefined
-      ? Prisma.sql`AND free.price >= ${query.priceMin * query.hours}`
-      : Prisma.empty
-  } ${query.priceMax !== undefined ? Prisma.sql`AND free.price <= ${query.priceMax * query.hours}` : Prisma.empty}`;
   const after = cursor
     ? Prisma.sql`WHERE (r.key, r.id) > (${cursor.key}::float8, ${cursor.id}::uuid)`
     : Prisma.empty;
-
-  // A venue's bookable starts in the window: each free slot on an active ground (of the sport and
-  // size asked for), after the venue's notice, whose ground's free slots fill the length from it.
-  // The inner read is bounded on startsAt both ways, so the (groundId, startsAt) index reads only
-  // the few slots in the length, not every slot to the horizon.
-  const startsOf = (venue: Prisma.Sql) => Prisma.sql`
-    "GroundSlot" s
-    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${ground}
-    LEFT JOIN "VenueSettings" st ON st."venueId" = s."venueId"
-    CROSS JOIN LATERAL (
-      SELECT sum(extract(epoch FROM x."endsAt" - x."startsAt")) AS seconds, sum(x.price) AS price
-      FROM "GroundSlot" x
-      WHERE x."groundId" = s."groundId" AND x.status = 'AVAILABLE'
-        AND x."startsAt" >= s."startsAt"
-        AND x."startsAt" < s."startsAt" + make_interval(secs => ${seconds})
-        AND x."endsAt" <= s."startsAt" + make_interval(secs => ${seconds})
-    ) free
-    WHERE s."venueId" = ${venue}
-      AND s.status = 'AVAILABLE'
-      AND s."startsAt" >= ${window.from} AND s."startsAt" < ${window.to}
-      AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
-      AND free.seconds = ${seconds}
-      ${price}`;
-  // With a start asked for, the venue must have a ground free from exactly then.
-  const atStart = query.start ? Prisma.sql`AND s."startsAt" = ${window.from}` : Prisma.empty;
 
   // Two stages, so the cost follows the page and not the whole country: first which venues match
   // (EXISTS stops at the first bookable start), their order and how many; then the next free
@@ -437,4 +460,103 @@ const cards = async (rows: Row[], hours: number, language: Language): Promise<Ve
       },
     ];
   });
+};
+
+// How the venues a search finds spread over price and distance: the Filters sheet's price chart
+// and Where's radius bars. Every venue the search would find out to the farthest radius, with its
+// cheapest hour (any price) and whether a start fits the price range; the prices then count those
+// inside the radius, the distances those in the price range.
+export const venueSpread = async (
+  query: VenueSpreadQuery,
+  clock: Clock = systemClock,
+): Promise<VenueSpread> => {
+  const { id: marketplaceId, timezone, currency } = await activeMarketplace(query.marketplace);
+  const now = clock.now();
+  const { startsOf, atStart } = await bookable(query, timezone, now, { priced: false });
+  const { point, area, near, name, venue } = filtersFor({
+    ...query,
+    radius: SEARCH_RADIUS_KM.max,
+  });
+  const fits = Prisma.sql`(true ${
+    query.priceMin !== undefined
+      ? Prisma.sql`AND free.price >= ${query.priceMin * query.hours}`
+      : Prisma.empty
+  } ${query.priceMax !== undefined ? Prisma.sql`AND free.price <= ${query.priceMax * query.hours}` : Prisma.empty})`;
+  const rows = await prisma.$queryRaw<
+    { distance: number | null; cheapest: number; fits: boolean }[]
+  >`
+    SELECT ${point ? Prisma.sql`ST_Distance(v.coordinates, ${point})::float8` : Prisma.sql`NULL::float8`} AS distance,
+           b.cheapest, b.fits
+    FROM "Venue" v
+    CROSS JOIN LATERAL (
+      SELECT min(free.price)::float8 / ${query.hours} AS cheapest, bool_or(${fits}) AS fits
+      FROM ${startsOf(Prisma.sql`v.id`)} ${atStart}
+    ) b
+    WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplaceId}::uuid
+      ${area} ${near} ${name} ${venue}
+      AND b.cheapest IS NOT NULL`;
+
+  const inRadius = rows.filter(
+    (row) => row.distance === null || row.distance <= query.radius * 1000,
+  );
+  const bands = inRadius.map((row) => Math.floor(row.cheapest / PRICE_STEP));
+  const prices =
+    bands.length === 0
+      ? []
+      : Array.from({ length: Math.max(...bands) - Math.min(...bands) + 1 }, (_, i) => {
+          const band = Math.min(...bands) + i;
+          return { from: band * PRICE_STEP, venues: bands.filter((b) => b === band).length };
+        });
+  const fitting = rows.filter((row) => row.fits);
+  const distances = point
+    ? Array.from(
+        { length: SEARCH_RADIUS_KM.max },
+        (_, i) => fitting.filter((row) => (row.distance ?? 0) <= (i + 1) * 1000).length,
+      )
+    : null;
+  return { currency, prices, distances };
+};
+
+// Where there are live venues: governorates (top-level places) and the areas just under them,
+// counting each venue toward the area it's in or under.
+export const venueCoverage = async (
+  query: VenueCoverageQuery,
+  language: Language,
+): Promise<VenueCoverage> => {
+  const { id: marketplaceId } = await activeMarketplace(query.marketplace);
+  const rows = await prisma.$queryRaw<
+    { governorate: string; area: string | null; venues: number }[]
+  >`
+    WITH RECURSIVE tree AS (
+      SELECT id, id AS governorate, NULL::uuid AS area
+      FROM "Location" WHERE "parentId" IS NULL AND "marketplaceId" = ${marketplaceId}::uuid
+      UNION ALL
+      SELECT l.id, t.governorate, coalesce(t.area, l.id)
+      FROM "Location" l JOIN tree t ON l."parentId" = t.id
+    )
+    SELECT t.governorate, t.area, count(*)::int AS venues
+    FROM "Venue" v JOIN tree t ON t.id = v."locationId"
+    WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplaceId}::uuid
+    GROUP BY 1, 2`;
+  const ids = [...new Set(rows.flatMap((row) => [row.governorate, row.area ?? row.governorate]))];
+  const places = await prisma.location.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, ...names },
+  });
+  const nameOf = (id: string) =>
+    nameIn(places.find((place) => place.id === id)?.translations ?? [], language);
+  const governorates = [...new Set(rows.map((row) => row.governorate))].map((id) => {
+    const mine = rows.filter((row) => row.governorate === id);
+    const areas = mine
+      .filter((row): row is typeof row & { area: string } => row.area !== null)
+      .map((row) => ({ id: row.area, name: nameOf(row.area), venues: row.venues }))
+      .sort((a, b) => b.venues - a.venues);
+    return {
+      id,
+      name: nameOf(id),
+      venues: mine.reduce((sum, row) => sum + row.venues, 0),
+      areas,
+    };
+  });
+  return { data: governorates.sort((a, b) => b.venues - a.venues) };
 };

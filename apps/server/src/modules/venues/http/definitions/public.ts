@@ -5,8 +5,12 @@ import {
   VenueAvailabilityQuery,
   VenueFreeHours,
   VenueFreeHoursQuery,
+  VenueCoverage,
+  VenueCoverageQuery,
   VenueSearchQuery,
   VenueSearchResults,
+  VenueSpread,
+  VenueSpreadQuery,
 } from "@hagz/contracts";
 import { json, problemResponse } from "@/platform/http/definitions";
 
@@ -90,6 +94,41 @@ export const freeHours = createRoute({
   request: { query: VenueFreeHoursQuery },
   responses: {
     200: { description: "Every hour of the day", ...json(VenueFreeHours) },
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const venueSpread = createRoute({
+  method: "get",
+  path: "/venues/spread",
+  tags: ["Venues"],
+  summary: "How a search's venues spread over price and distance",
+  description:
+    "The venues a search finds, by their cheapest hour (leaving out the price range) and, with a " +
+    "point, by how far they are (leaving out the radius): the Filters sheet's price chart and " +
+    "Where's radius bars. Public.",
+  request: { query: VenueSpreadQuery },
+  responses: {
+    200: { description: "Prices and distances", ...json(VenueSpread) },
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const venueCoverage = createRoute({
+  method: "get",
+  path: "/venues/coverage",
+  tags: ["Venues"],
+  summary: "Where there are live venues",
+  description:
+    "Governorates with live venues, each with its areas and how many venues each has, most " +
+    "first: Where's area picker. Names in `Accept-Language`. Public.",
+  request: { query: VenueCoverageQuery },
+  responses: {
+    200: { description: "Governorates and their areas", ...json(VenueCoverage) },
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),

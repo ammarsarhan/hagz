@@ -3993,6 +3993,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/venues/spread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How a search's venues spread over price and distance
+         * @description The venues a search finds, by their cheapest hour (leaving out the price range) and, with a point, by how far they are (leaving out the radius): the Filters sheet's price chart and Where's radius bars. Public.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    marketplace: string;
+                    /** @description A location: venues in it or anywhere under it (Cairo takes in Maadi). */
+                    area?: string;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    /** @description With a point: how far to look, in km. */
+                    radius?: number;
+                    /** @description Part of the venue's name, in either language. */
+                    q?: string;
+                    /** @description In the venue's timezone. Left out: today. */
+                    date?: string;
+                    /** @description A start time on that date (HH:mm). Left out: any time that day. */
+                    start?: string;
+                    /** @description How long the game is: a ground must be free all of it. */
+                    hours?: number;
+                    sport?: components["schemas"]["GroundSport"];
+                    /** @description `STANDARD` for sports without size variants. */
+                    size?: components["schemas"]["GroundSize"];
+                    /** @description Any of these surfaces. */
+                    surface?: string;
+                    /** @description Any of these: indoor, outdoor or covered. */
+                    setting?: string;
+                    /** @description At least this many active grounds (of the sport, size… asked for). */
+                    grounds?: number;
+                    /** @description Per hour, in minor units: a free time at least this much. */
+                    priceMin?: number | null;
+                    /** @description Per hour, in minor units: a free time at most this much. */
+                    priceMax?: number | null;
+                    /** @description Amenity option ids, comma-separated: the venue has all of them. */
+                    amenities?: string;
+                    /** @description Rated at least this (unrated venues are left out). */
+                    rating?: number;
+                    /** @description Booked without the venue approving it. `true` to ask for it. */
+                    instant?: "true" | "false";
+                    /** @description `CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full). */
+                    payment?: components["schemas"]["PaymentFilter"];
+                    /** @description A full refund up to 24 hours before, or later. `true` to ask for it. */
+                    flexible?: "true" | "false";
+                    /** @description The venue rewards regulars with free bookings. `true` to ask for it. */
+                    loyalty?: "true" | "false";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Prices and distances */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSpread"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/venues/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where there are live venues
+         * @description Governorates with live venues, each with its areas and how many venues each has, most first: Where's area picker. Names in `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query: {
+                    marketplace: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Governorates and their areas */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueCoverage"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/venues/{slug}": {
         parameters: {
             query?: never;
@@ -12334,6 +12510,36 @@ export interface components {
                 hour: number;
                 /** @description Venues with a ground free to start then. */
                 venues: number;
+            }[];
+        };
+        VenueSpread: {
+            /** @example EGP */
+            currency: string;
+            /** @description Venues by their cheapest hour, in bands 5000 minor units wide from the cheapest band to the dearest, empty bands included. */
+            prices: {
+                /** @description Per hour, in minor units. */
+                from: number;
+                venues: number;
+            }[];
+            /** @description With a point: how many venues lie within 1 km, 2 km… up to the farthest radius allowed. */
+            distances: number[] | null;
+        };
+        VenueCoverage: {
+            /** @description Governorates, most venues first. */
+            data: {
+                /** Format: uuid */
+                id: string;
+                /** @description In the request's language. */
+                name: string | null;
+                venues: number;
+                /** @description Most venues first. */
+                areas: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @description In the request's language. */
+                    name: string | null;
+                    venues: number;
+                }[];
             }[];
         };
         PublicVenue: {

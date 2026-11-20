@@ -1530,6 +1530,120 @@
           "hours"
         ]
       },
+      "VenueSpread": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Per hour, in minor units."
+                },
+                "venues": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "from",
+                "venues"
+              ]
+            },
+            "description": "Venues by their cheapest hour, in bands 5000 minor units wide from the cheapest band to the dearest, empty bands included."
+          },
+          "distances": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "With a point: how many venues lie within 1 km, 2 km… up to the farthest radius allowed."
+          }
+        },
+        "required": [
+          "currency",
+          "prices",
+          "distances"
+        ]
+      },
+      "VenueCoverage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "In the request's language."
+                },
+                "venues": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "areas": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "In the request's language."
+                      },
+                      "venues": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "venues"
+                    ]
+                  },
+                  "description": "Most venues first."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "venues",
+                "areas"
+              ]
+            },
+            "description": "Governorates, most venues first."
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
       "PublicVenue": {
         "type": "object",
         "properties": {
@@ -10664,6 +10778,385 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VenueFreeHours"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venues/spread": {
+      "get": {
+        "tags": [
+          "Venues"
+        ],
+        "summary": "How a search's venues spread over price and distance",
+        "description": "The venues a search finds, by their cheapest hour (leaving out the price range) and, with a point, by how far they are (leaving out the radius): the Filters sheet's price chart and Where's radius bars. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$",
+              "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+              "example": "EG"
+            },
+            "required": true,
+            "description": "The marketplace's ISO 3166-1 alpha-2 code.",
+            "name": "marketplace",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A location: venues in it or anywhere under it (Cairo takes in Maadi)."
+            },
+            "required": false,
+            "description": "A location: venues in it or anywhere under it (Cairo takes in Maadi).",
+            "name": "area",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "latitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "longitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 50,
+              "default": 10,
+              "description": "With a point: how far to look, in km."
+            },
+            "required": false,
+            "description": "With a point: how far to look, in km.",
+            "name": "radius",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Part of the venue's name, in either language."
+            },
+            "required": false,
+            "description": "Part of the venue's name, in either language.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "In the venue's timezone. Left out: today.",
+              "example": "2026-11-20"
+            },
+            "required": false,
+            "description": "In the venue's timezone. Left out: today.",
+            "name": "date",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+              "description": "A start time on that date (HH:mm). Left out: any time that day.",
+              "example": "21:00"
+            },
+            "required": false,
+            "description": "A start time on that date (HH:mm). Left out: any time that day.",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6,
+              "default": 1,
+              "description": "How long the game is: a ground must be free all of it."
+            },
+            "required": false,
+            "description": "How long the game is: a ground must be free all of it.",
+            "name": "hours",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/GroundSport"
+            },
+            "required": false,
+            "name": "sport",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/GroundSize"
+            },
+            "required": false,
+            "description": "`STANDARD` for sports without size variants.",
+            "name": "size",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any of these surfaces.",
+              "example": "NATURAL_GRASS,ARTIFICIAL_TURF"
+            },
+            "required": false,
+            "description": "Any of these surfaces.",
+            "name": "surface",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any of these: indoor, outdoor or covered.",
+              "example": "INDOOR,OUTDOOR"
+            },
+            "required": false,
+            "description": "Any of these: indoor, outdoor or covered.",
+            "name": "setting",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "description": "At least this many active grounds (of the sport, size… asked for)."
+            },
+            "required": false,
+            "description": "At least this many active grounds (of the sport, size… asked for).",
+            "name": "grounds",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Per hour, in minor units: a free time at least this much."
+            },
+            "required": false,
+            "description": "Per hour, in minor units: a free time at least this much.",
+            "name": "priceMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Per hour, in minor units: a free time at most this much."
+            },
+            "required": false,
+            "description": "Per hour, in minor units: a free time at most this much.",
+            "name": "priceMax",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,19}$",
+              "description": "Amenity option ids, comma-separated: the venue has all of them."
+            },
+            "required": false,
+            "description": "Amenity option ids, comma-separated: the venue has all of them.",
+            "name": "amenities",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Rated at least this (unrated venues are left out)."
+            },
+            "required": false,
+            "description": "Rated at least this (unrated venues are left out).",
+            "name": "rating",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Booked without the venue approving it. `true` to ask for it."
+            },
+            "required": false,
+            "description": "Booked without the venue approving it. `true` to ask for it.",
+            "name": "instant",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PaymentFilter"
+            },
+            "required": false,
+            "description": "`CASH`: can be paid at the venue (cash, or a deposit and the rest there). `ONLINE`: can be paid online (a deposit, or in full).",
+            "name": "payment",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "A full refund up to 24 hours before, or later. `true` to ask for it."
+            },
+            "required": false,
+            "description": "A full refund up to 24 hours before, or later. `true` to ask for it.",
+            "name": "flexible",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "The venue rewards regulars with free bookings. `true` to ask for it."
+            },
+            "required": false,
+            "description": "The venue rewards regulars with free bookings. `true` to ask for it.",
+            "name": "loyalty",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prices and distances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueSpread"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venues/coverage": {
+      "get": {
+        "tags": [
+          "Venues"
+        ],
+        "summary": "Where there are live venues",
+        "description": "Governorates with live venues, each with its areas and how many venues each has, most first: Where's area picker. Names in `Accept-Language`. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$"
+            },
+            "required": true,
+            "name": "marketplace",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Governorates and their areas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueCoverage"
                 }
               }
             }

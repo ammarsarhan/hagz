@@ -1,4 +1,4 @@
-import { VenueFreeHours, VenueSearchResults } from "@hagz/contracts";
+import { VenueCoverage, VenueFreeHours, VenueSearchResults, VenueSpread } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { reconcileGround } from "@/modules/venues/application/slot-generation";
@@ -18,8 +18,19 @@ const tomorrow = () =>
     new Date(Date.now() + 24 * 3_600_000),
   );
 
+// A search is for a place; tests that don't name one look 50 km around Maadi (both live venues),
+// best rated first as they would across an area.
+const placed = (params: Record<string, string | number>) =>
+  "area" in params || "latitude" in params || "q" in params
+    ? params
+    : { ...MAADI, radius: 50, sort: "RATING", ...params };
+
 const search = async (params: Record<string, string | number>, language = "en") => {
-  const all: Record<string, string | number> = { marketplace: "EG", date: tomorrow(), ...params };
+  const all: Record<string, string | number> = {
+    marketplace: "EG",
+    date: tomorrow(),
+    ...placed(params),
+  };
   const query = new URLSearchParams(
     Object.entries(all).map(([key, value]): [string, string] => [key, `${value}`]),
   );
@@ -264,7 +275,7 @@ describe("filters and order", () => {
     expect((await found({ size: "FIVE_A_SIDE" })).data.map((card) => card.id)).toEqual([nile.id]);
   });
 
-  it("puts the best rated first without a point, the unrated last", async () => {
+  it("puts the best rated first, the unrated last", async () => {
     const { nile, padel } = await setup();
     expect((await found({})).data.map((card) => card.id)).toEqual([nile.id, padel.id]);
   });
@@ -286,7 +297,13 @@ describe("filters and order", () => {
 
   it("refuses sorting by distance without a point", async () => {
     await setup();
-    expect((await search({ sort: "DISTANCE" })).status).toBe(400);
+    expect((await search({ q: "nile", sort: "DISTANCE" })).status).toBe(400);
+  });
+
+  it("refuses a search without a place: an area, a point or a name", async () => {
+    await setup();
+    const res = await router.request(`/v1/venues?marketplace=EG&date=${tomorrow()}`);
+    expect(res.status).toBe(400);
   });
 });
 
@@ -413,7 +430,15 @@ describe("free hours", () => {
     const date = tomorrow();
     const get = async (params: Record<string, string>) => {
       const res = await router.request(
-        `/v1/venues/free-hours?${new URLSearchParams({ marketplace: "EG", date, ...params }).toString()}`,
+        `/v1/venues/free-hours?${new URLSearchParams({
+          marketplace: "EG",
+          date,
+          ...Object.fromEntries(
+            Object.entries(placed(params))
+              .filter(([key]) => key !== "sort")
+              .map(([key, value]) => [key, String(value)]),
+          ),
+        }).toString()}`,
       );
       expect(res.status).toBe(200);
       return VenueFreeHours.parse(await res.json());
@@ -446,6 +471,59 @@ describe("free hours", () => {
     expect(cheap.hours.find((h) => h.hour === 20)?.venues).toBe(0);
     expect(cheap.hours.find((h) => h.hour === 19)?.venues).toBe(2);
     expect((await get({ rating: "4" })).hours.find((h) => h.hour === 19)?.venues).toBe(1);
+  });
+});
+
+describe("spread and coverage", () => {
+  const spread = async (params: Record<string, string | number>) => {
+    const all: Record<string, string | number> = { marketplace: "EG", date: tomorrow(), ...params };
+    const res = await router.request(
+      `/v1/venues/spread?${new URLSearchParams(
+        Object.entries(all).map(([key, value]): [string, string] => [key, `${value}`]),
+      ).toString()}`,
+    );
+    expect(res.status).toBe(200);
+    return VenueSpread.parse(await res.json());
+  };
+
+  it("counts venues by their cheapest hour, and by distance from the point", async () => {
+    const { padel } = await setup();
+    await prisma.groundSlot.updateMany({
+      where: { groundId: padel.groundId },
+      data: { price: 30000 },
+    });
+    // Dokki is about 9 km from Maadi: inside 50 km, outside 5.
+    const wide = await spread({ ...MAADI, radius: 50 });
+    expect(wide.prices).toHaveLength(7); // 300 to 600 EGP in 50 EGP bands.
+    expect(wide.prices[0]).toEqual({ from: 30000, venues: 1 });
+    expect(wide.prices.at(-1)).toEqual({ from: 60000, venues: 1 });
+    expect(wide.distances?.[0]).toBe(1);
+    expect(wide.distances?.[49]).toBe(2);
+    // The prices leave out what the radius leaves out; the distances keep to the price range.
+    const close = await spread({ ...MAADI, radius: 5, priceMax: 40000 });
+    expect(close.prices).toEqual([{ from: 60000, venues: 1 }]);
+    expect(close.distances?.[49]).toBe(1);
+  });
+
+  it("gives no distances for an area", async () => {
+    const { cairo } = await setup();
+    const inCairo = await spread({ area: cairo.id });
+    expect(inCairo.distances).toBeNull();
+    expect(inCairo.prices).toEqual([{ from: 60000, venues: 1 }]);
+  });
+
+  it("lists governorates and their areas with live venues", async () => {
+    await setup();
+    const res = await router.request("/v1/venues/coverage?marketplace=EG", {
+      headers: { "Accept-Language": "en" },
+    });
+    expect(res.status).toBe(200);
+    const { data } = VenueCoverage.parse(await res.json());
+    // The draft and the paused venue in Maadi don't count.
+    expect(data.map((g) => [g.name, g.venues, g.areas.map((a) => [a.name, a.venues])])).toEqual([
+      ["Cairo", 1, [["Maadi", 1]]],
+      ["Giza", 1, [["Dokki", 1]]],
+    ]);
   });
 });
 
