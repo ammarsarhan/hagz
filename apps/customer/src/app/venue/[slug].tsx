@@ -271,19 +271,33 @@ function BackButton({ progress }: { progress: SharedValue<number> | null }) {
   );
 }
 
-// Pulled down past the top (iOS's bounce), the photo stretches to fill the gap, Airbnb's way: it
-// zooms by however far it's pulled, its bottom edge staying put and its top on the screen's top
-// edge, so there's never white above it (user, 2026-11-20). The counter isn't stretched.
+// Pulled down past the top (iOS's bounce), the photo stays pinned to the screen's top edge and
+// zooms by half as much as it's pulled, while the page under it pulls away: a white band opens
+// between the photo and the venue's name (user, 2026-11-20, over a full Airbnb stretch, which
+// zoomed too far). The counter rides on the photo's bottom edge, unzoomed.
+const ZOOM = 0.5;
+
 function Photos({ venue, scrollY }: { venue: PublicVenue; scrollY: SharedValue<number> }) {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  // Pulled `p` down, the page (and this box) sits `p` lower. The photo goes back up by `p` to the
+  // screen's top, then grows by ZOOM·p from that top edge (a scale grows from the middle, so it
+  // comes down by half of that again).
   const stretch = useAnimatedStyle(() => {
     const pulled = Math.max(0, -scrollY.value);
+    const grown = ZOOM * pulled;
     return {
-      transform: [{ translateY: -pulled / 2 }, { scale: (PHOTO_HEIGHT + pulled) / PHOTO_HEIGHT }],
+      transform: [
+        { translateY: -pulled + grown / 2 },
+        { scale: (PHOTO_HEIGHT + grown) / PHOTO_HEIGHT },
+      ],
     };
   });
+  // The photo's bottom edge ends up (1 − ZOOM)·p above where the box's is.
+  const counter = useAnimatedStyle(() => ({
+    transform: [{ translateY: -(1 - ZOOM) * Math.max(0, -scrollY.value) }],
+  }));
   if (venue.photos.length === 0) {
     return <Animated.View className="bg-[#c4c8cf]" style={[{ height: PHOTO_HEIGHT }, stretch]} />;
   }
@@ -315,11 +329,14 @@ function Photos({ venue, scrollY }: { venue: PublicVenue; scrollY: SharedValue<n
         />
       </Animated.View>
       {venue.photos.length > 1 ? (
-        <View className="absolute right-4 bottom-4 h-[26px] justify-center rounded-full bg-[#000000a0] px-2.5">
+        <Animated.View
+          className="absolute right-4 bottom-4 h-[26px] justify-center rounded-full bg-[#000000a0] px-2.5"
+          style={counter}
+        >
           <Text className="text-caption font-medium text-white">
             {t("screens.venue.photoCount", { index: index + 1, count: venue.photos.length })}
           </Text>
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
