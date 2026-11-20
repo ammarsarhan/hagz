@@ -3780,6 +3780,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search venues
+         * @description Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) with a ground free when asked: from `start` for `hours`, or any time on `date`, of the `sport` and `size` asked for. Each card has its next free times. Nearest first with a point, else best rated. Names follow `Accept-Language`. Public.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description The marketplace's ISO 3166-1 alpha-2 code. */
+                    marketplace: string;
+                    /** @description A location: venues in it or anywhere under it (Cairo takes in Maadi). */
+                    area?: string;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    /** @description With a point: how far to look, in km. */
+                    radius?: number;
+                    /** @description Part of the venue's name, in either language. */
+                    q?: string;
+                    /** @description In the venue's timezone. Left out: today. */
+                    date?: string;
+                    /** @description A start time on that date (HH:mm). Left out: any time that day. */
+                    start?: string;
+                    /** @description How long the game is: a ground must be free all of it. */
+                    hours?: number;
+                    sport?: components["schemas"]["GroundSport"];
+                    /** @description `STANDARD` for sports without size variants. */
+                    size?: components["schemas"]["GroundSize"];
+                    /** @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`. */
+                    sort?: components["schemas"]["VenueSearchSort"];
+                    /** @description `nextCursor` from the last page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueSearchResults"];
+                    };
+                };
+                /** @description VALIDATION_FAILED, or INVALID_CURSOR: search again. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/venues/{slug}": {
         parameters: {
             query?: never;
@@ -12038,6 +12129,69 @@ export interface components {
             name: string;
             password: string;
         };
+        VenueSearchResults: {
+            /**
+             * Format: date
+             * @description A local date, YYYY-MM-DD.
+             * @example 2026-11-20
+             */
+            date: string;
+            /** @example Africa/Cairo */
+            timezone: string;
+            /** @example EGP */
+            currency: string;
+            /** @description How many venues were found ("24 venues free tonight"); null on later pages. */
+            total: number | null;
+            data: components["schemas"]["VenueCard"][];
+            nextCursor: string | null;
+        };
+        VenueCard: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string | null;
+            /** @example Degla, Maadi */
+            area: string | null;
+            /** @description Its first photo; null when it has none. */
+            cover: {
+                url: string;
+            } | null;
+            rating: {
+                average: number | null;
+                count: number;
+            };
+            /** @description Its pin, for the map; null when it has none. */
+            coordinates: {
+                latitude: number;
+                longitude: number;
+            } | null;
+            /** @description Metres from the point; null without one. */
+            distance: number | null;
+            /** @description What its active grounds are for. */
+            sports: components["schemas"]["GroundSport"][];
+            /** @description The cheapest hour among the free times found, in minor units. */
+            priceFrom: number;
+            /** @description The first free start times found, earliest first. */
+            nextTimes: components["schemas"]["NextFreeTime"][];
+        };
+        /** @enum {string} */
+        GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
+        NextFreeTime: {
+            /** Format: date-time */
+            startsAt: string;
+            /** @description How many grounds are free then, for the length. */
+            grounds: number;
+        };
+        /**
+         * @description `STANDARD` for sports without size variants.
+         * @enum {string}
+         */
+        GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
+        /**
+         * @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`.
+         * @enum {string}
+         */
+        VenueSearchSort: "DISTANCE" | "RATING";
         PublicVenue: {
             /** Format: uuid */
             id: string;
@@ -12177,13 +12331,6 @@ export interface components {
             /** @description Longest booking, in hours. */
             maximumSlots: number;
         };
-        /** @enum {string} */
-        GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
-        /**
-         * @description `STANDARD` for sports without size variants.
-         * @enum {string}
-         */
-        GroundSize: "FIVE_A_SIDE" | "SEVEN_A_SIDE" | "ELEVEN_A_SIDE" | "STANDARD";
         /** @enum {string} */
         GroundSurface: "NATURAL_GRASS" | "ARTIFICIAL_TURF" | "HARD_WOOD" | "HARD_COURT" | "CLAY" | "SAND" | "OTHER";
         /**
