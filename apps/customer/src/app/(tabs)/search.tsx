@@ -34,9 +34,12 @@ import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
 import {
   ANY_TIME,
+  DEFAULT_RADIUS,
+  MAX_RADIUS,
   dayText,
   hourLabel,
   sportName,
+  useCoverage,
   useVenueSearch,
   whenText,
   type SearchParams,
@@ -48,8 +51,8 @@ import {
 } from "@/lib/search";
 
 // Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20, built behind
-// one switch to compare on the phone): venues free today near the player (or anywhere, best rated
-// first, when the phone can't say where it is), narrowed by sport. Results come as big cards
+// one switch to compare on the phone): venues free today near the player (or, when the phone can't
+// say where it is, in the governorate with the most venues), narrowed by sport. Results come as big cards
 // (option 1) or compact rows (option 2), or on a map with price pins (option 3). Changing where and
 // when (options 4 and 5) isn't built yet, so the search bar says so.
 //
@@ -226,11 +229,20 @@ export default function SearchTab() {
   const insets = useSafeAreaInsets();
   const phone = useHere();
   // Where and when, set from the search bar (options 4 and 5): near the player and today, any time,
-  // an hour to start. "Near me" without a position searches everywhere.
-  const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near" });
+  // an hour to start. "Near me" without a position looks in the governorate with the most venues.
+  const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near", radius: DEFAULT_RADIUS });
+  const coverage = useCoverage();
+  const fallback = coverage?.[0];
+  const where: Where | null =
+    whereChoice.kind === "near" && phone === null
+      ? fallback
+        ? { kind: "area", id: fallback.id, name: fallback.name ?? "", within: null }
+        : null
+      : whereChoice;
   const [when, setWhen] = useState<When>(ANY_TIME);
   const [editing, setEditing] = useState<"where" | "when" | null>(null);
-  const here = whereChoice.kind === "near" ? phone : null;
+  const here = where?.kind === "near" ? phone : null;
+  const radius = where?.kind === "near" ? where.radius : null;
   const [sport, setSport] = useState<Sport | undefined>(undefined);
   // The chips follow a tap at once; the search (and the list it redraws) follows right after, so
   // the tap never waits on the list.
@@ -272,8 +284,8 @@ export default function SearchTab() {
   const sort: SearchSort = here ? (sortChoice ?? "DISTANCE") : "RATING";
   // The search without its when, which the when sheet counts against.
   const whereParams: SearchParams = {
-    ...(here ? { latitude: here.latitude, longitude: here.longitude } : {}),
-    ...(whereChoice.kind === "area" ? { area: whereChoice.id } : {}),
+    ...(here && radius ? { latitude: here.latitude, longitude: here.longitude, radius } : {}),
+    ...(where?.kind === "area" ? { area: where.id } : {}),
     ...(searchedSport ? { sport: searchedSport } : {}),
     sort,
   };
@@ -284,7 +296,7 @@ export default function SearchTab() {
       ...(when.start ? { start: when.start } : {}),
       hours: when.hours,
     },
-    phone !== undefined,
+    phone !== undefined && where !== null,
   );
 
   const total = search.total;
@@ -294,11 +306,7 @@ export default function SearchTab() {
       : // The count found: the search bar already says where and when (user, 2026-11-20).
         `${total} ${total === 1 ? "venue" : "venues"} found`;
 
-  const whereLabel = here
-    ? "Near me"
-    : whereChoice.kind === "area"
-      ? whereChoice.name
-      : "All of Egypt";
+  const whereLabel = here ? "Near me" : where?.kind === "area" ? where.name : " ";
   const whenLabel = whenText(when, search.timezone);
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");
@@ -382,7 +390,7 @@ export default function SearchTab() {
       <Text className="mt-3 text-heading font-semibold">Uh oh!</Text>
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {`No ${searchedSport ? SPORT_PLACES[searchedSport] : "venues"}${
-          here ? " within 10 km" : whereChoice.kind === "area" ? ` in ${whereChoice.name}` : ""
+          here ? ` within ${radius} km` : where?.kind === "area" ? ` in ${where.name}` : ""
         } ${
           when.start
             ? `are free ${dayText(when.date, search.timezone).toLowerCase()} at ${hourLabel(Number(when.start.slice(0, 2)))}`
@@ -391,13 +399,13 @@ export default function SearchTab() {
               : "have a free hour left today"
         }.`}
       </Text>
-      {here ? (
+      {here && radius !== null && radius < MAX_RADIUS ? (
         <View className="mt-6">
           <Button
-            label="Search all of Egypt"
+            label={`Search within ${MAX_RADIUS} km`}
             size="small"
             quietLabel
-            onPress={() => setWhereChoice({ kind: "everywhere" })}
+            onPress={() => setWhereChoice({ kind: "near", radius: MAX_RADIUS })}
           />
         </View>
       ) : sport ? (
@@ -544,6 +552,13 @@ export default function SearchTab() {
         >
           <SearchWhere
             here={phone ?? null}
+            where={where ?? whereChoice}
+            params={{
+              ...(searchedSport ? { sport: searchedSport } : {}),
+              ...(when.date ? { date: when.date } : {}),
+              ...(when.start ? { start: when.start } : {}),
+              hours: when.hours,
+            }}
             onPick={(next) => {
               setWhereChoice(next);
               setEditing("when");
