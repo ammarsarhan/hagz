@@ -9,7 +9,13 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import Animated, { interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  interpolate,
+  useAnimatedStyle,
+  type SharedValue,
+} from "react-native-reanimated";
 import { reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { formatDistance } from "@/lib/distance";
@@ -237,7 +243,7 @@ export function VenueMapCard({
 }) {
   return (
     <View
-      className="gap-3 rounded-[20px] bg-white p-4"
+      className="rounded-[20px] bg-white"
       style={{
         shadowColor: "#0b0b0c",
         shadowOpacity: 0.12,
@@ -246,25 +252,38 @@ export function VenueMapCard({
         elevation: 8,
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => openVenue(card)}
-        className="flex-row gap-3.5"
+      {/* A newly picked venue's details fade in over the last one's as they fade out. Every line
+          is one line, so the card keeps its height between venues. */}
+      <Animated.View
+        key={card.id}
+        entering={FadeIn.duration(200)}
+        exiting={FadeOut.duration(160)}
+        className="gap-4 p-4"
       >
-        <Cover card={card} style={{ width: 64, height: 64, borderRadius: 12 }} />
-        <View className="flex-1 gap-0.5">
-          <View className="flex-row items-center justify-between gap-3">
-            <Text className="shrink text-[17px] leading-[22px] font-medium" numberOfLines={1}>
-              {card.name ?? "Venue"}
-            </Text>
-            <Rating card={card} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => openVenue(card)}
+          className="flex-row gap-3.5"
+        >
+          <Cover card={card} style={{ width: 64, height: 64, borderRadius: 12 }} />
+          <View className="flex-1">
+            <View className="flex-row items-center justify-between gap-3">
+              <Text className="shrink text-[18px] leading-6 font-medium" numberOfLines={1}>
+                {card.name ?? "Venue"}
+              </Text>
+              <Rating card={card} />
+            </View>
+            <View className="mt-1.5 gap-0.5">
+              <Text className="text-body text-ink-2" numberOfLines={1}>
+                {placeText(card)}
+              </Text>
+              <Price card={card} currency={currency} />
+            </View>
           </View>
-          <Text className="text-body text-ink-2">{placeText(card)}</Text>
-          <Price card={card} currency={currency} />
-        </View>
-      </Pressable>
-      {/* Under the card's padding to its edges, starting at the padding. */}
-      <TimeChips card={card} timezone={timezone} inset={16} />
+        </Pressable>
+        {/* Under the card's padding to its edges, starting at the padding. */}
+        <TimeChips card={card} timezone={timezone} inset={16} />
+      </Animated.View>
     </View>
   );
 }
