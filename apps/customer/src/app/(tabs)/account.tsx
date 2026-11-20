@@ -231,8 +231,8 @@ function SignedIn({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
       >
-        {/* Where the staff app's account keeps its back button's row, so the photo sits as low. */}
-        <View className="mb-[22px] h-10" />
+        {/* The room above the photo, as the staff app's account has it. */}
+        <View className="mb-3 h-10" />
         <View className="items-center">
           <Avatar
             name={profile.name}

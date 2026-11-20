@@ -12,7 +12,7 @@ const initialsOf = (name: string) => {
   return ends.map((word) => Array.from(word ?? "")[0]?.toUpperCase() ?? "").join("");
 };
 
-const SIZE = 76;
+const SIZE = 88;
 
 // The Account tab's photo (Figma C7, 154:2): theirs, or their initials on the round buttons' grey,
 // with a small black camera badge at its corner that says it can be changed. Busy while a new one
@@ -50,7 +50,7 @@ export function Avatar({
             transition={150}
           />
         ) : (
-          <Text className="text-[26px] font-semibold">{initialsOf(name)}</Text>
+          <Text className="text-[30px] font-semibold">{initialsOf(name)}</Text>
         )}
         {busy ? (
           <View className="absolute inset-0 items-center justify-center bg-[#ffffffa0]">
