@@ -15,7 +15,10 @@ export { default as IconX } from "@tabler/icons-react-native/IconX";
 // The venue page: its rating, phone and map, and amenities as the API names them (amenity-icon.tsx).
 export { default as IconAirConditioning } from "@tabler/icons-react-native/IconAirConditioning";
 export { default as IconArmchair } from "@tabler/icons-react-native/IconArmchair";
+export { default as IconBallBasketball } from "@tabler/icons-react-native/IconBallBasketball";
 export { default as IconBallFootball } from "@tabler/icons-react-native/IconBallFootball";
+export { default as IconBallTennis } from "@tabler/icons-react-native/IconBallTennis";
+export { default as IconBallVolleyball } from "@tabler/icons-react-native/IconBallVolleyball";
 export { default as IconBarbell } from "@tabler/icons-react-native/IconBarbell";
 export { default as IconBath } from "@tabler/icons-react-native/IconBath";
 export { default as IconBike } from "@tabler/icons-react-native/IconBike";

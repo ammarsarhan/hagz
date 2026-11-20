@@ -1,3 +1,4 @@
+import type { Icon } from "@tabler/icons-react-native";
 import { StatusBar } from "expo-status-bar";
 import { memo, useCallback, useDeferredValue, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,7 @@ import { MapToggle, SearchMap } from "@/components/search-map";
 import { SearchWhen } from "@/components/search-when";
 import { SearchFilters } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
+import { SPORT_ICONS } from "@/components/sport-icons";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
@@ -78,7 +80,9 @@ import {
 
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
-const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
+// Tennis after basketball: padel and tennis share a ball, so they aren't side by side (user,
+// 2026-11-20).
+const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "BASKETBALL", "TENNIS", "VOLLEYBALL"];
 const FOOTBALL_SIZES: GroundSize[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
 
 const shadow = {
@@ -90,7 +94,8 @@ const shadow = {
 } as const;
 
 // A chip in the row under the bar (Figma B2, 133:2): picked, its black (with white words) fades in
-// over the white one; an applied filter carries an × that takes it off. Memoised with an id and one
+// over the white one; a sport leads with its ball, and an applied filter carries an × that takes it
+// off. Memoised with an id and one
 // stable handler, so a tap re-renders only the chips that change.
 const Chip = memo(function Chip({
   id,
@@ -98,6 +103,7 @@ const Chip = memo(function Chip({
   on,
   removable = false,
   icon,
+  ball: Ball,
   onSelect,
 }: {
   id: string;
@@ -105,6 +111,8 @@ const Chip = memo(function Chip({
   on: boolean;
   removable?: boolean;
   icon?: ReactNode;
+  // A sport's ball before its name, ink on white and white on black.
+  ball?: Icon;
   onSelect: (id: string) => void;
 }) {
   const { t } = useTranslation();
@@ -122,13 +130,15 @@ const Chip = memo(function Chip({
       className={`h-10 flex-row items-center gap-1.5 rounded-full border bg-white px-4 ${icon ? "border-ink" : "border-border"}`}
     >
       {icon}
+      {Ball ? <Ball size={16} color={colors.ink} strokeWidth={2} /> : null}
       <Text className="text-body font-medium">{label}</Text>
       {removable ? <IconX size={14} color={colors.ink} strokeWidth={2.25} /> : null}
       <Animated.View
         pointerEvents="none"
-        className="absolute -inset-px items-center justify-center rounded-full bg-ink"
+        className="absolute -inset-px flex-row items-center justify-center gap-1.5 rounded-full bg-ink"
         style={fill}
       >
+        {Ball ? <Ball size={16} color={colors.white} strokeWidth={2} /> : null}
         <Text className="text-body font-medium text-white">{label}</Text>
       </Animated.View>
     </Pressable>
@@ -392,6 +402,7 @@ export default function SearchTab() {
             key={each}
             id={`sport:${each}`}
             label={sportName(each)}
+            ball={SPORT_ICONS[each]}
             on={sport === each}
             onSelect={onChip}
           />
