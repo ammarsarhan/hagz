@@ -79,3 +79,10 @@ export { default as IconHeart } from "@tabler/icons-react-native/IconHeart";
 export { default as IconHeartFilled } from "@tabler/icons-react-native/IconHeartFilled";
 export { default as IconCurrentLocation } from "@tabler/icons-react-native/IconCurrentLocation";
 export { default as IconWorld } from "@tabler/icons-react-native/IconWorld";
+
+// The Account tab: its rows' ends, the photo badge and the photo sheet.
+export { default as IconCamera } from "@tabler/icons-react-native/IconCamera";
+export { default as IconChevronRight } from "@tabler/icons-react-native/IconChevronRight";
+export { default as IconExternalLink } from "@tabler/icons-react-native/IconExternalLink";
+export { default as IconLogout } from "@tabler/icons-react-native/IconLogout";
+export { default as IconTrash } from "@tabler/icons-react-native/IconTrash";
