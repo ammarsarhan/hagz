@@ -1,4 +1,5 @@
 import type { Icon } from "@tabler/icons-react-native";
+import * as Haptics from "expo-haptics";
 import { StatusBar } from "expo-status-bar";
 import {
   memo,
@@ -610,6 +611,8 @@ export default function SearchTab() {
           <RefreshControl
             refreshing={pulled}
             onRefresh={() => {
+              // A tap in the hand the moment the pull catches, as Instagram's does.
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               pulledAt.current = Date.now();
               setPulled(true);
               search.refresh();
