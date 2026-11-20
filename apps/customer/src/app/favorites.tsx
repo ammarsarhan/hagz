@@ -148,6 +148,7 @@ function List({ venues }: { venues: Favorite[] }) {
       >
         <Title
           subtitle={t("screens.favorites.subtitle")}
+          tight
           onTitleLayout={(event) => {
             const { y, height } = event.nativeEvent.layout;
             titleEnd.value = y + height;
