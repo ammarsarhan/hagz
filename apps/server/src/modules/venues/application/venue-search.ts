@@ -15,8 +15,8 @@ import { nameIn, placeOf } from "../domain/names";
 
 // Search, first slice (PR 3.3): live venues by where (an area and everything under it, near a
 // point, or part of a name) with a ground free when asked (a start time, or any time that day) for
-// the whole length, as cards with their next free times. One query does the finding and the
-// ordering; a second reads the page's names, areas and covers.
+// the whole length, as cards with their next free times. One query finds, orders and counts the
+// venues and reads the page's free times; a second reads the page's names, areas and covers.
 //
 // A start counts when its slot is AVAILABLE, on an ACTIVE ground (of the sport and size asked
 // for), after the venue's minimum notice, and the ground's free slots from it fill the length:
@@ -124,10 +124,6 @@ export const searchVenues = async (
     ? Prisma.sql`AND g.sport = ${query.sport}::"GroundSport"`
     : Prisma.empty;
   const size = query.size ? Prisma.sql`AND g.size = ${query.size}::"GroundSize"` : Prisma.empty;
-  // An exact start: the venue must have a ground free from it; its later times still show.
-  const atStart = query.start
-    ? Prisma.sql`HAVING bool_or("startsAt" = ${window.from})`
-    : Prisma.empty;
   const distance = point
     ? Prisma.sql`round(ST_Distance(v.coordinates, ${point}))::int`
     : Prisma.sql`NULL::int`;
@@ -140,6 +136,33 @@ export const searchVenues = async (
     ? Prisma.sql`WHERE (r.key, r.id) > (${cursor.key}::float8, ${cursor.id}::uuid)`
     : Prisma.empty;
 
+  // A venue's bookable starts in the window: each free slot on an active ground (of the sport and
+  // size asked for), after the venue's notice, whose ground's free slots fill the length from it.
+  // The inner read is bounded on startsAt both ways, so the (groundId, startsAt) index reads only
+  // the few slots in the length, not every slot to the horizon.
+  const startsOf = (venue: Prisma.Sql) => Prisma.sql`
+    "GroundSlot" s
+    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${sport} ${size}
+    LEFT JOIN "VenueSettings" st ON st."venueId" = s."venueId"
+    CROSS JOIN LATERAL (
+      SELECT sum(extract(epoch FROM x."endsAt" - x."startsAt")) AS seconds, sum(x.price) AS price
+      FROM "GroundSlot" x
+      WHERE x."groundId" = s."groundId" AND x.status = 'AVAILABLE'
+        AND x."startsAt" >= s."startsAt"
+        AND x."startsAt" < s."startsAt" + make_interval(secs => ${seconds})
+        AND x."endsAt" <= s."startsAt" + make_interval(secs => ${seconds})
+    ) free
+    WHERE s."venueId" = ${venue}
+      AND s.status = 'AVAILABLE'
+      AND s."startsAt" >= ${window.from} AND s."startsAt" < ${window.to}
+      AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
+      AND free.seconds = ${seconds}`;
+  // With a start asked for, the venue must have a ground free from exactly then.
+  const atStart = query.start ? Prisma.sql`AND s."startsAt" = ${window.from}` : Prisma.empty;
+
+  // Two stages, so the cost follows the page and not the whole country: first which venues match
+  // (EXISTS stops at the first bookable start), their order and how many; then the next free
+  // times and the cheapest price for the page's venues only.
   const rows = await prisma.$queryRaw<Row[]>`
     WITH candidates AS (
       SELECT v.id, ${distance} AS distance, ${key} AS key
@@ -147,50 +170,31 @@ export const searchVenues = async (
       WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplace.id}::uuid
         ${area} ${near} ${name}
     ),
-    starts AS (
-      SELECT s."venueId", s."groundId", s."startsAt", free.price
-      FROM candidates c
-      JOIN "GroundSlot" s ON s."venueId" = c.id
-      JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${sport} ${size}
-      LEFT JOIN "VenueSettings" st ON st."venueId" = s."venueId"
-      CROSS JOIN LATERAL (
-        SELECT sum(extract(epoch FROM x."endsAt" - x."startsAt")) AS seconds, sum(x.price) AS price
-        FROM "GroundSlot" x
-        WHERE x."groundId" = s."groundId" AND x.status = 'AVAILABLE'
-          -- Bounded on startsAt both ways, so the (groundId, startsAt) index reads only the few
-          -- slots in the window, not every slot to the horizon.
-          AND x."startsAt" >= s."startsAt"
-          AND x."startsAt" < s."startsAt" + make_interval(secs => ${seconds})
-          AND x."endsAt" <= s."startsAt" + make_interval(secs => ${seconds})
-      ) free
-      WHERE s.status = 'AVAILABLE'
-        AND s."startsAt" >= ${window.from} AND s."startsAt" < ${window.to}
-        AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
-        AND free.seconds = ${seconds}
-    ),
-    times AS (
-      SELECT "venueId", "startsAt", count(DISTINCT "groundId")::int AS grounds, min(price) AS price,
-             row_number() OVER (PARTITION BY "venueId" ORDER BY "startsAt") AS n
-      FROM starts
-      GROUP BY "venueId", "startsAt"
-    ),
-    found AS (
-      SELECT "venueId",
-             json_agg(json_build_object('startsAt', "startsAt", 'grounds', grounds) ORDER BY "startsAt")
-               FILTER (WHERE n <= ${NEXT_TIMES}) AS next,
-             min(price)::int AS cheapest
-      FROM times
-      GROUP BY "venueId"
-      ${atStart}
-    ),
     ranked AS (
-      SELECT c.id, c.distance, c.key, f.next, f.cheapest, count(*) OVER ()::int AS total
-      FROM candidates c JOIN found f ON f."venueId" = c.id
+      SELECT c.*, count(*) OVER ()::int AS total
+      FROM candidates c
+      WHERE EXISTS (SELECT 1 FROM ${startsOf(Prisma.raw("c.id"))} ${atStart})
+    ),
+    page AS (
+      SELECT r.* FROM ranked r
+      ${after}
+      ORDER BY r.key, r.id
+      LIMIT ${query.limit + 1}
     )
-    SELECT r.id, r.distance, r.key, r.next, r.cheapest, r.total FROM ranked r
-    ${after}
-    ORDER BY r.key, r.id
-    LIMIT ${query.limit + 1}`;
+    SELECT p.id, p.distance, p.key, p.total, d.next, d.cheapest
+    FROM page p
+    CROSS JOIN LATERAL (
+      SELECT json_agg(json_build_object('startsAt', t."startsAt", 'grounds', t.grounds)
+               ORDER BY t."startsAt") FILTER (WHERE t.n <= ${NEXT_TIMES}) AS next,
+             min(t.price)::int AS cheapest
+      FROM (
+        SELECT s."startsAt", count(DISTINCT s."groundId")::int AS grounds, min(free.price) AS price,
+               row_number() OVER (ORDER BY s."startsAt") AS n
+        FROM ${startsOf(Prisma.raw("p.id"))}
+        GROUP BY s."startsAt"
+      ) t
+    ) d
+    ORDER BY p.key, p.id`;
 
   const page = rows.slice(0, query.limit);
   const last = page.at(-1);
