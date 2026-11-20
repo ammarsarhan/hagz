@@ -2,7 +2,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -161,11 +161,14 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
 // A round button in the top bar: white over the photo, the usual grey once the bar is behind it.
 function BarButton({
   icon: Glyph,
+  glyph,
   label,
   onPress,
   progress,
 }: {
   icon: Icon;
+  // Drawn in place of the icon (the saved heart, red).
+  glyph?: ReactNode;
   label: string;
   onPress: () => void;
   progress: SharedValue<number> | null;
@@ -184,13 +187,14 @@ function BarButton({
       className="active:opacity-70"
     >
       <Animated.View className="size-10 items-center justify-center rounded-full" style={style}>
-        <Glyph size={20} color={colors.ink} strokeWidth={2} />
+        {glyph ?? <Glyph size={20} color={colors.ink} strokeWidth={2} />}
       </Animated.View>
     </Pressable>
   );
 }
 
-// The heart: filled once saved, with a small pop as it fills.
+// The heart: filled red once saved (the user's call, 2026-11-20), with a small pop as it fills.
+const SAVED_EDGE = "#b42318";
 function SaveButton({
   venueId,
   progress,
@@ -218,7 +222,18 @@ function SaveButton({
   return (
     <Animated.View style={pop}>
       <BarButton
-        icon={saved ? IconHeartFilled : IconHeart}
+        icon={IconHeart}
+        glyph={
+          saved ? (
+            // Red, with a deeper red edge: the outline drawn over the filled heart.
+            <View>
+              <IconHeartFilled size={20} color={colors.red} />
+              <View className="absolute inset-0">
+                <IconHeart size={20} color={SAVED_EDGE} strokeWidth={2} />
+              </View>
+            </View>
+          ) : undefined
+        }
         label={saved ? "Remove from saved" : "Save this venue"}
         progress={progress}
         onPress={onPress}
