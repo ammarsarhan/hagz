@@ -293,9 +293,9 @@ export default function SearchTab() {
   }));
   const headerStyle = useAnimatedStyle(() => ({ opacity: docked.value }));
 
-  // Nearest first when the phone knows where it is; best rated otherwise. Nearest needs a point.
+  // Best match unless the player picks another order; nearest needs a point.
   const sort: SearchSort =
-    sortChoice && (sortChoice !== "DISTANCE" || here) ? sortChoice : here ? "DISTANCE" : "RATING";
+    sortChoice && (sortChoice !== "DISTANCE" || here) ? sortChoice : "BEST_MATCH";
   // The search without its when, which the when sheet counts against.
   const whereParams: SearchParams = {
     ...(here && radius ? { latitude: here.latitude, longitude: here.longitude, radius } : {}),

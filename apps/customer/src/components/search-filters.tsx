@@ -32,6 +32,7 @@ import { Text } from "./text";
 // perks. A draft, applied with Show N venues, which counts it as it changes; Clear all empties it.
 
 const SORTS: { sort: SearchSort; label: string; near?: boolean }[] = [
+  { sort: "BEST_MATCH", label: "Best match" },
   { sort: "DISTANCE", label: "Nearest", near: true },
   { sort: "PRICE", label: "Price" },
   { sort: "RATING", label: "Rating" },
@@ -45,6 +46,7 @@ const RATINGS = [undefined, 4, 4.5];
 const PAYMENTS: (Payment | undefined)[] = [undefined, "CASH", "ONLINE"];
 
 export const SORT_NAMES: Record<SearchSort, string> = {
+  BEST_MATCH: "Best match",
   DISTANCE: "Nearest",
   PRICE: "Cheapest",
   RATING: "Best rated",
