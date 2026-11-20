@@ -1,7 +1,7 @@
 import type { components } from "@hagz/api";
 import { router } from "expo-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Keyboard, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Keyboard, Pressable, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
@@ -16,7 +16,16 @@ import {
   type VenueCard,
   type Where,
 } from "@/lib/search";
-import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  interpolate,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { Button } from "./button";
 import { IconBallFootball, IconChevronDown, IconMapPin, IconSearch, IconX } from "./icons";
 import { RadiusSlider } from "./radius-slider";
@@ -56,7 +65,7 @@ function Row({
           {title}
         </Text>
         {line ? (
-          <Text className="text-label text-ink-2" numberOfLines={1}>
+          <Text className="text-caption text-ink-2" numberOfLines={1}>
             {line}
           </Text>
         ) : null}
@@ -73,6 +82,7 @@ function Heading({ children }: { children: string }) {
   );
 }
 
+// Near me | Pick an area: the white thumb slides under the picked side.
 function Segment({
   options,
   value,
@@ -82,8 +92,37 @@ function Segment({
   value: "near" | "area";
   onChange: (key: "near" | "area") => void;
 }) {
+  const [width, setWidth] = useState(0);
+  const index = Math.max(
+    0,
+    options.findIndex((option) => option.key === value),
+  );
+  const at = useSharedValue(index);
+  useEffect(() => {
+    at.value = withTiming(index, { duration: 240, easing: Easing.out(Easing.cubic) });
+  }, [index, at]);
+  const half = (width - 8) / options.length;
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: at.value * half }] }));
   return (
-    <View className="mt-4 h-11 flex-row rounded-[14px] bg-chip p-1">
+    <View
+      className="mt-4 h-11 flex-row rounded-[14px] bg-chip p-1"
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+    >
+      {width > 0 ? (
+        <Animated.View
+          className="absolute top-1 bottom-1 left-1 rounded-[11px] bg-white"
+          style={[
+            {
+              width: half,
+              shadowColor: "#0b0b0c",
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 1 },
+            },
+            thumb,
+          ]}
+        />
+      ) : null}
       {options.map((option) => {
         const on = option.key === value;
         return (
@@ -92,17 +131,7 @@ function Segment({
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             onPress={() => onChange(option.key)}
-            className={`flex-1 items-center justify-center rounded-[11px] ${on ? "bg-white" : ""}`}
-            style={
-              on
-                ? {
-                    shadowColor: "#0b0b0c",
-                    shadowOpacity: 0.08,
-                    shadowRadius: 4,
-                    shadowOffset: { width: 0, height: 1 },
-                  }
-                : undefined
-            }
+            className="flex-1 items-center justify-center"
           >
             <Text className={`text-body ${on ? "font-medium text-ink" : "text-ink-2"}`}>
               {option.label}
@@ -111,6 +140,43 @@ function Segment({
         );
       })}
     </View>
+  );
+}
+
+// An accordion's body: its height opens from nothing to what it measures (and back), the chevron
+// turning with it.
+function Collapsible({ open, children }: { open: boolean; children: ReactNode }) {
+  const [measured, setMeasured] = useState(0);
+  const shown = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(open ? 1 : 0, { duration: 260, easing: Easing.out(Easing.cubic) });
+  }, [open, shown]);
+  const body = useAnimatedStyle(() => ({
+    height: shown.value * measured,
+    opacity: interpolate(shown.value, [0, 0.5, 1], [0, 0.6, 1]),
+  }));
+  return (
+    <Animated.View style={[{ overflow: "hidden" }, body]}>
+      <View
+        className="absolute top-0 right-0 left-0"
+        onLayout={(event) => setMeasured(event.nativeEvent.layout.height)}
+      >
+        {children}
+      </View>
+    </Animated.View>
+  );
+}
+
+function Chevron({ open }: { open: boolean }) {
+  const turn = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    turn.value = withTiming(open ? 1 : 0, { duration: 260, easing: Easing.out(Easing.cubic) });
+  }, [open, turn]);
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
+  return (
+    <Animated.View style={style}>
+      <IconChevronDown size={20} color={colors.ink2} strokeWidth={2} />
+    </Animated.View>
   );
 }
 
@@ -210,174 +276,224 @@ export function SearchWhere({
     onPick(where);
   };
 
+  // The page scrolls under the bar, which rides up with it and docks under the status bar, a white
+  // header fading in behind it (the Search tab's pattern). Near me stays put: nothing to scroll.
+  const typed = q.trim() !== "";
+  const scrolls = typed || tab === "area";
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  useEffect(() => {
+    if (!scrolls) scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [scrolls, scrollRef]);
+  const top = insets.top + 16;
+  const barStart = useSharedValue(top + 50);
+  const dockAt = insets.top + 6;
+  const barStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(dockAt, barStart.value - scrollY.value) }],
+  }));
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(barStart.value - scrollY.value, [dockAt + 24, dockAt], [0, 1], "clamp"),
+  }));
+
   return (
-    <View className="flex-1 bg-white px-6" style={{ paddingTop: insets.top + 16 }}>
-      <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-        Search
-      </Text>
-      <View className="mt-4 h-[52px] flex-row items-center gap-3 rounded-full border-[1.5px] border-ink pr-3 pl-5">
-        <IconSearch size={20} color={colors.ink} strokeWidth={2} />
-        <TextInput
-          autoFocus
-          value={q}
-          onChangeText={setQ}
-          placeholder="An area or a venue"
-          placeholderTextColor={colors.unit}
-          selectionColor={colors.ink}
-          returnKeyType="search"
-          autoCorrect={false}
-          className="flex-1 text-[18px] text-ink"
+    <View className="flex-1 bg-white">
+      <Animated.ScrollView
+        ref={scrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        scrollEnabled={scrolls}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: top, paddingBottom: 40 }}
+      >
+        <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+          Search
+        </Text>
+        {/* The bar's slot: the bar floats over it, so it can dock. */}
+        <View
+          className="mt-4 h-[52px]"
+          onLayout={(event) => {
+            barStart.value = top + event.nativeEvent.layout.y;
+          }}
         />
-        {/* Clears what's typed; with nothing typed, closes. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={q ? "Clear" : "Close"}
-          hitSlop={10}
-          onPress={() => (q ? setQ("") : onClose())}
-          className="size-8 items-center justify-center active:opacity-60"
-        >
-          <IconX size={18} color={colors.ink2} strokeWidth={2} />
-        </Pressable>
-      </View>
-      {q.trim() ? null : (
-        <Segment
-          options={[
-            { key: "near", label: "Near me" },
-            { key: "area", label: "Pick an area" },
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
-      )}
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pt-3 pb-10">
-        {q.trim() ? null : tab === "near" ? (
-          here ? (
-            <Animated.View entering={FadeIn.duration(180)}>
-              <View className="mt-3 flex-row items-baseline justify-between">
-                <Text className="text-[20px] leading-[26px] font-semibold">Within {radius} km</Text>
-                <Text className="text-label text-ink-2">
-                  {count === null ? " " : venuesText(count)}
+        {typed ? null : (
+          <Segment
+            options={[
+              { key: "near", label: "Near me" },
+              { key: "area", label: "Pick an area" },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        )}
+        <View className="pt-3">
+          {typed ? null : tab === "near" ? (
+            <Animated.View key="near" entering={FadeIn.duration(220)}>
+              {here ? (
+                <>
+                  <View className="mt-3 flex-row items-baseline justify-between">
+                    <Text className="text-[20px] leading-[26px] font-semibold">
+                      Within {radius} km
+                    </Text>
+                    <Text className="text-label text-ink-2">
+                      {count === null ? " " : venuesText(count)}
+                    </Text>
+                  </View>
+                  <Text className="mt-1 mb-6 text-caption text-unit">
+                    Bars depict venues within each distance
+                  </Text>
+                  <RadiusSlider radius={radius} within={within} onChange={setRadius} />
+                  <View className="mt-8">
+                    <Button
+                      label={`Search within ${radius} km`}
+                      size="small"
+                      onPress={() => pick({ kind: "near", radius })}
+                    />
+                  </View>
+                </>
+              ) : (
+                <Text className="mt-6 text-subtitle text-ink-2">
+                  Turn on location for Hagz in Settings to search near you.
                 </Text>
-              </View>
-              <Text className="mt-1 mb-6 text-caption text-unit">
-                Bars depict venues within each distance
-              </Text>
-              <RadiusSlider radius={radius} within={within} onChange={setRadius} />
-              <View className="mt-8">
-                <Button
-                  label={`Search within ${radius} km`}
-                  size="small"
-                  onPress={() => pick({ kind: "near", radius })}
-                />
-              </View>
+              )}
             </Animated.View>
           ) : (
-            <Text className="mt-6 text-subtitle text-ink-2">
-              Turn on location for Hagz in Settings to search near you.
-            </Text>
-          )
-        ) : (
-          <Animated.View entering={FadeIn.duration(180)} layout={LinearTransition.duration(200)}>
-            {(coverage ?? []).map((governorate) => {
-              const expanded = governorate.id === shownOpen;
-              return (
-                <View key={governorate.id} className="border-b border-border py-4">
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded }}
-                    onPress={() => setOpen(expanded ? "" : governorate.id)}
-                    className="flex-row items-center justify-between active:opacity-60"
-                  >
-                    <View className="gap-0.5">
-                      <Text className="text-subtitle font-medium">{governorate.name}</Text>
-                      <Text className="text-caption text-ink-2">
-                        {`${governorate.areas.length} ${governorate.areas.length === 1 ? "area" : "areas"} · ${venuesText(governorate.venues)}`}
-                      </Text>
-                    </View>
-                    <View style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}>
-                      <IconChevronDown size={20} color={colors.ink2} strokeWidth={2} />
-                    </View>
-                  </Pressable>
-                  {expanded ? (
-                    <Animated.View
-                      entering={FadeIn.duration(180)}
-                      className="mt-4 flex-row flex-wrap gap-2"
+            <Animated.View key="area" entering={FadeIn.duration(220)}>
+              {(coverage ?? []).map((governorate) => {
+                const expanded = governorate.id === shownOpen;
+                return (
+                  <View key={governorate.id} className="border-b border-border py-4">
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded }}
+                      onPress={() => setOpen(expanded ? "" : governorate.id)}
+                      className="flex-row items-center justify-between active:opacity-60"
                     >
-                      <Pill
-                        label={`All of ${governorate.name ?? ""}`}
-                        on={where.kind === "area" && where.id === governorate.id}
-                        onPress={() =>
-                          pick({
-                            kind: "area",
-                            id: governorate.id,
-                            name: governorate.name ?? "",
-                            within: null,
-                          })
-                        }
-                      />
-                      {governorate.areas.map((area) => (
+                      <View className="gap-0.5">
+                        <Text className="text-subtitle font-medium">{governorate.name}</Text>
+                        <Text className="text-caption text-ink-2">
+                          {`${governorate.areas.length} ${governorate.areas.length === 1 ? "area" : "areas"} · ${venuesText(governorate.venues)}`}
+                        </Text>
+                      </View>
+                      <Chevron open={expanded} />
+                    </Pressable>
+                    <Collapsible open={expanded}>
+                      <View className="flex-row flex-wrap gap-2 pt-4">
                         <Pill
-                          key={area.id}
-                          label={area.name ?? ""}
-                          on={where.kind === "area" && where.id === area.id}
+                          label={`All of ${governorate.name ?? ""}`}
+                          on={where.kind === "area" && where.id === governorate.id}
                           onPress={() =>
                             pick({
                               kind: "area",
-                              id: area.id,
-                              name: area.name ?? "",
-                              within: governorate.name,
+                              id: governorate.id,
+                              name: governorate.name ?? "",
+                              within: null,
                             })
                           }
                         />
-                      ))}
-                    </Animated.View>
-                  ) : null}
-                </View>
-              );
-            })}
-          </Animated.View>
-        )}
-        {areas.length > 0 ? (
-          <>
-            <Heading>Areas</Heading>
-            {areas.map((area) => (
-              <Row
-                key={area.id}
-                icon={<IconMapPin size={20} color={colors.ink} strokeWidth={1.75} />}
-                title={area.name ?? ""}
-                line={area.within}
-                onPress={() =>
-                  pick({ kind: "area", id: area.id, name: area.name ?? "", within: area.within })
-                }
-              />
-            ))}
-          </>
-        ) : null}
-        {venues.length > 0 ? (
-          <>
-            <Heading>Venues</Heading>
-            {venues.map((venue) => (
-              <Row
-                key={venue.id}
-                icon={<IconBallFootball size={20} color={colors.ink} strokeWidth={1.75} />}
-                title={venue.name ?? "Venue"}
-                line={[venue.area, venue.distance === null ? null : formatDistance(venue.distance)]
-                  .filter(Boolean)
-                  .join(" · ")}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  router.push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
-                }}
-              />
-            ))}
-          </>
-        ) : null}
-        {q.trim() && answered === q.trim() && areas.length === 0 && venues.length === 0 ? (
-          <Text className="mt-6 text-subtitle text-ink-2">
-            No areas or venues match “{q.trim()}”.
-          </Text>
-        ) : null}
-      </ScrollView>
+                        {governorate.areas.map((area) => (
+                          <Pill
+                            key={area.id}
+                            label={area.name ?? ""}
+                            on={where.kind === "area" && where.id === area.id}
+                            onPress={() =>
+                              pick({
+                                kind: "area",
+                                id: area.id,
+                                name: area.name ?? "",
+                                within: governorate.name,
+                              })
+                            }
+                          />
+                        ))}
+                      </View>
+                    </Collapsible>
+                  </View>
+                );
+              })}
+            </Animated.View>
+          )}
+          {areas.length > 0 ? (
+            <>
+              <Heading>Areas</Heading>
+              {areas.map((area) => (
+                <Row
+                  key={area.id}
+                  icon={<IconMapPin size={20} color={colors.ink} strokeWidth={1.75} />}
+                  title={area.name ?? ""}
+                  line={area.within}
+                  onPress={() =>
+                    pick({ kind: "area", id: area.id, name: area.name ?? "", within: area.within })
+                  }
+                />
+              ))}
+            </>
+          ) : null}
+          {venues.length > 0 ? (
+            <>
+              <Heading>Venues</Heading>
+              {venues.map((venue) => (
+                <Row
+                  key={venue.id}
+                  icon={<IconBallFootball size={20} color={colors.ink} strokeWidth={1.75} />}
+                  title={venue.name ?? "Venue"}
+                  line={[
+                    venue.area,
+                    venue.distance === null ? null : formatDistance(venue.distance),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    router.push({ pathname: "/venue/[slug]", params: { slug: venue.slug } });
+                  }}
+                />
+              ))}
+            </>
+          ) : null}
+          {q.trim() && answered === q.trim() && areas.length === 0 && venues.length === 0 ? (
+            <Text className="mt-6 text-subtitle text-ink-2">
+              No areas or venues match “{q.trim()}”.
+            </Text>
+          ) : null}
+        </View>
+      </Animated.ScrollView>
+
+      {/* The header the bar docks in, and the bar itself. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute top-0 right-0 left-0 border-b border-hairline bg-white"
+        style={[{ height: dockAt + 52 + 10 }, headerStyle]}
+      />
+      <Animated.View className="absolute top-0 right-6 left-6" style={barStyle}>
+        <View className="h-[52px] flex-row items-center gap-3 rounded-full border-[1.5px] border-ink bg-white pr-3 pl-5">
+          <IconSearch size={20} color={colors.ink} strokeWidth={2} />
+          <TextInput
+            autoFocus
+            value={q}
+            onChangeText={setQ}
+            placeholder="An area or a venue"
+            placeholderTextColor={colors.unit}
+            selectionColor={colors.ink}
+            returnKeyType="search"
+            autoCorrect={false}
+            className="flex-1 text-[18px] text-ink"
+          />
+          {/* Clears what's typed; with nothing typed, closes. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={q ? "Clear" : "Close"}
+            hitSlop={10}
+            onPress={() => (q ? setQ("") : onClose())}
+            className="size-8 items-center justify-center active:opacity-60"
+          >
+            <IconX size={18} color={colors.ink2} strokeWidth={2} />
+          </Pressable>
+        </View>
+      </Animated.View>
     </View>
   );
 }
