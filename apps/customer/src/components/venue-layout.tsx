@@ -9,7 +9,8 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 // A venue's map, read only (Figma C5, "The grounds"): the owner's grid at a cell to every
 // `width / columns` points, the venue's outline in ink, each ground drawn top-down with its
 // markings and name, the amenities placed on it as white tiles, and the entrances as black tags on
-// the edge. Grounds under maintenance say so. The ground picked in the list under it is a darker grey.
+// the edge. Grounds under maintenance say so, and so do grounds that don't fit the search the page
+// came from (faded, "Unavailable"). The ground picked in the list under it is a darker grey.
 // It's the real place seen from above, so it isn't mirrored in Arabic.
 
 type Layout = NonNullable<PublicVenue["layout"]>;
@@ -182,12 +183,15 @@ export function VenueLayout({
   grounds,
   amenities,
   selectedId,
+  unavailableIds,
 }: {
   layout: Layout;
   grounds: PublicGround[];
   amenities: PublicVenue["amenities"];
   // The ground picked in the list under the map: a darker grey, with darker lines.
   selectedId?: string | null;
+  // Grounds that don't fit the search the page came from: faded, tagged Unavailable.
+  unavailableIds?: ReadonlySet<string>;
 }) {
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
@@ -273,8 +277,9 @@ export function VenueLayout({
                   : [placed.width, placed.height];
               const box = boxOf(placed.x, placed.y, w, h);
               const selected = ground.id === selectedId;
+              const unavailable = unavailableIds?.has(ground.id) === true;
               return (
-                <G key={placed.groundId}>
+                <G key={placed.groundId} opacity={unavailable ? 0.45 : 1}>
                   <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={TILE} />
                   <Markings sport={ground.sport} box={box} color={MARK} />
                   <PickedOverlay sport={ground.sport} box={box} picked={selected} />
@@ -284,7 +289,9 @@ export function VenueLayout({
                     status={
                       ground.status === "MAINTENANCE"
                         ? t("components.venueLayout.closed")
-                        : undefined
+                        : unavailable
+                          ? t("screens.venue.filter.unavailable")
+                          : undefined
                     }
                   />
                 </G>

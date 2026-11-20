@@ -61,18 +61,24 @@ export function GroupHeading({ children, action }: { children: string; action?: 
 // A section of the scroll, which reports where it starts so the tabs can scroll to it.
 export function Section({
   title,
+  note,
   action,
   onLayout,
   children,
 }: {
   title: string;
+  // A small grey line under the heading (what the grounds were matched against).
+  note?: string;
   action?: ReactNode;
   onLayout?: (event: LayoutChangeEvent) => void;
   children: ReactNode;
 }) {
   return (
     <View className="gap-4 px-6 pt-8" onLayout={onLayout}>
-      <GroupHeading action={action}>{title}</GroupHeading>
+      <View className="gap-1">
+        <GroupHeading action={action}>{title}</GroupHeading>
+        {note ? <Text className="text-caption text-ink-2">{note}</Text> : null}
+      </View>
       {children}
     </View>
   );
@@ -278,6 +284,7 @@ function GroundOption({
   width,
   currency,
   picked,
+  unavailable = false,
   onPick,
   onSeeTimes,
 }: {
@@ -285,6 +292,8 @@ function GroundOption({
   width: number;
   currency: string;
   picked: boolean;
+  // Not what the search asked for (lib/ground-filter.ts): greyed out, still there to look at.
+  unavailable?: boolean;
   onPick: () => void;
   onSeeTimes: () => void;
 }) {
@@ -301,7 +310,7 @@ function GroundOption({
       accessibilityState={{ selected: picked }}
       onPress={onPick}
       className="gap-0.5 rounded-2xl border border-border px-4 py-4"
-      style={{ width }}
+      style={{ width, opacity: unavailable ? 0.45 : 1 }}
     >
       <Animated.View
         pointerEvents="none"
@@ -315,7 +324,13 @@ function GroundOption({
         <GroundPrice ground={ground} currency={currency} />
       </View>
       <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
-      {bookable ? <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text> : null}
+      {unavailable ? (
+        <Text className="text-label font-medium text-ink-2">
+          {t("screens.venue.filter.unavailable")}
+        </Text>
+      ) : bookable ? (
+        <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text>
+      ) : null}
       {bookable ? (
         // On every card: grey, and lime once it's the picked one, the lime laid over the grey and
         // faded in. Pressed on a card that isn't picked, it picks it too.
@@ -378,6 +393,12 @@ function PageDots({ count, current }: { count: number; current: number }) {
   );
 }
 
+// The grounds a search's matches leave out, for the layout to mark.
+const unavailableOf = (venue: PublicVenue, matches: ReadonlySet<string> | null) =>
+  matches
+    ? new Set(venue.grounds.filter((ground) => !matches.has(ground.id)).map((ground) => ground.id))
+    : undefined;
+
 // The cards: 80% of the screen, 10 apart, so the next one peeks in.
 const CARD_SHARE = 0.8;
 const CARD_GAP = 10;
@@ -388,6 +409,8 @@ export function GroundsSection({
   onLayout,
   onSeeTimes,
   onPick,
+  matches = null,
+  note,
 }: {
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
@@ -395,6 +418,10 @@ export function GroundsSection({
   onSeeTimes: (groundId: string) => void;
   // Which ground is picked now, for the Book button to open.
   onPick?: (groundId: string) => void;
+  // Opened from a search: the grounds that fit it (the rest are greyed out, on the cards and the
+  // layout), and what they were matched against, under the heading. Null: no search.
+  matches?: ReadonlySet<string> | null;
+  note?: string;
 }) {
   const { t } = useTranslation();
   const { width: screen } = useWindowDimensions();
@@ -405,9 +432,11 @@ export function GroundsSection({
   const count = venue.grounds.length;
   const end = Math.max(0, 2 * GUTTER + count * card + (count - 1) * CARD_GAP - screen);
   const stops = venue.grounds.map((_, index) => Math.min(index * step, end));
+  const firstOpen = (fits: (id: string) => boolean) =>
+    venue.grounds.findIndex((ground) => ground.status === "ACTIVE" && fits(ground.id));
   const first = Math.max(
     0,
-    venue.grounds.findIndex((ground) => ground.status === "ACTIVE"),
+    firstOpen(() => true),
   );
   const [pickedId, setPickedId] = useState<string | null>(venue.grounds[first]?.id ?? null);
   const row = useRef<ScrollViewInstance>(null);
@@ -435,15 +464,24 @@ export function GroundsSection({
       onPick?.(ground.id);
     }
   };
+  // Once the search's matches are known: the first ground that fits comes into place, unless the
+  // picked one already does.
+  useEffect(() => {
+    if (!matches || (pickedId && matches.has(pickedId))) return;
+    const index = firstOpen((id) => matches.has(id));
+    if (index >= 0) bringIn(index);
+    // Only when the matches arrive, not on every pick.
+  }, [matches]);
 
   return (
-    <Section title={t("screens.venue.grounds.title")} onLayout={onLayout}>
+    <Section title={t("screens.venue.grounds.title")} note={note} onLayout={onLayout}>
       {venue.layout ? (
         <VenueLayout
           layout={venue.layout}
           grounds={venue.grounds}
           amenities={venue.amenities}
           selectedId={pickedId}
+          unavailableIds={unavailableOf(venue, matches)}
         />
       ) : null}
       {/* Edge to edge, snapping each card to the page's gutter, the last one to the right gutter.
@@ -470,6 +508,7 @@ export function GroundsSection({
             width={card}
             currency={currency}
             picked={ground.id === pickedId}
+            unavailable={matches !== null && !matches.has(ground.id)}
             onPick={() => bringIn(index)}
             onSeeTimes={() => onSeeTimes(ground.id)}
           />
