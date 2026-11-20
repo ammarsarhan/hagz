@@ -271,38 +271,49 @@ function BackButton({ progress }: { progress: SharedValue<number> | null }) {
   );
 }
 
-function Photos({ venue }: { venue: PublicVenue }) {
+// Pulled down past the top (iOS's bounce), the photo stretches to fill the gap, Airbnb's way: it
+// zooms by however far it's pulled, its bottom edge staying put and its top on the screen's top
+// edge, so there's never white above it (user, 2026-11-20). The counter isn't stretched.
+function Photos({ venue, scrollY }: { venue: PublicVenue; scrollY: SharedValue<number> }) {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  const stretch = useAnimatedStyle(() => {
+    const pulled = Math.max(0, -scrollY.value);
+    return {
+      transform: [{ translateY: -pulled / 2 }, { scale: (PHOTO_HEIGHT + pulled) / PHOTO_HEIGHT }],
+    };
+  });
   if (venue.photos.length === 0) {
-    return <View className="bg-[#c4c8cf]" style={{ height: PHOTO_HEIGHT }} />;
+    return <Animated.View className="bg-[#c4c8cf]" style={[{ height: PHOTO_HEIGHT }, stretch]} />;
   }
   return (
     <View style={{ height: PHOTO_HEIGHT }}>
-      <FlatList
-        data={venue.photos}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(photo) => photo.id}
-        onMomentumScrollEnd={(event) =>
-          setIndex(Math.round(event.nativeEvent.contentOffset.x / width))
-        }
-        renderItem={({ item }) => (
-          <Image
-            source={{ uri: reachable(item.url) }}
-            style={{ width, height: PHOTO_HEIGHT, backgroundColor: "#c4c8cf" }}
-            contentFit="cover"
-            transition={150}
-            accessibilityLabel={
-              venue.name
-                ? t("screens.venue.photoOf", { name: venue.name })
-                : t("screens.venue.photoOfVenue")
-            }
-          />
-        )}
-      />
+      <Animated.View style={stretch}>
+        <FlatList
+          data={venue.photos}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(photo) => photo.id}
+          onMomentumScrollEnd={(event) =>
+            setIndex(Math.round(event.nativeEvent.contentOffset.x / width))
+          }
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: reachable(item.url) }}
+              style={{ width, height: PHOTO_HEIGHT, backgroundColor: "#c4c8cf" }}
+              contentFit="cover"
+              transition={150}
+              accessibilityLabel={
+                venue.name
+                  ? t("screens.venue.photoOf", { name: venue.name })
+                  : t("screens.venue.photoOfVenue")
+              }
+            />
+          )}
+        />
+      </Animated.View>
       {venue.photos.length > 1 ? (
         <View className="absolute right-4 bottom-4 h-[26px] justify-center rounded-full bg-[#000000a0] px-2.5">
           <Text className="text-caption font-medium text-white">
@@ -454,13 +465,9 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         // The tabs (the fourth child) stick natively, so they never trail the scroll.
         stickyHeaderIndices={[3]}
         scrollEventThrottle={16}
-        // The photos are the top of the page: it never pulls down past them (user, 2026-11-20).
-        // iOS can't stop the bounce at the top alone, so the bottom doesn't bounce either.
-        bounces={false}
-        overScrollMode="never"
         contentContainerStyle={{ paddingBottom: footer + 32 }}
       >
-        <Photos venue={venue} />
+        <Photos venue={venue} scrollY={scrollY} />
         <VenueHeader
           venue={venue}
           distance={distance}
