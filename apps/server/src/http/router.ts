@@ -10,6 +10,7 @@ import { systemRoutes } from "@/modules/system";
 import {
   removeAmenityFromLayouts,
   venuesAdminRoutes,
+  venuesFavoriteRoutes,
   venuesPublicRoutes,
   venuesStaffRoutes,
 } from "@/modules/venues";
@@ -54,6 +55,7 @@ router.route("/v1", customerAuthRoutes);
 router.route("/v1", staffAuthRoutes);
 router.route("/v1", adminAuthRoutes);
 router.route("/v1", venuesPublicRoutes);
+router.route("/v1", venuesFavoriteRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);

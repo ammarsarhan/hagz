@@ -3789,7 +3789,7 @@ export interface paths {
         };
         /**
          * Search venues
-         * @description Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) with a ground free when asked: from `start` for `hours`, or any time on `date`, of the `sport` and `size` asked for. Each card has its next free times. Nearest first with a point, else best rated. Names follow `Accept-Language`. Public.
+         * @description Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) with a ground free when asked: from `start` for `hours`, or any time on `date`, of the `sport` and `size` asked for, and the other filters. Each card has its next free times. Best match first unless `sort` says otherwise. Names follow `Accept-Language`. Public; signed in, best match puts the player's own venues first and cards carry `you`.
          */
         get: {
             parameters: {
@@ -3835,7 +3835,7 @@ export interface paths {
                     flexible?: "true" | "false";
                     /** @description The venue rewards regulars with free bookings. `true` to ask for it. */
                     loyalty?: "true" | "false";
-                    /** @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`. */
+                    /** @description `BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. */
                     sort?: components["schemas"]["VenueSearchSort"];
                     /** @description `nextCursor` from the last page. */
                     cursor?: string;
@@ -3858,6 +3858,15 @@ export interface paths {
                 };
                 /** @description VALIDATION_FAILED, or INVALID_CURSOR: search again. */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description TOKEN_EXPIRED or UNAUTHENTICATED: a token was sent and isn't good. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4296,6 +4305,170 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/me/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List saved venues
+         * @description Most recently saved first. Names follow `Accept-Language`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Saved venues */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FavoriteVenues"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/me/favorites/{venueId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save a venue
+         * @description Idempotent: saving a saved venue changes nothing. Live and paused venues only.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Saved */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: no listed venue with that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Remove a saved venue
+         * @description Idempotent: removing a venue that isn't saved changes nothing.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -12471,6 +12644,23 @@ export interface components {
             priceFrom: number;
             /** @description The first free start times found, earliest first. */
             nextTimes: components["schemas"]["NextFreeTime"][];
+            /** @description Any of its free times found came free again near kick-off. */
+            justFreed: boolean;
+            /** @description It rewards regulars with free bookings. */
+            loyalty: boolean;
+            /** @description The signed-in player and this venue; null for guests. */
+            you: {
+                favorite: boolean;
+                /** @description Bookings completed there. */
+                played: number;
+                /** @description The loyalty card being filled ("2 of 4") or with a free booking. */
+                card: {
+                    /** @enum {string} */
+                    status: "OPEN" | "EARNED";
+                    stamps: number;
+                    required: number;
+                } | null;
+            } | null;
         };
         /** @enum {string} */
         GroundSport: "FOOTBALL" | "PADEL" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL";
@@ -12479,6 +12669,8 @@ export interface components {
             startsAt: string;
             /** @description How many grounds are free then, for the length. */
             grounds: number;
+            /** @description A ground came free again then, near kick-off. */
+            justFreed: boolean;
         };
         /**
          * @description `STANDARD` for sports without size variants.
@@ -12491,10 +12683,10 @@ export interface components {
          */
         PaymentFilter: "CASH" | "ONLINE";
         /**
-         * @description `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`.
+         * @description `BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first.
          * @enum {string}
          */
-        VenueSearchSort: "DISTANCE" | "RATING" | "PRICE" | "SOONEST";
+        VenueSearchSort: "BEST_MATCH" | "DISTANCE" | "RATING" | "PRICE" | "SOONEST";
         VenueFreeHours: {
             /**
              * Format: date
@@ -12781,6 +12973,31 @@ export interface components {
         };
         /** @enum {string} */
         PriceTier: "BASE" | "PEAK" | "DISCOUNT";
+        FavoriteVenues: {
+            data: components["schemas"]["FavoriteVenue"][];
+        };
+        FavoriteVenue: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string | null;
+            area: string | null;
+            cover: {
+                url: string;
+            } | null;
+            rating: {
+                average: number | null;
+                count: number;
+            };
+            sports: components["schemas"]["GroundSport"][];
+            /**
+             * @description `MAINTENANCE`: paused, taking no bookings. `UNAVAILABLE`: no longer listed (kept so the player sees it went).
+             * @enum {string}
+             */
+            status: "LIVE" | "MAINTENANCE" | "UNAVAILABLE";
+            /** Format: date-time */
+            savedAt: string;
+        };
         StaffVenue: {
             /** Format: uuid */
             id: string;

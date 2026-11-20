@@ -1414,6 +1414,65 @@
             },
             "maxItems": 4,
             "description": "The first free start times found, earliest first."
+          },
+          "justFreed": {
+            "type": "boolean",
+            "description": "Any of its free times found came free again near kick-off."
+          },
+          "loyalty": {
+            "type": "boolean",
+            "description": "It rewards regulars with free bookings."
+          },
+          "you": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "favorite": {
+                "type": "boolean"
+              },
+              "played": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Bookings completed there."
+              },
+              "card": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "OPEN",
+                      "EARNED"
+                    ]
+                  },
+                  "stamps": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "required": {
+                    "type": "integer",
+                    "minimum": 2
+                  }
+                },
+                "required": [
+                  "status",
+                  "stamps",
+                  "required"
+                ],
+                "description": "The loyalty card being filled (\"2 of 4\") or with a free booking."
+              }
+            },
+            "required": [
+              "favorite",
+              "played",
+              "card"
+            ],
+            "description": "The signed-in player and this venue; null for guests."
           }
         },
         "required": [
@@ -1427,7 +1486,10 @@
           "distance",
           "sports",
           "priceFrom",
-          "nextTimes"
+          "nextTimes",
+          "justFreed",
+          "loyalty",
+          "you"
         ]
       },
       "GroundSport": {
@@ -1451,11 +1513,16 @@
             "type": "integer",
             "minimum": 1,
             "description": "How many grounds are free then, for the length."
+          },
+          "justFreed": {
+            "type": "boolean",
+            "description": "A ground came free again then, near kick-off."
           }
         },
         "required": [
           "startsAt",
-          "grounds"
+          "grounds",
+          "justFreed"
         ]
       },
       "GroundSize": {
@@ -1479,12 +1546,13 @@
       "VenueSearchSort": {
         "type": "string",
         "enum": [
+          "BEST_MATCH",
           "DISTANCE",
           "RATING",
           "PRICE",
           "SOONEST"
         ],
-        "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`."
+        "description": "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first."
       },
       "VenueFreeHours": {
         "type": "object",
@@ -2409,6 +2477,107 @@
           "BASE",
           "PEAK",
           "DISCOUNT"
+        ]
+      },
+      "FavoriteVenues": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteVenue"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "FavoriteVenue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "area": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cover": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ]
+          },
+          "rating": {
+            "type": "object",
+            "properties": {
+              "average": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "average",
+              "count"
+            ]
+          },
+          "sports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroundSport"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "LIVE",
+              "MAINTENANCE",
+              "UNAVAILABLE"
+            ],
+            "description": "`MAINTENANCE`: paused, taking no bookings. `UNAVAILABLE`: no longer listed (kept so the player sees it went)."
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "area",
+          "cover",
+          "rating",
+          "sports",
+          "status",
+          "savedAt"
         ]
       },
       "StaffVenue": {
@@ -10190,7 +10359,13 @@
           "Venues"
         ],
         "summary": "Search venues",
-        "description": "Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) with a ground free when asked: from `start` for `hours`, or any time on `date`, of the `sport` and `size` asked for. Each card has its next free times. Nearest first with a point, else best rated. Names follow `Accept-Language`. Public.",
+        "description": "Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) with a ground free when asked: from `start` for `hours`, or any time on `date`, of the `sport` and `size` asked for, and the other filters. Each card has its next free times. Best match first unless `sort` says otherwise. Names follow `Accept-Language`. Public; signed in, best match puts the player's own venues first and cards carry `you`.",
+        "security": [
+          {
+            "customerBearer": []
+          },
+          {}
+        ],
         "parameters": [
           {
             "schema": {
@@ -10461,7 +10636,7 @@
               "$ref": "#/components/schemas/VenueSearchSort"
             },
             "required": false,
-            "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first. Left out: `DISTANCE` with a point, else `RATING`.",
+            "description": "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first.",
             "name": "sort",
             "in": "query"
           },
@@ -10501,6 +10676,16 @@
           },
           "400": {
             "description": "VALIDATION_FAILED, or INVALID_CURSOR: search again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "TOKEN_EXPIRED or UNAUTHENTICATED: a token was sent and isn't good.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11307,6 +11492,160 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND: no live or paused venue has that slug (drafts and venues in review aren't public).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/me/favorites": {
+      "get": {
+        "tags": [
+          "Favorites"
+        ],
+        "summary": "List saved venues",
+        "description": "Most recently saved first. Names follow `Accept-Language`.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved venues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteVenues"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/me/favorites/{venueId}": {
+      "put": {
+        "tags": [
+          "Favorites"
+        ],
+        "summary": "Save a venue",
+        "description": "Idempotent: saving a saved venue changes nothing. Live and paused venues only.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Saved"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: no listed venue with that id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Favorites"
+        ],
+        "summary": "Remove a saved venue",
+        "description": "Idempotent: removing a venue that isn't saved changes nothing.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
             "content": {
               "application/problem+json": {
                 "schema": {
