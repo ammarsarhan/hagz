@@ -1,0 +1,554 @@
+import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  View,
+  type ViewStyle,
+} from "react-native";
+import Animated, {
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/button";
+import { useHud, useHudAnchor } from "@/components/hud";
+import { IconInfoCircle } from "@/components/icons";
+import { BackButton } from "@/components/nav";
+import { Text } from "@/components/text";
+import { Title } from "@/components/title";
+import { api } from "@/lib/api";
+import { hudMessage, send } from "@/lib/api-errors";
+import { colors } from "@/lib/colors";
+import { intlLocale, isRTL } from "@/lib/language";
+import { formatPrice, fromPerHour } from "@/lib/money";
+import {
+  DAY_STARTS,
+  hourAt,
+  kindOf,
+  nextDate,
+  partOfDay,
+  timeOfDay,
+  timeRange,
+  type FreeSlot,
+  type PublicGround,
+  type PublicVenue,
+} from "@/lib/venue";
+
+// See times (Figma C6 round 2, 161:2: "Pick slots"; the user's pick, 2026-11-20): a ground's free
+// hours for a day, as chips grouped by part of the day, and the player taps the hours they want,
+// one after another: the booking is those hours, no length to choose. Fewer than the ground's
+// shortest booking, the hours either side are outlined and Continue waits; at its longest, no more
+// can be added. Tapping an hour away from the picked ones starts again from it.
+//
+// A playing day runs 5 am to 5 am (lib/venue.ts): Friday's late night is Saturday's first hours,
+// fetched with it, so 11 pm and 12 am can be one booking. Only free hours are listed; taken ones
+// will show once there are bookings (Phase 4), which is also where Continue goes.
+
+const DAYS = 14;
+const PARTS = ["morning", "afternoon", "evening", "lateNight"] as const;
+// The back button's row and its gap to the title, as on every Screen, and the bar's 8 under it.
+const ROW = 40;
+const TITLE_GAP = 22;
+const BAR_BELOW = 8;
+const FADE = 24;
+const RISE = 6;
+
+type Loaded<T> =
+  { state: "loading" } | { state: "failed"; message: string } | { state: "ready"; data: T };
+
+interface Day {
+  date: string;
+  days: { first: string; last: string };
+  timezone: string;
+  currency: string;
+  slots: FreeSlot[];
+}
+
+// The day after `date`, as many days as go from `first` up to `last`.
+const daysFrom = (first: string, last: string) => {
+  const out = [first];
+  while (out.length < DAYS && (out.at(-1) ?? first) < last) out.push(nextDate(out.at(-1) ?? first));
+  return out;
+};
+
+// "Fri 20 Nov", in the app's language, Western digits.
+const dayLabel = (date: string) =>
+  new Intl.DateTimeFormat(intlLocale, {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  })
+    .format(new Date(`${date}T12:00:00Z`))
+    .replace(",", "");
+
+// What a tap on `slot` does to the picked run of hours (in time order, each starting where the last
+// ended): next to it, added (up to `longest`); an end, taken off; anywhere else, a fresh start.
+const tapped = (picked: FreeSlot[], slot: FreeSlot, longest: number): FreeSlot[] => {
+  const first = picked[0];
+  const last = picked.at(-1);
+  if (!first || !last) return [slot];
+  if (picked.some((each) => each.id === slot.id)) {
+    // An end comes off; the middle starts again from there.
+    if (slot.id === first.id) return picked.slice(1);
+    if (slot.id === last.id) return picked.slice(0, -1);
+    return [slot];
+  }
+  const before = slot.endsAt === first.startsAt;
+  const after = slot.startsAt === last.endsAt;
+  // Next to the pick: added, unless it's already the ground's longest booking (then nothing).
+  if (before || after) {
+    if (picked.length >= longest) return picked;
+    return before ? [slot, ...picked] : [...picked, slot];
+  }
+  return [slot];
+};
+
+export default function Times() {
+  const { slug, ground: groundId } = useLocalSearchParams<{ slug: string; ground: string }>();
+  const [venue, setVenue] = useState<Loaded<PublicVenue>>({ state: "loading" });
+  const [date, setDate] = useState<string | undefined>(undefined);
+  const [day, setDay] = useState<Loaded<Day>>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    void send(api.GET("/v1/venues/{slug}", { params: { path: { slug } } })).then((result) => {
+      if (!active) return;
+      setVenue(
+        result.ok
+          ? { state: "ready", data: result.data }
+          : { state: "failed", message: hudMessage(result.error) },
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [slug, attempt]);
+
+  // The day asked for (today to begin with), and the next day's first hours, which are its night.
+  useEffect(() => {
+    let active = true;
+    setDay({ state: "loading" });
+    void (async () => {
+      const read = (on?: string) =>
+        send(
+          api.GET("/v1/venues/{slug}/availability", {
+            params: { path: { slug }, query: on ? { date: on } : {} },
+          }),
+        );
+      const result = await read(date);
+      if (!active) return;
+      if (!result.ok) {
+        setDay({ state: "failed", message: hudMessage(result.error) });
+        return;
+      }
+      const { timezone } = result.data;
+      const following =
+        result.data.date < result.data.days.last ? await read(nextDate(result.data.date)) : null;
+      if (!active) return;
+      const own = result.data.slots.filter(
+        (slot) => slot.groundId === groundId && hourAt(slot.startsAt, timezone) >= DAY_STARTS,
+      );
+      const night =
+        following?.ok === true
+          ? following.data.slots.filter(
+              (slot) => slot.groundId === groundId && hourAt(slot.startsAt, timezone) < DAY_STARTS,
+            )
+          : [];
+      setDay({ state: "ready", data: { ...result.data, slots: [...own, ...night] } });
+    })();
+    return () => {
+      active = false;
+    };
+  }, [slug, groundId, date, attempt]);
+
+  const ground =
+    venue.state === "ready" ? venue.data.grounds.find((each) => each.id === groundId) : undefined;
+
+  if (venue.state === "failed" || day.state === "failed" || (venue.state === "ready" && !ground)) {
+    return (
+      <Failed
+        message={
+          venue.state === "failed" ? venue.message : day.state === "failed" ? day.message : ""
+        }
+        onRetry={() => setAttempt((n) => n + 1)}
+      />
+    );
+  }
+  if (!ground || venue.state !== "ready") return <Failed loading />;
+  return (
+    <Picker
+      venue={venue.data}
+      ground={ground}
+      day={day.state === "ready" ? day.data : null}
+      onDate={setDate}
+    />
+  );
+}
+
+// Loading the venue, or something that couldn't be read.
+function Failed({
+  loading = false,
+  message = "",
+  onRetry,
+}: {
+  loading?: boolean;
+  message?: string;
+  onRetry?: () => void;
+}) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      className="flex-1 bg-white px-5"
+      style={{ paddingTop: insets.top, direction: isRTL ? "rtl" : "ltr" }}
+    >
+      <StatusBar style="dark" />
+      <View className="-mx-1 h-10 justify-center">
+        <BackButton onPress={() => router.back()} />
+      </View>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.ink} />
+        </View>
+      ) : (
+        <View className="flex-1 justify-center gap-4 px-1 pb-24">
+          <Text className="text-subtitle text-ink-2">{message}</Text>
+          {onRetry ? (
+            <View className="items-start">
+              <Button label={t("common.actions.tryAgain")} onPress={onRetry} />
+            </View>
+          ) : null}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function Picker({
+  venue,
+  ground,
+  day,
+  onDate,
+}: {
+  venue: PublicVenue;
+  ground: PublicGround;
+  // Null while the day's hours load.
+  day: Day | null;
+  onDate: (date: string) => void;
+}) {
+  const { t } = useTranslation();
+  const hud = useHud();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const [picked, setPicked] = useState<FreeSlot[]>([]);
+  const [footer, setFooter] = useState(0);
+  useHudAnchor(footer);
+
+  // A new day starts with nothing picked.
+  const dayKey = day?.date;
+  useEffect(() => setPicked([]), [dayKey]);
+
+  const shortest = ground.minimumSlots;
+  const longest = ground.maximumSlots;
+  const name = ground.name ?? kindOf(ground);
+  const timezone = day?.timezone ?? venue.marketplace.timezone;
+  const currency = day?.currency ?? venue.marketplace.currency;
+  const pickedIds = new Set(picked.map((slot) => slot.id));
+  const first = picked[0];
+  const last = picked.at(-1);
+  const ready = picked.length >= shortest;
+  // Short of the shortest booking: the free hours either side, outlined.
+  const next = new Set(
+    !first || !last || ready
+      ? []
+      : (day?.slots ?? [])
+          .filter((slot) => slot.endsAt === first.startsAt || slot.startsAt === last.endsAt)
+          .map((slot) => slot.id),
+  );
+  const range = first && last ? timeRange(first.startsAt, last.endsAt, timezone) : "";
+  const total = picked.reduce((sum, slot) => sum + slot.price, 0);
+
+  const groups = useMemo(
+    () =>
+      PARTS.map((part) => ({
+        part,
+        slots: (day?.slots ?? []).filter(
+          (slot) => partOfDay(hourAt(slot.startsAt, timezone)) === part,
+        ),
+      })).filter((group) => group.slots.length > 0),
+    [day, timezone],
+  );
+
+  const cheapest = ground.priceFrom;
+  const books =
+    shortest === longest
+      ? t("screens.times.booksExactly", { count: shortest })
+      : t("screens.times.booksRange", { min: shortest, max: longest });
+
+  // The note under the hours: how to start, what's missing, or what's picked.
+  const note = !first
+    ? { strong: "", text: t("screens.times.start") }
+    : !ready
+      ? {
+          strong: t("screens.times.short", { ground: name, count: shortest }),
+          text: t("screens.times.addNext"),
+        }
+      : {
+          strong: t("screens.times.picked", {
+            hours: t("formats.hours", { count: picked.length }),
+            range,
+          }),
+          text:
+            picked.length >= longest
+              ? t("screens.times.longest", { ground: name })
+              : t("screens.times.longer"),
+        };
+
+  // The page scrolls under a fixed bar, the title coming back small beside the back button.
+  const bar = insets.top + ROW + BAR_BELOW;
+  const scrollY = useSharedValue(0);
+  const titleEnd = useSharedValue(Number.POSITIVE_INFINITY);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const compact = useAnimatedStyle(() => {
+    const gone = titleEnd.value - bar;
+    const progress = interpolate(scrollY.value, [gone - FADE, gone], [0, 1], "clamp");
+    return { opacity: progress, transform: [{ translateY: (1 - progress) * RISE }] };
+  });
+  const hairline = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 12], [0, 1], "clamp"),
+  }));
+
+  return (
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+      <StatusBar style="dark" />
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingTop: insets.top + ROW + TITLE_GAP,
+          paddingHorizontal: 24,
+          paddingBottom: footer + 32,
+        }}
+      >
+        <Title
+          subtitle={`${kindOf(ground)} · ${books}`}
+          tight
+          onTitleLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            titleEnd.value = y + height;
+          }}
+        >
+          {name}
+        </Title>
+
+        {day ? (
+          <DayTiles
+            days={daysFrom(day.days.first, day.days.last)}
+            today={day.days.first}
+            on={day.date}
+            onPick={onDate}
+          />
+        ) : null}
+
+        <View className="mt-7 mb-3.5 flex-row items-center justify-between">
+          <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
+            {t("screens.times.heading")}
+          </Text>
+          {day ? <Text className="text-label text-ink-2">{dayLabel(day.date)}</Text> : null}
+        </View>
+
+        {!day ? (
+          <View className="items-center py-16">
+            <ActivityIndicator color={colors.ink} />
+          </View>
+        ) : groups.length === 0 ? (
+          <View className="gap-1 py-6">
+            <Text className="text-subtitle font-medium">{t("screens.times.none")}</Text>
+            <Text className="text-subtitle text-ink-2">{t("screens.times.noneHint")}</Text>
+          </View>
+        ) : (
+          <>
+            <View className="gap-4">
+              {groups.map(({ part, slots }) => (
+                <View key={part} className="gap-2">
+                  <Text className="text-label text-unit">{t(`screens.times.parts.${part}`)}</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {slots.map((slot) => (
+                      <Slot
+                        key={slot.id}
+                        time={timeOfDay(slot.startsAt, timezone)}
+                        price={formatPrice(slot.price, currency)}
+                        state={pickedIds.has(slot.id) ? "on" : next.has(slot.id) ? "next" : "free"}
+                        onPress={() => setPicked((now) => tapped(now, slot, longest))}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+            <View className="mt-5 flex-row items-start gap-2">
+              <IconInfoCircle size={18} color={colors.ink2} strokeWidth={1.75} />
+              <Text className="flex-1 text-label text-ink-2">
+                {note.strong ? (
+                  <Text className="font-medium text-ink">{`${note.strong} `}</Text>
+                ) : null}
+                {note.text}
+              </Text>
+            </View>
+          </>
+        )}
+      </Animated.ScrollView>
+
+      {/* The fixed bar: the back button, and the ground's name once the big one is under it. */}
+      <View
+        className="absolute top-0 right-0 left-0 bg-white px-5"
+        style={{ height: bar, paddingTop: insets.top }}
+      >
+        <View className="-mx-1 h-10 flex-row items-center gap-3">
+          <BackButton onPress={() => router.back()} />
+          <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[compact, { maxWidth: width - 40 - 40 - 12 }]}
+          >
+            <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
+              {name}
+            </Text>
+          </Animated.View>
+        </View>
+        <Animated.View
+          className="absolute right-0 bottom-0 left-0 h-px bg-hairline"
+          style={hairline}
+        />
+      </View>
+
+      {/* What's picked and what it comes to, and Continue (lime once there's enough). */}
+      <View
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
+        style={{ paddingBottom: insets.bottom + 8 }}
+        onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
+      >
+        <View className="shrink gap-0.5">
+          <Text className="text-button font-medium">
+            {first
+              ? formatPrice(total, currency)
+              : cheapest === null
+                ? " "
+                : fromPerHour(cheapest, currency)}
+          </Text>
+          <Text className="text-caption text-unit" numberOfLines={1}>
+            {first && day
+              ? t("screens.times.line", { day: dayLabel(day.date), range })
+              : t("screens.times.pick", { count: shortest })}
+          </Text>
+        </View>
+        <View className="w-[150px]">
+          <Button
+            label={t("screens.times.continue")}
+            variant={ready ? "moment" : "secondary"}
+            size="small"
+            disabled={!ready}
+            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Today and the days after it, as tiles: the weekday (or Today) over the date.
+function DayTiles({
+  days,
+  today,
+  on,
+  onPick,
+}: {
+  days: string[];
+  today: string;
+  on: string;
+  onPick: (date: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ marginHorizontal: -24 }}
+      contentContainerStyle={{ gap: 8, paddingHorizontal: 24 }}
+    >
+      {days.map((date) => {
+        const at = new Date(`${date}T12:00:00Z`);
+        const picked = date === on;
+        return (
+          <Pressable
+            key={date}
+            accessibilityRole="button"
+            accessibilityState={{ selected: picked }}
+            onPress={() => onPick(date)}
+            className={`h-[72px] w-[58px] items-center justify-center gap-0.5 rounded-[14px] ${picked ? "bg-ink" : "border border-border bg-white"}`}
+          >
+            <Text className={`text-caption ${picked ? "text-white" : "text-ink-2"}`}>
+              {date === today
+                ? t("formats.today")
+                : new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "short" }).format(
+                    at,
+                  )}
+            </Text>
+            <Text
+              className={`text-[20px] leading-6 font-medium ${picked ? "text-white" : "text-ink"}`}
+            >
+              {at.getUTCDate()}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+// An hour: its start and price. Picked, black; next to a pick that's still short, a dashed outline.
+function Slot({
+  time,
+  price,
+  state,
+  onPress,
+}: {
+  time: string;
+  price: string;
+  state: "free" | "on" | "next";
+  onPress: () => void;
+}) {
+  const on = state === "on";
+  const box: ViewStyle =
+    state === "next"
+      ? { borderWidth: 1.5, borderStyle: "dashed", borderColor: colors.ink }
+      : on
+        ? { borderWidth: 1, borderColor: colors.ink, backgroundColor: colors.ink }
+        : { borderWidth: 1, borderColor: "#ebebeb" };
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      accessibilityLabel={`${time}, ${price}`}
+      onPress={onPress}
+      className="h-[54px] w-[76px] items-center justify-center gap-px rounded-[14px] active:opacity-70"
+      style={box}
+    >
+      <Text className={`text-subtitle font-medium ${on ? "text-white" : ""}`}>{time}</Text>
+      <Text className={`text-[12px] leading-4 ${on ? "text-white" : "text-unit"}`}>{price}</Text>
+    </Pressable>
+  );
+}

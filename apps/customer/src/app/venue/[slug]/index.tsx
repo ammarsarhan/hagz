@@ -472,6 +472,18 @@ function VenueView({ venue }: { venue: PublicVenue }) {
   const distance = useDistanceTo(venue.location.coordinates);
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";
+  // The ground picked in the row under the map (the first open one to begin with): Book opens its
+  // free hours, as its own See times does.
+  const pickedGround = useRef(
+    venue.grounds.find((ground) => ground.status === "ACTIVE")?.id ?? venue.grounds[0]?.id,
+  );
+  const openTimes = (groundId: string | undefined) => {
+    if (!groundId) return;
+    router.push({
+      pathname: "/venue/[slug]/times",
+      params: { slug: venue.slug, ground: groundId },
+    });
+  };
 
   return (
     <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
@@ -503,7 +515,10 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         <GroundsSection
           venue={venue}
           onLayout={recordOffset("grounds")}
-          onSeeTimes={() => hud.show(t("screens.venue.bookingSoon"))}
+          onSeeTimes={openTimes}
+          onPick={(groundId) => {
+            pickedGround.current = groundId;
+          }}
         />
         <BookingSection venue={venue} onLayout={recordOffset("booking")} />
         <CancellationSection venue={venue} />
@@ -600,7 +615,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
             variant="moment"
             size="small"
             disabled={paused}
-            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
+            onPress={() => openTimes(pickedGround.current)}
           />
         </View>
       </View>

@@ -387,10 +387,14 @@ export function GroundsSection({
   venue,
   onLayout,
   onSeeTimes,
+  onPick,
 }: {
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
-  onSeeTimes: () => void;
+  // A ground's See times: its free hours (app/venue/[slug]/times.tsx).
+  onSeeTimes: (groundId: string) => void;
+  // Which ground is picked now, for the Book button to open.
+  onPick?: (groundId: string) => void;
 }) {
   const { t } = useTranslation();
   const { width: screen } = useWindowDimensions();
@@ -418,12 +422,18 @@ export function GroundsSection({
       if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
     });
     const ground = venue.grounds[index];
-    if (ground) setPickedId(ground.id);
+    if (ground) {
+      setPickedId(ground.id);
+      onPick?.(ground.id);
+    }
   };
   const bringIn = (index: number) => {
     row.current?.scrollTo({ x: stops[index] ?? 0, animated: true });
     const ground = venue.grounds[index];
-    if (ground) setPickedId(ground.id);
+    if (ground) {
+      setPickedId(ground.id);
+      onPick?.(ground.id);
+    }
   };
 
   return (
@@ -461,7 +471,7 @@ export function GroundsSection({
             currency={currency}
             picked={ground.id === pickedId}
             onPick={() => bringIn(index)}
-            onSeeTimes={onSeeTimes}
+            onSeeTimes={() => onSeeTimes(ground.id)}
           />
         ))}
       </ScrollView>
