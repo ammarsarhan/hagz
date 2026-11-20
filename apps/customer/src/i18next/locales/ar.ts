@@ -534,6 +534,16 @@ const ar: ArabicTranslations = {
           payAtVenue: "الدفع في الملعب",
           payAtVenueLine: "نقدًا، عند اللعب.",
         },
+        filter: {
+          label: "حسب بحثك: {{what}}",
+          at: "{{day}}، {{range}}",
+          anyTime: "{{day}}، في أي وقت",
+          anyTimeFor: "{{day}}، أي {{hours}}",
+          between: "{{from}}–{{to}}/ساعة",
+          under: "أقل من {{price}}/ساعة",
+          from: "من {{price}}/ساعة",
+          unavailable: "غير متاح",
+        },
         grounds: {
           title: "الملاعب",
           closed: "مغلق حاليًا",

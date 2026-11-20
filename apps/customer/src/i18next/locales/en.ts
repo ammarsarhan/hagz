@@ -488,6 +488,17 @@ const en = {
           payAtVenue: "Pay at the venue",
           payAtVenueLine: "In cash, when you play.",
         },
+        // What the grounds were matched against when the page came from a search.
+        filter: {
+          label: "For your search: {{what}}",
+          at: "{{day}}, {{range}}",
+          anyTime: "{{day}}, any time",
+          anyTimeFor: "{{day}}, any {{hours}}",
+          between: "{{from}}–{{to}}/hr",
+          under: "Under {{price}}/hr",
+          from: "From {{price}}/hr",
+          unavailable: "Unavailable",
+        },
         grounds: {
           title: "Grounds",
           closed: "Closed for now",
