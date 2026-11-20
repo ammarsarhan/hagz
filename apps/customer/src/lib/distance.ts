@@ -30,12 +30,11 @@ export const formatDistance = (metres: number) => {
   return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
 };
 
-export const useDistanceTo = (place: Point | null) => {
-  const [distance, setDistance] = useState<string | null>(null);
-  const latitude = place?.latitude;
-  const longitude = place?.longitude;
+// Where the phone is: undefined while it's still being found, null when it can't be (location
+// not allowed, or no fix), so a screen can wait for the answer before searching.
+export const useHere = () => {
+  const [here, setHere] = useState<Point | null | undefined>(undefined);
   useEffect(() => {
-    if (latitude === undefined || longitude === undefined) return;
     let active = true;
     void (async () => {
       try {
@@ -43,19 +42,28 @@ export const useDistanceTo = (place: Point | null) => {
         if (permission.status === "undetermined" && permission.canAskAgain) {
           permission = await Location.requestForegroundPermissionsAsync();
         }
-        if (permission.status !== "granted") return;
-        const here =
+        if (permission.status !== "granted") {
+          if (active) setHere(null);
+          return;
+        }
+        const fix =
           (await Location.getLastKnownPositionAsync()) ??
           (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
-        if (active)
-          setDistance(formatDistance(metresBetween(here.coords, { latitude, longitude })));
+        if (active) setHere({ latitude: fix.coords.latitude, longitude: fix.coords.longitude });
       } catch {
-        // No fix (location off, simulator): the area alone.
+        // No fix (location off, simulator).
+        if (active) setHere(null);
       }
     })();
     return () => {
       active = false;
     };
-  }, [latitude, longitude]);
-  return distance;
+  }, []);
+  return here;
+};
+
+export const useDistanceTo = (place: Point | null) => {
+  const here = useHere();
+  if (!place || !here) return null;
+  return formatDistance(metresBetween(here, place));
 };
