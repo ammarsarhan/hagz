@@ -137,8 +137,49 @@ export const VenueSearchResults = z
   })
   .meta({ id: "VenueSearchResults" });
 
+// How many venues have a ground free to start each hour of a day (PR 3.3, for the When sheet's
+// timeline): the search's where and what, without its when.
+export const VenueFreeHoursQuery = z
+  .object({
+    marketplace: z.string().regex(/^[A-Za-z]{2}$/),
+    area: z.uuid().optional(),
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
+    radius: z.coerce.number().min(0.5).max(SEARCH_RADIUS_KM.max).default(SEARCH_RADIUS_KM.default),
+    q: z.string().trim().min(1).max(100).optional(),
+    date: LocalDate.optional().meta({ description: "In the venue's timezone. Left out: today." }),
+    sport: GroundSport.optional(),
+    size: GroundSize.optional(),
+  })
+  .refine((query) => (query.latitude === undefined) === (query.longitude === undefined), {
+    message: "Send latitude and longitude together.",
+    path: ["latitude"],
+  })
+  .meta({ id: "VenueFreeHoursQuery" });
+
+export const VenueFreeHours = z
+  .object({
+    date: LocalDate,
+    timezone: z.string().meta({ example: "Africa/Cairo" }),
+    hours: z
+      .array(
+        z.object({
+          hour: z.int().min(0).max(23).meta({ description: "Local hour the game would start." }),
+          venues: z.int().min(0).meta({ description: "Venues with a ground free to start then." }),
+        }),
+      )
+      .length(24)
+      .meta({
+        description:
+          "Every hour of the day, midnight first. Hours already past (or inside the venues' notice) count no one.",
+      }),
+  })
+  .meta({ id: "VenueFreeHours" });
+
 export type VenueSearchSort = z.infer<typeof VenueSearchSort>;
 export type VenueSearchQuery = z.infer<typeof VenueSearchQuery>;
 export type NextFreeTime = z.infer<typeof NextFreeTime>;
 export type VenueCard = z.infer<typeof VenueCard>;
 export type VenueSearchResults = z.infer<typeof VenueSearchResults>;
+export type VenueFreeHoursQuery = z.infer<typeof VenueFreeHoursQuery>;
+export type VenueFreeHours = z.infer<typeof VenueFreeHours>;
