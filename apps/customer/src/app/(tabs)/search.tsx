@@ -299,6 +299,10 @@ export default function SearchTab() {
     transform: [{ translateY: Math.max(dockAt, pillStart.value - scrollY.value) }],
   }));
   const headerStyle = useAnimatedStyle(() => ({ opacity: docked.value }));
+  const pulling = useSharedValue(0);
+  const pullStyle = useAnimatedStyle(() => ({
+    opacity: Math.max(pulling.value, interpolate(-scrollY.value, [10, 60], [0, 1], "clamp")),
+  }));
 
   // Best match unless the player picks another order; nearest needs a point.
   const sort: SearchSort =
@@ -335,6 +339,9 @@ export default function SearchTab() {
   useEffect(() => {
     if (pulled && !search.loading) setPulled(false);
   }, [pulled, search.loading]);
+  useEffect(() => {
+    pulling.value = withTiming(pulled ? 1 : 0, { duration: 180 });
+  }, [pulled, pulling]);
 
   const total = search.total;
   const summary =
@@ -591,12 +598,27 @@ export default function SearchTab() {
               setPulled(true);
               search.refresh();
             }}
-            tintColor={colors.ink}
-            colors={[colors.ink]}
+            // The system's spinner can't be made smaller, so it's hidden and ours (below) shows.
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
             progressViewOffset={insets.top}
           />
         }
       />
+
+      {/* The pull's spinner: small, fading in as the list is pulled down, held while it reloads. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute right-0 left-0 items-center"
+        style={[{ top: insets.top + 14 }, pullStyle]}
+      >
+        <ActivityIndicator
+          size="small"
+          color={colors.ink}
+          style={{ transform: [{ scale: 0.8 }] }}
+        />
+      </Animated.View>
 
       {/* The header the bar docks in: white, fading in as the bar arrives. */}
       <Animated.View
