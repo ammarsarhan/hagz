@@ -135,7 +135,7 @@ export function SearchWhere({
           selectionColor={colors.ink}
           returnKeyType="search"
           autoCorrect={false}
-          className="flex-1 text-[20px] text-ink"
+          className="flex-1 text-[18px] text-ink"
         />
         {/* Clears what's typed; with nothing typed, closes. */}
         <Pressable
