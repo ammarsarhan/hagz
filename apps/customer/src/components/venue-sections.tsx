@@ -347,13 +347,16 @@ function GroundOption({
             className="h-10 items-center justify-center rounded-full bg-chip active:opacity-80"
           >
             <SeeTimesLabel />
-            <Animated.View
-              pointerEvents="none"
-              className="absolute inset-0 items-center justify-center rounded-full bg-primary"
-              style={fade}
-            >
-              <SeeTimesLabel />
-            </Animated.View>
+            {/* Unavailable for the search: grey even when picked, the lime kept for a fit. */}
+            {unavailable ? null : (
+              <Animated.View
+                pointerEvents="none"
+                className="absolute inset-0 items-center justify-center rounded-full bg-primary"
+                style={fade}
+              >
+                <SeeTimesLabel />
+              </Animated.View>
+            )}
           </Pressable>
         </View>
       ) : null}
