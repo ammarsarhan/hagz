@@ -60,7 +60,7 @@ function Bar({
 }) {
   const shown = useSharedValue(picked ? 1 : 0);
   useEffect(() => {
-    shown.value = withTiming(picked ? 1 : 0, { duration: 160 });
+    shown.value = withTiming(picked ? 1 : 0, { duration: 100 });
   }, [picked, shown]);
   const tall = useSharedValue(height);
   useEffect(() => {
@@ -108,10 +108,9 @@ export function HourTimeline({
   const most = Math.max(1, ...(counts ?? []).slice(FIRST, LAST));
   const lowest = Math.max(FIRST, earliest);
 
-  // The run's ends in points, moved on the UI thread: with the finger while it drags (no snapping
-  // mid-drag), gliding to whole hours when it lets go or when the run changes from outside (a tap,
-  // a new day). The run itself, which the bars, the label and the search read, changes once per
-  // hour crossed.
+  // The run's ends in points, moved on the UI thread: stepping hour by hour with the finger (a quick
+  // glide to each new hour), and gliding when the run changes from outside (a tap, a new day). The
+  // run itself, which the bars, the label and the search read, changes at the same moments.
   const fromX = useSharedValue(0);
   const toX = useSharedValue(0);
   const shown = useSharedValue(run ? 1 : 0);
@@ -177,40 +176,35 @@ export function HourTimeline({
     .onUpdate((event) => {
       const c = cellSV.value;
       if (held.value === 0 || c === 0) return;
-      const dx = event.x - startX.value;
-      const least = (lowestSV.value - FIRST) * c;
-      const end = SPAN * c;
+      // Where the finger would put the ends, in hours, then kept to the rules: the whole run slid
+      // (length kept), or one end moved (1 to LONGEST hours, never before the earliest hour).
+      const dx = Math.round((event.x - startX.value) / c);
+      const first = Math.round(startFrom.value / c) + FIRST;
+      const last = Math.round(startTo.value / c) + FIRST;
+      const least = lowestSV.value;
+      let from = lastFrom.value;
+      let to = lastTo.value;
       if (held.value === 3) {
-        const span = startTo.value - startFrom.value;
-        const from = Math.min(Math.max(startFrom.value + dx, least), end - span);
-        fromX.value = from;
-        toX.value = from + span;
+        const span = last - first;
+        from = Math.min(Math.max(first + dx, least), LAST - span);
+        to = from + span;
       } else if (held.value === 1) {
-        fromX.value = Math.min(
-          Math.max(startFrom.value + dx, least, toX.value - LONGEST * c),
-          toX.value - c,
-        );
+        from = Math.min(Math.max(first + dx, least, lastTo.value - LONGEST), lastTo.value - 1);
       } else {
-        toX.value = Math.max(
-          Math.min(startTo.value + dx, end, fromX.value + LONGEST * c),
-          fromX.value + c,
-        );
+        to = Math.max(Math.min(last + dx, LAST, lastFrom.value + LONGEST), lastFrom.value + 1);
       }
-      const from = Math.round(fromX.value / c) + FIRST;
-      const to = Math.round(toX.value / c) + FIRST;
+      // Hour by hour: the handles step to the new hours with a quick glide, and the run (the
+      // bars, the label, the count) changes at the same moment.
       if (from !== lastFrom.value || to !== lastTo.value) {
+        const step = { duration: 90, easing: Easing.out(Easing.cubic) };
+        if (from !== lastFrom.value) fromX.value = withTiming((from - FIRST) * c, step);
+        if (to !== lastTo.value) toX.value = withTiming((to - FIRST) * c, step);
         lastFrom.value = from;
         lastTo.value = to;
         runOnJS(commit)(from, to);
       }
     })
     .onFinalize(() => {
-      const c = cellSV.value;
-      if (held.value !== 0) {
-        const glide = { duration: 140, easing: Easing.out(Easing.cubic) };
-        fromX.value = withTiming((lastFrom.value - FIRST) * c, glide);
-        toX.value = withTiming((lastTo.value - FIRST) * c, glide);
-      }
       held.value = 0;
       dragging.value = false;
     });
