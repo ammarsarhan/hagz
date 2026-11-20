@@ -34,9 +34,9 @@ type Loaded = { state: "loading" } | { state: "failed"; message: string } | { st
 // The saved heart's deeper red edge, as on the venue page.
 const SAVED_EDGE = "#b42318";
 
-// Favorites (Figma C7, 156:2 and 158:2; the user, 2026-11-20), opened from the Account tab: the
-// venues the player saved, newest first, as Search's cards with the red heart on the cover to take
-// one off (it leaves the list at once). A venue that's gone from Hagz stays, faded, with Remove. Read
+// Favorites (Figma C7, 157:2 and 158:2; the user, 2026-11-20), opened from the Account tab: the
+// venues the player saved, newest first, as rows with the red heart at the end to take one off (it
+// leaves the list at once). A venue that's gone from Hagz stays, faded, with Remove. Read
 // fresh each time the screen comes into view, and every heart in the app follows it.
 export default function Favorites() {
   const { t } = useTranslation();
@@ -161,8 +161,8 @@ function List({ venues }: { venues: Favorite[] }) {
             layout={LinearTransition.duration(240)}
             exiting={FadeOut.duration(180)}
           >
-            {index > 0 ? <View className="my-6 h-px bg-border" /> : null}
-            <FavoriteCard venue={venue} />
+            {index > 0 ? <View className="h-px bg-border" /> : null}
+            <FavoriteRow venue={venue} />
           </Animated.View>
         ))}
       </Animated.ScrollView>
@@ -194,20 +194,12 @@ function List({ venues }: { venues: Favorite[] }) {
   );
 }
 
-function Rating({ venue }: { venue: Favorite }) {
-  if (venue.rating.average === null) return null;
-  return (
-    <View className="flex-row items-center gap-1">
-      <IconStarFilled size={14} color={colors.ink} />
-      <Text className="text-body font-medium">{venue.rating.average.toFixed(2)}</Text>
-      <Text className="text-body text-ink-2">({venue.rating.count})</Text>
-    </View>
-  );
-}
+// A saved venue as a row (Figma C7, 157:2; the user's pick, 2026-11-20): its photo, then the name,
+// where it is, and what's played there with its rating; the red heart at the end takes it off. Gone
+// from Hagz: faded, with Remove for the heart, and nothing to open.
+const THUMB = 84;
 
-// A saved venue: its cover with the red heart (tap to take it off), then the venue. Gone from Hagz:
-// faded, with Remove for the heart, and nothing to open.
-function FavoriteCard({ venue }: { venue: Favorite }) {
+function FavoriteRow({ venue }: { venue: Favorite }) {
   const { t } = useTranslation();
   const hud = useHud();
   const gone = venue.status === "UNAVAILABLE";
@@ -216,65 +208,75 @@ function FavoriteCard({ venue }: { venue: Favorite }) {
     void toggleFavorite(venue.id).then((problem) => {
       if (problem) hud.show(problem);
     });
-  const line = gone
+  const where = gone
     ? t("screens.favorites.gone")
     : venue.status === "MAINTENANCE"
       ? t("screens.favorites.paused")
-      : [venue.area, sportsText(venue.sports)].filter(Boolean).join(" · ");
+      : venue.area;
+  const rating = venue.rating.average;
 
   return (
     <Pressable
       accessibilityRole={gone ? undefined : "button"}
       disabled={gone}
       onPress={() => router.push({ pathname: "/venue/[slug]", params: { slug: venue.slug } })}
+      className="flex-row items-center gap-3.5 py-3.5"
     >
       <View
-        className="overflow-hidden rounded-2xl bg-[#c4c8cf]"
-        style={{ aspectRatio: 16 / 9, opacity: gone ? 0.45 : 1 }}
+        className="overflow-hidden rounded-[14px]"
+        style={{ width: THUMB, height: THUMB, backgroundColor: "#c4c8cf", opacity: gone ? 0.4 : 1 }}
       >
         {venue.cover ? (
           <Image
             source={{ uri: reachable(venue.cover.url) }}
-            style={{ width: "100%", height: "100%" }}
+            style={{ width: THUMB, height: THUMB }}
             contentFit="cover"
             transition={150}
           />
         ) : null}
-        {gone ? null : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("screens.favorites.unsave", { name })}
-            hitSlop={8}
-            onPress={remove}
-            className="absolute top-3 right-3 size-9 items-center justify-center rounded-full bg-white active:opacity-80"
-          >
-            <View>
-              <IconHeartFilled size={18} color={colors.red} />
-              <View className="absolute inset-0">
-                <IconHeart size={18} color={SAVED_EDGE} strokeWidth={2} />
-              </View>
-            </View>
-          </Pressable>
-        )}
       </View>
-      <View className="mt-4 flex-row items-center justify-between gap-3">
-        <Text
-          className={`shrink text-[18px] leading-6 font-medium ${gone ? "text-ink-3" : ""}`}
-          numberOfLines={1}
-        >
+      <View className="flex-1" style={{ opacity: gone ? 0.5 : 1 }}>
+        <Text className="text-[17px] leading-[22px] font-medium" numberOfLines={1}>
           {name}
         </Text>
-        {gone ? (
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={remove}>
-            <Text className="text-body font-medium underline">{t("screens.favorites.remove")}</Text>
-          </Pressable>
-        ) : (
-          <Rating venue={venue} />
-        )}
+        {where ? (
+          <Text className="mt-0.5 text-label text-ink-2" numberOfLines={1}>
+            {where}
+          </Text>
+        ) : null}
+        <View className="flex-row items-center gap-1">
+          <Text className="shrink text-label text-ink-2" numberOfLines={1}>
+            {sportsText(venue.sports)}
+          </Text>
+          {rating !== null && !gone ? (
+            <>
+              <Text className="text-label text-ink-2">·</Text>
+              <IconStarFilled size={12} color={colors.ink2} />
+              <Text className="text-label text-ink-2">{rating.toFixed(2)}</Text>
+            </>
+          ) : null}
+        </View>
       </View>
-      <Text className="mt-1 text-body text-ink-2" numberOfLines={1}>
-        {line}
-      </Text>
+      {gone ? (
+        <Pressable accessibilityRole="button" hitSlop={10} onPress={remove}>
+          <Text className="text-label font-medium underline">{t("screens.favorites.remove")}</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("screens.favorites.unsave", { name })}
+          hitSlop={12}
+          onPress={remove}
+          className="active:opacity-60"
+        >
+          <View>
+            <IconHeartFilled size={20} color={colors.red} />
+            <View className="absolute inset-0">
+              <IconHeart size={20} color={SAVED_EDGE} strokeWidth={2} />
+            </View>
+          </View>
+        </Pressable>
+      )}
     </Pressable>
   );
 }
