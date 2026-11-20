@@ -11,17 +11,20 @@ export function Title({
   subtitle,
   action,
   onTitleLayout,
+  tight = false,
 }: {
   children: string;
   subtitle?: ReactNode;
   action?: { label: string; onPress: () => void };
   onTitleLayout?: (event: LayoutChangeEvent) => void;
+  // The subtitle a little closer under the title (Favorites, user 2026-11-20).
+  tight?: boolean;
 }) {
   return (
     <>
       <Text
         accessibilityRole="header"
-        className="mb-2 text-title font-semibold tracking-[-0.4px]"
+        className={`${tight ? "mb-1" : "mb-2"} text-title font-semibold tracking-[-0.4px]`}
         onLayout={onTitleLayout}
       >
         {children}

@@ -1,6 +1,8 @@
 import { errorMessage, isProblem, shortErrorMessage, type Problem } from "@hagz/api";
 import { language } from "./language";
 
+export { retryAfter } from "@hagz/api";
+
 // openapi-fetch answers { data } or { error }, and throws when there's no answer at all (offline).
 // `send` folds all three into one shape, so screens handle every failure in one place.
 export type Result<T> = { ok: true; data: T } | { ok: false; error: unknown };

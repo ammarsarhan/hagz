@@ -1552,7 +1552,7 @@
           "PRICE",
           "SOONEST"
         ],
-        "description": "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first."
+        "description": "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with at least 5 reviews, then those with fewer (best rated first), then the unrated. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first."
       },
       "VenueFreeHours": {
         "type": "object",
@@ -10573,10 +10573,10 @@
               "type": "number",
               "minimum": 1,
               "maximum": 5,
-              "description": "Rated at least this (unrated venues are left out)."
+              "description": "Rated at least this, from at least 5 reviews (venues with fewer are left out)."
             },
             "required": false,
-            "description": "Rated at least this (unrated venues are left out).",
+            "description": "Rated at least this, from at least 5 reviews (venues with fewer are left out).",
             "name": "rating",
             "in": "query"
           },
@@ -10636,7 +10636,7 @@
               "$ref": "#/components/schemas/VenueSearchSort"
             },
             "required": false,
-            "description": "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first.",
+            "description": "`BEST_MATCH` (the default): the player's own venues first (a free booking ready, then stamps being collected, then venues played at), then venues with loyalty, then the rest; within each, by closeness, rating (pulled towards the marketplace's mean when there are few reviews) and how many free times fit. Guests see only the last two groups. `DISTANCE`: nearest first (needs a point). `RATING`: best rated first among venues with at least 5 reviews, then those with fewer (best rated first), then the unrated. `PRICE`: cheapest hour (among the free times found) first. `SOONEST`: the earliest free start first.",
             "name": "sort",
             "in": "query"
           },
@@ -10897,10 +10897,10 @@
               "type": "number",
               "minimum": 1,
               "maximum": 5,
-              "description": "Rated at least this (unrated venues are left out)."
+              "description": "Rated at least this, from at least 5 reviews (venues with fewer are left out)."
             },
             "required": false,
-            "description": "Rated at least this (unrated venues are left out).",
+            "description": "Rated at least this, from at least 5 reviews (venues with fewer are left out).",
             "name": "rating",
             "in": "query"
           },
@@ -11214,10 +11214,10 @@
               "type": "number",
               "minimum": 1,
               "maximum": 5,
-              "description": "Rated at least this (unrated venues are left out)."
+              "description": "Rated at least this, from at least 5 reviews (venues with fewer are left out)."
             },
             "required": false,
-            "description": "Rated at least this (unrated venues are left out).",
+            "description": "Rated at least this, from at least 5 reviews (venues with fewer are left out).",
             "name": "rating",
             "in": "query"
           },

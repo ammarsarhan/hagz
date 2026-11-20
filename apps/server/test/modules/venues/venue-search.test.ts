@@ -90,6 +90,7 @@ const venue = async ({
   size = "FIVE_A_SIDE",
   status = "LIVE",
   rating = null,
+  reviews,
 }: {
   marketplaceId: string;
   locationId: string;
@@ -100,6 +101,8 @@ const venue = async ({
   size?: "FIVE_A_SIDE" | "STANDARD";
   status?: "LIVE" | "MAINTENANCE" | "DRAFT";
   rating?: string | null;
+  // How many reviews the rating is from: 10 when rated, unless given.
+  reviews?: number;
 }) => {
   const created = await prisma.venue.create({
     data: {
@@ -108,7 +111,7 @@ const venue = async ({
       slug: `search-${++slugs}`,
       status,
       averageRating: rating,
-      reviewCount: rating ? 10 : 0,
+      reviewCount: reviews ?? (rating ? 10 : 0),
       translations: {
         create: [
           { language: "EN", name },
@@ -288,6 +291,22 @@ describe("filters and order", () => {
   it("puts the best rated first, the unrated last", async () => {
     const { nile, padel } = await setup();
     expect((await found({})).data.map((card) => card.id)).toEqual([nile.id, padel.id]);
+  });
+
+  it("ranks a rating from fewer than 5 reviews after the ones that have them, and leaves it out of a minimum", async () => {
+    const { maadi, nile, padel } = await setup();
+    // A perfect score from two reviews: after Nile's 4.6 from ten, though still before the unrated.
+    const lucky = await venue({
+      marketplaceId: nile.marketplaceId,
+      locationId: maadi.id,
+      name: "Lucky Pitch",
+      arabic: "ملعب محظوظ",
+      at: MAADI,
+      rating: "5.00",
+      reviews: 2,
+    });
+    expect((await found({})).data.map((card) => card.id)).toEqual([nile.id, lucky.id, padel.id]);
+    expect((await found({ rating: 4.5 })).data.map((card) => card.id)).toEqual([nile.id]);
   });
 
   it("pages with a cursor, and refuses one that's been tampered with", async () => {
