@@ -215,3 +215,36 @@ export const groundsText = (count: number, sports: Sport[]) => {
   const noun = courts ? "court" : "ground";
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 };
+
+// How many venues are free to start each hour of a day (GET /v1/venues/free-hours), for the When
+// sheet's timeline; null while loading.
+export const useFreeHours = (params: SearchParams, enabled: boolean) => {
+  const [counts, setCounts] = useState<number[] | null>(null);
+  const key = JSON.stringify(params);
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    setCounts(null);
+    void (async () => {
+      const { area, latitude, longitude, date, sport } = JSON.parse(key) as SearchParams;
+      const result = await send(
+        api.GET("/v1/venues/free-hours", {
+          params: {
+            query: {
+              marketplace: MARKETPLACE,
+              ...(area ? { area } : {}),
+              ...(latitude !== undefined && longitude !== undefined ? { latitude, longitude } : {}),
+              ...(date ? { date } : {}),
+              ...(sport ? { sport } : {}),
+            },
+          },
+        }),
+      );
+      if (active && result.ok) setCounts(result.data.hours.map((hour) => hour.venues));
+    })();
+    return () => {
+      active = false;
+    };
+  }, [key, enabled]);
+  return counts;
+};
