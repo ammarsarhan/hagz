@@ -4,6 +4,7 @@ export { recordStaffAccountChange, venuesOwnedBy } from "./application/staff-acc
 export { linkWalkIns } from "./application/venue-customers";
 export { removeAmenityFromLayouts } from "./application/layout-hooks";
 export { venuesAdminRoutes } from "./http/admin-routes";
+export { venuesFavoriteRoutes } from "./http/favorite-routes";
 export { venuesPublicRoutes } from "./http/public-routes";
 export { venuesStaffRoutes } from "./http/staff-routes";
 // For the development seed scripts.

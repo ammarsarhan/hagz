@@ -8,6 +8,7 @@ import {
   Pressable,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetHud } from "./hud";
 import { CloseButton } from "./nav";
@@ -30,11 +31,22 @@ interface SheetProps {
   // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
   // its own under it.
   header?: ReactNode;
+  // A sheet that scrolls and has no fields: its content isn't wrapped in the tap that closes the
+  // keyboard, which would take the touch before the scroll view could start scrolling.
+  scrolls?: boolean;
   children: ReactNode;
 }
 
-export function Sheet({ visible, onClose, onHidden, header, children }: SheetProps) {
+export function Sheet({
+  visible,
+  onClose,
+  onHidden,
+  header,
+  scrolls = false,
+  children,
+}: SheetProps) {
   const insets = useSafeAreaInsets();
+  const Wrapper = scrolls ? View : Pressable;
   const progress = useRef(new Animated.Value(0)).current;
   // Stay mounted while sliding out.
   const [mounted, setMounted] = useState(visible);
@@ -70,7 +82,9 @@ export function Sheet({ visible, onClose, onHidden, header, children }: SheetPro
       onDismiss={Platform.OS === "ios" ? () => hidden.current?.() : undefined}
       statusBarTranslucent
     >
-      <View className="flex-1">
+      {/* A Modal is its own window: gestures in it (sliders, the scroll view) need a root of their
+          own, one for the whole sheet so they all share touches. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior="padding"
           className="flex-1 justify-end"
@@ -91,7 +105,7 @@ export function Sheet({ visible, onClose, onHidden, header, children }: SheetPro
             }}
           >
             {/* Tapping the panel outside a field or button closes the keyboard. */}
-            <Pressable accessible={false} onPress={Keyboard.dismiss}>
+            <Wrapper accessible={false} onPress={Keyboard.dismiss}>
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
               <View className="h-10 flex-row items-center justify-end">
                 {header ? (
@@ -102,11 +116,11 @@ export function Sheet({ visible, onClose, onHidden, header, children }: SheetPro
                 <CloseButton onPress={onClose} />
               </View>
               {children}
-            </Pressable>
+            </Wrapper>
           </Animated.View>
         </KeyboardAvoidingView>
         <SheetHud open={visible && panelTop !== null} bottom={area - (panelTop ?? 0)} />
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

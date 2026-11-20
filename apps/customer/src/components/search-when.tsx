@@ -163,6 +163,7 @@ export function SearchWhen({
               count === null ? "Show venues" : `Show ${count} ${count === 1 ? "venue" : "venues"}`
             }
             size="small"
+            disabled={count === 0}
             onPress={() => onApply(draft)}
           />
         </View>
