@@ -40,13 +40,12 @@ export const PaymentFilter = z.enum(["CASH", "ONLINE"]).meta({
 });
 
 // A comma-separated list of an enum's values, as one query parameter ("A,B").
-const listOf = <T extends string>(values: readonly T[], description: string) =>
+const listOf = (values: readonly string[], description: string) =>
   z
     .string()
-    .refine(
-      (text) => text.split(",").every((part) => (values as readonly string[]).includes(part)),
-      { message: `A comma-separated list of: ${values.join(", ")}.` },
-    )
+    .refine((text) => text.split(",").every((part) => values.includes(part)), {
+      message: `A comma-separated list of: ${values.join(", ")}.`,
+    })
     .optional()
     .meta({ description, example: values.slice(0, 2).join(",") });
 
