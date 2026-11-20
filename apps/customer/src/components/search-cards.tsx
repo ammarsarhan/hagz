@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -119,7 +119,9 @@ const UNDER = 16;
 const CHIPS_GAP = 12;
 const GUTTER = 24;
 
-export function VenueListCard({
+// Memoised: a card re-renders only when its own venue, the currency, the timezone or the shared
+// morph value change, not every time Search does (a sport tap was redrawing every card).
+export const VenueListCard = memo(function VenueListCard({
   card,
   currency,
   timezone,
@@ -216,7 +218,7 @@ export function VenueListCard({
       </Animated.View>
     </Animated.View>
   );
-}
+});
 
 // Option 3: the picked venue on the map, as a floating card.
 export function VenueMapCard({

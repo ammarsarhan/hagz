@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -51,6 +51,8 @@ import {
 // until the new ones arrive and new ones fade in, cards ⟷ rows morphs each card (cover into
 // thumbnail, words sliding beside it), and the list and the map cross-fade.
 
+const Separator = () => <View className="my-6 h-px bg-border" />;
+
 const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
 // What a sport is played on, for "No padel courts have a free hour left today."
 const SPORT_PLACES: Record<Sport, string> = {
@@ -70,7 +72,18 @@ const shadow = {
 } as const;
 
 // A filter chip: picked, its black (with white words) fades in over the white one.
-function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+// Memoised with a value and one stable handler, so a tap re-renders only the two chips that change.
+const Chip = memo(function Chip({
+  label,
+  value,
+  on,
+  onSelect,
+}: {
+  label: string;
+  value: Sport | undefined;
+  on: boolean;
+  onSelect: (value: Sport | undefined) => void;
+}) {
   const shown = useSharedValue(on ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(on ? 1 : 0, { duration: 180 });
@@ -80,7 +93,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      onPress={onPress}
+      onPress={() => onSelect(value)}
       className="h-10 justify-center rounded-full border border-border bg-white px-4"
     >
       <Text className="text-body font-medium">{label}</Text>
@@ -93,7 +106,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
       </Animated.View>
     </Pressable>
   );
-}
+});
 
 // "Nearest" or "Best rated": the words cross-fade and the arrow turns when it changes.
 function SortToggle({
@@ -199,6 +212,9 @@ export default function SearchTab() {
   const [everywhere, setEverywhere] = useState(false);
   const here = everywhere ? null : phone;
   const [sport, setSport] = useState<Sport | undefined>(undefined);
+  // The chips follow a tap at once; the search (and the list it redraws) follows right after, so
+  // the tap never waits on the list.
+  const searchedSport = useDeferredValue(sport);
   const [sortChoice, setSortChoice] = useState<SearchSort | undefined>(undefined);
   // The list or the map, cross-faded; and how the list shows venues.
   const [mode, setMode] = useState<"list" | "map">("list");
@@ -237,7 +253,7 @@ export default function SearchTab() {
   const search = useVenueSearch(
     {
       ...(here ? { latitude: here.latitude, longitude: here.longitude } : {}),
-      ...(sport ? { sport } : {}),
+      ...(searchedSport ? { sport: searchedSport } : {}),
       sort,
     },
     phone !== undefined,
@@ -260,13 +276,14 @@ export default function SearchTab() {
         style={{ marginHorizontal: -24 }}
         contentContainerStyle={{ gap: 8, paddingHorizontal: 24 }}
       >
-        <Chip label="All" on={!sport} onPress={() => setSport(undefined)} />
+        <Chip label="All" value={undefined} on={!sport} onSelect={setSport} />
         {SPORTS.map((each) => (
           <Chip
             key={each}
             label={sportName(each)}
+            value={each}
             on={sport === each}
-            onPress={() => setSport(each)}
+            onSelect={setSport}
           />
         ))}
       </ScrollView>
@@ -298,6 +315,17 @@ export default function SearchTab() {
     </View>
   );
 
+  // Stable, so the list doesn't redraw every card when Search re-renders.
+  const { currency, timezone } = search;
+  const renderItem = useCallback(
+    ({ item }: { item: VenueCard }) => (
+      <Animated.View entering={FadeIn.duration(200)}>
+        <VenueListCard card={item} currency={currency} timezone={timezone} compact={compact} />
+      </Animated.View>
+    ),
+    [currency, timezone, compact],
+  );
+
   const empty = search.loading ? (
     <View className="items-center pt-16">
       <ActivityIndicator color={colors.ink} />
@@ -313,7 +341,7 @@ export default function SearchTab() {
       <LightsOutArt />
       <Text className="mt-3 text-heading font-semibold">Uh oh!</Text>
       <Text className="mt-2 text-center text-subtitle text-ink-2">
-        {`No ${sport ? SPORT_PLACES[sport] : "venues"}${here ? " within 10 km" : ""} have a free hour left today.`}
+        {`No ${searchedSport ? SPORT_PLACES[searchedSport] : "venues"}${here ? " within 10 km" : ""} have a free hour left today.`}
       </Text>
       {here ? (
         <View className="mt-6">
@@ -346,17 +374,8 @@ export default function SearchTab() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         // Venues new to the list fade in (opacity only).
-        renderItem={({ item }: { item: VenueCard }) => (
-          <Animated.View entering={FadeIn.duration(200)}>
-            <VenueListCard
-              card={item}
-              currency={search.currency}
-              timezone={search.timezone}
-              compact={compact}
-            />
-          </Animated.View>
-        )}
-        ItemSeparatorComponent={() => <View className="my-6 h-px bg-border" />}
+        renderItem={renderItem}
+        ItemSeparatorComponent={Separator}
         ListHeaderComponent={
           <View className="gap-4 pb-5">
             <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
