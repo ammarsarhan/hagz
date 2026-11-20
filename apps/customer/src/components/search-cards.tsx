@@ -121,6 +121,37 @@ const GUTTER = 24;
 
 // Memoised: a card re-renders only when its own venue, the currency, the timezone or the shared
 // morph value change, not every time Search does (a sport tap was redrawing every card).
+// The card's badge (docs/architecture.md, "Search ranking"): the player's own standing there first,
+// then a free time that came free again, then the venue's loyalty. Null for nothing to say.
+export const badgeOf = (card: VenueCard): { label: string; moment: boolean } | null => {
+  const you = card.you;
+  if (you?.card?.status === "EARNED") return { label: "Free booking ready", moment: true };
+  if (you?.card?.status === "OPEN") {
+    return { label: `${you.card.stamps} of ${you.card.required}`, moment: false };
+  }
+  if (you && you.played > 0) return { label: `Played here ${you.played}×`, moment: false };
+  if (card.justFreed) return { label: "Just freed", moment: false };
+  if (card.loyalty) return { label: "Loyalty", moment: false };
+  return null;
+};
+
+// On the cover's top right: white, or lime for the one big moment (a free booking ready).
+function CoverBadge({ badge }: { badge: { label: string; moment: boolean } }) {
+  return (
+    <View
+      className={`h-7 justify-center rounded-full px-3 ${badge.moment ? "bg-primary" : "bg-white"}`}
+      style={{
+        shadowColor: "#0b0b0c",
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+      }}
+    >
+      <Text className="text-[13px] leading-4 font-semibold text-ink">{badge.label}</Text>
+    </View>
+  );
+}
+
 export const VenueListCard = memo(function VenueListCard({
   card,
   currency,
@@ -156,6 +187,11 @@ export const VenueListCard = memo(function VenueListCard({
       { translateY: interpolate(compact.value, [0, 1], [coverHeight + UNDER, 0]) },
     ],
   }));
+  // The badge belongs to the cover: it fades out over the first part of the shrink into a row.
+  const badgeFade = useAnimatedStyle(() => ({
+    opacity: interpolate(compact.value, [0, 0.4], [1, 0], "clamp"),
+  }));
+  const badge = badgeOf(card);
   const chips = useAnimatedStyle(() => ({
     transform: [
       {
@@ -208,6 +244,11 @@ export const VenueListCard = memo(function VenueListCard({
             />
           ) : null}
         </Animated.View>
+        {badge ? (
+          <Animated.View pointerEvents="none" className="absolute top-3 right-3" style={badgeFade}>
+            <CoverBadge badge={badge} />
+          </Animated.View>
+        ) : null}
       </Pressable>
       <Animated.View
         className="absolute top-0 right-0 left-0"
