@@ -80,7 +80,7 @@ export function TimeChips({
           accessibilityRole="button"
           accessibilityLabel={`${card.name ?? "Venue"} at ${timeOfDay(time.startsAt, timezone)}`}
           onPress={() => openVenue(card)}
-          className="min-w-[72px] items-center justify-center rounded-xl border border-border px-3 py-1.5 active:bg-chip"
+          className="min-w-[72px] items-center justify-center rounded-xl border border-border px-3 py-1.5"
         >
           <Text className="text-subtitle font-medium">{timeOfDay(time.startsAt, timezone)}</Text>
           <Text className="text-[12px] leading-4 text-unit">
