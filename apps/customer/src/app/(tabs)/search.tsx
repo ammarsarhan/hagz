@@ -16,7 +16,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
-import { useHud } from "@/components/hud";
 import { LightsOutArt } from "@/components/lights-out-art";
 import {
   IconAdjustmentsHorizontal,
@@ -28,12 +27,21 @@ import {
 } from "@/components/icons";
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
+import { SearchWhen } from "@/components/search-when";
+import { SearchWhere } from "@/components/search-where";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
 import {
+  ANY_TIME,
+  dayText,
+  hourLabel,
   sportName,
   useVenueSearch,
+  whenText,
+  type SearchParams,
+  type When,
+  type Where,
   type SearchSort,
   type Sport,
   type VenueCard,
@@ -155,11 +163,14 @@ function SearchPill({
   where,
   when,
   onPress,
+  onFilter,
   docked,
 }: {
   where: string;
   when: string;
+  // The bar opens where; its round button opens when (until there are filters).
   onPress: () => void;
+  onFilter: () => void;
   docked: DerivedValue<number> | null;
 }) {
   const box = useAnimatedStyle(() => ({
@@ -193,12 +204,19 @@ function SearchPill({
             </Text>
           </Animated.View>
         </View>
-        <Animated.View
-          className="size-10 items-center justify-center rounded-full border border-border"
-          style={button}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="When to play"
+          hitSlop={6}
+          onPress={onFilter}
         >
-          <IconAdjustmentsHorizontal size={18} color={colors.ink} strokeWidth={2} />
-        </Animated.View>
+          <Animated.View
+            className="size-10 items-center justify-center rounded-full border border-border"
+            style={button}
+          >
+            <IconAdjustmentsHorizontal size={18} color={colors.ink} strokeWidth={2} />
+          </Animated.View>
+        </Pressable>
       </Animated.View>
     </Pressable>
   );
@@ -206,11 +224,13 @@ function SearchPill({
 
 export default function SearchTab() {
   const insets = useSafeAreaInsets();
-  const hud = useHud();
   const phone = useHere();
-  // Near the player, until they ask for everywhere (offered when nothing's near).
-  const [everywhere, setEverywhere] = useState(false);
-  const here = everywhere ? null : phone;
+  // Where and when, set from the search bar (options 4 and 5): near the player and today, any time,
+  // an hour to start. "Near me" without a position searches everywhere.
+  const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near" });
+  const [when, setWhen] = useState<When>(ANY_TIME);
+  const [editing, setEditing] = useState<"where" | "when" | null>(null);
+  const here = whereChoice.kind === "near" ? phone : null;
   const [sport, setSport] = useState<Sport | undefined>(undefined);
   // The chips follow a tap at once; the search (and the list it redraws) follows right after, so
   // the tap never waits on the list.
@@ -250,16 +270,23 @@ export default function SearchTab() {
 
   // Nearest first when the phone knows where it is; best rated otherwise.
   const sort: SearchSort = here ? (sortChoice ?? "DISTANCE") : "RATING";
+  // The search without its when, which the when sheet counts against.
+  const whereParams: SearchParams = {
+    ...(here ? { latitude: here.latitude, longitude: here.longitude } : {}),
+    ...(whereChoice.kind === "area" ? { area: whereChoice.id } : {}),
+    ...(searchedSport ? { sport: searchedSport } : {}),
+    sort,
+  };
   const search = useVenueSearch(
     {
-      ...(here ? { latitude: here.latitude, longitude: here.longitude } : {}),
-      ...(searchedSport ? { sport: searchedSport } : {}),
-      sort,
+      ...whereParams,
+      ...(when.date ? { date: when.date } : {}),
+      ...(when.start ? { start: when.start } : {}),
+      hours: when.hours,
     },
     phone !== undefined,
   );
 
-  const soon = () => hud.show("Changing where and when comes next");
   const total = search.total;
   const summary =
     total === null
@@ -267,8 +294,14 @@ export default function SearchTab() {
       : // The count found: the search bar already says where and when (user, 2026-11-20).
         `${total} ${total === 1 ? "venue" : "venues"} found`;
 
-  const where = here ? "Near me" : "All of Egypt";
-  const when = "Today · any time · 1 hour";
+  const whereLabel = here
+    ? "Near me"
+    : whereChoice.kind === "area"
+      ? whereChoice.name
+      : "All of Egypt";
+  const whenLabel = whenText(when, search.timezone);
+  const openWhere = () => setEditing("where");
+  const openWhen = () => setEditing("when");
   const chips = (
     <View>
       <ScrollView
@@ -311,7 +344,13 @@ export default function SearchTab() {
       >
         {/* The bar alone: no sport chips and no switch here (user, 2026-11-20); the List pill at
             the bottom goes back. */}
-        <SearchPill where={where} when={when} onPress={soon} docked={null} />
+        <SearchPill
+          where={whereLabel}
+          when={whenLabel}
+          onPress={openWhere}
+          onFilter={openWhen}
+          docked={null}
+        />
       </View>
     </View>
   );
@@ -342,7 +381,15 @@ export default function SearchTab() {
       <LightsOutArt />
       <Text className="mt-3 text-heading font-semibold">Uh oh!</Text>
       <Text className="mt-2 text-center text-subtitle text-ink-2">
-        {`No ${searchedSport ? SPORT_PLACES[searchedSport] : "venues"}${here ? " within 10 km" : ""} have a free hour left today.`}
+        {`No ${searchedSport ? SPORT_PLACES[searchedSport] : "venues"}${
+          here ? " within 10 km" : whereChoice.kind === "area" ? ` in ${whereChoice.name}` : ""
+        } ${
+          when.start
+            ? `are free ${dayText(when.date, search.timezone).toLowerCase()} at ${hourLabel(Number(when.start.slice(0, 2)))}`
+            : when.date
+              ? `have a free hour on ${dayText(when.date, search.timezone)}`
+              : "have a free hour left today"
+        }.`}
       </Text>
       {here ? (
         <View className="mt-6">
@@ -350,7 +397,7 @@ export default function SearchTab() {
             label="Search all of Egypt"
             size="small"
             quietLabel
-            onPress={() => setEverywhere(true)}
+            onPress={() => setWhereChoice({ kind: "everywhere" })}
           />
         </View>
       ) : sport ? (
@@ -441,7 +488,13 @@ export default function SearchTab() {
         style={[{ height: dockAt + 48 + 10 }, headerStyle]}
       />
       <Animated.View className="absolute top-0 right-6 left-6" style={pillStyle}>
-        <SearchPill where={where} when={when} onPress={soon} docked={docked} />
+        <SearchPill
+          where={whereLabel}
+          when={whenLabel}
+          onPress={openWhere}
+          onFilter={openWhen}
+          docked={docked}
+        />
       </Animated.View>
 
       {search.cards.length > 0 ? (
@@ -460,7 +513,8 @@ export default function SearchTab() {
     </View>
   );
 
-  // The list and the map fade over each other.
+  // The list and the map fade over each other; where covers both while it's being chosen, and when
+  // is a sheet over them.
   return (
     <View className="flex-1 bg-white">
       {mode === "map" ? (
@@ -482,6 +536,33 @@ export default function SearchTab() {
           {listView}
         </Animated.View>
       )}
+      {editing === "where" ? (
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(150)}
+          style={StyleSheet.absoluteFill}
+        >
+          <SearchWhere
+            here={phone ?? null}
+            onPick={(next) => {
+              setWhereChoice(next);
+              setEditing("when");
+            }}
+            onClose={() => setEditing(null)}
+          />
+        </Animated.View>
+      ) : null}
+      <SearchWhen
+        visible={editing === "when"}
+        when={when}
+        timezone={search.timezone}
+        params={whereParams}
+        onApply={(next) => {
+          setWhen(next);
+          setEditing(null);
+        }}
+        onClose={() => setEditing(null)}
+      />
     </View>
   );
 }
