@@ -23,7 +23,6 @@ import {
   IconArrowsSort,
   IconLayoutGrid,
   IconLayoutList,
-  IconList,
   IconMap,
   IconSearch,
 } from "@/components/icons";
@@ -292,6 +291,7 @@ export default function SearchTab() {
         here={phone ?? null}
         top={header}
         bottom={0}
+        onList={() => setMode("list")}
       />
       <View
         className="absolute right-0 left-0 px-6"
@@ -299,22 +299,9 @@ export default function SearchTab() {
         onLayout={(event) => setHeader(event.nativeEvent.layout.height + insets.top + 8)}
         pointerEvents="box-none"
       >
-        {/* The bar, and the switch back to the list beside it at the bar's height. No sport chips
-            here: the map keeps to the bar (user, 2026-11-20). */}
-        <View className="flex-row items-center gap-3">
-          <View className="flex-1">
-            <SearchPill where={where} when={when} onPress={soon} docked={null} />
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Show the list"
-            onPress={() => setMode("list")}
-            className="size-[60px] items-center justify-center rounded-full border border-border bg-white active:opacity-80"
-            style={shadow}
-          >
-            <IconList size={22} color={colors.ink} strokeWidth={2} />
-          </Pressable>
-        </View>
+        {/* The bar alone: no sport chips and no switch here (user, 2026-11-20); the List pill at
+            the bottom goes back. */}
+        <SearchPill where={where} when={when} onPress={soon} docked={null} />
       </View>
     </View>
   );

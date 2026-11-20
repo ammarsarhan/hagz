@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
 import type { VenueCard } from "@/lib/search";
+import { IconList } from "./icons";
 import { VenueMapCard } from "./search-cards";
 import { Text } from "./text";
 
@@ -31,6 +33,7 @@ export function SearchMap({
   here,
   top,
   bottom,
+  onList,
 }: {
   cards: VenueCard[];
   currency: string;
@@ -39,6 +42,7 @@ export function SearchMap({
   // How much the search bar covers at the top, and the tab bar at the bottom.
   top: number;
   bottom: number;
+  onList: () => void;
 }) {
   const map = useRef<MapView>(null);
   const placed = cards.filter((card) => card.coordinates !== null);
@@ -85,11 +89,21 @@ export function SearchMap({
           ) : null;
         })}
       </MapView>
-      {picked ? (
-        <View className="absolute right-4 left-4" style={{ bottom: bottom + 12 }}>
-          <VenueMapCard card={picked} currency={currency} timezone={timezone} />
+      {/* The way back to the list (the list's Map pill, mirrored), over the picked venue's card. */}
+      <View
+        className="absolute right-4 left-4 gap-3"
+        style={{ bottom: bottom + 12 }}
+        pointerEvents="box-none"
+      >
+        <View className="items-center" pointerEvents="box-none">
+          <MapToggle
+            label="List"
+            icon={<IconList size={18} color={colors.white} strokeWidth={2} />}
+            onPress={onList}
+          />
         </View>
-      ) : null}
+        {picked ? <VenueMapCard card={picked} currency={currency} timezone={timezone} /> : null}
+      </View>
     </View>
   );
 }
