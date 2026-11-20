@@ -125,15 +125,8 @@ const SPORT_NAMES: Record<Sport, string> = {
 
 export const sportName = (sport: Sport) => SPORT_NAMES[sport];
 
-// "Football", "Football and padel".
-export const sportsText = (sports: Sport[]) => {
-  const names = sports.map((sport, index) =>
-    index === 0 ? SPORT_NAMES[sport] : SPORT_NAMES[sport].toLowerCase(),
-  );
-  return names.length > 1
-    ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
-    : (names[0] ?? "");
-};
+// "Football", "Football/Padel" (user, 2026-11-20).
+export const sportsText = (sports: Sport[]) => sports.map((sport) => SPORT_NAMES[sport]).join("/");
 
 // "2 grounds", or "2 courts" at a venue that's only courts (padel, tennis…).
 export const groundsText = (count: number, sports: Sport[]) => {
