@@ -26,7 +26,7 @@ export const accessLog = createMiddleware(async (c, next) => {
   logger[status >= 500 ? "error" : "info"](
     {
       method: c.req.method,
-      route: routePath(c, -1),
+      route: routePath(c),
       status,
       durationMs: Math.round(performance.now() - start),
     },

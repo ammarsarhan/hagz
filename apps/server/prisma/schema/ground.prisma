@@ -87,6 +87,9 @@ model GroundSlot {
   isManual        Boolean    @default(false)
   scheduleVersion Int // Version it was generated from.
   bookingId       String?    @db.Uuid // Cleared when the booking is cancelled or expires.
+  // When it last came free again (a booking cancelled, a regular's reservation released): search
+  // marks it "just freed" near kick-off (docs/regulars.md).
+  freedAt         DateTime?  @db.Timestamptz
   createdAt       DateTime   @default(now()) @db.Timestamptz
   updatedAt       DateTime   @updatedAt @db.Timestamptz
 

@@ -6,6 +6,7 @@ export const colors = {
   ink2: "#5e636b",
   ink3: "#9aa0a8",
   unit: "#737373",
+  chip: "#f2f3f5",
   lime: "#e9fea0",
   red: "#d92d20",
   white: "#ffffff",
