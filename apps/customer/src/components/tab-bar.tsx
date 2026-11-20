@@ -14,7 +14,6 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 // black with a heavier stroke and a semibold label; the rest are grey. No lime here: it's kept for
 // the big moments.
 const ROW = 49;
-const HAIRLINE = 1;
 
 const TABS: Record<string, { icon: Icon; label: string }> = {
   home: { icon: IconHome, label: "Home" },
@@ -23,9 +22,6 @@ const TABS: Record<string, { icon: Icon; label: string }> = {
   bookings: { icon: IconTicket, label: "Bookings" },
   account: { icon: IconUserCircle, label: "Account" },
 };
-
-// How much of the screen the bar takes, from the bottom edge.
-export const useTabBarHeight = () => ROW + HAIRLINE + useSafeAreaInsets().bottom;
 
 export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const insets = useSafeAreaInsets();

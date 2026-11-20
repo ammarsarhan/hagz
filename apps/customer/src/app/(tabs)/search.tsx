@@ -1,6 +1,16 @@
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  interpolate,
+  LinearTransition,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
@@ -15,17 +25,27 @@ import {
 } from "@/components/icons";
 import { VenueCardLarge, VenueRow } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
-import { useTabBarHeight } from "@/components/tab-bar";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
-import { sportName, useVenueSearch, type SearchSort, type Sport } from "@/lib/search";
+import {
+  sportName,
+  useVenueSearch,
+  type SearchSort,
+  type Sport,
+  type VenueCard,
+} from "@/lib/search";
 
 // Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20, built behind
 // one switch to compare on the phone): venues free today near the player (or anywhere, best rated
 // first, when the phone can't say where it is), narrowed by sport. Results come as big cards
 // (option 1) or compact rows (option 2), or on a map with price pins (option 3). Changing where and
 // when (options 4 and 5) isn't built yet, so the search bar says so.
+//
+// The page scrolls as one, like the venue page: the big title rises into a white bar as it goes
+// under it (user, 2026-11-20). Changes animate: a chip's black fades, the order's label cross-fades
+// and its arrow turns, and the results glide to their new places, kept on screen until the new
+// ones arrive.
 
 const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
 type View_ = "cards" | "rows" | "map";
@@ -38,22 +58,74 @@ const shadow = {
   elevation: 4,
 } as const;
 
+// A filter chip: picked, its black (with white words) fades in over the white one.
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const shown = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(on ? 1 : 0, { duration: 180 });
+  }, [on, shown]);
+  const fill = useAnimatedStyle(() => ({ opacity: shown.value }));
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      className={`h-10 justify-center rounded-full px-4 ${on ? "bg-ink" : "border border-border bg-white"}`}
+      className="h-10 justify-center rounded-full border border-border bg-white px-4"
     >
-      <Text className={`text-body font-medium ${on ? "text-white" : "text-ink"}`}>{label}</Text>
+      <Text className="text-body font-medium">{label}</Text>
+      <Animated.View
+        pointerEvents="none"
+        className="absolute -inset-px items-center justify-center rounded-full bg-ink"
+        style={fill}
+      >
+        <Text className="text-body font-medium text-white">{label}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// "Nearest" or "Best rated": the words cross-fade and the arrow turns when it changes.
+function SortToggle({
+  sort,
+  enabled,
+  onPress,
+}: {
+  sort: SearchSort;
+  enabled: boolean;
+  onPress: () => void;
+}) {
+  const turn = useSharedValue(sort === "DISTANCE" ? 0 : 1);
+  useEffect(() => {
+    turn.value = withTiming(sort === "DISTANCE" ? 0 : 1, { duration: 220 });
+  }, [sort, turn]);
+  const arrow = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(turn.value, [0, 1], [0, 180])}deg` }],
+  }));
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={sort === "DISTANCE" ? "Sorted nearest first" : "Sorted best rated first"}
+      disabled={!enabled}
+      hitSlop={8}
+      onPress={onPress}
+      className="flex-row items-center gap-1 active:opacity-60"
+    >
+      <Animated.View style={arrow}>
+        <IconArrowsSort size={16} color={colors.ink} strokeWidth={2} />
+      </Animated.View>
+      <Animated.View layout={LinearTransition.duration(200)}>
+        <Animated.View key={sort} entering={FadeIn.duration(180)} exiting={FadeOut.duration(100)}>
+          <Text className="text-body font-medium">
+            {sort === "DISTANCE" ? "Nearest" : "Best rated"}
+          </Text>
+        </Animated.View>
+      </Animated.View>
     </Pressable>
   );
 }
 
 export default function SearchTab() {
   const insets = useSafeAreaInsets();
-  const tabBar = useTabBarHeight();
   const hud = useHud();
   const phone = useHere();
   // Near the player, until they ask for everywhere (offered when nothing's near).
@@ -63,6 +135,19 @@ export default function SearchTab() {
   const [sortChoice, setSortChoice] = useState<SearchSort | undefined>(undefined);
   const [view, setView] = useState<View_>("cards");
   const [header, setHeader] = useState(0);
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  // Where the big title ends in the scroll; the bar's title is in once it has gone under.
+  const [titleEnd, setTitleEnd] = useState(0);
+  const barStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [titleEnd - 28, titleEnd], [0, 1], "clamp"),
+  }));
+  const compactStyle = useAnimatedStyle(() => {
+    const progress = interpolate(scrollY.value, [titleEnd - 24, titleEnd], [0, 1], "clamp");
+    return { opacity: progress, transform: [{ translateY: (1 - progress) * 6 }] };
+  });
 
   // Nearest first when the phone knows where it is; best rated otherwise.
   const sort: SearchSort = here ? (sortChoice ?? "DISTANCE") : "RATING";
@@ -128,7 +213,7 @@ export default function SearchTab() {
           timezone={search.timezone}
           here={phone ?? null}
           top={header}
-          bottom={tabBar}
+          bottom={0}
         />
         <View
           className="absolute right-0 left-0 px-6"
@@ -154,93 +239,130 @@ export default function SearchTab() {
   }
 
   const Item = view === "cards" ? VenueCardLarge : VenueRow;
-  return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-      <StatusBar style="dark" />
-      <View className="gap-4 px-6 pt-4 pb-3">
-        <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-          Search
-        </Text>
-        {bar}
-        <View className="flex-row items-center justify-between">
-          <Text className="text-body text-ink-2">{summary}</Text>
-          <View className="flex-row items-center gap-4">
-            <Pressable
-              accessibilityRole="button"
-              disabled={!here}
-              hitSlop={8}
-              onPress={() => setSortChoice(sort === "DISTANCE" ? "RATING" : "DISTANCE")}
-              className="flex-row items-center gap-1 active:opacity-60"
-            >
-              <IconArrowsSort size={16} color={colors.ink} strokeWidth={2} />
-              <Text className="text-body font-medium">
-                {sort === "DISTANCE" ? "Nearest" : "Best rated"}
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={view === "cards" ? "Show as rows" : "Show as cards"}
-              hitSlop={8}
-              onPress={() => setView(view === "cards" ? "rows" : "cards")}
-              className="active:opacity-60"
-            >
-              {view === "cards" ? (
-                <IconLayoutList size={20} color={colors.ink} strokeWidth={2} />
-              ) : (
-                <IconLayoutGrid size={20} color={colors.ink} strokeWidth={2} />
-              )}
-            </Pressable>
-          </View>
+  const empty = search.loading ? (
+    <View className="items-center pt-16">
+      <ActivityIndicator color={colors.ink} />
+    </View>
+  ) : search.error ? (
+    <View className="items-start gap-4 pt-10">
+      <Text className="text-subtitle text-ink-2">{search.error}</Text>
+      <Button label="Try again" size="small" onPress={search.refresh} />
+    </View>
+  ) : (
+    <View className="items-start gap-2 pt-10">
+      <Text className="text-heading font-semibold">
+        {here ? "Nothing free near you today" : "Nothing free today"}
+      </Text>
+      <Text className="text-subtitle text-ink-2">
+        {here
+          ? "Nothing within 10 km has a free hour left today."
+          : sport
+            ? "Try another sport, or all of them."
+            : "Check back later today."}
+      </Text>
+      {here ? (
+        <View className="mt-4">
+          <Button label="Search all of Egypt" size="small" onPress={() => setEverywhere(true)} />
         </View>
-      </View>
-      <FlatList
+      ) : null}
+    </View>
+  );
+
+  return (
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
+      <Animated.FlatList
         data={search.cards}
-        keyExtractor={(card) => card.id}
-        renderItem={({ item }) => (
-          <Item card={item} currency={search.currency} timezone={search.timezone} />
+        keyExtractor={(card: VenueCard) => card.id}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        // A new order glides each venue to its place; venues that come or go fade.
+        itemLayoutAnimation={LinearTransition.duration(260)}
+        renderItem={({ item }: { item: VenueCard }) => (
+          <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)}>
+            <Item card={item} currency={search.currency} timezone={search.timezone} />
+          </Animated.View>
         )}
         ItemSeparatorComponent={() => <View className="my-6 h-px bg-border" />}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 96 }}
-        onEndReached={search.loadMore}
-        onEndReachedThreshold={0.6}
-        refreshing={false}
-        onRefresh={search.refresh}
-        ListEmptyComponent={
-          search.loading ? undefined : search.error ? (
-            <View className="items-start gap-4 pt-10">
-              <Text className="text-subtitle text-ink-2">{search.error}</Text>
-              <Button label="Try again" onPress={search.refresh} />
+        ListHeaderComponent={
+          <View className="gap-4 pb-5">
+            <Text
+              accessibilityRole="header"
+              className="text-title font-semibold tracking-[-0.4px]"
+              onLayout={(event) => {
+                const { y, height } = event.nativeEvent.layout;
+                setTitleEnd(y + height);
+              }}
+            >
+              Search
+            </Text>
+            {bar}
+            <View className="flex-row items-center justify-between">
+              <Text className="text-body text-ink-2">{summary}</Text>
+              <View className="flex-row items-center gap-4">
+                <SortToggle
+                  sort={sort}
+                  enabled={Boolean(here)}
+                  onPress={() => setSortChoice(sort === "DISTANCE" ? "RATING" : "DISTANCE")}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={view === "cards" ? "Show as rows" : "Show as cards"}
+                  hitSlop={8}
+                  onPress={() => setView(view === "cards" ? "rows" : "cards")}
+                  className="active:opacity-60"
+                >
+                  {view === "cards" ? (
+                    <IconLayoutList size={20} color={colors.ink} strokeWidth={2} />
+                  ) : (
+                    <IconLayoutGrid size={20} color={colors.ink} strokeWidth={2} />
+                  )}
+                </Pressable>
+              </View>
             </View>
-          ) : (
-            <View className="items-start gap-2 pt-10">
-              <Text className="text-heading font-semibold">
-                {here ? "Nothing free near you today" : "Nothing free today"}
-              </Text>
-              <Text className="text-subtitle text-ink-2">
-                {here
-                  ? "Nothing within 10 km has a free hour left today."
-                  : sport
-                    ? "Try another sport, or all of them."
-                    : "Check back later today."}
-              </Text>
-              {here ? (
-                <View className="mt-4">
-                  <Button label="Search all of Egypt" onPress={() => setEverywhere(true)} />
-                </View>
-              ) : null}
-            </View>
-          )
+          </View>
         }
+        ListEmptyComponent={empty}
         ListFooterComponent={
-          search.loading ? (
+          search.loadingMore ? (
             <View className="py-8">
               <ActivityIndicator color={colors.ink} />
             </View>
           ) : undefined
         }
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingTop: insets.top + 16,
+          paddingBottom: 96,
+        }}
+        onEndReached={search.loadMore}
+        onEndReachedThreshold={0.6}
+        refreshing={false}
+        onRefresh={search.refresh}
       />
+
+      {/* The bar over the top: white with the title in it once the big title has scrolled under. */}
+      <View className="absolute top-0 right-0 left-0" pointerEvents="none">
+        <Animated.View
+          className="border-b border-hairline bg-white"
+          style={[{ height: insets.top + 44 }, barStyle]}
+        />
+        <Animated.View
+          className="absolute right-0 left-0 px-6"
+          style={[{ top: insets.top + 12 }, compactStyle]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text className="text-body font-semibold">Search</Text>
+        </Animated.View>
+      </View>
+
       {search.cards.length > 0 ? (
-        <View className="absolute right-0 left-0 items-center" style={{ bottom: tabBar + 16 }}>
+        <View
+          className="absolute right-0 left-0 items-center"
+          style={{ bottom: 16 }}
+          pointerEvents="box-none"
+        >
           <MapToggle
             label="Map"
             icon={<IconMap size={18} color={colors.white} strokeWidth={2} />}
