@@ -378,8 +378,8 @@ function PhotoSheet({
       : []),
   ];
   return (
-    <Sheet visible={visible} onClose={onClose} onHidden={onHidden}>
-      <View className="mt-3">
+    <Sheet visible={visible} onClose={onClose} onHidden={onHidden} closeButton={false}>
+      <View>
         {choices.map(({ key, icon: Glyph, label }, index) => (
           <SettingsRow
             key={key}
