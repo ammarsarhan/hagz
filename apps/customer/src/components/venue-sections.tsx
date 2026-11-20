@@ -520,13 +520,13 @@ export function AmenitiesSection({
         {venue.amenities.map((amenity) => (
           <View
             key={amenity.id}
-            className="h-[38px] flex-row items-center gap-2 rounded-full bg-chip px-3.5"
+            className="h-8 flex-row items-center gap-1.5 rounded-full bg-chip px-3"
           >
-            <AmenityIcon name={amenity.icon} size={18} color={colors.ink} />
-            <Text className="text-body font-medium">
+            <AmenityIcon name={amenity.icon} size={16} color={colors.ink} />
+            <Text className="text-label font-medium">
               {amenity.name}
               {amenity.price !== null ? (
-                <Text className="text-body text-ink-2">
+                <Text className="text-label text-ink-2">
                   {" · "}
                   {formatPrice(amenity.price, venue.marketplace.currency)}
                   {amenity.pricing === "PER_HOUR" ? "/hr" : ""}
