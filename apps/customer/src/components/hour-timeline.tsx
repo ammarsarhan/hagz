@@ -105,7 +105,9 @@ export function HourTimeline({
     });
 
   return (
-    <GestureHandlerRootView>
+    // Sized by what's in it: the root view flexes by default, and in a sheet sized by its content
+    // that leaves it no height, so the timeline spilled under the buttons.
+    <GestureHandlerRootView style={{ flex: 0 }}>
       <GestureDetector gesture={Gesture.Exclusive(drag, tap)}>
         <View
           onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
