@@ -135,26 +135,17 @@ export function SearchWhen({
         ))}
       </ScrollView>
 
-      <View className="mt-6 flex-row items-baseline justify-between">
-        <Text className="text-[24px] leading-[30px] font-medium">
+      <View className="mt-8 flex-row items-baseline justify-between">
+        <Text className="text-[20px] leading-[26px] font-medium">
           {run ? runLabel(run) : "Any time"}
         </Text>
         {run ? (
-          <View className="flex-row items-baseline gap-3">
-            <Text className="text-label text-ink-2">
-              {run.to - run.from === 1 ? "1 hour" : `${run.to - run.from} hours`}
-            </Text>
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setRun(null)}>
-              <Text className="text-label font-medium underline">Any time</Text>
-            </Pressable>
-          </View>
+          <Text className="text-label text-ink-2">
+            {run.to - run.from === 1 ? "1 hour" : `${run.to - run.from} hours`}
+          </Text>
         ) : null}
       </View>
-      <Text className="mt-1 mb-3 text-caption text-unit">
-        {run
-          ? "Bars: venues free each hour. Drag the ends."
-          : "Bars: venues free each hour. Tap one to pick a time."}
-      </Text>
+      <Text className="mt-1 mb-3 text-caption text-unit">Bars depict venues free each hour</Text>
       <HourTimeline counts={counts} run={run} earliest={earliest} onChange={setRun} />
 
       <View className="mt-7 flex-row gap-2.5">
