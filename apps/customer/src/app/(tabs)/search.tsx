@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import {
   memo,
   useCallback,
+  useMemo,
   useDeferredValue,
   useEffect,
   useRef,
@@ -50,6 +51,7 @@ import { SPORT_ICONS } from "@/components/sport-icons";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
+import { groundParams, whenFilter } from "@/lib/ground-filter";
 import { isRTL } from "@/lib/language";
 import {
   ANY_TIME,
@@ -452,6 +454,20 @@ export default function SearchTab() {
     </View>
   );
 
+  // What the search asks of a venue's grounds, for its page to grey out the rest (lib/
+  // ground-filter.ts). Kept by value, so the memoised cards only redraw when it really changes.
+  const groundKey = JSON.stringify(
+    groundParams({
+      ...whenFilter(when),
+      sport: searchedSport,
+      size: filters.size,
+      surfaces: filters.surfaces,
+      settings: filters.settings,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+    }),
+  );
+  const venueParams = useMemo(() => JSON.parse(groundKey) as Record<string, string>, [groundKey]);
   const mapView = (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
@@ -459,6 +475,7 @@ export default function SearchTab() {
         cards={search.cards}
         currency={search.currency}
         timezone={search.timezone}
+        params={venueParams}
         here={phone ?? null}
         top={header}
         bottom={0}
@@ -490,10 +507,10 @@ export default function SearchTab() {
   const renderItem = useCallback(
     ({ item }: { item: VenueCard }) => (
       <Animated.View entering={FadeIn.duration(200)}>
-        <VenueListCard card={item} currency={currency} timezone={timezone} />
+        <VenueListCard card={item} currency={currency} timezone={timezone} params={venueParams} />
       </Animated.View>
     ),
-    [currency, timezone],
+    [currency, timezone, venueParams],
   );
 
   const empty = search.loading ? (
