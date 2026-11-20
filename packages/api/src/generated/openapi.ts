@@ -3871,6 +3871,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/venues/free-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many venues are free each hour of a day
+         * @description For each local hour of `date`, how many live venues (by the search's where and what) have a ground free to start then, after their notice: the When sheet's timeline. Public.
+         */
+        get: {
+            parameters: {
+                query: {
+                    marketplace: string;
+                    area?: string;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    radius?: number;
+                    q?: string;
+                    /** @description In the venue's timezone. Left out: today. */
+                    date?: string;
+                    sport?: components["schemas"]["GroundSport"];
+                    /** @description `STANDARD` for sports without size variants. */
+                    size?: components["schemas"]["GroundSize"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Every hour of the day */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VenueFreeHours"];
+                    };
+                };
+                /** @description VALIDATION_FAILED */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MARKETPLACE_NOT_FOUND: no active marketplace with that code. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/venues/{slug}": {
         parameters: {
             query?: never;
@@ -12192,6 +12270,23 @@ export interface components {
          * @enum {string}
          */
         VenueSearchSort: "DISTANCE" | "RATING";
+        VenueFreeHours: {
+            /**
+             * Format: date
+             * @description A local date, YYYY-MM-DD.
+             * @example 2026-11-20
+             */
+            date: string;
+            /** @example Africa/Cairo */
+            timezone: string;
+            /** @description Every hour of the day, midnight first. Hours already past (or inside the venues' notice) count no one. */
+            hours: {
+                /** @description Local hour the game would start. */
+                hour: number;
+                /** @description Venues with a ground free to start then. */
+                venues: number;
+            }[];
+        };
         PublicVenue: {
             /** Format: uuid */
             id: string;
