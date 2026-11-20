@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable } from "react-native";
 import { colors } from "@/lib/colors";
 import { Field } from "./field";
@@ -19,6 +20,7 @@ export function PasswordField({
   // New passwords get iOS's strong-password suggestion; existing ones get autofill.
   isNew?: boolean;
 }) {
+  const { t } = useTranslation();
   const [shown, setShown] = useState(false);
   return (
     <Field
@@ -36,7 +38,9 @@ export function PasswordField({
       trailing={
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={shown ? "Hide password" : "Show password"}
+          accessibilityLabel={
+            shown ? t("components.passwordField.hide") : t("components.passwordField.show")
+          }
           onPress={() => setShown(!shown)}
           hitSlop={8}
         >
