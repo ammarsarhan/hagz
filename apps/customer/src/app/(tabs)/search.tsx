@@ -1,8 +1,10 @@
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
+  runOnJS,
   type DerivedValue,
+  type SharedValue,
   FadeIn,
   FadeOut,
   interpolate,
@@ -45,12 +47,12 @@ import {
 // when (options 4 and 5) isn't built yet, so the search bar says so.
 //
 // The page scrolls as one, like the venue page: the big title rises into a white bar as it goes
-// under it (user, 2026-11-20). Changes animate: a chip's black fades, the order's label cross-fades
-// and its arrow turns, and the results glide to their new places, kept on screen until the new
-// ones arrive.
+// under it, and the search bar docks in the header (user, 2026-11-20). Changes animate, kept light:
+// a chip's black fades, the order's label cross-fades and its arrow turns, results stay on screen
+// until the new ones arrive and new ones fade in, cards ⟷ rows fades and scales the venues on
+// screen, and the list and the map cross-fade.
 
 const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
-type View_ = "cards" | "rows" | "map";
 
 const shadow = {
   shadowColor: "#0b0b0c",
@@ -126,6 +128,20 @@ function SortToggle({
   );
 }
 
+// A venue in the list: fades in when it's new, and follows the cards ⟷ rows swap (opacity and a
+// slight scale, both on the GPU).
+function SwapItem({ swap, children }: { swap: SharedValue<number>; children: ReactNode }) {
+  const style = useAnimatedStyle(() => ({
+    opacity: swap.value,
+    transform: [{ scale: 0.97 + 0.03 * swap.value }],
+  }));
+  return (
+    <Animated.View entering={FadeIn.duration(200)} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
+
 // The where/when bar. In the list it floats and docks in the header as the page scrolls (Airbnb's
 // pattern, user 2026-11-20): `docked` runs 0 → 1 as it arrives, shrinking it from 60 to 48 and
 // folding its two lines into one. On the map it stays as it is.
@@ -191,7 +207,22 @@ export default function SearchTab() {
   const here = everywhere ? null : phone;
   const [sport, setSport] = useState<Sport | undefined>(undefined);
   const [sortChoice, setSortChoice] = useState<SearchSort | undefined>(undefined);
-  const [view, setView] = useState<View_>("cards");
+  // The list or the map, cross-faded; and how the list shows venues.
+  const [mode, setMode] = useState<"list" | "map">("list");
+  const [layout, setLayout] = useState<"cards" | "rows">("cards");
+  // Cards ⟷ rows: the venues on screen fade and shrink a touch, swap, and come back. Opacity and
+  // scale only, which the GPU does cheaply; no layout animation.
+  const swap = useSharedValue(1);
+  const relayout = (next: "cards" | "rows") => {
+    setLayout(next);
+    swap.value = withTiming(1, { duration: 180 });
+  };
+  const toggleLayout = () => {
+    const next = layout === "cards" ? "rows" : "cards";
+    swap.value = withTiming(0, { duration: 120 }, (finished) => {
+      if (finished) runOnJS(relayout)(next);
+    });
+  };
   const [header, setHeader] = useState(0);
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
@@ -251,45 +282,43 @@ export default function SearchTab() {
     </View>
   );
 
-  if (view === "map") {
-    return (
-      <View className="flex-1 bg-white">
-        <StatusBar style="dark" />
-        <SearchMap
-          cards={search.cards}
-          currency={search.currency}
-          timezone={search.timezone}
-          here={phone ?? null}
-          top={header}
-          bottom={0}
-        />
-        <View
-          className="absolute right-0 left-0 px-6"
-          style={{ top: insets.top + 8 }}
-          onLayout={(event) => setHeader(event.nativeEvent.layout.height + insets.top + 8)}
-          pointerEvents="box-none"
-        >
-          <View className="gap-3">
-            <SearchPill where={where} when={when} onPress={soon} docked={null} />
-            {chips}
-          </View>
-          <View className="mt-3 items-end">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Show the list"
-              onPress={() => setView("cards")}
-              className="size-11 items-center justify-center rounded-full bg-white"
-              style={shadow}
-            >
-              <IconList size={20} color={colors.ink} strokeWidth={2} />
-            </Pressable>
-          </View>
+  const mapView = (
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
+      <SearchMap
+        cards={search.cards}
+        currency={search.currency}
+        timezone={search.timezone}
+        here={phone ?? null}
+        top={header}
+        bottom={0}
+      />
+      <View
+        className="absolute right-0 left-0 px-6"
+        style={{ top: insets.top + 8 }}
+        onLayout={(event) => setHeader(event.nativeEvent.layout.height + insets.top + 8)}
+        pointerEvents="box-none"
+      >
+        <View className="gap-3">
+          <SearchPill where={where} when={when} onPress={soon} docked={null} />
+          {chips}
+        </View>
+        <View className="mt-3 items-end">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Show the list"
+            onPress={() => setMode("list")}
+            className="size-11 items-center justify-center rounded-full bg-white"
+            style={shadow}
+          >
+            <IconList size={20} color={colors.ink} strokeWidth={2} />
+          </Pressable>
         </View>
       </View>
-    );
-  }
+    </View>
+  );
 
-  const Item = view === "cards" ? VenueCardLarge : VenueRow;
+  const Item = layout === "cards" ? VenueCardLarge : VenueRow;
   const empty = search.loading ? (
     <View className="items-center pt-16">
       <ActivityIndicator color={colors.ink} />
@@ -313,13 +342,18 @@ export default function SearchTab() {
       </Text>
       {here ? (
         <View className="mt-4">
-          <Button label="Search all of Egypt" size="small" onPress={() => setEverywhere(true)} />
+          <Button
+            label="Search all of Egypt"
+            size="small"
+            quietLabel
+            onPress={() => setEverywhere(true)}
+          />
         </View>
       ) : null}
     </View>
   );
 
-  return (
+  const listView = (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
       <Animated.FlatList
@@ -327,12 +361,11 @@ export default function SearchTab() {
         keyExtractor={(card: VenueCard) => card.id}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        // A new order glides each venue to its place; venues that come or go fade.
-        itemLayoutAnimation={LinearTransition.duration(260)}
+        // Venues new to the list fade in (opacity only).
         renderItem={({ item }: { item: VenueCard }) => (
-          <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)}>
+          <SwapItem swap={swap}>
             <Item card={item} currency={search.currency} timezone={search.timezone} />
-          </Animated.View>
+          </SwapItem>
         )}
         ItemSeparatorComponent={() => <View className="my-6 h-px bg-border" />}
         ListHeaderComponent={
@@ -358,12 +391,12 @@ export default function SearchTab() {
                 />
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={view === "cards" ? "Show as rows" : "Show as cards"}
+                  accessibilityLabel={layout === "cards" ? "Show as rows" : "Show as cards"}
                   hitSlop={8}
-                  onPress={() => setView(view === "cards" ? "rows" : "cards")}
+                  onPress={toggleLayout}
                   className="active:opacity-60"
                 >
-                  {view === "cards" ? (
+                  {layout === "cards" ? (
                     <IconLayoutList size={20} color={colors.ink} strokeWidth={2} />
                   ) : (
                     <IconLayoutGrid size={20} color={colors.ink} strokeWidth={2} />
@@ -411,10 +444,35 @@ export default function SearchTab() {
           <MapToggle
             label="Map"
             icon={<IconMap size={18} color={colors.white} strokeWidth={2} />}
-            onPress={() => setView("map")}
+            onPress={() => setMode("map")}
           />
         </View>
       ) : null}
+    </View>
+  );
+
+  // The list and the map fade over each other.
+  return (
+    <View className="flex-1 bg-white">
+      {mode === "map" ? (
+        <Animated.View
+          key="map"
+          entering={FadeIn.duration(220)}
+          exiting={FadeOut.duration(180)}
+          style={StyleSheet.absoluteFill}
+        >
+          {mapView}
+        </Animated.View>
+      ) : (
+        <Animated.View
+          key="list"
+          entering={FadeIn.duration(220)}
+          exiting={FadeOut.duration(180)}
+          style={StyleSheet.absoluteFill}
+        >
+          {listView}
+        </Animated.View>
+      )}
     </View>
   );
 }
