@@ -50,6 +50,21 @@ export const requireCustomer = createMiddleware<{ Variables: { customer: Custome
   },
 );
 
+// For routes guests use too (search): a request with no token is a guest's; one with a token is
+// checked as requireCustomer checks it, so an expired token still gets TOKEN_EXPIRED and the app
+// refreshes it rather than quietly searching as a guest.
+export const optionalCustomer = createMiddleware<{
+  Variables: { customer: CustomerActor | null };
+}>(async (c, next) => {
+  if (!c.req.header("Authorization")) {
+    c.set("customer", null);
+  } else {
+    const { sub, sid } = await bearerClaims(c, "customer");
+    c.set("customer", { customerId: sub, sessionId: sid });
+  }
+  await next();
+});
+
 export const requireStaff = createMiddleware<{ Variables: { staff: StaffActor } }>(
   async (c, next) => {
     const { sub, sid } = await bearerClaims(c, "staff");

@@ -5,13 +5,21 @@ import {
   VenueAvailabilityQuery,
   VenueFreeHours,
   VenueFreeHoursQuery,
+  VenueCoverage,
+  VenueCoverageQuery,
   VenueSearchQuery,
   VenueSearchResults,
+  VenueSpread,
+  VenueSpreadQuery,
 } from "@hagz/contracts";
+import { CUSTOMER_BEARER, optionalCustomer } from "@/platform/http/authenticate";
 import { json, problemResponse } from "@/platform/http/definitions";
 
 // The venue page (PR 3.2). Public: guests browse everything, and the web renders it for search
 // engines.
+
+// Either a customer's token or none (a guest): the empty requirement makes the token optional.
+const guestOrCustomer: Record<string, string[]>[] = [{ [CUSTOMER_BEARER]: [] }, {}];
 
 const slug = z.object({
   slug: z
@@ -68,12 +76,16 @@ export const searchVenues = createRoute({
   description:
     "Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) " +
     "with a ground free when asked: from `start` for `hours`, or any time on `date`, of the " +
-    "`sport` and `size` asked for. Each card has its next free times. Nearest first with a point, " +
-    "else best rated. Names follow `Accept-Language`. Public.",
+    "`sport` and `size` asked for, and the other filters. Each card has its next free times. " +
+    "Best match first unless `sort` says otherwise. Names follow `Accept-Language`. Public; " +
+    "signed in, best match puts the player's own venues first and cards carry `you`.",
+  middleware: [optionalCustomer] as const,
+  security: guestOrCustomer,
   request: { query: VenueSearchQuery },
   responses: {
     200: { description: "A page of venues", ...json(VenueSearchResults) },
     400: problemResponse("VALIDATION_FAILED, or INVALID_CURSOR: search again."),
+    401: problemResponse("TOKEN_EXPIRED or UNAUTHENTICATED: a token was sent and isn't good."),
     404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),
   },
@@ -90,6 +102,41 @@ export const freeHours = createRoute({
   request: { query: VenueFreeHoursQuery },
   responses: {
     200: { description: "Every hour of the day", ...json(VenueFreeHours) },
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const venueSpread = createRoute({
+  method: "get",
+  path: "/venues/spread",
+  tags: ["Venues"],
+  summary: "How a search's venues spread over price and distance",
+  description:
+    "The venues a search finds, by their cheapest hour (leaving out the price range) and, with a " +
+    "point, by how far they are (leaving out the radius): the Filters sheet's price chart and " +
+    "Where's radius bars. Public.",
+  request: { query: VenueSpreadQuery },
+  responses: {
+    200: { description: "Prices and distances", ...json(VenueSpread) },
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const venueCoverage = createRoute({
+  method: "get",
+  path: "/venues/coverage",
+  tags: ["Venues"],
+  summary: "Where there are live venues",
+  description:
+    "Governorates with live venues, each with its areas and how many venues each has, most " +
+    "first: Where's area picker. Names in `Accept-Language`. Public.",
+  request: { query: VenueCoverageQuery },
+  responses: {
+    200: { description: "Governorates and their areas", ...json(VenueCoverage) },
     400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),

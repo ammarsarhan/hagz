@@ -1,6 +1,13 @@
 import { StatusBar } from "expo-status-bar";
-import { memo, useCallback, useDeferredValue, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { memo, useCallback, useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import Animated, {
   Easing,
   type DerivedValue,
@@ -19,6 +26,7 @@ import { Button } from "@/components/button";
 import { LightsOutArt } from "@/components/lights-out-art";
 import {
   IconAdjustmentsHorizontal,
+  IconX,
   IconArrowsSort,
   IconLayoutGrid,
   IconLayoutList,
@@ -28,15 +36,26 @@ import {
 import { VenueListCard } from "@/components/search-cards";
 import { MapToggle, SearchMap } from "@/components/search-map";
 import { SearchWhen } from "@/components/search-when";
+import { SearchFilters, SORT_NAMES } from "@/components/search-filters";
 import { SearchWhere } from "@/components/search-where";
 import { Text } from "@/components/text";
 import { colors } from "@/lib/colors";
 import { useHere } from "@/lib/distance";
 import {
   ANY_TIME,
+  appliedFilters,
+  DEFAULT_RADIUS,
+  filterQuery,
+  type Filters,
+  NO_FILTERS,
+  SIZE_NAMES,
+  type GroundSize,
+  useAmenities,
+  MAX_RADIUS,
   dayText,
   hourLabel,
   sportName,
+  useCoverage,
   useVenueSearch,
   whenText,
   type SearchParams,
@@ -48,8 +67,8 @@ import {
 } from "@/lib/search";
 
 // Search (Figma "C3 · Tabs & Search"; the user picked options 1, 2 and 3 on 2026-11-20, built behind
-// one switch to compare on the phone): venues free today near the player (or anywhere, best rated
-// first, when the phone can't say where it is), narrowed by sport. Results come as big cards
+// one switch to compare on the phone): venues free today near the player (or, when the phone can't
+// say where it is, in the governorate with the most venues), narrowed by sport. Results come as big cards
 // (option 1) or compact rows (option 2), or on a map with price pins (option 3). Changing where and
 // when (options 4 and 5) isn't built yet, so the search bar says so.
 //
@@ -62,6 +81,7 @@ import {
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
 const SPORTS: Sport[] = ["FOOTBALL", "PADEL", "TENNIS", "BASKETBALL", "VOLLEYBALL"];
+const FOOTBALL_SIZES: GroundSize[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
 // What a sport is played on, for "No padel courts have a free hour left today."
 const SPORT_PLACES: Record<Sport, string> = {
   FOOTBALL: "football pitches",
@@ -79,18 +99,23 @@ const shadow = {
   elevation: 4,
 } as const;
 
-// A filter chip: picked, its black (with white words) fades in over the white one.
-// Memoised with a value and one stable handler, so a tap re-renders only the two chips that change.
+// A chip in the row under the bar (Figma B2, 133:2): picked, its black (with white words) fades in
+// over the white one; an applied filter carries an × that takes it off. Memoised with an id and one
+// stable handler, so a tap re-renders only the chips that change.
 const Chip = memo(function Chip({
+  id,
   label,
-  value,
   on,
+  removable = false,
+  icon,
   onSelect,
 }: {
+  id: string;
   label: string;
-  value: Sport | undefined;
   on: boolean;
-  onSelect: (value: Sport | undefined) => void;
+  removable?: boolean;
+  icon?: ReactNode;
+  onSelect: (id: string) => void;
 }) {
   const shown = useSharedValue(on ? 1 : 0);
   useEffect(() => {
@@ -101,10 +126,13 @@ const Chip = memo(function Chip({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
-      onPress={() => onSelect(value)}
-      className="h-10 justify-center rounded-full border border-border bg-white px-4"
+      accessibilityLabel={removable ? `Remove ${label}` : label}
+      onPress={() => onSelect(id)}
+      className={`h-10 flex-row items-center gap-1.5 rounded-full border bg-white px-4 ${icon ? "border-ink" : "border-border"}`}
     >
+      {icon}
       <Text className="text-body font-medium">{label}</Text>
+      {removable ? <IconX size={14} color={colors.ink} strokeWidth={2.25} /> : null}
       <Animated.View
         pointerEvents="none"
         className="absolute -inset-px items-center justify-center rounded-full bg-ink"
@@ -116,40 +144,21 @@ const Chip = memo(function Chip({
   );
 });
 
-// "Nearest" or "Best rated": the words cross-fade and the arrow turns when it changes.
-function SortToggle({
-  sort,
-  enabled,
-  onPress,
-}: {
-  sort: SearchSort;
-  enabled: boolean;
-  onPress: () => void;
-}) {
-  const turn = useSharedValue(sort === "DISTANCE" ? 0 : 1);
-  useEffect(() => {
-    turn.value = withTiming(sort === "DISTANCE" ? 0 : 1, { duration: 220 });
-  }, [sort, turn]);
-  const arrow = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${interpolate(turn.value, [0, 1], [0, 180])}deg` }],
-  }));
+// The order the list is in ("Nearest", "Cheapest"…): the words cross-fade when it changes, and a
+// tap opens Filters, where it's picked.
+function SortLabel({ sort, onPress }: { sort: SearchSort; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={sort === "DISTANCE" ? "Sorted nearest first" : "Sorted best rated first"}
-      disabled={!enabled}
+      accessibilityLabel={`Sorted: ${SORT_NAMES[sort]}`}
       hitSlop={8}
       onPress={onPress}
       className="flex-row items-center gap-1 active:opacity-60"
     >
-      <Animated.View style={arrow}>
-        <IconArrowsSort size={16} color={colors.ink} strokeWidth={2} />
-      </Animated.View>
+      <IconArrowsSort size={16} color={colors.ink} strokeWidth={2} />
       <Animated.View layout={LinearTransition.duration(200)}>
         <Animated.View key={sort} entering={FadeIn.duration(180)} exiting={FadeOut.duration(100)}>
-          <Text className="text-body font-medium">
-            {sort === "DISTANCE" ? "Nearest" : "Best rated"}
-          </Text>
+          <Text className="text-body font-medium">{SORT_NAMES[sort]}</Text>
         </Animated.View>
       </Animated.View>
     </Pressable>
@@ -164,13 +173,18 @@ function SearchPill({
   when,
   onPress,
   onFilter,
+  onWhen,
+  badge,
   docked,
 }: {
   where: string;
   when: string;
-  // The bar opens where; its round button opens when (until there are filters).
+  // The bar opens where (then when); its round button opens Filters, with how many are on.
   onPress: () => void;
   onFilter: () => void;
+  // The when line opens when on its own.
+  onWhen: () => void;
+  badge: number;
   docked: DerivedValue<number> | null;
 }) {
   const box = useAnimatedStyle(() => ({
@@ -196,7 +210,9 @@ function SearchPill({
         <View className="flex-1 justify-center self-stretch overflow-hidden">
           <Animated.View style={full}>
             <Text className="text-subtitle font-semibold">{where}</Text>
-            <Text className="text-label text-ink-2">{when}</Text>
+            <Pressable accessibilityRole="button" hitSlop={6} onPress={onWhen}>
+              <Text className="text-label text-ink-2">{when}</Text>
+            </Pressable>
           </Animated.View>
           <Animated.View className="absolute inset-0 justify-center" style={compact}>
             <Text className="text-body font-semibold" numberOfLines={1}>
@@ -206,7 +222,7 @@ function SearchPill({
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="When to play"
+          accessibilityLabel={badge > 0 ? `Filters, ${badge} on` : "Filters"}
           hitSlop={6}
           onPress={onFilter}
         >
@@ -215,6 +231,11 @@ function SearchPill({
             style={button}
           >
             <IconAdjustmentsHorizontal size={18} color={colors.ink} strokeWidth={2} />
+            {badge > 0 ? (
+              <View className="absolute -top-1 -right-1 size-[18px] items-center justify-center rounded-full border-2 border-white bg-ink">
+                <Text className="text-[10px] leading-3 font-semibold text-white">{badge}</Text>
+              </View>
+            ) : null}
           </Animated.View>
         </Pressable>
       </Animated.View>
@@ -226,11 +247,22 @@ export default function SearchTab() {
   const insets = useSafeAreaInsets();
   const phone = useHere();
   // Where and when, set from the search bar (options 4 and 5): near the player and today, any time,
-  // an hour to start. "Near me" without a position searches everywhere.
-  const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near" });
+  // an hour to start. "Near me" without a position looks in the governorate with the most venues.
+  const [whereChoice, setWhereChoice] = useState<Where>({ kind: "near", radius: DEFAULT_RADIUS });
+  const coverage = useCoverage();
+  const fallback = coverage?.[0];
+  const where: Where | null =
+    whereChoice.kind === "near" && phone === null
+      ? fallback
+        ? { kind: "area", id: fallback.id, name: fallback.name ?? "", within: null }
+        : null
+      : whereChoice;
   const [when, setWhen] = useState<When>(ANY_TIME);
-  const [editing, setEditing] = useState<"where" | "when" | null>(null);
-  const here = whereChoice.kind === "near" ? phone : null;
+  const [editing, setEditing] = useState<"where" | "when" | "filters" | null>(null);
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const amenities = useAmenities();
+  const here = where?.kind === "near" ? phone : null;
+  const radius = where?.kind === "near" ? where.radius : null;
   const [sport, setSport] = useState<Sport | undefined>(undefined);
   // The chips follow a tap at once; the search (and the list it redraws) follows right after, so
   // the tap never waits on the list.
@@ -267,15 +299,30 @@ export default function SearchTab() {
     transform: [{ translateY: Math.max(dockAt, pillStart.value - scrollY.value) }],
   }));
   const headerStyle = useAnimatedStyle(() => ({ opacity: docked.value }));
+  const pulling = useSharedValue(0);
+  const pullStyle = useAnimatedStyle(() => ({
+    opacity: Math.max(pulling.value, interpolate(-scrollY.value, [10, 60], [0, 1], "clamp")),
+  }));
 
-  // Nearest first when the phone knows where it is; best rated otherwise.
-  const sort: SearchSort = here ? (sortChoice ?? "DISTANCE") : "RATING";
+  // Best match unless the player picks another order; nearest needs a point.
+  const sort: SearchSort =
+    sortChoice && (sortChoice !== "DISTANCE" || here) ? sortChoice : "BEST_MATCH";
   // The search without its when, which the when sheet counts against.
   const whereParams: SearchParams = {
-    ...(here ? { latitude: here.latitude, longitude: here.longitude } : {}),
-    ...(whereChoice.kind === "area" ? { area: whereChoice.id } : {}),
+    ...(here && radius ? { latitude: here.latitude, longitude: here.longitude, radius } : {}),
+    ...(where?.kind === "area" ? { area: where.id } : {}),
     ...(searchedSport ? { sport: searchedSport } : {}),
+    ...filterQuery(filters),
     sort,
+  };
+  // The search without its filters and order, which the Filters sheet counts against.
+  const whereParamsWithout: SearchParams = {
+    ...(here && radius ? { latitude: here.latitude, longitude: here.longitude, radius } : {}),
+    ...(where?.kind === "area" ? { area: where.id } : {}),
+    ...(searchedSport ? { sport: searchedSport } : {}),
+    ...(when.date ? { date: when.date } : {}),
+    ...(when.start ? { start: when.start } : {}),
+    hours: when.hours,
   };
   const search = useVenueSearch(
     {
@@ -284,8 +331,17 @@ export default function SearchTab() {
       ...(when.start ? { start: when.start } : {}),
       hours: when.hours,
     },
-    phone !== undefined,
+    phone !== undefined && where !== null,
   );
+
+  // A pull to refresh, until the search it started comes back.
+  const [pulled, setPulled] = useState(false);
+  useEffect(() => {
+    if (pulled && !search.loading) setPulled(false);
+  }, [pulled, search.loading]);
+  useEffect(() => {
+    pulling.value = withTiming(pulled ? 1 : 0, { duration: 180 });
+  }, [pulled, pulling]);
 
   const total = search.total;
   const summary =
@@ -294,14 +350,37 @@ export default function SearchTab() {
       : // The count found: the search bar already says where and when (user, 2026-11-20).
         `${total} ${total === 1 ? "venue" : "venues"} found`;
 
-  const whereLabel = here
-    ? "Near me"
-    : whereChoice.kind === "area"
-      ? whereChoice.name
-      : "All of Egypt";
+  const whereLabel = here ? "Near me" : where?.kind === "area" ? where.name : " ";
   const whenLabel = whenText(when, search.timezone);
   const openWhere = () => setEditing("where");
   const openWhen = () => setEditing("when");
+  const openFilters = () => setEditing("filters");
+  // The chips row (Figma B2, 133:2): Filters with how many are on, the sport (the others hidden
+  // once one is picked; tap it again for all), its sizes, then what's applied, each with an ×.
+  const applied = appliedFilters(
+    filters,
+    search.currency,
+    new Map(amenities.map((amenity) => [amenity.id, amenity.name])),
+  );
+  const onChip = useCallback(
+    (id: string) => {
+      if (id === "filters") setEditing("filters");
+      else if (id.startsWith("sport:")) {
+        const picked = id.slice(6) as Sport;
+        setSport((current) => (current === picked ? undefined : picked));
+        if (picked !== "FOOTBALL") setFilters((current) => ({ ...current, size: undefined }));
+      } else if (id.startsWith("size:")) {
+        const size = id.slice(5) as GroundSize;
+        setFilters((current) => ({ ...current, size: current.size === size ? undefined : size }));
+      } else {
+        setFilters((current) => {
+          const chip = appliedFilters(current, "", new Map()).find((each) => each.key === id);
+          return chip ? chip.without : current;
+        });
+      }
+    },
+    [setSport],
+  );
   const chips = (
     <View>
       <ScrollView
@@ -310,14 +389,41 @@ export default function SearchTab() {
         style={{ marginHorizontal: -24 }}
         contentContainerStyle={{ gap: 8, paddingHorizontal: 24 }}
       >
-        <Chip label="All" value={undefined} on={!sport} onSelect={setSport} />
-        {SPORTS.map((each) => (
+        <Chip
+          id="filters"
+          label={applied.length > 0 ? `Filters · ${applied.length}` : "Filters"}
+          on={false}
+          icon={<IconAdjustmentsHorizontal size={16} color={colors.ink} strokeWidth={2} />}
+          onSelect={onChip}
+        />
+        {(sport ? [sport] : SPORTS).map((each) => (
           <Chip
             key={each}
+            id={`sport:${each}`}
             label={sportName(each)}
-            value={each}
             on={sport === each}
-            onSelect={setSport}
+            onSelect={onChip}
+          />
+        ))}
+        {sport === "FOOTBALL"
+          ? FOOTBALL_SIZES.map((size) => (
+              <Chip
+                key={size}
+                id={`size:${size}`}
+                label={SIZE_NAMES[size]}
+                on={filters.size === size}
+                onSelect={onChip}
+              />
+            ))
+          : null}
+        {applied.map((chip) => (
+          <Chip
+            key={chip.key}
+            id={chip.key}
+            label={chip.label}
+            on={false}
+            removable
+            onSelect={onChip}
           />
         ))}
       </ScrollView>
@@ -348,7 +454,9 @@ export default function SearchTab() {
           where={whereLabel}
           when={whenLabel}
           onPress={openWhere}
-          onFilter={openWhen}
+          onFilter={openFilters}
+          onWhen={openWhen}
+          badge={applied.length}
           docked={null}
         />
       </View>
@@ -382,7 +490,7 @@ export default function SearchTab() {
       <Text className="mt-3 text-heading font-semibold">Uh oh!</Text>
       <Text className="mt-2 text-center text-subtitle text-ink-2">
         {`No ${searchedSport ? SPORT_PLACES[searchedSport] : "venues"}${
-          here ? " within 10 km" : whereChoice.kind === "area" ? ` in ${whereChoice.name}` : ""
+          here ? ` within ${radius} km` : where?.kind === "area" ? ` in ${where.name}` : ""
         } ${
           when.start
             ? `are free ${dayText(when.date, search.timezone).toLowerCase()} at ${hourLabel(Number(when.start.slice(0, 2)))}`
@@ -391,13 +499,22 @@ export default function SearchTab() {
               : "have a free hour left today"
         }.`}
       </Text>
-      {here ? (
+      {applied.length > 0 || filters.size ? (
         <View className="mt-6">
           <Button
-            label="Search all of Egypt"
+            label="Clear filters"
             size="small"
             quietLabel
-            onPress={() => setWhereChoice({ kind: "everywhere" })}
+            onPress={() => setFilters(NO_FILTERS)}
+          />
+        </View>
+      ) : here && radius !== null && radius < MAX_RADIUS ? (
+        <View className="mt-6">
+          <Button
+            label={`Search within ${MAX_RADIUS} km`}
+            size="small"
+            quietLabel
+            onPress={() => setWhereChoice({ kind: "near", radius: MAX_RADIUS })}
           />
         </View>
       ) : sport ? (
@@ -440,11 +557,7 @@ export default function SearchTab() {
             <View className="flex-row items-center justify-between">
               <Text className="text-body text-ink-2">{summary}</Text>
               <View className="flex-row items-center gap-4">
-                <SortToggle
-                  sort={sort}
-                  enabled={Boolean(here)}
-                  onPress={() => setSortChoice(sort === "DISTANCE" ? "RATING" : "DISTANCE")}
-                />
+                <SortLabel sort={sort} onPress={openFilters} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={layout === "cards" ? "Show as rows" : "Show as cards"}
@@ -477,9 +590,35 @@ export default function SearchTab() {
         }}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
-        refreshing={false}
-        onRefresh={search.refresh}
+        // Pulled down from the top: the search again, the spinner held until it's back.
+        refreshControl={
+          <RefreshControl
+            refreshing={pulled}
+            onRefresh={() => {
+              setPulled(true);
+              search.refresh();
+            }}
+            // The system's spinner can't be made smaller, so it's hidden and ours (below) shows.
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
+            progressViewOffset={insets.top}
+          />
+        }
       />
+
+      {/* The pull's spinner: small, fading in as the list is pulled down, held while it reloads. */}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute right-0 left-0 items-center"
+        style={[{ top: insets.top + 14 }, pullStyle]}
+      >
+        <ActivityIndicator
+          size="small"
+          color={colors.ink}
+          style={{ transform: [{ scale: 0.95 }] }}
+        />
+      </Animated.View>
 
       {/* The header the bar docks in: white, fading in as the bar arrives. */}
       <Animated.View
@@ -492,7 +631,9 @@ export default function SearchTab() {
           where={whereLabel}
           when={whenLabel}
           onPress={openWhere}
-          onFilter={openWhen}
+          onFilter={openFilters}
+          onWhen={openWhen}
+          badge={applied.length}
           docked={docked}
         />
       </Animated.View>
@@ -544,6 +685,13 @@ export default function SearchTab() {
         >
           <SearchWhere
             here={phone ?? null}
+            where={where ?? whereChoice}
+            params={{
+              ...(searchedSport ? { sport: searchedSport } : {}),
+              ...(when.date ? { date: when.date } : {}),
+              ...(when.start ? { start: when.start } : {}),
+              hours: when.hours,
+            }}
             onPick={(next) => {
               setWhereChoice(next);
               setEditing("when");
@@ -552,6 +700,21 @@ export default function SearchTab() {
           />
         </Animated.View>
       ) : null}
+      <SearchFilters
+        visible={editing === "filters"}
+        filters={filters}
+        sort={sort}
+        near={Boolean(here)}
+        sport={sport}
+        params={whereParamsWithout}
+        currency={search.currency}
+        onApply={(next, nextSort) => {
+          setFilters(next);
+          setSortChoice(nextSort);
+          setEditing(null);
+        }}
+        onClose={() => setEditing(null)}
+      />
       <SearchWhen
         visible={editing === "when"}
         when={when}

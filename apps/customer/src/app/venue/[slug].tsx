@@ -2,7 +2,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -21,12 +21,21 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
+  withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconChevronLeft, IconCircleCheckFilled, IconHeart, IconShare } from "@/components/icons";
+import {
+  IconChevronLeft,
+  IconCircleCheckFilled,
+  IconHeart,
+  IconHeartFilled,
+  IconShare,
+} from "@/components/icons";
+import { toggleFavorite, useIsFavorite } from "@/lib/favorites";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
@@ -152,11 +161,14 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
 // A round button in the top bar: white over the photo, the usual grey once the bar is behind it.
 function BarButton({
   icon: Glyph,
+  glyph,
   label,
   onPress,
   progress,
 }: {
   icon: Icon;
+  // Drawn in place of the icon (the saved heart, red).
+  glyph?: ReactNode;
   label: string;
   onPress: () => void;
   progress: SharedValue<number> | null;
@@ -175,9 +187,58 @@ function BarButton({
       className="active:opacity-70"
     >
       <Animated.View className="size-10 items-center justify-center rounded-full" style={style}>
-        <Glyph size={20} color={colors.ink} strokeWidth={2} />
+        {glyph ?? <Glyph size={20} color={colors.ink} strokeWidth={2} />}
       </Animated.View>
     </Pressable>
+  );
+}
+
+// The heart: filled red once saved (the user's call, 2026-11-20), with a small pop as it fills.
+const SAVED_EDGE = "#b42318";
+function SaveButton({
+  venueId,
+  progress,
+  onPress,
+}: {
+  venueId: string;
+  progress: SharedValue<number> | null;
+  onPress: () => void;
+}) {
+  const saved = useIsFavorite(venueId);
+  const scale = useSharedValue(1);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (saved)
+      scale.value = withSequence(
+        withTiming(1.25, { duration: 110 }),
+        withTiming(1, { duration: 160 }),
+      );
+  }, [saved, scale]);
+  const pop = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View style={pop}>
+      <BarButton
+        icon={IconHeart}
+        glyph={
+          saved ? (
+            // Red, with a deeper red edge: the outline drawn over the filled heart.
+            <View>
+              <IconHeartFilled size={20} color={colors.red} />
+              <View className="absolute inset-0">
+                <IconHeart size={20} color={SAVED_EDGE} strokeWidth={2} />
+              </View>
+            </View>
+          ) : undefined
+        }
+        label={saved ? "Remove from saved" : "Save this venue"}
+        progress={progress}
+        onPress={onPress}
+      />
+    </Animated.View>
   );
 }
 
@@ -439,17 +500,22 @@ function VenueView({ venue }: { venue: PublicVenue }) {
                 }}
               />
             ) : null}
-            {/* Saving venues is PR 3.4: a guest is asked to sign in first, as everywhere a choice
-                needs an account; signed in, it says it's coming. */}
-            <BarButton
-              icon={IconHeart}
-              label="Save this venue"
+            {/* Saving (PR 3.4): a guest is asked to sign in first, as everywhere a choice needs an
+                account. */}
+            <SaveButton
+              venueId={venue.id}
               progress={barProgress}
               onPress={() =>
-                void whenSignedIn(() => hud.show("Saving venues comes next"), {
-                  title: "Sign in to save venues",
-                  body: "Create an account or sign in to keep the venues you like in one place.",
-                })
+                void whenSignedIn(
+                  () =>
+                    void toggleFavorite(venue.id).then((problem) => {
+                      if (problem) hud.show(problem);
+                    }),
+                  {
+                    title: "Sign in to save venues",
+                    body: "Create an account or sign in to keep the venues you like in one place.",
+                  },
+                )
               }
             />
           </View>
