@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
@@ -21,7 +21,8 @@ const HANDLE = 26;
 const INK = "#0b0b0c";
 const OFF = "#d5d8dd";
 
-function Bar({ height, on }: { height: number; on: boolean }) {
+// Memoised: a kilometre crossed redraws only the bar it turns black or grey.
+const Bar = memo(function Bar({ height, on }: { height: number; on: boolean }) {
   const shown = useSharedValue(on ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(on ? 1 : 0, { duration: 100 });
@@ -42,7 +43,7 @@ function Bar({ height, on }: { height: number; on: boolean }) {
       />
     </Animated.View>
   );
-}
+});
 
 export function RadiusSlider({
   radius,
@@ -55,18 +56,23 @@ export function RadiusSlider({
   onChange: (radius: number) => void;
 }) {
   const [width, setWidth] = useState(0);
-  const step = width / (MAX_RADIUS - 1);
+  // A cell a kilometre, as the When timeline lays out hours: the handle sits on the end of the last
+  // black bar, so the bars and the handle line up all along.
+  const cell = width / MAX_RADIUS;
   const most = Math.max(1, ...(within ?? []));
 
   const x = useSharedValue(0);
-  const stepSV = useSharedValue(step);
+  const cellSV = useSharedValue(cell);
   const last = useSharedValue(radius);
   const start = useSharedValue(0);
   const dragging = useSharedValue(false);
   useEffect(() => {
-    stepSV.value = step;
-    if (!dragging.value) x.value = (radius - 1) * step;
-  }, [step, radius, stepSV, x, dragging]);
+    cellSV.value = cell;
+    if (!dragging.value) {
+      x.value = radius * cell;
+      last.value = radius;
+    }
+  }, [cell, radius, cellSV, x, last, dragging]);
 
   const commit = (km: number) => {
     void Haptics.selectionAsync();
@@ -75,10 +81,10 @@ export function RadiusSlider({
 
   const move = (to: number) => {
     "worklet";
-    const s = stepSV.value;
-    if (s === 0) return;
-    x.value = Math.min(Math.max(to, 0), (MAX_RADIUS - 1) * s);
-    const km = Math.round(x.value / s) + 1;
+    const c = cellSV.value;
+    if (c === 0) return;
+    x.value = Math.min(Math.max(to, c), MAX_RADIUS * c);
+    const km = Math.min(Math.max(Math.round(x.value / c), 1), MAX_RADIUS);
     if (km !== last.value) {
       last.value = km;
       runOnJS(commit)(km);
@@ -97,22 +103,28 @@ export function RadiusSlider({
       move(start.value + event.translationX);
     })
     .onFinalize(() => {
+      // Settles on the end of the kilometre it's on.
+      x.value = withTiming(last.value * cellSV.value, { duration: 120 });
       dragging.value = false;
     });
+  // A tap takes the bar under it.
   const tap = Gesture.Tap().onEnd((event) => {
-    move(event.x);
+    const c = cellSV.value;
+    if (c === 0) return;
+    move((Math.floor(event.x / c) + 1) * c);
   });
 
   const handle = useAnimatedStyle(() => ({ left: x.value - HANDLE / 2 }));
   const segment = useAnimatedStyle(() => ({ width: x.value }));
+  const TICK = 44;
 
   return (
     <GestureHandlerRootView style={{ flex: 0 }}>
       <GestureDetector gesture={Gesture.Exclusive(drag, tap)}>
         <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-          <View className="flex-row items-end justify-between" style={{ height: BARS }}>
+          <View className="flex-row items-end" style={{ height: BARS }}>
             {Array.from({ length: MAX_RADIUS }, (_, i) => (
-              <View key={i} style={{ width: Math.max(1, step - 2) }}>
+              <View key={i} style={{ width: cell, paddingHorizontal: cell > 5 ? 1 : 0.5 }}>
                 <Bar
                   height={within ? Math.max(2, ((within[i] ?? 0) / most) * BARS) : 2}
                   on={i + 1 <= radius}
@@ -138,9 +150,17 @@ export function RadiusSlider({
               ]}
             />
           </View>
-          <View className="flex-row justify-between">
+          {/* Each under its own bar. */}
+          <View style={{ height: 14 }}>
             {[1, 10, 20, 30, 40, 50].map((km) => (
-              <Text key={km} className="text-[11px] leading-[14px] text-unit">
+              <Text
+                key={km}
+                className="absolute text-center text-[11px] leading-[14px] text-unit"
+                style={{
+                  width: TICK,
+                  left: Math.min(Math.max((km - 0.5) * cell - TICK / 2, 0), width - TICK),
+                }}
+              >
                 {km} km
               </Text>
             ))}

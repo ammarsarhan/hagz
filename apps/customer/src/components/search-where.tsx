@@ -163,9 +163,10 @@ export function SearchWhere({
             governorate.id === where.id || governorate.areas.some((area) => area.id === where.id),
         )?.id ?? null)
       : (coverage?.[0]?.id ?? null));
+  // The bars leave the radius out, so moving the slider doesn't ask for them again.
   const spread = useSpread(
     here && tab === "near"
-      ? { ...params, latitude: here.latitude, longitude: here.longitude, radius }
+      ? { ...params, latitude: here.latitude, longitude: here.longitude }
       : null,
   );
   const within = spread?.distances ?? null;
@@ -258,7 +259,7 @@ export function SearchWhere({
                   {count === null ? " " : venuesText(count)}
                 </Text>
               </View>
-              <Text className="mt-1 mb-3 text-caption text-unit">
+              <Text className="mt-1 mb-6 text-caption text-unit">
                 Bars depict venues within each distance
               </Text>
               <RadiusSlider radius={radius} within={within} onChange={setRadius} />
