@@ -9,20 +9,24 @@ import { cache, queueConnection } from "@/platform/redis/connections";
 // filed under the nearest area with a centre, gets one to three grounds open late with peak
 // evening prices, a few amenities, a policy and a payment mode, and its slots generated through the
 // real generation path. Ratings are set straight on the venue (there are no bookings to review).
-// Safe to run again: venues already made (by slug) are left alone.
+// Safe to run again: venues already made (by slug) are only moved to their point.
 //
-//   pnpm --filter @hagz/server seed:nearby                        (central Alexandria)
+//   pnpm --filter @hagz/server seed:nearby                        (central Alexandria, on land)
 //   pnpm --filter @hagz/server seed:nearby --lat 30.04 --lng 31.24 --count 10 --radius 4
 
 const { values } = parseArgs({
   options: {
-    lat: { type: "string", default: "31.2155" },
-    lng: { type: "string", default: "29.942" },
+    lat: { type: "string" },
+    lng: { type: "string" },
     count: { type: "string", default: "10" },
     radius: { type: "string", default: "4" },
   },
 });
-const centre = { latitude: Number(values.lat), longitude: Number(values.lng) };
+// No point given: central Alexandria, on the fixed inland points below.
+const custom = values.lat !== undefined || values.lng !== undefined;
+const centre = custom
+  ? { latitude: Number(values.lat), longitude: Number(values.lng) }
+  : { latitude: 31.2155, longitude: 29.942 };
 const count = Number(values.count);
 const radiusKm = Number(values.radius);
 if (
@@ -119,8 +123,27 @@ const weekFor = (i: number) => {
   return Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, hours }));
 };
 
-// A point spread around the centre: a spiral, so venues don't stack and reruns land the same.
+// Central Alexandria, on land: the coast runs south-west to north-east about 2 km north of Smouha,
+// so a spread around a centre puts some venues in the sea. These sit at least ~1 km south of the
+// Corniche, from Smouha to Victoria.
+const ALEXANDRIA = [
+  { latitude: 31.2105, longitude: 29.944 }, // Smouha
+  { latitude: 31.213, longitude: 29.931 }, // Sporting
+  { latitude: 31.2186, longitude: 29.9419 }, // Sidi Gaber
+  { latitude: 31.228, longitude: 29.959 }, // Kafr Abdo
+  { latitude: 31.231, longitude: 29.952 }, // Roushdy
+  { latitude: 31.237, longitude: 29.966 }, // Gleem
+  { latitude: 31.244, longitude: 29.973 }, // Laurent
+  { latitude: 31.248, longitude: 29.983 }, // Zizinia
+  { latitude: 31.25, longitude: 29.99 }, // Victoria
+  { latitude: 31.203, longitude: 29.94 }, // Smouha, Fawzy Moaz
+];
+
+// A point for the i-th venue: Alexandria's inland points by default; elsewhere, a spiral around the
+// centre (golden angle), so venues don't stack and reruns land the same.
 const pointFor = (i: number) => {
+  const fixed = custom ? undefined : ALEXANDRIA[i % ALEXANDRIA.length];
+  if (fixed) return fixed;
   const angle = i * 2.399963; // the golden angle
   const distanceKm = radiusKm * Math.sqrt((i + 0.5) / count);
   const dLat = (distanceKm / 111.32) * Math.cos(angle);
@@ -149,15 +172,8 @@ try {
     select: { id: true, key: true },
   });
 
-  for (let i = 0; i < count; i++) {
-    const slug = `seed-nearby-${i + 1}`;
-    if (await prisma.venue.findUnique({ where: { slug } })) {
-      console.log(`  ${slug} already there`);
-      continue;
-    }
-    const at = pointFor(i);
-    const names = NAMES[i % NAMES.length] ?? { en: `Seed Venue ${i + 1}`, ar: "ملعب تجريبي" };
-    // The nearest area with a centre, as the venue creation flow suggests.
+  // The nearest area with a centre, as the venue creation flow suggests.
+  const nearestArea = async (at: { latitude: number; longitude: number }) => {
     const [area] = await prisma.$queryRaw<{ id: string; name: string | null }[]>`
       SELECT l.id, t.name
       FROM "Location" l
@@ -167,6 +183,27 @@ try {
       ORDER BY l.center <-> ST_SetSRID(ST_MakePoint(${at.longitude}, ${at.latitude}), 4326)::geography
       LIMIT 1`;
     if (!area) throw new Error("No areas with centres: run seed:reference first.");
+    return area;
+  };
+  const placeAt = (venueId: string, at: { latitude: number; longitude: number }) =>
+    prisma.$executeRaw`
+      UPDATE "Venue"
+      SET coordinates = ST_SetSRID(ST_MakePoint(${at.longitude}, ${at.latitude}), 4326)::geography
+      WHERE id = ${venueId}::uuid`;
+
+  for (let i = 0; i < count; i++) {
+    const slug = `seed-nearby-${i + 1}`;
+    const at = pointFor(i);
+    const area = await nearestArea(at);
+    // Made by an earlier run: moved to its point (and the area there), nothing else touched.
+    const existing = await prisma.venue.findUnique({ where: { slug }, select: { id: true } });
+    if (existing) {
+      await prisma.venue.update({ where: { id: existing.id }, data: { locationId: area.id } });
+      await placeAt(existing.id, at);
+      console.log(`  ${slug.padEnd(16)} moved to ${area.name ?? "?"}`);
+      continue;
+    }
+    const names = NAMES[i % NAMES.length] ?? { en: `Seed Venue ${i + 1}`, ar: "ملعب تجريبي" };
 
     const venue = await prisma.venue.create({
       data: {
@@ -216,10 +253,7 @@ try {
           marketplaceId: marketplace.id,
         })),
     });
-    await prisma.$executeRaw`
-      UPDATE "Venue"
-      SET coordinates = ST_SetSRID(ST_MakePoint(${at.longitude}, ${at.latitude}), 4326)::geography
-      WHERE id = ${venue.id}::uuid`;
+    await placeAt(venue.id, at);
 
     const plans = groundsFor(i);
     const week = weekFor(i);
