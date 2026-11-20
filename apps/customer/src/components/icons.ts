@@ -75,5 +75,6 @@ export { default as IconAdjustmentsHorizontal } from "@tabler/icons-react-native
 export { default as IconLayoutGrid } from "@tabler/icons-react-native/IconLayoutGrid";
 export { default as IconLayoutList } from "@tabler/icons-react-native/IconLayoutList";
 export { default as IconHeart } from "@tabler/icons-react-native/IconHeart";
+export { default as IconHeartFilled } from "@tabler/icons-react-native/IconHeartFilled";
 export { default as IconCurrentLocation } from "@tabler/icons-react-native/IconCurrentLocation";
 export { default as IconWorld } from "@tabler/icons-react-native/IconWorld";

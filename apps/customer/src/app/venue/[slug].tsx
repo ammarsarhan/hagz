@@ -21,12 +21,21 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
+  withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconChevronLeft, IconCircleCheckFilled, IconHeart, IconShare } from "@/components/icons";
+import {
+  IconChevronLeft,
+  IconCircleCheckFilled,
+  IconHeart,
+  IconHeartFilled,
+  IconShare,
+} from "@/components/icons";
+import { toggleFavorite, useIsFavorite } from "@/lib/favorites";
 import { useSignInSheet } from "@/components/sign-in-sheet";
 import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
@@ -178,6 +187,43 @@ function BarButton({
         <Glyph size={20} color={colors.ink} strokeWidth={2} />
       </Animated.View>
     </Pressable>
+  );
+}
+
+// The heart: filled once saved, with a small pop as it fills.
+function SaveButton({
+  venueId,
+  progress,
+  onPress,
+}: {
+  venueId: string;
+  progress: SharedValue<number> | null;
+  onPress: () => void;
+}) {
+  const saved = useIsFavorite(venueId);
+  const scale = useSharedValue(1);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (saved)
+      scale.value = withSequence(
+        withTiming(1.25, { duration: 110 }),
+        withTiming(1, { duration: 160 }),
+      );
+  }, [saved, scale]);
+  const pop = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View style={pop}>
+      <BarButton
+        icon={saved ? IconHeartFilled : IconHeart}
+        label={saved ? "Remove from saved" : "Save this venue"}
+        progress={progress}
+        onPress={onPress}
+      />
+    </Animated.View>
   );
 }
 
@@ -439,17 +485,22 @@ function VenueView({ venue }: { venue: PublicVenue }) {
                 }}
               />
             ) : null}
-            {/* Saving venues is PR 3.4: a guest is asked to sign in first, as everywhere a choice
-                needs an account; signed in, it says it's coming. */}
-            <BarButton
-              icon={IconHeart}
-              label="Save this venue"
+            {/* Saving (PR 3.4): a guest is asked to sign in first, as everywhere a choice needs an
+                account. */}
+            <SaveButton
+              venueId={venue.id}
               progress={barProgress}
               onPress={() =>
-                void whenSignedIn(() => hud.show("Saving venues comes next"), {
-                  title: "Sign in to save venues",
-                  body: "Create an account or sign in to keep the venues you like in one place.",
-                })
+                void whenSignedIn(
+                  () =>
+                    void toggleFavorite(venue.id).then((problem) => {
+                      if (problem) hud.show(problem);
+                    }),
+                  {
+                    title: "Sign in to save venues",
+                    body: "Create an account or sign in to keep the venues you like in one place.",
+                  },
+                )
               }
             />
           </View>
