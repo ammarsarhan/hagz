@@ -31,8 +31,10 @@ export const clearFavorites = () => {
 
 const load = () => {
   loading ??= (async () => {
+    // A guest has nothing saved. (Not clearFavorites: that reloads, which would land here again.)
     if (!(await auth.isSignedIn())) {
-      clearFavorites();
+      loaded = true;
+      if (saved.size > 0) publish(new Set());
       return;
     }
     const result = await send(api.GET("/v1/customers/me/favorites"));
