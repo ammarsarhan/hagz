@@ -299,19 +299,20 @@ export default function SearchTab() {
         onLayout={(event) => setHeader(event.nativeEvent.layout.height + insets.top + 8)}
         pointerEvents="box-none"
       >
-        <View className="gap-3">
-          <SearchPill where={where} when={when} onPress={soon} docked={null} />
-          {chips}
-        </View>
-        <View className="mt-3 items-end">
+        {/* The bar, and the switch back to the list beside it at the bar's height. No sport chips
+            here: the map keeps to the bar (user, 2026-11-20). */}
+        <View className="flex-row items-center gap-3">
+          <View className="flex-1">
+            <SearchPill where={where} when={when} onPress={soon} docked={null} />
+          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Show the list"
             onPress={() => setMode("list")}
-            className="size-11 items-center justify-center rounded-full bg-white"
+            className="size-[60px] items-center justify-center rounded-full border border-border bg-white active:opacity-80"
             style={shadow}
           >
-            <IconList size={20} color={colors.ink} strokeWidth={2} />
+            <IconList size={22} color={colors.ink} strokeWidth={2} />
           </Pressable>
         </View>
       </View>
