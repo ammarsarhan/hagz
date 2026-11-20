@@ -535,7 +535,6 @@ const ar: ArabicTranslations = {
           payAtVenueLine: "نقدًا، عند اللعب.",
         },
         filter: {
-          label: "حسب بحثك: {{what}}",
           at: "{{day}}، {{range}}",
           anyTime: "{{day}}، في أي وقت",
           anyTimeFor: "{{day}}، أي {{hours}}",

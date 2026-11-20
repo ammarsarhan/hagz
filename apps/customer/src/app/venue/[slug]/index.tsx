@@ -394,7 +394,6 @@ function Tabs({
 // runs past midnight), then each ground judged as the search judges it. Null without a search, or
 // until the slots are back (nothing is greyed out before it's known).
 function useSearchedGrounds(venue: PublicVenue, filter: GroundFilter | null) {
-  const { t } = useTranslation();
   const [searched, setSearched] = useState<{
     date: string;
     matches: ReadonlySet<string>;
@@ -419,15 +418,13 @@ function useSearchedGrounds(venue: PublicVenue, filter: GroundFilter | null) {
       setSearched({
         date,
         matches: matchingGrounds(venue.grounds, slots, filter, date, timezone),
-        note: t("screens.venue.filter.label", {
-          what: describeFilter(filter, date, timezone, currency),
-        }),
+        note: describeFilter(filter, date, timezone, currency),
       });
     })();
     return () => {
       active = false;
     };
-  }, [venue, filter, t]);
+  }, [venue, filter]);
   return searched;
 }
 

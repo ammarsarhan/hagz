@@ -490,7 +490,6 @@ const en = {
         },
         // What the grounds were matched against when the page came from a search.
         filter: {
-          label: "For your search: {{what}}",
           at: "{{day}}, {{range}}",
           anyTime: "{{day}}, any time",
           anyTimeFor: "{{day}}, any {{hours}}",
