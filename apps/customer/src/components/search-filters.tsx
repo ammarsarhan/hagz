@@ -162,7 +162,10 @@ export function SearchFilters({
   const amenities = useAmenities();
   const query = { ...params, ...filterQuery(draft) };
   const count = useVenueCount(query, visible);
-  const spread = useSpread(visible ? query : null);
+  // The chart's bands leave the price range out, so moving the handles doesn't ask for it again.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { priceMin, priceMax, ...unpriced } = query;
+  const spread = useSpread(visible ? unpriced : null);
   const bands = spread?.prices ?? [];
   const step = bands.length > 1 ? (bands[1]?.from ?? 0) - (bands[0]?.from ?? 0) : 5000;
   // The range over the bands: the whole chart when no price is set.
@@ -194,10 +197,11 @@ export function SearchFilters({
       visible={visible}
       onClose={onClose}
       header={<Text className="text-subtitle font-semibold">Filters</Text>}
+      scrolls
     >
       <ScrollView
         style={{ maxHeight: height * 0.66 }}
-        className="-mx-6 border-t border-border"
+        className="-mx-6 mt-4 border-t border-border"
         contentContainerClassName="px-6"
         showsVerticalScrollIndicator={false}
       >

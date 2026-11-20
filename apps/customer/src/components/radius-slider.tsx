@@ -85,8 +85,10 @@ export function RadiusSlider({
     }
   };
 
+  // Sideways only: a vertical swipe that starts here scrolls what it's in.
   const drag = Gesture.Pan()
-    .minDistance(1)
+    .activeOffsetX([-6, 6])
+    .failOffsetY([-8, 8])
     .onBegin(() => {
       start.value = x.value;
       dragging.value = true;

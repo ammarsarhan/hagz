@@ -30,11 +30,22 @@ interface SheetProps {
   // A title centred on the close button's row (the photo sheet's "Photo #2"), instead of a row of
   // its own under it.
   header?: ReactNode;
+  // A sheet that scrolls and has no fields: its content isn't wrapped in the tap that closes the
+  // keyboard, which would take the touch before the scroll view could start scrolling.
+  scrolls?: boolean;
   children: ReactNode;
 }
 
-export function Sheet({ visible, onClose, onHidden, header, children }: SheetProps) {
+export function Sheet({
+  visible,
+  onClose,
+  onHidden,
+  header,
+  scrolls = false,
+  children,
+}: SheetProps) {
   const insets = useSafeAreaInsets();
+  const Wrapper = scrolls ? View : Pressable;
   const progress = useRef(new Animated.Value(0)).current;
   // Stay mounted while sliding out.
   const [mounted, setMounted] = useState(visible);
@@ -91,7 +102,7 @@ export function Sheet({ visible, onClose, onHidden, header, children }: SheetPro
             }}
           >
             {/* Tapping the panel outside a field or button closes the keyboard. */}
-            <Pressable accessible={false} onPress={Keyboard.dismiss}>
+            <Wrapper accessible={false} onPress={Keyboard.dismiss}>
               <View className="mb-3.5 h-[5px] w-9 self-center rounded-full bg-grab" />
               <View className="h-10 flex-row items-center justify-end">
                 {header ? (
@@ -102,7 +113,7 @@ export function Sheet({ visible, onClose, onHidden, header, children }: SheetPro
                 <CloseButton onPress={onClose} />
               </View>
               {children}
-            </Pressable>
+            </Wrapper>
           </Animated.View>
         </KeyboardAvoidingView>
         <SheetHud open={visible && panelTop !== null} bottom={area - (panelTop ?? 0)} />

@@ -89,8 +89,10 @@ export function RangeBars({
   const nowFrom = useSharedValue(0);
   const nowTo = useSharedValue(0);
 
+  // Sideways only: a vertical swipe that starts here scrolls what it's in.
   const drag = Gesture.Pan()
-    .minDistance(2)
+    .activeOffsetX([-6, 6])
+    .failOffsetY([-8, 8])
     .onBegin((event) => {
       const c = cellSV.value;
       if (c === 0) return;
