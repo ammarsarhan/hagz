@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "@/lib/colors";
 import { isRTL } from "@/lib/language";
 import { Text } from "./text";
 
@@ -10,7 +11,15 @@ import { Text } from "./text";
 export function ComingSoon({ title }: { title: string }) {
   const { t } = useTranslation();
   return (
-    <SafeAreaView className="flex-1 bg-white px-6" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+    // SafeAreaView is native: its white and gutters are a style, which className doesn't reach.
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: colors.white,
+        paddingHorizontal: 24,
+        direction: isRTL ? "rtl" : "ltr",
+      }}
+    >
       <Pressable
         accessibilityRole="button"
         hitSlop={12}

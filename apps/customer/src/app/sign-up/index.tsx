@@ -51,7 +51,7 @@ export default function SignUpPhone() {
             <Trans
               i18nKey="screens.signUp.phone.haveAccount"
               components={{
-                link: (
+                signIn: (
                   <Text
                     accessibilityRole="link"
                     className="font-medium text-ink underline"

@@ -210,7 +210,7 @@ Rough launch numbers: 1,000 venues × 4 grounds × 16 slots a day over a 90-day 
 
 Agreed on 2026-11-19. **Filters decide which venues appear; the sort decides their order.** A venue that fails a filter never appears, however loyal the player is.
 
-The sorts the player picks (distance, price, rating, soonest available) are applied exactly as named. Only **best match**, the default, is personal. It orders venues by tier first, then by a match score within each tier:
+The sorts the player picks (distance, price, rating, soonest available) are applied exactly as named, except that a rating counts only from `MIN_REVIEWS` (5) reviews up: the rating sort puts venues with fewer after the rest (best rated first among them, the unrated last), and a minimum rating leaves them out. Only **best match**, the default, is personal. It orders venues by tier first, then by a match score within each tier:
 
 | Tier | The venue is one where the player… | Read from | Card badge |
 |---|---|---|---|

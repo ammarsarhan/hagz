@@ -1,7 +1,11 @@
-import { useTranslation } from "react-i18next";
-import { TabPlaceholder } from "@/components/tab-placeholder";
+import { StatusBar } from "expo-status-bar";
+import { View } from "react-native";
 
+// Bookings, blank until it's designed (user, 2026-11-20), like Home.
 export default function BookingsTab() {
-  const { t } = useTranslation();
-  return <TabPlaceholder title={t("screens.bookings.title")} line={t("screens.bookings.line")} />;
+  return (
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
+    </View>
+  );
 }

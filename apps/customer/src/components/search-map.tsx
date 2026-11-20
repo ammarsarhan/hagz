@@ -35,6 +35,7 @@ export function SearchMap({
   cards,
   currency,
   timezone,
+  params,
   here,
   top,
   bottom,
@@ -43,6 +44,8 @@ export function SearchMap({
   cards: VenueCard[];
   currency: string;
   timezone: string;
+  // What the search asked of the grounds, for the venue page's link.
+  params: Record<string, string>;
   here: { latitude: number; longitude: number } | null;
   // How much the search bar covers at the top, and the tab bar at the bottom.
   top: number;
@@ -112,7 +115,9 @@ export function SearchMap({
             onPress={onList}
           />
         </View>
-        {picked ? <VenueMapCard card={picked} currency={currency} timezone={timezone} /> : null}
+        {picked ? (
+          <VenueMapCard card={picked} currency={currency} timezone={timezone} params={params} />
+        ) : null}
       </View>
     </View>
   );

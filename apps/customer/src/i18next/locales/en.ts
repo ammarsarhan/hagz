@@ -1,6 +1,8 @@
 // English strings, grouped by where they're used: components, screens, common words shared by
 // several screens, and formats (sports, sizes, times, prices) that the lib helpers put together.
 // Placeholders use i18next's {{name}}; <tag>…</tag> marks a styled part (react-i18next's Trans).
+// Never name a tag after an HTML void element (link, img, br, input…): Trans parses the string as
+// HTML, so <link>Sign in</link> comes out empty with "Sign in" outside it, and the tap does nothing.
 // Western digits only (decided 2026-10-30), as in the staff app.
 const en = {
   translation: {
@@ -184,7 +186,7 @@ const en = {
         phone: {
           title: "What’s your mobile number?",
           subtitle: "We’ll send a code on WhatsApp to confirm it’s yours.",
-          haveAccount: "Already have an account? <link>Sign in</link>",
+          haveAccount: "Already have an account? <signIn>Sign in</signIn>",
           terms: "By continuing you agree to Hagz’s Terms and Privacy Policy.",
         },
         code: {
@@ -226,16 +228,94 @@ const en = {
       },
       account: {
         title: "Account",
-        signedInAs: "Signed in as {{name}}.",
-        guest: "Create an account or sign in to book and keep your bookings.",
+        guestTitle: "Uh oh!",
+        guest:
+          "You’re not signed in. Sign in or create an account to book, keep your favorites and collect free bookings.",
+        yourHagz: "Your Hagz",
+        favorites: {
+          title: "Favorites",
+          none: "Venues you save show up here.",
+          count_one: "{{count}} venue you’ve saved",
+          count_other: "{{count}} venues you’ve saved",
+        },
+        security: "Security",
+        twoFactor: {
+          title: "Two-factor sign-in",
+          off: "A WhatsApp code every time you sign in.",
+          on: "On: a WhatsApp code at every sign-in.",
+          turnOnTitle: "Turn on two-factor",
+          turnOffTitle: "Turn off two-factor",
+          subtitle: "Enter the code we sent to WhatsApp at {{phone}}.",
+          turnOn: "Turn on",
+          turnOff: "Turn off",
+        },
+        password: {
+          title: "Password",
+          body: "Reset it with a code to your WhatsApp.",
+        },
+        app: "App",
+        language: {
+          title: "Language",
+          body: "{{language}}, from your phone’s settings.",
+          en: "English",
+          ar: "Arabic",
+        },
+        support: "Message the Hagz team on WhatsApp.",
+        photo: {
+          change: "Change your photo",
+          library: "Choose from library",
+          camera: "Take a photo",
+          remove: "Remove photo",
+          cameraBlocked: "Allow camera access in Settings to take a photo.",
+          failed: "Couldn’t open your photos. Try again.",
+          uploadFailed: "Couldn’t upload your photo. Try again.",
+        },
+        signOut: {
+          title: "Sign out?",
+          body: "You’ll sign back in with your number and password. Your bookings and favorites stay as they are.",
+          cancel: "Cancel",
+        },
+        version: "Hagz · {{version}}",
       },
-      bookings: {
-        title: "Bookings",
-        line: "Your upcoming and past bookings. Coming soon.",
+      times: {
+        booksExactly_one: "Books {{count}} hour",
+        booksExactly_other: "Books {{count}} hours",
+        booksRange: "Books {{min}} to {{max}} hours",
+        heading: "Pick your hours",
+        parts: {
+          morning: "Morning",
+          afternoon: "Afternoon",
+          evening: "Evening",
+          lateNight: "Late night",
+        },
+        start: "Tap the hours you want to play, one after another.",
+        short_one: "{{ground}} books {{count}} hour or more.",
+        short_other: "{{ground}} books {{count}} hours or more.",
+        addNext: "Add the hour before or after.",
+        picked: "{{hours}}, {{range}}.",
+        longer: "Tap the next hour to play longer.",
+        longest: "That’s as long as {{ground}} books.",
+        pick_one: "Pick an hour",
+        pick_other: "Pick at least {{count}} hours",
+        line: "{{day}} · {{range}}",
+        none: "No free hours on this day.",
+        noneHint: "Try another day.",
+        continue: "Continue",
       },
-      community: {
-        title: "Community",
-        line: "Open games near you, and players looking for one more. Coming soon.",
+      favorites: {
+        title: "Favorites",
+        subtitle: "Your favorite venues in one place.",
+        count_one: "{{count}} venue",
+        count_other: "{{count}} venues",
+        gone: "No longer on Hagz",
+        paused: "Not taking bookings for now",
+        remove: "Remove",
+        unsave: "Remove {{name}} from favorites",
+        empty: {
+          title: "No favorites yet",
+          body: "Tap the heart on a venue and it’ll wait for you here.",
+          action: "Find venues",
+        },
       },
       search: {
         title: "Search",
@@ -407,6 +487,16 @@ const en = {
           payOnlineLine: "In full when you book.",
           payAtVenue: "Pay at the venue",
           payAtVenueLine: "In cash, when you play.",
+        },
+        // What the grounds were matched against when the page came from a search.
+        filter: {
+          at: "{{day}}, {{range}}",
+          anyTime: "{{day}}, any time",
+          anyTimeFor: "{{day}}, any {{hours}}",
+          between: "{{from}}–{{to}}/hr",
+          under: "Under {{price}}/hr",
+          from: "From {{price}}/hr",
+          unavailable: "Unavailable",
         },
         grounds: {
           title: "Grounds",
