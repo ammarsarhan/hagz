@@ -1,4 +1,4 @@
-import { VenueSearchResults } from "@hagz/contracts";
+import { VenueFreeHours, VenueSearchResults } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { router } from "@/http/router";
 import { reconcileGround } from "@/modules/venues/application/slot-generation";
@@ -287,6 +287,43 @@ describe("filters and order", () => {
   it("refuses sorting by distance without a point", async () => {
     await setup();
     expect((await search({ sort: "DISTANCE" })).status).toBe(400);
+  });
+});
+
+describe("free hours", () => {
+  it("counts the venues free to start each hour of a day, by the search's where and what", async () => {
+    const { nile } = await setup();
+    const date = tomorrow();
+    const get = async (params: Record<string, string>) => {
+      const res = await router.request(
+        `/v1/venues/free-hours?${new URLSearchParams({ marketplace: "EG", date, ...params }).toString()}`,
+      );
+      expect(res.status).toBe(200);
+      return VenueFreeHours.parse(await res.json());
+    };
+    const all = await get({});
+    expect(all.hours).toHaveLength(24);
+    // Both live venues open every hour; the draft and the paused one never count.
+    expect(all.hours.find((h) => h.hour === 21)?.venues).toBe(2);
+
+    // 9 pm taken at Nile Kickoff: one venue free then.
+    await prisma.groundSlot.update({
+      where: { id: await slotAt(nile.groundId, "21:00") },
+      data: { status: "BLOCKED" },
+    });
+    const later = await get({});
+    expect(later.hours.find((h) => h.hour === 21)?.venues).toBe(1);
+    expect(later.hours.find((h) => h.hour === 20)?.venues).toBe(2);
+
+    // Narrowed like the search.
+    const padel = await get({ sport: "PADEL" });
+    expect(padel.hours.find((h) => h.hour === 20)?.venues).toBe(1);
+    const near = await get({
+      latitude: String(MAADI.latitude),
+      longitude: String(MAADI.longitude),
+      radius: "3",
+    });
+    expect(near.hours.find((h) => h.hour === 20)?.venues).toBe(1);
   });
 });
 

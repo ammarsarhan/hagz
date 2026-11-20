@@ -1,5 +1,7 @@
 import {
   NEXT_TIMES,
+  type VenueFreeHours,
+  type VenueFreeHoursQuery,
   type VenueCard,
   type VenueSearchQuery,
   type VenueSearchResults,
@@ -70,16 +72,103 @@ interface Row {
   longitude: number | null;
 }
 
+// The search's where and what, as SQL pieces over "Venue" v and "Ground" g: an area and everything
+// under it, near a point (within the radius), part of the name in either language, a sport and a
+// size. Shared by the search and the free hours, so the timeline counts what the search finds.
+const filtersFor = (query: {
+  area?: string;
+  latitude?: number;
+  longitude?: number;
+  radius: number;
+  q?: string;
+  sport?: VenueSearchQuery["sport"];
+  size?: VenueSearchQuery["size"];
+}) => {
+  const point =
+    query.latitude !== undefined && query.longitude !== undefined
+      ? Prisma.sql`ST_SetSRID(ST_MakePoint(${query.longitude}, ${query.latitude}), 4326)::geography`
+      : null;
+  const typed = query.q ? foldName(query.q) : "";
+  return {
+    point,
+    area: query.area
+      ? Prisma.sql`AND v."locationId" IN (
+          WITH RECURSIVE tree AS (
+            SELECT id FROM "Location" WHERE id = ${query.area}::uuid
+            UNION ALL
+            SELECT l.id FROM "Location" l JOIN tree ON l."parentId" = tree.id
+          )
+          SELECT id FROM tree)`
+      : Prisma.empty,
+    near: point
+      ? Prisma.sql`AND ST_DWithin(v.coordinates, ${point}, ${query.radius * 1000})`
+      : Prisma.empty,
+    name: typed
+      ? Prisma.sql`AND EXISTS (
+          SELECT 1 FROM "VenueTranslation" t
+          WHERE t."venueId" = v.id
+            AND ${foldNameSql(Prisma.sql`t.name`)} LIKE ${`%${likeLiteral(typed)}%`})`
+      : Prisma.empty,
+    sport: query.sport ? Prisma.sql`AND g.sport = ${query.sport}::"GroundSport"` : Prisma.empty,
+    size: query.size ? Prisma.sql`AND g.size = ${query.size}::"GroundSize"` : Prisma.empty,
+  };
+};
+
+const activeMarketplace = async (code: string) => {
+  const marketplace = await prisma.marketplace.findFirst({
+    where: { code: code.toUpperCase(), isActive: true },
+    select: { id: true, timezone: true, currency: true },
+  });
+  if (!marketplace) throw marketplaceNotFound();
+  return marketplace;
+};
+
+// How many venues have a ground free to start each hour of a day (the When sheet's timeline): a
+// free slot on an active ground of the sport and size asked for, after the venue's notice. One
+// slot is enough to count: the hour's bar says something can start then, not for how long.
+export const freeHours = async (
+  query: VenueFreeHoursQuery,
+  clock: Clock = systemClock,
+): Promise<VenueFreeHours> => {
+  const { id: marketplaceId, timezone } = await activeMarketplace(query.marketplace);
+  const now = clock.now();
+  const [day] = await prisma.$queryRaw<{ date: string; from: Date; to: Date }[]>`
+    WITH d AS (
+      SELECT coalesce(${query.date ?? null}::date, (${now}::timestamptz AT TIME ZONE ${timezone})::date) AS day
+    )
+    SELECT day::text AS date,
+           (day::timestamp AT TIME ZONE ${timezone}) AS "from",
+           ((day + 1)::timestamp AT TIME ZONE ${timezone}) AS "to"
+    FROM d`;
+  if (!day) throw new Error("Postgres returned no day.");
+  const { area, near, name, sport, size } = filtersFor(query);
+  const rows = await prisma.$queryRaw<{ hour: number; venues: number }[]>`
+    SELECT extract(hour FROM (s."startsAt" AT TIME ZONE ${timezone}))::int AS hour,
+           count(DISTINCT s."venueId")::int AS venues
+    FROM "Venue" v
+    JOIN "GroundSlot" s ON s."venueId" = v.id
+    JOIN "Ground" g ON g.id = s."groundId" AND g.status = 'ACTIVE' ${sport} ${size}
+    LEFT JOIN "VenueSettings" st ON st."venueId" = v.id
+    WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplaceId}::uuid
+      ${area} ${near} ${name}
+      AND s.status = 'AVAILABLE'
+      AND s."startsAt" >= ${day.from} AND s."startsAt" < ${day.to}
+      AND s."startsAt" >= ${now}::timestamptz + make_interval(mins => coalesce(st."minimumNotice", 60))
+    GROUP BY 1`;
+  const byHour = new Map(rows.map((row) => [row.hour, row.venues]));
+  return {
+    date: day.date,
+    timezone,
+    hours: Array.from({ length: 24 }, (_, hour) => ({ hour, venues: byHour.get(hour) ?? 0 })),
+  };
+};
+
 export const searchVenues = async (
   query: VenueSearchQuery,
   language: Language,
   clock: Clock = systemClock,
 ): Promise<VenueSearchResults> => {
-  const marketplace = await prisma.marketplace.findFirst({
-    where: { code: query.marketplace.toUpperCase(), isActive: true },
-    select: { id: true, timezone: true, currency: true },
-  });
-  if (!marketplace) throw marketplaceNotFound();
+  const marketplace = await activeMarketplace(query.marketplace);
   const { timezone, currency } = marketplace;
   const now = clock.now();
 
@@ -95,37 +184,11 @@ export const searchVenues = async (
     FROM d`;
   if (!window) throw new Error("Postgres returned no search window.");
 
-  const point =
-    query.latitude !== undefined && query.longitude !== undefined
-      ? Prisma.sql`ST_SetSRID(ST_MakePoint(${query.longitude}, ${query.latitude}), 4326)::geography`
-      : null;
+  const { point, area, near, name, sport, size } = filtersFor(query);
   const sort = query.sort ?? (point ? "DISTANCE" : "RATING");
   const seconds = query.hours * 3600;
-  const typed = query.q ? foldName(query.q) : "";
   const cursor = query.cursor ? decodeCursor(query.cursor) : null;
 
-  const area = query.area
-    ? Prisma.sql`AND v."locationId" IN (
-        WITH RECURSIVE tree AS (
-          SELECT id FROM "Location" WHERE id = ${query.area}::uuid
-          UNION ALL
-          SELECT l.id FROM "Location" l JOIN tree ON l."parentId" = tree.id
-        )
-        SELECT id FROM tree)`
-    : Prisma.empty;
-  const near = point
-    ? Prisma.sql`AND ST_DWithin(v.coordinates, ${point}, ${query.radius * 1000})`
-    : Prisma.empty;
-  const name = typed
-    ? Prisma.sql`AND EXISTS (
-        SELECT 1 FROM "VenueTranslation" t
-        WHERE t."venueId" = v.id
-          AND ${foldNameSql(Prisma.sql`t.name`)} LIKE ${`%${likeLiteral(typed)}%`})`
-    : Prisma.empty;
-  const sport = query.sport
-    ? Prisma.sql`AND g.sport = ${query.sport}::"GroundSport"`
-    : Prisma.empty;
-  const size = query.size ? Prisma.sql`AND g.size = ${query.size}::"GroundSize"` : Prisma.empty;
   const distance = point
     ? Prisma.sql`round(ST_Distance(v.coordinates, ${point}))::int`
     : Prisma.sql`NULL::int`;

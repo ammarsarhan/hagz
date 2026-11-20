@@ -1476,6 +1476,50 @@
         ],
         "description": "`DISTANCE`: nearest first (needs a point). `RATING`: best rated first, unrated last. Left out: `DISTANCE` with a point, else `RATING`."
       },
+      "VenueFreeHours": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "A local date, YYYY-MM-DD.",
+            "example": "2026-11-20"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Cairo"
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hour": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 23,
+                  "description": "Local hour the game would start."
+                },
+                "venues": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Venues with a ground free to start then."
+                }
+              },
+              "required": [
+                "hour",
+                "venues"
+              ]
+            },
+            "description": "Every hour of the day, midnight first. Hours already past (or inside the venues' notice) count no one."
+          }
+        },
+        "required": [
+          "date",
+          "timezone",
+          "hours"
+        ]
+      },
       "PublicVenue": {
         "type": "object",
         "properties": {
@@ -10197,6 +10241,153 @@
           },
           "400": {
             "description": "VALIDATION_FAILED, or INVALID_CURSOR: search again.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKETPLACE_NOT_FOUND: no active marketplace with that code.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/venues/free-hours": {
+      "get": {
+        "tags": [
+          "Venues"
+        ],
+        "summary": "How many venues are free each hour of a day",
+        "description": "For each local hour of `date`, how many live venues (by the search's where and what) have a ground free to start then, after their notice: the When sheet's timeline. Public.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z]{2}$"
+            },
+            "required": true,
+            "name": "marketplace",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "area",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "latitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "longitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 50,
+              "default": 10
+            },
+            "required": false,
+            "name": "radius",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "In the venue's timezone. Left out: today.",
+              "example": "2026-11-20"
+            },
+            "required": false,
+            "description": "In the venue's timezone. Left out: today.",
+            "name": "date",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/GroundSport"
+            },
+            "required": false,
+            "name": "sport",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/GroundSize"
+            },
+            "required": false,
+            "description": "`STANDARD` for sports without size variants.",
+            "name": "size",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every hour of the day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueFreeHours"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
             "content": {
               "application/problem+json": {
                 "schema": {

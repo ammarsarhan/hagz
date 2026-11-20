@@ -3,6 +3,8 @@ import {
   PublicVenue,
   VenueAvailability,
   VenueAvailabilityQuery,
+  VenueFreeHours,
+  VenueFreeHoursQuery,
   VenueSearchQuery,
   VenueSearchResults,
 } from "@hagz/contracts";
@@ -72,6 +74,23 @@ export const searchVenues = createRoute({
   responses: {
     200: { description: "A page of venues", ...json(VenueSearchResults) },
     400: problemResponse("VALIDATION_FAILED, or INVALID_CURSOR: search again."),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const freeHours = createRoute({
+  method: "get",
+  path: "/venues/free-hours",
+  tags: ["Venues"],
+  summary: "How many venues are free each hour of a day",
+  description:
+    "For each local hour of `date`, how many live venues (by the search's where and what) have a " +
+    "ground free to start then, after their notice: the When sheet's timeline. Public.",
+  request: { query: VenueFreeHoursQuery },
+  responses: {
+    200: { description: "Every hour of the day", ...json(VenueFreeHours) },
+    400: problemResponse("VALIDATION_FAILED"),
     404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),
   },
