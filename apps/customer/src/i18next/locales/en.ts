@@ -1,0 +1,470 @@
+// English strings, grouped by where they're used: components, screens, common words shared by
+// several screens, and formats (sports, sizes, times, prices) that the lib helpers put together.
+// Placeholders use i18next's {{name}}; <tag>…</tag> marks a styled part (react-i18next's Trans).
+// Western digits only (decided 2026-10-30), as in the staff app.
+const en = {
+  translation: {
+    components: {
+      tabs: {
+        home: "Home",
+        search: "Search",
+        community: "Community",
+        bookings: "Bookings",
+        account: "Account",
+      },
+      nav: {
+        back: "Back",
+        close: "Close",
+      },
+      passwordField: {
+        show: "Show password",
+        hide: "Hide password",
+      },
+      passwordRule: "At least 8 characters",
+      resendCode: {
+        countdown: "Resend code in {{time}}",
+        resend: "Resend code",
+      },
+      comingSoon: "Coming soon.",
+      venueLayout: {
+        closed: "Closed",
+      },
+    },
+    common: {
+      actions: {
+        contactSupport: "Contact support",
+        backToSignIn: "Back to sign in",
+        continue: "Continue",
+        createAccount: "Create account",
+        getStarted: "Get started",
+        signIn: "Sign in",
+        signOut: "Sign out",
+        sendCode: "Send code",
+        verify: "Verify",
+        change: "Change",
+        forgotPassword: "Forgot password?",
+        tryAgain: "Try again",
+        clear: "Clear",
+      },
+      fields: {
+        mobileNumber: "Mobile number",
+        fullName: "Full name",
+        password: "Password",
+      },
+      codeSentTo: "Sent on WhatsApp to <phone>{{phone}}</phone>.",
+      showVenues: "Show venues",
+      showVenuesCount_one: "Show {{count}} venue",
+      showVenuesCount_other: "Show {{count}} venues",
+      searchWithin: "Search within {{km}} km",
+    },
+    formats: {
+      // Joining a list: "Football, padel and tennis".
+      listComma: ", ",
+      listAnd: " and ",
+      // "250 EGP": the amount first, as the user writes prices (2026-11-19).
+      price: "{{amount}} {{currency}}",
+      priceRange: "{{from}}–{{to}}",
+      fromPerHour: "from {{price}}/hr",
+      perHour: "/hr",
+      percent: "{{percent}}%",
+      currencies: { EGP: "EGP" },
+      metres: "{{value}} m",
+      km: "{{value}} km",
+      hours_one: "{{count}} hour",
+      hours_other: "{{count}} hours",
+      venues_one: "{{count}} venue",
+      venues_other: "{{count}} venues",
+      // Times of day: "9 pm", "9:30 pm".
+      am: "am",
+      pm: "pm",
+      time: "{{time}} {{period}}",
+      today: "Today",
+      tomorrow: "Tomorrow",
+      // The search bar's when: "Today · any time", "Fri 21 · 9–11 pm".
+      whenAnyTime: "{{day}} · any time",
+      whenRange: "{{day}} · {{range}}",
+      sports: {
+        FOOTBALL: "Football",
+        PADEL: "Padel",
+        TENNIS: "Tennis",
+        BASKETBALL: "Basketball",
+        VOLLEYBALL: "Volleyball",
+      },
+      sizes: {
+        FIVE_A_SIDE: "5-a-side",
+        SEVEN_A_SIDE: "7-a-side",
+        ELEVEN_A_SIDE: "11-a-side",
+        STANDARD: "Standard",
+      },
+      // What a ground is, where the size alone doesn't say the sport.
+      footballSizes: {
+        FIVE_A_SIDE: "5-a-side football",
+        SEVEN_A_SIDE: "7-a-side football",
+        ELEVEN_A_SIDE: "11-a-side football",
+      },
+      // "Football, 5 and 7-a-side": the sizes as they're listed under a venue's name.
+      sizesShort: { FIVE_A_SIDE: "5", SEVEN_A_SIDE: "7", ELEVEN_A_SIDE: "11" },
+      footballWithSizes: "Football, {{sizes}}-a-side",
+      // The Filters sheet's surface names.
+      surfaces: {
+        ARTIFICIAL_TURF: "Artificial turf",
+        NATURAL_GRASS: "Natural grass",
+        HARD_COURT: "Hard court",
+        HARD_WOOD: "Hardwood",
+        CLAY: "Clay",
+        SAND: "Sand",
+        OTHER: "Other",
+      },
+      // A ground's surface on the venue page.
+      groundSurfaces: {
+        ARTIFICIAL_TURF: "Artificial turf",
+        NATURAL_GRASS: "Natural grass",
+        HARD_COURT: "Hard court",
+        HARD_WOOD: "Wooden floor",
+        CLAY: "Clay",
+        SAND: "Sand",
+        OTHER: "Other surface",
+      },
+      settings: {
+        INDOOR: "Indoor",
+        OUTDOOR: "Outdoor",
+        COVERED: "Covered",
+      },
+      grounds_one: "{{count}} ground",
+      grounds_other: "{{count}} grounds",
+      courts_one: "{{count}} court",
+      courts_other: "{{count}} courts",
+      // How players pay, in the venue page's rows, and in as few words for the Book bar.
+      payment: {
+        MANUAL: "Cash at the venue",
+        DEPOSIT: "{{percent}}% online deposit",
+        PLATFORM: "Online in full",
+      },
+      paymentShort: {
+        MANUAL: "Cash at the venue",
+        DEPOSIT: "{{percent}}% online",
+        PLATFORM: "Paid online",
+      },
+      // How long before kick-off booking closes.
+      untilStart: "Until it starts",
+      minutesBefore_one: "{{count}} minute before",
+      minutesBefore_other: "{{count}} minutes before",
+      hoursBefore_one: "{{count}} hour before",
+      hoursBefore_other: "{{count}} hours before",
+    },
+    screens: {
+      // The Arabic lines need their own wordplay, not a translation (ar.ts).
+      onboarding: {
+        pitches: {
+          title: "Pitch hunting,\nhandled.",
+          body: "See free slots at venues near you and book in a few taps. No more calling around.",
+        },
+        free: {
+          title: "Frequent fixtures,\nfree.",
+          body: "Venues reward their regulars: keep booking and your stamps add up to a free game.",
+        },
+        squads: {
+          title: "Short squads,\nsolved.",
+          body: "Open your game to players nearby, or join one that’s a couple short.",
+        },
+        crews: {
+          title: "Kickabout crews,\ncrowned.",
+          body: "Turn your weekly game into a community and play for the cup in tournaments.",
+        },
+      },
+      signIn: {
+        title: "Welcome back",
+        subtitle: "Sign in with your mobile number and password.",
+        twoFactor: {
+          title: "Two-factor code",
+          subtitle: "We sent a code on WhatsApp to <phone>{{phone}}</phone>.",
+        },
+      },
+      signUp: {
+        phone: {
+          title: "What’s your mobile number?",
+          subtitle: "We’ll send a code on WhatsApp to confirm it’s yours.",
+          haveAccount: "Already have an account? <link>Sign in</link>",
+          terms: "By continuing you agree to Hagz’s Terms and Privacy Policy.",
+        },
+        code: {
+          title: "Enter the 6-digit code",
+        },
+        details: {
+          title: "Set up your account",
+          subtitle: "Venues see this name on your bookings.",
+        },
+        registered: {
+          title: "You already have an account",
+          body: "<phone>{{phone}}</phone> is already on Hagz. Sign in instead, or reset your password if you’ve forgotten it.",
+        },
+      },
+      forgotPassword: {
+        phone: {
+          title: "Reset your password",
+          subtitle: "Enter your mobile number and we’ll send a code on WhatsApp.",
+        },
+        code: {
+          title: "Enter the 6-digit code",
+        },
+        newPassword: {
+          title: "Choose a new password",
+          subtitle: "You’ll use it to sign in. Every device signed in now will be signed out.",
+          label: "New password",
+          submit: "Reset password",
+        },
+      },
+      blocked: {
+        suspended: {
+          title: "Your account is suspended",
+          body: "You can’t sign in for now. If you think this is a mistake, contact our support team.",
+        },
+        banned: {
+          title: "This account can’t be used",
+          body: "It was closed for breaking Hagz’s terms. If you think this is a mistake, contact our support team.",
+        },
+      },
+      account: {
+        title: "Account",
+        signedInAs: "Signed in as {{name}}.",
+        guest: "Create an account or sign in to book and keep your bookings.",
+      },
+      bookings: {
+        title: "Bookings",
+        line: "Your upcoming and past bookings. Coming soon.",
+      },
+      community: {
+        title: "Community",
+        line: "Open games near you, and players looking for one more. Coming soon.",
+      },
+      search: {
+        title: "Search",
+        nearMe: "Near me",
+        filters: "Filters",
+        filtersCount: "Filters · {{count}}",
+        filtersOn: "Filters, {{count}} on",
+        remove: "Remove {{label}}",
+        sorted: "Sorted: {{sort}}",
+        found_one: "{{count}} venue found",
+        found_other: "{{count}} venues found",
+        showRows: "Show as rows",
+        showCards: "Show as cards",
+        map: "Map",
+        list: "List",
+        clearFilters: "Clear filters",
+        showAllSports: "Show all sports",
+        // "Lights out": "No padel courts within 10 km have a free hour left today."
+        empty: {
+          title: "Uh oh!",
+          sentence: "No {{what}}{{where}} {{when}}.",
+          venues: "venues",
+          places: {
+            FOOTBALL: "football pitches",
+            PADEL: "padel courts",
+            TENNIS: "tennis courts",
+            BASKETBALL: "basketball courts",
+            VOLLEYBALL: "volleyball courts",
+          },
+          within: " within {{km}} km",
+          in: " in {{area}}",
+          freeAt: "are free {{day}} at {{hour}}",
+          freeOn: "have a free hour on {{day}}",
+          freeToday: "have a free hour left today",
+        },
+        // The chips for the filters that are on.
+        chips: {
+          under: "Under {{price}}",
+          from: "From {{price}}",
+          grounds: "{{count}}+ grounds",
+          amenity: "Amenity",
+          atLeast: "{{value}}+",
+          instant: "Instant",
+          flexible: "Free cancellation",
+          cash: "Pay cash",
+          online: "Pay online",
+          loyalty: "Loyalty",
+        },
+        filtersSheet: {
+          title: "Filters",
+          sortBy: "Sort by",
+          sorts: {
+            BEST_MATCH: "Best match",
+            DISTANCE: "Nearest",
+            PRICE: "Price",
+            RATING: "Rating",
+            SOONEST: "Soonest",
+          },
+          // The order the list is in, beside the count.
+          sortNames: {
+            BEST_MATCH: "Best match",
+            DISTANCE: "Nearest",
+            PRICE: "Cheapest",
+            RATING: "Best rated",
+            SOONEST: "Soonest",
+          },
+          price: "Price per hour",
+          anyPrice: "Any price",
+          priceRange: "{{from}} – {{to}}",
+          noResults: "No venue results",
+          perHour: "per hour",
+          ground: "Ground",
+          size: "Size",
+          surface: "Surface",
+          setting: "Setting",
+          grounds: "Grounds at the venue",
+          any: "Any",
+          atLeast: "{{value}}+",
+          venue: "Venue",
+          rating: "Rating",
+          booking: "Booking",
+          instant: "Instant confirmation",
+          instantLine: "Booked without waiting for the venue",
+          flexible: "Flexible cancellation",
+          flexibleLine: "Your money back up to 24 hours before",
+          pay: "Pay",
+          cash: "Cash",
+          online: "Online",
+          perks: "Perks",
+          loyalty: "Loyalty",
+          loyaltyLine: "Free bookings for regulars",
+          clearAll: "Clear all",
+        },
+        where: {
+          nearMe: "Near me",
+          pickArea: "Pick an area",
+          within: "Within {{km}} km",
+          barsHint: "Bars depict venues at each distance",
+          locationOff: "Turn on location for Hagz in Settings to search near you.",
+          areas_one: "{{count}} area",
+          areas_other: "{{count}} areas",
+          allOf: "All of {{name}}",
+          areasHeading: "Areas",
+          venuesHeading: "Venues",
+          noMatch: "No areas or venues match “{{query}}”.",
+          placeholder: "An area or a venue",
+          clear: "Clear",
+        },
+        when: {
+          title: "When do you want to play?",
+          anyTime: "Any time",
+          barsHint: "Bars depict venues free each hour",
+        },
+        card: {
+          atTime: "{{venue}} at {{time}}",
+          photoOf: "Photo of {{name}}",
+          photoOfVenue: "Photo of the venue",
+          open: "Open {{name}}",
+          openVenue: "Open the venue",
+          badges: {
+            freeReady: "Free booking ready",
+            stamps: "{{stamps}} of {{required}}",
+            played: "Played here {{count}}×",
+            justFreed: "Just freed",
+            loyalty: "Loyalty",
+          },
+        },
+      },
+      venue: {
+        fallbackName: "Venue",
+        missingTitle: "This venue isn’t on Hagz",
+        missingBody: "It may have closed, or the link is wrong.",
+        failedTitle: "Couldn’t load the venue",
+        tabs: {
+          grounds: "Grounds",
+          booking: "Booking",
+          amenities: "Amenities",
+          reviews: "Reviews",
+          map: "Map",
+        },
+        save: "Save this venue",
+        unsave: "Remove from saved",
+        share: "Copy the venue’s link",
+        copied: "Link copied",
+        photoOf: "Photo of {{name}}",
+        photoOfVenue: "Photo of the venue",
+        photoCount: "{{index}} / {{count}}",
+        bookingSoon: "Booking opens soon",
+        pricesVary: "Prices vary",
+        paused: "Paused",
+        book: "Book",
+        saveSheet: {
+          title: "Sign in to save venues",
+          body: "Create an account or sign in to keep the venues you like in one place.",
+        },
+        reviews_one: "{{count}} review",
+        reviews_other: "{{count}} reviews",
+        noReviews: "No reviews yet",
+        highlights: {
+          instant: "Instant confirmation",
+          instantLine: "No waiting for the venue to accept.",
+          venueConfirms: "Confirmed by the venue",
+          venueConfirmsLine: "They accept each booking.",
+          freeCancellation: "Free cancellation up to {{hours}} before",
+          partBack: "{{percent}}% back up to {{hours}} before",
+          nextBack: "{{percent}}% back up to {{hours}} before.",
+          noRefundAfter: "No refund after that.",
+          deposit: "{{percent}}% online deposit",
+          depositLine: "The rest at the venue.",
+          payOnline: "Pay online",
+          payOnlineLine: "In full when you book.",
+          payAtVenue: "Pay at the venue",
+          payAtVenueLine: "In cash, when you play.",
+        },
+        grounds: {
+          title: "Grounds",
+          closed: "Closed for now",
+          book: "Book {{hours}}",
+          bookRange: "Book {{min}}–{{max}} hours",
+          seeTimes: "See times",
+          seeTimesFor: "See times for {{name}}",
+        },
+        booking: {
+          title: "How booking works",
+          confirmation: "Confirmation",
+          instant: "Instant",
+          venueConfirms: "The venue confirms",
+          bookUpTo: "Book up to",
+          payment: "Payment",
+          loyalty: "Loyalty",
+          loyaltyValue: "1 free after {{count}} bookings",
+        },
+        cancellation: {
+          title: "Cancellation policy",
+          before: "Cancel before it starts",
+          back: "You get back",
+          orMore: "{{hours}} or more",
+          under: "Under {{hours}}",
+          between: "{{from}} to {{hours}}",
+          everything: "Everything",
+          nothing: "Nothing",
+          venueCancels: "If the venue cancels, you get everything back.",
+        },
+        amenities: "What’s here",
+        about: "About",
+        reviewsTitle: "Reviews",
+        fromPlayers_one: "from {{count}} player",
+        fromPlayers_other: "from {{count}} players",
+        noReviewsBody: "No reviews yet. Players can review a venue after they’ve played there.",
+        where: "Where it is",
+        noAddress: "Address not given",
+        directions: "Directions",
+      },
+    },
+  },
+};
+
+export default en;
+export type Translations = typeof en;
+
+// Arabic has six plural forms where English has two: next to each counted string (one with an
+// _other form) it may add _zero, _two, _few and _many.
+type WithArabicPlurals<T> = {
+  [K in keyof T]: T[K] extends object ? WithArabicPlurals<T[K]> : T[K];
+} & {
+  [
+    K in keyof T as K extends `${infer Base}_other`
+      ? `${Base}_zero` | `${Base}_two` | `${Base}_few` | `${Base}_many`
+      : never
+  ]?: string;
+};
+export type ArabicTranslations = WithArabicPlurals<Translations>;
