@@ -1,6 +1,14 @@
 import type { Icon } from "@tabler/icons-react-native";
 import { StatusBar } from "expo-status-bar";
-import { memo, useCallback, useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -77,6 +85,9 @@ import {
 // under it, and the search bar docks in the header (user, 2026-11-20). Changes animate, kept light:
 // a chip's black fades, the order's label cross-fades and its arrow turns, results stay on screen
 // until the new ones arrive and new ones fade in, and the list and the map cross-fade.
+
+// The least time a pull to refresh holds the list down, however quickly the search answers.
+const HOLD_MS = 800;
 
 const Separator = () => <View className="my-6 h-px bg-border" />;
 
@@ -331,10 +342,18 @@ export default function SearchTab() {
     phone !== undefined && where !== null,
   );
 
-  // A pull to refresh, until the search it started comes back.
+  // A pull to refresh: the list locks down with the spinner showing, Instagram's way, until the
+  // search it started comes back, and for at least HOLD_MS (a quick answer would otherwise snap it
+  // straight back up, user 2026-11-20).
   const [pulled, setPulled] = useState(false);
+  const pulledAt = useRef(0);
   useEffect(() => {
-    if (pulled && !search.loading) setPulled(false);
+    if (!pulled || search.loading) return;
+    const timer = setTimeout(
+      () => setPulled(false),
+      Math.max(0, HOLD_MS - (Date.now() - pulledAt.current)),
+    );
+    return () => clearTimeout(timer);
   }, [pulled, search.loading]);
   useEffect(() => {
     pulling.value = withTiming(pulled ? 1 : 0, { duration: 180 });
@@ -591,6 +610,7 @@ export default function SearchTab() {
           <RefreshControl
             refreshing={pulled}
             onRefresh={() => {
+              pulledAt.current = Date.now();
               setPulled(true);
               search.refresh();
             }}
