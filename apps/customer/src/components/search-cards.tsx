@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { memo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Pressable,
   ScrollView,
@@ -16,10 +17,12 @@ import Animated, {
   useAnimatedStyle,
   type SharedValue,
 } from "react-native-reanimated";
+import i18n from "@/i18next/i18next";
 import { reachable } from "@/lib/api";
 import { colors } from "@/lib/colors";
 import { formatDistance } from "@/lib/distance";
-import { formatPrice } from "@/lib/money";
+import { isRTL } from "@/lib/language";
+import { fromPerHour } from "@/lib/money";
 import { groundsText, sportsText, type VenueCard } from "@/lib/search";
 import { timeOfDay } from "@/lib/venue";
 import { IconStarFilled } from "./icons";
@@ -51,9 +54,7 @@ const placeText = (card: VenueCard) =>
     .join(" · ");
 
 function Price({ card, currency }: { card: VenueCard; currency: string }) {
-  return (
-    <Text className="text-body font-medium">from {formatPrice(card.priceFrom, currency)}/hr</Text>
-  );
+  return <Text className="text-body font-medium">{fromPerHour(card.priceFrom, currency)}</Text>;
 }
 
 // The next free start times, each with how many grounds are free then.
@@ -67,6 +68,7 @@ export function TimeChips({
   // Gutter the row scrolls from and to, when it runs edge to edge.
   inset?: number;
 }) {
+  const { t } = useTranslation();
   return (
     <ScrollView
       horizontal
@@ -78,7 +80,10 @@ export function TimeChips({
         <Pressable
           key={time.startsAt}
           accessibilityRole="button"
-          accessibilityLabel={`${card.name ?? "Venue"} at ${timeOfDay(time.startsAt, timezone)}`}
+          accessibilityLabel={t("screens.search.card.atTime", {
+            venue: card.name ?? t("screens.venue.fallbackName"),
+            time: timeOfDay(time.startsAt, timezone),
+          })}
           onPress={() => openVenue(card)}
           className="min-w-[72px] items-center justify-center rounded-xl border border-border px-3 py-1.5"
         >
@@ -94,6 +99,7 @@ export function TimeChips({
 
 // Sized with a style: expo-image's Image isn't styled by class names.
 function Cover({ card, style }: { card: VenueCard; style: ViewStyle }) {
+  const { t } = useTranslation();
   const look = { ...style, backgroundColor: "#c4c8cf", overflow: "hidden" as const };
   return card.cover ? (
     <Image
@@ -101,7 +107,11 @@ function Cover({ card, style }: { card: VenueCard; style: ViewStyle }) {
       style={look}
       contentFit="cover"
       transition={150}
-      accessibilityLabel={`Photo of ${card.name ?? "the venue"}`}
+      accessibilityLabel={
+        card.name
+          ? t("screens.search.card.photoOf", { name: card.name })
+          : t("screens.search.card.photoOfVenue")
+      }
     />
   ) : (
     <View style={look} />
@@ -125,13 +135,27 @@ const GUTTER = 24;
 // then a free time that came free again, then the venue's loyalty. Null for nothing to say.
 export const badgeOf = (card: VenueCard): { label: string; moment: boolean } | null => {
   const you = card.you;
-  if (you?.card?.status === "EARNED") return { label: "Free booking ready", moment: true };
-  if (you?.card?.status === "OPEN") {
-    return { label: `${you.card.stamps} of ${you.card.required}`, moment: false };
+  if (you?.card?.status === "EARNED") {
+    return { label: i18n.t("screens.search.card.badges.freeReady"), moment: true };
   }
-  if (you && you.played > 0) return { label: `Played here ${you.played}×`, moment: false };
-  if (card.justFreed) return { label: "Just freed", moment: false };
-  if (card.loyalty) return { label: "Loyalty", moment: false };
+  if (you?.card?.status === "OPEN") {
+    return {
+      label: i18n.t("screens.search.card.badges.stamps", {
+        stamps: you.card.stamps,
+        required: you.card.required,
+      }),
+      moment: false,
+    };
+  }
+  if (you && you.played > 0) {
+    return {
+      label: i18n.t("screens.search.card.badges.played", { count: you.played }),
+      moment: false,
+    };
+  }
+  if (card.justFreed)
+    return { label: i18n.t("screens.search.card.badges.justFreed"), moment: false };
+  if (card.loyalty) return { label: i18n.t("screens.search.card.badges.loyalty"), moment: false };
   return null;
 };
 
@@ -163,6 +187,7 @@ export const VenueListCard = memo(function VenueListCard({
   timezone: string;
   compact: SharedValue<number>;
 }) {
+  const { t } = useTranslation();
   const { width: screen } = useWindowDimensions();
   const inner = screen - 2 * GUTTER;
   const coverHeight = Math.round((inner * 9) / 16);
@@ -183,7 +208,8 @@ export const VenueListCard = memo(function VenueListCard({
   const words = useAnimatedStyle(() => ({
     width: interpolate(compact.value, [0, 1], [inner, inner - THUMB - BESIDE]),
     transform: [
-      { translateX: interpolate(compact.value, [0, 1], [0, THUMB + BESIDE]) },
+      // Beside the photo: to its right, or to its left in Arabic.
+      { translateX: interpolate(compact.value, [0, 1], [0, (THUMB + BESIDE) * (isRTL ? -1 : 1)]) },
       { translateY: interpolate(compact.value, [0, 1], [coverHeight + UNDER, 0]) },
     ],
   }));
@@ -210,7 +236,11 @@ export const VenueListCard = memo(function VenueListCard({
           (user, 2026-11-20). */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Open ${card.name ?? "the venue"}`}
+        accessibilityLabel={
+          card.name
+            ? t("screens.search.card.open", { name: card.name })
+            : t("screens.search.card.openVenue")
+        }
         onPress={() => openVenue(card)}
         style={StyleSheet.absoluteFill}
       >
@@ -218,7 +248,7 @@ export const VenueListCard = memo(function VenueListCard({
           <View onLayout={(event) => setWordsHeight(Math.round(event.nativeEvent.layout.height))}>
             <View className="flex-row items-center justify-between gap-3">
               <Text className="shrink text-[18px] leading-6 font-medium" numberOfLines={1}>
-                {card.name ?? "Venue"}
+                {card.name ?? t("screens.venue.fallbackName")}
               </Text>
               <Rating card={card} />
             </View>
@@ -271,6 +301,7 @@ export function VenueMapCard({
   currency: string;
   timezone: string;
 }) {
+  const { t } = useTranslation();
   return (
     <View
       className="rounded-[20px] bg-white"
@@ -299,7 +330,7 @@ export function VenueMapCard({
           <View className="flex-1">
             <View className="flex-row items-center justify-between gap-3">
               <Text className="shrink text-[18px] leading-6 font-medium" numberOfLines={1}>
-                {card.name ?? "Venue"}
+                {card.name ?? t("screens.venue.fallbackName")}
               </Text>
               <Rating card={card} />
             </View>

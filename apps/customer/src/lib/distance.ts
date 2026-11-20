@@ -1,5 +1,6 @@
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
+import i18n from "@/i18next/i18next";
 
 // How far a place is from the player, for "Borg El Arab, Alexandria (5.5 km)". From the phone's
 // last known position when the player has allowed location, asked for once if they haven't been
@@ -25,9 +26,11 @@ export const metresBetween = (a: Point, b: Point) => {
 
 // 850 → "850 m", 5_480 → "5.5 km", 12_300 → "12 km".
 export const formatDistance = (metres: number) => {
-  if (metres < 1000) return `${Math.max(10, Math.round(metres / 10) * 10)} m`;
+  if (metres < 1000) {
+    return i18n.t("formats.metres", { value: Math.max(10, Math.round(metres / 10) * 10) });
+  }
   const km = metres / 1000;
-  return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+  return i18n.t("formats.km", { value: km < 10 ? km.toFixed(1) : Math.round(km) });
 };
 
 // Where the phone is: undefined while it's still being found, null when it can't be (location

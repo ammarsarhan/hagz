@@ -9,11 +9,13 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { isRTL } from "@/lib/language";
 
 // A range over bars (the Filters sheet's price per hour, Figma "C3 · Tabs & Search" A1, 127:2):
 // one bar a band, as tall as how many venues fall in it, black inside the range, under a track with
 // two handles. Like the When sheet's timeline: a handle steps a band at a time under the finger
 // (a quick glide, a tick), and the bars change at the same moment. At least one band is picked.
+// In Arabic the bands run right to left, cheapest on the right.
 
 const BARS = 56;
 const HANDLE = 26;
@@ -62,6 +64,16 @@ export function RangeBars({
   const cell = bands > 0 ? width / bands : 0;
   const most = Math.max(1, ...counts);
 
+  // Touches are measured from the left; the bands run from the start, the right in Arabic.
+  const widthSV = useSharedValue(width);
+  useEffect(() => {
+    widthSV.value = width;
+  }, [width, widthSV]);
+  const along = (x: number) => {
+    "worklet";
+    return isRTL ? widthSV.value - x : x;
+  };
+
   const fromX = useSharedValue(range.from * cell);
   const toX = useSharedValue(range.to * cell);
   const cellSV = useSharedValue(cell);
@@ -96,8 +108,9 @@ export function RangeBars({
     .onBegin((event) => {
       const c = cellSV.value;
       if (c === 0) return;
-      held.value = Math.abs(event.x - fromX.value) <= Math.abs(event.x - toX.value) ? 1 : 2;
-      startX.value = event.x;
+      const x = along(event.x);
+      held.value = Math.abs(x - fromX.value) <= Math.abs(x - toX.value) ? 1 : 2;
+      startX.value = x;
       first.value = Math.round(fromX.value / c);
       last.value = Math.round(toX.value / c);
       nowFrom.value = first.value;
@@ -107,7 +120,7 @@ export function RangeBars({
     .onUpdate((event) => {
       const c = cellSV.value;
       if (held.value === 0 || c === 0) return;
-      const moved = Math.round((event.x - startX.value) / c);
+      const moved = Math.round((along(event.x) - startX.value) / c);
       const from = nowFrom.value;
       const to = nowTo.value;
       let nextFrom = from;

@@ -10,7 +10,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { hourLabel } from "@/lib/search";
+import { isRTL } from "@/lib/language";
+import { hourParts } from "@/lib/search";
 import { Text } from "./text";
 
 // The When sheet's timeline (Figma "C3 · Tabs & Search", section "Search · When sheet", option 4,
@@ -18,7 +19,8 @@ import { Text } from "./text";
 // tall as the number of venues free to start then, over a track with the game's run between two
 // handles. Drag a handle to move that end an hour at a time (with a tick), or press between the
 // handles of a run two or more hours long and drag to slide it; tap the timeline to move the run
-// there (or, with nothing picked, to pick that hour). The run is 1 to 6 hours.
+// there (or, with nothing picked, to pick that hour). The run is 1 to 6 hours. In Arabic the day
+// runs right to left, as the staff app's week does.
 
 export interface Run {
   from: number; // First hour, 0–23.
@@ -35,14 +37,6 @@ const HANDLE = 26;
 const INK = "#0b0b0c";
 const OFF = "#d5d8dd";
 const PAST = "#edeef0";
-
-// "8 – 11 pm", "11 am – 1 pm".
-export const runLabel = (run: Run) => {
-  const from = hourLabel(run.from % 24);
-  const to = hourLabel(run.to % 24);
-  const sameHalf = run.from < 12 === run.to % 24 < 12 && run.to !== 24;
-  return sameHalf ? `${from.replace(/ [ap]m$/, "")} – ${to}` : `${from} – ${to}`;
-};
 
 // An hour's bar: grey (faint when past), its black fading in as the run takes it in and out as it
 // leaves, so moving a handle sweeps rather than snaps. Its height follows the day's count: growing
@@ -105,6 +99,15 @@ export function HourTimeline({
 }) {
   const [width, setWidth] = useState(0);
   const cell = width / SPAN;
+  // Touches are measured from the left; the hours run from the start, the right in Arabic.
+  const widthSV = useSharedValue(width);
+  useEffect(() => {
+    widthSV.value = width;
+  }, [width, widthSV]);
+  const along = (x: number) => {
+    "worklet";
+    return isRTL ? widthSV.value - x : x;
+  };
   const most = Math.max(1, ...(counts ?? []).slice(FIRST, LAST));
   const lowest = Math.max(FIRST, earliest);
 
@@ -161,12 +164,13 @@ export function HourTimeline({
         held.value = 0;
         return;
       }
-      const toFrom = Math.abs(event.x - fromX.value);
-      const toTo = Math.abs(event.x - toX.value);
-      const inside = event.x > fromX.value && event.x < toX.value;
+      const x = along(event.x);
+      const toFrom = Math.abs(x - fromX.value);
+      const toTo = Math.abs(x - toX.value);
+      const inside = x > fromX.value && x < toX.value;
       const wide = Math.round((toX.value - fromX.value) / c) >= 2;
       held.value = inside && wide && Math.min(toFrom, toTo) > GRAB ? 3 : toFrom <= toTo ? 1 : 2;
-      startX.value = event.x;
+      startX.value = x;
       startFrom.value = fromX.value;
       startTo.value = toX.value;
       lastFrom.value = Math.round(fromX.value / c) + FIRST;
@@ -178,7 +182,7 @@ export function HourTimeline({
       if (held.value === 0 || c === 0) return;
       // Where the finger would put the ends, in hours, then kept to the rules: the whole run slid
       // (length kept), or one end moved (1 to LONGEST hours, never before the earliest hour).
-      const dx = Math.round((event.x - startX.value) / c);
+      const dx = Math.round((along(event.x) - startX.value) / c);
       const first = Math.round(startFrom.value / c) + FIRST;
       const last = Math.round(startTo.value / c) + FIRST;
       const least = lowestSV.value;
@@ -212,7 +216,7 @@ export function HourTimeline({
   const tap = Gesture.Tap()
     .runOnJS(true)
     .onEnd((event) => {
-      const hour = Math.min(Math.max(Math.floor(event.x / cell) + FIRST, lowest), LAST - 1);
+      const hour = Math.min(Math.max(Math.floor(along(event.x) / cell) + FIRST, lowest), LAST - 1);
       const length = run ? run.to - run.from : 1;
       const from = Math.min(hour, LAST - length);
       if (from < lowest) return;
@@ -281,11 +285,15 @@ export function HourTimeline({
           />
         </View>
         <View className="flex-row justify-between">
-          {[6, 12, 18, 24].map((hour) => (
-            <Text key={hour} className="text-[11px] leading-[14px] text-unit">
-              {hourLabel(hour % 24).replace(" ", "")}
-            </Text>
-          ))}
+          {[6, 12, 18, 24].map((hour) => {
+            // "6am", tight under the bars.
+            const { time, period } = hourParts(hour % 24);
+            return (
+              <Text key={hour} className="text-[11px] leading-[14px] text-unit">
+                {`${time}${period}`}
+              </Text>
+            );
+          })}
         </View>
       </View>
     </GestureDetector>
