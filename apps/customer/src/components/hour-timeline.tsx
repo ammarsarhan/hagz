@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { hourLabel } from "@/lib/search";
@@ -34,6 +35,28 @@ export const runLabel = (run: Run) => {
   const sameHalf = run.from < 12 === run.to % 24 < 12 && run.to !== 24;
   return sameHalf ? `${from.replace(/ [ap]m$/, "")} – ${to}` : `${from} – ${to}`;
 };
+
+// An hour's bar: grey (faint when past), its black fading in as the run takes it in and out as it
+// leaves, so moving a handle sweeps rather than snaps.
+function Bar({ height, picked, past }: { height: number; picked: boolean; past: boolean }) {
+  const shown = useSharedValue(picked ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(picked ? 1 : 0, { duration: 160 });
+  }, [picked, shown]);
+  const fill = useAnimatedStyle(() => ({ opacity: shown.value }));
+  return (
+    <View
+      style={{ height, borderRadius: 2, backgroundColor: past ? PAST : OFF, overflow: "hidden" }}
+    >
+      <Animated.View
+        style={[
+          { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: INK },
+          fill,
+        ]}
+      />
+    </View>
+  );
+}
 
 export function HourTimeline({
   counts,
@@ -122,12 +145,10 @@ export function HourTimeline({
               const past = hour < lowest;
               return (
                 <View key={hour} style={{ width: cell, paddingHorizontal: 1.5 }}>
-                  <View
-                    style={{
-                      height: counts ? Math.max(3, (venues / most) * BARS) : 3,
-                      borderRadius: 2,
-                      backgroundColor: past ? PAST : picked ? INK : OFF,
-                    }}
+                  <Bar
+                    height={counts ? Math.max(3, (venues / most) * BARS) : 3}
+                    picked={picked && !past}
+                    past={past}
                   />
                 </View>
               );
