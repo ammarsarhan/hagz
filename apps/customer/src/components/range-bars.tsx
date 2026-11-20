@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { View } from "react-native";
-import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
   runOnJS,
@@ -25,7 +25,7 @@ export interface Range {
   to: number; // The band after the last one picked.
 }
 
-function Bar({ height, on }: { height: number; on: boolean }) {
+const Bar = memo(function Bar({ height, on }: { height: number; on: boolean }) {
   const shown = useSharedValue(on ? 1 : 0);
   useEffect(() => {
     shown.value = withTiming(on ? 1 : 0, { duration: 100 });
@@ -46,7 +46,7 @@ function Bar({ height, on }: { height: number; on: boolean }) {
       />
     </Animated.View>
   );
-}
+});
 
 export function RangeBars({
   counts,
@@ -141,33 +141,32 @@ export function RangeBars({
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 0 }}>
-      <GestureDetector gesture={drag}>
-        <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-          <View className="flex-row items-end" style={{ height: BARS }}>
-            {counts.map((count, i) => (
-              <View key={i} style={{ width: cell, paddingHorizontal: 1.5 }}>
-                <Bar
-                  height={Math.max(3, (count / most) * BARS)}
-                  on={i >= range.from && i < range.to}
-                />
-              </View>
-            ))}
-          </View>
-          <View style={{ height: HANDLE + 8, justifyContent: "center" }}>
-            <View className="h-1 rounded-full bg-chip" />
-            <Animated.View className="absolute h-1 rounded-full bg-ink" style={segment} />
-            <Animated.View
-              className="absolute rounded-full border-2 border-ink bg-white"
-              style={[handle, startHandle]}
-            />
-            <Animated.View
-              className="absolute rounded-full border-2 border-ink bg-white"
-              style={[handle, endHandle]}
-            />
-          </View>
+    // Inside a Sheet, which holds the gesture root.
+    <GestureDetector gesture={drag}>
+      <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+        <View className="flex-row items-end" style={{ height: BARS }}>
+          {counts.map((count, i) => (
+            <View key={i} style={{ width: cell, paddingHorizontal: 1.5 }}>
+              <Bar
+                height={Math.max(3, (count / most) * BARS)}
+                on={i >= range.from && i < range.to}
+              />
+            </View>
+          ))}
         </View>
-      </GestureDetector>
-    </GestureHandlerRootView>
+        <View style={{ height: HANDLE + 8, justifyContent: "center" }}>
+          <View className="h-1 rounded-full bg-chip" />
+          <Animated.View className="absolute h-1 rounded-full bg-ink" style={segment} />
+          <Animated.View
+            className="absolute rounded-full border-2 border-ink bg-white"
+            style={[handle, startHandle]}
+          />
+          <Animated.View
+            className="absolute rounded-full border-2 border-ink bg-white"
+            style={[handle, endHandle]}
+          />
+        </View>
+      </View>
+    </GestureDetector>
   );
 }

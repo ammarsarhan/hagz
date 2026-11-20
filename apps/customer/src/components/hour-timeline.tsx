@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { View } from "react-native";
-import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { hourLabel } from "@/lib/search";
 import { Text } from "./text";
 
@@ -242,55 +242,52 @@ export function HourTimeline({
   };
 
   return (
-    // Sized by what's in it: the root view flexes by default, and in a sheet sized by its content
-    // that leaves it no height, so the timeline spilled under the buttons.
-    <GestureHandlerRootView style={{ flex: 0 }}>
-      <GestureDetector gesture={Gesture.Exclusive(drag, tap)}>
-        <View
-          onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-          style={{ paddingTop: 4 }}
-        >
-          {/* Bars: venues free to start each hour. */}
-          <View className="flex-row items-end" style={{ height: BARS }}>
-            {Array.from({ length: SPAN }, (_, i) => {
-              const hour = FIRST + i;
-              const venues = counts?.[hour] ?? 0;
-              const picked = run !== null && hour >= run.from && hour < run.to;
-              const past = hour < lowest;
-              return (
-                <View key={hour} style={{ width: cell, paddingHorizontal: 1.5 }}>
-                  <Bar
-                    height={counts ? Math.max(3, (venues / most) * BARS) : 3}
-                    picked={picked && !past}
-                    past={past}
-                    delay={i * GROW_STAGGER}
-                  />
-                </View>
-              );
-            })}
-          </View>
-          {/* The track and the run on it, with its handles. */}
-          <View style={{ height: HANDLE + 8, justifyContent: "center" }}>
-            <View className="h-1 rounded-full bg-chip" />
-            <Animated.View className="absolute h-1 rounded-full bg-ink" style={segment} />
-            <Animated.View
-              className="absolute rounded-full border-2 border-ink bg-white"
-              style={[handle, startHandle]}
-            />
-            <Animated.View
-              className="absolute rounded-full border-2 border-ink bg-white"
-              style={[handle, endHandle]}
-            />
-          </View>
-          <View className="flex-row justify-between">
-            {[6, 12, 18, 24].map((hour) => (
-              <Text key={hour} className="text-[11px] leading-[14px] text-unit">
-                {hourLabel(hour % 24).replace(" ", "")}
-              </Text>
-            ))}
-          </View>
+    // Inside the When sheet, which holds the gesture root.
+    <GestureDetector gesture={Gesture.Exclusive(drag, tap)}>
+      <View
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+        style={{ paddingTop: 4 }}
+      >
+        {/* Bars: venues free to start each hour. */}
+        <View className="flex-row items-end" style={{ height: BARS }}>
+          {Array.from({ length: SPAN }, (_, i) => {
+            const hour = FIRST + i;
+            const venues = counts?.[hour] ?? 0;
+            const picked = run !== null && hour >= run.from && hour < run.to;
+            const past = hour < lowest;
+            return (
+              <View key={hour} style={{ width: cell, paddingHorizontal: 1.5 }}>
+                <Bar
+                  height={counts ? Math.max(3, (venues / most) * BARS) : 3}
+                  picked={picked && !past}
+                  past={past}
+                  delay={i * GROW_STAGGER}
+                />
+              </View>
+            );
+          })}
         </View>
-      </GestureDetector>
-    </GestureHandlerRootView>
+        {/* The track and the run on it, with its handles. */}
+        <View style={{ height: HANDLE + 8, justifyContent: "center" }}>
+          <View className="h-1 rounded-full bg-chip" />
+          <Animated.View className="absolute h-1 rounded-full bg-ink" style={segment} />
+          <Animated.View
+            className="absolute rounded-full border-2 border-ink bg-white"
+            style={[handle, startHandle]}
+          />
+          <Animated.View
+            className="absolute rounded-full border-2 border-ink bg-white"
+            style={[handle, endHandle]}
+          />
+        </View>
+        <View className="flex-row justify-between">
+          {[6, 12, 18, 24].map((hour) => (
+            <Text key={hour} className="text-[11px] leading-[14px] text-unit">
+              {hourLabel(hour % 24).replace(" ", "")}
+            </Text>
+          ))}
+        </View>
+      </View>
+    </GestureDetector>
   );
 }

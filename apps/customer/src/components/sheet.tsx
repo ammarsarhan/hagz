@@ -8,6 +8,7 @@ import {
   Pressable,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SheetHud } from "./hud";
 import { CloseButton } from "./nav";
@@ -81,7 +82,9 @@ export function Sheet({
       onDismiss={Platform.OS === "ios" ? () => hidden.current?.() : undefined}
       statusBarTranslucent
     >
-      <View className="flex-1">
+      {/* A Modal is its own window: gestures in it (sliders, the scroll view) need a root of their
+          own, one for the whole sheet so they all share touches. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior="padding"
           className="flex-1 justify-end"
@@ -117,7 +120,7 @@ export function Sheet({
           </Animated.View>
         </KeyboardAvoidingView>
         <SheetHud open={visible && panelTop !== null} bottom={area - (panelTop ?? 0)} />
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
