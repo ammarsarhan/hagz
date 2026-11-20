@@ -1,10 +1,19 @@
 import type { components } from "@hagz/api";
 import { Image } from "expo-image";
+import { StatusBar } from "expo-status-bar";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import Animated, { FadeOut, LinearTransition } from "react-native-reanimated";
+import { ActivityIndicator, Pressable, useWindowDimensions, View } from "react-native";
+import Animated, {
+  FadeOut,
+  interpolate,
+  LinearTransition,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import { IconHeart, IconHeartFilled, IconStarFilled } from "@/components/icons";
@@ -16,6 +25,7 @@ import { api, reachable } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { syncFavorites, toggleFavorite, useFavoriteIds } from "@/lib/favorites";
+import { isRTL } from "@/lib/language";
 import { sportsText } from "@/lib/search";
 
 type Favorite = components["schemas"]["FavoriteVenue"];
@@ -88,19 +98,64 @@ export default function Favorites() {
 
   if (shown.length === 0) return <Empty nav={nav} />;
 
+  return <List venues={shown} />;
+}
+
+// The back button's row (NavBar's h-10, at the top of the safe area) and the gap under it to the
+// title (its mb-[22px]), as on every Screen; the bar keeps 8 more under the button.
+const ROW = 40;
+const BAR_BELOW = 8;
+const TITLE_GAP = 22;
+// The compact title fades in over the last stretch of the big one going under the bar, rising.
+const FADE = 24;
+const RISE = 6;
+
+// The list scrolls as one page under a fixed bar, the venue page's and the staff app's pattern
+// (user, 2026-11-20): the big title goes under the bar and comes back small beside the back button,
+// and the bar's hairline fades in once anything is under it.
+function List({ venues }: { venues: Favorite[] }) {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const bar = insets.top + ROW + BAR_BELOW;
+  const scrollY = useSharedValue(0);
+  const titleEnd = useSharedValue(Number.POSITIVE_INFINITY);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+  const compact = useAnimatedStyle(() => {
+    const gone = titleEnd.value - bar;
+    const progress = interpolate(scrollY.value, [gone - FADE, gone], [0, 1], "clamp");
+    return { opacity: progress, transform: [{ translateY: (1 - progress) * RISE }] };
+  });
+  const hairline = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 12], [0, 1], "clamp"),
+  }));
+  const title = t("screens.favorites.title");
+
   return (
-    <Screen>
-      {/* The whole page scrolls, the back button with it; edge to edge, gutters put back inside. */}
-      <ScrollView
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+      <StatusBar style="dark" />
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        style={{ marginHorizontal: -20 }}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + ROW + TITLE_GAP,
+          paddingHorizontal: 24,
+          paddingBottom: insets.bottom + 32,
+        }}
       >
-        <View className="-mx-1">{nav}</View>
-        <Title subtitle={t("screens.favorites.count", { count: shown.length })}>
-          {t("screens.favorites.title")}
+        <Title
+          subtitle={t("screens.favorites.count", { count: venues.length })}
+          onTitleLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            titleEnd.value = y + height;
+          }}
+        >
+          {title}
         </Title>
-        {shown.map((venue, index) => (
+        {venues.map((venue, index) => (
           <Animated.View
             key={venue.id}
             layout={LinearTransition.duration(240)}
@@ -110,8 +165,32 @@ export default function Favorites() {
             <FavoriteCard venue={venue} />
           </Animated.View>
         ))}
-      </ScrollView>
-    </Screen>
+      </Animated.ScrollView>
+
+      <View
+        className="absolute top-0 right-0 left-0 bg-white px-5"
+        style={{ height: bar, paddingTop: insets.top }}
+      >
+        <View className="-mx-1 h-10 flex-row items-center gap-3">
+          <BackButton onPress={() => router.back()} />
+          <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            // The gutters, the button and the gap: a long title ends in "…".
+            style={[compact, { maxWidth: width - 40 - 40 - 12 }]}
+          >
+            <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
+              {title}
+            </Text>
+          </Animated.View>
+        </View>
+        <Animated.View
+          className="absolute right-0 bottom-0 left-0 h-px bg-hairline"
+          style={hairline}
+        />
+      </View>
+    </View>
   );
 }
 
