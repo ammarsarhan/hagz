@@ -1,12 +1,14 @@
 import type { components } from "@hagz/api";
 import { router } from "expo-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Keyboard, Pressable, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { formatDistance } from "@/lib/distance";
+import { isRTL } from "@/lib/language";
 import {
   DEFAULT_RADIUS,
   MARKETPLACE,
@@ -102,7 +104,10 @@ function Segment({
     at.value = withTiming(index, { duration: 240, easing: Easing.out(Easing.cubic) });
   }, [index, at]);
   const half = (width - 8) / options.length;
-  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: at.value * half }] }));
+  // The thumb sits at the start, which is the right in Arabic, so it moves the other way there.
+  const thumb = useAnimatedStyle(() => ({
+    transform: [{ translateX: at.value * half * (isRTL ? -1 : 1) }],
+  }));
   return (
     <View
       className="mt-4 h-11 flex-row rounded-[14px] bg-chip p-1"
@@ -193,8 +198,6 @@ function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-const venuesText = (count: number) => `${count} ${count === 1 ? "venue" : "venues"}`;
-
 export function SearchWhere({
   here,
   where,
@@ -209,6 +212,7 @@ export function SearchWhere({
   onPick: (where: Where) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState("");
   const [areas, setAreas] = useState<Area[]>([]);
@@ -299,7 +303,7 @@ export function SearchWhere({
   }));
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <Animated.ScrollView
         ref={scrollRef}
         onScroll={onScroll}
@@ -310,7 +314,7 @@ export function SearchWhere({
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: top, paddingBottom: 40 }}
       >
         <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
-          Search
+          {t("screens.search.title")}
         </Text>
         {/* The bar's slot: the bar floats over it, so it can dock. */}
         <View
@@ -323,8 +327,8 @@ export function SearchWhere({
         {typed ? null : (
           <Segment
             options={[
-              { key: "near", label: "Near me" },
-              { key: "area", label: "Pick an area" },
+              { key: "near", label: t("screens.search.where.nearMe") },
+              { key: "area", label: t("screens.search.where.pickArea") },
             ]}
             value={tab}
             onChange={setTab}
@@ -337,19 +341,19 @@ export function SearchWhere({
                 <>
                   <View className="mt-3 flex-row items-baseline justify-between">
                     <Text className="text-[20px] leading-[26px] font-semibold">
-                      Within {radius} km
+                      {t("screens.search.where.within", { km: radius })}
                     </Text>
                     <Text className="text-label text-ink-2">
-                      {count === null ? " " : venuesText(count)}
+                      {count === null ? " " : t("formats.venues", { count })}
                     </Text>
                   </View>
                   <Text className="mt-1 mb-6 text-caption text-unit">
-                    Bars depict venues at each distance
+                    {t("screens.search.where.barsHint")}
                   </Text>
                   <RadiusSlider radius={radius} within={within} onChange={setRadius} />
                   <View className="mt-8">
                     <Button
-                      label={`Search within ${radius} km`}
+                      label={t("common.searchWithin", { km: radius })}
                       size="small"
                       onPress={() => pick({ kind: "near", radius })}
                     />
@@ -357,7 +361,7 @@ export function SearchWhere({
                 </>
               ) : (
                 <Text className="mt-6 text-subtitle text-ink-2">
-                  Turn on location for Hagz in Settings to search near you.
+                  {t("screens.search.where.locationOff")}
                 </Text>
               )}
             </Animated.View>
@@ -376,7 +380,7 @@ export function SearchWhere({
                       <View className="gap-0.5">
                         <Text className="text-subtitle font-medium">{governorate.name}</Text>
                         <Text className="text-caption text-ink-2">
-                          {`${governorate.areas.length} ${governorate.areas.length === 1 ? "area" : "areas"} · ${venuesText(governorate.venues)}`}
+                          {`${t("screens.search.where.areas", { count: governorate.areas.length })} · ${t("formats.venues", { count: governorate.venues })}`}
                         </Text>
                       </View>
                       <Chevron open={expanded} />
@@ -384,7 +388,7 @@ export function SearchWhere({
                     <Collapsible open={expanded}>
                       <View className="flex-row flex-wrap gap-2 pt-4">
                         <Pill
-                          label={`All of ${governorate.name ?? ""}`}
+                          label={t("screens.search.where.allOf", { name: governorate.name ?? "" })}
                           on={where.kind === "area" && where.id === governorate.id}
                           onPress={() =>
                             pick({
@@ -419,7 +423,7 @@ export function SearchWhere({
           )}
           {areas.length > 0 ? (
             <>
-              <Heading>Areas</Heading>
+              <Heading>{t("screens.search.where.areasHeading")}</Heading>
               {areas.map((area) => (
                 <Row
                   key={area.id}
@@ -435,12 +439,12 @@ export function SearchWhere({
           ) : null}
           {venues.length > 0 ? (
             <>
-              <Heading>Venues</Heading>
+              <Heading>{t("screens.search.where.venuesHeading")}</Heading>
               {venues.map((venue) => (
                 <Row
                   key={venue.id}
                   icon={<IconBallFootball size={20} color={colors.ink} strokeWidth={1.75} />}
-                  title={venue.name ?? "Venue"}
+                  title={venue.name ?? t("screens.venue.fallbackName")}
                   line={[
                     venue.area,
                     venue.distance === null ? null : formatDistance(venue.distance),
@@ -457,7 +461,7 @@ export function SearchWhere({
           ) : null}
           {q.trim() && answered === q.trim() && areas.length === 0 && venues.length === 0 ? (
             <Text className="mt-6 text-subtitle text-ink-2">
-              No areas or venues match “{q.trim()}”.
+              {t("screens.search.where.noMatch", { query: q.trim() })}
             </Text>
           ) : null}
         </View>
@@ -476,7 +480,7 @@ export function SearchWhere({
             autoFocus
             value={q}
             onChangeText={setQ}
-            placeholder="An area or a venue"
+            placeholder={t("screens.search.where.placeholder")}
             placeholderTextColor={colors.unit}
             selectionColor={colors.ink}
             returnKeyType="search"
@@ -486,7 +490,7 @@ export function SearchWhere({
           {/* Clears what's typed; with nothing typed, closes. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={q ? "Clear" : "Close"}
+            accessibilityLabel={q ? t("screens.search.where.clear") : t("components.nav.close")}
             hitSlop={10}
             onPress={() => (q ? setQ("") : onClose())}
             className="size-8 items-center justify-center active:opacity-60"

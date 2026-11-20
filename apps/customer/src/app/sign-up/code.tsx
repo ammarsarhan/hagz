@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
@@ -11,11 +12,12 @@ import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
-import { displayPhone, toE164 } from "@/lib/phone";
+import { displayPhone, isolate, toE164 } from "@/lib/phone";
 
 // Sign up, step 2: the 6-digit WhatsApp code. It's checked as soon as all six digits are in. Too
 // many wrong tries lock the boxes; a new code can be asked for once the countdown runs out.
 export default function SignUpCode() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ phone: string; resendAfter: string }>();
   const phone = params.phone ?? "";
   const [code, setCode] = useState("");
@@ -87,7 +89,7 @@ export default function SignUpCode() {
     <Screen
       footer={
         <Button
-          label="Continue"
+          label={t("common.actions.continue")}
           disabled={code.length < 6 || Boolean(error) || locked}
           loading={checking}
           onPress={() => void confirm(code)}
@@ -97,13 +99,15 @@ export default function SignUpCode() {
       <NavBar start={<BackButton onPress={() => router.back()} />} />
       <Title
         subtitle={
-          <>
-            Sent on WhatsApp to <Text className="text-ink">{displayPhone(phone)}</Text>.
-          </>
+          <Trans
+            i18nKey="common.codeSentTo"
+            values={{ phone: isolate(displayPhone(phone)) }}
+            components={{ phone: <Text className="text-ink" /> }}
+          />
         }
-        action={{ label: "Change", onPress: () => router.back() }}
+        action={{ label: t("common.actions.change"), onPress: () => router.back() }}
       >
-        Enter the 6-digit code
+        {t("screens.signUp.code.title")}
       </Title>
       <CodeInput
         value={code}

@@ -10,6 +10,9 @@ export const isCompletePhone = (digits: string) => digits.length === PHONE_DIGIT
 export const displayPhone = (digits: string) =>
   `${COUNTRY_CODE} ${[digits.slice(0, 3), digits.slice(3, 6), digits.slice(6)].filter(Boolean).join(" ")}`;
 
+// Keeps a number reading left to right inside a right-to-left sentence (Unicode isolates).
+export const isolate = (text: string) => `\u2066${text}\u2069`;
+
 // "+20 100 ••• 4567": only the last four digits, where a code was sent to a number the person
 // typed before an account was proven (two-factor, a reset).
 export const maskedPhone = (digits: string) =>

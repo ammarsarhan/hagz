@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
@@ -9,6 +10,7 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 // `width / columns` points, the venue's outline in ink, each ground drawn top-down with its
 // markings and name, the amenities placed on it as white tiles, and the entrances as black tags on
 // the edge. Grounds under maintenance say so. The ground picked in the list under it is a darker grey.
+// It's the real place seen from above, so it isn't mirrored in Arabic.
 
 type Layout = NonNullable<PublicVenue["layout"]>;
 
@@ -187,6 +189,7 @@ export function VenueLayout({
   // The ground picked in the list under the map: a darker grey, with darker lines.
   selectedId?: string | null;
 }) {
+  const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   const cell = width / layout.columns;
   const height = cell * layout.rows;
@@ -278,7 +281,11 @@ export function VenueLayout({
                   <Tag
                     box={box}
                     name={ground.name ?? ""}
-                    status={ground.status === "MAINTENANCE" ? "Closed" : undefined}
+                    status={
+                      ground.status === "MAINTENANCE"
+                        ? t("components.venueLayout.closed")
+                        : undefined
+                    }
                   />
                 </G>
               );

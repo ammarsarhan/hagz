@@ -1,5 +1,6 @@
 import type { components } from "@hagz/api";
 import { memo, useCallback, useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Switch, useWindowDimensions, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -12,13 +13,13 @@ import {
   NO_FILTERS,
   type Payment,
   priceText,
-  SETTING_NAMES,
   type SearchParams,
   type SearchSort,
   type Setting,
-  SIZE_NAMES,
+  settingName,
+  sizeName,
   type Sport,
-  SURFACE_NAMES,
+  surfaceName,
   type Surface,
   useAmenities,
   useSpread,
@@ -26,7 +27,7 @@ import {
 } from "@/lib/search";
 import { AmenityIcon } from "./amenity-icon";
 import { Button } from "./button";
-import { RangeBars, type Range } from "./range-bars";
+import { EmptyBars, RangeBars, type Range } from "./range-bars";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
 
@@ -42,12 +43,13 @@ import { Text } from "./text";
 type AmenityIconName = components["schemas"]["AmenityIcon"];
 type SetFilters = (change: Partial<Filters>) => void;
 
-const SORTS: { sort: SearchSort; label: string; near?: boolean }[] = [
-  { sort: "BEST_MATCH", label: "Best match" },
-  { sort: "DISTANCE", label: "Nearest", near: true },
-  { sort: "PRICE", label: "Price" },
-  { sort: "RATING", label: "Rating" },
-  { sort: "SOONEST", label: "Soonest" },
+// Each sort's pill says screens.search.filtersSheet.sorts.<sort>; Nearest needs the player's spot.
+const SORTS: { sort: SearchSort; near?: boolean }[] = [
+  { sort: "BEST_MATCH" },
+  { sort: "DISTANCE", near: true },
+  { sort: "PRICE" },
+  { sort: "RATING" },
+  { sort: "SOONEST" },
 ];
 const FOOTBALL_SIZES: GroundSize[] = ["FIVE_A_SIDE", "SEVEN_A_SIDE", "ELEVEN_A_SIDE"];
 const SURFACES: Surface[] = ["ARTIFICIAL_TURF", "NATURAL_GRASS", "HARD_COURT", "HARD_WOOD", "SAND"];
@@ -55,14 +57,6 @@ const SETTINGS: Setting[] = ["INDOOR", "OUTDOOR", "COVERED"];
 const GROUNDS = [undefined, 2, 3, 5];
 const RATINGS = [undefined, 4, 4.5];
 const PAYMENTS: (Payment | undefined)[] = [undefined, "CASH", "ONLINE"];
-
-export const SORT_NAMES: Record<SearchSort, string> = {
-  BEST_MATCH: "Best match",
-  DISTANCE: "Nearest",
-  PRICE: "Cheapest",
-  RATING: "Best rated",
-  SOONEST: "Soonest",
-};
 
 // A pill: picked, its black (with white words) fades in over the white one, as the sport chips do.
 const Pill = memo(function Pill({
@@ -172,13 +166,14 @@ const SortSection = memo(function SortSection({
   near: boolean;
   onSort: (sort: SearchSort) => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Group title="Sort by">
+    <Group title={t("screens.search.filtersSheet.sortBy")}>
       <Pills>
         {SORTS.filter((each) => !each.near || near).map((each) => (
           <Pill
             key={each.sort}
-            label={each.label}
+            label={t(`screens.search.filtersSheet.sorts.${each.sort}`)}
             on={sort === each.sort}
             onPress={() => onSort(each.sort)}
           />
@@ -205,6 +200,7 @@ const PriceSection = memo(function PriceSection({
   currency: string;
   set: SetFilters;
 }) {
+  const { t } = useTranslation();
   const bands = axis ?? [];
   const step = bands.length > 1 ? (bands[1] ?? 0) - (bands[0] ?? 0) : 5000;
   const bandOf = (price: number) =>
@@ -231,15 +227,20 @@ const PriceSection = memo(function PriceSection({
   const high = highFrom === undefined ? undefined : highFrom + step;
   const empty = [...counts.values()].every((count) => count === 0);
   return (
-    <Group title="Price per hour">
+    <Group title={t("screens.search.filtersSheet.price")}>
       <View className="mb-3 flex-row items-baseline justify-between">
         <Text className="text-[20px] leading-[26px] font-semibold">
           {low === undefined || high === undefined
-            ? "Any price"
-            : `${Math.round(low / 100)} – ${priceText(high, currency)}`}
+            ? t("screens.search.filtersSheet.anyPrice")
+            : t("screens.search.filtersSheet.priceRange", {
+                from: Math.round(low / 100),
+                to: priceText(high, currency),
+              })}
         </Text>
         <Text className="text-label text-ink-2">
-          {axis && empty ? "No venue results" : "per hour"}
+          {axis && empty
+            ? t("screens.search.filtersSheet.noResults")
+            : t("screens.search.filtersSheet.perHour")}
         </Text>
       </View>
       {bands.length > 0 ? (
@@ -249,7 +250,7 @@ const PriceSection = memo(function PriceSection({
           onChange={setRange}
         />
       ) : (
-        <View style={{ height: 90 }} />
+        <EmptyBars />
       )}
     </Group>
   );
@@ -270,16 +271,17 @@ const GroundSection = memo(function GroundSection({
   grounds: number | undefined;
   set: SetFilters;
 }) {
+  const { t } = useTranslation();
   return (
-    <Group title="Ground">
+    <Group title={t("screens.search.filtersSheet.ground")}>
       {football ? (
         <>
-          <Label first>Size</Label>
+          <Label first>{t("screens.search.filtersSheet.size")}</Label>
           <Pills>
             {FOOTBALL_SIZES.map((each) => (
               <Pill
                 key={each}
-                label={SIZE_NAMES[each]}
+                label={sizeName(each)}
                 on={size === each}
                 onPress={() => set({ size: size === each ? undefined : each })}
               />
@@ -287,34 +289,38 @@ const GroundSection = memo(function GroundSection({
           </Pills>
         </>
       ) : null}
-      <Label first={!football}>Surface</Label>
+      <Label first={!football}>{t("screens.search.filtersSheet.surface")}</Label>
       <Pills>
         {SURFACES.map((surface) => (
           <Pill
             key={surface}
-            label={SURFACE_NAMES[surface]}
+            label={surfaceName(surface)}
             on={surfaces.includes(surface)}
             onPress={() => set({ surfaces: toggled(surfaces, surface) })}
           />
         ))}
       </Pills>
-      <Label>Setting</Label>
+      <Label>{t("screens.search.filtersSheet.setting")}</Label>
       <Pills>
         {SETTINGS.map((setting) => (
           <Pill
             key={setting}
-            label={SETTING_NAMES[setting]}
+            label={settingName(setting)}
             on={settings.includes(setting)}
             onPress={() => set({ settings: toggled(settings, setting) })}
           />
         ))}
       </Pills>
-      <Label>Grounds at the venue</Label>
+      <Label>{t("screens.search.filtersSheet.grounds")}</Label>
       <Pills>
         {GROUNDS.map((each) => (
           <Pill
             key={each ?? "any"}
-            label={each ? `${each}+` : "Any"}
+            label={
+              each
+                ? t("screens.search.filtersSheet.atLeast", { value: each })
+                : t("screens.search.filtersSheet.any")
+            }
             on={grounds === each}
             onPress={() => set({ grounds: each })}
           />
@@ -335,8 +341,9 @@ const VenueSection = memo(function VenueSection({
   rating: number | undefined;
   set: SetFilters;
 }) {
+  const { t } = useTranslation();
   return (
-    <Group title="Venue">
+    <Group title={t("screens.search.filtersSheet.venue")}>
       <Pills>
         {amenities.map((amenity) => (
           <Pill
@@ -348,12 +355,16 @@ const VenueSection = memo(function VenueSection({
           />
         ))}
       </Pills>
-      <Label>Rating</Label>
+      <Label>{t("screens.search.filtersSheet.rating")}</Label>
       <Pills>
         {RATINGS.map((each) => (
           <Pill
             key={each ?? "any"}
-            label={each ? `${each.toFixed(1)}+` : "Any"}
+            label={
+              each
+                ? t("screens.search.filtersSheet.atLeast", { value: each.toFixed(1) })
+                : t("screens.search.filtersSheet.any")
+            }
             on={rating === each}
             onPress={() => set({ rating: each })}
           />
@@ -376,37 +387,44 @@ const BookingSection = memo(function BookingSection({
   loyalty: boolean;
   set: SetFilters;
 }) {
+  const { t } = useTranslation();
   return (
     <>
-      <Group title="Booking">
+      <Group title={t("screens.search.filtersSheet.booking")}>
         <Toggle
-          title="Instant confirmation"
-          line="Booked without waiting for the venue"
+          title={t("screens.search.filtersSheet.instant")}
+          line={t("screens.search.filtersSheet.instantLine")}
           on={instant}
           onChange={(next) => set({ instant: next })}
         />
         <Toggle
-          title="Flexible cancellation"
-          line="Your money back up to 24 hours before"
+          title={t("screens.search.filtersSheet.flexible")}
+          line={t("screens.search.filtersSheet.flexibleLine")}
           on={flexible}
           onChange={(next) => set({ flexible: next })}
         />
-        <Label>Pay</Label>
+        <Label>{t("screens.search.filtersSheet.pay")}</Label>
         <Pills>
           {PAYMENTS.map((each) => (
             <Pill
               key={each ?? "any"}
-              label={each === "CASH" ? "Cash" : each === "ONLINE" ? "Online" : "Any"}
+              label={t(
+                each === "CASH"
+                  ? "screens.search.filtersSheet.cash"
+                  : each === "ONLINE"
+                    ? "screens.search.filtersSheet.online"
+                    : "screens.search.filtersSheet.any",
+              )}
               on={payment === each}
               onPress={() => set({ payment: each })}
             />
           ))}
         </Pills>
       </Group>
-      <Group title="Perks" last>
+      <Group title={t("screens.search.filtersSheet.perks")} last>
         <Toggle
-          title="Loyalty"
-          line="Free bookings for regulars"
+          title={t("screens.search.filtersSheet.loyalty")}
+          line={t("screens.search.filtersSheet.loyaltyLine")}
           on={loyalty}
           onChange={(next) => set({ loyalty: next })}
         />
@@ -438,6 +456,7 @@ export function SearchFilters({
   onApply: (filters: Filters, sort: SearchSort) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { height } = useWindowDimensions();
   const [draft, setDraft] = useState(filters);
   const [draftSort, setDraftSort] = useState(sort);
@@ -477,7 +496,11 @@ export function SearchFilters({
     <Sheet
       visible={visible}
       onClose={onClose}
-      header={<Text className="text-subtitle font-semibold">Filters</Text>}
+      header={
+        <Text className="text-subtitle font-semibold">
+          {t("screens.search.filtersSheet.title")}
+        </Text>
+      }
       scrolls
     >
       <ScrollView
@@ -526,13 +549,13 @@ export function SearchFilters({
           onPress={() => onApply(NO_FILTERS, "BEST_MATCH")}
           className="active:opacity-60"
         >
-          <Text className="text-subtitle font-medium underline">Clear all</Text>
+          <Text className="text-subtitle font-medium underline">
+            {t("screens.search.filtersSheet.clearAll")}
+          </Text>
         </Pressable>
         <View className="w-[200px]">
           <Button
-            label={
-              count === null ? "Show venues" : `Show ${count} ${count === 1 ? "venue" : "venues"}`
-            }
+            label={count === null ? t("common.showVenues") : t("common.showVenuesCount", { count })}
             size="small"
             // Nothing to show: grey, until a change finds something.
             disabled={count === 0}

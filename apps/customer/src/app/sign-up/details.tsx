@@ -1,6 +1,7 @@
 import { getCalendars } from "expo-localization";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
 import { Field } from "@/components/field";
 import { useHud } from "@/components/hud";
@@ -22,6 +23,7 @@ const timezone = () => getCalendars()[0]?.timeZone ?? "Africa/Cairo";
 // account were sent to "already registered" after the code; this still handles one registered in
 // the meantime (on another device). An expired verification goes back to the phone.
 export default function SignUpDetails() {
+  const { t } = useTranslation();
   const { phone = "", token = "" } = useLocalSearchParams<{ phone: string; token: string }>();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -57,7 +59,7 @@ export default function SignUpDetails() {
     <Screen
       footer={
         <Button
-          label="Create account"
+          label={t("common.actions.createAccount")}
           variant="moment"
           disabled={!name.trim() || password.length < MIN_PASSWORD}
           loading={loading}
@@ -66,16 +68,23 @@ export default function SignUpDetails() {
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title subtitle="Venues see this name on your bookings.">Set up your account</Title>
+      <Title subtitle={t("screens.signUp.details.subtitle")}>
+        {t("screens.signUp.details.title")}
+      </Title>
       <Field
-        label="Full name"
+        label={t("common.fields.fullName")}
         value={name}
         onChangeText={setName}
         textContentType="name"
         autoComplete="name"
         maxLength={100}
       />
-      <PasswordField label="Password" value={password} onChangeText={setPassword} isNew />
+      <PasswordField
+        label={t("common.fields.password")}
+        value={password}
+        onChangeText={setPassword}
+        isNew
+      />
       <PasswordRule password={password} />
     </Screen>
   );

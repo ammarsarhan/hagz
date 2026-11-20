@@ -12,6 +12,7 @@ import {
 import { Animated, Platform, View } from "react-native";
 import { FullWindowOverlay } from "react-native-screens";
 import { colors } from "@/lib/colors";
+import { isRTL } from "@/lib/language";
 import { IconAlertCircleFilled } from "./icons";
 import { Text } from "./text";
 
@@ -184,7 +185,11 @@ function Hud({
   }, [progress, onHidden]);
 
   return (
-    <View pointerEvents="none" className="absolute inset-x-0 items-center" style={{ bottom }}>
+    <View
+      pointerEvents="none"
+      className="absolute inset-x-0 items-center"
+      style={{ bottom, direction: isRTL ? "rtl" : "ltr" }}
+    >
       <Animated.View
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"

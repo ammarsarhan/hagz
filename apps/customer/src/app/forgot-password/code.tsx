@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
@@ -11,11 +12,12 @@ import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
-import { maskedPhone, toE164 } from "@/lib/phone";
+import { isolate, maskedPhone, toE164 } from "@/lib/phone";
 
 // Reset, step 2: the WhatsApp code, checked as soon as all six digits are in, before the new
 // password is asked for.
 export default function ResetCode() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ phone: string; resendAfter: string }>();
   const phone = params.phone ?? "";
   const [code, setCode] = useState("");
@@ -78,7 +80,7 @@ export default function ResetCode() {
     <Screen
       footer={
         <Button
-          label="Continue"
+          label={t("common.actions.continue")}
           disabled={code.length < 6 || Boolean(error) || locked}
           loading={checking}
           onPress={() => void verify(code)}
@@ -88,12 +90,14 @@ export default function ResetCode() {
       <NavBar start={<BackButton onPress={() => router.back()} />} />
       <Title
         subtitle={
-          <>
-            Sent on WhatsApp to <Text className="text-ink">{maskedPhone(phone)}</Text>.
-          </>
+          <Trans
+            i18nKey="common.codeSentTo"
+            values={{ phone: isolate(maskedPhone(phone)) }}
+            components={{ phone: <Text className="text-ink" /> }}
+          />
         }
       >
-        Enter the 6-digit code
+        {t("screens.forgotPassword.code.title")}
       </Title>
       <CodeInput
         value={code}

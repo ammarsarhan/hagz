@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
@@ -8,7 +9,7 @@ import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { hudMessage, send } from "@/lib/api-errors";
-import { displayPhone } from "@/lib/phone";
+import { displayPhone, isolate } from "@/lib/phone";
 
 // The number already has an account. Shown straight after its code is confirmed (so it reveals
 // nothing to anyone who doesn't hold the number), instead of after a name and password.
@@ -17,6 +18,7 @@ export default function AlreadyRegistered() {
   // needs no second code. Missing when the number was registered between the code and the name
   // (on another device): then the reset starts from the number as usual.
   const { phone = "", token = "" } = useLocalSearchParams<{ phone: string; token: string }>();
+  const { t } = useTranslation();
   const [resetting, setResetting] = useState(false);
   const hud = useHud();
 
@@ -47,11 +49,11 @@ export default function AlreadyRegistered() {
       footer={
         <>
           <Button
-            label="Sign in"
+            label={t("common.actions.signIn")}
             onPress={() => router.replace({ pathname: "/sign-in", params: { phone } })}
           />
           <Button
-            label="Forgot password?"
+            label={t("common.actions.forgotPassword")}
             variant="ghost"
             loading={resetting}
             onPress={() => void forgotPassword()}
@@ -62,13 +64,14 @@ export default function AlreadyRegistered() {
       <NavBar start={<BackButton onPress={() => router.back()} />} />
       <Title
         subtitle={
-          <>
-            <Text className="text-ink">{displayPhone(phone)}</Text> is already on Hagz. Sign in
-            instead, or reset your password if you’ve forgotten it.
-          </>
+          <Trans
+            i18nKey="screens.signUp.registered.body"
+            values={{ phone: isolate(displayPhone(phone)) }}
+            components={{ phone: <Text className="text-ink" /> }}
+          />
         }
       >
-        You already have an account
+        {t("screens.signUp.registered.title")}
       </Title>
     </Screen>
   );

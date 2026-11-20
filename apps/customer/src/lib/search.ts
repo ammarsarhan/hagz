@@ -1,7 +1,10 @@
 import type { components } from "@hagz/api";
 import { useCallback, useEffect, useRef, useState } from "react";
+import i18n from "@/i18next/i18next";
 import { api } from "./api";
 import { hudMessage, send } from "./api-errors";
+import { intlLocale } from "./language";
+import { currencyName } from "./money";
 
 // Searching venues (GET /v1/venues, PR 3.3): one page at a time, the next on reaching the end.
 
@@ -100,30 +103,17 @@ export const filterQuery = (filters: Filters): FilterQuery => ({
   ...(filters.payment ? { payment: filters.payment } : {}),
 });
 
-export const SIZE_NAMES: Record<GroundSize, string> = {
-  FIVE_A_SIDE: "5-a-side",
-  SEVEN_A_SIDE: "7-a-side",
-  ELEVEN_A_SIDE: "11-a-side",
-  STANDARD: "Standard",
-};
-export const SURFACE_NAMES: Record<Surface, string> = {
-  ARTIFICIAL_TURF: "Artificial turf",
-  NATURAL_GRASS: "Natural grass",
-  HARD_COURT: "Hard court",
-  HARD_WOOD: "Hardwood",
-  CLAY: "Clay",
-  SAND: "Sand",
-  OTHER: "Other",
-};
-export const SETTING_NAMES: Record<Setting, string> = {
-  INDOOR: "Indoor",
-  OUTDOOR: "Outdoor",
-  COVERED: "Covered",
-};
+// "5-a-side", "Artificial turf", "Indoor", in the app's language (formats.*).
+export const sizeName = (size: GroundSize) => i18n.t(`formats.sizes.${size}`);
+export const surfaceName = (surface: Surface) => i18n.t(`formats.surfaces.${surface}`);
+export const settingName = (setting: Setting) => i18n.t(`formats.settings.${setting}`);
 
 // "250 EGP", from minor units.
 export const priceText = (minor: number, currency: string) =>
-  `${Math.round(minor / 100)} ${currency}`;
+  i18n.t("formats.price", {
+    amount: String(Math.round(minor / 100)),
+    currency: currencyName(currency),
+  });
 
 // The filters on, as chips for the chips row (each with what taking it off leaves): the Filters
 // button counts them. Size isn't one: it has its own chips.
@@ -138,37 +128,56 @@ export const appliedFilters = (
   if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
     const label =
       filters.priceMin !== undefined && filters.priceMax !== undefined
-        ? `${Math.round(filters.priceMin / 100)}–${priceText(filters.priceMax, currency)}`
+        ? i18n.t("formats.priceRange", {
+            from: Math.round(filters.priceMin / 100),
+            to: priceText(filters.priceMax, currency),
+          })
         : filters.priceMax !== undefined
-          ? `Under ${priceText(filters.priceMax, currency)}`
-          : `From ${priceText(filters.priceMin ?? 0, currency)}`;
+          ? i18n.t("screens.search.chips.under", { price: priceText(filters.priceMax, currency) })
+          : i18n.t("screens.search.chips.from", {
+              price: priceText(filters.priceMin ?? 0, currency),
+            });
     add("price", label, { priceMin: undefined, priceMax: undefined });
   }
   for (const surface of filters.surfaces) {
-    add(`surface-${surface}`, SURFACE_NAMES[surface], {
+    add(`surface-${surface}`, surfaceName(surface), {
       surfaces: filters.surfaces.filter((each) => each !== surface),
     });
   }
   for (const setting of filters.settings) {
-    add(`setting-${setting}`, SETTING_NAMES[setting], {
+    add(`setting-${setting}`, settingName(setting), {
       settings: filters.settings.filter((each) => each !== setting),
     });
   }
-  if (filters.grounds) add("grounds", `${filters.grounds}+ grounds`, { grounds: undefined });
+  if (filters.grounds) {
+    add("grounds", i18n.t("screens.search.chips.grounds", { count: filters.grounds }), {
+      grounds: undefined,
+    });
+  }
   for (const amenity of filters.amenities) {
-    add(`amenity-${amenity}`, amenityNames.get(amenity) ?? "Amenity", {
+    add(`amenity-${amenity}`, amenityNames.get(amenity) ?? i18n.t("screens.search.chips.amenity"), {
       amenities: filters.amenities.filter((each) => each !== amenity),
     });
   }
-  if (filters.rating) add("rating", `${filters.rating.toFixed(1)}+`, { rating: undefined });
-  if (filters.instant) add("instant", "Instant", { instant: false });
-  if (filters.flexible) add("flexible", "Free cancellation", { flexible: false });
-  if (filters.payment) {
-    add("payment", filters.payment === "CASH" ? "Pay cash" : "Pay online", {
-      payment: undefined,
+  if (filters.rating) {
+    add("rating", i18n.t("screens.search.chips.atLeast", { value: filters.rating.toFixed(1) }), {
+      rating: undefined,
     });
   }
-  if (filters.loyalty) add("loyalty", "Loyalty", { loyalty: false });
+  if (filters.instant) add("instant", i18n.t("screens.search.chips.instant"), { instant: false });
+  if (filters.flexible) {
+    add("flexible", i18n.t("screens.search.chips.flexible"), { flexible: false });
+  }
+  if (filters.payment) {
+    add(
+      "payment",
+      i18n.t(
+        filters.payment === "CASH" ? "screens.search.chips.cash" : "screens.search.chips.online",
+      ),
+      { payment: undefined },
+    );
+  }
+  if (filters.loyalty) add("loyalty", i18n.t("screens.search.chips.loyalty"), { loyalty: false });
   return chips;
 };
 
@@ -187,31 +196,40 @@ export const localDate = (timezone: string, days = 0) =>
     new Date(Date.now() + days * 86_400_000),
   );
 
-// "9 pm" for 21, "12 am" for 0.
-export const hourLabel = (hour: number) =>
-  `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "am" : "pm"}`;
+// An hour on the 12-hour clock and its half of the day: 21 → "9" and "pm" ("م" in Arabic).
+export const hourParts = (hour: number) => ({
+  time: String(hour % 12 === 0 ? 12 : hour % 12),
+  period: i18n.t(hour < 12 ? "formats.am" : "formats.pm"),
+});
 
-// "Today", "Tomorrow", "Fri 21".
+// "9 pm" for 21, "12 am" for 0.
+export const hourLabel = (hour: number) => i18n.t("formats.time", hourParts(hour));
+
+// "9–11 pm" within one half of the day, "11 am–1 pm" across; `to` may be 24 (midnight).
+export const hourRange = (from: number, to: number, separator = "–") => {
+  const sameHalf = from < 12 === to % 24 < 12 && to % 24 !== 0;
+  const start = sameHalf ? hourParts(from).time : hourLabel(from);
+  return `${start}${separator}${hourLabel(to % 24)}`;
+};
+
+// "Today", "Tomorrow", "Fri 21" ("الجمعة 21" in Arabic, with Western digits).
 export const dayText = (date: string | null, timezone: string) => {
-  if (date === null || date === localDate(timezone)) return "Today";
-  if (date === localDate(timezone, 1)) return "Tomorrow";
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric" })
-    .format(new Date(`${date}T12:00:00Z`))
-    .replace(",", "");
+  if (date === null || date === localDate(timezone)) return i18n.t("formats.today");
+  if (date === localDate(timezone, 1)) return i18n.t("formats.tomorrow");
+  const at = new Date(`${date}T12:00:00Z`);
+  const weekday = new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "short" }).format(
+    at,
+  );
+  return `${weekday} ${at.getUTCDate()}`;
 };
 
 // The search bar's second line: "Today · any time", "Fri 21 · 9–11 pm".
 export const whenText = (when: When, timezone: string) => {
   const day = dayText(when.date, timezone);
   // A length only comes with a start (the start is a run of hours).
-  if (!when.start) return `${day} · any time`;
+  if (!when.start) return i18n.t("formats.whenAnyTime", { day });
   const from = Number(when.start.slice(0, 2));
-  const to = (from + when.hours) % 24;
-  const range =
-    from < 12 === to < 12 && to !== 0
-      ? `${hourLabel(from).replace(/ [ap]m$/, "")}–${hourLabel(to)}`
-      : `${hourLabel(from)}–${hourLabel(to)}`;
-  return `${day} · ${range}`;
+  return i18n.t("formats.whenRange", { day, range: hourRange(from, from + when.hours) });
 };
 
 // How many venues a search would find, for "Show 24 venues": one card asked for, the total read,
@@ -338,24 +356,15 @@ export const useVenueSearch = (params: SearchParams, ready: boolean) => {
   };
 };
 
-const SPORT_NAMES: Record<Sport, string> = {
-  FOOTBALL: "Football",
-  PADEL: "Padel",
-  TENNIS: "Tennis",
-  BASKETBALL: "Basketball",
-  VOLLEYBALL: "Volleyball",
-};
-
-export const sportName = (sport: Sport) => SPORT_NAMES[sport];
+export const sportName = (sport: Sport) => i18n.t(`formats.sports.${sport}`);
 
 // "Football", "Football/Padel" (user, 2026-11-20).
-export const sportsText = (sports: Sport[]) => sports.map((sport) => SPORT_NAMES[sport]).join("/");
+export const sportsText = (sports: Sport[]) => sports.map(sportName).join("/");
 
 // "2 grounds", or "2 courts" at a venue that's only courts (padel, tennis…).
 export const groundsText = (count: number, sports: Sport[]) => {
   const courts = sports.length > 0 && !sports.includes("FOOTBALL");
-  const noun = courts ? "court" : "ground";
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+  return i18n.t(courts ? "formats.courts" : "formats.grounds", { count });
 };
 
 // How many venues are free to start each hour of a day (GET /v1/venues/free-hours), for the When
