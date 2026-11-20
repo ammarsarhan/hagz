@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { colors } from "@/lib/colors";
@@ -48,6 +49,7 @@ export function SearchMap({
   bottom: number;
   onList: () => void;
 }) {
+  const { t } = useTranslation();
   const map = useRef<MapView>(null);
   const placed = cards.filter((card) => card.coordinates !== null);
   const [pickedId, setPickedId] = useState<string | null>(placed[0]?.id ?? null);
@@ -105,7 +107,7 @@ export function SearchMap({
       >
         <View className="items-center" pointerEvents="box-none">
           <MapToggle
-            label="List"
+            label={t("screens.search.list")}
             icon={<IconList size={18} color={colors.white} strokeWidth={2} />}
             onPress={onList}
           />

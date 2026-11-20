@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { memo, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
@@ -8,6 +9,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { isRTL } from "@/lib/language";
 import { MAX_RADIUS } from "@/lib/search";
 import { Text } from "./text";
 
@@ -15,7 +17,7 @@ import { Text } from "./text";
 // bar per kilometre as tall as how many venues lie that far (not within it, which made a wall once
 // every venue was inside), black up to the radius. The handle
 // follows the finger on the UI thread; the radius (and the label and count it drives) changes a
-// kilometre at a time, with a tick.
+// kilometre at a time, with a tick. In Arabic it runs right to left, nearest on the right.
 
 const BARS = 56;
 const HANDLE = 26;
@@ -56,6 +58,7 @@ export function RadiusSlider({
   within: number[] | null;
   onChange: (radius: number) => void;
 }) {
+  const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   // A cell a kilometre, as the When timeline lays out hours: the handle sits on the end of the last
   // black bar, so the bars and the handle line up all along.
@@ -103,7 +106,8 @@ export function RadiusSlider({
       dragging.value = true;
     })
     .onUpdate((event) => {
-      move(start.value + event.translationX);
+      // Dragging towards the end: right in English, left in Arabic.
+      move(start.value + event.translationX * (isRTL ? -1 : 1));
     })
     .onFinalize(() => {
       // Settles on the end of the kilometre it's on.
@@ -114,7 +118,9 @@ export function RadiusSlider({
   const tap = Gesture.Tap().onEnd((event) => {
     const c = cellSV.value;
     if (c === 0) return;
-    move((Math.floor(event.x / c) + 1) * c);
+    // Measured from the left; the kilometres run from the start.
+    const x = isRTL ? MAX_RADIUS * c - event.x : event.x;
+    move((Math.floor(x / c) + 1) * c);
   });
 
   const handle = useAnimatedStyle(() => ({ left: x.value - HANDLE / 2 }));
@@ -164,7 +170,7 @@ export function RadiusSlider({
                   left: Math.min(Math.max((km - 0.5) * cell - TICK / 2, 0), width - TICK),
                 }}
               >
-                {km} km
+                {t("formats.km", { value: km })}
               </Text>
             ))}
           </View>

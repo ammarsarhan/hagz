@@ -1,5 +1,6 @@
 import { router, type Href } from "expo-router";
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { auth } from "@/lib/api";
 import { signInFrom } from "@/lib/navigation";
@@ -22,6 +23,7 @@ interface Ask {
 //   onPress={() => whenSignedIn(book, { title: "Sign in to book", body: … })}
 //   …and render {sheet} in the screen.
 export function useSignInSheet(from: Href) {
+  const { t } = useTranslation();
   const [ask, setAsk] = useState<Ask | null>(null);
   const [open, setOpen] = useState(false);
   // Where to go once the sheet has slid away: a screen can't be pushed under a Modal that's still
@@ -58,8 +60,16 @@ export function useSignInSheet(from: Href) {
       <Text className="mb-1.5 text-heading font-semibold">{ask.title}</Text>
       <Text className="text-subtitle text-ink-2">{ask.body}</Text>
       <View className="mt-6 gap-2.5">
-        <Button label="Create account" variant="moment" onPress={() => go("/sign-up")} />
-        <Button label="Sign in" variant="secondary" onPress={() => go("/sign-in")} />
+        <Button
+          label={t("common.actions.createAccount")}
+          variant="moment"
+          onPress={() => go("/sign-up")}
+        />
+        <Button
+          label={t("common.actions.signIn")}
+          variant="secondary"
+          onPress={() => go("/sign-in")}
+        />
       </View>
     </Sheet>
   ) : null;

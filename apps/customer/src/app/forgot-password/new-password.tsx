@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/button";
 import { useHud } from "@/components/hud";
 import { BackButton, NavBar } from "@/components/nav";
@@ -18,6 +19,7 @@ export default function ResetNewPassword() {
     phone: string;
     resetToken: string;
   }>();
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const hud = useHud();
@@ -55,7 +57,7 @@ export default function ResetNewPassword() {
     <Screen
       footer={
         <Button
-          label="Reset password"
+          label={t("screens.forgotPassword.newPassword.submit")}
           disabled={password.length < MIN_PASSWORD}
           loading={saving}
           onPress={() => void reset()}
@@ -63,10 +65,15 @@ export default function ResetNewPassword() {
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title subtitle="You’ll use it to sign in. Every device signed in now will be signed out.">
-        Choose a new password
+      <Title subtitle={t("screens.forgotPassword.newPassword.subtitle")}>
+        {t("screens.forgotPassword.newPassword.title")}
       </Title>
-      <PasswordField label="New password" value={password} onChangeText={setPassword} isNew />
+      <PasswordField
+        label={t("screens.forgotPassword.newPassword.label")}
+        value={password}
+        onChangeText={setPassword}
+        isNew
+      />
       <PasswordRule password={password} />
     </Screen>
   );

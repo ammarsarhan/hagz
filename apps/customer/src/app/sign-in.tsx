@@ -1,6 +1,7 @@
 import type { components } from "@hagz/api";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { Button } from "@/components/button";
 import { CodeInput } from "@/components/code-input";
@@ -15,7 +16,7 @@ import { Text } from "@/components/text";
 import { Title } from "@/components/title";
 import { api } from "@/lib/api";
 import { fieldMessage, hudMessage, problem, send } from "@/lib/api-errors";
-import { isCompletePhone, maskedPhone, toE164 } from "@/lib/phone";
+import { isCompletePhone, isolate, maskedPhone, toE164 } from "@/lib/phone";
 import { enterWithSession } from "@/lib/session";
 
 type Challenge = components["schemas"]["TwoFactorChallenge"];
@@ -27,6 +28,7 @@ const blockedKind = (code: "ACCOUNT_SUSPENDED" | "ACCOUNT_BANNED") =>
 // A wrong number and a wrong password get the same message, so neither gives the other away.
 // Signing in returns to whatever asked for it (lib/navigation.ts), or Home.
 export default function SignIn() {
+  const { t } = useTranslation();
   // Filled in from the sign-up number, or after a password reset.
   const params = useLocalSearchParams<{ phone?: string }>();
   const [phone, setPhone] = useState(params.phone ?? "");
@@ -69,7 +71,7 @@ export default function SignIn() {
     <Screen
       footer={
         <Button
-          label="Sign in"
+          label={t("common.actions.signIn")}
           disabled={!isCompletePhone(phone) || !password}
           loading={loading}
           onPress={() => void signIn()}
@@ -77,9 +79,9 @@ export default function SignIn() {
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title subtitle="Sign in with your mobile number and password.">Welcome back</Title>
+      <Title subtitle={t("screens.signIn.subtitle")}>{t("screens.signIn.title")}</Title>
       <PhoneField
-        label="Mobile number"
+        label={t("common.fields.mobileNumber")}
         value={phone}
         onChangeText={(digits) => {
           setPhone(digits);
@@ -87,7 +89,7 @@ export default function SignIn() {
         }}
       />
       <PasswordField
-        label="Password"
+        label={t("common.fields.password")}
         value={password}
         onChangeText={(text) => {
           setPassword(text);
@@ -101,7 +103,9 @@ export default function SignIn() {
         hitSlop={8}
         className="self-start"
       >
-        <Text className="text-body font-medium text-ink underline">Forgot password?</Text>
+        <Text className="text-body font-medium text-ink underline">
+          {t("common.actions.forgotPassword")}
+        </Text>
       </Pressable>
 
       {challenge ? (
@@ -134,6 +138,7 @@ function TwoFactorSheet({
   onClose: () => void;
   onHidden: () => void;
 }) {
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
   const [locked, setLocked] = useState(false);
@@ -190,9 +195,15 @@ function TwoFactorSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} onHidden={onHidden}>
-      <Text className="mb-1.5 text-heading font-semibold">Two-factor code</Text>
+      <Text className="mb-1.5 text-heading font-semibold">
+        {t("screens.signIn.twoFactor.title")}
+      </Text>
       <Text className="mb-[22px] text-subtitle text-ink-2">
-        We sent a code on WhatsApp to <Text className="text-ink">{maskedPhone(phone)}</Text>.
+        <Trans
+          i18nKey="screens.signIn.twoFactor.subtitle"
+          values={{ phone: isolate(maskedPhone(phone)) }}
+          components={{ phone: <Text className="text-ink" /> }}
+        />
       </Text>
       <CodeInput
         value={code}
@@ -213,7 +224,7 @@ function TwoFactorSheet({
       </View>
       <View className="mt-[22px]">
         <Button
-          label="Verify"
+          label={t("common.actions.verify")}
           disabled={code.length < 6 || Boolean(error) || locked}
           loading={verifying}
           onPress={() => void verify()}

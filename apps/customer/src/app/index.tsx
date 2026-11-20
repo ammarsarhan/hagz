@@ -1,7 +1,8 @@
 import { Redirect, router, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { useWindowDimensions, View, type FlatList } from "react-native";
+import { useTranslation } from "react-i18next";
+import { I18nManager, useWindowDimensions, View, type FlatList } from "react-native";
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
@@ -13,36 +14,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { OnboardingArt } from "@/components/onboarding-art";
 import { Text } from "@/components/text";
+import { isRTL } from "@/lib/language";
 import { hasSeenOnboarding, markOnboardingSeen } from "@/lib/onboarding";
 
 // Customer onboarding: four lime slides (a problem in two words, the fix in one), swiped or
 // advancing gently on their own until touched, with Get started (browse as a guest) and Create
-// account on every slide; signing in lives inside the account flow. English only until the customer app gets its translations; the
-// Arabic lines need their own wordplay, not a translation.
-const SLIDES = [
-  {
-    key: "pitches",
-    title: "Pitch hunting,\nhandled.",
-    body: "See free slots at venues near you and book in a few taps. No more calling around.",
-  },
-  {
-    key: "free",
-    title: "Frequent fixtures,\nfree.",
-    body: "Venues reward their regulars: keep booking and your stamps add up to a free game.",
-  },
-  {
-    key: "squads",
-    title: "Short squads,\nsolved.",
-    body: "Open your game to players nearby, or join one that’s a couple short.",
-  },
-  {
-    key: "crews",
-    title: "Kickabout crews,\ncrowned.",
-    body: "Turn your weekly game into a community and play for the cup in tournaments.",
-  },
-] as const;
+// account on every slide; signing in lives inside the account flow. Each slide's strings live under
+// screens.onboarding.<slide>; the Arabic lines need their own wordplay, not a translation.
+const SLIDES = ["pitches", "free", "squads", "crews"] as const;
 type Slide = (typeof SLIDES)[number];
 const AUTO_ADVANCE_MS = 5000;
+
+// The pager runs left to right; in Arabic it's flipped so the next slide comes from the left, as in
+// the staff app. Builds that are natively right-to-left already scroll that way, so they aren't
+// flipped twice.
+const flipPager = isRTL && !I18nManager.isRTL;
+const direction = isRTL ? "rtl" : "ltr";
 
 export default function Index() {
   if (hasSeenOnboarding()) return <Redirect href="/home" />;
@@ -56,6 +43,7 @@ function leave(to: Href) {
 }
 
 function Onboarding() {
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const pager = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
@@ -82,43 +70,55 @@ function Onboarding() {
         <Animated.FlatList
           ref={pager}
           data={SLIDES}
-          keyExtractor={(slide) => slide.key}
+          keyExtractor={(slide) => slide}
           horizontal
           pagingEnabled
+          inverted={flipPager}
           showsHorizontalScrollIndicator={false}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
           onScrollBeginDrag={() => setTouched(true)}
           onScroll={onScroll}
           scrollEventThrottle={16}
           onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
+          style={{ direction: "ltr" }}
           renderItem={({ item, index: i }) => (
-            <View style={{ width }} className="flex-1 px-6">
+            <View style={{ width, direction }} className="flex-1 px-6">
               <View className="mt-13 flex-1">
                 <OnboardingArt
                   index={i}
-                  scene={item.key}
+                  scene={item}
                   scrollX={scrollX}
                   pageWidth={width}
                   active={i === index}
                 />
               </View>
               <Text className="mt-8 text-display font-semibold tracking-[-0.8px] text-on-primary">
-                {item.title}
+                {t(`screens.onboarding.${item}.title`)}
               </Text>
-              <Text className="mb-8 mt-3 text-subtitle text-on-primary-muted">{item.body}</Text>
+              <Text className="mb-8 mt-3 text-subtitle text-on-primary-muted">
+                {t(`screens.onboarding.${item}.body`)}
+              </Text>
             </View>
           )}
         />
 
-        <View className="mb-8 flex-row justify-center gap-1.5">
+        <View className="mb-8 flex-row justify-center gap-1.5" style={{ direction }}>
           {SLIDES.map((slide, i) => (
-            <Dot key={slide.key} index={i} scrollX={scrollX} width={width} />
+            <Dot key={slide} index={i} scrollX={scrollX} width={width} />
           ))}
         </View>
 
         <View className="gap-2.5 px-5 pb-3">
-          <Button label="Get started" variant="ink" onPress={() => leave("/home")} />
-          <Button label="Create account" variant="white" onPress={() => leave("/sign-up")} />
+          <Button
+            label={t("common.actions.getStarted")}
+            variant="ink"
+            onPress={() => leave("/home")}
+          />
+          <Button
+            label={t("common.actions.createAccount")}
+            variant="white"
+            onPress={() => leave("/sign-up")}
+          />
         </View>
       </SafeAreaView>
     </View>

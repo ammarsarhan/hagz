@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   Keyboard,
@@ -10,12 +11,13 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isRTL } from "@/lib/language";
 import { SheetHud } from "./hud";
 import { CloseButton } from "./nav";
 
 // A bottom sheet: dimmed screen behind, white panel with 28px top corners, a grab handle, and only
 // the close button (end side) above the content. Tapping outside closes it, and it rises with the
-// keyboard.
+// keyboard. The Modal renders outside the screen, so it sets the direction itself.
 //
 // To close, set `visible` to false and keep it mounted: it slides down, then calls `onHidden` once
 // it's really gone (on iOS, when the Modal says it's dismissed), which is when to unmount it or to
@@ -46,6 +48,7 @@ export function Sheet({
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const Wrapper = scrolls ? View : Pressable;
   const progress = useRef(new Animated.Value(0)).current;
   // Stay mounted while sliding out.
@@ -84,14 +87,18 @@ export function Sheet({
     >
       {/* A Modal is its own window: gestures in it (sliders, the scroll view) need a root of their
           own, one for the whole sheet so they all share touches. */}
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView style={{ flex: 1, direction: isRTL ? "rtl" : "ltr" }}>
         <KeyboardAvoidingView
           behavior="padding"
           className="flex-1 justify-end"
           onLayout={(event) => setArea(event.nativeEvent.layout.height)}
         >
           <Animated.View className="absolute inset-0 bg-scrim" style={{ opacity: progress }}>
-            <Pressable accessibilityLabel="Close" onPress={onClose} className="flex-1" />
+            <Pressable
+              accessibilityLabel={t("components.nav.close")}
+              onPress={onClose}
+              className="flex-1"
+            />
           </Animated.View>
           <Animated.View
             accessibilityViewIsModal

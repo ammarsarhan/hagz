@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
-import { localDate, type SearchParams, useFreeHours, useVenueCount, type When } from "@/lib/search";
+import { intlLocale } from "@/lib/language";
+import {
+  hourRange,
+  localDate,
+  type SearchParams,
+  useFreeHours,
+  useVenueCount,
+  type When,
+} from "@/lib/search";
 import { Button } from "./button";
-import { HourTimeline, runLabel, type Run } from "./hour-timeline";
+import { HourTimeline, type Run } from "./hour-timeline";
 import { Sheet } from "./sheet";
 import { Text } from "./text";
 
@@ -26,11 +35,12 @@ function DayTile({
   on: boolean;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const today = date === localDate(timezone);
   const at = new Date(`${date}T12:00:00Z`);
   const weekday = today
-    ? "Today"
-    : new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" }).format(at);
+    ? t("formats.today")
+    : new Intl.DateTimeFormat(intlLocale, { timeZone: "UTC", weekday: "short" }).format(at);
   return (
     <Pressable
       accessibilityRole="button"
@@ -68,6 +78,7 @@ export function SearchWhen({
   onApply: (when: When) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   // A draft, applied only with the button.
   const [draft, setDraft] = useState(when);
   useEffect(() => {
@@ -106,7 +117,7 @@ export function SearchWhen({
   return (
     <Sheet visible={visible} onClose={onClose}>
       <Text accessibilityRole="header" className="text-[22px] leading-7 font-semibold">
-        When do you want to play?
+        {t("screens.search.when.title")}
       </Text>
 
       <ScrollView
@@ -137,21 +148,21 @@ export function SearchWhen({
 
       <View className="mt-8 flex-row items-baseline justify-between">
         <Text className="text-[20px] leading-[26px] font-semibold">
-          {run ? runLabel(run) : "Any time"}
+          {run ? hourRange(run.from, run.to, " – ") : t("screens.search.when.anyTime")}
         </Text>
         {run ? (
           <Text className="text-label text-ink-2">
-            {run.to - run.from === 1 ? "1 hour" : `${run.to - run.from} hours`}
+            {t("formats.hours", { count: run.to - run.from })}
           </Text>
         ) : null}
       </View>
-      <Text className="mt-1 mb-3 text-caption text-unit">Bars depict venues free each hour</Text>
+      <Text className="mt-1 mb-3 text-caption text-unit">{t("screens.search.when.barsHint")}</Text>
       <HourTimeline counts={counts} run={run} earliest={earliest} onChange={setRun} />
 
       <View className="mt-7 flex-row gap-2.5">
         <View className="w-[104px]">
           <Button
-            label="Clear"
+            label={t("common.actions.clear")}
             variant="secondary"
             size="small"
             onPress={() => setDraft({ date: null, start: null, hours: 1 })}
@@ -159,9 +170,7 @@ export function SearchWhen({
         </View>
         <View className="flex-1">
           <Button
-            label={
-              count === null ? "Show venues" : `Show ${count} ${count === 1 ? "venue" : "venues"}`
-            }
+            label={count === null ? t("common.showVenues") : t("common.showVenuesCount", { count })}
             size="small"
             disabled={count === 0}
             onPress={() => onApply(draft)}

@@ -1,4 +1,5 @@
 import type { components } from "@hagz/api";
+import i18n from "@/i18next/i18next";
 
 // The venue page's reading of the API (GET /v1/venues/{slug} and its /availability): when a ground
 // can start, and the venue's terms in a player's words.
@@ -38,44 +39,31 @@ export const timeOfDay = (iso: string, timezone: string) => {
   }).formatToParts(new Date(iso));
   const hour = parts.find((part) => part.type === "hour")?.value ?? "";
   const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
-  const period = (parts.find((part) => part.type === "dayPeriod")?.value ?? "").toLowerCase();
-  return `${hour}${minute === "00" ? "" : `:${minute}`} ${period}`;
+  const period = parts.find((part) => part.type === "dayPeriod")?.value ?? "";
+  return i18n.t("formats.time", {
+    time: `${hour}${minute === "00" ? "" : `:${minute}`}`,
+    period: i18n.t(period.toUpperCase() === "AM" ? "formats.am" : "formats.pm"),
+  });
 };
 
 // 1 → "1 hour", 24 → "24 hours".
-export const hoursLabel = (hours: number) => (hours === 1 ? "1 hour" : `${hours} hours`);
+export const hoursLabel = (hours: number) => i18n.t("formats.hours", { count: hours });
 
 // How long before kick-off booking closes, as the Booking rows say it.
 export const noticeLabel = (minutes: number) =>
   minutes === 0
-    ? "Until it starts"
+    ? i18n.t("formats.untilStart")
     : minutes < 60
-      ? `${minutes} minutes before`
-      : `${hoursLabel(minutes / 60)} before`;
+      ? i18n.t("formats.minutesBefore", { count: minutes })
+      : i18n.t("formats.hoursBefore", { count: minutes / 60 });
 
 // How players pay, as the Booking rows say it.
-export const paymentLabel = (payment: PublicVenue["booking"]["payment"]) => {
-  switch (payment.mode) {
-    case "MANUAL":
-      return "Cash at the venue";
-    case "DEPOSIT":
-      return `${payment.depositPercent ?? 0}% online deposit`;
-    case "PLATFORM":
-      return "Online in full";
-  }
-};
+export const paymentLabel = (payment: PublicVenue["booking"]["payment"]) =>
+  i18n.t(`formats.payment.${payment.mode}`, { percent: payment.depositPercent ?? 0 });
 
 // The same in as few words as it goes, for under the price in the Book bar.
-export const paymentShort = (payment: PublicVenue["booking"]["payment"]) => {
-  switch (payment.mode) {
-    case "MANUAL":
-      return "Cash at the venue";
-    case "DEPOSIT":
-      return `${payment.depositPercent ?? 0}% online`;
-    case "PLATFORM":
-      return "Paid online";
-  }
-};
+export const paymentShort = (payment: PublicVenue["booking"]["payment"]) =>
+  i18n.t(`formats.paymentShort.${payment.mode}`, { percent: payment.depositPercent ?? 0 });
 
 // The cheapest hour across the venue's grounds.
 export const cheapestHour = (venue: PublicVenue) => {
@@ -85,58 +73,41 @@ export const cheapestHour = (venue: PublicVenue) => {
   return prices.length > 0 ? Math.min(...prices) : null;
 };
 
-const SPORTS: Record<PublicGround["sport"], string> = {
-  FOOTBALL: "Football",
-  PADEL: "Padel",
-  TENNIS: "Tennis",
-  BASKETBALL: "Basketball",
-  VOLLEYBALL: "Volleyball",
-};
+const sportName = (sport: PublicGround["sport"]) => i18n.t(`formats.sports.${sport}`);
 
-const SIZES: Record<PublicGround["size"], string> = {
-  FIVE_A_SIDE: "5-a-side",
-  SEVEN_A_SIDE: "7-a-side",
-  ELEVEN_A_SIDE: "11-a-side",
-  STANDARD: "",
-};
-
-const SURFACES: Record<PublicGround["surface"], string> = {
-  NATURAL_GRASS: "Natural grass",
-  ARTIFICIAL_TURF: "Artificial turf",
-  HARD_WOOD: "Wooden floor",
-  HARD_COURT: "Hard court",
-  CLAY: "Clay",
-  SAND: "Sand",
-  OTHER: "Other surface",
-};
-
-const ENVIRONMENTS: Record<PublicGround["environment"], string> = {
-  INDOOR: "Indoor",
-  OUTDOOR: "Outdoor",
-  COVERED: "Covered",
-};
+// "A, B and C" ("أ، ب وج" in Arabic).
+const listText = (items: string[]) =>
+  items.length > 1
+    ? `${items.slice(0, -1).join(i18n.t("formats.listComma"))}${i18n.t("formats.listAnd")}${items.at(-1)}`
+    : (items[0] ?? "");
 
 // "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
 export const kindOf = (ground: PublicGround) =>
-  SIZES[ground.size] ? `${SIZES[ground.size]} football` : SPORTS[ground.sport];
+  ground.size === "STANDARD"
+    ? sportName(ground.sport)
+    : i18n.t(`formats.footballSizes.${ground.size}`);
 
 // "7-a-side football · Artificial turf · Outdoor".
 export const groundLine = (ground: PublicGround) =>
-  [kindOf(ground), SURFACES[ground.surface], ENVIRONMENTS[ground.environment]].join(" · ");
+  [
+    kindOf(ground),
+    i18n.t(`formats.groundSurfaces.${ground.surface}`),
+    i18n.t(`formats.settings.${ground.environment}`),
+  ].join(" · ");
 
 // "Football, 5 and 7-a-side" or "Football and padel": what's played there, for under the name.
 export const sportsLine = (venue: PublicVenue) => {
   const sports = [...new Set(venue.grounds.map((ground) => ground.sport))];
   if (sports.length === 1 && sports[0] === "FOOTBALL") {
-    const sizes = [...new Set(venue.grounds.map((ground) => SIZES[ground.size]))]
-      .filter(Boolean)
-      .map((size) => size.replace("-a-side", ""));
-    return sizes.length > 0 ? `Football, ${sizes.join(" and ")}-a-side` : "Football";
+    const sizes = [...new Set(venue.grounds.map((ground) => ground.size))].flatMap((size) =>
+      size === "STANDARD" ? [] : [i18n.t(`formats.sizesShort.${size}`)],
+    );
+    return sizes.length > 0
+      ? i18n.t("formats.footballWithSizes", { sizes: listText(sizes) })
+      : sportName("FOOTBALL");
   }
-  const names = sports.map((sport, index) =>
-    index === 0 ? SPORTS[sport] : SPORTS[sport].toLowerCase(),
+  // Lower case after the first, in English ("Football and padel"); Arabic has no case.
+  return listText(
+    sports.map((sport, index) => (index === 0 ? sportName(sport) : sportName(sport).toLowerCase())),
   );
-  return names.length > 1
-    ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
-    : (names[0] ?? "");
 };
