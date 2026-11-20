@@ -13,7 +13,8 @@ import {
 import { Coordinates } from "./venue-setup";
 
 // The venue page (PR 3.2): what anyone, signed in or not, sees of a live or paused venue, and its
-// free times on a day. Read by the customer app and the web's /venue/[slug]. Text follows
+// free times on a day. Not the venue's phone: players get it with a booking there (user,
+// 2026-11-19), so it isn't handed to anyone who opens the page. Read by the customer app and the web's /venue/[slug]. Text follows
 // `Accept-Language`, else whichever language the venue wrote it in.
 
 const LocalDate = z.iso
@@ -84,7 +85,6 @@ export const PublicVenue = z
     status: PublicVenueStatus,
     name: z.string().nullable(),
     description: z.string().nullable(),
-    phone: z.string().nullable().meta({ example: "+201001234567" }),
     marketplace: z.object({
       code: z.string().meta({ example: "EG" }),
       currency: z

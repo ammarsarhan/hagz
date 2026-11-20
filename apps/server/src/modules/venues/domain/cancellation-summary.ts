@@ -1,31 +1,11 @@
-import type { CancellationTier, Language } from "@hagz/contracts";
+import { refundBands, type CancellationTier, type Language } from "@hagz/contracts";
 
 // A cancellation policy in plain words for the venue page (PR 3.2), one sentence a line, so the app
 // and the web say it the same way. Tiers come most notice first, refunds never rising
 // (CancellationTiers), and less notice than the last tier refunds nothing.
 //
-// The tiers split the time before a booking into bands: from the first tier's hours up, between
-// each tier and the one before it, and under the last. Neighbouring bands that refund the same are
-// one band to a player ("50% back from 6 to 48 hours", not two lines), so they're merged first. A
-// venue cancelling always refunds in full, which ends every summary.
-
-interface Band {
-  from: number; // Hours of notice, at least.
-  to: number | null; // Under this many; null: no limit.
-  refundPercent: number;
-}
-
-export const refundBands = (tiers: readonly CancellationTier[]): Band[] => {
-  const bands: Band[] = [];
-  let to: number | null = null;
-  for (const tier of [...tiers, { hours: 0, refundPercent: 0 }]) {
-    const last = bands.at(-1);
-    if (last?.refundPercent === tier.refundPercent) last.from = tier.hours;
-    else bands.push({ from: tier.hours, to, refundPercent: tier.refundPercent });
-    to = tier.hours;
-  }
-  return bands;
-};
+// It reads the tiers as refund bands (refundBands in contracts, which the app's policy table uses
+// too). A venue cancelling always refunds in full, which ends every summary.
 
 // Arabic counts its nouns: ساعة واحدة, ساعتين, 3–10 ساعات, then ساعة again from 11.
 const hoursIn = (hours: number, language: Language) => {

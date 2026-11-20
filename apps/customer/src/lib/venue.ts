@@ -42,17 +42,6 @@ export const timeOfDay = (iso: string, timezone: string) => {
   return `${hour}${minute === "00" ? "" : `:${minute}`} ${period}`;
 };
 
-// "Thu 20 Nov" for a local date (YYYY-MM-DD).
-export const dayLabel = (date: string) =>
-  new Intl.DateTimeFormat("en-GB", {
-    timeZone: "UTC",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  })
-    .format(new Date(`${date}T12:00:00Z`))
-    .replace(",", "");
-
 // 1 → "1 hour", 24 → "24 hours".
 export const hoursLabel = (hours: number) => (hours === 1 ? "1 hour" : `${hours} hours`);
 
@@ -64,21 +53,29 @@ export const noticeLabel = (minutes: number) =>
       ? `${minutes} minutes before`
       : `${hoursLabel(minutes / 60)} before`;
 
-// How players pay, in a few words.
+// How players pay, as the Booking rows say it.
 export const paymentLabel = (payment: PublicVenue["booking"]["payment"]) => {
   switch (payment.mode) {
     case "MANUAL":
       return "Cash at the venue";
     case "DEPOSIT":
-      return `${payment.depositPercent ?? 0}% online, the rest at the venue`;
+      return `${payment.depositPercent ?? 0}% online deposit`;
     case "PLATFORM":
-      return "Online when you book";
+      return "Online in full";
   }
 };
 
-// How long before kick-off cancelling is still free, or null when it never is.
-export const freeCancellationHours = (venue: PublicVenue) =>
-  venue.booking.cancellation?.tiers.find((tier) => tier.refundPercent === 100)?.hours ?? null;
+// The same in as few words as it goes, for under the price in the Book bar.
+export const paymentShort = (payment: PublicVenue["booking"]["payment"]) => {
+  switch (payment.mode) {
+    case "MANUAL":
+      return "Cash at the venue";
+    case "DEPOSIT":
+      return `${payment.depositPercent ?? 0}% online`;
+    case "PLATFORM":
+      return "Paid online";
+  }
+};
 
 // The cheapest hour across the venue's grounds.
 export const cheapestHour = (venue: PublicVenue) => {
@@ -119,10 +116,11 @@ const ENVIRONMENTS: Record<PublicGround["environment"], string> = {
   COVERED: "Covered",
 };
 
-// "5-a-side" for football, "Padel" for the rest.
-export const kindOf = (ground: PublicGround) => SIZES[ground.size] || SPORTS[ground.sport];
+// "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
+export const kindOf = (ground: PublicGround) =>
+  SIZES[ground.size] ? `${SIZES[ground.size]} football` : SPORTS[ground.sport];
 
-// "5-a-side · Artificial turf · Outdoor".
+// "7-a-side football · Artificial turf · Outdoor".
 export const groundLine = (ground: PublicGround) =>
   [kindOf(ground), SURFACES[ground.surface], ENVIRONMENTS[ground.environment]].join(" · ");
 

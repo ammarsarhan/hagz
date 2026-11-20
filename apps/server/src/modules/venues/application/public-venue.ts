@@ -73,7 +73,6 @@ export const publicVenue = async (slug: string, language: Language): Promise<Pub
       id: true,
       slug: true,
       status: true,
-      phone: true,
       averageRating: true,
       reviewCount: true,
       marketplace: { select: { code: true, currency: true, timezone: true } },
@@ -114,7 +113,6 @@ export const publicVenue = async (slug: string, language: Language): Promise<Pub
     status: venue.status === "LIVE" ? "LIVE" : "MAINTENANCE",
     name: text?.name ?? null,
     description: text?.description ?? null,
-    phone: venue.phone,
     marketplace: venue.marketplace,
     location: {
       area: placeOf(venue.location, language),

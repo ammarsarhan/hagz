@@ -1,32 +1,41 @@
-import type { ReactNode } from "react";
+import { refundBands } from "@hagz/contracts";
+import type { Icon } from "@tabler/icons-react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Linking,
   Platform,
   Pressable,
   ScrollView,
+  useWindowDimensions,
   View,
   type LayoutChangeEvent,
+  type ScrollViewInstance,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { SvgXml } from "react-native-svg";
+import { MAP_PIN, MAP_PIN_SIZE } from "@/assets/map-art";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { colors } from "@/lib/colors";
 import { formatPrice } from "@/lib/money";
-import { COUNTRY_CODE, displayPhone, PHONE_DIGITS } from "@/lib/phone";
 import {
-  cheapestHour,
-  dayLabel,
-  freeCancellationHours,
   groundLine,
+  hoursLabel,
   kindOf,
   noticeLabel,
   paymentLabel,
   sportsLine,
-  startTimes,
-  timeOfDay,
+  type PublicGround,
   type PublicVenue,
-  type VenueAvailability,
 } from "@/lib/venue";
-import { colors } from "@/lib/colors";
 import { AmenityIcon } from "./amenity-icon";
-import { IconStarFilled } from "./icons";
+import {
+  IconArrowRight,
+  IconBolt,
+  IconCalendarX,
+  IconCash,
+  IconClock,
+  IconStarFilled,
+} from "./icons";
 import { Text } from "./text";
 import { VenueLayout } from "./venue-layout";
 
@@ -101,15 +110,35 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-// Name, where it is, what's played, and its rating.
-export function VenueHeader({ venue }: { venue: PublicVenue }) {
-  const place = [venue.location.area, sportsLine(venue)].filter(Boolean).join(" · ");
+// Name, where it is, what's played, and its rating. `onTitleLayout` says where the name sits, so
+// the bar can show it once it has scrolled under.
+export function VenueHeader({
+  venue,
+  distance,
+  onTitleLayout,
+}: {
+  venue: PublicVenue;
+  // How far it is from the player ("5.5 km"), when the phone knows.
+  distance: string | null;
+  onTitleLayout: (event: LayoutChangeEvent) => void;
+}) {
+  const sports = sportsLine(venue);
   return (
-    <View className="gap-1.5 px-6 pt-5">
-      <Text accessibilityRole="header" className="text-title font-semibold tracking-[-0.4px]">
+    <View className="gap-1.5 px-6 pt-7">
+      <Text
+        accessibilityRole="header"
+        className="text-title font-semibold tracking-[-0.4px]"
+        onLayout={onTitleLayout}
+      >
         {venue.name ?? "Venue"}
       </Text>
-      {place ? <Text className="text-body text-ink-2">{place}</Text> : null}
+      {venue.location.area ? (
+        <Text className="text-body text-ink-2">
+          {venue.location.area}
+          {distance ? ` (${distance})` : ""}
+        </Text>
+      ) : null}
+      {sports ? <Text className="text-body text-ink-2">{sports}</Text> : null}
       <View className="mt-1 flex-row items-center gap-1.5">
         {venue.rating.average !== null ? (
           <>
@@ -128,163 +157,280 @@ export function VenueHeader({ venue }: { venue: PublicVenue }) {
   );
 }
 
-// Three big figures: the cheapest hour, how many grounds, how long cancelling stays free.
-export function Figures({ venue }: { venue: PublicVenue }) {
-  const cheapest = cheapestHour(venue);
-  const free = freeCancellationHours(venue);
-  const figures = [
-    {
-      value: cheapest === null ? "—" : formatPrice(cheapest, venue.marketplace.currency),
-      label: "from, per hour",
-    },
-    {
-      value: String(venue.grounds.length),
-      label: venue.grounds.length === 1 ? "ground" : "grounds",
-    },
-    {
-      value: free === null ? "None" : `${free} h`,
-      label: "free cancellation",
-    },
+// What booking here is like, in three rows under the name (Airbnb's listing highlights, the user's
+// pick on 2026-11-19): how it's confirmed, how long cancelling is free, and how you pay.
+const highlightsOf = (venue: PublicVenue) => {
+  const { booking } = venue;
+  const rows: { icon: Icon; title: string; line: string }[] = [
+    booking.instantConfirmation
+      ? {
+          icon: IconBolt,
+          title: "Instant confirmation",
+          line: "No waiting for the venue to accept.",
+        }
+      : { icon: IconClock, title: "Confirmed by the venue", line: "They accept each booking." },
   ];
+  const cancellation = booking.cancellation;
+  if (cancellation) {
+    const bands = refundBands(cancellation.tiers);
+    const [first, next] = bands;
+    if (first && first.refundPercent > 0) {
+      rows.push({
+        icon: IconCalendarX,
+        title:
+          first.refundPercent === 100
+            ? `Free cancellation up to ${hoursLabel(first.from)} before`
+            : `${first.refundPercent}% back up to ${hoursLabel(first.from)} before`,
+        line:
+          next && next.refundPercent > 0
+            ? `${next.refundPercent}% back up to ${hoursLabel(next.from)} before.`
+            : "No refund after that.",
+      });
+    }
+  }
+  const { payment } = booking;
+  rows.push(
+    payment.mode === "DEPOSIT"
+      ? {
+          icon: IconCash,
+          title: `${payment.depositPercent ?? 0}% online deposit`,
+          line: "The rest at the venue.",
+        }
+      : payment.mode === "PLATFORM"
+        ? { icon: IconCash, title: "Pay online", line: "In full when you book." }
+        : { icon: IconCash, title: "Pay at the venue", line: "In cash, when you play." },
+  );
+  return rows;
+};
+
+export function Highlights({ venue }: { venue: PublicVenue }) {
   return (
-    <View className="mx-6 mt-5 flex-row border-y border-border py-4">
-      {figures.map((figure, index) => (
-        <View
-          key={figure.label}
-          className={`flex-1 gap-0.5 ${index > 0 ? "border-l border-border pl-4" : ""}`}
-        >
-          <Text className="text-[20px] leading-[26px] font-medium">{figure.value}</Text>
-          <Text className="text-caption text-unit">{figure.label}</Text>
+    <View className="mx-6 mt-6 gap-4 border-y border-border py-4">
+      {highlightsOf(venue).map(({ icon: Glyph, title, line }) => (
+        <View key={title} className="flex-row items-start gap-3">
+          <Glyph size={20} color={colors.ink} strokeWidth={1.75} />
+          <View className="shrink">
+            <Text className="text-body font-medium">{title}</Text>
+            <Text className="text-caption text-ink-2">{line}</Text>
+          </View>
         </View>
       ))}
     </View>
   );
 }
 
-// Today's start times per ground, as chips (Fresha's results), or tomorrow's once today has none
-// left. Tapping one is where booking will start.
-export function FreeToday({
-  venue,
-  availability,
-  onPick,
-}: {
-  venue: PublicVenue;
-  availability: VenueAvailability | null;
-  onPick: () => void;
-}) {
-  if (venue.status === "MAINTENANCE") {
-    return (
-      <View className="gap-2 px-6 pt-6">
-        <GroupHeading>Paused for now</GroupHeading>
-        <Text className="text-body text-ink-2">
-          The venue isn’t taking bookings at the moment. Bookings already made still stand.
-        </Text>
-      </View>
-    );
+// A ground's hourly price, or that it's closed.
+function GroundPrice({ ground, currency }: { ground: PublicGround; currency: string }) {
+  if (ground.status === "MAINTENANCE") {
+    return <Text className="text-label text-unit">Closed for now</Text>;
   }
-  const timezone = venue.marketplace.timezone;
-  const rows = venue.grounds
-    .filter((ground) => ground.status === "ACTIVE")
-    .map((ground) => ({
-      ground,
-      starts: availability ? startTimes(availability.slots, ground) : [],
-    }))
-    .filter((row) => row.starts.length > 0);
-
+  if (ground.priceFrom === null) return null;
   return (
-    <View className="gap-4 pt-6">
-      <View className="px-6">
-        <GroupHeading
-          action={
-            availability ? (
-              <Text className="text-label text-ink-2">{dayLabel(availability.date)}</Text>
-            ) : undefined
-          }
-        >
-          {!availability || availability.date === availability.days.first
-            ? "Free today"
-            : "Free tomorrow"}
-        </GroupHeading>
-      </View>
-      {rows.length === 0 ? (
-        <Text className="px-6 text-body text-ink-2">
-          {availability ? "Nothing left today or tomorrow." : "Couldn’t load today’s times."}
+    <Text className="text-subtitle font-medium">
+      {formatPrice(ground.priceFrom, currency)}
+      <Text className="text-subtitle text-ink-2">/hr</Text>
+    </Text>
+  );
+}
+
+// How long a booking there can be: "Book 1 hour", "Book 1–2 hours".
+const lengthLabel = (ground: PublicGround) =>
+  ground.minimumSlots === ground.maximumSlots
+    ? `Book ${hoursLabel(ground.minimumSlots)}`
+    : `Book ${ground.minimumSlots}–${ground.maximumSlots} hours`;
+
+// A ground's card in the row under the map (Figma C5 round 3, option 5, 86:2): name and price, what
+// it is, how long a booking can be, and a See times button across the bottom. Picking only fades
+// things: a slightly darker grey border over the light one (which stays, so an unpicked card keeps its 1px
+// edge) and the button from grey to lime (user, 2026-11-20). Nothing changes size, so nothing moves.
+function GroundOption({
+  ground,
+  width,
+  currency,
+  picked,
+  onPick,
+  onSeeTimes,
+}: {
+  ground: PublicGround;
+  width: number;
+  currency: string;
+  picked: boolean;
+  onPick: () => void;
+  onSeeTimes: () => void;
+}) {
+  const shown = useSharedValue(picked ? 1 : 0);
+  useEffect(() => {
+    shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
+  }, [picked, shown]);
+  const fade = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const bookable = ground.status === "ACTIVE";
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: picked }}
+      onPress={onPick}
+      className="gap-0.5 rounded-2xl border border-border px-4 py-4"
+      style={{ width }}
+    >
+      <Animated.View
+        pointerEvents="none"
+        className="absolute -inset-px rounded-[17px] border-[1.5px] border-[#d5d8dd]"
+        style={fade}
+      />
+      <View className="flex-row items-center justify-between gap-6">
+        <Text className="shrink text-subtitle font-medium" numberOfLines={1}>
+          {ground.name ?? kindOf(ground)}
         </Text>
-      ) : (
-        rows.map(({ ground, starts }, index) => (
-          <View key={ground.id} className="gap-2.5">
-            {index > 0 ? (
-              <View className="mx-6 mb-2">
-                <Hairline />
-              </View>
-            ) : null}
-            <View className="flex-row items-center justify-between px-6">
-              <Text className="text-subtitle font-medium">
-                {ground.name ?? kindOf(ground)}{" "}
-                <Text className="text-subtitle text-ink-2">· {kindOf(ground)}</Text>
-              </Text>
-              {ground.priceFrom !== null ? (
-                <Text className="text-label text-ink-2">
-                  from {formatPrice(ground.priceFrom, venue.marketplace.currency)}
-                </Text>
-              ) : null}
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerClassName="gap-2 px-6"
+        <GroundPrice ground={ground} currency={currency} />
+      </View>
+      <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
+      {bookable ? <Text className="text-label text-ink-2">{lengthLabel(ground)}</Text> : null}
+      {bookable ? (
+        // On every card: grey, and lime once it's the picked one, the lime laid over the grey and
+        // faded in. Pressed on a card that isn't picked, it picks it too.
+        <View className="mt-auto pt-3">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`See times for ${ground.name ?? kindOf(ground)}`}
+            onPress={() => {
+              if (!picked) onPick();
+              onSeeTimes();
+            }}
+            className="h-10 items-center justify-center rounded-full bg-chip active:opacity-80"
+          >
+            <SeeTimesLabel />
+            <Animated.View
+              pointerEvents="none"
+              className="absolute inset-0 items-center justify-center rounded-full bg-primary"
+              style={fade}
             >
-              {starts.map((slot) => (
-                <Pressable
-                  key={slot.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${ground.name ?? kindOf(ground)} at ${timeOfDay(slot.startsAt, timezone)}`}
-                  onPress={onPick}
-                  className="h-9 items-center justify-center rounded-full border border-border px-3.5 active:bg-chip"
-                >
-                  <Text className="text-body font-medium">
-                    {timeOfDay(slot.startsAt, timezone)}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        ))
-      )}
+              <SeeTimesLabel />
+            </Animated.View>
+          </Pressable>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+// "See times →", in ink on both the grey button and the lime one.
+function SeeTimesLabel() {
+  return (
+    <View className="flex-row items-center gap-1.5">
+      <Text className="text-body font-semibold">See times</Text>
+      <IconArrowRight size={16} color={colors.ink} strokeWidth={2.25} />
     </View>
   );
 }
 
+// Which card is in place, out of how many: a short pill for it, dots for the rest.
+function PageDots({ count, current }: { count: number; current: number }) {
+  if (count < 2) return null;
+  return (
+    <View className="flex-row items-center justify-center gap-1.5" accessible={false}>
+      {Array.from({ length: count }, (_, index) => (
+        <View
+          key={index}
+          className={`h-1.5 rounded-full ${index === current ? "w-3.5 bg-ink" : "w-1.5 bg-grab"}`}
+        />
+      ))}
+    </View>
+  );
+}
+
+// The cards: 80% of the screen, 10 apart, so the next one peeks in.
+const CARD_SHARE = 0.8;
+const CARD_GAP = 10;
+const GUTTER = 24;
+
 export function GroundsSection({
   venue,
   onLayout,
+  onSeeTimes,
 }: {
   venue: PublicVenue;
   onLayout: (event: LayoutChangeEvent) => void;
+  onSeeTimes: () => void;
 }) {
+  const { width: screen } = useWindowDimensions();
+  const card = Math.round(screen * CARD_SHARE);
+  const step = card + CARD_GAP;
+  // Where the row stops for each card: its left edge on the page's gutter, except at the end,
+  // where the last card's right edge meets the gutter on the other side.
+  const count = venue.grounds.length;
+  const end = Math.max(0, 2 * GUTTER + count * card + (count - 1) * CARD_GAP - screen);
+  const stops = venue.grounds.map((_, index) => Math.min(index * step, end));
+  const first = Math.max(
+    0,
+    venue.grounds.findIndex((ground) => ground.status === "ACTIVE"),
+  );
+  const [pickedId, setPickedId] = useState<string | null>(venue.grounds[first]?.id ?? null);
+  const row = useRef<ScrollViewInstance>(null);
+  const currency = venue.marketplace.currency;
+
+  // The card that settles in place is the picked one, so the map follows the swipe; tapping a
+  // card brings it into place.
+  // The card whose stop is nearest; at the end, where several may share it, the last of them.
+  const settle = (x: number) => {
+    let index = 0;
+    stops.forEach((stop, i) => {
+      if (Math.abs(stop - x) <= Math.abs((stops[index] ?? 0) - x)) index = i;
+    });
+    const ground = venue.grounds[index];
+    if (ground) setPickedId(ground.id);
+  };
+  const bringIn = (index: number) => {
+    row.current?.scrollTo({ x: stops[index] ?? 0, animated: true });
+    const ground = venue.grounds[index];
+    if (ground) setPickedId(ground.id);
+  };
+
   return (
-    <Section title="The grounds" onLayout={onLayout}>
+    <Section title="Grounds" onLayout={onLayout}>
       {venue.layout ? (
-        <VenueLayout layout={venue.layout} grounds={venue.grounds} amenities={venue.amenities} />
+        <VenueLayout
+          layout={venue.layout}
+          grounds={venue.grounds}
+          amenities={venue.amenities}
+          selectedId={pickedId}
+        />
       ) : null}
-      <Rows>
-        {venue.grounds.map((ground) => (
-          <View key={ground.id} className="flex-row items-center justify-between gap-3 py-3.5">
-            <View className="shrink gap-0.5">
-              <Text className="text-subtitle font-medium">{ground.name ?? kindOf(ground)}</Text>
-              <Text className="text-label text-ink-2">{groundLine(ground)}</Text>
-            </View>
-            {ground.status === "MAINTENANCE" ? (
-              <Text className="text-label text-unit">Closed for now</Text>
-            ) : ground.priceFrom !== null ? (
-              <Text className="text-label font-medium">
-                {formatPrice(ground.priceFrom, venue.marketplace.currency)}
-                <Text className="text-label text-ink-2">/hr</Text>
-              </Text>
-            ) : null}
-          </View>
+      {/* Edge to edge, snapping each card to the page's gutter, the last one to the right gutter.
+          All as tall as the tallest. */}
+      <ScrollView
+        ref={row}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToOffsets={[...new Set(stops)]}
+        decelerationRate="fast"
+        disableIntervalMomentum
+        contentOffset={{ x: stops[first] ?? 0, y: 0 }}
+        onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.x)}
+        className="-mx-6"
+        contentContainerStyle={{
+          gap: CARD_GAP,
+          paddingHorizontal: GUTTER,
+        }}
+      >
+        {venue.grounds.map((ground, index) => (
+          <GroundOption
+            key={ground.id}
+            ground={ground}
+            width={card}
+            currency={currency}
+            picked={ground.id === pickedId}
+            onPick={() => bringIn(index)}
+            onSeeTimes={onSeeTimes}
+          />
         ))}
-      </Rows>
+      </ScrollView>
+      <PageDots
+        count={venue.grounds.length}
+        current={Math.max(
+          0,
+          venue.grounds.findIndex((ground) => ground.id === pickedId),
+        )}
+      />
     </Section>
   );
 }
@@ -306,37 +452,58 @@ export function BookingSection({
     { label: "Payment", value: paymentLabel(booking.payment) },
   ];
   if (booking.loyalty) {
-    facts.push({
-      label: "Regulars",
-      value: `1 free after ${booking.loyalty.stamps} bookings`,
-    });
+    facts.push({ label: "Loyalty", value: `1 free after ${booking.loyalty.stamps} bookings` });
   }
-  const summary = booking.cancellation?.summary ?? [];
-  // The last line is the venue's own promise (a full refund if it cancels): a note, not a rule.
-  const rules = summary.slice(0, -1);
-  const note = summary.at(-1);
   return (
-    <>
-      <Section title="How booking works" onLayout={onLayout}>
-        <Rows>
-          {facts.map((fact) => (
-            <FactRow key={fact.label} {...fact} />
-          ))}
-        </Rows>
-      </Section>
-      {rules.length > 0 ? (
-        <Section title="If you cancel">
-          <Rows>
-            {rules.map((line) => (
-              <Text key={line} className="py-3.5 text-body">
-                {line}
+    <Section title="How booking works" onLayout={onLayout}>
+      <Rows>
+        {facts.map((fact) => (
+          <FactRow key={fact.label} {...fact} />
+        ))}
+      </Rows>
+    </Section>
+  );
+}
+
+// "24 hours or more", "6 to 24 hours", "Under 6 hours": a band of notice before the start.
+const bandLabel = (from: number, to: number | null) =>
+  to === null
+    ? `${hoursLabel(from)} or more`
+    : from === 0
+      ? `Under ${hoursLabel(to)}`
+      : `${from} to ${hoursLabel(to)}`;
+
+// The policy as a table: how much notice, and how much comes back (the same bands the server's
+// plain-words summary is written from). A venue cancelling always refunds in full.
+export function CancellationSection({ venue }: { venue: PublicVenue }) {
+  const cancellation = venue.booking.cancellation;
+  if (!cancellation) return null;
+  const bands = refundBands(cancellation.tiers);
+  return (
+    <Section title="Cancellation policy">
+      <View className="overflow-hidden rounded-field border border-border">
+        <View className="flex-row items-center justify-between bg-chip px-4 py-2.5">
+          <Text className="text-caption font-medium text-ink-2">Cancel before it starts</Text>
+          <Text className="text-caption font-medium text-ink-2">You get back</Text>
+        </View>
+        {bands.map((band, index) => (
+          <View key={band.from}>
+            {index > 0 ? <Hairline /> : null}
+            <View className="flex-row items-center justify-between gap-4 px-4 py-3.5">
+              <Text className="text-body">{bandLabel(band.from, band.to)}</Text>
+              <Text className={`text-body ${band.refundPercent > 0 ? "font-medium" : "text-unit"}`}>
+                {band.refundPercent === 100
+                  ? "Everything"
+                  : band.refundPercent === 0
+                    ? "Nothing"
+                    : `${band.refundPercent}%`}
               </Text>
-            ))}
-          </Rows>
-          {note ? <Text className="text-label text-unit">{note}</Text> : null}
-        </Section>
-      ) : null}
-    </>
+            </View>
+          </View>
+        ))}
+      </View>
+      <Text className="text-label text-unit">If the venue cancels, you get everything back.</Text>
+    </Section>
   );
 }
 
@@ -353,13 +520,13 @@ export function AmenitiesSection({
         {venue.amenities.map((amenity) => (
           <View
             key={amenity.id}
-            className="h-[38px] flex-row items-center gap-2 rounded-full bg-chip px-3.5"
+            className="h-8 flex-row items-center gap-1.5 rounded-full bg-chip px-3"
           >
-            <AmenityIcon name={amenity.icon} size={18} color={colors.ink} />
-            <Text className="text-body">
+            <AmenityIcon name={amenity.icon} size={16} color={colors.ink} />
+            <Text className="text-label font-medium">
               {amenity.name}
               {amenity.price !== null ? (
-                <Text className="text-body text-ink-2">
+                <Text className="text-label text-ink-2">
                   {" · "}
                   {formatPrice(amenity.price, venue.marketplace.currency)}
                   {amenity.pricing === "PER_HOUR" ? "/hr" : ""}
@@ -408,12 +575,6 @@ export function ReviewsSection({
   );
 }
 
-// "+20 100 123 4567" for a mobile in the app's country; anything else (a landline) as stored.
-const readablePhone = (e164: string) => {
-  const local = e164.startsWith(COUNTRY_CODE) ? e164.slice(COUNTRY_CODE.length) : null;
-  return local && local.length === PHONE_DIGITS ? displayPhone(local) : e164;
-};
-
 // Opens the phone's maps app with directions to the venue.
 const openDirections = (latitude: number, longitude: number, name: string) => {
   const label = encodeURIComponent(name);
@@ -424,11 +585,14 @@ const openDirections = (latitude: number, longitude: number, name: string) => {
   );
 };
 
+// The map and address. No phone: players get the venue's number with a booking there.
 export function WhereSection({
   venue,
+  distance,
   onLayout,
 }: {
   venue: PublicVenue;
+  distance: string | null;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
   const { coordinates, address, area } = venue.location;
@@ -437,6 +601,8 @@ export function WhereSection({
       {coordinates ? (
         <View className="h-[180px] overflow-hidden rounded-2xl" pointerEvents="none">
           <MapView
+            // Google Maps on both platforms, as in the staff app (the key is built in for both).
+            provider={PROVIDER_GOOGLE}
             style={{ flex: 1 }}
             initialRegion={{ ...coordinates, latitudeDelta: 0.008, longitudeDelta: 0.008 }}
             scrollEnabled={false}
@@ -445,45 +611,35 @@ export function WhereSection({
             pitchEnabled={false}
             toolbarEnabled={false}
           >
-            <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 0.5 }}>
-              <View className="size-9 items-center justify-center rounded-full bg-ink">
-                <View className="size-3 rounded-full bg-primary" />
-              </View>
+            {/* Its point on the venue: anchored at the bottom middle. Drawn once, so the map
+                doesn't keep re-rendering it. */}
+            <Marker coordinate={coordinates} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false}>
+              <SvgXml xml={MAP_PIN} width={MAP_PIN_SIZE.width} height={MAP_PIN_SIZE.height} />
             </Marker>
           </MapView>
         </View>
       ) : null}
-      <Rows>
-        {[
-          <View key="address" className="flex-row items-center justify-between gap-4 py-3.5">
-            <View className="shrink gap-0.5">
-              <Text className="text-subtitle font-medium">
-                {address ?? area ?? "Address not given"}
-              </Text>
-              {address && area ? <Text className="text-label text-ink-2">{area}</Text> : null}
-            </View>
-            {coordinates ? (
-              <Link
-                label="Directions"
-                onPress={() =>
-                  openDirections(coordinates.latitude, coordinates.longitude, venue.name ?? "")
-                }
-              />
-            ) : null}
-          </View>,
-          ...(venue.phone
-            ? [
-                <View key="phone" className="flex-row items-center justify-between gap-4 py-3.5">
-                  <View className="gap-0.5">
-                    <Text className="text-subtitle font-medium">{readablePhone(venue.phone)}</Text>
-                    <Text className="text-label text-ink-2">The venue’s phone</Text>
-                  </View>
-                  <Link label="Call" onPress={() => void Linking.openURL(`tel:${venue.phone}`)} />
-                </View>,
-              ]
-            : []),
-        ]}
-      </Rows>
+      <View className="flex-row items-center justify-between gap-4">
+        <View className="shrink gap-0.5">
+          <Text className="text-subtitle font-medium">
+            {address ?? area ?? "Address not given"}
+          </Text>
+          {address && area ? (
+            <Text className="text-label text-ink-2">
+              {area}
+              {distance ? ` (${distance})` : ""}
+            </Text>
+          ) : null}
+        </View>
+        {coordinates ? (
+          <Link
+            label="Directions"
+            onPress={() =>
+              openDirections(coordinates.latitude, coordinates.longitude, venue.name ?? "")
+            }
+          />
+        ) : null}
+      </View>
     </Section>
   );
 }

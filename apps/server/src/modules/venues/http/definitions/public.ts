@@ -1,5 +1,13 @@
 import { createRoute, z } from "@hono/zod-openapi";
-import { PublicVenue, VenueAvailability, VenueAvailabilityQuery } from "@hagz/contracts";
+import {
+  PublicVenue,
+  VenueAvailability,
+  VenueAvailabilityQuery,
+  VenueFreeHours,
+  VenueFreeHoursQuery,
+  VenueSearchQuery,
+  VenueSearchResults,
+} from "@hagz/contracts";
 import { json, problemResponse } from "@/platform/http/definitions";
 
 // The venue page (PR 3.2). Public: guests browse everything, and the web renders it for search
@@ -48,6 +56,42 @@ export const venueAvailability = createRoute({
     200: { description: "The day's free times", ...json(VenueAvailability) },
     400: problemResponse("VALIDATION_FAILED"),
     404: notFound,
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const searchVenues = createRoute({
+  method: "get",
+  path: "/venues",
+  tags: ["Venues"],
+  summary: "Search venues",
+  description:
+    "Live venues by where (`area`, a point with `radius`, or part of the name in `q`; any mix) " +
+    "with a ground free when asked: from `start` for `hours`, or any time on `date`, of the " +
+    "`sport` and `size` asked for. Each card has its next free times. Nearest first with a point, " +
+    "else best rated. Names follow `Accept-Language`. Public.",
+  request: { query: VenueSearchQuery },
+  responses: {
+    200: { description: "A page of venues", ...json(VenueSearchResults) },
+    400: problemResponse("VALIDATION_FAILED, or INVALID_CURSOR: search again."),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
+    503: problemResponse("The database is unavailable; retry."),
+  },
+});
+
+export const freeHours = createRoute({
+  method: "get",
+  path: "/venues/free-hours",
+  tags: ["Venues"],
+  summary: "How many venues are free each hour of a day",
+  description:
+    "For each local hour of `date`, how many live venues (by the search's where and what) have a " +
+    "ground free to start then, after their notice: the When sheet's timeline. Public.",
+  request: { query: VenueFreeHoursQuery },
+  responses: {
+    200: { description: "Every hour of the day", ...json(VenueFreeHours) },
+    400: problemResponse("VALIDATION_FAILED"),
+    404: problemResponse("MARKETPLACE_NOT_FOUND: no active marketplace with that code."),
     503: problemResponse("The database is unavailable; retry."),
   },
 });

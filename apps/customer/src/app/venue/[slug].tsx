@@ -1,3 +1,4 @@
+import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +10,7 @@ import {
   ScrollView,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
 import Animated, {
   interpolate,
@@ -24,15 +26,17 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/button";
 import { useHud, useHudAnchor } from "@/components/hud";
-import { IconChevronLeft } from "@/components/icons";
+import { IconChevronLeft, IconCircleCheckFilled, IconHeart, IconShare } from "@/components/icons";
+import { useSignInSheet } from "@/components/sign-in-sheet";
+import type { Icon } from "@tabler/icons-react-native";
 import { Text } from "@/components/text";
 import {
   AboutSection,
   AmenitiesSection,
   BookingSection,
-  Figures,
-  FreeToday,
+  CancellationSection,
   GroundsSection,
+  Highlights,
   ReviewsSection,
   VenueHeader,
   WhereSection,
@@ -40,20 +44,28 @@ import {
 import { api, reachable } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
-import { formatPrice } from "@/lib/money";
-import { cheapestHour, paymentLabel, type PublicVenue, type VenueAvailability } from "@/lib/venue";
+import { useDistanceTo } from "@/lib/distance";
+import { webLinks } from "@/lib/links";
+import { formatAmount } from "@/lib/money";
+import { cheapestHour, paymentShort, type PublicVenue } from "@/lib/venue";
 
 // The venue page (Figma C5, frames 59:2 and 60:2; PR 3.2): photos edge to edge under the status
-// bar, then the venue, today's free times, and every section a player checks before booking, with
-// Book pinned to the bottom. Public, so guests see all of it.
+// bar, then the venue and every section a player checks before booking, with Book pinned to the
+// bottom. Public, so guests see all of it.
 //
-// As the photos scroll away, a white bar fades in behind the back button; once the tabs reach it,
-// they stay there, and tapping one scrolls to its section. Booking itself (the day and time sheet,
-// the ground picker) comes next, so Book and the time chips say so for now.
+// As the photos scroll away a white bar fades in behind the back button, and the venue's name rises
+// into it beside the button as the big name goes under (the staff app's compact title). The tabs
+// stick under the bar the moment they reach it: they're moved on the UI thread with the scroll, so
+// they never lag behind it. Booking itself (the day and time sheet, the ground picker) comes next,
+// so Book says so for now.
 
 const PHOTO_HEIGHT = 320;
 const BAR = 56;
 const TABS = 46;
+// The compact name fades in over the last stretch of the big one going under the bar, rising as it
+// does.
+const FADE = 24;
+const RISE = 6;
 
 type Tab = "grounds" | "booking" | "amenities" | "reviews" | "map";
 const TAB_LABELS: Record<Tab, string> = {
@@ -64,18 +76,11 @@ const TAB_LABELS: Record<Tab, string> = {
   map: "Map",
 };
 
-// The local date after this one (YYYY-MM-DD).
-const nextDate = (date: string) => {
-  const day = new Date(`${date}T12:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + 1);
-  return day.toISOString().slice(0, 10);
-};
-
 type Loaded =
   | { state: "loading" }
   | { state: "missing" }
   | { state: "failed"; message: string }
-  | { state: "ready"; venue: PublicVenue; availability: VenueAvailability | null };
+  | { state: "ready"; venue: PublicVenue };
 
 export default function VenuePage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -85,38 +90,18 @@ export default function VenuePage() {
   useEffect(() => {
     let active = true;
     void (async () => {
-      const [venue, availability] = await Promise.all([
-        send(api.GET("/v1/venues/{slug}", { params: { path: { slug } } })),
-        send(api.GET("/v1/venues/{slug}/availability", { params: { path: { slug } } })),
-      ]);
+      const venue = await send(api.GET("/v1/venues/{slug}", { params: { path: { slug } } }));
       if (!active) return;
-      if (venue.ok) {
-        // Late in the day there's often nothing left: show tomorrow's times instead of an empty row.
-        let day = availability.ok ? availability.data : null;
-        if (day && day.slots.length === 0 && venue.data.status === "LIVE") {
-          const next = await send(
-            api.GET("/v1/venues/{slug}/availability", {
-              params: { path: { slug }, query: { date: nextDate(day.date) } },
-            }),
-          );
-          if (!active) return;
-          if (next.ok) day = next.data;
-        }
-        setLoaded({ state: "ready", venue: venue.data, availability: day });
-      } else if (problem(venue.error)?.code === "VENUE_NOT_FOUND") {
-        setLoaded({ state: "missing" });
-      } else {
-        setLoaded({ state: "failed", message: hudMessage(venue.error) });
-      }
+      if (venue.ok) setLoaded({ state: "ready", venue: venue.data });
+      else if (problem(venue.error)?.code === "VENUE_NOT_FOUND") setLoaded({ state: "missing" });
+      else setLoaded({ state: "failed", message: hudMessage(venue.error) });
     })();
     return () => {
       active = false;
     };
   }, [slug, attempt]);
 
-  if (loaded.state === "ready") {
-    return <VenueView venue={loaded.venue} availability={loaded.availability} />;
-  }
+  if (loaded.state === "ready") return <VenueView venue={loaded.venue} />;
   return (
     <Waiting
       loaded={loaded}
@@ -164,8 +149,18 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
   );
 }
 
-// The round back button: white over the photo, the usual grey once the bar is behind it.
-function BackButton({ progress }: { progress: SharedValue<number> | null }) {
+// A round button in the top bar: white over the photo, the usual grey once the bar is behind it.
+function BarButton({
+  icon: Glyph,
+  label,
+  onPress,
+  progress,
+}: {
+  icon: Icon;
+  label: string;
+  onPress: () => void;
+  progress: SharedValue<number> | null;
+}) {
   const style = useAnimatedStyle(() => ({
     backgroundColor: progress
       ? interpolateColor(progress.value, [0, 1], ["#ffffff", "#f2f3f5"])
@@ -174,16 +169,22 @@ function BackButton({ progress }: { progress: SharedValue<number> | null }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back"
+      accessibilityLabel={label}
       hitSlop={8}
-      onPress={() => (router.canGoBack() ? router.back() : router.replace("/home"))}
+      onPress={onPress}
       className="active:opacity-70"
     >
       <Animated.View className="size-10 items-center justify-center rounded-full" style={style}>
-        <IconChevronLeft size={20} color={colors.ink} strokeWidth={2} />
+        <Glyph size={20} color={colors.ink} strokeWidth={2} />
       </Animated.View>
     </Pressable>
   );
+}
+
+const goBack = () => (router.canGoBack() ? router.back() : router.replace("/home"));
+
+function BackButton({ progress }: { progress: SharedValue<number> | null }) {
+  return <BarButton icon={IconChevronLeft} label="Back" onPress={goBack} progress={progress} />;
 }
 
 function Photos({ venue }: { venue: PublicVenue }) {
@@ -259,15 +260,11 @@ function Tabs({
   );
 }
 
-function VenueView({
-  venue,
-  availability,
-}: {
-  venue: PublicVenue;
-  availability: VenueAvailability | null;
-}) {
+function VenueView({ venue }: { venue: PublicVenue }) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const hud = useHud();
+  const { whenSignedIn, sheet } = useSignInSheet(`/venue/${venue.slug}`);
   const scroll = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0);
   const header = insets.top + BAR;
@@ -279,14 +276,16 @@ function VenueView({
     "reviews",
     "map",
   ];
-  // Where each section and the tabs start in the scroll, from their layouts.
+  // Where each section starts in the scroll, from their layouts.
   const offsets = useRef<Partial<Record<Tab, number>>>({});
-  const [tabsAt, setTabsAt] = useState(Number.POSITIVE_INFINITY);
   const [active, setActive] = useState<Tab>("grounds");
   const [darkStatus, setDarkStatus] = useState(false);
-  const recordOffset = (tab: Tab) => (event: { nativeEvent: { layout: { y: number } } }) => {
+  const recordOffset = (tab: Tab) => (event: LayoutChangeEvent) => {
     offsets.current[tab] = event.nativeEvent.layout.y;
   };
+
+  // Where the big name ends, on the UI thread.
+  const titleEnd = useSharedValue(Number.POSITIVE_INFINITY);
 
   // The bottom bar: the HUD sits just above it.
   const [footer, setFooter] = useState(0);
@@ -316,19 +315,17 @@ function VenueView({
       if (dark !== previous) runOnJS(setDarkStatus)(dark);
     },
   );
-  // The tabs stick under the bar once they reach it.
-  const [stuck, setStuck] = useState(false);
-  useAnimatedReaction(
-    () => scrollY.value >= tabsAt - header,
-    (now, previous) => {
-      if (now !== previous) runOnJS(setStuck)(now);
-    },
-    [tabsAt, header],
-  );
   const barStyle = useAnimatedStyle(() => ({ opacity: barProgress.value }));
-
-  // Which section is under the stuck tabs.
+  const compactStyle = useAnimatedStyle(() => {
+    const gone = titleEnd.value - header;
+    const progress = interpolate(scrollY.value, [gone - FADE, gone], [0, 1], "clamp");
+    return { opacity: progress, transform: [{ translateY: (1 - progress) * RISE }] };
+  });
+  // Which section is under the tabs. Not while a tapped tab scrolls to its section: the tabs it
+  // passes would light up on the way.
+  const jumpingUntil = useRef(0);
   const pickActive = (y: number) => {
+    if (Date.now() < jumpingUntil.current) return;
     let current: Tab = tabs[0] ?? "grounds";
     for (const tab of tabs) {
       const at = offsets.current[tab];
@@ -346,11 +343,14 @@ function VenueView({
   const goTo = (tab: Tab) => {
     const at = offsets.current[tab];
     if (at === undefined) return;
+    jumpingUntil.current = Date.now() + 600;
     scroll.current?.scrollTo({ y: Math.max(0, at - header - TABS + 1), animated: true });
     setActive(tab);
   };
 
-  const soon = () => hud.show("Booking opens soon");
+  // Null in a build without the web app's address: no Share then.
+  const link = webLinks?.venue(venue.slug) ?? null;
+  const distance = useDistanceTo(venue.location.coordinates);
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";
 
@@ -360,28 +360,44 @@ function VenueView({
       <Animated.ScrollView
         ref={scroll}
         onScroll={onScroll}
+        // The tabs (the fourth child) stick natively, so they never trail the scroll.
+        stickyHeaderIndices={[3]}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: footer + 32 }}
       >
         <Photos venue={venue} />
-        <VenueHeader venue={venue} />
-        <Figures venue={venue} />
-        <FreeToday venue={venue} availability={availability} onPick={soon} />
-        <View className="mt-8" onLayout={(event) => setTabsAt(event.nativeEvent.layout.y)}>
+        <VenueHeader
+          venue={venue}
+          distance={distance}
+          onTitleLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            titleEnd.value = PHOTO_HEIGHT + y + height;
+          }}
+        />
+        <Highlights venue={venue} />
+        {/* A sticky header sticks at the very top, which is under our bar: a clear spacer the bar's
+            height goes above the tabs, pulled up over the content before it so the gap stays 32. */}
+        <View style={{ marginTop: 32 - header }} pointerEvents="box-none">
+          <View style={{ height: header }} pointerEvents="none" />
           <Tabs tabs={tabs} active={active} onPress={goTo} />
         </View>
-        <GroundsSection venue={venue} onLayout={recordOffset("grounds")} />
+        <GroundsSection
+          venue={venue}
+          onLayout={recordOffset("grounds")}
+          onSeeTimes={() => hud.show("Booking opens soon")}
+        />
         <BookingSection venue={venue} onLayout={recordOffset("booking")} />
+        <CancellationSection venue={venue} />
         {venue.amenities.length > 0 ? (
           <AmenitiesSection venue={venue} onLayout={recordOffset("amenities")} />
         ) : null}
         {venue.description ? <AboutSection description={venue.description} /> : null}
         <ReviewsSection venue={venue} onLayout={recordOffset("reviews")} />
-        <WhereSection venue={venue} onLayout={recordOffset("map")} />
+        <WhereSection venue={venue} distance={distance} onLayout={recordOffset("map")} />
       </Animated.ScrollView>
 
-      {/* The bar over the top: white behind the back button once the photo has gone, then the
-          tabs under it. */}
+      {/* The bar over the top: white behind the back button once the photo has gone, with the
+          venue's name beside the button once the big one is under it. */}
       <View className="absolute top-0 right-0 left-0" pointerEvents="box-none">
         <Animated.View
           pointerEvents="none"
@@ -389,17 +405,60 @@ function VenueView({
           style={[{ height: header }, barStyle]}
         />
         <View
-          className="flex-row items-center px-5"
+          className="flex-row items-center justify-between gap-3 px-5"
           style={{ paddingTop: insets.top, height: header }}
           pointerEvents="box-none"
         >
-          <BackButton progress={barProgress} />
+          <View className="shrink flex-row items-center gap-3" pointerEvents="box-none">
+            <BackButton progress={barProgress} />
+            <Animated.View
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              // The gutters, the three buttons and the gaps: a long name ends in "…".
+              style={[compactStyle, { maxWidth: width - 40 - 40 - 12 - 40 - 10 - 40 - 12 }]}
+            >
+              <Text className="text-body leading-[1.25] font-semibold" numberOfLines={1}>
+                {venue.name ?? ""}
+              </Text>
+            </Animated.View>
+          </View>
+          <View className="flex-row items-center gap-2.5" pointerEvents="box-none">
+            {link ? (
+              <BarButton
+                icon={IconShare}
+                label="Copy the venue's link"
+                progress={barProgress}
+                onPress={() => {
+                  // Done, not a problem: a check in place of the HUD's alert.
+                  void Clipboard.setStringAsync(link).then(() =>
+                    hud.show("Link copied", {
+                      leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
+                    }),
+                  );
+                }}
+              />
+            ) : null}
+            {/* Saving venues is PR 3.4: a guest is asked to sign in first, as everywhere a choice
+                needs an account; signed in, it says it's coming. */}
+            <BarButton
+              icon={IconHeart}
+              label="Save this venue"
+              progress={barProgress}
+              onPress={() =>
+                void whenSignedIn(() => hud.show("Saving venues comes next"), {
+                  title: "Sign in to save venues",
+                  body: "Create an account or sign in to keep the venues you like in one place.",
+                })
+              }
+            />
+          </View>
         </View>
-        {stuck ? <Tabs tabs={tabs} active={active} onPress={goTo} /> : null}
       </View>
+      {sheet}
 
       <View
-        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-4 border-t border-border bg-white px-5 pt-3.5"
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
         style={{ paddingBottom: insets.bottom + 8 }}
         onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
       >
@@ -407,18 +466,17 @@ function VenueView({
           <Text className="text-button font-medium">
             {cheapest === null
               ? "Prices vary"
-              : `from ${formatPrice(cheapest, venue.marketplace.currency)}`}
+              : `from ${formatAmount(cheapest, venue.marketplace.currency)} ${venue.marketplace.currency}/hr`}
           </Text>
-          <Text className="text-caption text-unit">
-            per hour · {paymentLabel(venue.booking.payment).toLowerCase()}
-          </Text>
+          <Text className="text-caption text-unit">{paymentShort(venue.booking.payment)}</Text>
         </View>
-        <View className="w-[150px]">
+        <View className="w-[128px]">
           <Button
             label={paused ? "Paused" : "Book"}
             variant="moment"
+            size="small"
             disabled={paused}
-            onPress={soon}
+            onPress={() => hud.show("Booking opens soon")}
           />
         </View>
       </View>

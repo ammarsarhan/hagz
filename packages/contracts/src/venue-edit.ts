@@ -79,6 +79,30 @@ export const CANCELLATION_PRESETS = {
   readonly z.infer<typeof CancellationTier>[]
 >;
 
+// A policy's tiers as bands of notice, the way a player reads them: from the first tier's hours up,
+// between each tier and the one before it, and under the last (which refunds nothing). Neighbouring
+// bands that refund the same are one band ("50% back from 6 to 48 hours", not two), so they're
+// merged. The server's plain-words summary and the apps' policy table both read these.
+export interface RefundBand {
+  // Hours of notice, at least.
+  from: number;
+  // Under this many; null: no limit.
+  to: number | null;
+  refundPercent: number;
+}
+
+export const refundBands = (tiers: readonly CancellationTier[]): RefundBand[] => {
+  const bands: RefundBand[] = [];
+  let to: number | null = null;
+  for (const tier of [...tiers, { hours: 0, refundPercent: 0 }]) {
+    const last = bands.at(-1);
+    if (last?.refundPercent === tier.refundPercent) last.from = tier.hours;
+    else bands.push({ from: tier.hours, to, refundPercent: tier.refundPercent });
+    to = tier.hours;
+  }
+  return bands;
+};
+
 export const Loyalty = z
   .object({
     stamps: z.int().min(2).max(20).meta({ description: "Bookings per free one." }),

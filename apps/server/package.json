@@ -20,6 +20,7 @@
     "db:studio": "prisma studio",
     "admin:create": "tsx src/create-admin.ts",
     "seed:invitations": "tsx src/seed-invitations.ts",
+    "seed:nearby": "tsx src/seed-nearby.ts",
     "seed:reference": "tsx src/seed-reference.ts",
     "seed:scale": "tsx src/seed-scale.ts"
   },

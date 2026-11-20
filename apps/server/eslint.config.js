@@ -56,6 +56,7 @@ export default defineConfig(globalIgnores(["src/generated/"]), base, {
                   "worker.ts",
                   "create-admin.ts",
                   "seed-invitations.ts",
+                  "seed-nearby.ts",
                   "seed-reference.ts",
                 ],
               },
