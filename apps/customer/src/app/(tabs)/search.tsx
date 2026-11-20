@@ -616,7 +616,7 @@ export default function SearchTab() {
         <ActivityIndicator
           size="small"
           color={colors.ink}
-          style={{ transform: [{ scale: 0.8 }] }}
+          style={{ transform: [{ scale: 0.9 }] }}
         />
       </Animated.View>
 
