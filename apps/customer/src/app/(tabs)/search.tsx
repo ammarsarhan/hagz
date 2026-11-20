@@ -1,6 +1,13 @@
 import { StatusBar } from "expo-status-bar";
 import { memo, useCallback, useDeferredValue, useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import Animated, {
   Easing,
   type DerivedValue,
@@ -323,6 +330,12 @@ export default function SearchTab() {
     phone !== undefined && where !== null,
   );
 
+  // A pull to refresh, until the search it started comes back.
+  const [pulled, setPulled] = useState(false);
+  useEffect(() => {
+    if (pulled && !search.loading) setPulled(false);
+  }, [pulled, search.loading]);
+
   const total = search.total;
   const summary =
     total === null
@@ -570,8 +583,19 @@ export default function SearchTab() {
         }}
         onEndReached={search.loadMore}
         onEndReachedThreshold={0.6}
-        refreshing={false}
-        onRefresh={search.refresh}
+        // Pulled down from the top: the search again, the spinner held until it's back.
+        refreshControl={
+          <RefreshControl
+            refreshing={pulled}
+            onRefresh={() => {
+              setPulled(true);
+              search.refresh();
+            }}
+            tintColor={colors.ink}
+            colors={[colors.ink]}
+            progressViewOffset={insets.top}
+          />
+        }
       />
 
       {/* The header the bar docks in: white, fading in as the bar arrives. */}
