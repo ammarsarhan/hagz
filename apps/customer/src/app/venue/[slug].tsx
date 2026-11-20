@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -54,8 +55,9 @@ import { api, reachable } from "@/lib/api";
 import { hudMessage, problem, send } from "@/lib/api-errors";
 import { colors } from "@/lib/colors";
 import { useDistanceTo } from "@/lib/distance";
+import { isRTL } from "@/lib/language";
 import { webLinks } from "@/lib/links";
-import { formatAmount } from "@/lib/money";
+import { fromPerHour } from "@/lib/money";
 import { cheapestHour, paymentShort, type PublicVenue } from "@/lib/venue";
 
 // The venue page (Figma C5, frames 59:2 and 60:2; PR 3.2): photos edge to edge under the status
@@ -76,14 +78,8 @@ const TABS = 46;
 const FADE = 24;
 const RISE = 6;
 
+// Each tab's label lives under screens.venue.tabs.<tab>.
 type Tab = "grounds" | "booking" | "amenities" | "reviews" | "map";
-const TAB_LABELS: Record<Tab, string> = {
-  grounds: "Grounds",
-  booking: "Booking",
-  amenities: "Amenities",
-  reviews: "Reviews",
-  map: "Map",
-};
 
 type Loaded =
   | { state: "loading" }
@@ -124,9 +120,13 @@ export default function VenuePage() {
 
 // Loading, a venue that isn't public (or never was), or one that couldn't be read.
 function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
-    <View className="flex-1 bg-white px-5" style={{ paddingTop: insets.top }}>
+    <View
+      className="flex-1 bg-white px-5"
+      style={{ paddingTop: insets.top, direction: isRTL ? "rtl" : "ltr" }}
+    >
       <StatusBar style="dark" />
       <View className="h-14 justify-center">
         <BackButton progress={null} />
@@ -138,18 +138,20 @@ function Waiting({ loaded, onRetry }: { loaded: Loaded; onRetry: () => void }) {
       ) : (
         <View className="flex-1 justify-center gap-2 px-1 pb-24">
           <Text className="text-heading font-semibold">
-            {loaded.state === "missing" ? "This venue isn’t on Hagz" : "Couldn’t load the venue"}
+            {loaded.state === "missing"
+              ? t("screens.venue.missingTitle")
+              : t("screens.venue.failedTitle")}
           </Text>
           <Text className="text-subtitle text-ink-2">
             {loaded.state === "missing"
-              ? "It may have closed, or the link is wrong."
+              ? t("screens.venue.missingBody")
               : loaded.state === "failed"
                 ? loaded.message
                 : ""}
           </Text>
           {loaded.state === "failed" ? (
             <View className="mt-4 items-start">
-              <Button label="Try again" onPress={onRetry} />
+              <Button label={t("common.actions.tryAgain")} onPress={onRetry} />
             </View>
           ) : null}
         </View>
@@ -165,6 +167,7 @@ function BarButton({
   label,
   onPress,
   progress,
+  mirrored = false,
 }: {
   icon: Icon;
   // Drawn in place of the icon (the saved heart, red).
@@ -172,6 +175,8 @@ function BarButton({
   label: string;
   onPress: () => void;
   progress: SharedValue<number> | null;
+  // Flipped in Arabic (the back chevron).
+  mirrored?: boolean;
 }) {
   const style = useAnimatedStyle(() => ({
     backgroundColor: progress
@@ -187,7 +192,14 @@ function BarButton({
       className="active:opacity-70"
     >
       <Animated.View className="size-10 items-center justify-center rounded-full" style={style}>
-        {glyph ?? <Glyph size={20} color={colors.ink} strokeWidth={2} />}
+        {glyph ?? (
+          <Glyph
+            size={20}
+            color={colors.ink}
+            strokeWidth={2}
+            style={mirrored ? { transform: [{ scaleX: -1 }] } : undefined}
+          />
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -204,6 +216,7 @@ function SaveButton({
   progress: SharedValue<number> | null;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const saved = useIsFavorite(venueId);
   const scale = useSharedValue(1);
   const first = useRef(true);
@@ -234,7 +247,7 @@ function SaveButton({
             </View>
           ) : undefined
         }
-        label={saved ? "Remove from saved" : "Save this venue"}
+        label={saved ? t("screens.venue.unsave") : t("screens.venue.save")}
         progress={progress}
         onPress={onPress}
       />
@@ -244,11 +257,22 @@ function SaveButton({
 
 const goBack = () => (router.canGoBack() ? router.back() : router.replace("/home"));
 
+// Points the way back: left in English, right in Arabic.
 function BackButton({ progress }: { progress: SharedValue<number> | null }) {
-  return <BarButton icon={IconChevronLeft} label="Back" onPress={goBack} progress={progress} />;
+  const { t } = useTranslation();
+  return (
+    <BarButton
+      icon={IconChevronLeft}
+      label={t("components.nav.back")}
+      onPress={goBack}
+      progress={progress}
+      mirrored={isRTL}
+    />
+  );
 }
 
 function Photos({ venue }: { venue: PublicVenue }) {
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   if (venue.photos.length === 0) {
@@ -271,14 +295,18 @@ function Photos({ venue }: { venue: PublicVenue }) {
             style={{ width, height: PHOTO_HEIGHT, backgroundColor: "#c4c8cf" }}
             contentFit="cover"
             transition={150}
-            accessibilityLabel={`Photo of ${venue.name ?? "the venue"}`}
+            accessibilityLabel={
+              venue.name
+                ? t("screens.venue.photoOf", { name: venue.name })
+                : t("screens.venue.photoOfVenue")
+            }
           />
         )}
       />
       {venue.photos.length > 1 ? (
         <View className="absolute right-4 bottom-4 h-[26px] justify-center rounded-full bg-[#000000a0] px-2.5">
           <Text className="text-caption font-medium text-white">
-            {index + 1} / {venue.photos.length}
+            {t("screens.venue.photoCount", { index: index + 1, count: venue.photos.length })}
           </Text>
         </View>
       ) : null}
@@ -295,6 +323,7 @@ function Tabs({
   active: Tab;
   onPress: (tab: Tab) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View className="border-b border-border bg-white" style={{ height: TABS }}>
       <ScrollView
@@ -312,7 +341,7 @@ function Tabs({
             style={{ height: TABS }}
           >
             <Text className={`text-body font-medium ${tab === active ? "text-ink" : "text-unit"}`}>
-              {TAB_LABELS[tab]}
+              {t(`screens.venue.tabs.${tab}`)}
             </Text>
           </Pressable>
         ))}
@@ -322,6 +351,7 @@ function Tabs({
 }
 
 function VenueView({ venue }: { venue: PublicVenue }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const hud = useHud();
@@ -416,7 +446,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
   const paused = venue.status === "MAINTENANCE";
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ direction: isRTL ? "rtl" : "ltr" }}>
       <StatusBar style={darkStatus ? "dark" : "light"} />
       <Animated.ScrollView
         ref={scroll}
@@ -445,7 +475,7 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         <GroundsSection
           venue={venue}
           onLayout={recordOffset("grounds")}
-          onSeeTimes={() => hud.show("Booking opens soon")}
+          onSeeTimes={() => hud.show(t("screens.venue.bookingSoon"))}
         />
         <BookingSection venue={venue} onLayout={recordOffset("booking")} />
         <CancellationSection venue={venue} />
@@ -488,12 +518,12 @@ function VenueView({ venue }: { venue: PublicVenue }) {
             {link ? (
               <BarButton
                 icon={IconShare}
-                label="Copy the venue's link"
+                label={t("screens.venue.share")}
                 progress={barProgress}
                 onPress={() => {
                   // Done, not a problem: a check in place of the HUD's alert.
                   void Clipboard.setStringAsync(link).then(() =>
-                    hud.show("Link copied", {
+                    hud.show(t("screens.venue.copied"), {
                       leading: <IconCircleCheckFilled size={22} color={colors.ink} />,
                     }),
                   );
@@ -512,8 +542,8 @@ function VenueView({ venue }: { venue: PublicVenue }) {
                       if (problem) hud.show(problem);
                     }),
                   {
-                    title: "Sign in to save venues",
-                    body: "Create an account or sign in to keep the venues you like in one place.",
+                    title: t("screens.venue.saveSheet.title"),
+                    body: t("screens.venue.saveSheet.body"),
                   },
                 )
               }
@@ -531,18 +561,18 @@ function VenueView({ venue }: { venue: PublicVenue }) {
         <View className="shrink gap-0.5">
           <Text className="text-button font-medium">
             {cheapest === null
-              ? "Prices vary"
-              : `from ${formatAmount(cheapest, venue.marketplace.currency)} ${venue.marketplace.currency}/hr`}
+              ? t("screens.venue.pricesVary")
+              : fromPerHour(cheapest, venue.marketplace.currency)}
           </Text>
           <Text className="text-caption text-unit">{paymentShort(venue.booking.payment)}</Text>
         </View>
         <View className="w-[128px]">
           <Button
-            label={paused ? "Paused" : "Book"}
+            label={paused ? t("screens.venue.paused") : t("screens.venue.book")}
             variant="moment"
             size="small"
             disabled={paused}
-            onPress={() => hud.show("Booking opens soon")}
+            onPress={() => hud.show(t("screens.venue.bookingSoon"))}
           />
         </View>
       </View>
