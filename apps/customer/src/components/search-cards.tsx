@@ -259,7 +259,10 @@ export const VenueListCard = memo(function VenueListCard({
               <Text className="text-body text-ink-2" numberOfLines={1}>
                 {sportsText(card.sports)}
               </Text>
-              <Price card={card} currency={currency} />
+              {/* A little more room above the price, setting it apart from the grey lines. */}
+              <View className="mt-1">
+                <Price card={card} currency={currency} />
+              </View>
             </View>
           </View>
         </Animated.View>
