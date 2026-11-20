@@ -12,7 +12,8 @@ import { MAX_RADIUS } from "@/lib/search";
 import { Text } from "./text";
 
 // Where's radius (Figma "C3 · Tabs & Search" C1, 135:2; smooth, user 2026-11-20): 1 to 50 km, a
-// bar per kilometre as tall as how many venues lie within it, black up to the radius. The handle
+// bar per kilometre as tall as how many venues lie that far (not within it, which made a wall once
+// every venue was inside), black up to the radius. The handle
 // follows the finger on the UI thread; the radius (and the label and count it drives) changes a
 // kilometre at a time, with a tick.
 
@@ -59,7 +60,9 @@ export function RadiusSlider({
   // A cell a kilometre, as the When timeline lays out hours: the handle sits on the end of the last
   // black bar, so the bars and the handle line up all along.
   const cell = width / MAX_RADIUS;
-  const most = Math.max(1, ...(within ?? []));
+  // A bar a kilometre: the venues between it and the one before (the API counts within each).
+  const at = (within ?? []).map((count, i) => count - (i > 0 ? (within?.[i - 1] ?? 0) : 0));
+  const most = Math.max(1, ...at);
 
   const x = useSharedValue(0);
   const cellSV = useSharedValue(cell);
@@ -126,7 +129,7 @@ export function RadiusSlider({
             {Array.from({ length: MAX_RADIUS }, (_, i) => (
               <View key={i} style={{ width: cell, paddingHorizontal: cell > 5 ? 1 : 0.5 }}>
                 <Bar
-                  height={within ? Math.max(2, ((within[i] ?? 0) / most) * BARS) : 2}
+                  height={within ? Math.max(2, ((at[i] ?? 0) / most) * BARS) : 2}
                   on={i + 1 <= radius}
                 />
               </View>

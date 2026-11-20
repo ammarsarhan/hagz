@@ -316,7 +316,8 @@ export function SearchWhere({
         <View
           className="mt-4 h-[52px]"
           onLayout={(event) => {
-            barStart.value = top + event.nativeEvent.layout.y;
+            // Measured in the content, which already has the top padding.
+            barStart.value = event.nativeEvent.layout.y;
           }}
         />
         {typed ? null : (
@@ -343,7 +344,7 @@ export function SearchWhere({
                     </Text>
                   </View>
                   <Text className="mt-1 mb-6 text-caption text-unit">
-                    Bars depict venues within each distance
+                    Bars depict venues at each distance
                   </Text>
                   <RadiusSlider radius={radius} within={within} onChange={setRadius} />
                   <View className="mt-8">
