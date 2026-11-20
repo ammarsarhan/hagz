@@ -196,7 +196,8 @@ export function VenueMapCard({
           <Price card={card} currency={currency} />
         </View>
       </Pressable>
-      <TimeChips card={card} timezone={timezone} />
+      {/* Under the card's padding to its edges, starting at the padding. */}
+      <TimeChips card={card} timezone={timezone} inset={16} />
     </View>
   );
 }
