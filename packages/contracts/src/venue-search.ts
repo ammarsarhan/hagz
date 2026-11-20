@@ -105,6 +105,10 @@ export const VenueCard = z
       average: z.number().nullable(),
       count: z.int().min(0),
     }),
+    coordinates: z
+      .object({ latitude: z.number(), longitude: z.number() })
+      .nullable()
+      .meta({ description: "Its pin, for the map; null when it has none." }),
     distance: z
       .int()
       .min(0)
@@ -125,13 +129,9 @@ export const VenueSearchResults = z
     date: LocalDate,
     timezone: z.string().meta({ example: "Africa/Cairo" }),
     currency: z.string().meta({ example: "EGP" }),
-    total: z
-      .int()
-      .min(0)
-      .nullable()
-      .meta({
-        description: 'How many venues were found ("24 venues free tonight"); null on later pages.',
-      }),
+    total: z.int().min(0).nullable().meta({
+      description: 'How many venues were found ("24 venues free tonight"); null on later pages.',
+    }),
     data: z.array(VenueCard),
     nextCursor: z.string().nullable(),
   })

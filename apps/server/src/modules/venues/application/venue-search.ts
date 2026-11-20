@@ -66,6 +66,8 @@ interface Row {
   cheapest: number;
   // Every venue found, not just this page's.
   total: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const searchVenues = async (
@@ -165,7 +167,8 @@ export const searchVenues = async (
   // times and the cheapest price for the page's venues only.
   const rows = await prisma.$queryRaw<Row[]>`
     WITH candidates AS (
-      SELECT v.id, ${distance} AS distance, ${key} AS key
+      SELECT v.id, ${distance} AS distance, ${key} AS key,
+             ST_Y(v.coordinates::geometry) AS latitude, ST_X(v.coordinates::geometry) AS longitude
       FROM "Venue" v
       WHERE v.status = 'LIVE' AND v."marketplaceId" = ${marketplace.id}::uuid
         ${area} ${near} ${name}
@@ -181,7 +184,7 @@ export const searchVenues = async (
       ORDER BY r.key, r.id
       LIMIT ${query.limit + 1}
     )
-    SELECT p.id, p.distance, p.key, p.total, d.next, d.cheapest
+    SELECT p.id, p.distance, p.key, p.total, p.latitude, p.longitude, d.next, d.cheapest
     FROM page p
     CROSS JOIN LATERAL (
       SELECT json_agg(json_build_object('startsAt', t."startsAt", 'grounds', t.grounds)
@@ -250,6 +253,10 @@ const cards = async (rows: Row[], hours: number, language: Language): Promise<Ve
           average: venue.averageRating === null ? null : venue.averageRating.toNumber(),
           count: venue.reviewCount,
         },
+        coordinates:
+          row.latitude === null || row.longitude === null
+            ? null
+            : { latitude: row.latitude, longitude: row.longitude },
         distance: row.distance,
         sports: venue.grounds.map((ground) => ground.sport),
         // The cheapest of the free times' totals, per hour.

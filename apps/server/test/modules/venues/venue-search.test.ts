@@ -190,6 +190,7 @@ describe("where", () => {
       sports: ["FOOTBALL"],
       rating: { average: 4.6, count: 10 },
       distance: null,
+      coordinates: { latitude: MAADI.latitude, longitude: MAADI.longitude },
     });
   });
 
