@@ -7,9 +7,9 @@ import { wordsFor, type Locale } from "./words";
 export function StoreBadges({ locale }: { locale: Locale }) {
   const { manage: words } = wordsFor(locale);
   return (
-    <div className="flex flex-wrap gap-3">
-      <img src="/badges/app-store.svg" alt={words.appStore} className="h-11 w-auto" />
-      <img src="/badges/google-play.png" alt={words.googlePlay} className="h-11 w-auto" />
+    <div className="flex flex-wrap gap-3.5">
+      <img src="/badges/app-store.svg" alt={words.appStore} className="h-10 w-auto" />
+      <img src="/badges/google-play.png" alt={words.googlePlay} className="h-10 w-auto" />
     </div>
   );
 }
