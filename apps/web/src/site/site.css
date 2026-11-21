@@ -107,3 +107,9 @@ body {
     opacity: 1;
   }
 }
+
+/* Tailwind 4 leaves buttons with the default arrow; on the site everything pressable shows a hand. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
