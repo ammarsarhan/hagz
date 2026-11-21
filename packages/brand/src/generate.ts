@@ -112,3 +112,24 @@ await write(
   "apps/web/src/app/admin/apple-icon.png",
   await png({ framing: FRAMINGS.tile, color: COLORS.black, background: COLORS.white }, 180),
 );
+
+// Staff links on the web (/manage, Figma W3): the white mark on a blue tile, the staff colours turned
+// round so the tile holds in a light tab (a white one would vanish). Full detail, like the other web
+// favicons. Next.js links the nearest segment's icon, so both languages' /manage get their own.
+const staffTile = {
+  framing: FRAMINGS.favicon,
+  color: COLORS.white,
+  background: COLORS.blue,
+  radius: 0.22,
+  detail: "full",
+} as const;
+for (const segment of ["(en)", "ar"]) {
+  const folder = `apps/web/src/app/(site)/${segment}/manage`;
+  await write(`${folder}/icon.svg`, markSvg(staffTile));
+  await write(`${folder}/icon.png`, await png(staffTile, 32));
+  // Apple touch icon: the staff app's own icon, full bleed, because iOS rounds it.
+  await write(
+    `${folder}/apple-icon.png`,
+    await png({ framing: FRAMINGS.tile, color: COLORS.blue, background: COLORS.white }, 180),
+  );
+}
