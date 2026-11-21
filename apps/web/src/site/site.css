@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@import "@hagz/brand/customer.css";
+
+/* The public site: the customer app's lime and black on white, in the system font like the apps
+   (SF Pro on Apple devices, Segoe UI on Windows, Roboto on Android). */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--color-chip);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
