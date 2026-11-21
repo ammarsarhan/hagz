@@ -16,7 +16,7 @@ import {
   todayAt,
   weekdayShort,
 } from "../format";
-import { pathIn, wordsFor, type Locale } from "../words";
+import { wordsFor, type Locale } from "../words";
 import { Photos } from "./photos";
 import {
   About,
@@ -110,8 +110,9 @@ async function origin() {
   return `${proto}://${host}`;
 }
 
-// "/venue/x", from the shared routes (links.ts in contracts) so it stays the path the app shares.
-const venuePath = (slug: string) => links("").venue(slug);
+// "/venue/x" or "/ar/venue/x", from the shared routes (links.ts in contracts): the paths the app
+// shares.
+const venuePath = (slug: string, locale: Locale = "en") => links("").venue(slug, locale);
 
 export async function venueMetadata(slug: string, locale: Locale): Promise<Metadata> {
   const words = wordsFor(locale);
@@ -121,14 +122,15 @@ export async function venueMetadata(slug: string, locale: Locale): Promise<Metad
   const area = venue.location.area ?? null;
   const description = words.metaDescription(sportsLine(venue, locale), area, name);
   const path = venuePath(venue.slug);
+  const arabic = venuePath(venue.slug, "ar");
   return {
     title: words.metaTitle(name, area),
     description,
     metadataBase: new URL(await origin()),
     // The page in each language, so search engines show the right one.
     alternates: {
-      canonical: pathIn(locale, path),
-      languages: { en: path, ar: pathIn("ar", path), "x-default": path },
+      canonical: locale === "ar" ? arabic : path,
+      languages: { en: path, ar: arabic, "x-default": path },
     },
     openGraph: {
       title: name,
@@ -145,7 +147,7 @@ export async function VenuePage({ slug, locale }: { slug: string; locale: Locale
 
   const [free, base] = await Promise.all([freeTimes(venue, locale), origin()]);
   // This page, in this language: what Share copies and the QR code opens.
-  const pageUrl = base + pathIn(locale, venuePath(venue.slug));
+  const pageUrl = base + venuePath(venue.slug, locale);
   // Opens the customer app on this venue; universal links don't cover /venue yet.
   const appUrl = `${schemeFor("customer", appEnv)}://venue/${encodeURIComponent(venue.slug)}`;
   const qrSvg = await QRCode.toString(pageUrl, { type: "svg", margin: 0 });
