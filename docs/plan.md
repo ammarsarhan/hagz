@@ -93,7 +93,7 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 
 **Dropped (user, 2026-11-20):** a time window with a duration range (too much to ask of the When sheet for how rarely it's needed); each card's matching grounds (too much for a list card; the free times already count the grounds); a "has discounts" filter (7.4's discount codes are private to the players a venue gives them, so there's nothing public to filter by; it would come back only with public promotions).
 
-**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` and area pages, server-rendered for search engines. These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges.
+**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` (built 2026-11-21) and area pages, server-rendered for search engines, and every page the site links to (Phase 8b). These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges.
 **Admin slice:** search venues in any status. Hide a live venue (`MAINTENANCE`).
 **Done when:** every search shape stays inside its query-plan and latency budget on the seeded launch-scale data, and a guest can find a venue and see its free times in the app.
 
@@ -110,7 +110,7 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 | 4.8 Rescheduling | Designed in [rescheduling.md](rescheduling.md). Staff move a booking to another time or ground, or swap two, in one transaction: the old booking ends `RESCHEDULED`, the new one keeps the original's terms at the new slots' prices, and a `Rescheduling` records it (refills use it too). Listings follow the booking. Picking a free target slot holds it automatically until the move is confirmed, and the move releases the hold in the same transaction. Staff holds: a staff `HELD` booking that expires after `staffHoldMinutes`, with confirm, extend and release |
 | 4.7 Listings | Designed in [listings.md](listings.md). A `BookingListing` per listed app booking, with `neededPlayers` capped by the ground's size and only lowered down to the joined count. `ListingPlayer` for joining, leaving and removal under a lock on the listing. The "games needing players" feed and share link, the disclaimer, phone numbers shared after joining, and no-show reports with a reliability figure. Money (2026-11-19): only fully prepaid bookings can be listed; each player owes the booker the share (total ÷ the ground's players), plus a 10% joining fee that the venue collects. The venue sees the booking flagged with the expected players and records how many came. A shortfall against expected is noted, and the fee for that count is taken at payout |
 
-**Screens:** customer app: the layout-first booking flow, my bookings, listings (feed, join, leave). Dashboard: the calendar (open games flagged with their expected players, and recording how many came), approvals, walk-in and phone bookings, regulars and their weekly reservations, Fill a slot, move, swap and hold. Web: the shared booking page (`/b/[code]`).
+**Screens:** customer app: Home, the feed of rails the app opens on (Nearby, Free tonight, Top rated, Instant confirmation, Within budget, New on Hagz, Saved venues, Play again, Most booked this week, Just freed, Games needing players; built here because half of them need bookings), the layout-first booking flow, my bookings, listings (feed, join, leave). Dashboard: the calendar (open games flagged with their expected players, and recording how many came), approvals, walk-in and phone bookings, regulars and their weekly reservations, Fill a slot, move, swap and hold. Web: the shared booking page (`/b/[code]`).
 **Admin slice:** look up any booking and its events.
 **Done when:** the 100-request race leaves exactly one booking, and a customer books and staff manage it end to end in the apps.
 
@@ -168,7 +168,7 @@ Decided on 2026-11-19 to come straight after bookings: it needs listings (4.7) a
 | 7.3 Reviews | One per customer per venue, tied to a completed booking, editable. `averageRating` and `reviewCount` recalculated in the same transaction |
 | 7.4 Discounts | Venue discount codes: percent or amount, uses, expiry, revoking |
 
-**Screens:** both apps: the notification inbox and push permission. Customer app: loyalty cards, reviews, discount codes at checkout, the waitlist, offer and nearby-game opt-ins, community and tournament notifications (muting a community). Dashboard: loyalty and discount settings, fill-a-slot alerts. Web: the regular's confirm or release page (reminder link).
+**Screens:** both apps: the notification inbox and push permission. Customer app: Home's loyalty progress rail and inbox bell, loyalty cards, reviews, discount codes at checkout, the waitlist, offer and nearby-game opt-ins, community and tournament notifications (muting a community). Dashboard: loyalty and discount settings, fill-a-slot alerts. Web: the regular's confirm or release page (reminder link).
 **Admin slice:** hiding reviews, notification delivery logs.
 **Done when:** notifications survive a Redis outage, and a push reaches a real device.
 **Decide at the start:** per-customer limits on a discount code, and whether a code applies to a free loyalty booking.
@@ -183,13 +183,27 @@ Decided on 2026-11-19 to come straight after bookings: it needs listings (4.7) a
 
 **Screens:** both apps: profile, sessions and signing out of all devices, deleting the account. Dashboard: the venue activity feed.
 
+## Phase 8b: Web links (user, 2026-11-21; postponed from after Phase 3 so the booking flow comes first)
+
+Every link in the public site's header and footer (`apps/web/src/site/links.ts`, all `null` until their page exists) goes somewhere real, so the site is finished, not a venue page with dead links around it.
+
+| PR | Scope |
+|---|---|
+| 8b.1 Players | Venues and Find venues (search by area on the web), the area pages for Cairo, Alexandria and Giza, and All cities; Get the app (store badges and a QR); How it works and How booking works; Help |
+| 8b.2 Venues | Owners and Hagz for venues; List your venue (into the staff app's sign-up); Book a demo; Venue support |
+| 8b.3 Company | About, Contact us, Careers |
+| 8b.4 Legal | The real Privacy Policy and Terms, for customers, venues and admins. The preliminary admin pages were removed 2026-11-21, so the admin footer's links are plain text until these exist. Payment providers usually ask for public terms, privacy and refund pages when onboarding a merchant, so if Paymob does, this PR moves ahead of Phase 5 going live; the customer app's sign-up line ("you agree to Hagz's Terms and Privacy Policy") links to them too |
+| 8b.5 Arabic and app links | The العربية switch, with the whole site in Arabic, right to left. Universal links cover `/venue/*`, so Book in the app opens the app rather than only its scheme (needs a native build: see [Native builds](#native-builds)) |
+
+**Done when:** no link on the site is `null`, and the site reads correctly in both languages.
+
 ## Phase 9: Launch readiness (backend)
 
 - The pre-launch list for the code routes: Cloudflare in front with the origin locked, `CLIENT_IP_HEADER`, alerting on the global code cap, device attestation (Play Integrity, App Attest), a Meta spending alert.
 - Observability: Sentry, OpenTelemetry traces, metrics and SLO dashboards.
 - Load tests with k6, a security review, a restore drill, runbooks.
 - Choose the host (Railway or a VPS) using the criteria in [deployment.md](deployment.md#what-would-decide-it), including a week of staging data on Railway. Remove the remaining Railway coupling in the code. Production on that host, with the API and database in one region.
-- Legal: terms reflecting the agent model, holding venues' money (payment licensing), ETA e-receipts.
+- Legal: review of the terms and privacy policy written in Phase 8b for the agent model, holding venues' money (payment licensing), ETA e-receipts.
 
 ## Phase 10: Store launch
 

@@ -61,7 +61,7 @@ import {
   matchingGrounds,
   type GroundFilter,
 } from "@/lib/ground-filter";
-import { isRTL } from "@/lib/language";
+import { isRTL, language } from "@/lib/language";
 import { webLinks } from "@/lib/links";
 import { fromPerHour } from "@/lib/money";
 import { cheapestHour, nextDate, paymentShort, type PublicVenue } from "@/lib/venue";
@@ -518,8 +518,9 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
     setActive(tab);
   };
 
-  // Null in a build without the web app's address: no Share then.
-  const link = webLinks?.venue(venue.slug) ?? null;
+  // Null in a build without the web app's address: no Share then. In the app's language, so an
+  // Arabic phone shares the Arabic page.
+  const link = webLinks?.venue(venue.slug, language) ?? null;
   const distance = useDistanceTo(venue.location.coordinates);
   const cheapest = cheapestHour(venue);
   const paused = venue.status === "MAINTENANCE";

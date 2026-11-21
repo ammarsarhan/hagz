@@ -28,7 +28,7 @@ export const ROUTES = {
   adminInvitation: { app: "web", path: "/admin/invitations/accept" },
   adminPasswordReset: { app: "web", path: "/admin/password/reset" },
   adminVenueSlots: { app: "web", path: "/admin/venues/[venueId]/slots" },
-  // A venue's public page, the link the customer app shares (PR 3.2).
+  // A venue's public page, the link the customer app shares (PR 3.2). In Arabic under /ar.
   venue: { app: "web", path: "/venue/[slug]" },
 } as const satisfies Record<string, { app: AppName | "web"; path: string }>;
 
@@ -58,6 +58,9 @@ export const links = (webUrl: string) => {
     adminPasswordReset: (token: string) =>
       `${base}${ROUTES.adminPasswordReset.path}#token=${encodeURIComponent(token)}`,
     adminVenueSlots: (venueId: string) => base + fill(ROUTES.adminVenueSlots.path, venueId),
-    venue: (slug: string) => base + fill(ROUTES.venue.path, slug),
+    // The web's public pages are in English at their path and in Arabic under /ar, so a link
+    // shared from the app opens in the app's language.
+    venue: (slug: string, language: "en" | "ar" = "en") =>
+      base + (language === "ar" ? "/ar" : "") + fill(ROUTES.venue.path, slug),
   } satisfies Record<RouteName, (value: string) => string>;
 };
