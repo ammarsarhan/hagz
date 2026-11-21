@@ -37,12 +37,9 @@ function Footer() {
   return (
     <footer className="flex items-center gap-5 text-caption text-ink-3">
       <span>© {new Date().getFullYear()} Hagz</span>
-      <a className={link} href="/admin/privacy">
-        Privacy Policy
-      </a>
-      <a className={link} href="/admin/terms">
-        Terms
-      </a>
+      {/* No pages yet: the real policy and terms come with the site's (plan.md, "Web links"). */}
+      <span>Privacy Policy</span>
+      <span>Terms</span>
       {support ? (
         <a className={link} href={`https://wa.me/${support}`} target="_blank" rel="noreferrer">
           Support
