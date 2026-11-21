@@ -113,13 +113,13 @@ await write(
   await png({ framing: FRAMINGS.tile, color: COLORS.black, background: COLORS.white }, 180),
 );
 
-// Staff links on the web (/manage, Figma W3): the white mark on a blue tile, the staff colours turned
-// round so the tile holds in a light tab (a white one would vanish). Full detail, like the other web
-// favicons. Next.js links the nearest segment's icon, so both languages' /manage get their own.
+// Staff links on the web (/manage): the staff app's icon, the blue mark on a white tile (user,
+// 2026-11-22). Full detail, like the other web favicons. Next.js links the nearest segment's icon,
+// so both languages' /manage get their own.
 const staffTile = {
   framing: FRAMINGS.favicon,
-  color: COLORS.white,
-  background: COLORS.blue,
+  color: COLORS.blue,
+  background: COLORS.white,
   radius: 0.22,
   detail: "full",
 } as const;
