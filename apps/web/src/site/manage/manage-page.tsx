@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { appEnv } from "@/lib/env";
 import { origin } from "../origin";
 import { StoreBadges } from "../store-badges";
+import { CopyCodeButton } from "./copy-code-button";
 import { pathIn, wordsFor, type Locale } from "../words";
 
 // What a staff link (/manage/...) shows when Hagz Dashboard isn't installed to open it (Figma W3,
@@ -81,6 +82,12 @@ export async function ManagePage({ path, locale }: { path: string[]; locale: Loc
                   <div>
                     <Code code={code} label={words.codeLabel(code)} />
                   </div>
+                  <CopyCodeButton
+                    code={code}
+                    label={words.copyCode}
+                    copied={words.codeCopied}
+                    failed={words.copyCodeFailed}
+                  />
                 </>
               ) : null}
             </Step>
