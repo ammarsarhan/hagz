@@ -55,5 +55,8 @@ export const LEGAL_LINKS: SiteLink[] = [
   { label: "Terms", href: null },
 ];
 
-// The accounts aren't set up yet.
-export const SOCIAL = { instagram: null as string | null, tiktok: null as string | null };
+// @hagzapp on both (user, 2026-11-21).
+export const SOCIAL = {
+  instagram: "https://www.instagram.com/hagzapp/" as string | null,
+  tiktok: "https://www.tiktok.com/@hagzapp" as string | null,
+};
