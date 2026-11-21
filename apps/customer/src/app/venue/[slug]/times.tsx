@@ -34,7 +34,6 @@ import { localTimeOf } from "@/lib/ground-filter";
 import { intlLocale, isRTL } from "@/lib/language";
 import { formatPrice, fromPerHour } from "@/lib/money";
 import {
-  DAY_STARTS,
   hourAt,
   kindOf,
   nextDate,
@@ -52,12 +51,14 @@ import {
 // shortest booking, the hours either side are outlined and Continue waits; at its longest, no more
 // can be added. Tapping an hour away from the picked ones starts again from it.
 //
-// A playing day runs 5 am to 5 am (lib/venue.ts): Friday's late night is Saturday's first hours,
-// fetched with it, so 11 pm and 12 am can be one booking. Only free hours are listed; taken ones
-// will show once there are bookings (Phase 4), which is also where Continue goes.
+// A day runs midnight to midnight (user, 2026-11-22): its own hours, its small hours first as early
+// morning. After them, as late night, the next day's first hours, as far as the ground's longest
+// booking could run past midnight (or the search's game, if it runs further), so 11 pm and 12 am
+// can still be one booking. Only free hours are listed; taken ones will show once there are bookings
+// (Phase 4), which is also where Continue goes.
 
 const DAYS = 14;
-const PARTS = ["morning", "afternoon", "evening", "lateNight"] as const;
+const PARTS = ["earlyMorning", "morning", "afternoon", "evening", "lateNight"] as const;
 // The back button's row and its gap to the title, as on every Screen, and the bar's 8 under it.
 const ROW = 40;
 const TITLE_GAP = 22;
@@ -74,6 +75,8 @@ interface Day {
   timezone: string;
   currency: string;
   slots: FreeSlot[];
+  // The ground's free hours on the next day, of which See times shows the first few as late night.
+  night: FreeSlot[];
 }
 
 // The day after `date`, as many days as go from `first` up to `last`.
@@ -150,7 +153,7 @@ export default function Times() {
     };
   }, [slug, attempt]);
 
-  // The day asked for (today to begin with), and the next day's first hours, which are its night.
+  // The day asked for (today to begin with), and the next day's first hours, as late night.
   useEffect(() => {
     let active = true;
     setDay({ state: "loading" });
@@ -169,20 +172,15 @@ export default function Times() {
       }
       setDays(result.data.days);
       setShown(result.data.date);
-      const { timezone } = result.data;
+      const own = result.data.slots.filter((slot) => slot.groundId === groundId);
       const following =
         result.data.date < result.data.days.last ? await read(nextDate(result.data.date)) : null;
       if (!active) return;
-      const own = result.data.slots.filter(
-        (slot) => slot.groundId === groundId && hourAt(slot.startsAt, timezone) >= DAY_STARTS,
-      );
       const night =
         following?.ok === true
-          ? following.data.slots.filter(
-              (slot) => slot.groundId === groundId && hourAt(slot.startsAt, timezone) < DAY_STARTS,
-            )
+          ? following.data.slots.filter((slot) => slot.groundId === groundId)
           : [];
-      setDay({ state: "ready", data: { ...result.data, slots: [...own, ...night] } });
+      setDay({ state: "ready", data: { ...result.data, slots: own, night } });
     })();
     return () => {
       active = false;
@@ -292,6 +290,33 @@ function Picker({
   const [footer, setFooter] = useState(0);
   useHudAnchor(footer);
 
+  const longest = ground.maximumSlots;
+  // The day's hours, then the next day's first ones (late night): as far past midnight as the
+  // ground's longest booking can run from the day's last hour, or as the search's game runs.
+  const { slots, nightIds } = useMemo(() => {
+    if (!day) return { slots: [], nightIds: new Set<string>() };
+    const sample = day.slots[0] ?? day.night[0];
+    const slotMinutes = sample
+      ? (Date.parse(sample.endsAt) - Date.parse(sample.startsAt)) / 60_000
+      : 60;
+    const minutesOf = (time: string) => {
+      const [hours = 0, minutes = 0] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+    const askedEnd =
+      asked && asked.date === day.date
+        ? minutesOf(asked.start) + asked.hours * slotMinutes - 24 * 60
+        : 0;
+    const reach = Math.max((longest - 1) * slotMinutes, askedEnd);
+    const night = day.night.filter(
+      (slot) => minutesOf(localTimeOf(slot.startsAt, day.timezone)) < reach,
+    );
+    return {
+      slots: [...day.slots, ...night],
+      nightIds: new Set(night.map((slot) => slot.id)),
+    };
+  }, [day, asked, longest]);
+
   // A new day starts with nothing picked.
   useEffect(() => setPicked([]), [on]);
   // The search's game, once, when its day's hours are in: the slot at its start and the ones after
@@ -300,7 +325,7 @@ function Picker({
   useEffect(() => {
     if (applied.current || !asked || !day || day.date !== asked.date) return;
     applied.current = true;
-    const own = day.slots;
+    const own = slots;
     const first = own.find((slot) => localTimeOf(slot.startsAt, day.timezone) === asked.start);
     if (!first) return;
     const run = [first];
@@ -310,10 +335,9 @@ function Picker({
       run.push(following);
     }
     setPicked(run);
-  }, [asked, day, ground.maximumSlots]);
+  }, [asked, day, slots, ground.maximumSlots]);
 
   const shortest = ground.minimumSlots;
-  const longest = ground.maximumSlots;
   const name = ground.name ?? kindOf(ground);
   const timezone = day?.timezone ?? venue.marketplace.timezone;
   const currency = day?.currency ?? venue.marketplace.currency;
@@ -325,7 +349,7 @@ function Picker({
   const next = new Set(
     !first || !last || ready
       ? []
-      : (day?.slots ?? [])
+      : slots
           .filter((slot) => slot.endsAt === first.startsAt || slot.startsAt === last.endsAt)
           .map((slot) => slot.id),
   );
@@ -336,11 +360,13 @@ function Picker({
     () =>
       PARTS.map((part) => ({
         part,
-        slots: (day?.slots ?? []).filter(
-          (slot) => partOfDay(hourAt(slot.startsAt, timezone)) === part,
+        slots: slots.filter(
+          (slot) =>
+            (nightIds.has(slot.id) ? "lateNight" : partOfDay(hourAt(slot.startsAt, timezone))) ===
+            part,
         ),
       })).filter((group) => group.slots.length > 0),
-    [day, timezone],
+    [slots, nightIds, timezone],
   );
 
   const cheapest = ground.priceFrom;

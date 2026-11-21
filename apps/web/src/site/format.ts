@@ -51,10 +51,6 @@ export const startTimes = (slots: FreeSlot[], ground: PublicGround): FreeSlot[] 
   });
 };
 
-// A playing day runs from 5 am to 5 am: the hours after midnight are the night before's
-// ("Saturday, 1 am" is Saturday night), as in the app (lib/venue.ts DAY_STARTS).
-export const DAY_STARTS = 5;
-
 const partsAt = (iso: string, timezone: string) => {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: timezone,
@@ -65,9 +61,6 @@ const partsAt = (iso: string, timezone: string) => {
   const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
   return { hour: value("hour"), minute: value("minute") };
 };
-
-// The hour (0–23) a time falls in at the venue.
-export const hourAt = (iso: string, timezone: string) => partsAt(iso, timezone).hour;
 
 // "9 pm", "9:30 pm", "12 am" or "9 م", "9:30 م", "12 ص", at the venue's clock.
 export const timeOfDay = (iso: string, timezone: string, locale: Locale) => {
@@ -106,9 +99,6 @@ export const dayLabel = (date: string, locale: Locale) => {
   const { weekday, day, month } = dateParts(date, locale);
   return `${weekday} ${day} ${month}`;
 };
-
-// "Sun" or "الأحد", for a time on a different date from the heading's.
-export const weekdayShort = (date: string, locale: Locale) => dateParts(date, locale).weekday;
 
 // "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
 export const kindOf = (ground: PublicGround, locale: Locale) => {

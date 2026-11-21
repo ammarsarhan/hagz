@@ -308,6 +308,7 @@ const ar: ArabicTranslations = {
         booksRange: "يُحجز من {{min}} إلى {{max}} ساعات",
         heading: "اختر ساعاتك",
         parts: {
+          earlyMorning: "الصباح الباكر",
           morning: "الصباح",
           afternoon: "بعد الظهر",
           evening: "المساء",

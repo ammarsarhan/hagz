@@ -182,11 +182,11 @@ function GroundCard({
       </div>
       <div className="mt-1 text-label text-ink-2">{groundLine(ground, locale)}</div>
       {closed ? null : times.length > 0 ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-1">
           {times.slice(0, CARD_TIMES).map((time) => (
             <span
               key={time}
-              className="flex h-[34px] items-center rounded-full border border-border px-3 text-label font-medium"
+              className="flex h-[30px] items-center rounded-full border border-border px-2 text-caption font-medium"
             >
               {time}
             </span>
@@ -195,11 +195,11 @@ function GroundCard({
             <span
               title={more}
               aria-label={more}
-              // "+3" either way round: in Arabic the plus would otherwise land after the number.
-              dir="ltr"
-              className="flex h-[34px] items-center rounded-full bg-chip px-3 text-label font-medium text-ink-2"
+              className="flex h-[30px] items-center gap-1 rounded-full bg-chip px-2 text-caption font-medium text-ink-2"
             >
-              +{times.length - CARD_TIMES}
+              {/* "+3" either way round: in Arabic the plus would otherwise land after the number. */}
+              <bdi dir="ltr">+{times.length - CARD_TIMES}</bdi>
+              {words.more}
             </span>
           ) : null}
         </div>
