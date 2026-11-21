@@ -93,23 +93,9 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 
 **Dropped (user, 2026-11-20):** a time window with a duration range (too much to ask of the When sheet for how rarely it's needed); each card's matching grounds (too much for a list card; the free times already count the grounds); a "has discounts" filter (7.4's discount codes are private to the players a venue gives them, so there's nothing public to filter by; it would come back only with public promotions).
 
-**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` (built 2026-11-21) and area pages, server-rendered for search engines, and every page the site links to (Phase 3b). These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges.
+**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` (built 2026-11-21) and area pages, server-rendered for search engines, and every page the site links to (Phase 8b). These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges.
 **Admin slice:** search venues in any status. Hide a live venue (`MAINTENANCE`).
 **Done when:** every search shape stays inside its query-plan and latency budget on the seeded launch-scale data, and a guest can find a venue and see its free times in the app.
-
-## Phase 3b: Web links (user, 2026-11-21)
-
-Every link in the public site's header and footer (`apps/web/src/site/links.ts`, all `null` until their page exists) goes somewhere real, so the site is finished, not a venue page with dead links around it.
-
-| PR | Scope |
-|---|---|
-| 3b.1 Players | Venues and Find venues (search by area on the web), the area pages for Cairo, Alexandria and Giza, and All cities; Get the app (store badges and a QR); How it works and How booking works; Help |
-| 3b.2 Venues | Owners and Hagz for venues; List your venue (into the staff app's sign-up); Book a demo; Venue support |
-| 3b.3 Company | About, Contact us, Careers |
-| 3b.4 Legal | The real Privacy Policy and Terms, for customers, venues and admins. The preliminary admin pages were removed 2026-11-21, so the admin footer's links are plain text until these exist; the customer app's sign-up line ("you agree to Hagz's Terms and Privacy Policy") links to them too |
-| 3b.5 Arabic and app links | The العربية switch, with the whole site in Arabic, right to left. Universal links cover `/venue/*`, so Book in the app opens the app rather than only its scheme (needs a native build: see [Native builds](#native-builds)) |
-
-**Done when:** no link on the site is `null`, and the site reads correctly in both languages.
 
 ## Phase 4: Bookings
 
@@ -197,13 +183,27 @@ Decided on 2026-11-19 to come straight after bookings: it needs listings (4.7) a
 
 **Screens:** both apps: profile, sessions and signing out of all devices, deleting the account. Dashboard: the venue activity feed.
 
+## Phase 8b: Web links (user, 2026-11-21; postponed from after Phase 3 so the booking flow comes first)
+
+Every link in the public site's header and footer (`apps/web/src/site/links.ts`, all `null` until their page exists) goes somewhere real, so the site is finished, not a venue page with dead links around it.
+
+| PR | Scope |
+|---|---|
+| 8b.1 Players | Venues and Find venues (search by area on the web), the area pages for Cairo, Alexandria and Giza, and All cities; Get the app (store badges and a QR); How it works and How booking works; Help |
+| 8b.2 Venues | Owners and Hagz for venues; List your venue (into the staff app's sign-up); Book a demo; Venue support |
+| 8b.3 Company | About, Contact us, Careers |
+| 8b.4 Legal | The real Privacy Policy and Terms, for customers, venues and admins. The preliminary admin pages were removed 2026-11-21, so the admin footer's links are plain text until these exist. Payment providers usually ask for public terms, privacy and refund pages when onboarding a merchant, so if Paymob does, this PR moves ahead of Phase 5 going live; the customer app's sign-up line ("you agree to Hagz's Terms and Privacy Policy") links to them too |
+| 8b.5 Arabic and app links | The العربية switch, with the whole site in Arabic, right to left. Universal links cover `/venue/*`, so Book in the app opens the app rather than only its scheme (needs a native build: see [Native builds](#native-builds)) |
+
+**Done when:** no link on the site is `null`, and the site reads correctly in both languages.
+
 ## Phase 9: Launch readiness (backend)
 
 - The pre-launch list for the code routes: Cloudflare in front with the origin locked, `CLIENT_IP_HEADER`, alerting on the global code cap, device attestation (Play Integrity, App Attest), a Meta spending alert.
 - Observability: Sentry, OpenTelemetry traces, metrics and SLO dashboards.
 - Load tests with k6, a security review, a restore drill, runbooks.
 - Choose the host (Railway or a VPS) using the criteria in [deployment.md](deployment.md#what-would-decide-it), including a week of staging data on Railway. Remove the remaining Railway coupling in the code. Production on that host, with the API and database in one region.
-- Legal: review of the terms and privacy policy written in Phase 3b for the agent model, holding venues' money (payment licensing), ETA e-receipts.
+- Legal: review of the terms and privacy policy written in Phase 8b for the agent model, holding venues' money (payment licensing), ETA e-receipts.
 
 ## Phase 10: Store launch
 
