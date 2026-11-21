@@ -128,6 +128,12 @@ export const dayLabel = (date: string) =>
     .format(new Date(`${date}T12:00:00Z`))
     .replace(",", "");
 
+// "Sun", for a time on a different date from the heading's.
+export const weekdayShort = (date: string) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" }).format(
+    new Date(`${date}T12:00:00Z`),
+  );
+
 // "7-a-side football" for football (the size alone doesn't say the sport), "Padel" for the rest.
 export const kindOf = (ground: PublicGround) =>
   ground.size === "STANDARD" ? SPORTS[ground.sport] : FOOTBALL_SIZES[ground.size];

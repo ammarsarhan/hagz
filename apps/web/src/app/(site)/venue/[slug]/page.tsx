@@ -14,6 +14,7 @@ import {
   startTimes,
   timeOfDay,
   todayAt,
+  weekdayShort,
 } from "@/site/format";
 import { Photos } from "@/site/venue/photos";
 import {
@@ -35,8 +36,10 @@ import {
 // A venue's public page (PR 3.2's web screen, Figma W2 round 5), server-rendered for search engines
 // and for links shared from the app. View only: booking happens in the app.
 
-// Free start times for today's playing day at the venue (5 am to 5 am, so tonight's late hours are
-// today's), or tomorrow's when nothing's left today, as the app does.
+// Free start times for the venue's playing day (5 am to 5 am, as in the app), or tomorrow's when
+// nothing's left today. Labelled by the real calendar date, though: at 11 pm on Saturday, a 1 am
+// start is Sunday's, so the heading names the date of the first time shown, and a time on the date
+// after it says its day ("Sun 1 am").
 async function freeTimes(venue: PublicVenue): Promise<FreeTimes> {
   const { timezone } = venue.marketplace;
   // The calendar day after 5 am, and the small hours of the next one.
@@ -49,26 +52,52 @@ async function freeTimes(venue: PublicVenue): Promise<FreeTimes> {
       ...(day?.slots ?? []).filter((slot) => hourAt(slot.startsAt, timezone) >= DAY_STARTS),
       ...(night?.slots ?? []).filter((slot) => hourAt(slot.startsAt, timezone) < DAY_STARTS),
     ];
-    const byGround = new Map<string, string[]>();
-    for (const ground of venue.grounds) {
-      const times = startTimes(slots, ground).map((slot) => timeOfDay(slot.startsAt, timezone));
-      if (times.length > 0) byGround.set(ground.id, times);
-    }
-    return byGround;
+    return new Map(venue.grounds.map((ground) => [ground.id, startTimes(slots, ground)] as const));
   };
-  // Before 5 am it's still last night's playing day.
   const now = new Date();
   const calendarToday = todayAt(timezone, now);
-  const today =
+  // Before 5 am it's still last night's playing day.
+  const playingToday =
     hourAt(now.toISOString(), timezone) < DAY_STARTS
       ? todayAt(timezone, new Date(now.getTime() - 86_400_000))
       : calendarToday;
-  const todays = await read(today);
-  if (todays.size > 0 || venue.status !== "LIVE") {
-    return { when: "today", day: dayLabel(today), byGround: todays };
+  let starts = await read(playingToday);
+  let playingDay = playingToday;
+  const any = () => [...starts.values()].some((list) => list.length > 0);
+  if (!any() && venue.status === "LIVE") {
+    playingDay = nextDate(playingToday);
+    starts = await read(playingDay);
   }
-  const tomorrow = nextDate(today);
-  return { when: "tomorrow", day: dayLabel(tomorrow), byGround: await read(tomorrow) };
+
+  // The calendar date of the earliest time shown (the playing day itself when nothing's free).
+  const earliest = [...starts.values()]
+    .flat()
+    .map((slot) => slot.startsAt)
+    .sort()[0];
+  const date = earliest ? todayAt(timezone, new Date(earliest)) : playingDay;
+  const when =
+    date === calendarToday
+      ? "today"
+      : date === nextDate(calendarToday)
+        ? "tomorrow"
+        : `on ${dayLabel(date)}`;
+  const byGround = new Map<string, string[]>();
+  for (const [groundId, list] of starts) {
+    if (list.length === 0) continue;
+    byGround.set(
+      groundId,
+      list.map((slot) => {
+        const time = timeOfDay(slot.startsAt, timezone);
+        const on = todayAt(timezone, new Date(slot.startsAt));
+        return on === date ? time : `${weekdayShort(on)} ${time}`;
+      }),
+    );
+  }
+  return {
+    when,
+    heading: when.startsWith("on ") ? dayLabel(date) : `${when}, ${dayLabel(date)}`,
+    byGround,
+  };
 }
 
 // This site's own origin, as the request reached it, for the share link and the QR code.

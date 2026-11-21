@@ -29,11 +29,12 @@ import { ShareButton } from "./share-button";
 // The venue page's sections (Figma W2, round 5): the app's venue page laid out for a desktop, in its
 // words. Every way to book ends in the app; the web shows, it doesn't book.
 
-// The free start times shown, per ground, for the day the page is about.
+// The free start times shown, per ground, already labelled ("10 pm", or "Sun 1 am" past midnight).
 export interface FreeTimes {
-  // "today", or "tomorrow" when nothing's free today.
-  when: "today" | "tomorrow";
-  day: string;
+  // "today", "tomorrow" or "on Mon 23 Nov": the calendar date of the first time shown.
+  when: string;
+  // For the Grounds heading: "today, Sat 21 Nov", "tomorrow, Sun 22 Nov" or "Mon 23 Nov".
+  heading: string;
   byGround: Map<string, string[]>;
 }
 
@@ -137,7 +138,7 @@ function GroundCard({
   ground: PublicGround;
   currency: string;
   times: string[];
-  when: FreeTimes["when"];
+  when: string;
 }) {
   const closed = ground.status === "MAINTENANCE";
   return (
@@ -196,7 +197,7 @@ export function Grounds({ venue, free }: { venue: PublicVenue; free: FreeTimes }
     />
   ));
   return (
-    <Section title="Grounds" note={`Free times ${free.when}, ${free.day}`}>
+    <Section title="Grounds" note={`Free times ${free.heading}`}>
       {venue.layout ? (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <div className="lg:w-[512px] lg:shrink-0">
