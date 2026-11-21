@@ -10,14 +10,14 @@ import { SiteLinkView } from "./site-link";
 export function Header() {
   return (
     <HeaderBar>
-      <header className="mx-auto flex h-[88px] w-full max-w-[1120px] items-center justify-between px-6 xl:px-0">
+      <header className="mx-auto flex h-[72px] w-full max-w-[1120px] items-center justify-between px-6 xl:px-0">
         <div className="flex items-center gap-8">
           <a href="/" aria-label="Hagz" className="text-black">
             <Mark className="h-[30px]" label="" />
           </a>
           <nav className="hidden items-center gap-6 md:flex">
             {HEADER_LINKS.map((link) => (
-              <SiteLinkView key={link.label} link={link} className="text-subtitle font-medium" />
+              <SiteLinkView key={link.label} link={link} className="text-body font-medium" />
             ))}
           </nav>
         </div>
