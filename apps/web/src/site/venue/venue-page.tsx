@@ -66,9 +66,17 @@ async function freeTimes(venue: PublicVenue, locale: Locale): Promise<FreeTimes>
       : calendarToday;
   let starts = await read(playingToday);
   let playingDay = playingToday;
+  // After midnight, last night's last hours alone hide the whole day ahead: add the coming playing day.
+  if (playingToday !== calendarToday) {
+    const ahead = await read(calendarToday);
+    starts = new Map(
+      [...starts].map(([groundId, list]) => [groundId, [...list, ...(ahead.get(groundId) ?? [])]]),
+    );
+    playingDay = calendarToday;
+  }
   const any = () => [...starts.values()].some((list) => list.length > 0);
   if (!any() && venue.status === "LIVE") {
-    playingDay = nextDate(playingToday);
+    playingDay = nextDate(playingDay);
     starts = await read(playingDay);
   }
 
