@@ -68,13 +68,10 @@ export const hourAt = (iso: string, timezone: string) =>
 export const nextDate = (date: string) =>
   new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
-// A playing day runs from 5 am to 5 am: the hours after midnight are the night before's
-// ("Friday, 12 am" is Friday night, not Friday's small hours).
-export const DAY_STARTS = 5;
-
-// Which part of the playing day an hour is in.
+// Which part of the day an hour is in. A day runs midnight to midnight, so the hours before 5 am
+// (late night) come first.
 export const partOfDay = (hour: number) =>
-  hour < DAY_STARTS
+  hour < 5
     ? ("lateNight" as const)
     : hour < 12
       ? ("morning" as const)

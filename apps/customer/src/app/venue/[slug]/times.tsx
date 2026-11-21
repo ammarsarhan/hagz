@@ -34,7 +34,6 @@ import { localTimeOf } from "@/lib/ground-filter";
 import { intlLocale, isRTL } from "@/lib/language";
 import { formatPrice, fromPerHour } from "@/lib/money";
 import {
-  DAY_STARTS,
   hourAt,
   kindOf,
   nextDate,
@@ -52,12 +51,12 @@ import {
 // shortest booking, the hours either side are outlined and Continue waits; at its longest, no more
 // can be added. Tapping an hour away from the picked ones starts again from it.
 //
-// A playing day runs 5 am to 5 am (lib/venue.ts): Friday's late night is Saturday's first hours,
-// fetched with it, so 11 pm and 12 am can be one booking. Only free hours are listed; taken ones
-// will show once there are bookings (Phase 4), which is also where Continue goes.
+// A day runs midnight to midnight (user, 2026-11-22): each day shows only its own hours, its
+// small hours first. Only free hours are listed; taken ones will show once there are bookings
+// (Phase 4), which is also where Continue goes.
 
 const DAYS = 14;
-const PARTS = ["morning", "afternoon", "evening", "lateNight"] as const;
+const PARTS = ["lateNight", "morning", "afternoon", "evening"] as const;
 // The back button's row and its gap to the title, as on every Screen, and the bar's 8 under it.
 const ROW = 40;
 const TITLE_GAP = 22;
@@ -150,7 +149,7 @@ export default function Times() {
     };
   }, [slug, attempt]);
 
-  // The day asked for (today to begin with), and the next day's first hours, which are its night.
+  // The day asked for (today to begin with).
   useEffect(() => {
     let active = true;
     setDay({ state: "loading" });
@@ -169,20 +168,8 @@ export default function Times() {
       }
       setDays(result.data.days);
       setShown(result.data.date);
-      const { timezone } = result.data;
-      const following =
-        result.data.date < result.data.days.last ? await read(nextDate(result.data.date)) : null;
-      if (!active) return;
-      const own = result.data.slots.filter(
-        (slot) => slot.groundId === groundId && hourAt(slot.startsAt, timezone) >= DAY_STARTS,
-      );
-      const night =
-        following?.ok === true
-          ? following.data.slots.filter(
-              (slot) => slot.groundId === groundId && hourAt(slot.startsAt, timezone) < DAY_STARTS,
-            )
-          : [];
-      setDay({ state: "ready", data: { ...result.data, slots: [...own, ...night] } });
+      const own = result.data.slots.filter((slot) => slot.groundId === groundId);
+      setDay({ state: "ready", data: { ...result.data, slots: own } });
     })();
     return () => {
       active = false;
