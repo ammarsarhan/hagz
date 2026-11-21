@@ -98,7 +98,7 @@ export function Title({ venue, shareUrl }: { venue: PublicVenue; shareUrl: strin
         <div className="text-[15px] text-ink-2">{sportsLine(venue)}</div>
       </div>
       <div className="hidden md:block">
-        <ShareButton url={shareUrl} title={venue.name ?? "Hagz"} />
+        <ShareButton url={shareUrl} />
       </div>
     </div>
   );
@@ -209,9 +209,9 @@ function Rows({ rows }: { rows: { label: string; value: string }[] }) {
       {rows.map((row, index) => (
         <div key={row.label}>
           {index > 0 ? <Hairline /> : null}
-          <div className="flex h-[52px] items-center justify-between gap-4">
-            <div className="text-subtitle text-ink-2">{row.label}</div>
-            <div className="text-subtitle font-medium">{row.value}</div>
+          <div className="flex h-12 items-center justify-between gap-4">
+            <div className="text-body text-ink-2">{row.label}</div>
+            <div className="text-body font-medium">{row.value}</div>
           </div>
         </div>
       ))}
@@ -245,14 +245,14 @@ export function Cancellation({ venue }: { venue: PublicVenue }) {
   return (
     <Section title="Cancellation policy">
       <div className="overflow-hidden rounded-2xl border border-border">
-        <div className="flex h-11 items-center justify-between bg-chip px-5 text-label font-medium text-ink-2">
+        <div className="flex h-10 items-center justify-between bg-chip px-5 text-caption font-medium text-ink-2">
           <span>Cancel before it starts</span>
           <span>You get back</span>
         </div>
         {refundBands(cancellation.tiers).map((band) => (
           <div key={band.from}>
             <Hairline />
-            <div className="flex h-[52px] items-center justify-between gap-4 px-5 text-subtitle">
+            <div className="flex h-12 items-center justify-between gap-4 px-5 text-body">
               <span>{bandLabel(band.from, band.to)}</span>
               <span className={band.refundPercent > 0 ? "font-medium" : "text-unit"}>
                 {band.refundPercent === 100
@@ -301,7 +301,7 @@ export function About({ venue }: { venue: PublicVenue }) {
   if (!venue.description) return null;
   return (
     <Section title="About">
-      <p className="text-[17px] leading-[27px] whitespace-pre-line">{venue.description}</p>
+      <p className="text-subtitle leading-[26px] whitespace-pre-line">{venue.description}</p>
     </Section>
   );
 }
@@ -309,7 +309,7 @@ export function About({ venue }: { venue: PublicVenue }) {
 export function Reviews({ venue }: { venue: PublicVenue }) {
   const { average, count } = venue.rating;
   return (
-    <div id="reviews" className="scroll-mt-8">
+    <div id="reviews" className="scroll-mt-[120px]">
       <Section title="Reviews">
         {average !== null ? (
           <div className="flex flex-col gap-3">
@@ -397,7 +397,7 @@ export function BookCard({
   return (
     <div
       id="get-the-app"
-      className="flex scroll-mt-8 flex-col rounded-[20px] border border-border bg-white p-6 shadow-[0_6px_24px_rgba(0,0,0,0.08)]"
+      className="flex scroll-mt-[120px] flex-col rounded-[20px] border border-border bg-white p-6 shadow-[0_6px_24px_rgba(0,0,0,0.08)]"
     >
       {cheapest !== null ? (
         <div>

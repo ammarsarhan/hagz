@@ -142,7 +142,7 @@ export default async function VenuePage(props: PageProps<"/venue/[slug]">) {
           <Hairline />
           <Where venue={venue} />
         </div>
-        <aside className="sticky top-8 hidden w-[380px] shrink-0 lg:block">
+        <aside className="sticky top-[120px] hidden w-[380px] shrink-0 lg:block">
           <BookCard venue={venue} free={free} appUrl={appUrl} qrSvg={qrSvg} />
         </aside>
       </div>
