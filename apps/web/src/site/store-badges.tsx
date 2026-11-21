@@ -1,30 +1,15 @@
-import { IconBrandAppleFilled, IconBrandGooglePlay } from "@tabler/icons-react";
 import { wordsFor, type Locale } from "./words";
 
-// The two store badges (Figma W3). Not links yet: the apps aren't in the stores, like the site's
-// other links that wait for their pages (links.ts).
+// The official store badges (Apple's "Download on the App Store" from developer.apple.com, Google's
+// "Get it on Google Play" cropped to the badge; their clear space is the gap between them). English
+// in both languages for now: Apple's Arabic badge needs downloading from its marketing tools. Not
+// links yet: the apps aren't in the stores, like the site's other links that wait for their pages.
 export function StoreBadges({ locale }: { locale: Locale }) {
   const { manage: words } = wordsFor(locale);
-  const badges = [
-    { ...words.appStore, icon: <IconBrandAppleFilled size={22} /> },
-    { ...words.googlePlay, icon: <IconBrandGooglePlay size={20} stroke={1.75} /> },
-  ];
   return (
-    <div className="flex flex-wrap gap-2.5">
-      {badges.map((badge) => (
-        <span
-          key={badge.name}
-          className="flex h-11 items-center gap-2 rounded-[10px] bg-ink ps-3 pe-3.5 text-white"
-        >
-          {badge.icon}
-          <span className="flex flex-col">
-            <span className="text-[10px] leading-3">{badge.small}</span>
-            <span dir="ltr" className="text-subtitle leading-[18px] font-semibold">
-              {badge.name}
-            </span>
-          </span>
-        </span>
-      ))}
+    <div className="flex flex-wrap gap-3">
+      <img src="/badges/app-store.svg" alt={words.appStore} className="h-11 w-auto" />
+      <img src="/badges/google-play.png" alt={words.googlePlay} className="h-11 w-auto" />
     </div>
   );
 }
