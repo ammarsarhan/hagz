@@ -36,7 +36,8 @@ export const useHud = () => {
   return show;
 };
 
-export function HudProvider({ children }: { children: ReactNode }) {
+// The HUD is drawn on <body>, outside the page's dir, so it's told the language's direction.
+export function HudProvider({ children, dir }: { children: ReactNode; dir: "ltr" | "rtl" }) {
   const [showing, setShowing] = useState<Showing>();
 
   const show = useCallback<Show>((message, options) => {
@@ -58,7 +59,10 @@ export function HudProvider({ children }: { children: ReactNode }) {
       {children}
       {showing
         ? createPortal(
-            <div className="pointer-events-none fixed inset-x-0 bottom-[104px] z-50 flex justify-center lg:bottom-8">
+            <div
+              dir={dir}
+              className="pointer-events-none fixed inset-x-0 bottom-[104px] z-50 flex justify-center lg:bottom-8"
+            >
               <div
                 key={showing.key}
                 role="status"

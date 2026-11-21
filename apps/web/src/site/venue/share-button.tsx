@@ -23,14 +23,24 @@ const copy = async (text: string) => {
 };
 
 // Copies the page's link, and the HUD says so (as the app's Share does).
-export function ShareButton({ url }: { url: string }) {
+export function ShareButton({
+  url,
+  label,
+  copied,
+  failed,
+}: {
+  url: string;
+  label: string;
+  copied: string;
+  failed: string;
+}) {
   const hud = useHud();
   const share = async () => {
     try {
       await copy(url);
-      hud("Link copied", { leading: <IconCircleCheckFilled size={22} /> });
+      hud(copied, { leading: <IconCircleCheckFilled size={22} /> });
     } catch {
-      hud("Couldn’t copy the link");
+      hud(failed);
     }
   };
   return (
@@ -40,7 +50,7 @@ export function ShareButton({ url }: { url: string }) {
       className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-chip px-[18px] text-[15px] font-semibold"
     >
       <IconShare size={18} stroke={1.75} />
-      Share
+      {label}
     </button>
   );
 }

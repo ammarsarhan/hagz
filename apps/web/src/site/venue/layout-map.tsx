@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 import type { PublicGround, PublicVenue } from "../api";
+import { wordsFor, type Locale } from "../words";
 
 // A venue's map, read only: the customer app's components/venue-layout.tsx drawn on the server.
 // The owner's grid, the venue's outline in ink, each ground top-down with its markings and name,
 // the amenities as white tiles, the entrances as black tags on the edge. Grounds under maintenance
-// say so. Cells are sized to fit the box, so the text stays the app's size.
+// say so. Cells are sized to fit the box, so the text stays the app's size. The map is drawn the
+// same way round in Arabic: it's the venue as it stands, so only its words change.
 
 type Layout = NonNullable<PublicVenue["layout"]>;
 
@@ -132,6 +134,7 @@ export function LayoutMap({
   amenities,
   boxWidth,
   boxHeight,
+  locale,
 }: {
   layout: Layout;
   grounds: PublicGround[];
@@ -139,7 +142,9 @@ export function LayoutMap({
   // The room it's drawn for, padding included: cells are as big as fit both.
   boxWidth: number;
   boxHeight: number;
+  locale: Locale;
 }) {
+  const words = wordsFor(locale);
   const cell = Math.min(
     (boxWidth - 24 - 2 * EDGE) / layout.columns,
     (boxHeight - 24 - 2 * EDGE) / layout.rows,
@@ -164,7 +169,8 @@ export function LayoutMap({
         viewBox={`${-EDGE} ${-EDGE} ${width + 2 * EDGE} ${height + 2 * EDGE}`}
         className="h-full max-w-full"
         role="img"
-        aria-label="Map of the venue's grounds"
+        aria-label={words.mapLabel}
+        direction="ltr"
         fontFamily="inherit"
       >
         {Array.from({ length: layout.columns - 1 }, (_, i) => (
@@ -233,7 +239,7 @@ export function LayoutMap({
               <Tag
                 box={box}
                 name={ground.name ?? ""}
-                status={ground.status === "MAINTENANCE" ? "Closed" : undefined}
+                status={ground.status === "MAINTENANCE" ? words.closed : undefined}
               />
             </g>
           );
@@ -268,7 +274,7 @@ export function LayoutMap({
                   fontWeight={600}
                   fill="#ffffff"
                 >
-                  Entrance
+                  {words.entrance}
                 </text>
               ) : null}
             </g>
