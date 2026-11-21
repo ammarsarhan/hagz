@@ -195,11 +195,11 @@ function GroundCard({
             <span
               title={more}
               aria-label={more}
-              // "+3" either way round: in Arabic the plus would otherwise land after the number.
-              dir="ltr"
-              className="flex h-[34px] items-center rounded-full bg-chip px-3 text-label font-medium text-ink-2"
+              className="flex h-[34px] items-center gap-1 rounded-full bg-chip px-3 text-label font-medium text-ink-2"
             >
-              +{times.length - CARD_TIMES}
+              {/* "+3" either way round: in Arabic the plus would otherwise land after the number. */}
+              <bdi dir="ltr">+{times.length - CARD_TIMES}</bdi>
+              {words.more}
             </span>
           ) : null}
         </div>
