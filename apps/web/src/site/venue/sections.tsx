@@ -443,17 +443,17 @@ export function BookCard({
       >
         Book in the app
       </a>
-      <div className="mt-5 flex items-center gap-4">
+      <div className="mt-5 flex items-center gap-3.5">
         <div
           aria-label="QR code for this page"
           role="img"
-          className="size-20 shrink-0 [&>svg]:size-full"
+          className="size-[68px] shrink-0 [&>svg]:size-full"
           // Generated on the server from this page's own URL.
           dangerouslySetInnerHTML={{ __html: qrSvg }}
         />
-        <div className="flex flex-col gap-1">
-          <div className="text-[15px] font-medium">Scan with your phone</div>
-          <div className="text-label text-ink-2">
+        <div className="flex flex-col gap-0.5">
+          <div className="text-label font-medium">Scan with your phone</div>
+          <div className="text-[12px] leading-4 text-ink-2">
             Opens {venue.name ?? "the venue"} in Hagz, or the store if you don’t have it.
           </div>
         </div>
