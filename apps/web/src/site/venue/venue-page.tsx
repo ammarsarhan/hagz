@@ -1,11 +1,11 @@
 import { links, schemeFor } from "@hagz/contracts";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { appEnv } from "@/lib/env";
 import { getAvailability, getVenue, type PublicVenue, type VenueAvailability } from "../api";
 import { dayLabel, nextDate, sportsLine, startTimes, timeOfDay, todayAt } from "../format";
+import { origin } from "../origin";
 import { wordsFor, type Locale } from "../words";
 import { Photos } from "./photos";
 import {
@@ -68,14 +68,6 @@ async function freeTimes(venue: PublicVenue, locale: Locale): Promise<FreeTimes>
     ),
     byGround,
   };
-}
-
-// This site's own origin, as the request reached it, for the share link and the QR code.
-async function origin() {
-  const list = await headers();
-  const host = list.get("x-forwarded-host") ?? list.get("host") ?? "localhost:3001";
-  const proto = list.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
 }
 
 // "/venue/x" or "/ar/venue/x", from the shared routes (links.ts in contracts): the paths the app
