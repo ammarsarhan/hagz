@@ -9,7 +9,7 @@ export interface SiteLink {
 export const HEADER_LINKS: SiteLink[] = [
   { label: "Venues", href: null },
   { label: "Owners", href: null },
-  { label: "Demo", href: null },
+  { label: "How it works", href: null },
 ];
 
 export const FOOTER_COLUMNS: { title: string; links: SiteLink[] }[] = [
