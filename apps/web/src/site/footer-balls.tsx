@@ -1,6 +1,8 @@
 // A football, a padel ball and a basketball side by side across the footer's full width, very faint
 // (7%), their bottoms cut off by the page's edge (Figma W2 round 5). Drawn like the app's
-// illustrations: black, white and grey only, with thick black outlines.
+// illustrations: black, white and grey only, with thick black outlines. Alive like the app's
+// scenes (user, 2026-11-21): the football rocks, the padel ball spins, the basketball bounces, and
+// sparkles twinkle between them (site.css, .ball-* and .sparkle; still with reduced motion).
 
 const W = 1440;
 const H = 300;
@@ -91,13 +93,45 @@ function Basketball({ cx }: { cx: number }) {
   );
 }
 
+// A four-point sparkle, as in the app's illustrations.
+const sparkle = (x: number, y: number, s: number) =>
+  `M${x} ${y - s} Q${x} ${y} ${x + s} ${y} Q${x} ${y} ${x} ${y + s} Q${x} ${y} ${x - s} ${y} Q${x} ${y} ${x} ${y - s}Z`;
+
+// Between and beside the balls' tops: where, how big, how dark, and when each one twinkles.
+const SPARKLES: { x: number; y: number; s: number; fill: string; delay: number }[] = [
+  { x: 40, y: 70, s: 16, fill: "#000", delay: 0 },
+  { x: 480, y: 56, s: 22, fill: "#000", delay: 1.1 },
+  { x: 452, y: 132, s: 11, fill: "#8e8e8e", delay: 2.3 },
+  { x: 960, y: 60, s: 18, fill: "#000", delay: 0.6 },
+  { x: 994, y: 142, s: 10, fill: "#8e8e8e", delay: 1.8 },
+  { x: 1400, y: 84, s: 14, fill: "#000", delay: 2.9 },
+];
+
 export function FooterBalls() {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} aria-hidden className="block h-auto w-full">
       <g opacity={0.07}>
-        <Football cx={W / 6} />
-        <Padel cx={W / 2} />
-        <Basketball cx={(W * 5) / 6} />
+        <g className="ball-rock">
+          <Football cx={W / 6} />
+        </g>
+        <g className="ball-spin">
+          <Padel cx={W / 2} />
+        </g>
+        <g className="ball-bounce">
+          <Basketball cx={(W * 5) / 6} />
+        </g>
+      </g>
+      {/* A little stronger than the balls, so the twinkle reads. */}
+      <g opacity={0.18}>
+        {SPARKLES.map((spark) => (
+          <path
+            key={`${spark.x}-${spark.y}`}
+            d={sparkle(spark.x, spark.y, spark.s)}
+            fill={spark.fill}
+            className="sparkle"
+            style={{ animationDelay: `${spark.delay}s` }}
+          />
+        ))}
       </g>
     </svg>
   );
