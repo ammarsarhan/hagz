@@ -139,7 +139,8 @@ export const groundLine = (ground: PublicGround) =>
 const listText = (items: string[]) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` : (items[0] ?? "");
 
-// "Football, 5 and 7-a-side" or "Football and padel": what's played there.
+// "Football, 5 and 7-a-side" or "Football/Padel": what's played there (the web writes several sports
+// with slashes, user 2026-11-21; the app still says "Football and padel").
 export const sportsLine = (venue: PublicVenue) => {
   const sports = [...new Set(venue.grounds.map((ground) => ground.sport))];
   if (sports.length === 1 && sports[0] === "FOOTBALL") {
@@ -148,9 +149,7 @@ export const sportsLine = (venue: PublicVenue) => {
     );
     return sizes.length > 0 ? `Football, ${listText(sizes)}-a-side` : "Football";
   }
-  return listText(
-    sports.map((sport, index) => (index === 0 ? SPORTS[sport] : SPORTS[sport].toLowerCase())),
-  );
+  return sports.map((sport) => SPORTS[sport]).join("/");
 };
 
 // The cheapest hour across the venue's grounds.
