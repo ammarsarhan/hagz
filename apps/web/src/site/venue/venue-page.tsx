@@ -4,18 +4,8 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { appEnv } from "@/lib/env";
-import { getAvailability, getVenue, type PublicVenue } from "../api";
-import {
-  DAY_STARTS,
-  dayLabel,
-  hourAt,
-  nextDate,
-  sportsLine,
-  startTimes,
-  timeOfDay,
-  todayAt,
-  weekdayShort,
-} from "../format";
+import { getAvailability, getVenue, type PublicVenue, type VenueAvailability } from "../api";
+import { dayLabel, nextDate, sportsLine, startTimes, timeOfDay, todayAt } from "../format";
 import { wordsFor, type Locale } from "../words";
 import { Photos } from "./photos";
 import {
@@ -38,67 +28,37 @@ import {
 // and for links shared from the app, in English at /venue/[slug] and Arabic at /ar/venue/[slug].
 // View only: booking happens in the app.
 
-// Free start times for the venue's playing day (5 am to 5 am, as in the app), or tomorrow's when
-// nothing's left today. Labelled by the real calendar date, though: at 11 pm on Saturday, a 1 am
-// start is Sunday's, so the heading names the date of the first time shown, and a time on the date
-// after it says its day ("Sun 1 am").
+// Free start times for today at the venue. A day runs midnight to midnight, as in the app's See
+// times (user, 2026-11-22): today shows only today's hours. When nothing's left today, the page
+// shows the next day that has any, up to the last day the venue takes bookings for.
 async function freeTimes(venue: PublicVenue, locale: Locale): Promise<FreeTimes> {
   const words = wordsFor(locale);
   const { timezone } = venue.marketplace;
-  // The calendar day after 5 am, and the small hours of the next one.
-  const read = async (date: string) => {
-    const [day, night] = await Promise.all([
-      getAvailability(venue.slug, date),
-      getAvailability(venue.slug, nextDate(date)),
-    ]);
-    const slots = [
-      ...(day?.slots ?? []).filter((slot) => hourAt(slot.startsAt, timezone) >= DAY_STARTS),
-      ...(night?.slots ?? []).filter((slot) => hourAt(slot.startsAt, timezone) < DAY_STARTS),
-    ];
-    return new Map(venue.grounds.map((ground) => [ground.id, startTimes(slots, ground)] as const));
-  };
-  const now = new Date();
-  const calendarToday = todayAt(timezone, now);
-  // Before 5 am it's still last night's playing day.
-  const playingToday =
-    hourAt(now.toISOString(), timezone) < DAY_STARTS
-      ? todayAt(timezone, new Date(now.getTime() - 86_400_000))
-      : calendarToday;
-  let starts = await read(playingToday);
-  let playingDay = playingToday;
-  // After midnight, last night's last hours alone hide the whole day ahead: add the coming playing day.
-  if (playingToday !== calendarToday) {
-    const ahead = await read(calendarToday);
-    starts = new Map(
-      [...starts].map(([groundId, list]) => [groundId, [...list, ...(ahead.get(groundId) ?? [])]]),
+  const today = todayAt(timezone);
+  const startsOn = (availability: VenueAvailability | null) =>
+    new Map(
+      venue.grounds.map(
+        (ground) => [ground.id, startTimes(availability?.slots ?? [], ground)] as const,
+      ),
     );
-    playingDay = calendarToday;
-  }
+  let date = today;
+  let availability = await getAvailability(venue.slug, date);
+  let starts = startsOn(availability);
   const any = () => [...starts.values()].some((list) => list.length > 0);
-  if (!any() && venue.status === "LIVE") {
-    playingDay = nextDate(playingDay);
-    starts = await read(playingDay);
+  while (!any() && venue.status === "LIVE" && availability && date < availability.days.last) {
+    date = nextDate(date);
+    availability = await getAvailability(venue.slug, date);
+    starts = startsOn(availability);
   }
 
-  // The calendar date of the earliest time shown (the playing day itself when nothing's free).
-  const earliest = [...starts.values()]
-    .flat()
-    .map((slot) => slot.startsAt)
-    .sort()[0];
-  const date = earliest ? todayAt(timezone, new Date(earliest)) : playingDay;
-  const relative =
-    date === calendarToday ? words.today : date === nextDate(calendarToday) ? words.tomorrow : null;
+  const relative = date === today ? words.today : date === nextDate(today) ? words.tomorrow : null;
   const when = relative ?? words.onDay(dayLabel(date, locale));
   const byGround = new Map<string, string[]>();
   for (const [groundId, list] of starts) {
     if (list.length === 0) continue;
     byGround.set(
       groundId,
-      list.map((slot) => {
-        const time = timeOfDay(slot.startsAt, timezone, locale);
-        const on = todayAt(timezone, new Date(slot.startsAt));
-        return on === date ? time : `${weekdayShort(on, locale)} ${time}`;
-      }),
+      list.map((slot) => timeOfDay(slot.startsAt, timezone, locale)),
     );
   }
   return {
