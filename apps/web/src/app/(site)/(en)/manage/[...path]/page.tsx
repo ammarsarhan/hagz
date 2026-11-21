@@ -1,30 +1,10 @@
-import { APPS, schemeFor } from "@hagz/contracts";
-import { appEnv } from "@/lib/env";
+import type { Metadata } from "next";
+import { ManagePage, manageMetadata } from "@/site/manage/manage-page";
 
-// Dashboard links (/manage/...) open the app directly when it's installed and the domain is verified.
-// This page is what everyone else sees: a button that opens the app by its scheme, and what to do
-// if they don't have it.
-export default async function ManageFallback({ params }: { params: Promise<{ path: string[] }> }) {
-  const { path } = await params;
-  const appUrl = `${schemeFor("dashboard", appEnv)}://manage/${path.map(encodeURIComponent).join("/")}`;
-  const isInvitation = path[0] === "invite";
+export async function generateMetadata(props: PageProps<"/manage/[...path]">): Promise<Metadata> {
+  return manageMetadata((await props.params).path, "en");
+}
 
-  return (
-    <main
-      style={{ maxWidth: 480, margin: "64px auto", padding: "0 16px", fontFamily: "system-ui" }}
-    >
-      <h1>
-        {isInvitation ? "You're invited to join a venue on Hagz" : `Open ${APPS.dashboard.name}`}
-      </h1>
-      <p>
-        {isInvitation
-          ? `Open the invitation in ${APPS.dashboard.name}, signed in with the phone number it was sent to.`
-          : `This link opens in ${APPS.dashboard.name}.`}
-      </p>
-      <p>
-        <a href={appUrl}>Open in {APPS.dashboard.name}</a>
-      </p>
-      <p>Don&apos;t have the app yet? Install {APPS.dashboard.name}, then open this link again.</p>
-    </main>
-  );
+export default async function Page(props: PageProps<"/manage/[...path]">) {
+  return <ManagePage path={(await props.params).path} locale="en" />;
 }
