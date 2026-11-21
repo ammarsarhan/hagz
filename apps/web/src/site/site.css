@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@import "@hagz/brand/customer.css";
+
+/* The public site: the customer app's lime and black on white, in the system font like the apps
+   (SF Pro on Apple devices, Segoe UI on Windows, Roboto on Android). */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--color-chip);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The HUD rising in and fading out (site/hud.tsx), as in the app: 200 ms, 8 px. */
+@keyframes hud-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes hud-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.hud-entering {
+  animation: hud-in 200ms ease-out;
+}
+.hud-leaving {
+  animation: hud-out 200ms ease-in forwards;
+}
+
+/* The footer's balls and sparkles (site/footer-balls.tsx): slow, so they read as alive, not busy.
+   Each turns about its own centre. */
+.ball-rock,
+.ball-spin,
+.ball-bounce,
+.sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes ball-rock {
+  0%,
+  100% {
+    transform: rotate(-9deg);
+  }
+  50% {
+    transform: rotate(9deg);
+  }
+}
+@keyframes ball-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ball-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0);
+  }
+  50% {
+    transform: translateY(-28px);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.67, 1);
+  }
+}
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+.ball-rock {
+  animation: ball-rock 6s ease-in-out infinite;
+}
+.ball-spin {
+  animation: ball-spin 24s linear infinite;
+}
+.ball-bounce {
+  animation: ball-bounce 2.4s infinite;
+}
+.sparkle {
+  opacity: 0;
+  animation: sparkle 3.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-entering,
+  .hud-leaving,
+  .ball-rock,
+  .ball-spin,
+  .ball-bounce {
+    animation: none;
+  }
+  .sparkle {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Tailwind 4 leaves buttons with the default arrow; on the site everything pressable shows a hand. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}

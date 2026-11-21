@@ -14,7 +14,8 @@ import { resetRedis } from "../../support/redis";
 const MAADI = { latitude: 29.96, longitude: 31.25 };
 const DOKKI = { latitude: 30.04, longitude: 31.21 };
 
-// Tomorrow in Cairo, so the venues' notice and the time of day never get in the way.
+// Tomorrow in Cairo, so the venues' notice and the time of day don't get in the way (except for the
+// first hours after midnight, within an hour of 11 pm: a test that reads those turns the notice off).
 const tomorrow = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(
     new Date(Date.now() + 24 * 3_600_000),
@@ -264,7 +265,13 @@ describe("when", () => {
   });
 
   it("shows the next free times through the day, and the cheapest hour among them", async () => {
-    await setup();
+    const { nile } = await setup();
+    // No notice, so tomorrow's midnight slot is always bookable: with the hour's notice the venues
+    // have, it isn't between 11 pm and midnight, and this failed then.
+    await prisma.venue.update({
+      where: { id: nile.id },
+      data: { settings: { update: { minimumNotice: 0 } } },
+    });
     const card = page0(await found({ q: "nile", hours: 2 }));
     expect(card.nextTimes).toHaveLength(4);
     // Midnight to 2 am, at the base price.
