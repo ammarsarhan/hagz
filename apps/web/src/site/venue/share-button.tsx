@@ -1,19 +1,37 @@
 "use client";
 
-import { IconShare } from "@tabler/icons-react";
-import { useState } from "react";
+import { IconCircleCheckFilled, IconShare } from "@tabler/icons-react";
+import { useHud } from "../hud";
 
-// The phone's share sheet where there is one; elsewhere, the link copied, and the button says so.
-export function ShareButton({ url, title }: { url: string; title: string }) {
-  const [copied, setCopied] = useState(false);
+// The Clipboard API exists only on secure origins (https, localhost); elsewhere, such as the dev
+// server opened on a phone by its IP, the old way: select a hidden field's text and copy it.
+const copy = async (text: string) => {
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.append(field);
+  field.select();
+  const copied = document.execCommand("copy");
+  field.remove();
+  if (!copied) throw new Error("Copy failed");
+};
+
+// Copies the page's link, and the HUD says so (as the app's Share does).
+export function ShareButton({ url }: { url: string }) {
+  const hud = useHud();
   const share = async () => {
-    if (navigator.share) {
-      await navigator.share({ url, title }).catch(() => undefined);
-      return;
+    try {
+      await copy(url);
+      hud("Link copied", { leading: <IconCircleCheckFilled size={22} /> });
+    } catch {
+      hud("Couldn’t copy the link");
     }
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
   return (
     <button
@@ -22,7 +40,7 @@ export function ShareButton({ url, title }: { url: string; title: string }) {
       className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-chip px-[18px] text-[15px] font-semibold"
     >
       <IconShare size={18} stroke={1.75} />
-      {copied ? "Link copied" : "Share"}
+      Share
     </button>
   );
 }
