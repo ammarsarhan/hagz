@@ -283,6 +283,7 @@ const en = {
         booksRange: "Books {{min}} to {{max}} hours",
         heading: "Pick your hours",
         parts: {
+          earlyMorning: "Early morning",
           morning: "Morning",
           afternoon: "Afternoon",
           evening: "Evening",
