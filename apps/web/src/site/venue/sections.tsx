@@ -123,6 +123,11 @@ export function Highlights({ venue }: { venue: PublicVenue }) {
   );
 }
 
+// A card shows the first few start times, on one row, so it stays wide rather than square; the
+// rest are a quiet grey "+N" chip that says, on hover and to screen readers, they're in the app
+// (user, 2026-11-21). Spelt out in full it wrapped onto a second row in the two-column cards.
+const CARD_TIMES = 3;
+
 function GroundCard({
   ground,
   currency,
@@ -152,8 +157,8 @@ function GroundCard({
       </div>
       <div className="mt-1 text-label text-ink-2">{groundLine(ground)}</div>
       {closed ? null : times.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {times.map((time) => (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {times.slice(0, CARD_TIMES).map((time) => (
             <span
               key={time}
               className="flex h-[34px] items-center rounded-full border border-border px-3 text-label font-medium"
@@ -161,6 +166,15 @@ function GroundCard({
               {time}
             </span>
           ))}
+          {times.length > CARD_TIMES ? (
+            <span
+              title={`${times.length - CARD_TIMES} more ${times.length - CARD_TIMES === 1 ? "time" : "times"} in the app`}
+              aria-label={`${times.length - CARD_TIMES} more ${times.length - CARD_TIMES === 1 ? "time" : "times"} in the app`}
+              className="flex h-[34px] items-center rounded-full bg-chip px-3 text-label font-medium text-ink-2"
+            >
+              +{times.length - CARD_TIMES}
+            </span>
+          ) : null}
         </div>
       ) : (
         <div className="mt-3 text-label text-ink-2">No free times {when}</div>

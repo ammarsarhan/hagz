@@ -52,7 +52,7 @@ async function freeTimes(venue: PublicVenue): Promise<FreeTimes> {
     const byGround = new Map<string, string[]>();
     for (const ground of venue.grounds) {
       const times = startTimes(slots, ground).map((slot) => timeOfDay(slot.startsAt, timezone));
-      if (times.length > 0) byGround.set(ground.id, times.slice(0, 6));
+      if (times.length > 0) byGround.set(ground.id, times);
     }
     return byGround;
   };
