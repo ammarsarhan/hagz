@@ -152,14 +152,13 @@ const en = {
   notFoundTitle: "Venue not found · Hagz",
   // The /manage fallback: a staff link opened without Hagz Dashboard (Figma W3, option A).
   manage: {
-    eyebrow: "Staff invitation",
     invitedTitle: "You’re invited to join a venue’s team on Hagz",
     invitedLine: (app: string) =>
       `Open it in ${app}, signed in with the phone number the invitation was sent to.`,
     otherTitle: (app: string) => `This opens in ${app}`,
     otherLine:
       "It’s a page from your venue’s dashboard. Open it in the app, signed in to your staff account.",
-    open: (app: string) => `Open in ${app}`,
+    open: "Open in Dashboard",
     noApp: "Don’t have the app yet?",
     install: (app: string) => `Install ${app}`,
     signIn: "Sign in with the number it was sent to",
@@ -354,12 +353,11 @@ const ar: Words = {
     `${sports}${area ? ` في ${area}` : ""}. شوف المواعيد المتاحة واحجز ${name} من تطبيق حجز.`,
   notFoundTitle: "الملعب غير موجود · حجز",
   manage: {
-    eyebrow: "دعوة للانضمام إلى فريق",
     invitedTitle: "تمت دعوتك للانضمام إلى فريق ملعب على حجز",
     invitedLine: (app) => `افتحها في ${app} بعد تسجيل الدخول برقم الهاتف الذي أُرسلت إليه الدعوة.`,
     otherTitle: (app) => `يُفتح هذا الرابط في ${app}`,
     otherLine: "إنها صفحة من لوحة تحكم ملعبك. افتحها في التطبيق بعد تسجيل الدخول بحساب الموظف.",
-    open: (app) => `افتح في ${app}`,
+    open: "افتح في لوحة التحكم",
     noApp: "ليس لديك التطبيق بعد؟",
     install: (app) => `ثبّت ${app}`,
     signIn: "سجّل الدخول بالرقم الذي أُرسلت إليه",

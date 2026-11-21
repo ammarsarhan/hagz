@@ -1,4 +1,3 @@
-import { COLORS, FRAMINGS, markSvg } from "@hagz/brand/mark";
 import { APPS, schemeFor } from "@hagz/contracts";
 import { IconExternalLink } from "@tabler/icons-react";
 import type { Metadata } from "next";
@@ -14,14 +13,6 @@ import { pathIn, wordsFor, type Locale } from "../words";
 // join, ending in its code for the app's "Have a code?"; any other link just opens the app.
 
 const APP = APPS.dashboard.name;
-
-// The staff app icon as the stores show it: the blue mark on a white tile.
-const APP_ICON = markSvg({
-  framing: FRAMINGS.tile,
-  color: COLORS.blue,
-  background: COLORS.white,
-  radius: 0.22,
-});
 
 // The invitation's code, when the link carries one that looks like a code.
 const codeIn = (path: string[]) =>
@@ -51,15 +42,7 @@ export async function ManagePage({ path, locale }: { path: string[]; locale: Loc
   return (
     <main className="mx-auto flex w-full max-w-[1120px] items-start justify-between gap-12 px-6 pt-6 lg:pt-[72px] xl:px-0">
       <div className="flex w-full max-w-[560px] flex-col">
-        <div
-          className="size-16 overflow-hidden rounded-[22%] shadow-[0_0_0_1px_#E3E5E8] lg:size-[72px] [&>svg]:size-full"
-          // The same drawing as the staff app's icon (@hagz/brand).
-          dangerouslySetInnerHTML={{ __html: APP_ICON }}
-        />
-        {invitation ? (
-          <div className="mt-5 text-label font-semibold text-blue">{words.eyebrow}</div>
-        ) : null}
-        <h1 className="mt-3 text-[30px] leading-9 font-semibold tracking-[-0.02em] lg:text-[40px] lg:leading-[46px] rtl:tracking-normal">
+        <h1 className="text-[30px] leading-9 font-semibold tracking-[-0.02em] lg:text-[40px] lg:leading-[46px] rtl:tracking-normal">
           {invitation ? words.invitedTitle : words.otherTitle(APP)}
         </h1>
         <p className="mt-3 text-subtitle text-ink-2">
@@ -67,10 +50,10 @@ export async function ManagePage({ path, locale }: { path: string[]; locale: Loc
         </p>
         <a
           href={appUrl}
-          className="mt-8 flex h-[52px] items-center justify-center gap-2 rounded-full bg-blue px-6 text-subtitle font-semibold text-white sm:self-start"
+          className="mt-7 flex h-11 items-center justify-center gap-2 rounded-full bg-blue px-5 text-body font-semibold text-white self-start"
         >
-          <IconExternalLink size={18} stroke={2} className="rtl:-scale-x-100" />
-          {words.open(APP)}
+          <IconExternalLink size={17} stroke={2} className="rtl:-scale-x-100" />
+          {words.open}
         </a>
         <div className="mt-9 h-px bg-border" />
         <h2 className="mt-9 text-[18px] leading-6 font-semibold">{words.noApp}</h2>
@@ -109,7 +92,7 @@ export async function ManagePage({ path, locale }: { path: string[]; locale: Loc
         )}
       </div>
       {/* On a computer (WhatsApp Web, say): carry the link to the phone. */}
-      <div className="mt-3 hidden w-[340px] shrink-0 flex-col items-center gap-5 rounded-[20px] border border-border p-8 lg:flex">
+      <div className="hidden w-[340px] shrink-0 flex-col items-center gap-5 rounded-[20px] border border-border p-8 lg:flex">
         <div
           role="img"
           aria-label={words.qrLabel}
