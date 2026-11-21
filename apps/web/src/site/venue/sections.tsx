@@ -309,7 +309,7 @@ export function About({ venue }: { venue: PublicVenue }) {
 export function Reviews({ venue }: { venue: PublicVenue }) {
   const { average, count } = venue.rating;
   return (
-    <div id="reviews" className="scroll-mt-[120px]">
+    <div id="reviews" className="scroll-mt-[104px]">
       <Section title="Reviews">
         {average !== null ? (
           <div className="flex flex-col gap-3">
@@ -328,12 +328,12 @@ export function Reviews({ venue }: { venue: PublicVenue }) {
                 </div>
               </div>
             </div>
-            <div className="text-label text-ink-2">
+            <div className="text-body text-ink-2">
               Players review a venue in the app after they’ve played there.
             </div>
           </div>
         ) : (
-          <div className="text-subtitle text-ink-2">
+          <div className="text-body text-ink-2">
             No reviews yet. Players can review a venue after they’ve played there.
           </div>
         )}
@@ -397,7 +397,7 @@ export function BookCard({
   return (
     <div
       id="get-the-app"
-      className="flex scroll-mt-[120px] flex-col rounded-[20px] border border-border bg-white p-6 shadow-[0_6px_24px_rgba(0,0,0,0.08)]"
+      className="flex scroll-mt-[104px] flex-col rounded-[20px] border border-border bg-white p-6 shadow-[0_6px_24px_rgba(0,0,0,0.08)]"
     >
       {cheapest !== null ? (
         <div>
