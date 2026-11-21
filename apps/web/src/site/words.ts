@@ -106,6 +106,7 @@ const en = {
   pricesVary: "Prices vary",
   perHour: "/hr",
   perHourAndUp: "/hr and up",
+  more: "more",
   moreInApp: { one: "1 more time in the app", other: "{n} more times in the app" } as Forms,
   mapLabel: "Map of the venue’s grounds",
   entrance: "Entrance",
@@ -149,6 +150,37 @@ const en = {
   metaDescription: (sports: string, area: string | null, name: string) =>
     `${sports}${area ? ` in ${area}` : ""}. See free times and book ${name} in the Hagz app.`,
   notFoundTitle: "Venue not found · Hagz",
+  // The /manage fallback: a staff link opened without Hagz Dashboard (Figma W3, option A).
+  manage: {
+    invitedTitle: "You’re invited to join a venue’s team on Hagz",
+    invitedLine: (app: string) =>
+      `Open it in ${app}, signed in with the phone number the invitation was sent to.`,
+    otherTitle: (app: string) => `This opens in ${app}`,
+    otherLine:
+      "It’s a page from your venue’s dashboard. Open it in the app, signed in to your staff account.",
+    open: "Open in Dashboard",
+    noApp: "Don’t have the app yet?",
+    install: (app: string) => `Install ${app}`,
+    signIn: "Sign in with the number it was sent to",
+    signInLine:
+      "The invitation only opens for that phone number. New to Hagz? Create an account with it.",
+    openAgain: "Open this link again",
+    codeBefore: "Or tap ",
+    haveCode: "Have a code?",
+    codeAfter: " in the app and enter:",
+    codeLabel: (code: string) => `Invitation code ${code}`,
+    copyCode: "Copy code",
+    codeCopied: "Code copied",
+    copyCodeFailed: "Couldn’t copy the code",
+    qrTitle: "On your computer?",
+    qrLine: (app: string) => `Scan to open the invitation on your phone, where ${app} is.`,
+    qrLineOther: (app: string) => `Scan to open this link on your phone, where ${app} is.`,
+    qrLabel: "QR code for this link",
+    appStore: "Download on the App Store",
+    googlePlay: "Get it on Google Play",
+    invitedMeta: (app: string) => `You’re invited · ${app}`,
+    otherMeta: (app: string) => `Open in ${app}`,
+  },
 };
 
 export type Words = typeof en;
@@ -266,6 +298,7 @@ const ar: Words = {
   pricesVary: "الأسعار تختلف",
   perHour: "/ساعة",
   perHourAndUp: "/ساعة فأكثر",
+  more: "أخرى",
   moreInApp: {
     one: "موعد آخر في التطبيق",
     two: "موعدان آخران في التطبيق",
@@ -322,6 +355,33 @@ const ar: Words = {
   metaDescription: (sports, area, name) =>
     `${sports}${area ? ` في ${area}` : ""}. شوف المواعيد المتاحة واحجز ${name} من تطبيق حجز.`,
   notFoundTitle: "الملعب غير موجود · حجز",
+  manage: {
+    invitedTitle: "تمت دعوتك للانضمام إلى فريق ملعب على حجز",
+    invitedLine: (app) => `افتحها في ${app} بعد تسجيل الدخول برقم الهاتف الذي أُرسلت إليه الدعوة.`,
+    otherTitle: (app) => `يُفتح هذا الرابط في ${app}`,
+    otherLine: "إنها صفحة من لوحة تحكم ملعبك. افتحها في التطبيق بعد تسجيل الدخول بحساب الموظف.",
+    open: "افتح في لوحة التحكم",
+    noApp: "ليس لديك التطبيق بعد؟",
+    install: (app) => `ثبّت ${app}`,
+    signIn: "سجّل الدخول بالرقم الذي أُرسلت إليه",
+    signInLine: "لا تُفتح الدعوة إلا لهذا الرقم. جديد على حجز؟ أنشئ حسابًا به.",
+    openAgain: "افتح هذا الرابط مرة أخرى",
+    codeBefore: "أو اضغط ",
+    haveCode: "لديك رمز؟",
+    codeAfter: " في التطبيق وأدخل:",
+    codeLabel: (code) => `رمز الدعوة ${code}`,
+    copyCode: "نسخ الرمز",
+    codeCopied: "تم نسخ الرمز",
+    copyCodeFailed: "تعذّر نسخ الرمز",
+    qrTitle: "على الكمبيوتر؟",
+    qrLine: () => "امسح الرمز لتفتح الدعوة على هاتفك، حيث التطبيق.",
+    qrLineOther: () => "امسح الرمز لتفتح هذا الرابط على هاتفك، حيث التطبيق.",
+    qrLabel: "رمز QR لهذا الرابط",
+    appStore: "حمّله من App Store",
+    googlePlay: "احصل عليه من Google Play",
+    invitedMeta: (app) => `دعوة · ${app}`,
+    otherMeta: (app) => `افتح في ${app}`,
+  },
 };
 
 export const wordsFor = (locale: Locale): Words => (locale === "ar" ? ar : en);
