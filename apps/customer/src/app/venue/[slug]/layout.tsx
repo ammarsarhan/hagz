@@ -182,8 +182,9 @@ function Picking({
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title>{t("screens.layout.title")}</Title>
-      {/* Closer to the map than Title's own subtitle sits to what follows it (user, 2026-11-22). */}
+      <Title tight>{t("screens.layout.title")}</Title>
+      {/* Close under the title (tight) and closer to the map than Title's own subtitle sits to what
+          follows it (user, 2026-11-22). */}
       <Text className="mb-4 text-subtitle text-ink-2">{note ?? t("screens.layout.subtitle")}</Text>
       {/* Never scrolls: the map takes what's left once the cards are under it, shrinking (and
           centring) to fit when the venue is tall. It sits right on top of the cards, any spare room
