@@ -3,6 +3,7 @@ import { requestLanguage } from "@/platform/http/language";
 import { createRouter } from "@/platform/http/router";
 import { bookingView } from "../application/booking-view";
 import { createBooking, quoteBooking } from "../application/create-booking";
+import { ensureMyBooking, listMyBookings } from "../application/my-bookings";
 import * as route from "./definitions/customer";
 
 export const bookingsCustomerRoutes = createRouter()
@@ -16,4 +17,17 @@ export const bookingsCustomerRoutes = createRouter()
       c.req.valid("header")["idempotency-key"],
     );
     return c.json(await bookingView(result.value, requestLanguage(c)), 201, replayHeaders(result));
+  })
+  .openapi(route.listBookings, async (c) => {
+    const page = await listMyBookings(
+      c.get("customer").customerId,
+      c.req.valid("query"),
+      requestLanguage(c),
+    );
+    return c.json(page, 200);
+  })
+  .openapi(route.getBooking, async (c) => {
+    const { bookingId } = c.req.valid("param");
+    await ensureMyBooking(c.get("customer").customerId, bookingId);
+    return c.json(await bookingView(bookingId, requestLanguage(c)), 200);
   });

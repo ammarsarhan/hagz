@@ -4560,7 +4560,66 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List my bookings
+         * @description Upcoming (still to be played, soonest first) or past (played, cancelled, expired or released, latest first). A booking the venue moved isn't listed; the one that replaced it is. Names follow `Accept-Language`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    when?: "upcoming" | "past";
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of bookings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["BookingSummary"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+                /** @description INVALID_CURSOR */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
         put?: never;
         /**
          * Book a ground
@@ -4649,6 +4708,74 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one of my bookings
+         * @description Names follow `Accept-Language`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13562,6 +13689,40 @@ export interface components {
             amenities: string[];
             /** @description For the venue. */
             note?: string;
+        };
+        BookingSummary: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: string | null;
+                /** @example Maadi, Cairo */
+                area: string | null;
+                cover: {
+                    url: string;
+                } | null;
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            /** @example EGP */
+            currency: string;
+            /** @description Minor units, VAT included. */
+            total: number;
         };
         Checkout: {
             payment: {

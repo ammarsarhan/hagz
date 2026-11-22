@@ -9,7 +9,7 @@ export {
   lockFreeSlots,
   releaseSlots,
 } from "./application/booking-slots";
-export { nameIn } from "./domain/names";
+export { nameIn, placeOf } from "./domain/names";
 export { resolvedTiers } from "./domain/settings";
 export { HORIZON_DAYS } from "./domain/slots";
 export { removeAmenityFromLayouts } from "./application/layout-hooks";
