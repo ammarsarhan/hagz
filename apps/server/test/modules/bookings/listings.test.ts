@@ -1,11 +1,8 @@
 import { Booking, Game, GamePage, StaffBookingDetail } from "@hagz/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
-import { recordArrived, reportNoShow } from "@/modules/bookings/application/listings";
-import { completeEndedBookings } from "@/modules/bookings/application/complete-bookings";
-import { ALL_PERMISSIONS } from "@/modules/venues";
 import { router } from "@/http/router";
 import { prisma } from "@/platform/db/prisma";
-import { aGround, asStaff, at, book, HOUR, signedIn, staffAt } from "../../support/bookings";
+import { aGround, asStaff, at, book, signedIn, staffAt } from "../../support/bookings";
 import { resetDatabase } from "../../support/database";
 import { resetRedis } from "../../support/redis";
 
@@ -124,7 +121,7 @@ describe("joining", () => {
         customerId: player.customer.id,
         phone: "+201005550001",
         reliability: { games: 0, showedUp: 0 },
-        noShowReported: false,
+        checkedInAt: null,
       }),
     ]);
   });
@@ -274,54 +271,5 @@ describe("the feed", () => {
     expect((await mine.json()) as { data: { id: string }[] }).toMatchObject({
       data: [{ id: gameId }],
     });
-  });
-});
-
-describe("after the game", () => {
-  it("staff record who came, a shortfall is noted, and the booker reports no-shows", async () => {
-    const { venue, booker, gameId } = await listed(2);
-    const owner = await staffAt(venue.id);
-    const actor = {
-      venueId: venue.id,
-      staffId: owner.id,
-      role: "OWNER" as const,
-      permissions: ALL_PERMISSIONS,
-    };
-    const one = await signedIn("+201005550001");
-    const two = await signedIn("+201005550002");
-    await join(one.token, gameId);
-    await join(two.token, gameId);
-    const listing = await prisma.bookingListing.findUniqueOrThrow({ where: { id: gameId } });
-    const later = { now: () => new Date(Date.now() + 26 * HOUR) };
-
-    await expect(
-      recordArrived(actor, listing.bookingId, { count: 1 }, { now: () => new Date() }),
-    ).rejects.toMatchObject({ code: "ARRIVED_WINDOW_CLOSED" });
-    await expect(
-      recordArrived(actor, listing.bookingId, { count: 3 }, later),
-    ).rejects.toMatchObject({
-      code: "MORE_THAN_JOINED",
-    });
-    await recordArrived(actor, listing.bookingId, { count: 1 }, later);
-    const events = await prisma.bookingEvent.findMany({ where: { bookingId: listing.bookingId } });
-    expect(events.at(-1)).toMatchObject({
-      type: "GAME_SHORTFALL",
-      data: { expected: 2, arrived: 1 },
-    });
-
-    await expect(
-      reportNoShow(booker.customer.id, listing.bookingId, two.customer.id, later),
-    ).rejects.toMatchObject({ code: "REPORT_WINDOW_CLOSED" });
-    await completeEndedBookings(later);
-    await reportNoShow(booker.customer.id, listing.bookingId, two.customer.id, later);
-    const view = Booking.parse(
-      await (await call(booker.token, "GET", `/bookings/${listing.bookingId}`)).json(),
-    );
-    expect(
-      view.listing?.players.map((p) => [p.customerId, p.reliability, p.noShowReported]),
-    ).toEqual([
-      [one.customer.id, { games: 1, showedUp: 1 }, false],
-      [two.customer.id, { games: 1, showedUp: 0 }, true],
-    ]);
   });
 });
