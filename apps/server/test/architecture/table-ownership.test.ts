@@ -27,6 +27,7 @@ const FILE_OWNERS: Record<string, string> = {
   "ground.prisma": "venues",
   "layout.prisma": "venues",
   "booking.prisma": "bookings",
+  "payment.prisma": "payments",
 };
 
 // Crossings that exist today, each with why it's allowed until it's fixed. An entry that no longer

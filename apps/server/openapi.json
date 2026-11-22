@@ -2849,6 +2849,10 @@
             ],
             "description": "`DEPOSIT`: the share paid online."
           },
+          "paid": {
+            "type": "integer",
+            "description": "Paid online so far, in minor units: succeeded payments less refunds."
+          },
           "charges": {
             "type": "array",
             "items": {
@@ -2898,6 +2902,7 @@
           "tax",
           "paymentMode",
           "deposit",
+          "paid",
           "charges",
           "cancellation",
           "note",
@@ -2958,6 +2963,88 @@
           "startsAt",
           "endsAt"
         ]
+      },
+      "Checkout": {
+        "type": "object",
+        "properties": {
+          "payment": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "$ref": "#/components/schemas/PaymentStatus"
+              },
+              "method": {
+                "$ref": "#/components/schemas/OnlinePaymentMethod"
+              },
+              "amount": {
+                "type": "integer",
+                "description": "Minor units: the deposit, or the whole total."
+              },
+              "currency": {
+                "type": "string",
+                "example": "EGP"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "method",
+              "amount",
+              "currency"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "description": "`fake` until Phase 5.",
+            "example": "fake"
+          },
+          "reference": {
+            "type": "string",
+            "description": "The provider's id for this payment."
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's page to pay on; null for the stand-in provider."
+          }
+        },
+        "required": [
+          "payment",
+          "provider",
+          "reference",
+          "url"
+        ]
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "SUCCEEDED",
+          "FAILED",
+          "EXPIRED"
+        ],
+        "description": "`PENDING`: waiting on the provider. `EXPIRED`: replaced by a newer checkout."
+      },
+      "OnlinePaymentMethod": {
+        "type": "string",
+        "enum": [
+          "CARD",
+          "WALLET"
+        ]
+      },
+      "StartCheckout": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/OnlinePaymentMethod"
+          }
+        }
       },
       "StaffVenue": {
         "type": "object",
@@ -5426,7 +5513,8 @@
           "slot-generation",
           "slot-maintenance",
           "venue-photo-sweeper",
-          "customer-avatar-sweeper"
+          "customer-avatar-sweeper",
+          "booking-expiry"
         ]
       },
       "AdminMarketplace": {
@@ -12229,6 +12317,115 @@
           },
           "503": {
             "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/payments": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Start paying for a held booking",
+        "description": "For a `HELD` booking before its `expiresAt`: the deposit, or the whole total. A newer checkout replaces one still waiting. Retrying with the same `Idempotency-Key` returns the same payment.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "One UUID per user action, reused on every retry of it.",
+              "example": "0192f0c4-8a7e-7b3e-9a51-2f6c1d0e4b7a"
+            },
+            "required": true,
+            "description": "One UUID per user action, reused on every retry of it.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartCheckout"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Checkout started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checkout"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "HOLD_EXPIRED: the time to pay ran out. BOOKING_NOT_AWAITING_PAYMENT (with `bookingStatus`): nothing to pay online now, e.g. still waiting for approval.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "IDEMPOTENCY_KEY_REUSED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PAYMENTS_UNAVAILABLE: no payment provider yet (production), or the database is unavailable.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -20700,6 +20897,160 @@
           },
           "409": {
             "description": "STAFF_NOT_ACTIVE (with `staffStatus`): reactivate them first",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dev/payments/{paymentId}/succeed": {
+      "post": {
+        "tags": [
+          "Development"
+        ],
+        "summary": "Mark a stand-in payment paid",
+        "description": "Development and staging only, while the provider is the stand-in: settles one of your own pending payments as the provider would.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "paymentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking after the outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "PAYMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PAYMENT_SETTLED: it already has its outcome.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dev/payments/{paymentId}/fail": {
+      "post": {
+        "tags": [
+          "Development"
+        ],
+        "summary": "Mark a stand-in payment failed",
+        "description": "Development and staging only, while the provider is the stand-in: settles one of your own pending payments as the provider would.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "paymentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking after the outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "PAYMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PAYMENT_SETTLED: it already has its outcome.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
             "content": {
               "application/problem+json": {
                 "schema": {
