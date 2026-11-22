@@ -9,12 +9,9 @@ import {
   leaveGame,
   listBooking,
   myGames,
-  recordArrived,
   removePlayer,
-  reportNoShow,
   updateListing,
 } from "../application/listings";
-import { staffBookingDetail } from "../application/staff-bookings";
 import * as route from "./definitions/games";
 
 // `mine` is registered before `{gameId}` so it isn't read as an id.
@@ -78,14 +75,4 @@ export const bookingsGameRoutes = createRouter()
     const { bookingId, customerId } = c.req.valid("param");
     await removePlayer(c.get("customer").customerId, bookingId, customerId);
     return c.json(await bookingView(bookingId, requestLanguage(c)), 200);
-  })
-  .openapi(route.reportNoShow, async (c) => {
-    const { bookingId, customerId } = c.req.valid("param");
-    await reportNoShow(c.get("customer").customerId, bookingId, customerId);
-    return c.json(await bookingView(bookingId, requestLanguage(c)), 200);
-  })
-  .openapi(route.recordArrived, async (c) => {
-    const { bookingId } = c.req.valid("param");
-    await recordArrived(c.var.venue, bookingId, c.req.valid("json"));
-    return c.json(await staffBookingDetail(c.var.venue.venueId, bookingId), 200);
   });

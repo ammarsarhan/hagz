@@ -7,22 +7,13 @@ import {
   GamesQuery,
   ListingRequest,
   MyGamesQuery,
-  RecordArrived,
-  StaffBookingDetail,
   UpdateListing,
 } from "@hagz/contracts";
-import { requireVenueAccess } from "@/modules/venues";
-import {
-  CUSTOMER_BEARER,
-  optionalCustomer,
-  requireCustomer,
-  requireStaff,
-  STAFF_BEARER,
-} from "@/platform/http/authenticate";
+import { CUSTOMER_BEARER, optionalCustomer, requireCustomer } from "@/platform/http/authenticate";
 import { body, json, problemResponse } from "@/platform/http/definitions";
 
 // Open games (PR 4.7, docs/listings.md): the feed and joining, the booker's listing on their
-// booking, and the venue recording how many came.
+// booking.
 
 const tags = ["Open games"];
 const security = [{ [CUSTOMER_BEARER]: [] }];
@@ -184,45 +175,5 @@ export const removePlayer = createRoute({
     401: unauthenticated,
     404: notYours,
     409: problemResponse("NOT_JOINED or GAME_STARTED"),
-  },
-});
-
-export const reportNoShow = createRoute({
-  method: "post",
-  path: "/bookings/{bookingId}/listing/players/{customerId}/no-show",
-  tags,
-  summary: "Report a player who didn't come",
-  description: "Within 48 hours of a game that was played. Counts in their reliability.",
-  middleware: [requireCustomer] as const,
-  security,
-  request: { params: playerParams },
-  responses: {
-    200: booking,
-    401: unauthenticated,
-    404: notYours,
-    409: problemResponse("NOT_JOINED or REPORT_WINDOW_CLOSED"),
-  },
-});
-
-export const recordArrived = createRoute({
-  method: "post",
-  path: "/staff/venues/{venueId}/bookings/{bookingId}/arrived",
-  tags: ["Venue bookings"],
-  summary: "Record how many of an open game's players came",
-  description:
-    "Needs `bookings: manage`. From kick-off until 24 hours after the end, and correctable in that time. Left unrecorded, everyone expected counts as having come.",
-  middleware: [requireStaff, requireVenueAccess("bookings", "manage")] as const,
-  security: [{ [STAFF_BEARER]: [] }],
-  request: {
-    params: z.object({ venueId: z.uuid(), bookingId: z.uuid() }),
-    ...body(RecordArrived),
-  },
-  responses: {
-    200: { description: "The booking", ...json(StaffBookingDetail) },
-    401: unauthenticated,
-    403: problemResponse("PERMISSION_DENIED"),
-    404: problemResponse("BOOKING_NOT_FOUND, or GAME_NOT_FOUND: no open game with players."),
-    409: problemResponse("ARRIVED_WINDOW_CLOSED"),
-    422: problemResponse("MORE_THAN_JOINED (with `joined`)"),
   },
 });

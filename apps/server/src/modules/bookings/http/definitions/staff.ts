@@ -153,7 +153,7 @@ export const markBooking = createRoute({
     ...common,
     404: notFound,
     409: problemResponse(
-      "BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, or MARK_WINDOW_CLOSED: more than 24 hours since it ended.",
+      "BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, MARK_WINDOW_CLOSED: more than 24 hours since it ended, or CHECKED_IN: a no-show for a booker who checked in.",
     ),
   },
 });
