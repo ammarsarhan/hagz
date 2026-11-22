@@ -1,5 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
+  BookingSettings,
+  UpdateBookingSettings,
   CreateVenueCustomer,
   UpdateVenueCustomer,
   VenueCustomer,
@@ -97,5 +99,41 @@ export const updateCustomer = createRoute({
     409: problemResponse(
       "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`).",
     ),
+  },
+});
+
+const settingsTags = ["Venue settings"];
+
+export const getBookingSettings = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/booking-settings",
+  tags: settingsTags,
+  summary: "Staff holds, regulars and Fill a slot settings",
+  middleware: [requireStaff, requireVenueAccess("bookings", "view")] as const,
+  security,
+  request: { params: venueParams },
+  responses: {
+    200: { description: "The settings", ...json(BookingSettings) },
+    ...common,
+    404: problemResponse("VENUE_NOT_FOUND"),
+    409: problemResponse("VENUE_STATUS_CONFLICT: no settings yet."),
+  },
+});
+
+export const updateBookingSettings = createRoute({
+  method: "patch",
+  path: "/staff/venues/{venueId}/booking-settings",
+  tags: settingsTags,
+  summary: "Change staff holds, regulars and Fill a slot settings",
+  description:
+    "Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.",
+  middleware: [requireStaff, requireVenueAccess("venue", "manage")] as const,
+  security,
+  request: { params: venueParams, ...body(UpdateBookingSettings) },
+  responses: {
+    200: { description: "The settings", ...json(BookingSettings) },
+    ...common,
+    404: problemResponse("VENUE_NOT_FOUND"),
+    409: problemResponse("VENUE_STATUS_CONFLICT"),
   },
 });

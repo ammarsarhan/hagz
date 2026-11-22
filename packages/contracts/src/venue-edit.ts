@@ -387,3 +387,33 @@ export type AdminVenueSettings = z.infer<typeof AdminVenueSettings>;
 export type AdminVenueGrounds = z.infer<typeof AdminVenueGrounds>;
 export type SetCommission = z.infer<typeof SetCommission>;
 export type AdminVenueAmenities = z.infer<typeof AdminVenueAmenities>;
+
+// How the venue runs its bookings day to day (PRs 4.5, 4.6, 4.8): staff holds, regulars, and who
+// counts as a regular or lapsed in Fill a slot. Kept apart from the settings above, which players
+// see and the venue's review covers.
+export const BookingSettings = z
+  .object({
+    staffHoldMinutes: z.int().min(5).max(60).meta({ description: "How long a staff hold lasts." }),
+    regularHorizon: z.int().min(1).max(12).meta({
+      description: "Weeks of regulars' reservations kept ahead.",
+    }),
+    confirmationWindow: z.int().min(1).max(168).meta({
+      description: "Hours before kick-off a regular's week must be confirmed.",
+    }),
+    lapsedAfter: z.int().min(1).max(12).meta({
+      description: "Weeks without a game before a regular counts as lapsed.",
+    }),
+    regularBookings: z.int().min(1).max(50).meta({
+      description: "Games within `regularPeriod` weeks that make someone a regular.",
+    }),
+    regularPeriod: z.int().min(1).max(26).meta({ description: "Weeks." }),
+  })
+  .meta({ id: "BookingSettings" });
+
+export const UpdateBookingSettings = BookingSettings.partial().meta({
+  id: "UpdateBookingSettings",
+  description: "Only what's sent changes.",
+});
+
+export type BookingSettings = z.infer<typeof BookingSettings>;
+export type UpdateBookingSettings = z.infer<typeof UpdateBookingSettings>;
