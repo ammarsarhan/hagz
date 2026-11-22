@@ -301,7 +301,7 @@ const ar: ArabicTranslations = {
       },
       layout: {
         title: "المخطط",
-        subtitle: "دوس على أي ملعب، أو اسحب الكروت.",
+        subtitle: "اختار أي ملعب عشان تشوف مواعيده.",
         viewTimes: "شوف المواعيد",
       },
       times: {

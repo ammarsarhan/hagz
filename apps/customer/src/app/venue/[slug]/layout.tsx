@@ -22,15 +22,16 @@ type Loaded =
 
 // The page's side padding (Screen's px-5), which the cards run into.
 const GUTTER = 20;
-// From the map to the cards (its mb-5), and kept clear under the cards above the bar.
-const MAP_GAP = 20;
-const BELOW = 16;
+// From the map to the cards (its mb-7), and kept clear under the cards above the bar (user,
+// 2026-11-22: more room around the cards).
+const MAP_GAP = 28;
+const BELOW = 28;
 
 // A venue's layout on its own screen, from View layout on the Grounds heading (Figma C5 215:2,
 // round 2; user, 2026-11-22): the map from above, and the venue's ground cards under it. Tapping a
 // ground on the map picks it and brings its card into place; swiping the cards picks the one that
 // settles. The picked ground is darker on the map and its card has an ink border. The bar at the
-// bottom names it, and View times (lime: the user's call over the Figma's black) opens its free
+// bottom names it, and View times (black; the user tried lime and went back) opens its free
 // times. Opened from a search, what was searched for is the subtitle, the grounds that don't fit are
 // faded, and the search's day, start and length carry on to See times, as the ground cards do.
 export default function VenueLayoutScreen() {
@@ -95,7 +96,8 @@ export default function VenueLayoutScreen() {
     <Picking
       venue={loaded.venue}
       unavailable={unavailable}
-      note={note}
+      // Only a search with a time to aim for says it; otherwise the usual hint.
+      note={search.start ? note : undefined}
       onTimes={(groundId) =>
         router.push({
           pathname: "/venue/[slug]/times",
@@ -120,7 +122,7 @@ function Picking({
   venue: PublicVenue;
   // The grounds the search left out, comma-separated; none without a search.
   unavailable?: string;
-  // What was searched for ("Fri 22 Nov, 7–9 pm").
+  // What was searched for ("Fri 22 Nov, 7–9 pm"), when it had a start time.
   note?: string;
   onTimes: (groundId: string) => void;
 }) {
@@ -170,7 +172,6 @@ function Picking({
             <View className="w-[150px]">
               <Button
                 label={t("screens.layout.viewTimes")}
-                variant="moment"
                 size="small"
                 disabled={!open}
                 onPress={() => onTimes(picked.id)}
@@ -181,14 +182,16 @@ function Picking({
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      <Title subtitle={note ?? t("screens.layout.subtitle")}>{t("screens.layout.title")}</Title>
+      <Title>{t("screens.layout.title")}</Title>
+      {/* Closer to the map than Title's own subtitle sits to what follows it (user, 2026-11-22). */}
+      <Text className="mb-4 text-subtitle text-ink-2">{note ?? t("screens.layout.subtitle")}</Text>
       {/* Never scrolls: the map takes what's left once the cards are under it, shrinking (and
           centring) to fit when the venue is tall. It sits right on top of the cards, any spare room
           under them. */}
       <View className="flex-1" onLayout={(event) => setRoom(event.nativeEvent.layout.height)}>
         {venue.layout && room > 0 && cardsHeight > 0 ? (
-          // 20 to the cards, the entrance tags on its bottom edge hanging into it.
-          <View className="mb-5">
+          // 28 to the cards, the entrance tags on its bottom edge hanging into it.
+          <View className="mb-7">
             <VenueLayout
               layout={venue.layout}
               grounds={venue.grounds}

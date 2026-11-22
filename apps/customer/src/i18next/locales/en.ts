@@ -280,7 +280,7 @@ const en = {
       },
       layout: {
         title: "Layout",
-        subtitle: "Tap a ground, or swipe the cards.",
+        subtitle: "Select any ground to view times.",
         viewTimes: "View times",
       },
       times: {
