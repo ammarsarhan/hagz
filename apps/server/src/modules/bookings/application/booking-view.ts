@@ -3,6 +3,7 @@ import type { Language } from "@/generated/prisma/enums";
 import { nameIn } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import type { ChargeLine } from "../domain/charges";
+import { moveFor } from "./move-response";
 
 // How a booking is shown to the player who made it.
 
@@ -124,6 +125,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
       tiers: booking.cancellationTiers as CancellationTier[],
     },
     note: booking.note,
+    move: await moveFor(booking.id, language),
     createdAt: booking.createdAt.toISOString(),
   };
 };
