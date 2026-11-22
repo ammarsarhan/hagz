@@ -10,10 +10,11 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 - **At checkout** (decided on 2026-10-30): the booker can ask for players while booking (step 3 of the booking flow). The listing opens by itself once the booking is `CONFIRMED` and fully paid, under the rule above. If the booking never gets there, no listing is made.
 - **How many:** the booker sets `neededPlayers`. The ground's sport and size cap it: a 5-a-side pitch holds 10, so at most 9 others can join. A table in code maps each sport and size to its player count.
 - **Raising and lowering:** the booker can raise it at any time up to the cap, and **lower it only down to the number already joined**. Setting it to the joined count closes the listing. Turning the listing off is only possible while nobody has joined, or after removing the joined players.
-- **Joining:** any signed-in customer, from the feed or a shared link. Not the booker, not twice, not when it's full, not after kick-off, and not into two games that overlap in time.
+- **Joining:** any signed-in customer, from the feed or a shared link. Not the booker, not twice, not when it's full, not after kick-off, not into two games that overlap in time, and not over a booking of their own.
 - **Leaving:** a joined player can leave until kick-off, which frees their spot. The booker can remove a player, who is told.
 - **Cancellation:** if the booking is cancelled, every joined player is notified and the listing closes.
 - **Rescheduling:** if staff move the booking, the listing moves with it (new booking and start time) and joined players are told. See [rescheduling.md](rescheduling.md).
+- **Decided on 2026-11-22 (PR 4.7):** no minimum reliability to join in v1 (the booker sees the figure and can remove someone). Joining is also refused when it overlaps a booking of the player's own that's still on. A removed player can't rejoin that game; one who left can, while there's room. Joined players don't become the venue's customers.
 - **Disclaimer,** on the listing and on the join button: *"Hagz doesn't guarantee that the players who join will show up, or that the game will go ahead. You pay your share to the booker and the joining fee to the venue, in person."*
 
 ## What people see
@@ -84,6 +85,3 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
 
 - Whether the venue keeps part of the joining fee for collecting it. It has to chase strangers for 6 EGP, and a share would make it more likely to record honestly.
 - VAT on the joining fee: it's Hagz's revenue, so Hagz charges VAT on it once registered (the accountant's question, with commission).
-
-- Whether joined players also become the venue's customers (`VenueCustomer`), so venues can see them in Fill a slot. They play there, but they didn't book.
-- Whether a minimum reliability can be required to join (for example, bookers may only accept players who show up at least 80% of the time).
