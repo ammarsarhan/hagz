@@ -26,9 +26,13 @@ export const BookingStatus = z
       "`PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it.",
   });
 
-export const BookingChargeType = z.enum(["SLOT", "AMENITY", "DISCOUNT", "REWARD"]).meta({
-  id: "BookingChargeType",
-});
+export const BookingChargeType = z
+  .enum(["SLOT", "AMENITY", "DISCOUNT", "REWARD", "ADJUSTMENT"])
+  .meta({
+    id: "BookingChargeType",
+    description:
+      "`ADJUSTMENT`: the venue's own price for a booking its staff entered, as the difference from the other lines (either sign).",
+  });
 
 const Instant = z.iso.datetime();
 

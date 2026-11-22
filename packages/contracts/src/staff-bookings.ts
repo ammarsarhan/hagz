@@ -145,3 +145,92 @@ export type MoveBooking = z.infer<typeof MoveBooking>;
 export type SwapBookings = z.infer<typeof SwapBookings>;
 export type SwappedBookings = z.infer<typeof SwappedBookings>;
 export type SharedBooking = z.infer<typeof SharedBooking>;
+
+// The venue's customers (PR 4.3): app players who booked there and walk-ins staff entered.
+
+const Phone = z.string().min(1).max(32).meta({ example: "+20 100 123 4567" });
+const Name = z.string().trim().min(1).max(100);
+const Note = z.string().trim().max(500).meta({
+  description: "Staff's own note about the customer; never shown to them. Empty clears it.",
+});
+
+export const VenueCustomersQuery = z
+  .object({
+    q: z.string().trim().max(100).optional().meta({
+      description: "Part of the name or the phone number.",
+    }),
+    cursor: z.string().optional().meta({ description: "`nextCursor` from the previous page." }),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .meta({ id: "VenueCustomersQuery" });
+
+export const VenueCustomer = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    phone: z.string().nullable(),
+    app: z.boolean().meta({
+      description:
+        "A Hagz account: its name and number follow the account and can't be edited by the venue.",
+    }),
+    note: z.string().nullable(),
+    lastBookedAt: Instant.nullable(),
+    bookingCount: z.int().meta({ description: "Games played (completed)." }),
+    noShowCount: z.int(),
+    createdAt: Instant,
+  })
+  .meta({ id: "VenueCustomer" });
+
+export const VenueCustomerPage = z
+  .object({ data: z.array(VenueCustomer), nextCursor: z.string().nullable() })
+  .meta({ id: "VenueCustomerPage" });
+
+export const CreateVenueCustomer = z
+  .object({ name: Name, phone: Phone.optional(), note: Note.optional() })
+  .meta({ id: "CreateVenueCustomer" });
+
+export const UpdateVenueCustomer = z
+  .object({
+    name: Name.optional().meta({ description: "Walk-ins only." }),
+    phone: Phone.nullable().optional().meta({ description: "Walk-ins only; null removes it." }),
+    note: Note.optional(),
+  })
+  .meta({ id: "UpdateVenueCustomer" });
+
+export const CustomerBookingsQuery = z
+  .object({
+    cursor: z.uuid().optional().meta({ description: "`nextCursor` from the previous page." }),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .meta({ id: "CustomerBookingsQuery" });
+
+export const StaffBookingPage = z
+  .object({ data: z.array(StaffBooking), nextCursor: z.uuid().nullable() })
+  .meta({ id: "StaffBookingPage" });
+
+// A walk-in or phone booking (PR 4.3): confirmed at once, paid at the venue, no commission.
+export const CreateStaffBooking = z
+  .object({
+    ...Range,
+    amenities: z
+      .array(z.uuid())
+      .max(20)
+      .default([])
+      .meta({ description: "Priced amenities (option ids) added to the booking." }),
+    customer: CreateHold.shape.customer,
+    total: z.int().min(0).optional().meta({
+      description:
+        "The venue's own price, in minor units, VAT included. Left out: the slots' and amenities' prices. Kept as an `ADJUSTMENT` line for the difference.",
+    }),
+    note: z.string().trim().max(500).optional(),
+  })
+  .meta({ id: "CreateStaffBooking" });
+
+export type VenueCustomersQuery = z.infer<typeof VenueCustomersQuery>;
+export type VenueCustomer = z.infer<typeof VenueCustomer>;
+export type VenueCustomerPage = z.infer<typeof VenueCustomerPage>;
+export type CreateVenueCustomer = z.infer<typeof CreateVenueCustomer>;
+export type UpdateVenueCustomer = z.infer<typeof UpdateVenueCustomer>;
+export type CustomerBookingsQuery = z.infer<typeof CustomerBookingsQuery>;
+export type StaffBookingPage = z.infer<typeof StaffBookingPage>;
+export type CreateStaffBooking = z.infer<typeof CreateStaffBooking>;
