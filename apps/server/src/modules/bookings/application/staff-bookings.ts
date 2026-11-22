@@ -19,6 +19,7 @@ import {
 } from "./admin-bookings";
 import { AppError } from "@/platform/errors/app-error";
 import { venueBookingNotFound } from "./booking-rows";
+import { staffGame } from "./listings";
 
 const customerNotFound = () =>
   new AppError({
@@ -31,7 +32,11 @@ const customerNotFound = () =>
 // bookings waiting for approval, one booking in full, and its history. Only this venue's bookings;
 // anyone else's answer as if they didn't exist.
 
-export const staffSelect = { ...summarySelect, expiresAt: true } as const;
+export const staffSelect = {
+  ...summarySelect,
+  expiresAt: true,
+  listing: { select: { status: true, playerCount: true } },
+} as const;
 const select = staffSelect;
 
 // A staff hold: HELD slots kept by staff for someone deciding. App bookings wait for payment in
@@ -40,11 +45,18 @@ export const isHold = (booking: { status: string; creatorId: string | null }) =>
   booking.status === "HELD" && booking.creatorId !== null;
 
 export const presentStaff = (
-  row: Parameters<typeof presentSummary>[0] & { expiresAt: Date | null },
+  row: Parameters<typeof presentSummary>[0] & {
+    expiresAt: Date | null;
+    listing: { status: string; playerCount: number } | null;
+  },
 ) => ({
   ...presentSummary(row),
   expiresAt: row.expiresAt?.toISOString() ?? null,
   hold: isHold(row),
+  openGame:
+    row.listing?.status === "OPEN" && row.listing.playerCount > 0
+      ? { players: row.listing.playerCount }
+      : null,
 });
 
 // Bookings overlapping the venue-local days [date, date + span), by start time then ground.
@@ -107,6 +119,7 @@ export const staffBookingDetail = async (
   return StaffBookingDetail.parse({
     ...detail,
     hold: isHold({ status: detail.status, creatorId: detail.creator?.id ?? null }),
+    game: await staffGame(bookingId),
   });
 };
 

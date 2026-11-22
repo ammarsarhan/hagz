@@ -4,6 +4,7 @@ import { nameIn, placeOf } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import { AppError } from "@/platform/errors/app-error";
 import { CODE_LENGTH } from "../domain/events";
+import { sharedGameId } from "./listings";
 
 // The share link, /b/{code} (PR 4.4): the venue, ground and time, for anyone with the link. No money
 // and nothing about the customer. A moved booking points to the one that replaced it.
@@ -24,6 +25,7 @@ export const sharedBooking = async (code: string, language: Language): Promise<S
   const booking = await prisma.booking.findUnique({
     where: { code: normalized },
     select: {
+      id: true,
       code: true,
       status: true,
       startsAt: true,
@@ -64,6 +66,7 @@ export const sharedBooking = async (code: string, language: Language): Promise<S
       sport: booking.ground.sport,
       size: booking.ground.size,
     },
+    gameId: await sharedGameId(booking.id),
     movedTo: booking.rescheduledTo[0]?.to.code ?? null,
   };
 };
