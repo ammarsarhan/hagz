@@ -11,6 +11,7 @@ CREATE TABLE "VenueRegular" (
     "startsOn" DATE NOT NULL,
     "endsOn" DATE,
     "pausedAt" TIMESTAMPTZ,
+    "endedAt" TIMESTAMPTZ,
     "priority" INTEGER NOT NULL,
     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ NOT NULL,

@@ -14,6 +14,7 @@ model VenueRegular {
   startsOn   DateTime  @db.Date
   endsOn     DateTime? @db.Date
   pausedAt   DateTime? @db.Timestamptz
+  endedAt    DateTime? @db.Timestamptz // Ended by staff: no more weeks, whatever endsOn says.
   priority   Int // Among regulars that overlap, lower reserves a week first. A new one goes last.
   createdAt  DateTime  @default(now()) @db.Timestamptz
   updatedAt  DateTime  @updatedAt @db.Timestamptz
