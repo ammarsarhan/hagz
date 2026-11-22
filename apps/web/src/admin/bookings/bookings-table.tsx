@@ -13,7 +13,8 @@ import { bookingHref, bookingTime, STATUSES, statusLabel, statusTone, useBooking
 // Bookings in the admin's one table design: status tabs with counts, a search that goes to the API
 // (code, customer, phone, venue), a page at a time with Show more, and a row opens the booking.
 // Every booking on the Bookings page; one venue's on that venue's Bookings tab, where the Venue
-// column gives way to the Ground and a dropdown beside the search narrows it to one ground.
+// column gives way to the Ground, a dropdown beside the search narrows it to one ground, and the
+// status is a dropdown too, at the row's right end, instead of tabs.
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, AdminBooking>();
@@ -118,8 +119,11 @@ type Section = "ALL" | BookingStatus;
 export function BookingsTable({
   venueId,
   grounds,
+  statusFilter = "tabs",
 }: {
   venueId?: string;
+  // Status as tabs over the table, or as a dropdown at the right end of the search row.
+  statusFilter?: "tabs" | "dropdown";
   // The venue's grounds, for its ground filter; the filter shows once they've loaded.
   grounds?: { id: string; name: string | null }[];
 }) {
@@ -144,7 +148,90 @@ export function BookingsTable({
   const counts = data?.counts;
   const total = counts ? STATUSES.reduce((sum, s) => sum + counts[s], 0) : undefined;
   const searching = query.trim() !== "";
+  // A count beside a dropdown option once the counts are in: "Confirmed · 22".
+  const counted = (label: string, count: number | undefined) =>
+    count === undefined ? label : `${label} · ${count}`;
 
+  const toolbar = (
+    <div className="flex items-center gap-2">
+      <TableSearch
+        value={query}
+        onChange={setQuery}
+        placeholder={venueId ? "Search code or customer…" : "Search code, customer or venue…"}
+      />
+      {grounds && grounds.length > 1 ? (
+        <TableFilter
+          label="Ground"
+          value={groundId}
+          onChange={setGroundId}
+          options={[
+            { value: "", label: "All grounds" },
+            ...grounds.map((ground, i) => ({
+              value: ground.id,
+              label: ground.name ?? `Ground ${i + 1}`,
+            })),
+          ]}
+        />
+      ) : null}
+      {statusFilter === "dropdown" ? (
+        <div className="ml-auto">
+          <TableFilter
+            label="Status"
+            value={section}
+            onChange={(value) => setSection(value as Section)}
+            options={[
+              { value: "ALL", label: counted("All statuses", total) },
+              ...STATUSES.map((s) => ({ value: s, label: counted(statusLabel[s], counts?.[s]) })),
+            ]}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const results = (
+    <>
+      <div className="mt-4">
+        <DataTable
+          table={table}
+          widths={widths}
+          onRowClick={(row) => router.push(bookingHref(row.original.id, "details"))}
+          loading={!data && !error}
+          empty={
+            error ??
+            (searching
+              ? `No booking matches “${query.trim()}”.`
+              : groundId
+                ? "No bookings on this ground."
+                : status
+                  ? `No ${statusLabel[status].toLowerCase()} bookings.`
+                  : "No bookings yet.")
+          }
+        />
+      </div>
+      {data?.nextCursor ? (
+        <div className="mt-6 flex justify-center">
+          <Button
+            size="small"
+            variant="secondary"
+            loading={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            Show more
+          </Button>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (statusFilter === "dropdown") {
+    return (
+      <>
+        {toolbar}
+        {results}
+      </>
+    );
+  }
   return (
     <>
       <Tabs
@@ -156,59 +243,9 @@ export function BookingsTable({
           ...STATUSES.map((s) => ({ id: s, label: statusLabel[s], count: counts?.[s] })),
         ]}
       />
-
       <TabPanel id={section}>
-        <div className="mt-6 flex items-center gap-2">
-          <TableSearch
-            value={query}
-            onChange={setQuery}
-            placeholder={venueId ? "Search code or customer…" : "Search code, customer or venue…"}
-          />
-          {grounds && grounds.length > 1 ? (
-            <TableFilter
-              label="Ground"
-              value={groundId}
-              onChange={setGroundId}
-              options={[
-                { value: "", label: "All grounds" },
-                ...grounds.map((ground, i) => ({
-                  value: ground.id,
-                  label: ground.name ?? `Ground ${i + 1}`,
-                })),
-              ]}
-            />
-          ) : null}
-        </div>
-        <div className="mt-4">
-          <DataTable
-            table={table}
-            widths={widths}
-            onRowClick={(row) => router.push(bookingHref(row.original.id, "details"))}
-            loading={!data && !error}
-            empty={
-              error ??
-              (searching
-                ? `No booking matches “${query.trim()}”.`
-                : groundId
-                  ? "No bookings on this ground."
-                  : status
-                    ? `No ${statusLabel[status].toLowerCase()} bookings.`
-                    : "No bookings yet.")
-            }
-          />
-        </div>
-        {data?.nextCursor ? (
-          <div className="mt-6 flex justify-center">
-            <Button
-              size="small"
-              variant="secondary"
-              loading={loadingMore}
-              onClick={() => void loadMore()}
-            >
-              Show more
-            </Button>
-          </div>
-        ) : null}
+        <div className="mt-6">{toolbar}</div>
+        {results}
       </TabPanel>
     </>
   );
