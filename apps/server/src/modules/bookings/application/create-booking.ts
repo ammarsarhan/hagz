@@ -11,6 +11,7 @@ import { BOOKING_EVENTS } from "../domain/events";
 import { checkLength, coversExactly, slotUnavailable } from "../domain/rules";
 import { startOf } from "../domain/status";
 import { newCode, withFreshCode } from "./booking-rows";
+import { listAtCheckout } from "./listings";
 import { bookingTerms, type BookingTerms } from "./booking-terms";
 import { amenityNames, presentCharge } from "./booking-view";
 
@@ -183,6 +184,7 @@ export const createBooking = async (
         id,
         booking.start.status === "CONFIRMED" ? "BOOKED" : "HELD",
       );
+      if (request.listing) await listAtCheckout(tx, id, request.listing, terms.startsAt);
       const stored: StoredKey = {
         id,
         groundId: terms.groundId,

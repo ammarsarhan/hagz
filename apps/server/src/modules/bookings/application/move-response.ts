@@ -11,6 +11,7 @@ import { MOVABLE, respondBy } from "../domain/moves";
 import { coversExactly } from "../domain/rules";
 import { invalidTransition } from "../domain/status";
 import { lockBooking, moveChain, netPaid, withFreshCode } from "./booking-rows";
+import { cancelListings } from "./listings";
 import { bookingNotFound } from "./my-bookings";
 import { claimTarget, movingSelect, retire, successor, type Moving } from "./rescheduling";
 
@@ -161,6 +162,7 @@ export const rejectMove = async (
       },
     });
     await releaseSlots(tx, [booking.id], now);
+    await cancelListings(tx, [booking.id], now);
     await tx.bookingEvent.create({
       data: { bookingId: booking.id, type: BOOKING_EVENTS.MOVE_REJECTED, customerId },
     });

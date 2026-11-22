@@ -2,6 +2,7 @@ import { releaseSlots } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { transaction } from "@/platform/db/transaction";
 import { BOOKING_EVENTS } from "../domain/events";
+import { cancelListings } from "./listings";
 
 // The expiry sweep (PR 4.2): PENDING bookings staff didn't approve and HELD ones nobody paid for,
 // past their expiresAt, become EXPIRED and give their slots back; a regular's UNCONFIRMED week
@@ -32,6 +33,7 @@ export const expireDueBookings = async (clock: Clock = systemClock): Promise<num
       await tx.booking.updateMany({ where: { id: { in: unpaid } }, data: { status: "EXPIRED" } });
       await tx.booking.updateMany({ where: { id: { in: weeks } }, data: { status: "RELEASED" } });
       await releaseSlots(tx, ids, now);
+      await cancelListings(tx, unpaid, now);
       await tx.bookingEvent.createMany({
         data: due.map((booking) =>
           booking.status === "UNCONFIRMED"

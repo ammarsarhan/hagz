@@ -11,6 +11,7 @@ import { AppError } from "@/platform/errors/app-error";
 import { BOOKING_EVENTS } from "../domain/events";
 import { canMove, invalidTransition, paymentDeadline } from "../domain/status";
 import { lockBooking, netPaid, venueBookingNotFound } from "./booking-rows";
+import { cancelListings, openWaitingListing } from "./listings";
 
 // Staff deciding on bookings (PR 4.2): approving or declining one that waits for the venue, and
 // marking how a game went. Each is a compare-and-set on the locked row, with its BookingEvent.
@@ -79,7 +80,10 @@ export const approveBooking = async (
           : null,
       },
     });
-    if (!payable) await bookHeldSlots(tx, booking.id);
+    if (!payable) {
+      await bookHeldSlots(tx, booking.id);
+      await openWaitingListing(tx, booking.id);
+    }
     await tx.bookingEvent.create({
       data: {
         bookingId: booking.id,
@@ -116,6 +120,7 @@ export const declineBooking = async (
       },
     });
     await releaseSlots(tx, [booking.id], now);
+    await cancelListings(tx, [booking.id], now);
     await tx.bookingEvent.create({
       data: {
         bookingId: booking.id,

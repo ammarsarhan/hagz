@@ -22,6 +22,7 @@ import {
 import { checkLength, checkRange, coversExactly, slotUnavailable } from "../domain/rules";
 import { invalidTransition } from "../domain/status";
 import { lockBookings, newCode, venueBookingNotFound, withFreshCode } from "./booking-rows";
+import { followMove } from "./listings";
 
 // Moving and swapping bookings (PR 4.8, docs/rescheduling.md). A move never edits the booking: the
 // old one ends RESCHEDULED and a new one takes over its customer, status and terms at the new
@@ -221,6 +222,7 @@ export const successor = async (
     id,
     from.status === "CONFIRMED" ? "BOOKED" : "HELD",
   );
+  await followMove(tx, from.id, id, target.startsAt);
   await tx.rescheduling.create({
     data: {
       venueId: from.venueId,
