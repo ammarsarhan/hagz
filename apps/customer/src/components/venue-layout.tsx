@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { PublicGround, PublicVenue } from "@/lib/venue";
@@ -10,8 +10,9 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 // `width / columns` points, the venue's outline in ink, each ground drawn top-down with its
 // markings and name, the amenities placed on it as white tiles, and the entrances as black tags on
 // the edge. Grounds under maintenance say so, and so do grounds that don't fit the search the page
-// came from (faded, "Unavailable"). The ground picked in the list under it is a darker grey.
-// It's the real place seen from above, so it isn't mirrored in Arabic.
+// came from (faded, "Unavailable"). With `onPressGround` (the layout screen,
+// app/venue/[slug]/layout.tsx), each open ground is a button over its tile that goes dark grey while
+// held. It's the real place seen from above, so it isn't mirrored in Arabic.
 
 type Layout = NonNullable<PublicVenue["layout"]>;
 
@@ -19,9 +20,9 @@ const INK = "#0b0b0c";
 const GRID = "#edeef0";
 const TILE = "#e4e6ea";
 const MARK = "#9ea3ab";
-// The picked ground: a grey darker than the rest, its lines darker too.
-const PICKED = "#c9cdd3";
-const PICKED_MARK = "#6f747c";
+// A held ground: a grey darker than the rest, its lines darker too.
+const HELD = "#c9cdd3";
+const HELD_MARK = "#6f747c";
 const AMENITY_LINE = "#d5d8dd";
 const UNIT = "#737373";
 // Inside a cell's edge, so tiles side by side don't touch.
@@ -30,6 +31,8 @@ const INSET = 2;
 const MARGIN = 5;
 // Room around the outline for the entrance tags that sit across it.
 const EDGE = 8;
+// The card's padding (p-3), between its edge and the drawing.
+const PAD = 12;
 
 interface Box {
   x: number;
@@ -135,26 +138,26 @@ function Markings({
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 
-// The picked look laid over a ground (darker grey, darker lines), fading in and out as the pick
-// moves, rather than the colours snapping.
-function PickedOverlay({
+// The held look laid over a ground (darker grey, darker lines), fading in and out rather than the
+// colours snapping.
+function HeldOverlay({
   sport,
   box,
-  picked,
+  held,
 }: {
   sport: PublicGround["sport"];
   box: Box;
-  picked: boolean;
+  held: boolean;
 }) {
-  const shown = useSharedValue(picked ? 1 : 0);
+  const shown = useSharedValue(held ? 1 : 0);
   useEffect(() => {
-    shown.value = withTiming(picked ? 1 : 0, { duration: 200 });
-  }, [picked, shown]);
+    shown.value = withTiming(held ? 1 : 0, { duration: 200 });
+  }, [held, shown]);
   const props = useAnimatedProps(() => ({ opacity: shown.value }));
   return (
     <AnimatedG animatedProps={props}>
-      <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={PICKED} />
-      <Markings sport={sport} box={box} color={PICKED_MARK} />
+      <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={HELD} />
+      <Markings sport={sport} box={box} color={HELD_MARK} />
     </AnimatedG>
   );
 }
@@ -182,19 +185,21 @@ export function VenueLayout({
   layout,
   grounds,
   amenities,
-  selectedId,
   unavailableIds,
+  onPressGround,
 }: {
   layout: Layout;
   grounds: PublicGround[];
   amenities: PublicVenue["amenities"];
-  // The ground picked in the list under the map: a darker grey, with darker lines.
-  selectedId?: string | null;
   // Grounds that don't fit the search the page came from: faded, tagged Unavailable.
   unavailableIds?: ReadonlySet<string>;
+  // Tapping an open ground (not one closed for maintenance).
+  onPressGround?: (groundId: string) => void;
 }) {
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
+  // The ground under a finger.
+  const [heldId, setHeldId] = useState<string | null>(null);
   const cell = width / layout.columns;
   const height = cell * layout.rows;
   const groundById = new Map(grounds.map((ground) => [ground.id, ground]));
@@ -209,7 +214,7 @@ export function VenueLayout({
   return (
     <View
       className="overflow-hidden rounded-2xl bg-[#f6f7f8] p-3"
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width - 24 - 2 * EDGE)}
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width - 2 * PAD - 2 * EDGE)}
     >
       {width > 0 ? (
         <Svg width={width + 2 * EDGE} height={height + 2 * EDGE}>
@@ -276,13 +281,13 @@ export function VenueLayout({
                   ? [placed.height, placed.width]
                   : [placed.width, placed.height];
               const box = boxOf(placed.x, placed.y, w, h);
-              const selected = ground.id === selectedId;
+              const held = ground.id === heldId;
               const unavailable = unavailableIds?.has(ground.id) === true;
               return (
                 <G key={placed.groundId} opacity={unavailable ? 0.45 : 1}>
                   <Rect x={box.x} y={box.y} width={box.w} height={box.h} rx={4} fill={TILE} />
                   <Markings sport={ground.sport} box={box} color={MARK} />
-                  <PickedOverlay sport={ground.sport} box={box} picked={selected} />
+                  <HeldOverlay sport={ground.sport} box={box} held={held} />
                   <Tag
                     box={box}
                     name={ground.name ?? ""}
@@ -338,6 +343,38 @@ export function VenueLayout({
       ) : (
         <View style={{ aspectRatio: layout.columns / layout.rows }} />
       )}
+      {/* The buttons, one over each open ground's tile (an SVG shape can't be a button a screen
+          reader finds). */}
+      {onPressGround && width > 0
+        ? layout.grounds.map((placed) => {
+            const ground = groundById.get(placed.groundId);
+            if (!ground || ground.status !== "ACTIVE") return null;
+            const [w, h] =
+              placed.orientation === "VERTICAL"
+                ? [placed.height, placed.width]
+                : [placed.width, placed.height];
+            const box = boxOf(placed.x, placed.y, w, h);
+            return (
+              <Pressable
+                key={placed.groundId}
+                accessibilityRole="button"
+                accessibilityLabel={t("screens.venue.grounds.seeTimesFor", {
+                  name: ground.name ?? "",
+                })}
+                onPressIn={() => setHeldId(ground.id)}
+                onPressOut={() => setHeldId(null)}
+                onPress={() => onPressGround(ground.id)}
+                style={{
+                  position: "absolute",
+                  left: PAD + EDGE + box.x,
+                  top: PAD + EDGE + box.y,
+                  width: box.w,
+                  height: box.h,
+                }}
+              />
+            );
+          })
+        : null}
     </View>
   );
 }
