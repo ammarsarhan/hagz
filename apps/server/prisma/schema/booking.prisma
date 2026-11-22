@@ -136,7 +136,7 @@ model Rescheduling {
   toBookingId     String           @db.Uuid
   type            ReschedulingType
   groupId         String?          @db.Uuid // Shared by the two moves of a SWAP.
-  staffId         String?          @db.Uuid // Who moved it, or entered the refill; null when a customer refilled it in the app.
+  staffId         String?          @db.Uuid // Who moved it, or entered the refill; null when a customer refilled it or moved it back in the app.
   reason          String?
   priceDifference Int? // Minor units.
   createdAt       DateTime         @default(now()) @db.Timestamptz
