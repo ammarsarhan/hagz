@@ -4474,6 +4474,280 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Price a booking before making it
+         * @description For the review step: the charges, VAT, deposit and what the booking would start as. Open to guests. Nothing is held, so the time can still be taken before booking. Names follow `Accept-Language`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BookingRequest"];
+                };
+            };
+            responses: {
+                /** @description The price */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingQuote"];
+                    };
+                };
+                /** @description GROUND_NOT_FOUND: no ground with that id at a live venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOOKING_TIME (with the limit it broke: `minimumNotice`, `horizonDays`, or `minimumSlots` and `maximumSlots`), or AMENITY_NOT_AVAILABLE. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Book a ground
+         * @description Books back-to-back slots on one ground. Starts `CONFIRMED`, `PENDING` (the venue approves, until `expiresAt`) or `HELD` (waiting for payment, until `expiresAt`). Retrying with the same `Idempotency-Key` returns the same booking with `Idempotent-Replayed: true`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description One UUID per user action, reused on every retry of it. */
+                    "idempotency-key": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateBooking"];
+                };
+            };
+            responses: {
+                /** @description Booked */
+                201: {
+                    headers: {
+                        /** @description Set when this answers a retry with the booking already made. */
+                        "Idempotent-Replayed"?: "true";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GROUND_NOT_FOUND: no ground with that id at a live venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOOKING_TIME (with the limit it broke: `minimumNotice`, `horizonDays`, or `minimumSlots` and `maximumSlots`), or AMENITY_NOT_AVAILABLE. IDEMPOTENCY_KEY_REUSED: the key was used for a different booking. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start paying for a held booking
+         * @description For a `HELD` booking before its `expiresAt`: the deposit, or the whole total. A newer checkout replaces one still waiting. Retrying with the same `Idempotency-Key` returns the same payment.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description One UUID per user action, reused on every retry of it. */
+                    "idempotency-key": string;
+                };
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StartCheckout"];
+                };
+            };
+            responses: {
+                /** @description Checkout started */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Checkout"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description HOLD_EXPIRED: the time to pay ran out. BOOKING_NOT_AWAITING_PAYMENT (with `bookingStatus`): nothing to pay online now, e.g. still waiting for approval. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description IDEMPOTENCY_KEY_REUSED */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PAYMENTS_UNAVAILABLE: no payment provider yet (production), or the database is unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues": {
         parameters: {
             query?: never;
@@ -12171,6 +12445,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/dev/payments/{paymentId}/succeed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a stand-in payment paid
+         * @description Development and staging only, while the provider is the stand-in: settles one of your own pending payments as the provider would.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    paymentId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking after the outcome */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PAYMENT_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PAYMENT_SETTLED: it already has its outcome. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dev/payments/{paymentId}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a stand-in payment failed
+         * @description Development and staging only, while the provider is the stand-in: settles one of your own pending payments as the provider would.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    paymentId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking after the outcome */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PAYMENT_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PAYMENT_SETTLED: it already has its outcome. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -12998,6 +13426,174 @@ export interface components {
             /** Format: date-time */
             savedAt: string;
         };
+        BookingQuote: {
+            /**
+             * @description ISO 4217; amounts are in its minor units.
+             * @example EGP
+             */
+            currency: string;
+            /** @description VAT included. */
+            total: number;
+            /** @description The VAT inside `total`; 0 when the venue charges none. */
+            tax: number;
+            paymentMode: components["schemas"]["PaymentMode"];
+            /** @description `DEPOSIT`: the share paid online. */
+            deposit: number | null;
+            /**
+             * @description What booking now would start as: waiting for approval, waiting for payment, or confirmed.
+             * @enum {string}
+             */
+            startsAs: "PENDING" | "HELD" | "CONFIRMED";
+            charges: components["schemas"]["BookingCharge"][];
+        };
+        BookingCharge: {
+            type: components["schemas"]["BookingChargeType"];
+            /**
+             * Format: date-time
+             * @description `SLOT`: the hour it charges.
+             */
+            startsAt: string | null;
+            tier: components["schemas"]["PriceTier"] & (string | null);
+            amenity: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                pricing: components["schemas"]["AmenityPricing"];
+            } | null;
+            /** @description Minor units, VAT included. */
+            amount: number;
+            /** @description The VAT inside `amount`. */
+            taxAmount: number;
+        };
+        /** @enum {string} */
+        BookingChargeType: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD";
+        BookingRequest: {
+            /** Format: uuid */
+            groundId: string;
+            /**
+             * Format: date-time
+             * @description The first slot's start.
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description The last slot's end.
+             */
+            endsAt: string;
+            /**
+             * @description Priced amenities (option ids) added to the booking.
+             * @default []
+             */
+            amenities: string[];
+        };
+        Booking: {
+            /** Format: uuid */
+            id: string;
+            /** @description For the share link, /b/{code}. */
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * Format: date-time
+             * @description `PENDING` and `HELD`: when it expires unless approved or paid.
+             */
+            expiresAt: string | null;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: string | null;
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            /**
+             * @description ISO 4217; amounts are in its minor units.
+             * @example EGP
+             */
+            currency: string;
+            /** @description VAT included. */
+            total: number;
+            /** @description The VAT inside `total`; 0 when the venue charges none. */
+            tax: number;
+            paymentMode: components["schemas"]["PaymentMode"];
+            /** @description `DEPOSIT`: the share paid online. */
+            deposit: number | null;
+            /** @description Paid online so far, in minor units: succeeded payments less refunds. */
+            paid: number;
+            charges: components["schemas"]["BookingCharge"][];
+            cancellation: {
+                policy: components["schemas"]["CancellationPolicy"];
+                tiers: components["schemas"]["CancellationTier"][];
+            };
+            note: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /**
+         * @description `PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it.
+         * @enum {string}
+         */
+        BookingStatus: "PENDING" | "HELD" | "UNCONFIRMED" | "CONFIRMED" | "CANCELLED" | "EXPIRED" | "RELEASED" | "RESCHEDULED" | "COMPLETED" | "NO_SHOW";
+        CreateBooking: {
+            /** Format: uuid */
+            groundId: string;
+            /**
+             * Format: date-time
+             * @description The first slot's start.
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description The last slot's end.
+             */
+            endsAt: string;
+            /**
+             * @description Priced amenities (option ids) added to the booking.
+             * @default []
+             */
+            amenities: string[];
+            /** @description For the venue. */
+            note?: string;
+        };
+        Checkout: {
+            payment: {
+                /** Format: uuid */
+                id: string;
+                status: components["schemas"]["PaymentStatus"];
+                method: components["schemas"]["OnlinePaymentMethod"];
+                /** @description Minor units: the deposit, or the whole total. */
+                amount: number;
+                /** @example EGP */
+                currency: string;
+            };
+            /**
+             * @description `fake` until Phase 5.
+             * @example fake
+             */
+            provider: string;
+            /** @description The provider's id for this payment. */
+            reference: string;
+            /** @description The provider's page to pay on; null for the stand-in provider. */
+            url: string | null;
+        };
+        /**
+         * @description `PENDING`: waiting on the provider. `EXPIRED`: replaced by a newer checkout.
+         * @enum {string}
+         */
+        PaymentStatus: "PENDING" | "SUCCEEDED" | "FAILED" | "EXPIRED";
+        /** @enum {string} */
+        OnlinePaymentMethod: "CARD" | "WALLET";
+        StartCheckout: {
+            method?: components["schemas"]["OnlinePaymentMethod"];
+        };
         StaffVenue: {
             /** Format: uuid */
             id: string;
@@ -13795,7 +14391,7 @@ export interface components {
             }[];
         };
         /** @enum {string} */
-        QueueName: "slot-generation" | "slot-maintenance" | "venue-photo-sweeper" | "customer-avatar-sweeper";
+        QueueName: "slot-generation" | "slot-maintenance" | "venue-photo-sweeper" | "customer-avatar-sweeper" | "booking-expiry";
         AdminMarketplace: {
             /** Format: uuid */
             id: string;
