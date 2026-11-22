@@ -31,10 +31,6 @@ export const BOOKING_EVENTS = {
   // Released because the regular was changed, paused or ended (now RELEASED); data: { reason }
   // CHANGED, PAUSED or ENDED. Never counts against the regular's reliability.
   REGULAR_CHANGED: "REGULAR_CHANGED",
-  // Staff recorded how many of an open game's joined players came; data: { expected, arrived }.
-  // GAME_SHORTFALL when fewer came than expected (joined less the booker's no-show reports).
-  ARRIVED_RECORDED: "ARRIVED_RECORDED",
-  GAME_SHORTFALL: "GAME_SHORTFALL",
 } as const;
 
 export type BookingEventType = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];

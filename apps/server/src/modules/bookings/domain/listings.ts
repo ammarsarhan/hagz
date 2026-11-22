@@ -7,10 +7,6 @@ const UNIT = 100;
 
 // The booker's phone stays visible to joined players this long after kick-off.
 export const PHONE_HOURS_AFTER_START = 24;
-// The booker can report joined players who didn't come this long after the end.
-export const NO_SHOW_REPORT_HOURS = 48;
-// Staff record how many came from kick-off until this long after the end.
-export const ARRIVED_WINDOW_HOURS = 24;
 
 // Each player's share of the booking: the total over the ground's players, rounded up to a unit.
 export const shareOf = (total: number, players: number) => Math.ceil(total / players / UNIT) * UNIT;
