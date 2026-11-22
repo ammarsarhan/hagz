@@ -83,15 +83,18 @@ const presentSummary = (booking: SummaryRow): AdminBooking => ({
 
 export const listAdminBookings = async ({
   venueId,
+  groundId,
   status,
   q,
   cursor,
   limit,
 }: AdminBookingQuery) => {
   const text = q ? literal(q) : null;
-  // The venue (a venue's Bookings tab) and the search narrow the counts too; the tab doesn't.
+  // The venue and ground (a venue's Bookings tab) and the search narrow the counts too; the tab
+  // doesn't.
   const search: Prisma.BookingWhereInput = {
     ...(venueId && { venueId }),
+    ...(groundId && { groundId }),
     ...(text && {
       OR: [
         // Codes are upper case; people type them any way.

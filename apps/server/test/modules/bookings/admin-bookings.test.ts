@@ -144,6 +144,9 @@ describe("the admin's bookings", () => {
     expect(venue.data.map((booking) => booking.id)).toEqual([here.id]);
     expect(venue.counts.CONFIRMED).toBe(1);
     expect((await lookup(cookie)).counts.CONFIRMED).toBe(2);
+    const ground = await lookup(cookie, `?venueId=${maadi.venue.id}&groundId=${other.ground.id}`);
+    expect(ground.data).toEqual([]);
+    expect(ground.counts.CONFIRMED).toBe(0);
   });
 
   it("shows one booking in full, its payments and its history", async () => {

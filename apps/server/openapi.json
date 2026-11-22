@@ -21267,6 +21267,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Only this ground's bookings."
+            },
+            "required": false,
+            "description": "Only this ground's bookings.",
+            "name": "groundId",
+            "in": "query"
+          },
+          {
+            "schema": {
               "$ref": "#/components/schemas/BookingStatus"
             },
             "required": false,
