@@ -1,4 +1,4 @@
-import { bookingsCustomerRoutes } from "@/modules/bookings";
+import { bookingsAdminRoutes, bookingsCustomerRoutes } from "@/modules/bookings";
 import {
   adminAuthRoutes,
   customerAuthRoutes,
@@ -6,7 +6,7 @@ import {
   staffAuthRoutes,
   supportAdminRoutes,
 } from "@/modules/identity";
-import { paymentsCustomerRoutes, paymentsDevRoutes } from "@/modules/payments";
+import { paymentsAdminRoutes, paymentsCustomerRoutes, paymentsDevRoutes } from "@/modules/payments";
 import { locationsRoutes, platformAdminRoutes, whenAmenityUnplaceable } from "@/modules/locations";
 import { systemRoutes } from "@/modules/system";
 import {
@@ -65,6 +65,8 @@ router.route("/v1", venuesStaffRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
 router.route("/v1", venuesAdminRoutes);
+router.route("/v1", bookingsAdminRoutes);
+router.route("/v1", paymentsAdminRoutes);
 router.route("/v1", supportAdminRoutes);
 
 // Photos stored on disk in development are uploaded to and read from here (http/dev-storage.ts).

@@ -11896,6 +11896,307 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every booking, at every venue
+         * @description Newest made first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description `PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it. */
+                    status?: components["schemas"]["BookingStatus"];
+                    /** @description The booking's code, or part of the customer's name or phone, or the venue's name. */
+                    q?: string;
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of bookings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminBooking"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                            counts: {
+                                PENDING?: number;
+                                HELD?: number;
+                                UNCONFIRMED?: number;
+                                CONFIRMED?: number;
+                                CANCELLED?: number;
+                                EXPIRED?: number;
+                                RELEASED?: number;
+                                RESCHEDULED?: number;
+                                COMPLETED?: number;
+                                NO_SHOW?: number;
+                            };
+                        };
+                    };
+                };
+                /** @description VALIDATION_FAILED: see `errors`. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One booking in full */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AdminBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/bookings/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything that happened to a booking
+         * @description Newest first, a page at a time.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of events */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["BookingHistoryEvent"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/bookings/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A booking's payments and refunds
+         * @description Oldest first, every checkout including failed and replaced ones.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The payments */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminPayment"][];
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/staff": {
         parameters: {
             query?: never;
@@ -15090,6 +15391,225 @@ export interface components {
              * @example The owner called support: he left the business in October.
              */
             reason: string;
+        };
+        AdminBooking: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                names: {
+                    en: string | null;
+                    ar: string | null;
+                };
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            customer: {
+                name: string;
+                phone: string | null;
+            };
+            source: components["schemas"]["BookingSource"];
+            /** @example EGP */
+            currency: string;
+            /** @description Minor units, VAT included. */
+            total: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /**
+         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
+         * @enum {string}
+         */
+        BookingSource: "APP" | "STAFF";
+        AdminBookingDetail: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                names: {
+                    en: string | null;
+                    ar: string | null;
+                };
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            customer: {
+                /** Format: uuid */
+                venueCustomerId: string;
+                /**
+                 * Format: uuid
+                 * @description The player's account; null for walk-ins.
+                 */
+                accountId: string | null;
+                name: string;
+                phone: string | null;
+            };
+            source: components["schemas"]["BookingSource"];
+            /** @example EGP */
+            currency: string;
+            /** @description Minor units, VAT included. */
+            total: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            note: string | null;
+            /** @description The staff member who entered it. */
+            creator: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** Format: uuid */
+            regularId: string | null;
+            paymentMode: components["schemas"]["PaymentMode"];
+            deposit: number | null;
+            /** @description Succeeded payments less succeeded refunds. */
+            paid: number;
+            tax: number;
+            /** @description Basis points, copied when it was made. */
+            commissionRate: number;
+            cancellation: {
+                policy: components["schemas"]["CancellationPolicy"];
+                tiers: components["schemas"]["CancellationTier"][];
+            };
+            charges: {
+                type: components["schemas"]["BookingChargeType"];
+                /**
+                 * Format: date-time
+                 * @description `SLOT`: the hour it charges.
+                 */
+                startsAt: string | null;
+                tier: components["schemas"]["PriceTier"] & (string | null);
+                amenity: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string | null;
+                    pricing: components["schemas"]["AmenityPricing"];
+                } | null;
+                /** @description Minor units, VAT included. */
+                amount: number;
+                /** @description The VAT inside `amount`. */
+                taxAmount: number;
+                /** @description Basis points. */
+                taxRate: number;
+            }[];
+            cancelled: {
+                /** @enum {string} */
+                initiator: "CUSTOMER" | "VENUE" | "ADMIN";
+                reason: string | null;
+                refundPercent: number;
+                refundAmount: number;
+                /** Format: date-time */
+                at: string;
+            } | null;
+            movedFrom: {
+                /** Format: uuid */
+                bookingId: string;
+                code: string;
+                /** @enum {string} */
+                type: "MOVE" | "SWAP" | "REFILL";
+            } | null;
+            movedTo: {
+                /** Format: uuid */
+                bookingId: string;
+                code: string;
+                /** @enum {string} */
+                type: "MOVE" | "SWAP" | "REFILL";
+            }[];
+        };
+        BookingHistoryEvent: {
+            /** Format: uuid */
+            id: string;
+            /** @example CREATED */
+            type: string;
+            actor: {
+                kind: components["schemas"]["BookingActorKind"];
+                /** Format: uuid */
+                id: string | null;
+                name: string | null;
+            };
+            /** @description The event's details as stored. */
+            data?: unknown;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        BookingActorKind: "CUSTOMER" | "STAFF" | "ADMIN" | "SYSTEM";
+        AdminPayment: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "CASH" | "CARD" | "WALLET" | "REFERENCE" | "BNPL";
+            status: components["schemas"]["PaymentStatus"];
+            amount: number;
+            currency: string;
+            brand: string | null;
+            provider: string | null;
+            providerReference: string | null;
+            providerFee: number | null;
+            /** @description The staff member who recorded cash. */
+            recorder: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** Format: date-time */
+            succeededAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            refunds: components["schemas"]["AdminRefund"][];
+        };
+        AdminRefund: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "PENDING" | "SUCCEEDED" | "FAILED";
+            amount: number;
+            reason: string | null;
+            providerReference: string | null;
+            /** Format: date-time */
+            succeededAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
         };
         AdminStaffAccount: {
             /** Format: uuid */

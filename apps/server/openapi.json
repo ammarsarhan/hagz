@@ -7308,6 +7308,798 @@
           "reason"
         ]
       },
+      "AdminBooking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "names": {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ar": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "en",
+                  "ar"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "names"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "phone"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/BookingSource"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Minor units, VAT included."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "venue",
+          "ground",
+          "customer",
+          "source",
+          "currency",
+          "total",
+          "createdAt"
+        ]
+      },
+      "BookingSource": {
+        "type": "string",
+        "enum": [
+          "APP",
+          "STAFF"
+        ],
+        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
+      },
+      "AdminBookingDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "names": {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ar": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "en",
+                  "ar"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "names"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "venueCustomerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "accountId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The player's account; null for walk-ins."
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "venueCustomerId",
+              "accountId",
+              "name",
+              "phone"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/BookingSource"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Minor units, VAT included."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "creator": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "The staff member who entered it."
+          },
+          "regularId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "deposit": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paid": {
+            "type": "integer",
+            "description": "Succeeded payments less succeeded refunds."
+          },
+          "tax": {
+            "type": "integer"
+          },
+          "commissionRate": {
+            "type": "integer",
+            "description": "Basis points, copied when it was made."
+          },
+          "cancellation": {
+            "type": "object",
+            "properties": {
+              "policy": {
+                "$ref": "#/components/schemas/CancellationPolicy"
+              },
+              "tiers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CancellationTier"
+                }
+              }
+            },
+            "required": [
+              "policy",
+              "tiers"
+            ]
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "$ref": "#/components/schemas/BookingChargeType"
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "`SLOT`: the hour it charges."
+                },
+                "tier": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PriceTier"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "amenity": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "pricing": {
+                      "$ref": "#/components/schemas/AmenityPricing"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "pricing"
+                  ]
+                },
+                "amount": {
+                  "type": "integer",
+                  "description": "Minor units, VAT included."
+                },
+                "taxAmount": {
+                  "type": "integer",
+                  "description": "The VAT inside `amount`."
+                },
+                "taxRate": {
+                  "type": "integer",
+                  "description": "Basis points."
+                }
+              },
+              "required": [
+                "type",
+                "startsAt",
+                "tier",
+                "amenity",
+                "amount",
+                "taxAmount",
+                "taxRate"
+              ]
+            }
+          },
+          "cancelled": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "initiator": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER",
+                  "VENUE",
+                  "ADMIN"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "refundPercent": {
+                "type": "integer"
+              },
+              "refundAmount": {
+                "type": "integer"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "initiator",
+              "reason",
+              "refundPercent",
+              "refundAmount",
+              "at"
+            ]
+          },
+          "movedFrom": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "bookingId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "MOVE",
+                  "SWAP",
+                  "REFILL"
+                ]
+              }
+            },
+            "required": [
+              "bookingId",
+              "code",
+              "type"
+            ]
+          },
+          "movedTo": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "MOVE",
+                    "SWAP",
+                    "REFILL"
+                  ]
+                }
+              },
+              "required": [
+                "bookingId",
+                "code",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "venue",
+          "ground",
+          "customer",
+          "source",
+          "currency",
+          "total",
+          "createdAt",
+          "expiresAt",
+          "updatedAt",
+          "note",
+          "creator",
+          "regularId",
+          "paymentMode",
+          "deposit",
+          "paid",
+          "tax",
+          "commissionRate",
+          "cancellation",
+          "charges",
+          "cancelled",
+          "movedFrom",
+          "movedTo"
+        ]
+      },
+      "BookingHistoryEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "example": "CREATED"
+          },
+          "actor": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "$ref": "#/components/schemas/BookingActorKind"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "name"
+            ]
+          },
+          "data": {
+            "description": "The event's details as stored."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "actor",
+          "createdAt"
+        ]
+      },
+      "BookingActorKind": {
+        "type": "string",
+        "enum": [
+          "CUSTOMER",
+          "STAFF",
+          "ADMIN",
+          "SYSTEM"
+        ]
+      },
+      "AdminPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "CARD",
+              "WALLET",
+              "REFERENCE",
+              "BNPL"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "providerReference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "providerFee": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "recorder": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "The staff member who recorded cash."
+          },
+          "succeededAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRefund"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "method",
+          "status",
+          "amount",
+          "currency",
+          "brand",
+          "provider",
+          "providerReference",
+          "providerFee",
+          "recorder",
+          "succeededAt",
+          "createdAt",
+          "refunds"
+        ]
+      },
+      "AdminRefund": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "FAILED"
+            ]
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "providerReference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "succeededAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "amount",
+          "reason",
+          "providerReference",
+          "succeededAt",
+          "createdAt"
+        ]
+      },
       "AdminStaffAccount": {
         "type": "object",
         "properties": {
@@ -20438,6 +21230,423 @@
           },
           "409": {
             "description": "ALREADY_OWNER, STAFF_NOT_ACTIVE (with `staffStatus`), or UNFINISHED_VENUE_EXISTS (they own another venue that isn't live; with `venueId` and `venueStatus`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/bookings": {
+      "get": {
+        "tags": [
+          "Bookings (admin)"
+        ],
+        "summary": "Every booking, at every venue",
+        "description": "Newest made first, a page at a time. `counts` has how many match the search in each status, whatever `status` is, for the table's tabs.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/BookingStatus"
+            },
+            "required": false,
+            "description": "`PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The booking's code, or part of the customer's name or phone, or the venue's name."
+            },
+            "required": false,
+            "description": "The booking's code, or part of the customer's name or phone, or the venue's name.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of bookings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminBooking"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null on the last page."
+                    },
+                    "counts": {
+                      "type": "object",
+                      "properties": {
+                        "PENDING": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "HELD": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "UNCONFIRMED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "CONFIRMED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "CANCELLED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "EXPIRED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "RELEASED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "RESCHEDULED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "COMPLETED": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "NO_SHOW": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor",
+                    "counts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: see `errors`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/bookings/{id}": {
+      "get": {
+        "tags": [
+          "Bookings (admin)"
+        ],
+        "summary": "One booking in full",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/bookings/{id}/history": {
+      "get": {
+        "tags": [
+          "Bookings (admin)"
+        ],
+        "summary": "Everything that happened to a booking",
+        "description": "Newest first, a page at a time.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BookingHistoryEvent"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null on the last page."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/bookings/{id}/payments": {
+      "get": {
+        "tags": [
+          "Bookings (admin)"
+        ],
+        "summary": "A booking's payments and refunds",
+        "description": "Oldest first, every checkout including failed and replaced ones.",
+        "security": [
+          {
+            "adminCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminPayment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED: refresh, or sign in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED, or ADMIN_HEADER_REQUIRED: send `X-Hagz-Admin: 1`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {
