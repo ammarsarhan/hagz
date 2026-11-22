@@ -171,6 +171,7 @@ CREATE TABLE "VenueCustomer" (
     "customerId" UUID,
     "name" TEXT NOT NULL,
     "phone" TEXT,
+    "note" TEXT,
     "lastBookedAt" TIMESTAMPTZ,
     "bookingCount" INTEGER NOT NULL DEFAULT 0,
     "noShowCount" INTEGER NOT NULL DEFAULT 0,

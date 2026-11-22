@@ -162,6 +162,7 @@ enum BookingChargeType {
   AMENITY
   DISCOUNT
   REWARD // Loyalty.
+  ADJUSTMENT // A staff-entered booking's custom total: the difference from the priced lines, either sign.
 }
 
 // Listings
