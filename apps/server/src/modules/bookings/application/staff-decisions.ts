@@ -148,9 +148,18 @@ export const markBooking = async (
       startsAt: true,
       endsAt: true,
       customerId: true,
+      checkedInAt: true,
     });
     if (!booking) throw venueBookingNotFound();
     if (booking.status === outcome) return;
+    // A scanned or ticked-in booker came; undo the check-in (while it's open) if it was a mistake.
+    if (outcome === "NO_SHOW" && booking.checkedInAt) {
+      throw new AppError({
+        code: "CHECKED_IN",
+        status: 409,
+        detail: "They checked in at the venue, so this can't be a no-show.",
+      });
+    }
     if (!canMove(booking.status, outcome)) throw invalidTransition(booking.status, outcome);
     if (booking.startsAt > now) throw notStarted();
     if (now.getTime() > booking.endsAt.getTime() + MARK_WINDOW_HOURS * 60 * 60_000) {

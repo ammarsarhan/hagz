@@ -19,6 +19,7 @@ import {
 } from "./admin-bookings";
 import { AppError } from "@/platform/errors/app-error";
 import { venueBookingNotFound } from "./booking-rows";
+import { staffCheckIn } from "./check-in";
 import { staffGame } from "./listings";
 
 const customerNotFound = () =>
@@ -120,6 +121,7 @@ export const staffBookingDetail = async (
     ...detail,
     hold: isHold({ status: detail.status, creatorId: detail.creator?.id ?? null }),
     game: await staffGame(bookingId),
+    checkIn: await staffCheckIn(bookingId),
   });
 };
 

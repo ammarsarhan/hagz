@@ -3,6 +3,7 @@ import type { Language } from "@/generated/prisma/enums";
 import { nameIn } from "@/modules/venues";
 import { prisma } from "@/platform/db/prisma";
 import type { ChargeLine } from "../domain/charges";
+import { bookingCheckIn } from "./check-in";
 import { moveFor } from "./move-response";
 import { bookerListing } from "./listings";
 
@@ -48,6 +49,9 @@ export const bookingView = async (bookingId: string, language: Language): Promis
       startsAt: true,
       endsAt: true,
       expiresAt: true,
+      creatorId: true,
+      regularId: true,
+      checkedInAt: true,
       total: true,
       depositAmount: true,
       paymentMode: true,
@@ -127,6 +131,7 @@ export const bookingView = async (bookingId: string, language: Language): Promis
     },
     note: booking.note,
     listing: await bookerListing(booking.id),
+    checkIn: bookingCheckIn(booking),
     move: await moveFor(booking.id, language),
     createdAt: booking.createdAt.toISOString(),
   };
