@@ -256,3 +256,10 @@ ALTER TABLE "Booking" ADD CONSTRAINT "Booking_regular_check" CHECK (("regularId"
 
 -- AddCheck (hand-added: Prisma cannot declare CHECK constraints)
 ALTER TABLE "Rescheduling" ADD CONSTRAINT "Rescheduling_values_check" CHECK ("fromBookingId" <> "toBookingId" AND (type = 'SWAP') = ("groupId" IS NOT NULL) AND (type = 'REFILL') = ("priceDifference" IS NULL));
+
+-- AddExclusion (hand-added: Prisma cannot declare exclusion constraints). A backstop behind the slot
+-- claim: no two bookings that hold a ground's time overlap on it. A move or swap ends the old booking
+-- (RESCHEDULED) before inserting the new one, since this is checked at each statement.
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_no_overlap"
+  EXCLUDE USING gist ("groundId" WITH =, tstzrange("startsAt", "endsAt") WITH &&)
+  WHERE (status IN ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));
