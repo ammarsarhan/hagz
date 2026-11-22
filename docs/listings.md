@@ -46,17 +46,16 @@ Agreed on 2026-11-19.
 - **The joining fee** is 10% of the share, rounded to a whole unit: 6 EGP in the example. The rate is `Marketplace.joinFeeRate` (basis points, 1000 by default), copied onto the listing.
 - **At the venue,** the joined player pays the booker their share (60 EGP) and pays the venue the joining fee (6 EGP). The game page and the join button show both amounts and who each one is paid to.
 - **The venue sees what to expect:** the booking is flagged "Open game: n players", with their names and the fee each one owes.
-- **Staff record how many came,** one number on the booking, from the kick-off until 24 hours after the end. The fee is that number × the joining fee. Hagz takes it out of the venue's balance (one `JOIN_FEE` ledger entry per game), settled at the next payout. It works the same way as commission on cash bookings.
-- **If staff record nothing,** everyone expected is assumed to have come, minus the players the booker reported as no-shows. Recording a lower number is the venue's claim, so the venue gains nothing by staying silent.
-- **A recorded number lower than expected is noted.** "Expected" is the joined count minus the booker's no-show reports. A shortfall puts a `BookingEvent` on the booking and counts towards the venue's under-recording rate, which admins see per venue. A single game is never an alert (a few pounds), but a venue that's always short is.
+- **Players check in at the venue** (changed 2026-11-22, replacing staff's arrived count and the booker's no-show reports). The booker of any app booking and each joined player show a QR code in the app, and staff scan it from 15 minutes before kick-off until 30 minutes after. The code changes every 30 seconds and each one works for 60, so a screenshot sent to a friend soon stops working. If someone's phone died, staff can tick them in by name (marked as manual), and they can undo a mistake while check-in is open. A player who leaves or is removed before kick-off is no longer checked in. Staff-entered and regular bookings have no check-in, because those players may not use the app.
+- **The fee is for the players checked in.** Hagz takes that number × the joining fee out of the venue's balance (one `JOIN_FEE` ledger entry per game), settled at the next payout. It works the same way as commission on cash bookings.
+- **If staff check in none of the joined players, nothing is held against anyone ("unknown").** Every joined player counts for the fee, the same as before, and nobody gets a no-show. Skipping the scans saves the venue nothing. Admins see each venue's share of games where no joined player was checked in, and games where only the booker was.
+- **A booker who checked in can't be marked as a no-show** by staff. The check-in has to be undone first, while it's open.
 - **Only a game that took place is charged:** the fee is written when the booking is `COMPLETED`. If the venue marks the booking `NO_SHOW` or it's cancelled, there's no fee.
 - **A player who doesn't come pays nothing,** and Hagz accepts the loss: they're a small part of a booking that's already paid. Leaving or being removed costs nothing either, because nothing is paid in advance.
 
 ## Reliability
 
-After the game, the booker has 48 hours to mark joined players who didn't come. Each player then shows **"showed up X of Y games"** on the booking's player list and on their join. Nothing blocks anyone automatically. The booker uses it to decide whether to remove someone.
-
-A reported player sees the report on their game history. Admins can remove a report that looks unfair, and the booker's reports are visible to admins in case someone reports everyone.
+Each joined player shows **"showed up X of Y games"** on the booking's player list. Y counts the games they joined that were played and where the venue checked in at least one joined player. X counts the ones they were checked in at. A game where the venue scanned none of the joined players doesn't count for anyone. Nothing blocks anyone automatically. The booker uses the figure to decide whether to remove someone.
 
 ## Schema changes
 
@@ -70,19 +69,19 @@ A listing is its own model, not columns on `Booking`. A booking's terms are fixe
   - `playerCount`, kept up to date under the same lock as joining, so the feed shows spots left without counting rows;
   - `note?`;
   - `sharePrice` and `joinFee` (minor units, from `Marketplace.joinFeeRate`), copied when the listing opens (changed on 2026-11-19: replaces the informational `costShare?`). A reschedule keeps them, like the booking's other terms;
-  - `arrivedCount?`, `arrivedAt?` and `arrivedById?` (staff), recorded by the venue. CHECK: all three or none, and `arrivedCount` between 0 and `playerCount` (never more than joined). The shortfall is calculated, not stored;
   - `communityId?` and `publicAt?`, for community games (see [communities.md](communities.md));
   - `createdAt`, `closedAt?`.
 
   Indexed on `(status, startsAt)` and `venueId` for the feed.
-- **`ListingPlayer`:** `listingId`, `customerId`, `status` (`ListingPlayerStatus`: `JOINED` / `LEFT` / `REMOVED`), `joinedAt`, `leftAt?`, `noShowReportedAt?`. Its primary key is `(listingId, customerId)`, so rejoining reuses the row; indexed on `customerId` for "my games".
+- **`ListingPlayer`:** `listingId`, `customerId`, `status` (`ListingPlayerStatus`: `JOINED` / `LEFT` / `REMOVED`), `joinedAt`, `leftAt?`, and `checkedInAt?`, `checkedInById?` (staff) and `checkedInManually`. CHECK: checked in only while `JOINED`, always by a staff member. Its primary key is `(listingId, customerId)`, so rejoining reuses the row; indexed on `customerId` for "my games".
 - **Joining, leaving and changing `neededPlayers` lock the `BookingListing` row**, then check that `playerCount` stays at or under `neededPlayers`. Two players can't both take the last spot, the booker can't lower the number below what's joined, and the booking itself is never locked by people joining.
 - **If the booking is cancelled,** its transaction also sets the game to `CANCELLED`.
 - **`Marketplace.joinFeeRate`:** basis points, default 1000 (10%).
-- **`LedgerEntry` type `JOIN_FEE`:** one per game, unique on `listingId` (with `venueId`, so the fee lands on the game's own venue), for the recorded (or assumed) count × `joinFee`. Written when the recording window closes, and taken from the venue's balance (6.3).
+- **`LedgerEntry` type `JOIN_FEE`:** one per game, unique on `listingId` (with `venueId`, so the fee lands on the game's own venue), for the checked-in count (or every joined player, when none was checked in) × `joinFee`. Written when the booking completes, and taken from the venue's balance (6.3).
+- **`Booking.checkedInAt?`, `checkedInById?` and `checkedInManually`,** for the booker's check-in on any app booking.
 - **`Customer.nearbyGames`:** the "Games near me" opt-in, off by default (used in Phase 7).
 
 ## Open
 
-- Whether the venue keeps part of the joining fee for collecting it. It has to chase strangers for 6 EGP, and a share would make it more likely to record honestly.
+- Whether the venue keeps part of the joining fee for collecting it. It has to chase strangers for 6 EGP, and a share would make it more likely to scan everyone.
 - VAT on the joining fee: it's Hagz's revenue, so Hagz charges VAT on it once registered (the accountant's question, with commission).

@@ -185,10 +185,10 @@ flowchart LR
   tab["Games: Near me · My games"]:::hub --> filters["Filters: sport, size, date, time, area"]:::sheet --> game["Game detail: spots left, note, share + joining fee, booker's first name"]
   game --> join["Join (sign-in sheet if guest) + disclaimer"]:::sheet --> joined["Joined: booker's phone, players, reminder"]:::result
   joined --> leave["Leave the game"]:::danger
-  tab --> history["C8c My games → Past: who came"] --> report["A no-show report against me"]:::state
+  tab --> history["C8c My games → Past: who came"] --> report["Showed up X of Y games"]:::state
   mine["C8b Booker: my booking → game"] --> needed["Raise or lower needed players (not below joined)"]
   mine --> roster["Players: first name, phone, #quot;showed up X of Y#quot;, joined when"]
-  roster --> remove["Remove a player, report a no-show (48 h)"]:::danger
+  roster --> remove["Remove a player (before kick-off)"]:::danger
   mine --> off["Turn the listing off (only while nobody has joined)"]:::danger
 ```
 
@@ -598,6 +598,6 @@ flowchart LR
   destination --> invalid["Not valid: tell the venue to add another"]:::danger
   audit["A7d Nightly audit"] --> drift["Drift alerts: ledger vs payments, refunds, payouts"]:::state --> affected["Alert detail: affected entries"]
   moderation["A8 Moderation"] --> hide["Reviews: hide"]
-  moderation --> reports["Game no-show reports: remove unfair ones"]
+  moderation --> reports["Venues that rarely check players in"]
   moderation --> logs["Notification delivery logs"]
 ```
