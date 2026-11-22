@@ -7,6 +7,7 @@ import {
   BookingRequest,
   CreateBooking,
   IdempotencyHeaders,
+  SharedBooking,
 } from "@hagz/contracts";
 import { CUSTOMER_BEARER, requireCustomer } from "@/platform/http/authenticate";
 import { body, json, problemResponse } from "@/platform/http/definitions";
@@ -102,6 +103,81 @@ export const getBooking = createRoute({
     200: { description: "The booking", ...json(Booking) },
     401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED"),
     404: problemResponse("BOOKING_NOT_FOUND: none of yours with that id."),
+    503: unavailable,
+  },
+});
+
+const moveResponses = {
+  401: problemResponse("UNAUTHENTICATED or TOKEN_EXPIRED"),
+  404: problemResponse("BOOKING_NOT_FOUND: none of yours with that id."),
+  503: unavailable,
+};
+const bookingParams = z.object({ bookingId: z.uuid() });
+
+export const acceptMove = createRoute({
+  method: "post",
+  path: "/bookings/{bookingId}/move/accept",
+  tags,
+  summary: "Keep a change the venue made",
+  description:
+    "Closes the choice on `move`; from then on the venue's cancellation policy applies as usual.",
+  middleware: [requireCustomer] as const,
+  security,
+  request: { params: bookingParams },
+  responses: {
+    200: { description: "The booking", ...json(Booking) },
+    ...moveResponses,
+    409: problemResponse("MOVE_NOT_OPEN: nothing left to answer (accepted, or the time is up)."),
+  },
+});
+
+export const rejectMove = createRoute({
+  method: "post",
+  path: "/bookings/{bookingId}/move/reject",
+  tags,
+  summary: "Reject a change the venue made",
+  description:
+    "Cancels the booking as the venue's cancellation: everything paid is refunded in full.",
+  middleware: [requireCustomer] as const,
+  security,
+  request: { params: bookingParams },
+  responses: {
+    200: { description: "The cancelled booking", ...json(Booking) },
+    ...moveResponses,
+    409: problemResponse("MOVE_NOT_OPEN: nothing left to answer (accepted, or the time is up)."),
+  },
+});
+
+export const moveBack = createRoute({
+  method: "post",
+  path: "/bookings/{bookingId}/move/back",
+  tags,
+  summary: "Move a booking back to where it was",
+  description:
+    "When `move.canMoveBack`: back to the original ground and time at the original price. Answers with the booking that replaces this one.",
+  middleware: [requireCustomer] as const,
+  security,
+  request: { params: bookingParams },
+  responses: {
+    200: { description: "The booking, back at its original time", ...json(Booking) },
+    ...moveResponses,
+    409: problemResponse(
+      "MOVE_NOT_OPEN, or SLOT_UNAVAILABLE: the original time is taken (or it was a swap).",
+    ),
+  },
+});
+
+export const sharedBooking = createRoute({
+  method: "get",
+  path: "/shared-bookings/{code}",
+  tags,
+  summary: "A booking's share link",
+  description:
+    "What anyone with the link (/b/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.",
+  request: { params: z.object({ code: z.string().min(1).max(16) }) },
+  responses: {
+    200: { description: "The booking", ...json(SharedBooking) },
+    404: problemResponse("BOOKING_NOT_FOUND"),
     503: unavailable,
   },
 });

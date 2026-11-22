@@ -2883,6 +2883,96 @@
               "null"
             ]
           },
+          "move": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "MOVE",
+                  "SWAP"
+                ]
+              },
+              "from": {
+                "type": "object",
+                "properties": {
+                  "ground": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "total": {
+                    "type": "integer",
+                    "description": "What it cost before the move."
+                  }
+                },
+                "required": [
+                  "ground",
+                  "startsAt",
+                  "endsAt",
+                  "total"
+                ]
+              },
+              "priceDifference": {
+                "type": "integer",
+                "description": "New total less the old one, minor units."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "respondBy": {
+                "type": "string",
+                "format": "date-time",
+                "description": "24 hours after the move or kick-off, whichever is first. Silence accepts."
+              },
+              "canMoveBack": {
+                "type": "boolean",
+                "description": "The original time is still free (never after a swap)."
+              },
+              "movedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "type",
+              "from",
+              "priceDifference",
+              "reason",
+              "respondBy",
+              "canMoveBack",
+              "movedAt"
+            ],
+            "description": "The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -2906,6 +2996,7 @@
           "charges",
           "cancellation",
           "note",
+          "move",
           "createdAt"
         ]
       },
@@ -3085,6 +3176,104 @@
           "ground",
           "currency",
           "total"
+        ]
+      },
+      "SharedBooking": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Cairo"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Maadi, Cairo"
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "name",
+              "area"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "movedTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`RESCHEDULED`: the code of the booking that replaced it, to follow the link there."
+          }
+        },
+        "required": [
+          "code",
+          "status",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "venue",
+          "ground",
+          "movedTo"
         ]
       },
       "Checkout": {
@@ -5224,6 +5413,831 @@
           "slots"
         ],
         "description": "Slots for an occasion (Eid, Ramadan, a match night), kept whatever the weekly schedule says. Free slots from the schedule they overlap make way; any other overlap is refused."
+      },
+      "StaffBookingList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffBooking"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "StaffBooking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "names": {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ar": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "en",
+                  "ar"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "names"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "phone"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/BookingSource"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Minor units, VAT included."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "`PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go."
+          },
+          "hold": {
+            "type": "boolean",
+            "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "venue",
+          "ground",
+          "customer",
+          "source",
+          "currency",
+          "total",
+          "createdAt",
+          "expiresAt",
+          "hold"
+        ]
+      },
+      "BookingSource": {
+        "type": "string",
+        "enum": [
+          "APP",
+          "STAFF"
+        ],
+        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
+      },
+      "StaffBookingDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "The venue's IANA timezone.",
+            "example": "Africa/Cairo"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "names": {
+                "type": "object",
+                "properties": {
+                  "en": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ar": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "en",
+                  "ar"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "names"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "venueCustomerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "accountId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid",
+                "description": "The player's account; null for walk-ins."
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "venueCustomerId",
+              "accountId",
+              "name",
+              "phone"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/BookingSource"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Minor units, VAT included."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "creator": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "The staff member who entered it."
+          },
+          "regularId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "deposit": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paid": {
+            "type": "integer",
+            "description": "Succeeded payments less succeeded refunds."
+          },
+          "tax": {
+            "type": "integer"
+          },
+          "cancellation": {
+            "type": "object",
+            "properties": {
+              "policy": {
+                "$ref": "#/components/schemas/CancellationPolicy"
+              },
+              "tiers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CancellationTier"
+                }
+              }
+            },
+            "required": [
+              "policy",
+              "tiers"
+            ]
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "$ref": "#/components/schemas/BookingChargeType"
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "`SLOT`: the hour it charges."
+                },
+                "tier": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PriceTier"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "amenity": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "pricing": {
+                      "$ref": "#/components/schemas/AmenityPricing"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "pricing"
+                  ]
+                },
+                "amount": {
+                  "type": "integer",
+                  "description": "Minor units, VAT included."
+                },
+                "taxAmount": {
+                  "type": "integer",
+                  "description": "The VAT inside `amount`."
+                },
+                "taxRate": {
+                  "type": "integer",
+                  "description": "Basis points."
+                }
+              },
+              "required": [
+                "type",
+                "startsAt",
+                "tier",
+                "amenity",
+                "amount",
+                "taxAmount",
+                "taxRate"
+              ]
+            }
+          },
+          "cancelled": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "initiator": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER",
+                  "VENUE",
+                  "ADMIN"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "refundPercent": {
+                "type": "integer"
+              },
+              "refundAmount": {
+                "type": "integer"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "initiator",
+              "reason",
+              "refundPercent",
+              "refundAmount",
+              "at"
+            ]
+          },
+          "movedFrom": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "bookingId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "code": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "MOVE",
+                  "SWAP",
+                  "REFILL"
+                ]
+              }
+            },
+            "required": [
+              "bookingId",
+              "code",
+              "type"
+            ]
+          },
+          "movedTo": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "MOVE",
+                    "SWAP",
+                    "REFILL"
+                  ]
+                }
+              },
+              "required": [
+                "bookingId",
+                "code",
+                "type"
+              ]
+            }
+          },
+          "hold": {
+            "type": "boolean",
+            "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "venue",
+          "ground",
+          "customer",
+          "source",
+          "currency",
+          "total",
+          "createdAt",
+          "expiresAt",
+          "updatedAt",
+          "note",
+          "creator",
+          "regularId",
+          "paymentMode",
+          "deposit",
+          "paid",
+          "tax",
+          "cancellation",
+          "charges",
+          "cancelled",
+          "movedFrom",
+          "movedTo",
+          "hold"
+        ]
+      },
+      "BookingHistoryEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "example": "CREATED"
+          },
+          "actor": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "$ref": "#/components/schemas/BookingActorKind"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "name"
+            ]
+          },
+          "data": {
+            "description": "The event's details as stored."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "actor",
+          "createdAt"
+        ]
+      },
+      "BookingActorKind": {
+        "type": "string",
+        "enum": [
+          "CUSTOMER",
+          "STAFF",
+          "ADMIN",
+          "SYSTEM"
+        ]
+      },
+      "DeclineBooking": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Shown to the player."
+          }
+        }
+      },
+      "MarkBooking": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "NO_SHOW"
+            ],
+            "description": "Played, or the customer didn't come. Either can be corrected to the other."
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "MoveBooking": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first slot's start."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last slot's end."
+          },
+          "holdId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The staff hold on the target time, made when it was picked. Released by the move in the same step."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "groundId",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "SwappedBookings": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/StaffBookingDetail"
+              },
+              {
+                "$ref": "#/components/schemas/StaffBookingDetail"
+              }
+            ],
+            "description": "The two new bookings: this one's, then the other's."
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "SwapBookings": {
+        "type": "object",
+        "properties": {
+          "withBookingId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The booking that takes this one's time."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "withBookingId"
+        ]
+      },
+      "CreateHold": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first slot's start."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last slot's end."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "venueCustomerId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "venueCustomerId"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "example": "+20 100 123 4567"
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone"
+                ]
+              }
+            ],
+            "description": "Who it's held for: one of the venue's customers, or someone new by name and mobile number (found by number if the venue knows them)."
+          }
+        },
+        "required": [
+          "groundId",
+          "startsAt",
+          "endsAt",
+          "customer"
+        ]
       },
       "SystemStatus": {
         "type": "object",
@@ -7449,14 +8463,6 @@
           "createdAt"
         ]
       },
-      "BookingSource": {
-        "type": "string",
-        "enum": [
-          "APP",
-          "STAFF"
-        ],
-        "description": "`APP`: the player booked in the app. `STAFF`: entered by the venue's staff."
-      },
       "AdminBookingDetail": {
         "type": "object",
         "properties": {
@@ -7881,67 +8887,6 @@
           "cancelled",
           "movedFrom",
           "movedTo"
-        ]
-      },
-      "BookingHistoryEvent": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string",
-            "example": "CREATED"
-          },
-          "actor": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "$ref": "#/components/schemas/BookingActorKind"
-              },
-              "id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "uuid"
-              },
-              "name": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "kind",
-              "id",
-              "name"
-            ]
-          },
-          "data": {
-            "description": "The event's details as stored."
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "actor",
-          "createdAt"
-        ]
-      },
-      "BookingActorKind": {
-        "type": "string",
-        "enum": [
-          "CUSTOMER",
-          "STAFF",
-          "ADMIN",
-          "SYSTEM"
         ]
       },
       "AdminPayment": {
@@ -13419,6 +14364,290 @@
         }
       }
     },
+    "/v1/bookings/{bookingId}/move/accept": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Keep a change the venue made",
+        "description": "Closes the choice on `move`; from then on the venue's cancellation policy applies as usual.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MOVE_NOT_OPEN: nothing left to answer (accepted, or the time is up).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/move/reject": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Reject a change the venue made",
+        "description": "Cancels the booking as the venue's cancellation: everything paid is refunded in full.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The cancelled booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MOVE_NOT_OPEN: nothing left to answer (accepted, or the time is up).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/move/back": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Move a booking back to where it was",
+        "description": "When `move.canMoveBack`: back to the original ground and time at the original price. Answers with the booking that replaces this one.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking, back at its original time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MOVE_NOT_OPEN, or SLOT_UNAVAILABLE: the original time is taken (or it was a swap).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/shared-bookings/{code}": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "A booking's share link",
+        "description": "What anyone with the link (/b/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBooking"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/bookings/{bookingId}/payments": {
       "post": {
         "tags": [
@@ -17520,6 +18749,1245 @@
           },
           "422": {
             "description": "SLOT_STARTED (with the `slotIds`): it began already",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "The calendar: bookings by day and ground",
+        "description": "Bookings overlapping the venue-local days from `date`, up to a week, by start time then ground. Without a `status`, the ones holding their slots.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "A calendar day in the venue's timezone.",
+              "example": "2026-12-01"
+            },
+            "required": true,
+            "description": "A calendar day in the venue's timezone.",
+            "name": "date",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7,
+              "default": 1,
+              "description": "How many days to read from the date, up to a week."
+            },
+            "required": false,
+            "description": "How many days to read from the date, up to a week.",
+            "name": "span",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Only this ground's bookings."
+            },
+            "required": false,
+            "description": "Only this ground's bookings.",
+            "name": "groundId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "HELD",
+                "UNCONFIRMED",
+                "CONFIRMED",
+                "CANCELLED",
+                "EXPIRED",
+                "RELEASED",
+                "RESCHEDULED",
+                "COMPLETED",
+                "NO_SHOW"
+              ],
+              "description": "Only bookings in this status. Left out: the ones holding their slots (waiting, confirmed, played or no-show)."
+            },
+            "required": false,
+            "description": "Only bookings in this status. Left out: the ones holding their slots (waiting, confirmed, played or no-show).",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The bookings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/pending": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Bookings waiting for approval",
+        "description": "Not yet expired, the ones that expire soonest first.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The bookings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "One booking in full",
+        "description": "With its customer, charges, payments so far, cancellation, and where it was moved from and to.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/history": {
+      "get": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "What happened to a booking",
+        "description": "Its events, newest first, a page at a time.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "`nextCursor` from the previous page."
+            },
+            "required": false,
+            "description": "`nextCursor` from the previous page.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BookingHistoryEvent"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null on the last page."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/approve": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Approve a booking",
+        "description": "A `PENDING` booking before it expires. With something to pay online it becomes `HELD` for the venue's payment window (never past kick-off); otherwise `CONFIRMED`.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: it has already moved on (with `bookingStatus`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/decline": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Decline a booking",
+        "description": "A `PENDING` booking before it expires. It's cancelled as the venue's decision (a full refund of anything paid) and its slots are free again.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineBooking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The booking after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: it has already moved on (with `bookingStatus`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/mark": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Mark a game played or a no-show",
+        "description": "A `CONFIRMED` booking once it has kicked off, or a correction of the mark. Marking it as it already is changes nothing.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkBooking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The booking after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT (with `bookingStatus`), or BOOKING_NOT_STARTED: it hasn't kicked off yet.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/move": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Move a booking to another time or ground",
+        "description": "For bookings still to be played, before they start. The booking ends `RESCHEDULED` and a new one takes its customer, status and terms at the new slots' prices; answers with the new booking. The target must be free, the booking's own, or held by `holdId` (which ends with the move). The player can reject the move for a full refund, for 24 hours or until kick-off.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveBooking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. GROUND_NOT_FOUND: no such ground here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_NOT_MOVABLE, SLOT_UNAVAILABLE, HOLD_NOT_FOUND: the hold has ended, or GROUND_UNAVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/swap": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Swap two bookings' times",
+        "description": "Each takes the other's ground and time, keeping its own customer and terms at its new slots' prices. Both customers can reject their side.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapBookings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The two new bookings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwappedBookings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_NOT_MOVABLE, SLOT_UNAVAILABLE or GROUND_UNAVAILABLE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_SWAP: the same booking twice. INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/holds": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Hold slots for someone",
+        "description": "Keeps free slots as a `HELD` booking for the venue's `staffHoldMinutes`, for someone deciding on the phone or a move being confirmed. Staff can hold right up to kick-off. Nothing to pay through Hagz and no commission.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHold"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The hold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE, GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/holds/{bookingId}/confirm": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Confirm a hold as a booking",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HOLD_NOT_FOUND: no such hold at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/holds/{bookingId}/extend": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Give a hold more time, once",
+        "description": "Adds the venue's `staffHoldMinutes` to its deadline.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HOLD_NOT_FOUND: no such hold at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`). HOLD_ALREADY_EXTENDED: it has had its extension.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/holds/{bookingId}/release": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Let a hold go",
+        "description": "Frees its slots at once. It ends `EXPIRED`, as if it had run out.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "HOLD_NOT_FOUND: no such hold at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`).",
             "content": {
               "application/problem+json": {
                 "schema": {
