@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { Button } from "@/components/button";
 import { BackButton, NavBar } from "@/components/nav";
 import { Screen } from "@/components/screen";
@@ -22,6 +22,9 @@ type Loaded =
 
 // The page's side padding (Screen's px-5), which the cards run into.
 const GUTTER = 20;
+// From the map to the cards (its mb-5), and kept clear under the cards above the bar.
+const MAP_GAP = 20;
+const BELOW = 16;
 
 // A venue's layout on its own screen, from View layout on the Grounds heading (Figma C5 215:2,
 // round 2; user, 2026-11-22): the map from above, and the venue's ground cards under it. Tapping a
@@ -142,6 +145,9 @@ function Picking({
   const picked = venue.grounds.find((ground) => ground.id === pickedId);
   const currency = venue.marketplace.currency;
   const open = picked?.status === "ACTIVE";
+  // The height under the title, and the cards' (with their dots), for the map to fit between.
+  const [room, setRoom] = useState(0);
+  const [cardsHeight, setCardsHeight] = useState(0);
 
   return (
     <Screen
@@ -175,10 +181,12 @@ function Picking({
       }
     >
       <NavBar start={<BackButton onPress={() => router.back()} />} />
-      {/* A tall venue scrolls, its scroll bar at the screen's edge rather than the gutter. */}
-      <ScrollView className="-mx-5" contentContainerClassName="px-5 pb-8">
-        <Title subtitle={note ?? t("screens.layout.subtitle")}>{t("screens.layout.title")}</Title>
-        {venue.layout ? (
+      <Title subtitle={note ?? t("screens.layout.subtitle")}>{t("screens.layout.title")}</Title>
+      {/* Never scrolls: the map takes what's left once the cards are under it, shrinking (and
+          centring) to fit when the venue is tall. It sits right on top of the cards, any spare room
+          under them. */}
+      <View className="flex-1" onLayout={(event) => setRoom(event.nativeEvent.layout.height)}>
+        {venue.layout && room > 0 && cardsHeight > 0 ? (
           // 20 to the cards, the entrance tags on its bottom edge hanging into it.
           <View className="mb-5">
             <VenueLayout
@@ -188,10 +196,16 @@ function Picking({
               unavailableIds={unavailableIds}
               pickedId={pickedId}
               onPick={setPickedId}
+              maxHeight={room - cardsHeight - MAP_GAP - BELOW}
             />
           </View>
         ) : null}
-        <View className="gap-3">
+        <View
+          className="gap-3"
+          // Hidden for the frame it takes to measure, so the cards don't jump down under the map.
+          style={{ opacity: room > 0 && cardsHeight > 0 ? 1 : 0 }}
+          onLayout={(event) => setCardsHeight(event.nativeEvent.layout.height)}
+        >
           <GroundCards
             grounds={venue.grounds}
             currency={currency}
@@ -202,7 +216,7 @@ function Picking({
             gutter={GUTTER}
           />
         </View>
-      </ScrollView>
+      </View>
     </Screen>
   );
 }
