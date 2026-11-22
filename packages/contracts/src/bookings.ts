@@ -85,6 +85,28 @@ export const BookingQuote = z
   })
   .meta({ id: "BookingQuote" });
 
+// A move staff made that the player hasn't answered yet (docs/rescheduling.md, "Rejecting a move").
+export const BookingMove = z
+  .object({
+    type: z.enum(["MOVE", "SWAP"]),
+    from: z.object({
+      ground: z.object({ id: z.uuid(), name: z.string().nullable() }),
+      startsAt: Instant,
+      endsAt: Instant,
+      total: z.int().meta({ description: "What it cost before the move." }),
+    }),
+    priceDifference: z.int().meta({ description: "New total less the old one, minor units." }),
+    reason: z.string().nullable(),
+    respondBy: Instant.meta({
+      description: "24 hours after the move or kick-off, whichever is first. Silence accepts.",
+    }),
+    canMoveBack: z.boolean().meta({
+      description: "The original time is still free (never after a swap).",
+    }),
+    movedAt: Instant,
+  })
+  .meta({ id: "BookingMove" });
+
 export const Booking = z
   .object({
     id: z.uuid(),
@@ -109,6 +131,10 @@ export const Booking = z
     charges: z.array(BookingCharge),
     cancellation: z.object({ policy: CancellationPolicy, tiers: z.array(CancellationTier) }),
     note: z.string().nullable(),
+    move: BookingMove.nullable().meta({
+      description:
+        "The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise.",
+    }),
     createdAt: Instant,
   })
   .meta({ id: "Booking" });
@@ -157,6 +183,7 @@ export type BookingRequest = z.infer<typeof BookingRequest>;
 export type CreateBooking = z.infer<typeof CreateBooking>;
 export type BookingCharge = z.infer<typeof BookingCharge>;
 export type BookingQuote = z.infer<typeof BookingQuote>;
+export type BookingMove = z.infer<typeof BookingMove>;
 export type Booking = z.infer<typeof Booking>;
 export type BookingsQuery = z.infer<typeof BookingsQuery>;
 export type BookingSummary = z.infer<typeof BookingSummary>;
