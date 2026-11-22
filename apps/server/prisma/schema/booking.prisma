@@ -58,7 +58,7 @@ model Booking {
   @@index([status, expiresAt])
 }
 
-// Why and how a CANCELLED booking was cancelled; who did it is its CANCELLED BookingEvent. Players
+// Why and how a CANCELLED booking was cancelled; who did it is its BookingEvent (DECLINED, MOVE_REJECTED). Players
 // get the booking's tier for their notice; venue cancellations always refund in full. Refunds are
 // Refund rows. CHECKs: refundPercent 0–100, and 100 for VENUE; refundAmount >= 0.
 model Cancellation {

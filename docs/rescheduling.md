@@ -62,8 +62,8 @@ Staff can move a booking the customer never asked for, by mistake or not. Asking
 When staff are on the phone with someone who's deciding, they **hold** the slots: a staff-created booking in `HELD` for that customer, with `expiresAt` set `staffHoldMinutes` ahead. To everyone else the slots are taken.
 
 - **Confirm** turns it into a `CONFIRMED` booking.
-- **Extend** pushes `expiresAt` once more by `staffHoldMinutes`.
-- **Release** frees the slots at once.
+- **Extend** pushes `expiresAt` once more by `staffHoldMinutes`. Only once, so a hold can't keep slots off sale for long.
+- **Release** frees the slots at once. The hold ends `EXPIRED`, as if it had run out: a hold that didn't become a booking isn't a cancellation, so it never counts as one.
 - **Nothing happens:** the expiry sweeper frees the slots when it expires, as with unpaid holds.
 
 A staff hold needs no online payment. It's created by staff (`creatorId`), so it carries no commission, like any booking staff enter.
