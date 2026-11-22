@@ -68,3 +68,28 @@ export const walkInCustomer = async (
   if (!created) throw new Error("Couldn't create the venue's customer record.");
   return created.id;
 };
+
+// A customer's counters (docs/regulars.md "Filling a slot"): games played, no-shows and when they
+// last played, worked out again from their bookings in the transaction that marked a game, so they
+// never drift. `lastBookedAt` is the start of the last game they played.
+export const refreshCustomerCounters = async (tx: Tx, venueCustomerIds: readonly string[]) => {
+  const ids = [...new Set(venueCustomerIds)].sort();
+  if (ids.length === 0) return;
+  await tx.$executeRaw`
+    UPDATE "VenueCustomer" AS vc SET
+      "bookingCount" = s.played,
+      "noShowCount" = s."noShows",
+      "lastBookedAt" = s.last,
+      "updatedAt" = now()
+    FROM (
+      SELECT c.id,
+        count(b.id) FILTER (WHERE b.status = 'COMPLETED')::int AS played,
+        count(b.id) FILTER (WHERE b.status = 'NO_SHOW')::int AS "noShows",
+        max(b."startsAt") FILTER (WHERE b.status = 'COMPLETED') AS last
+      FROM "VenueCustomer" c
+      LEFT JOIN "Booking" b ON b."customerId" = c.id
+      WHERE c.id = ANY(${ids}::uuid[])
+      GROUP BY c.id
+    ) AS s
+    WHERE vc.id = s.id`;
+};

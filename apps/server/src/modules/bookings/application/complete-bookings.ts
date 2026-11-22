@@ -1,3 +1,4 @@
+import { refreshCustomerCounters } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { transaction } from "@/platform/db/transaction";
 import { BOOKING_EVENTS } from "../domain/events";
@@ -14,8 +15,8 @@ export const completeEndedBookings = async (clock: Clock = systemClock): Promise
   for (;;) {
     const now = clock.now();
     const count = await transaction(async (tx) => {
-      const due = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM "Booking"
+      const due = await tx.$queryRaw<{ id: string; customerId: string }[]>`
+        SELECT id, "customerId" FROM "Booking"
         WHERE status = 'CONFIRMED' AND "endsAt" <= ${now}
         ORDER BY "endsAt"
         LIMIT ${BATCH}
@@ -30,6 +31,10 @@ export const completeEndedBookings = async (clock: Clock = systemClock): Promise
           data: { from: "CONFIRMED" },
         })),
       });
+      await refreshCustomerCounters(
+        tx,
+        due.map((booking) => booking.customerId),
+      );
       return due.length;
     });
     completed += count;

@@ -1,5 +1,10 @@
 import type { DeclineBooking, MarkBooking } from "@hagz/contracts";
-import { bookHeldSlots, releaseSlots, type VenueAccess } from "@/modules/venues";
+import {
+  bookHeldSlots,
+  refreshCustomerCounters,
+  releaseSlots,
+  type VenueAccess,
+} from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError } from "@/platform/errors/app-error";
@@ -137,6 +142,7 @@ export const markBooking = async (
       status: true,
       startsAt: true,
       endsAt: true,
+      customerId: true,
     });
     if (!booking) throw venueBookingNotFound();
     if (booking.status === outcome) return;
@@ -154,5 +160,6 @@ export const markBooking = async (
         data: { from: booking.status },
       },
     });
+    await refreshCustomerCounters(tx, [booking.customerId]);
   });
 };

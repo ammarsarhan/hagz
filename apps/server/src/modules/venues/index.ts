@@ -4,6 +4,7 @@ export { recordStaffAccountChange, venuesOwnedBy } from "./application/staff-acc
 export {
   linkWalkIns,
   venueCustomerForAccount,
+  refreshCustomerCounters,
   walkInCustomer,
 } from "./application/venue-customers";
 // For bookings: claiming slots, and the terms a booking copies.
