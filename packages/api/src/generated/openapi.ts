@@ -4782,6 +4782,296 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bookings/{bookingId}/move/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep a change the venue made
+         * @description Closes the choice on `move`; from then on the venue's cancellation policy applies as usual.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MOVE_NOT_OPEN: nothing left to answer (accepted, or the time is up). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}/move/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a change the venue made
+         * @description Cancels the booking as the venue's cancellation: everything paid is refunded in full.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The cancelled booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MOVE_NOT_OPEN: nothing left to answer (accepted, or the time is up). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}/move/back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a booking back to where it was
+         * @description When `move.canMoveBack`: back to the original ground and time at the original price. Answers with the booking that replaces this one.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking, back at its original time */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MOVE_NOT_OPEN, or SLOT_UNAVAILABLE: the original time is taken (or it was a swap). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shared-bookings/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A booking's share link
+         * @description What anyone with the link (/b/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedBooking"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description The database is unavailable; retry. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bookings/{bookingId}/payments": {
         parameters: {
             query?: never;
@@ -8451,6 +8741,1051 @@ export interface paths {
                 };
                 /** @description SLOT_STARTED (with the `slotIds`): it began already */
                 422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The calendar: bookings by day and ground
+         * @description Bookings overlapping the venue-local days from `date`, up to a week, by start time then ground. Without a `status`, the ones holding their slots.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description A calendar day in the venue's timezone. */
+                    date: string;
+                    /** @description How many days to read from the date, up to a week. */
+                    span?: number;
+                    /** @description Only this ground's bookings. */
+                    groundId?: string;
+                    /** @description Only bookings in this status. Left out: the ones holding their slots (waiting, confirmed, played or no-show). */
+                    status?: "PENDING" | "HELD" | "UNCONFIRMED" | "CONFIRMED" | "CANCELLED" | "EXPIRED" | "RELEASED" | "RESCHEDULED" | "COMPLETED" | "NO_SHOW";
+                };
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The bookings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingList"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bookings waiting for approval
+         * @description Not yet expired, the ones that expire soonest first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The bookings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingList"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One booking in full
+         * @description With its customer, charges, payments so far, cancellation, and where it was moved from and to.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What happened to a booking
+         * @description Its events, newest first, a page at a time.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description `nextCursor` from the previous page. */
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of events */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["BookingHistoryEvent"][];
+                            /** @description Null on the last page. */
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a booking
+         * @description A `PENDING` booking before it expires. With something to pay online it becomes `HELD` for the venue's payment window (never past kick-off); otherwise `CONFIRMED`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_STATUS_CONFLICT: it has already moved on (with `bookingStatus`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline a booking
+         * @description A `PENDING` booking before it expires. It's cancelled as the venue's decision (a full refund of anything paid) and its slots are free again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DeclineBooking"];
+                };
+            };
+            responses: {
+                /** @description The booking after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_STATUS_CONFLICT: it has already moved on (with `bookingStatus`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/mark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a game played or a no-show
+         * @description A `CONFIRMED` booking once it has kicked off, or a correction of the mark. Marking it as it already is changes nothing.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MarkBooking"];
+                };
+            };
+            responses: {
+                /** @description The booking after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_STATUS_CONFLICT (with `bookingStatus`), or BOOKING_NOT_STARTED: it hasn't kicked off yet. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a booking to another time or ground
+         * @description For bookings still to be played, before they start. The booking ends `RESCHEDULED` and a new one takes its customer, status and terms at the new slots' prices; answers with the new booking. The target must be free, the booking's own, or held by `holdId` (which ends with the move). The player can reject the move for a full refund, for 24 hours or until kick-off.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MoveBooking"];
+                };
+            };
+            responses: {
+                /** @description The new booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. GROUND_NOT_FOUND: no such ground here. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_MOVABLE, SLOT_UNAVAILABLE, HOLD_NOT_FOUND: the hold has ended, or GROUND_UNAVAILABLE. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/swap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Swap two bookings' times
+         * @description Each takes the other's ground and time, keeping its own customer and terms at its new slots' prices. Both customers can reject their side.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SwapBookings"];
+                };
+            };
+            responses: {
+                /** @description The two new bookings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SwappedBookings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_MOVABLE, SLOT_UNAVAILABLE or GROUND_UNAVAILABLE */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_SWAP: the same booking twice. INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold slots for someone
+         * @description Keeps free slots as a `HELD` booking for the venue's `staffHoldMinutes`, for someone deciding on the phone or a move being confirmed. Staff can hold right up to kick-off. Nothing to pay through Hagz and no commission.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateHold"];
+                };
+            };
+            responses: {
+                /** @description The hold */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description INVALID_PHONE_NUMBER */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue. GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description SLOT_UNAVAILABLE, GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description INVALID_BOOKING_TIME (with the limit it broke: `horizonDays`, or `minimumSlots` and `maximumSlots`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/holds/{bookingId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a hold as a booking */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description HOLD_NOT_FOUND: no such hold at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/holds/{bookingId}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give a hold more time, once
+         * @description Adds the venue's `staffHoldMinutes` to its deadline.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description HOLD_NOT_FOUND: no such hold at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`). HOLD_ALREADY_EXTENDED: it has had its extension. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/holds/{bookingId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let a hold go
+         * @description Frees its slots at once. It ends `EXPIRED`, as if it had run out.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The booking after the change */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description HOLD_NOT_FOUND: no such hold at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_STATUS_CONFLICT: confirmed, released or run out already (with `bookingStatus`). */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -13966,6 +15301,36 @@ export interface components {
                 tiers: components["schemas"]["CancellationTier"][];
             };
             note: string | null;
+            /** @description The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise. */
+            move: {
+                /** @enum {string} */
+                type: "MOVE" | "SWAP";
+                from: {
+                    ground: {
+                        /** Format: uuid */
+                        id: string;
+                        name: string | null;
+                    };
+                    /** Format: date-time */
+                    startsAt: string;
+                    /** Format: date-time */
+                    endsAt: string;
+                    /** @description What it cost before the move. */
+                    total: number;
+                };
+                /** @description New total less the old one, minor units. */
+                priceDifference: number;
+                reason: string | null;
+                /**
+                 * Format: date-time
+                 * @description 24 hours after the move or kick-off, whichever is first. Silence accepts.
+                 */
+                respondBy: string;
+                /** @description The original time is still free (never after a swap). */
+                canMoveBack: boolean;
+                /** Format: date-time */
+                movedAt: string;
+            } | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -14028,6 +15393,33 @@ export interface components {
             currency: string;
             /** @description Minor units, VAT included. */
             total: number;
+        };
+        SharedBooking: {
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** @example Africa/Cairo */
+            timezone: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: string | null;
+                /** @example Maadi, Cairo */
+                area: string | null;
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            /** @description `RESCHEDULED`: the code of the booking that replaced it, to follow the link there. */
+            movedTo: string | null;
         };
         Checkout: {
             payment: {
@@ -14737,6 +16129,267 @@ export interface components {
                 price: number;
             }[];
         };
+        StaffBookingList: {
+            data: components["schemas"]["StaffBooking"][];
+        };
+        StaffBooking: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                names: {
+                    en: string | null;
+                    ar: string | null;
+                };
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            customer: {
+                name: string;
+                phone: string | null;
+            };
+            source: components["schemas"]["BookingSource"];
+            /** @example EGP */
+            currency: string;
+            /** @description Minor units, VAT included. */
+            total: number;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description `PENDING`, `HELD` and `UNCONFIRMED`: when it lets its slots go.
+             */
+            expiresAt: string | null;
+            /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
+            hold: boolean;
+        };
+        /**
+         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
+         * @enum {string}
+         */
+        BookingSource: "APP" | "STAFF";
+        StaffBookingDetail: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /**
+             * @description The venue's IANA timezone.
+             * @example Africa/Cairo
+             */
+            timezone: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                names: {
+                    en: string | null;
+                    ar: string | null;
+                };
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            customer: {
+                /** Format: uuid */
+                venueCustomerId: string;
+                /**
+                 * Format: uuid
+                 * @description The player's account; null for walk-ins.
+                 */
+                accountId: string | null;
+                name: string;
+                phone: string | null;
+            };
+            source: components["schemas"]["BookingSource"];
+            /** @example EGP */
+            currency: string;
+            /** @description Minor units, VAT included. */
+            total: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            note: string | null;
+            /** @description The staff member who entered it. */
+            creator: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** Format: uuid */
+            regularId: string | null;
+            paymentMode: components["schemas"]["PaymentMode"];
+            deposit: number | null;
+            /** @description Succeeded payments less succeeded refunds. */
+            paid: number;
+            tax: number;
+            cancellation: {
+                policy: components["schemas"]["CancellationPolicy"];
+                tiers: components["schemas"]["CancellationTier"][];
+            };
+            charges: {
+                type: components["schemas"]["BookingChargeType"];
+                /**
+                 * Format: date-time
+                 * @description `SLOT`: the hour it charges.
+                 */
+                startsAt: string | null;
+                tier: components["schemas"]["PriceTier"] & (string | null);
+                amenity: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string | null;
+                    pricing: components["schemas"]["AmenityPricing"];
+                } | null;
+                /** @description Minor units, VAT included. */
+                amount: number;
+                /** @description The VAT inside `amount`. */
+                taxAmount: number;
+                /** @description Basis points. */
+                taxRate: number;
+            }[];
+            cancelled: {
+                /** @enum {string} */
+                initiator: "CUSTOMER" | "VENUE" | "ADMIN";
+                reason: string | null;
+                refundPercent: number;
+                refundAmount: number;
+                /** Format: date-time */
+                at: string;
+            } | null;
+            movedFrom: {
+                /** Format: uuid */
+                bookingId: string;
+                code: string;
+                /** @enum {string} */
+                type: "MOVE" | "SWAP" | "REFILL";
+            } | null;
+            movedTo: {
+                /** Format: uuid */
+                bookingId: string;
+                code: string;
+                /** @enum {string} */
+                type: "MOVE" | "SWAP" | "REFILL";
+            }[];
+            /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
+            hold: boolean;
+        };
+        BookingHistoryEvent: {
+            /** Format: uuid */
+            id: string;
+            /** @example CREATED */
+            type: string;
+            actor: {
+                kind: components["schemas"]["BookingActorKind"];
+                /** Format: uuid */
+                id: string | null;
+                name: string | null;
+            };
+            /** @description The event's details as stored. */
+            data?: unknown;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        BookingActorKind: "CUSTOMER" | "STAFF" | "ADMIN" | "SYSTEM";
+        DeclineBooking: {
+            /** @description Shown to the player. */
+            reason?: string;
+        };
+        MarkBooking: {
+            /**
+             * @description Played, or the customer didn't come. Either can be corrected to the other.
+             * @enum {string}
+             */
+            outcome: "COMPLETED" | "NO_SHOW";
+        };
+        MoveBooking: {
+            /** Format: uuid */
+            groundId: string;
+            /**
+             * Format: date-time
+             * @description The first slot's start.
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description The last slot's end.
+             */
+            endsAt: string;
+            /**
+             * Format: uuid
+             * @description The staff hold on the target time, made when it was picked. Released by the move in the same step.
+             */
+            holdId?: string;
+            reason?: string;
+        };
+        SwappedBookings: {
+            /** @description The two new bookings: this one's, then the other's. */
+            data: [
+                components["schemas"]["StaffBookingDetail"],
+                components["schemas"]["StaffBookingDetail"]
+            ];
+        };
+        SwapBookings: {
+            /**
+             * Format: uuid
+             * @description The booking that takes this one's time.
+             */
+            withBookingId: string;
+            reason?: string;
+        };
+        CreateHold: {
+            /** Format: uuid */
+            groundId: string;
+            /**
+             * Format: date-time
+             * @description The first slot's start.
+             */
+            startsAt: string;
+            /**
+             * Format: date-time
+             * @description The last slot's end.
+             */
+            endsAt: string;
+            /** @description Who it's held for: one of the venue's customers, or someone new by name and mobile number (found by number if the venue knows them). */
+            customer: {
+                /** Format: uuid */
+                venueCustomerId: string;
+            } | {
+                name: string;
+                /** @example +20 100 123 4567 */
+                phone: string;
+            };
+        };
         SystemStatus: {
             /** Format: date-time */
             checkedAt: string;
@@ -15438,11 +17091,6 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
-        /**
-         * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
-         * @enum {string}
-         */
-        BookingSource: "APP" | "STAFF";
         AdminBookingDetail: {
             /** Format: uuid */
             id: string;
@@ -15560,24 +17208,6 @@ export interface components {
                 type: "MOVE" | "SWAP" | "REFILL";
             }[];
         };
-        BookingHistoryEvent: {
-            /** Format: uuid */
-            id: string;
-            /** @example CREATED */
-            type: string;
-            actor: {
-                kind: components["schemas"]["BookingActorKind"];
-                /** Format: uuid */
-                id: string | null;
-                name: string | null;
-            };
-            /** @description The event's details as stored. */
-            data?: unknown;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        /** @enum {string} */
-        BookingActorKind: "CUSTOMER" | "STAFF" | "ADMIN" | "SYSTEM";
         AdminPayment: {
             /** Format: uuid */
             id: string;
