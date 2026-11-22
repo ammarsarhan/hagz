@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AdminBooking, AdminBookingDetail } from "./admin-bookings";
 import { BookingStatus } from "./bookings";
 import { GroundSize, GroundSport } from "./grounds";
+import { StaffGame } from "./listings";
 
 // A venue's bookings for its staff (Phase 4): the calendar and the approvals queue (PR 4.4),
 // approving, declining and marking how a game went (PR 4.2), and holds, moves and swaps (PR 4.8,
@@ -33,6 +34,10 @@ export const StaffBooking = AdminBooking.extend({
   hold: z.boolean().meta({
     description: "A staff hold: `HELD` slots kept for someone deciding, with no payment due.",
   }),
+  openGame: z
+    .object({ players: z.int() })
+    .nullable()
+    .meta({ description: "An open game: how many players to expect besides the booker." }),
 }).meta({ id: "StaffBooking" });
 
 export const StaffBookingList = z
@@ -40,7 +45,7 @@ export const StaffBookingList = z
   .meta({ id: "StaffBookingList" });
 
 export const StaffBookingDetail = AdminBookingDetail.omit({ commissionRate: true })
-  .extend({ hold: StaffBooking.shape.hold })
+  .extend({ hold: StaffBooking.shape.hold, game: StaffGame.nullable() })
   .meta({ id: "StaffBookingDetail" });
 
 const Reason = z.string().trim().min(1).max(500);
@@ -126,6 +131,9 @@ export const SharedBooking = z
       name: z.string().nullable(),
       sport: GroundSport,
       size: GroundSize,
+    }),
+    gameId: z.uuid().nullable().meta({
+      description: "An open game anyone can join from the link: `GET /v1/games/{id}`.",
     }),
     movedTo: z.string().nullable().meta({
       description:

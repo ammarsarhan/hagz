@@ -36,6 +36,17 @@ export const SIZES_BY_SPORT = {
 export const sizeFitsSport = (sport: Sport, size: Size) =>
   (SIZES_BY_SPORT[sport] as readonly Size[]).includes(size);
 
+// How many players a ground holds (both sides), for open games (docs/listings.md "How many").
+export const PLAYERS_BY_GROUND: Record<Sport, Partial<Record<Size, number>>> = {
+  FOOTBALL: { FIVE_A_SIDE: 10, SEVEN_A_SIDE: 14, ELEVEN_A_SIDE: 22 },
+  PADEL: { STANDARD: 4 },
+  TENNIS: { STANDARD: 4 },
+  BASKETBALL: { STANDARD: 10 },
+  VOLLEYBALL: { STANDARD: 12 },
+};
+
+export const playersOn = (sport: Sport, size: Size): number => PLAYERS_BY_GROUND[sport][size] ?? 2;
+
 type Surface = z.infer<typeof GroundSurface>;
 
 // Which surfaces each sport is played on, in the order the app offers them (user, 2026-11-16).

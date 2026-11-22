@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BookerListing, ListingRequest } from "./listings";
 import { GroundSize, GroundSport, PriceTier } from "./grounds";
 import { page } from "./lists";
 import { AmenityPricing, CancellationPolicy, CancellationTier, PaymentMode } from "./venue-edit";
@@ -52,6 +53,9 @@ export const BookingRequest = z
 
 export const CreateBooking = BookingRequest.extend({
   note: z.string().trim().max(500).optional().meta({ description: "For the venue." }),
+  listing: ListingRequest.optional().meta({
+    description: "Ask for players: the open game starts once the booking is confirmed.",
+  }),
 }).meta({ id: "CreateBooking" });
 
 export const BookingCharge = z
@@ -135,6 +139,7 @@ export const Booking = z
     charges: z.array(BookingCharge),
     cancellation: z.object({ policy: CancellationPolicy, tiers: z.array(CancellationTier) }),
     note: z.string().nullable(),
+    listing: BookerListing.nullable().meta({ description: "Its open game, if listed." }),
     move: BookingMove.nullable().meta({
       description:
         "The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise.",
