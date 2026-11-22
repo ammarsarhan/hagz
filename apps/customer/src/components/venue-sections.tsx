@@ -46,14 +46,11 @@ import { Text } from "./text";
 
 export const Hairline = () => <View className="h-px bg-border" />;
 
-export function GroupHeading({ children, action }: { children: string; action?: ReactNode }) {
+export function GroupHeading({ children }: { children: string }) {
   return (
-    <View className="flex-row items-center justify-between">
-      <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
-        {children}
-      </Text>
-      {action}
-    </View>
+    <Text accessibilityRole="header" className="text-[18px] leading-6 font-semibold">
+      {children}
+    </Text>
   );
 }
 
@@ -68,15 +65,19 @@ export function Section({
   title: string;
   // A small grey line under the heading (what the grounds were matched against).
   note?: string;
+  // At the end, centred on the heading and its note together (View layout).
   action?: ReactNode;
   onLayout?: (event: LayoutChangeEvent) => void;
   children: ReactNode;
 }) {
   return (
     <View className="gap-4 px-6 pt-8" onLayout={onLayout}>
-      <View className="gap-1">
-        <GroupHeading action={action}>{title}</GroupHeading>
-        {note ? <Text className="text-caption text-ink-2">{note}</Text> : null}
+      <View className="flex-row items-center gap-4">
+        <View className="flex-1 gap-1">
+          <GroupHeading>{title}</GroupHeading>
+          {note ? <Text className="text-caption text-ink-2">{note}</Text> : null}
+        </View>
+        {action}
       </View>
       {children}
     </View>
