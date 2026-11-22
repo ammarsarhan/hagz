@@ -15,6 +15,7 @@ Open games share names, a note, and phone numbers once someone has joined. No ch
 - **Cancellation:** if the booking is cancelled, every joined player is notified and the listing closes.
 - **Rescheduling:** if staff move the booking, the listing moves with it (new booking and start time) and joined players are told. See [rescheduling.md](rescheduling.md).
 - **Decided on 2026-11-22 (PR 4.7):** no minimum reliability to join in v1 (the booker sees the figure and can remove someone). Joining is also refused when it overlaps a booking of the player's own that's still on. A removed player can't rejoin that game; one who left can, while there's room. Joined players don't become the venue's customers.
+- **Built (2026-11-22):** a game asked for at checkout is stored `WAITING` and opens in the transaction that confirms the booking (approval, payment), or is cancelled with it (declined, expired). Players per ground: football 10 / 14 / 22, padel and tennis 4, basketball 10, volleyball 12 (`PLAYERS_BY_GROUND` in contracts). Any cancellation added later (6.1) must call `cancelListings` in its transaction.
 - **Disclaimer,** on the listing and on the join button: *"Hagz doesn't guarantee that the players who join will show up, or that the game will go ahead. You pay your share to the booker and the joining fee to the venue, in person."*
 
 ## What people see
