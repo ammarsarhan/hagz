@@ -1,6 +1,7 @@
 import {
   bookingsAdminRoutes,
   bookingsCustomerRoutes,
+  bookingsGameRoutes,
   bookingsRegularRoutes,
   bookingsStaffRoutes,
 } from "@/modules/bookings";
@@ -70,6 +71,7 @@ router.route("/v1", paymentsCustomerRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", bookingsStaffRoutes);
 router.route("/v1", bookingsRegularRoutes);
+router.route("/v1", bookingsGameRoutes);
 router.route("/v1", venuesCustomerRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
