@@ -19,6 +19,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "admin:create": "tsx src/create-admin.ts",
+    "seed:bookings": "tsx src/seed-bookings.ts",
     "seed:invitations": "tsx src/seed-invitations.ts",
     "seed:nearby": "tsx src/seed-nearby.ts",
     "seed:reference": "tsx src/seed-reference.ts",
