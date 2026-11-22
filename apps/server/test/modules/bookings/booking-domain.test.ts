@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { depositFor, priceBooking, vatInside } from "@/modules/bookings/domain/charges";
+import {
+  chargesAfterMove,
+  depositAfterMove,
+  respondBy,
+  type StoredCharge,
+} from "@/modules/bookings/domain/moves";
 import { checkLength, checkRange, coversExactly } from "@/modules/bookings/domain/rules";
 import { canMove, paymentDeadline, startOf } from "@/modules/bookings/domain/status";
 
@@ -191,5 +197,57 @@ describe("where a booking starts", () => {
     expect(canMove("HELD", "CONFIRMED")).toBe(true);
     expect(canMove("CONFIRMED", "PENDING")).toBe(false);
     expect(canMove("EXPIRED", "CONFIRMED")).toBe(false);
+  });
+});
+
+describe("moving", () => {
+  const line = (fields: Partial<StoredCharge>): StoredCharge => ({
+    type: "SLOT",
+    startsAt: null,
+    tier: null,
+    optionId: null,
+    discountId: null,
+    pricing: null,
+    amount: 0,
+    taxRate: 1400,
+    taxAmount: 0,
+    ...fields,
+  });
+
+  it("prices the new hours, scales per-hour amenities and keeps the rest", () => {
+    const charges = [
+      line({ startsAt: at("2026-12-01T18:00:00Z"), tier: "BASE", amount: 40_000 }),
+      line({ startsAt: at("2026-12-01T19:00:00Z"), tier: "BASE", amount: 40_000 }),
+      line({ type: "AMENITY", optionId: "ball", pricing: "PER_HOUR", amount: 10_000 }),
+      line({ type: "AMENITY", optionId: "bibs", pricing: "PER_BOOKING", amount: 3_000 }),
+    ];
+    const slots = [
+      { startsAt: at("2026-12-01T20:00:00Z"), tier: "PEAK" as const, price: 60_000 },
+      { startsAt: at("2026-12-01T21:00:00Z"), tier: "PEAK" as const, price: 60_000 },
+      { startsAt: at("2026-12-01T22:00:00Z"), tier: "PEAK" as const, price: 60_000 },
+    ];
+    const moved = chargesAfterMove(charges, slots);
+    expect(moved.lines.map((charge) => [charge.type, charge.amount])).toEqual([
+      ["SLOT", 60_000],
+      ["SLOT", 60_000],
+      ["SLOT", 60_000],
+      ["AMENITY", 15_000],
+      ["AMENITY", 3_000],
+    ]);
+    expect(moved.total).toBe(198_000);
+    expect(moved.lines[0]?.taxAmount).toBe(vatInside(60_000, 1400));
+  });
+
+  it("keeps a deposit's share of the total", () => {
+    expect(depositAfterMove(null, 80_000, 100_000)).toBeNull();
+    expect(depositAfterMove(40_000, 80_000, 100_000)).toBe(50_000);
+    expect(depositAfterMove(1, 80_000, 10)).toBe(1);
+    expect(depositAfterMove(80_000, 80_000, 60_000)).toBe(60_000);
+  });
+
+  it("closes the answer 24 hours after the move, or at kick-off if sooner", () => {
+    const movedAt = at("2026-12-01T10:00:00Z");
+    expect(respondBy(movedAt, at("2026-12-05T18:00:00Z"))).toEqual(at("2026-12-02T10:00:00Z"));
+    expect(respondBy(movedAt, at("2026-12-01T18:00:00Z"))).toEqual(at("2026-12-01T18:00:00Z"));
   });
 });

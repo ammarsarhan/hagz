@@ -7,6 +7,24 @@ export const BOOKING_EVENTS = {
   CONFIRMED: "CONFIRMED",
   // Not approved or paid by expiresAt; data: { from } the status it expired from.
   EXPIRED: "EXPIRED",
+  // Staff approved a PENDING booking; data: { to } HELD (payment due) or CONFIRMED.
+  APPROVED: "APPROVED",
+  // Staff declined a PENDING booking (with its VENUE Cancellation); data: { reason? }.
+  DECLINED: "DECLINED",
+  // Staff marked how it went, or corrected the mark; data: { from }.
+  COMPLETED: "COMPLETED",
+  NO_SHOW: "NO_SHOW",
+  // A staff hold given more time; data: { expiresAt } the new deadline.
+  HOLD_EXTENDED: "HOLD_EXTENDED",
+  // A staff hold let go before it ran out (EXPIRED); data: { bookingId? } the move that took its
+  // slots, if one did.
+  HOLD_RELEASED: "HOLD_RELEASED",
+  // Moved or swapped (now RESCHEDULED); data: { to, type, groupId? }. The new booking's CREATED
+  // carries { status, from, type }.
+  RESCHEDULED: "RESCHEDULED",
+  // The player kept a move staff made, or rejected it (cancelled as the venue's, refunded in full).
+  MOVE_ACCEPTED: "MOVE_ACCEPTED",
+  MOVE_REJECTED: "MOVE_REJECTED",
 } as const;
 
 export type BookingEventType = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];
