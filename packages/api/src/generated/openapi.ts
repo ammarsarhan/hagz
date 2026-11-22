@@ -9514,7 +9514,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, or MARK_WINDOW_CLOSED: more than 24 hours since it ended. */
+                /** @description BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, MARK_WINDOW_CLOSED: more than 24 hours since it ended, or CHECKED_IN: a no-show for a booker who checked in. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -11510,38 +11510,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/bookings/{bookingId}/listing/players/{customerId}/no-show": {
+    "/v1/bookings/{bookingId}/check-in-code": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
         /**
-         * Report a player who didn't come
-         * @description Within 48 hours of a game that was played. Counts in their reliability.
+         * My check-in code for a booking
+         * @description For a confirmed booking made in the app. Changes every 30 seconds (`refreshAt`); each code works for 60. Available until check-in closes, 30 minutes after kick-off.
          */
-        post: {
+        get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
                     bookingId: string;
-                    customerId: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Your booking, with its listing */
+                /** @description The code to show as a QR code */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Booking"];
+                        "application/json": components["schemas"]["CheckInCode"];
                     };
                 };
                 /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
@@ -11553,7 +11550,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed. */
+                /** @description BOOKING_NOT_FOUND */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -11562,7 +11559,240 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description NOT_JOINED or REPORT_WINDOW_CLOSED */
+                /** @description NO_CHECK_IN: not a confirmed app booking, or CHECK_IN_CLOSED (with `opensAt`, `closesAt`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{gameId}/check-in-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My check-in code for a game I joined
+         * @description Like the booker's code, for each joined player.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    gameId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The code to show as a QR code */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CheckInCode"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NOT_JOINED, NO_CHECK_IN or CHECK_IN_CLOSED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check someone in with their QR code
+         * @description Needs `bookings: manage`. Scanning someone already checked in changes nothing (`already`).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ScanCheckIn"];
+                };
+            };
+            responses: {
+                /** @description Who was checked in */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CheckInResult"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NOT_IN_BOOKING: they left the game or were removed. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CHECK_IN_OTHER_VENUE, NO_CHECK_IN or CHECK_IN_CLOSED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description CHECK_IN_CODE_INVALID or CHECK_IN_CODE_EXPIRED */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check someone in by name
+         * @description Needs `bookings: manage`. For a booker or joined player without their code; marked as manual.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ManualCheckIn"];
+                };
+            };
+            responses: {
+                /** @description Who was checked in */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CheckInResult"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND or NOT_IN_BOOKING */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NO_CHECK_IN: not a confirmed app booking, or CHECK_IN_CLOSED (with `opensAt`, `closesAt`). */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -11579,7 +11809,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/staff/venues/{venueId}/bookings/{bookingId}/arrived": {
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/check-ins/{customerId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -11588,25 +11818,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
         /**
-         * Record how many of an open game's players came
-         * @description Needs `bookings: manage`. From kick-off until 24 hours after the end, and correctable in that time. Left unrecorded, everyone expected counts as having come.
+         * Undo a check-in
+         * @description Needs `bookings: manage`. While check-in is open.
          */
-        post: {
+        delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
                     venueId: string;
                     bookingId: string;
+                    customerId: string;
                 };
                 cookie?: never;
             };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["RecordArrived"];
-                };
-            };
+            requestBody?: never;
             responses: {
                 /** @description The booking */
                 200: {
@@ -11635,7 +11863,7 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description BOOKING_NOT_FOUND, or GAME_NOT_FOUND: no open game with players. */
+                /** @description BOOKING_NOT_FOUND or NOT_IN_BOOKING */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -11644,17 +11872,8 @@ export interface paths {
                         "application/problem+json": components["schemas"]["Problem"];
                     };
                 };
-                /** @description ARRIVED_WINDOW_CLOSED */
+                /** @description NO_CHECK_IN: not a confirmed app booking, or CHECK_IN_CLOSED (with `opensAt`, `closesAt`). */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["Problem"];
-                    };
-                };
-                /** @description MORE_THAN_JOINED (with `joined`) */
-                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -11664,7 +11883,6 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -17625,6 +17843,21 @@ export interface components {
                 /** @description Joined players, first to join first. */
                 players: components["schemas"]["ListingPlayer"][];
             } | null;
+            /** @description App bookings, once confirmed: when to show the check-in code at the venue, and whether they did. */
+            checkIn: {
+                /**
+                 * Format: date-time
+                 * @description 15 minutes before kick-off.
+                 */
+                opensAt: string;
+                /**
+                 * Format: date-time
+                 * @description 30 minutes after kick-off.
+                 */
+                closesAt: string;
+                /** Format: date-time */
+                checkedInAt: string | null;
+            } | null;
             /** @description The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise. */
             move: {
                 /** @enum {string} */
@@ -17675,12 +17908,15 @@ export interface components {
             phone: string | null;
             /** Format: date-time */
             joinedAt: string;
+            /** @description Games where the venue checked in none of the joined players don't count. */
             reliability: {
-                /** @description Open games they joined that were played. */
+                /** @description Open games they joined where the venue checked people in. */
                 games: number;
+                /** @description Of those, the ones they checked in at. */
                 showedUp: number;
             };
-            noShowReported: boolean;
+            /** Format: date-time */
+            checkedInAt: string | null;
         };
         CreateBooking: {
             /** Format: uuid */
@@ -18662,19 +18898,40 @@ export interface components {
             /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
             hold: boolean;
             game: components["schemas"]["StaffGame"];
+            /** @description App bookings: who has checked in (the booker and any joined players). */
+            checkIn: {
+                /** Format: date-time */
+                opensAt: string;
+                /** Format: date-time */
+                closesAt: string;
+                /** @description The booker, then joined players. */
+                people: components["schemas"]["CheckInPerson"][];
+            } | null;
         };
         StaffGame: {
             /** @description Joined players, final at kick-off. */
             expectedPlayers: number;
             players: {
+                /** Format: uuid */
+                customerId: string;
                 firstName: string;
             }[];
+            /** @description Each player owes the venue this. */
             joinFee: number;
-            /** @description How many came, as staff recorded it; null means everyone expected. */
-            arrivedCount: number | null;
-            /** Format: date-time */
-            arrivedAt: string | null;
+            /** @description Players the joining fee is due for: those checked in, or every joined player if none were. */
+            feePlayers: number;
         } | null;
+        CheckInPerson: {
+            /** Format: uuid */
+            customerId: string;
+            firstName: string;
+            /** @enum {string} */
+            role: "BOOKER" | "PLAYER";
+            /** Format: date-time */
+            checkedInAt: string | null;
+            /** @description Ticked in by name, without the code. */
+            manual: boolean;
+        };
         BookingHistoryEvent: {
             /** Format: uuid */
             id: string;
@@ -19064,6 +19321,21 @@ export interface components {
                 booker: boolean;
                 /** @enum {string|null} */
                 status: "JOINED" | "LEFT" | "REMOVED" | null;
+                /** @description Joined players: when to show the code. */
+                checkIn: {
+                    /**
+                     * Format: date-time
+                     * @description 15 minutes before kick-off.
+                     */
+                    opensAt: string;
+                    /**
+                     * Format: date-time
+                     * @description 30 minutes after kick-off.
+                     */
+                    closesAt: string;
+                    /** Format: date-time */
+                    checkedInAt: string | null;
+                } | null;
             } | null;
             /** @description Joined players' first names, once you've joined (or for the booker). */
             players: string[] | null;
@@ -19084,9 +19356,34 @@ export interface components {
             neededPlayers?: number;
             note?: string | null;
         };
-        RecordArrived: {
-            /** @description Joined players who came. */
-            count: number;
+        CheckInCode: {
+            /** @description Show it as a QR code. Works for 60 seconds. */
+            code: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /**
+             * Format: date-time
+             * @description Fetch a new one by then (30 seconds).
+             */
+            refreshAt: string;
+        };
+        CheckInResult: {
+            /** Format: uuid */
+            bookingId: string;
+            person: components["schemas"]["CheckInPerson"];
+            /** @description They had already checked in; nothing changed. */
+            already: boolean;
+        };
+        ScanCheckIn: {
+            /** @description What the QR code says. */
+            code: string;
+        };
+        ManualCheckIn: {
+            /**
+             * Format: uuid
+             * @description The booker's or a joined player's account.
+             */
+            customerId: string;
         };
         VenueCustomerPage: {
             data: components["schemas"]["VenueCustomer"][];

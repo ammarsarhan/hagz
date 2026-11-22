@@ -2938,6 +2938,37 @@
             ],
             "description": "Its open game, if listed."
           },
+          "checkIn": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "opensAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "15 minutes before kick-off."
+              },
+              "closesAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "30 minutes after kick-off."
+              },
+              "checkedInAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "opensAt",
+              "closesAt",
+              "checkedInAt"
+            ],
+            "description": "App bookings, once confirmed: when to show the check-in code at the venue, and whether they did."
+          },
           "move": {
             "type": [
               "object",
@@ -3052,6 +3083,7 @@
           "cancellation",
           "note",
           "listing",
+          "checkIn",
           "move",
           "createdAt"
         ]
@@ -3107,19 +3139,25 @@
             "properties": {
               "games": {
                 "type": "integer",
-                "description": "Open games they joined that were played."
+                "description": "Open games they joined where the venue checked people in."
               },
               "showedUp": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Of those, the ones they checked in at."
               }
             },
             "required": [
               "games",
               "showedUp"
-            ]
+            ],
+            "description": "Games where the venue checked in none of the joined players don't count."
           },
-          "noShowReported": {
-            "type": "boolean"
+          "checkedInAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         },
         "required": [
@@ -3128,7 +3166,7 @@
           "phone",
           "joinedAt",
           "reliability",
-          "noShowReported"
+          "checkedInAt"
         ]
       },
       "CreateBooking": {
@@ -6147,6 +6185,35 @@
           },
           "game": {
             "$ref": "#/components/schemas/StaffGame"
+          },
+          "checkIn": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "opensAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "closesAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "people": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CheckInPerson"
+                },
+                "description": "The booker, then joined players."
+              }
+            },
+            "required": [
+              "opensAt",
+              "closesAt",
+              "people"
+            ],
+            "description": "App bookings: who has checked in (the booker and any joined players)."
           }
         },
         "required": [
@@ -6178,7 +6245,8 @@
           "movedFrom",
           "movedTo",
           "hold",
-          "game"
+          "game",
+          "checkIn"
         ]
       },
       "StaffGame": {
@@ -6196,39 +6264,71 @@
             "items": {
               "type": "object",
               "properties": {
+                "customerId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
                 "firstName": {
                   "type": "string"
                 }
               },
               "required": [
+                "customerId",
                 "firstName"
               ]
             }
           },
           "joinFee": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Each player owes the venue this."
           },
-          "arrivedCount": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "description": "How many came, as staff recorded it; null means everyone expected."
-          },
-          "arrivedAt": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
+          "feePlayers": {
+            "type": "integer",
+            "description": "Players the joining fee is due for: those checked in, or every joined player if none were."
           }
         },
         "required": [
           "expectedPlayers",
           "players",
           "joinFee",
-          "arrivedCount",
-          "arrivedAt"
+          "feePlayers"
+        ]
+      },
+      "CheckInPerson": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "BOOKER",
+              "PLAYER"
+            ]
+          },
+          "checkedInAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "manual": {
+            "type": "boolean",
+            "description": "Ticked in by name, without the code."
+          }
+        },
+        "required": [
+          "customerId",
+          "firstName",
+          "role",
+          "checkedInAt",
+          "manual"
         ]
       },
       "BookingHistoryEvent": {
@@ -7365,11 +7465,43 @@
                   "REMOVED",
                   null
                 ]
+              },
+              "checkIn": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "opensAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "15 minutes before kick-off."
+                  },
+                  "closesAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "30 minutes after kick-off."
+                  },
+                  "checkedInAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "opensAt",
+                  "closesAt",
+                  "checkedInAt"
+                ],
+                "description": "Joined players: when to show the code."
               }
             },
             "required": [
               "booker",
-              "status"
+              "status",
+              "checkIn"
             ],
             "description": "Null for guests."
           },
@@ -7465,18 +7597,75 @@
           }
         }
       },
-      "RecordArrived": {
+      "CheckInCode": {
         "type": "object",
         "properties": {
-          "count": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 21,
-            "description": "Joined players who came."
+          "code": {
+            "type": "string",
+            "description": "Show it as a QR code. Works for 60 seconds."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "refreshAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fetch a new one by then (30 seconds)."
           }
         },
         "required": [
-          "count"
+          "code",
+          "expiresAt",
+          "refreshAt"
+        ]
+      },
+      "CheckInResult": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person": {
+            "$ref": "#/components/schemas/CheckInPerson"
+          },
+          "already": {
+            "type": "boolean",
+            "description": "They had already checked in; nothing changed."
+          }
+        },
+        "required": [
+          "bookingId",
+          "person",
+          "already"
+        ]
+      },
+      "ScanCheckIn": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "What the QR code says."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "ManualCheckIn": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The booker's or a joined player's account."
+          }
+        },
+        "required": [
+          "customerId"
         ]
       },
       "VenueCustomerPage": {
@@ -21154,7 +21343,7 @@
             }
           },
           "409": {
-            "description": "BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, or MARK_WINDOW_CLOSED: more than 24 hours since it ended.",
+            "description": "BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, MARK_WINDOW_CLOSED: more than 24 hours since it ended, or CHECKED_IN: a no-show for a booker who checked in.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23487,13 +23676,13 @@
         }
       }
     },
-    "/v1/bookings/{bookingId}/listing/players/{customerId}/no-show": {
-      "post": {
+    "/v1/bookings/{bookingId}/check-in-code": {
+      "get": {
         "tags": [
-          "Open games"
+          "Check-in"
         ],
-        "summary": "Report a player who didn't come",
-        "description": "Within 48 hours of a game that was played. Counts in their reliability.",
+        "summary": "My check-in code for a booking",
+        "description": "For a confirmed booking made in the app. Changes every 30 seconds (`refreshAt`); each code works for 60. Available until check-in closes, 30 minutes after kick-off.",
         "security": [
           {
             "customerBearer": []
@@ -23508,24 +23697,15 @@
             "required": true,
             "name": "bookingId",
             "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "customerId",
-            "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Your booking, with its listing",
+            "description": "The code to show as a QR code",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Booking"
+                  "$ref": "#/components/schemas/CheckInCode"
                 }
               }
             }
@@ -23541,7 +23721,7 @@
             }
           },
           "404": {
-            "description": "BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed.",
+            "description": "BOOKING_NOT_FOUND",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23551,7 +23731,7 @@
             }
           },
           "409": {
-            "description": "NOT_JOINED or REPORT_WINDOW_CLOSED",
+            "description": "NO_CHECK_IN: not a confirmed app booking, or CHECK_IN_CLOSED (with `opensAt`, `closesAt`).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23563,13 +23743,167 @@
         }
       }
     },
-    "/v1/staff/venues/{venueId}/bookings/{bookingId}/arrived": {
+    "/v1/games/{gameId}/check-in-code": {
+      "get": {
+        "tags": [
+          "Check-in"
+        ],
+        "summary": "My check-in code for a game I joined",
+        "description": "Like the booker's code, for each joined player.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "gameId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The code to show as a QR code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInCode"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOT_JOINED, NO_CHECK_IN or CHECK_IN_CLOSED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/check-ins": {
       "post": {
         "tags": [
-          "Venue bookings"
+          "Check-in"
         ],
-        "summary": "Record how many of an open game's players came",
-        "description": "Needs `bookings: manage`. From kick-off until 24 hours after the end, and correctable in that time. Left unrecorded, everyone expected counts as having come.",
+        "summary": "Check someone in with their QR code",
+        "description": "Needs `bookings: manage`. Scanning someone already checked in changes nothing (`already`).",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanCheckIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Who was checked in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_IN_BOOKING: they left the game or were removed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CHECK_IN_OTHER_VENUE, NO_CHECK_IN or CHECK_IN_CLOSED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CHECK_IN_CODE_INVALID or CHECK_IN_CODE_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/check-ins": {
+      "post": {
+        "tags": [
+          "Check-in"
+        ],
+        "summary": "Check someone in by name",
+        "description": "Needs `bookings: manage`. For a booker or joined player without their code; marked as manual.",
         "security": [
           {
             "staffBearer": []
@@ -23600,11 +23934,106 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RecordArrived"
+                "$ref": "#/components/schemas/ManualCheckIn"
               }
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Who was checked in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND or NOT_IN_BOOKING",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_CHECK_IN: not a confirmed app booking, or CHECK_IN_CLOSED (with `opensAt`, `closesAt`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/check-ins/{customerId}": {
+      "delete": {
+        "tags": [
+          "Check-in"
+        ],
+        "summary": "Undo a check-in",
+        "description": "Needs `bookings: manage`. While check-in is open.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
         "responses": {
           "200": {
             "description": "The booking",
@@ -23637,7 +24066,7 @@
             }
           },
           "404": {
-            "description": "BOOKING_NOT_FOUND, or GAME_NOT_FOUND: no open game with players.",
+            "description": "BOOKING_NOT_FOUND or NOT_IN_BOOKING",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23647,17 +24076,7 @@
             }
           },
           "409": {
-            "description": "ARRIVED_WINDOW_CLOSED",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "MORE_THAN_JOINED (with `joined`)",
+            "description": "NO_CHECK_IN: not a confirmed app booking, or CHECK_IN_CLOSED (with `opensAt`, `closesAt`).",
             "content": {
               "application/problem+json": {
                 "schema": {
