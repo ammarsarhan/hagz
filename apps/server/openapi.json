@@ -6344,6 +6344,467 @@
           "nextCursor"
         ]
       },
+      "VenueRegularList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VenueRegular"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "VenueRegular": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RegularStatus"
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "app": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone",
+              "app"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0–6 from Sunday, in the venue's time."
+          },
+          "startHour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "The first hour, in the venue's time."
+          },
+          "slotCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "How many hours they play."
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "A calendar day in the venue's timezone.",
+            "example": "2026-12-03"
+          },
+          "endsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "A calendar day in the venue's timezone.",
+            "example": "2026-12-03"
+          },
+          "pausedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Among regulars that overlap, lower reserves a week first."
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/Reliability"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "customer",
+          "ground",
+          "dayOfWeek",
+          "startHour",
+          "slotCount",
+          "startsOn",
+          "endsOn",
+          "pausedAt",
+          "priority",
+          "reliability",
+          "createdAt"
+        ]
+      },
+      "RegularStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "PAUSED",
+          "ENDED"
+        ],
+        "description": "`ENDED`: its end date has come."
+      },
+      "Reliability": {
+        "type": "object",
+        "properties": {
+          "confirmed": {
+            "type": "integer",
+            "description": "Weeks confirmed, by staff or the regular."
+          },
+          "released": {
+            "type": "integer",
+            "description": "Weeks let go before the deadline."
+          },
+          "missed": {
+            "type": "integer",
+            "description": "Weeks nobody answered by the deadline."
+          },
+          "cancelled": {
+            "type": "integer",
+            "description": "Weeks confirmed, then cancelled."
+          },
+          "noShows": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "confirmed",
+          "released",
+          "missed",
+          "cancelled",
+          "noShows"
+        ],
+        "description": "Weeks released because the regular itself changed don't count."
+      },
+      "OrderRegulars": {
+        "type": "object",
+        "properties": {
+          "regularIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 2,
+            "maxItems": 50,
+            "description": "Regulars that overlap, first priority first. They swap their places in order."
+          }
+        },
+        "required": [
+          "regularIds"
+        ]
+      },
+      "VenueRegularDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RegularStatus"
+          },
+          "customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "app": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone",
+              "app"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0–6 from Sunday, in the venue's time."
+          },
+          "startHour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "The first hour, in the venue's time."
+          },
+          "slotCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "How many hours they play."
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "A calendar day in the venue's timezone.",
+            "example": "2026-12-03"
+          },
+          "endsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "A calendar day in the venue's timezone.",
+            "example": "2026-12-03"
+          },
+          "pausedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Among regulars that overlap, lower reserves a week first."
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/Reliability"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reservations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffBooking"
+            },
+            "description": "Its reservations still to be played, soonest first."
+          },
+          "skippedWeeks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date",
+              "description": "A calendar day in the venue's timezone.",
+              "example": "2026-12-03"
+            },
+            "description": "Weeks inside the horizon it couldn't reserve: the time was taken or closed. Tried again every day."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "customer",
+          "ground",
+          "dayOfWeek",
+          "startHour",
+          "slotCount",
+          "startsOn",
+          "endsOn",
+          "pausedAt",
+          "priority",
+          "reliability",
+          "createdAt",
+          "reservations",
+          "skippedWeeks"
+        ]
+      },
+      "CreateRegular": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "venueCustomerId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "venueCustomerId"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "example": "+20 100 123 4567"
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone"
+                ]
+              }
+            ],
+            "description": "Who it's held for: one of the venue's customers, or someone new by name and mobile number (found by number if the venue knows them)."
+          },
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0–6 from Sunday, in the venue's time."
+          },
+          "startHour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "The first hour, in the venue's time."
+          },
+          "slotCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "How many hours they play."
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "A calendar day in the venue's timezone.",
+            "example": "2026-12-03"
+          },
+          "endsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "A calendar day in the venue's timezone.",
+            "example": "2026-12-03"
+          }
+        },
+        "required": [
+          "customer",
+          "groundId",
+          "dayOfWeek",
+          "startHour",
+          "slotCount",
+          "startsOn"
+        ]
+      },
+      "UpdateRegular": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0–6 from Sunday, in the venue's time."
+          },
+          "startHour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23,
+            "description": "The first hour, in the venue's time."
+          },
+          "slotCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "How many hours they play."
+          },
+          "endsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "null: no end date.",
+            "example": "2026-12-03"
+          }
+        },
+        "description": "A new time or ground releases its unconfirmed weeks and reserves the new time; confirmed weeks stay."
+      },
       "VenueCustomerPage": {
         "type": "object",
         "properties": {
@@ -14881,6 +15342,160 @@
         }
       }
     },
+    "/v1/bookings/{bookingId}/reservation/confirm": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Confirm my regular week",
+        "description": "Until its deadline. Paid at the venue.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: not a week waiting for an answer, or its deadline has passed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/reservation/release": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Release my regular week",
+        "description": "Until its deadline: I'm not playing that week. Nothing is owed.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: not a week waiting for an answer, or its deadline has passed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/bookings/{bookingId}/payments": {
       "post": {
         "tags": [
@@ -20449,6 +21064,864 @@
           },
           "404": {
             "description": "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/regulars": {
+      "get": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "The venue's regulars",
+        "description": "By weekday and hour; overlapping ones in priority order. Ended ones included.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The regulars",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Set up a regular",
+        "description": "Reserves every week up to the venue's `regularHorizon` straight away. Weeks whose time is taken or closed are skipped (listed in `skippedWeeks`) and tried again every day. A new regular goes last in priority.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRegular"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The regular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_PHONE_NUMBER",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND, GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_REGULAR_DATES, or INVALID_BOOKING_TIME (with `minimumSlots` and `maximumSlots`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/regulars/order": {
+      "put": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Reorder overlapping regulars",
+        "description": "The regulars given take their places in this order, first priority first. Only weeks reserved from now on follow it: a week already reserved stays with its regular.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderRegulars"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The venue's regulars",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here. REGULARS_NOT_FOUND: some aren't at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/regulars/{regularId}": {
+      "get": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "One regular, its coming reservations and skipped weeks",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "regularId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The regular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Change a regular's time, ground, length or end date",
+        "description": "A new time, ground or length releases its unconfirmed weeks and reserves the new time; an earlier end date releases the unconfirmed weeks after it. Confirmed weeks stay: move them if needed. These releases don't count against the regular.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "regularId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRegular"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The regular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here. GROUND_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REGULAR_ENDED or GROUND_UNAVAILABLE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_REGULAR_DATES or INVALID_BOOKING_TIME",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/regulars/{regularId}/pause": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Pause a regular",
+        "description": "Releases its unconfirmed weeks at once (not counted against it); confirmed weeks stay. No new weeks are reserved until it resumes.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "regularId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The regular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REGULAR_ENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/regulars/{regularId}/resume": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Resume a paused regular",
+        "description": "Reserves its weeks again from the next free one.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "regularId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The regular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REGULAR_ENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/regulars/{regularId}/end": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "End a regular",
+        "description": "Releases its unconfirmed weeks at once; confirmed weeks stay. It can't be resumed.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "regularId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The regular",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueRegularDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. REGULAR_NOT_FOUND: no such regular here.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REGULAR_ENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/reservations/{bookingId}/confirm": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Confirm a regular's week",
+        "description": "Until its deadline. Paid at the venue.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reservation after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: not an unconfirmed reservation, or its deadline has passed (with `bookingStatus`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/reservations/{bookingId}/release": {
+      "post": {
+        "tags": [
+          "Regulars"
+        ],
+        "summary": "Release a regular's week",
+        "description": "Until its deadline. The slots go back on sale, or to the next overlapping regular in priority.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reservation after the change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND: not a venue you belong to. BOOKING_NOT_FOUND: no such booking at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_STATUS_CONFLICT: not an unconfirmed reservation, or its deadline has passed (with `bookingStatus`).",
             "content": {
               "application/problem+json": {
                 "schema": {
