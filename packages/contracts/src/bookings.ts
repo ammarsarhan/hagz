@@ -102,6 +102,9 @@ export const Booking = z
       size: GroundSize,
     }),
     ...Money,
+    paid: z.int().meta({
+      description: "Paid online so far, in minor units: succeeded payments less refunds.",
+    }),
     charges: z.array(BookingCharge),
     cancellation: z.object({ policy: CancellationPolicy, tiers: z.array(CancellationTier) }),
     note: z.string().nullable(),

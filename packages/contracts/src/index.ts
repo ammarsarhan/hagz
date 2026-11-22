@@ -9,6 +9,7 @@ export * from "./layout";
 export * from "./lists";
 export * from "./links";
 export * from "./marketplaces";
+export * from "./payments";
 export * from "./permissions";
 export * from "./platform";
 export * from "./venue-edit";
