@@ -3,6 +3,10 @@
 export const BOOKING_EVENTS = {
   // Made; data: { status } it started as.
   CREATED: "CREATED",
+  // Paid in full or its deposit, or approved with nothing to pay; data: { paymentId? }.
+  CONFIRMED: "CONFIRMED",
+  // Not approved or paid by expiresAt; data: { from } the status it expired from.
+  EXPIRED: "EXPIRED",
 } as const;
 
 export type BookingEventType = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];

@@ -3,7 +3,12 @@ export { ownsAVenue, restrictAfterPasswordReset } from "./application/staff-pass
 export { recordStaffAccountChange, venuesOwnedBy } from "./application/staff-account-changes";
 export { linkWalkIns, venueCustomerForAccount } from "./application/venue-customers";
 // For bookings: claiming slots, and the terms a booking copies.
-export { assignSlots, lockFreeSlots } from "./application/booking-slots";
+export {
+  assignSlots,
+  bookHeldSlots,
+  lockFreeSlots,
+  releaseSlots,
+} from "./application/booking-slots";
 export { nameIn } from "./domain/names";
 export { resolvedTiers } from "./domain/settings";
 export { HORIZON_DAYS } from "./domain/slots";

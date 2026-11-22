@@ -37,3 +37,15 @@ export const assignSlots = async (
   });
   if (count !== slotIds.length) throw new Error("Locked slots changed before they were assigned.");
 };
+
+// A held booking was confirmed (approved and paid, or paid): its slots become BOOKED.
+export const bookHeldSlots = (tx: Tx, bookingId: string) =>
+  tx.groundSlot.updateMany({ where: { bookingId, status: "HELD" }, data: { status: "BOOKED" } });
+
+// Bookings that ended without being played (expired, cancelled, released) give their slots back.
+// freedAt lets search mark a slot "just freed" near kick-off (docs/regulars.md).
+export const releaseSlots = (tx: Tx, bookingIds: readonly string[], now: Date) =>
+  tx.groundSlot.updateMany({
+    where: { bookingId: { in: [...bookingIds] } },
+    data: { status: "AVAILABLE", bookingId: null, freedAt: now },
+  });

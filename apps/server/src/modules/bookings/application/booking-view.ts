@@ -57,6 +57,13 @@ export const bookingView = async (bookingId: string, language: Language): Promis
         select: { id: true, slug: true, ...names, marketplace: { select: { currency: true } } },
       },
       ground: { select: { id: true, sport: true, size: true, ...names } },
+      payments: {
+        where: { status: "SUCCEEDED" },
+        select: {
+          amount: true,
+          refunds: { where: { status: "SUCCEEDED" }, select: { amount: true } },
+        },
+      },
       charges: {
         orderBy: [{ type: "asc" }, { startsAt: "asc" }, { id: "asc" }],
         select: {
@@ -102,6 +109,13 @@ export const bookingView = async (bookingId: string, language: Language): Promis
     tax: booking.charges.reduce((sum, charge) => sum + charge.taxAmount, 0),
     paymentMode: booking.paymentMode,
     deposit: booking.depositAmount,
+    paid: booking.payments.reduce(
+      (sum, payment) =>
+        sum +
+        payment.amount -
+        payment.refunds.reduce((refunded, refund) => refunded + refund.amount, 0),
+      0,
+    ),
     charges: booking.charges.map((charge) =>
       presentCharge(charge, (id) => optionNames.get(id) ?? null),
     ),
