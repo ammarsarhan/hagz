@@ -5,7 +5,7 @@ import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-tab
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/admin/button";
-import { DataTable, TableSearch, Tag } from "@/admin/data-table";
+import { DataTable, TableFilter, TableSearch, Tag } from "@/admin/data-table";
 import { formatMoney } from "@/admin/money";
 import { TabPanel, Tabs } from "@/admin/tabs";
 import { bookingHref, bookingTime, STATUSES, statusLabel, statusTone, useBookings } from "./model";
@@ -13,7 +13,7 @@ import { bookingHref, bookingTime, STATUSES, statusLabel, statusTone, useBooking
 // Bookings in the admin's one table design: status tabs with counts, a search that goes to the API
 // (code, customer, phone, venue), a page at a time with Show more, and a row opens the booking.
 // Every booking on the Bookings page; one venue's on that venue's Bookings tab, where the Venue
-// column gives way to the Ground.
+// column gives way to the Ground and a dropdown beside the search narrows it to one ground.
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, AdminBooking>();
@@ -115,12 +115,24 @@ const widths = {
 
 type Section = "ALL" | BookingStatus;
 
-export function BookingsTable({ venueId }: { venueId?: string }) {
+export function BookingsTable({
+  venueId,
+  grounds,
+}: {
+  venueId?: string;
+  // The venue's grounds, for its ground filter; the filter shows once they've loaded.
+  grounds?: { id: string; name: string | null }[];
+}) {
   const router = useRouter();
   const [section, setSection] = useState<Section>("ALL");
   const [query, setQuery] = useState("");
+  // "" is every ground.
+  const [groundId, setGroundId] = useState("");
   const status = section === "ALL" ? undefined : section;
-  const { data, error, loadingMore, loadMore } = useBookings(status, query, venueId);
+  const { data, error, loadingMore, loadMore } = useBookings(status, query, {
+    venueId,
+    groundId: groundId || undefined,
+  });
 
   const table = useTable({
     features,
@@ -146,12 +158,26 @@ export function BookingsTable({ venueId }: { venueId?: string }) {
       />
 
       <TabPanel id={section}>
-        <div className="mt-6">
+        <div className="mt-6 flex items-center gap-2">
           <TableSearch
             value={query}
             onChange={setQuery}
             placeholder={venueId ? "Search code or customer…" : "Search code, customer or venue…"}
           />
+          {grounds && grounds.length > 1 ? (
+            <TableFilter
+              label="Ground"
+              value={groundId}
+              onChange={setGroundId}
+              options={[
+                { value: "", label: "All grounds" },
+                ...grounds.map((ground, i) => ({
+                  value: ground.id,
+                  label: ground.name ?? `Ground ${i + 1}`,
+                })),
+              ]}
+            />
+          ) : null}
         </div>
         <div className="mt-4">
           <DataTable
@@ -163,9 +189,11 @@ export function BookingsTable({ venueId }: { venueId?: string }) {
               error ??
               (searching
                 ? `No booking matches “${query.trim()}”.`
-                : status
-                  ? `No ${statusLabel[status].toLowerCase()} bookings.`
-                  : "No bookings yet.")
+                : groundId
+                  ? "No bookings on this ground."
+                  : status
+                    ? `No ${statusLabel[status].toLowerCase()} bookings.`
+                    : "No bookings yet.")
             }
           />
         </div>

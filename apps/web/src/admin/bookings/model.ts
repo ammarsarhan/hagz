@@ -84,7 +84,11 @@ interface Loaded {
 // How long typing pauses before the search goes to the API.
 const SEARCH_DELAY_MS = 250;
 
-export function useBookings(status: BookingStatus | undefined, query: string, venueId?: string) {
+export function useBookings(
+  status: BookingStatus | undefined,
+  query: string,
+  { venueId, groundId }: { venueId?: string; groundId?: string } = {},
+) {
   const [data, setData] = useState<Loaded>();
   const [error, setError] = useState<string>();
   const [loadingMore, setLoadingMore] = useState(false);
@@ -96,10 +100,10 @@ export function useBookings(status: BookingStatus | undefined, query: string, ve
     (cursor?: string) =>
       send(
         api.GET("/v1/admin/bookings", {
-          params: { query: { venueId, status, q: query.trim() || undefined, cursor } },
+          params: { query: { venueId, groundId, status, q: query.trim() || undefined, cursor } },
         }),
       ),
-    [venueId, status, query],
+    [venueId, groundId, status, query],
   );
 
   const fail = useCallback(
