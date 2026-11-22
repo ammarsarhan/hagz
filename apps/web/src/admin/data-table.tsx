@@ -1,6 +1,6 @@
 "use client";
 
-import { IconDots, IconSearch, type Icon } from "@tabler/icons-react";
+import { IconChevronDown, IconDots, IconSearch, type Icon } from "@tabler/icons-react";
 import {
   FlexRender,
   type ReactTable,
@@ -185,6 +185,44 @@ export function TableSearch({
         className="h-full min-w-0 flex-1 bg-transparent text-label text-ink outline-none placeholder:text-ink-3 [&::-webkit-search-cancel-button]:hidden"
       />
     </label>
+  );
+}
+
+// A dropdown beside a TableSearch, the same height and shape, that narrows the table by one value,
+// e.g. a venue's bookings by ground. Native, so the keyboard and screen readers get the platform's
+// own picker.
+export function TableFilter({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  // What it filters by, for screen readers: the toolbar shows no label.
+  label: string;
+}) {
+  return (
+    <span className="relative flex h-9 shrink-0 items-center rounded-[0.625rem] border border-border bg-white text-label text-ink transition-colors focus-within:border-ink">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-full cursor-pointer appearance-none bg-transparent pr-9 pl-3 outline-none"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <IconChevronDown
+        size={16}
+        className="pointer-events-none absolute right-3 size-4 text-ink-3"
+        stroke={1.75}
+      />
+    </span>
   );
 }
 
