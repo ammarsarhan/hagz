@@ -82,7 +82,9 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 **Decide at the start:** the open items in [onboarding.md](onboarding.md#open) (photo minimum, phone verification, default cancellation policy).
 **Decided 2026-11-19:** going live doesn't wait for slot generation. A venue's run takes about a second, and a live venue with no slots matches no availability search, so it's only missing from results for that second.
 
-## Phase 3: Discovery (new)
+## Phase 3: Discovery ✅
+
+Done 2026-11-22: a guest finds a venue and sees its free times in the app, and on the web venue page in English and Arabic; every search shape stays inside its budget on `seed:scale`. Merged in #190, #193, #194, #197, #200, #203, #206 and #209.
 
 | PR | Scope |
 |---|---|
@@ -93,8 +95,8 @@ Done 2026-11-19: an owner took a venue from sign-up to `LIVE` through admin revi
 
 **Dropped (user, 2026-11-20):** a time window with a duration range (too much to ask of the When sheet for how rarely it's needed); each card's matching grounds (too much for a list card; the free times already count the grounds); a "has discounts" filter (7.4's discount codes are private to the players a venue gives them, so there's nothing public to filter by; it would come back only with public promotions).
 
-**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` (built 2026-11-21), server-rendered for search engines; the area pages and every page the site links to are Phase 8b. These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges.
-**Admin slice:** search venues in any status. Hide a live venue (`MAINTENANCE`).
+**Screens:** customer app: browse by area, near me with a map, search and every filter, the venue page with availability, favorites. Web: `/venue/[slug]` (built 2026-11-21), server-rendered for search engines; the area pages and every page the site links to are Phase 8b. These set the shared web layout, so the `/manage/*` fallback (where an invitation link opens without the app, unstyled since Phase 1) is restyled in it here, with the store badges (built 2026-11-22, in English and Arabic, with the staff favicon).
+**Admin slice:** search venues in any status. Hide a live venue (`MAINTENANCE`: Pause on the venue's Settings tab).
 **Done when:** every search shape stays inside its query-plan and latency budget on the seeded launch-scale data, and a guest can find a venue and see its free times in the app.
 
 ## Phase 4: Bookings
