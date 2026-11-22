@@ -34,7 +34,7 @@ The booker sees each joined player's first name, phone number, reliability figur
 ## Finding games
 
 - **Feed:** "Games needing players", using the Phase 3 search: near me or by area, sport, size, date and time. Sorted by soonest, then distance.
-- **Link:** the booking's existing share link (`/b/[code]`) shows the listing with a join button when it's open. It opens the app, or the web page that sends people to install it.
+- **Link:** the booking's existing share link (`/booking/[code]`) shows the listing with a join button when it's open. It opens the app, or the web page that sends people to install it.
 - **Notifications** (Phase 7): the booker hears when someone joins or leaves. Joined players get a reminder before kick-off and hear about cancellations and removals. Customers who opt in to "Games near me" can be told about new games matching their sport and area, within the same weekly cap as venue offers.
 
 ## Money

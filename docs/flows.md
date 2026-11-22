@@ -535,7 +535,7 @@ flowchart LR
   landing --> byName["Search venues by name"]
   area & byName --> venue["W2 /venue/[slug]: photos, rating, grounds, amenities, policy, map, reviews"]
   venue --> times["Free times today (read only)"] --> app["Book in the app → opens the app or the store"]:::result
-  shared["W3 /b/[code]: venue, ground, time"] --> game["Open game: spots left, Join"]:::state
+  shared["W3 /booking/[code]: venue, ground, time"] --> game["Open game: spots left, Join"]:::state
   shared --> summary["Plain booking summary"]
   game & summary --> getApp["Opens the app, or #quot;Get the app#quot;"]:::result
   reminder["W4 Regular's reminder link (no sign-in)"] --> reservation["Reservation: ground, time, deadline"]
