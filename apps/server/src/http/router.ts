@@ -18,6 +18,7 @@ import {
   venuesAdminRoutes,
   venuesFavoriteRoutes,
   venuesPublicRoutes,
+  venuesCustomerRoutes,
   venuesStaffRoutes,
 } from "@/modules/venues";
 import { Scalar } from "@scalar/hono-api-reference";
@@ -67,6 +68,7 @@ router.route("/v1", bookingsCustomerRoutes);
 router.route("/v1", paymentsCustomerRoutes);
 router.route("/v1", venuesStaffRoutes);
 router.route("/v1", bookingsStaffRoutes);
+router.route("/v1", venuesCustomerRoutes);
 router.route("/v1", systemRoutes);
 router.route("/v1", platformAdminRoutes);
 router.route("/v1", venuesAdminRoutes);

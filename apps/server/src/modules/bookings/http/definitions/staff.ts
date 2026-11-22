@@ -1,6 +1,10 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   BookingHistoryEvent,
+  CreateStaffBooking,
+  CustomerBookingsQuery,
+  IdempotencyHeaders,
+  StaffBookingPage,
   BookingHistoryQuery,
   CreateHold,
   DeclineBooking,
@@ -265,4 +269,60 @@ export const releaseHold = createRoute({
   security,
   request: { params: bookingParams },
   responses: holdResponses,
+});
+
+export const createBooking = createRoute({
+  method: "post",
+  path: "/staff/venues/{venueId}/bookings",
+  tags,
+  summary: "Enter a walk-in or phone booking",
+  description:
+    "Confirmed at once and paid at the venue, with no commission. For one of the venue's customers, or someone new by name and number. Staff can book right up to kick-off. With `total`, the venue's own price, kept as an `ADJUSTMENT` line. Retrying with the same `Idempotency-Key` returns the same booking with `Idempotent-Replayed: true`.",
+  middleware: [requireStaff, requireVenueAccess("bookings", "manage")] as const,
+  security,
+  request: { params: venueParams, headers: IdempotencyHeaders, ...body(CreateStaffBooking) },
+  responses: {
+    201: {
+      description: "The booking",
+      headers: z.object({
+        "Idempotent-Replayed": z.literal("true").optional().meta({
+          description: "Set when this answers a retry with the booking already made.",
+        }),
+      }),
+      ...json(StaffBookingDetail),
+    },
+    400: problemResponse("INVALID_PHONE_NUMBER"),
+    ...common,
+    404: problemResponse(
+      `${notFound.description} GROUND_NOT_FOUND, or CUSTOMER_NOT_FOUND: no such customer at this venue.`,
+    ),
+    409: problemResponse(
+      "SLOT_UNAVAILABLE, GROUND_UNAVAILABLE, or VENUE_STATUS_CONFLICT: the venue isn't live.",
+    ),
+    422: problemResponse(
+      `${badTime.description}, AMENITY_NOT_AVAILABLE, or IDEMPOTENCY_KEY_REUSED: the key was used for a different booking.`,
+    ),
+  },
+});
+
+export const customerBookings = createRoute({
+  method: "get",
+  path: "/staff/venues/{venueId}/customers/{customerId}/bookings",
+  tags,
+  summary: "A customer's bookings here",
+  description:
+    "Latest game first, a page at a time. Needs `customers: view`. A booking the venue moved isn't listed; the one that replaced it is.",
+  middleware: [requireStaff, requireVenueAccess("customers", "view")] as const,
+  security,
+  request: {
+    params: venueParams.extend({ customerId: z.uuid() }),
+    query: CustomerBookingsQuery,
+  },
+  responses: {
+    200: { description: "A page of bookings", ...json(StaffBookingPage) },
+    ...common,
+    404: problemResponse(
+      "VENUE_NOT_FOUND: not a venue you belong to. CUSTOMER_NOT_FOUND: no such customer here.",
+    ),
+  },
 });

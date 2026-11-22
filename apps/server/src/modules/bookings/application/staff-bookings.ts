@@ -1,5 +1,7 @@
 import type {
   BookingHistoryEvent,
+  CustomerBookingsQuery,
+  StaffBookingPage,
   BookingHistoryQuery,
   StaffBooking,
   StaffBookingsQuery,
@@ -15,7 +17,15 @@ import {
   presentSummary,
   summarySelect,
 } from "./admin-bookings";
+import { AppError } from "@/platform/errors/app-error";
 import { venueBookingNotFound } from "./booking-rows";
+
+const customerNotFound = () =>
+  new AppError({
+    code: "CUSTOMER_NOT_FOUND",
+    status: 404,
+    detail: "This venue has no such customer.",
+  });
 
 // A venue's bookings for its staff (PR 4.4): the calendar (a day or a week, by ground), the queue of
 // bookings waiting for approval, one booking in full, and its history. Only this venue's bookings;
@@ -104,4 +114,42 @@ export const venueBookingHistory = async (
 ): Promise<{ data: BookingHistoryEvent[]; nextCursor: string | null }> => {
   await ensureAtVenue(actor.venueId, bookingId);
   return bookingHistory(bookingId, query);
+};
+
+// One customer's bookings at the venue, latest game first, a page at a time. A booking the venue
+// moved isn't listed; the one that replaced it is.
+export const customerBookings = async (
+  actor: VenueAccess,
+  customerId: string,
+  { cursor, limit }: CustomerBookingsQuery,
+): Promise<StaffBookingPage> => {
+  const customer = await prisma.venueCustomer.findFirst({
+    where: { id: customerId, venueId: actor.venueId },
+    select: { id: true },
+  });
+  if (!customer) throw customerNotFound();
+  const from = cursor
+    ? await prisma.booking.findFirst({
+        where: { id: cursor, customerId },
+        select: { id: true, startsAt: true },
+      })
+    : null;
+  const rows = await prisma.booking.findMany({
+    where: {
+      venueId: actor.venueId,
+      customerId,
+      status: { not: "RESCHEDULED" },
+      ...(from && {
+        OR: [{ startsAt: { lt: from.startsAt } }, { startsAt: from.startsAt, id: { lt: from.id } }],
+      }),
+    },
+    orderBy: [{ startsAt: "desc" }, { id: "desc" }],
+    take: limit + 1,
+    select,
+  });
+  const page = rows.slice(0, limit);
+  return {
+    data: page.map(present),
+    nextCursor: rows.length > limit ? (page.at(-1)?.id ?? null) : null,
+  };
 };

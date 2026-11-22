@@ -1,7 +1,10 @@
 import { createRouter } from "@/platform/http/router";
-import { confirmHold, createHold, extendHold, releaseHold } from "../application/holds";
+import { confirmHold, extendHold, releaseHold } from "../application/holds";
+import { createHold, createStaffBooking } from "../application/staff-entry";
 import { moveBooking, swapBookings } from "../application/rescheduling";
+import { replayHeaders } from "@/platform/idempotency/idempotency";
 import {
+  customerBookings,
   listVenueBookings,
   pendingBookings,
   staffBookingDetail,
@@ -79,4 +82,22 @@ export const bookingsStaffRoutes = createRouter()
     const { bookingId } = c.req.valid("param");
     await releaseHold(c.var.venue, bookingId);
     return c.json(await staffBookingDetail(c.var.venue.venueId, bookingId), 200);
-  });
+  })
+  .openapi(route.createBooking, async (c) => {
+    const result = await createStaffBooking(
+      c.var.venue,
+      c.req.valid("json"),
+      c.req.valid("header")["idempotency-key"],
+    );
+    return c.json(
+      await staffBookingDetail(c.var.venue.venueId, result.value),
+      201,
+      replayHeaders(result),
+    );
+  })
+  .openapi(route.customerBookings, async (c) =>
+    c.json(
+      await customerBookings(c.var.venue, c.req.valid("param").customerId, c.req.valid("query")),
+      200,
+    ),
+  );
