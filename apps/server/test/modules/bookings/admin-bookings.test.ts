@@ -130,6 +130,22 @@ describe("the admin's bookings", () => {
     expect((await lookup(cookie, "?q=karim")).counts.CONFIRMED).toBe(1);
   });
 
+  it("lists one venue's bookings, with that venue's counts", async () => {
+    const maadi = await aGround();
+    const other = await aGround();
+    const { token } = await signedIn();
+    const here = Booking.parse(
+      await (await book(token, { groundId: maadi.ground.id, ...at(maadi.hours, 0, 1) })).json(),
+    );
+    await book(token, { groundId: other.ground.id, ...at(other.hours, 0, 1) });
+    const cookie = await adminCookie();
+
+    const venue = await lookup(cookie, `?venueId=${maadi.venue.id}`);
+    expect(venue.data.map((booking) => booking.id)).toEqual([here.id]);
+    expect(venue.counts.CONFIRMED).toBe(1);
+    expect((await lookup(cookie)).counts.CONFIRMED).toBe(2);
+  });
+
   it("shows one booking in full, its payments and its history", async () => {
     const { ground, hours } = await aGround({
       settings: { paymentMode: "DEPOSIT", depositPercent: 50 },

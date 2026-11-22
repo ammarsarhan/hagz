@@ -21256,6 +21256,17 @@
         "parameters": [
           {
             "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Only this venue's bookings."
+            },
+            "required": false,
+            "description": "Only this venue's bookings.",
+            "name": "venueId",
+            "in": "query"
+          },
+          {
+            "schema": {
               "$ref": "#/components/schemas/BookingStatus"
             },
             "required": false,

@@ -11,6 +11,7 @@ const Instant = z.iso.datetime();
 
 export const AdminBookingQuery = z
   .object({
+    venueId: z.uuid().optional().meta({ description: "Only this venue's bookings." }),
     status: BookingStatus.optional(),
     q: z.string().trim().max(100).optional().meta({
       description:

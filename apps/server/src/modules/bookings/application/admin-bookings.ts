@@ -81,23 +81,31 @@ const presentSummary = (booking: SummaryRow): AdminBooking => ({
   createdAt: booking.createdAt.toISOString(),
 });
 
-export const listAdminBookings = async ({ status, q, cursor, limit }: AdminBookingQuery) => {
+export const listAdminBookings = async ({
+  venueId,
+  status,
+  q,
+  cursor,
+  limit,
+}: AdminBookingQuery) => {
   const text = q ? literal(q) : null;
-  const search: Prisma.BookingWhereInput = text
-    ? {
-        OR: [
-          // Codes are upper case; people type them any way.
-          { code: { contains: text.toUpperCase() } },
-          { customer: { name: { contains: text, mode: "insensitive" } } },
-          { customer: { phone: { contains: text.replace(/\s/g, "") } } },
-          {
-            venue: {
-              translations: { some: { name: { contains: text, mode: "insensitive" } } },
-            },
+  // The venue (a venue's Bookings tab) and the search narrow the counts too; the tab doesn't.
+  const search: Prisma.BookingWhereInput = {
+    ...(venueId && { venueId }),
+    ...(text && {
+      OR: [
+        // Codes are upper case; people type them any way.
+        { code: { contains: text.toUpperCase() } },
+        { customer: { name: { contains: text, mode: "insensitive" } } },
+        { customer: { phone: { contains: text.replace(/\s/g, "") } } },
+        {
+          venue: {
+            translations: { some: { name: { contains: text, mode: "insensitive" } } },
           },
-        ],
-      }
-    : {};
+        },
+      ],
+    }),
+  };
 
   const [rows, groups] = await Promise.all([
     prisma.booking.findMany({
