@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { GroundSize, GroundSport, PriceTier } from "./grounds";
+import { page } from "./lists";
 import { AmenityPricing, CancellationPolicy, CancellationTier, PaymentMode } from "./venue-edit";
 
 // Bookings (Phase 4): a run of back-to-back slots on one ground, booked by a player in the app or
@@ -112,9 +113,51 @@ export const Booking = z
   })
   .meta({ id: "Booking" });
 
+// A player's bookings, as the Bookings tab lists them. Upcoming: still to be played (waiting or
+// confirmed), soonest first. Past: played, or ended without being played (cancelled, expired,
+// released), latest first. A booking the venue moved isn't listed; the booking that replaced it is.
+export const BookingsQuery = z
+  .object({
+    when: z.enum(["upcoming", "past"]).default("upcoming"),
+    cursor: z.string().optional().meta({ description: "`nextCursor` from the previous page." }),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .meta({ id: "BookingsQuery" });
+
+export const BookingSummary = z
+  .object({
+    id: z.uuid(),
+    code: z.string(),
+    status: BookingStatus,
+    startsAt: Instant,
+    endsAt: Instant,
+    expiresAt: Instant.nullable(),
+    venue: z.object({
+      id: z.uuid(),
+      slug: z.string(),
+      name: z.string().nullable(),
+      area: z.string().nullable().meta({ example: "Maadi, Cairo" }),
+      cover: z.object({ url: z.string() }).nullable(),
+    }),
+    ground: z.object({
+      id: z.uuid(),
+      name: z.string().nullable(),
+      sport: GroundSport,
+      size: GroundSize,
+    }),
+    currency: z.string().meta({ example: "EGP" }),
+    total: z.int().meta({ description: "Minor units, VAT included." }),
+  })
+  .meta({ id: "BookingSummary" });
+
+export const BookingPage = page(BookingSummary);
+
 export type BookingStatus = z.infer<typeof BookingStatus>;
 export type BookingRequest = z.infer<typeof BookingRequest>;
 export type CreateBooking = z.infer<typeof CreateBooking>;
 export type BookingCharge = z.infer<typeof BookingCharge>;
 export type BookingQuote = z.infer<typeof BookingQuote>;
 export type Booking = z.infer<typeof Booking>;
+export type BookingsQuery = z.infer<typeof BookingsQuery>;
+export type BookingSummary = z.infer<typeof BookingSummary>;
+export type BookingPage = z.infer<typeof BookingPage>;
