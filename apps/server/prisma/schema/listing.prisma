@@ -4,10 +4,9 @@
 // players, changed only under a lock on this row, so it never passes neededPlayers; it's final at
 // kick-off. A community game (communityId) is for members only, joining the
 // public feed at publicAt if set. Each joined player owes the booker sharePrice and the venue joinFee, both copied when the
-// listing opens; the venue records how many came (arrivedCount), and Hagz takes that × joinFee from
-// its balance (LedgerEntry JOIN_FEE). CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, sharePrice and joinFee
-// >= 0, closedAt set exactly when not WAITING or OPEN; the arrived fields all or none, arrivedCount
-// 0–playerCount; publicAt only with communityId.
+// listing opens; players check in at the venue with a QR code (ListingPlayer.checkedInAt), and Hagz
+// takes the joining fee for each one who came from the venue's balance (LedgerEntry JOIN_FEE). CHECKs: neededPlayers >= 1, playerCount 0–neededPlayers, sharePrice and joinFee
+// >= 0, closedAt set exactly when not WAITING or OPEN; publicAt only with communityId.
 model BookingListing {
   id            String        @id @default(uuid(7)) @db.Uuid
   bookingId     String        @db.Uuid
@@ -21,9 +20,6 @@ model BookingListing {
   joinFee       Int // Per player, minor units, owed to the venue: sharePrice × Marketplace.joinFeeRate.
   communityId   String?       @db.Uuid
   publicAt      DateTime?     @db.Timestamptz // A community game joins the public feed from here.
-  arrivedCount  Int?          @db.SmallInt // Recorded by the venue; null means everyone expected came.
-  arrivedAt     DateTime?     @db.Timestamptz // When it was recorded.
-  arrivedById   String?       @db.Uuid // Staff who recorded it.
   closedAt      DateTime?     @db.Timestamptz
   createdAt     DateTime      @default(now()) @db.Timestamptz
   updatedAt     DateTime      @updatedAt @db.Timestamptz
@@ -31,7 +27,6 @@ model BookingListing {
   booking    Booking         @relation(fields: [bookingId, venueId], references: [id, venueId], onDelete: Restrict)
   venue      Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
   community  Community?      @relation(fields: [communityId], references: [id], onDelete: Restrict)
-  arrivedBy  Staff?          @relation(fields: [arrivedById], references: [id], onDelete: Restrict)
   players    ListingPlayer[]
   joiningFee LedgerEntry?
 
@@ -43,17 +38,21 @@ model BookingListing {
 }
 
 // A customer who joined a listing. Leaving and removal change the status; rows are never deleted, and
-// rejoining reuses the row. CHECKs: leftAt set exactly when not JOINED; a no-show only for JOINED.
+// rejoining reuses the row. CHECKs: leftAt set exactly when not JOINED; checked in only while JOINED, by
+// a staff member.
 model ListingPlayer {
-  listingId        String              @db.Uuid
-  customerId       String              @db.Uuid
-  status           ListingPlayerStatus @default(JOINED)
-  joinedAt         DateTime            @default(now()) @db.Timestamptz
-  leftAt           DateTime?           @db.Timestamptz
-  noShowReportedAt DateTime?           @db.Timestamptz // By the booker, within 48 hours (API).
+  listingId         String              @db.Uuid
+  customerId        String              @db.Uuid
+  status            ListingPlayerStatus @default(JOINED)
+  joinedAt          DateTime            @default(now()) @db.Timestamptz
+  leftAt            DateTime?           @db.Timestamptz
+  checkedInAt       DateTime?           @db.Timestamptz // Showed their QR code at the venue (or staff ticked them in).
+  checkedInById     String?             @db.Uuid // Staff who checked them in.
+  checkedInManually Boolean             @default(false) // Ticked in by name, without the code.
 
-  listing  BookingListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  listing     BookingListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  customer    Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  checkedInBy Staff?         @relation(fields: [checkedInById], references: [id], onDelete: Restrict)
 
   @@id([listingId, customerId])
   @@index([customerId])

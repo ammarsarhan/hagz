@@ -17,6 +17,9 @@ model Booking {
   endsAt             DateTime           @db.Timestamptz
   note               String? // From the customer.
   expiresAt          DateTime?          @db.Timestamptz // PENDING, HELD and UNCONFIRMED release slots after this.
+  checkedInAt        DateTime?          @db.Timestamptz // The booker showed their QR code (or staff ticked them in), around kick-off.
+  checkedInById      String?            @db.Uuid // Staff who checked them in.
+  checkedInManually  Boolean            @default(false) // Ticked in by name, without the code.
   idempotencyKey     String?            @db.Uuid // Idempotency-Key header; a retry gets this booking.
   // Terms copied at booking time; never updated.
   total              Int // Sum of its charges, VAT included.
@@ -31,7 +34,8 @@ model Booking {
   venue           Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
   ground          Ground          @relation(fields: [groundId, venueId], references: [id, venueId], onDelete: Restrict)
   customer        VenueCustomer   @relation(fields: [customerId, venueId], references: [id, venueId], onDelete: Restrict)
-  creator         Staff?          @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  creator         Staff?          @relation("BookingCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  checkedInBy     Staff?          @relation("BookingCheckIn", fields: [checkedInById], references: [id], onDelete: Restrict)
   regular         VenueRegular?   @relation(fields: [regularId, venueId], references: [id, venueId], onDelete: Restrict)
   tokens          ReminderToken[]
   slots           GroundSlot[]
