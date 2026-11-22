@@ -674,8 +674,9 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
       {sheet}
 
       <View
-        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white px-6 pt-3.5"
-        style={{ paddingBottom: insets.bottom + 8 }}
+        className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between gap-6 border-t border-border bg-white pt-3.5"
+        // Book closer to the edge than the price is (user, 2026-11-22); start and end, for Arabic.
+        style={{ paddingStart: 24, paddingEnd: 16, paddingBottom: insets.bottom + 8 }}
         onLayout={(event) => setFooter(event.nativeEvent.layout.height)}
       >
         <View className="shrink gap-0.5">

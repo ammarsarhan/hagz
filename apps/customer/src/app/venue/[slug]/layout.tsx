@@ -156,7 +156,11 @@ function Picking({
       footer={
         picked ? (
           // Across the screen, under a hairline: the picked ground, and View times.
-          <View className="-mx-5 -mt-3 flex-row items-center justify-between gap-6 border-t border-border px-6 pt-3.5">
+          // View times closer to the edge than the name is (user, 2026-11-22).
+          <View
+            className="-mx-5 -mt-3 flex-row items-center justify-between gap-6 border-t border-border pt-3.5"
+            style={{ paddingStart: 24, paddingEnd: 16 }}
+          >
             <View className="shrink gap-0.5">
               <Text className="text-button font-medium" numberOfLines={1}>
                 {picked.name ?? kindOf(picked)}
