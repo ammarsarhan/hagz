@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CheckInWindow } from "./check-in";
 import { GroundSize, GroundSport } from "./grounds";
 
 // Open games (PR 4.7, docs/listings.md): a player lists their app booking as needing players, and
@@ -42,11 +43,17 @@ export const ListingPlayer = z
     firstName: z.string(),
     phone: z.string().nullable(),
     joinedAt: Instant,
-    reliability: z.object({
-      games: z.int().meta({ description: "Open games they joined that were played." }),
-      showedUp: z.int(),
-    }),
-    noShowReported: z.boolean(),
+    reliability: z
+      .object({
+        games: z
+          .int()
+          .meta({ description: "Open games they joined where the venue checked people in." }),
+        showedUp: z.int().meta({ description: "Of those, the ones they checked in at." }),
+      })
+      .meta({
+        description: "Games where the venue checked in none of the joined players don't count.",
+      }),
+    checkedInAt: Instant.nullable(),
   })
   .meta({ id: "ListingPlayer" });
 
@@ -97,6 +104,9 @@ export const Game = z
       .object({
         booker: z.boolean(),
         status: z.enum(["JOINED", "LEFT", "REMOVED"]).nullable(),
+        checkIn: CheckInWindow.nullable().meta({
+          description: "Joined players: when to show the code.",
+        }),
       })
       .nullable()
       .meta({ description: "Null for guests." }),
@@ -140,18 +150,14 @@ export const GameList = z.object({ data: z.array(Game) }).meta({ id: "GameList" 
 export const StaffGame = z
   .object({
     expectedPlayers: z.int().meta({ description: "Joined players, final at kick-off." }),
-    players: z.array(z.object({ firstName: z.string() })),
-    joinFee: z.int(),
-    arrivedCount: z.int().nullable().meta({
-      description: "How many came, as staff recorded it; null means everyone expected.",
+    players: z.array(z.object({ customerId: z.uuid(), firstName: z.string() })),
+    joinFee: z.int().meta({ description: "Each player owes the venue this." }),
+    feePlayers: z.int().meta({
+      description:
+        "Players the joining fee is due for: those checked in, or every joined player if none were.",
     }),
-    arrivedAt: Instant.nullable(),
   })
   .meta({ id: "StaffGame" });
-
-export const RecordArrived = z
-  .object({ count: z.int().min(0).max(21).meta({ description: "Joined players who came." }) })
-  .meta({ id: "RecordArrived" });
 
 export type ListingStatus = z.infer<typeof ListingStatus>;
 export type ListingRequest = z.infer<typeof ListingRequest>;
@@ -164,4 +170,3 @@ export type GamePage = z.infer<typeof GamePage>;
 export type MyGamesQuery = z.infer<typeof MyGamesQuery>;
 export type GameList = z.infer<typeof GameList>;
 export type StaffGame = z.infer<typeof StaffGame>;
-export type RecordArrived = z.infer<typeof RecordArrived>;

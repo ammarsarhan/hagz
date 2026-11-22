@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CheckInWindow } from "./check-in";
 import { BookerListing, ListingRequest } from "./listings";
 import { GroundSize, GroundSport, PriceTier } from "./grounds";
 import { page } from "./lists";
@@ -140,6 +141,10 @@ export const Booking = z
     cancellation: z.object({ policy: CancellationPolicy, tiers: z.array(CancellationTier) }),
     note: z.string().nullable(),
     listing: BookerListing.nullable().meta({ description: "Its open game, if listed." }),
+    checkIn: CheckInWindow.nullable().meta({
+      description:
+        "App bookings, once confirmed: when to show the check-in code at the venue, and whether they did.",
+    }),
     move: BookingMove.nullable().meta({
       description:
         "The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise.",

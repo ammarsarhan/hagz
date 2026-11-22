@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AdminBooking, AdminBookingDetail } from "./admin-bookings";
 import { BookingStatus } from "./bookings";
 import { GroundSize, GroundSport } from "./grounds";
+import { StaffCheckIn } from "./check-in";
 import { StaffGame } from "./listings";
 
 // A venue's bookings for its staff (Phase 4): the calendar and the approvals queue (PR 4.4),
@@ -45,7 +46,13 @@ export const StaffBookingList = z
   .meta({ id: "StaffBookingList" });
 
 export const StaffBookingDetail = AdminBookingDetail.omit({ commissionRate: true })
-  .extend({ hold: StaffBooking.shape.hold, game: StaffGame.nullable() })
+  .extend({
+    hold: StaffBooking.shape.hold,
+    game: StaffGame.nullable(),
+    checkIn: StaffCheckIn.nullable().meta({
+      description: "App bookings: who has checked in (the booker and any joined players).",
+    }),
+  })
   .meta({ id: "StaffBookingDetail" });
 
 const Reason = z.string().trim().min(1).max(500);
