@@ -140,7 +140,7 @@ export const markBooking = createRoute({
   tags,
   summary: "Mark a game played or a no-show",
   description:
-    "A `CONFIRMED` booking once it has kicked off, or a correction of the mark. Marking it as it already is changes nothing.",
+    "A `CONFIRMED` booking once it has kicked off, or a correction of the mark, until 24 hours after it ends (games are marked `COMPLETED` by themselves when they end). Marking it as it already is changes nothing.",
   middleware: [requireStaff, requireVenueAccess("bookings", "manage")] as const,
   security,
   request: { params: bookingParams, ...body(MarkBooking) },
@@ -149,7 +149,7 @@ export const markBooking = createRoute({
     ...common,
     404: notFound,
     409: problemResponse(
-      "BOOKING_STATUS_CONFLICT (with `bookingStatus`), or BOOKING_NOT_STARTED: it hasn't kicked off yet.",
+      "BOOKING_STATUS_CONFLICT (with `bookingStatus`), BOOKING_NOT_STARTED: it hasn't kicked off yet, or MARK_WINDOW_CLOSED: more than 24 hours since it ended.",
     ),
   },
 });

@@ -10,11 +10,23 @@ import { lockBooking, netPaid, venueBookingNotFound } from "./booking-rows";
 // Staff deciding on bookings (PR 4.2): approving or declining one that waits for the venue, and
 // marking how a game went. Each is a compare-and-set on the locked row, with its BookingEvent.
 
+// How long after a game ends staff can still mark it, or change the mark (user, 2026-11-22). The
+// sweep completes it at the end; after this, the mark is final.
+export const MARK_WINDOW_HOURS = 24;
+
 const notStarted = () =>
   new AppError({
     code: "BOOKING_NOT_STARTED",
     status: 409,
     detail: "A game can be marked once it has kicked off.",
+  });
+
+const markClosed = () =>
+  new AppError({
+    code: "MARK_WINDOW_CLOSED",
+    status: 409,
+    detail: `A game can be marked until ${MARK_WINDOW_HOURS} hours after it ends.`,
+    extensions: { markWindowHours: MARK_WINDOW_HOURS },
   });
 
 const pendingSelect = {
@@ -110,8 +122,8 @@ export const declineBooking = async (
   });
 };
 
-// Marks a confirmed game played or a no-show once it has kicked off, or corrects the mark. Marking
-// it the way it already is changes nothing.
+// Marks a confirmed game played or a no-show once it has kicked off, or corrects the mark, until
+// MARK_WINDOW_HOURS after it ends. Marking it the way it already is changes nothing.
 export const markBooking = async (
   actor: VenueAccess,
   bookingId: string,
@@ -124,11 +136,15 @@ export const markBooking = async (
       id: true,
       status: true,
       startsAt: true,
+      endsAt: true,
     });
     if (!booking) throw venueBookingNotFound();
     if (booking.status === outcome) return;
     if (!canMove(booking.status, outcome)) throw invalidTransition(booking.status, outcome);
     if (booking.startsAt > now) throw notStarted();
+    if (now.getTime() > booking.endsAt.getTime() + MARK_WINDOW_HOURS * 60 * 60_000) {
+      throw markClosed();
+    }
     await tx.booking.update({ where: { id: booking.id }, data: { status: outcome } });
     await tx.bookingEvent.create({
       data: {
