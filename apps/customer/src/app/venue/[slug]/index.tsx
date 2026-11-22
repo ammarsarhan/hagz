@@ -530,15 +530,30 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
     venue.grounds.find((ground) => ground.status === "ACTIVE")?.id ?? venue.grounds[0]?.id,
   );
   // See times opens on the search's day, with its start and length picked when there was one.
+  const searchParams = {
+    ...(searched ? { date: searched.date } : {}),
+    ...(filter?.start ? { start: filter.start, hours: String(filter.hours) } : {}),
+  };
   const openTimes = (groundId: string | undefined) => {
     if (!groundId) return;
     router.push({
       pathname: "/venue/[slug]/times",
+      params: { slug: venue.slug, ground: groundId, ...searchParams },
+    });
+  };
+  // The layout on its own screen, which opens See times the same way, and fades the grounds the
+  // search left out.
+  const openLayout = () => {
+    const matches = searched?.matches;
+    const unavailable = matches
+      ? venue.grounds.filter((ground) => !matches.has(ground.id)).map((ground) => ground.id)
+      : [];
+    router.push({
+      pathname: "/venue/[slug]/layout",
       params: {
         slug: venue.slug,
-        ground: groundId,
-        ...(searched ? { date: searched.date } : {}),
-        ...(filter?.start ? { start: filter.start, hours: String(filter.hours) } : {}),
+        ...searchParams,
+        ...(unavailable.length > 0 ? { unavailable: unavailable.join(",") } : {}),
       },
     });
   };
@@ -574,6 +589,7 @@ function VenueView({ venue, filter }: { venue: PublicVenue; filter: GroundFilter
           venue={venue}
           onLayout={recordOffset("grounds")}
           onSeeTimes={openTimes}
+          onViewLayout={openLayout}
           onPick={(groundId) => {
             pickedGround.current = groundId;
           }}

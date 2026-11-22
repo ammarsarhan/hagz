@@ -40,7 +40,6 @@ import {
   IconStarFilled,
 } from "./icons";
 import { Text } from "./text";
-import { VenueLayout } from "./venue-layout";
 
 // The venue page's parts (Figma C5, frames 59:2 and 60:2), top to bottom. Rows follow Public's
 // pattern: grey label at the start, the value at the end, hairlines between (mirrored in Arabic).
@@ -396,12 +395,6 @@ function PageDots({ count, current }: { count: number; current: number }) {
   );
 }
 
-// The grounds a search's matches leave out, for the layout to mark.
-const unavailableOf = (venue: PublicVenue, matches: ReadonlySet<string> | null) =>
-  matches
-    ? new Set(venue.grounds.filter((ground) => !matches.has(ground.id)).map((ground) => ground.id))
-    : undefined;
-
 // The cards: 80% of the screen, 10 apart, so the next one peeks in.
 const CARD_SHARE = 0.8;
 const CARD_GAP = 10;
@@ -411,6 +404,7 @@ export function GroundsSection({
   venue,
   onLayout,
   onSeeTimes,
+  onViewLayout,
   onPick,
   matches = null,
   note,
@@ -419,10 +413,13 @@ export function GroundsSection({
   onLayout: (event: LayoutChangeEvent) => void;
   // A ground's See times: its free hours (app/venue/[slug]/times.tsx).
   onSeeTimes: (groundId: string) => void;
+  // View layout, at the end of the heading when the venue has drawn one: the map on its own screen
+  // (app/venue/[slug]/layout.tsx).
+  onViewLayout: () => void;
   // Which ground is picked now, for the Book button to open.
   onPick?: (groundId: string) => void;
-  // Opened from a search: the grounds that fit it (the rest are greyed out, on the cards and the
-  // layout), and what they were matched against, under the heading. Null: no search.
+  // Opened from a search: the grounds that fit it (the rest are greyed out), and what they were
+  // matched against, under the heading. Null: no search.
   matches?: ReadonlySet<string> | null;
   note?: string;
 }) {
@@ -445,8 +442,7 @@ export function GroundsSection({
   const row = useRef<ScrollViewInstance>(null);
   const currency = venue.marketplace.currency;
 
-  // The card that settles in place is the picked one, so the map follows the swipe; tapping a
-  // card brings it into place.
+  // The card that settles in place is the picked one; tapping a card brings it into place.
   // The card whose stop is nearest; at the end, where several may share it, the last of them.
   const settle = (x: number) => {
     let index = 0;
@@ -477,16 +473,16 @@ export function GroundsSection({
   }, [matches]);
 
   return (
-    <Section title={t("screens.venue.grounds.title")} note={note} onLayout={onLayout}>
-      {venue.layout ? (
-        <VenueLayout
-          layout={venue.layout}
-          grounds={venue.grounds}
-          amenities={venue.amenities}
-          selectedId={pickedId}
-          unavailableIds={unavailableOf(venue, matches)}
-        />
-      ) : null}
+    <Section
+      title={t("screens.venue.grounds.title")}
+      note={note}
+      onLayout={onLayout}
+      action={
+        venue.layout ? (
+          <Link label={t("screens.venue.grounds.viewLayout")} onPress={onViewLayout} />
+        ) : undefined
+      }
+    >
       {/* Edge to edge, snapping each card to the page's gutter, the last one to the right gutter.
           All as tall as the tallest. */}
       <ScrollView

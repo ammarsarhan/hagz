@@ -298,6 +298,10 @@ const ar: ArabicTranslations = {
         },
         version: "حجز · {{version}}",
       },
+      layout: {
+        title: "المخطط",
+        subtitle: "دوس على أي ملعب عشان تشوف مواعيده الفاضية.",
+      },
       times: {
         booksExactly_zero: "يُحجز {{count}} ساعة",
         booksExactly_one: "يُحجز ساعة واحدة",
@@ -551,6 +555,7 @@ const ar: ArabicTranslations = {
           bookRange: "احجز من {{min}} إلى {{max}} ساعات",
           seeTimes: "شوف المواعيد",
           seeTimesFor: "شوف مواعيد {{name}}",
+          viewLayout: "شوف المخطط",
         },
         booking: {
           title: "كيف يتم الحجز",

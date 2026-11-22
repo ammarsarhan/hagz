@@ -277,6 +277,10 @@ const en = {
         },
         version: "Hagz · {{version}}",
       },
+      layout: {
+        title: "Layout",
+        subtitle: "Tap a ground to see its free times.",
+      },
       times: {
         booksExactly_one: "Books {{count}} hour",
         booksExactly_other: "Books {{count}} hours",
@@ -506,6 +510,7 @@ const en = {
           bookRange: "Book {{min}}–{{max}} hours",
           seeTimes: "See times",
           seeTimesFor: "See times for {{name}}",
+          viewLayout: "View layout",
         },
         booking: {
           title: "How booking works",
