@@ -6,10 +6,10 @@ import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-na
 import Svg, { Circle, G, Line, Rect, Text as SvgText } from "react-native-svg";
 import type { PublicGround, PublicVenue } from "@/lib/venue";
 
-// A venue's map, read only (Figma C5, "The grounds"): the owner's grid at a cell to every
-// `width / columns` points, the venue's outline in ink, each ground drawn top-down with its
-// markings and name, the amenities placed on it as white tiles, and the entrances as black tags on
-// the edge. Grounds under maintenance say so, and so do grounds that don't fit the search the page
+// A venue's map, read only: the owner's grid at a cell to every `width / columns` points, drawn
+// without its lines or an outline (user, 2026-11-22: the grid broken up by the tiles looked bad);
+// the grey card is the venue. Each ground is drawn top-down with its markings and name, the
+// amenities placed on it as white tiles, and the entrances as black tags on the edge. Grounds under maintenance say so, and so do grounds that don't fit the search the page
 // came from (faded, "Unavailable"). With `onPressGround` (the layout screen,
 // app/venue/[slug]/layout.tsx), each open ground is a button over its tile that goes dark grey while
 // held. It's the real place seen from above, so it isn't mirrored in Arabic.
@@ -17,7 +17,6 @@ import type { PublicGround, PublicVenue } from "@/lib/venue";
 type Layout = NonNullable<PublicVenue["layout"]>;
 
 const INK = "#0b0b0c";
-const GRID = "#edeef0";
 const TILE = "#e4e6ea";
 const MARK = "#9ea3ab";
 // A held ground: a grey darker than the rest, its lines darker too.
@@ -219,29 +218,6 @@ export function VenueLayout({
       {width > 0 ? (
         <Svg width={width + 2 * EDGE} height={height + 2 * EDGE}>
           <G transform={`translate(${EDGE}, ${EDGE})`}>
-            {Array.from({ length: layout.columns - 1 }, (_, i) => (
-              <Line
-                key={`c${i}`}
-                x1={(i + 1) * cell}
-                y1={0}
-                x2={(i + 1) * cell}
-                y2={height}
-                stroke={GRID}
-                strokeWidth={1}
-              />
-            ))}
-            {Array.from({ length: layout.rows - 1 }, (_, i) => (
-              <Line
-                key={`r${i}`}
-                x1={0}
-                y1={(i + 1) * cell}
-                x2={width}
-                y2={(i + 1) * cell}
-                stroke={GRID}
-                strokeWidth={1}
-              />
-            ))}
-
             {layout.amenities.map((tile, i) => {
               const box = boxOf(tile.x, tile.y, tile.width, tile.height);
               const name = amenityById.get(tile.optionId)?.name ?? "";
@@ -302,16 +278,6 @@ export function VenueLayout({
                 </G>
               );
             })}
-
-            <Rect
-              x={0.75}
-              y={0.75}
-              width={width - 1.5}
-              height={height - 1.5}
-              fill="none"
-              stroke={INK}
-              strokeWidth={1.5}
-            />
 
             {layout.entrances.map((entrance, i) => {
               const along = (entrance.offset + 0.5) * cell;
