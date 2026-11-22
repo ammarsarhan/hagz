@@ -16,7 +16,7 @@ export interface PricedAmenity {
 }
 
 export interface ChargeLine {
-  type: "SLOT" | "AMENITY";
+  type: "SLOT" | "AMENITY" | "ADJUSTMENT";
   startsAt: Date | null;
   tier: PriceTier | null;
   optionId: string | null;
@@ -75,3 +75,29 @@ export const priceBooking = (
 // more than the total.
 export const depositFor = (total: number, depositPercent: number): number =>
   Math.min(total, Math.max(1, Math.ceil((total * depositPercent) / 100)));
+
+// A staff booking at the venue's own total (PR 4.3): one ADJUSTMENT line for the difference from the
+// priced lines, either sign, at the same VAT rate. None when the total is already the price.
+export const adjustedTo = (
+  price: { lines: ChargeLine[]; total: number; tax: number },
+  total: number,
+  taxRate: number,
+): { lines: ChargeLine[]; total: number; tax: number } => {
+  const difference = total - price.total;
+  if (difference === 0) return price;
+  const adjustment: ChargeLine = {
+    type: "ADJUSTMENT",
+    startsAt: null,
+    tier: null,
+    optionId: null,
+    pricing: null,
+    amount: difference,
+    taxRate,
+    taxAmount: vatInside(difference, taxRate),
+  };
+  return {
+    lines: [...price.lines, adjustment],
+    total,
+    tax: price.tax + adjustment.taxAmount,
+  };
+};

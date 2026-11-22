@@ -30,7 +30,7 @@ export const respondBy = (movedAt: Date, startsAt: Date): Date =>
   new Date(Math.min(movedAt.getTime() + MOVE_RESPONSE_HOURS * 60 * 60_000, startsAt.getTime()));
 
 export interface StoredCharge {
-  type: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD";
+  type: "SLOT" | "AMENITY" | "DISCOUNT" | "REWARD" | "ADJUSTMENT";
   startsAt: Date | null;
   tier: PriceTier | null;
   optionId: string | null;
@@ -43,7 +43,8 @@ export interface StoredCharge {
 
 // The moved booking's charges: one line per new slot at the price it carries now, at the original's
 // VAT rate (its terms); per-hour amenities follow the new number of hours at the price paid per
-// hour; everything else (flat amenities, a discount, a reward) as it was.
+// hour; everything else (flat amenities, a discount, a reward, staff's adjustment) as it was. A
+// staff discount bigger than the new price shrinks so the total stops at 0.
 export const chargesAfterMove = (
   charges: readonly StoredCharge[],
   slots: readonly PricedSlot[],
@@ -72,10 +73,21 @@ export const chargesAfterMove = (
         return { ...charge, amount, taxAmount: vatInside(amount, charge.taxRate) };
       }),
   ];
+  const sum = lines.reduce((total, line) => total + line.amount, 0);
+  const fitted =
+    sum >= 0
+      ? lines
+      : lines.flatMap((line) => {
+          if (line.type !== "ADJUSTMENT") return [line];
+          const amount = line.amount - sum;
+          return amount === 0
+            ? []
+            : [{ ...line, amount, taxAmount: vatInside(amount, line.taxRate) }];
+        });
   return {
-    lines,
-    total: lines.reduce((sum, line) => sum + line.amount, 0),
-    tax: lines.reduce((sum, line) => sum + line.taxAmount, 0),
+    lines: fitted,
+    total: fitted.reduce((total, line) => total + line.amount, 0),
+    tax: fitted.reduce((total, line) => total + line.taxAmount, 0),
   };
 };
 
