@@ -10870,6 +10870,806 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff/venues/{venueId}/slots/{slotId}/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who to contact about an empty slot
+         * @description Needs `customers: view`. Lapsed regulars first, then active regulars (with another free slot near their usual time to offer), then everyone else; each group ranked by how well the slot fits them, fewer no-shows, then who played last.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    venueId: string;
+                    slotId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The candidates */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SlotCandidates"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND, or SLOT_NOT_FOUND: no such slot at this venue. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Games needing players
+         * @description Open games that aren't full or started, soonest first, then nearest to `latitude`/`longitude`. Public; signed in, each game carries `me`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    latitude?: number | null;
+                    longitude?: number | null;
+                    /** @description Kilometres. */
+                    radius?: number;
+                    /** @description A location id; its sub-areas included. */
+                    area?: string;
+                    sport?: components["schemas"]["GroundSport"];
+                    /** @description `STANDARD` for sports without size variants. */
+                    size?: components["schemas"]["GroundSize"];
+                    /** @description A calendar day in the venue's timezone. */
+                    date?: string;
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A page of games */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GamePage"];
+                    };
+                };
+                /** @description INVALID_CURSOR */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Games I've joined */
+        get: {
+            parameters: {
+                query?: {
+                    when?: "upcoming" | "past";
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The games */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GameList"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{gameId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One game
+         * @description Names of the other players and the booker's number only once you've joined. Public, for the share link.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    gameId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The game */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description GAME_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{gameId}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join a game
+         * @description You owe the booker `sharePrice` and the venue `joinFee`, in person. Hagz doesn't guarantee the players will show up or that the game will go ahead.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    gameId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The game */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description REMOVED_FROM_GAME: the booker removed you. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GAME_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, or GAME_CLASH: you have a game or a booking at this time. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/games/{gameId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave a game
+         * @description Until kick-off. Nothing is owed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    gameId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The game */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Game"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GAME_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NOT_JOINED or GAME_STARTED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}/listing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Look for players
+         * @description A confirmed booking you made in the app, before it starts. A listing you turned off opens again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ListingRequest"];
+                };
+            };
+            responses: {
+                /** @description Your booking, with its listing */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_LISTABLE or ALREADY_LISTED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description TOO_MANY_PLAYERS (with `maximum`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        /**
+         * Stop looking for players
+         * @description Only while nobody has joined; remove them first.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Your booking, with its listing */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GAME_NOT_OPEN or GAME_HAS_PLAYERS */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Change how many players you need, or the note */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateListing"];
+                };
+            };
+            responses: {
+                /** @description Your booking, with its listing */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description GAME_NOT_OPEN, GAME_STARTED, or BELOW_JOINED (with `joined`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description TOO_MANY_PLAYERS (with `maximum`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}/listing/players/{customerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a player from your game
+         * @description Until kick-off. They can't join this game again.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                    customerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Your booking, with its listing */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NOT_JOINED or GAME_STARTED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{bookingId}/listing/players/{customerId}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a player who didn't come
+         * @description Within 48 hours of a game that was played. Counts in their reliability.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    bookingId: string;
+                    customerId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Your booking, with its listing */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Booking"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description NOT_JOINED or REPORT_WINDOW_CLOSED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/arrived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record how many of an open game's players came
+         * @description Needs `bookings: manage`. From kick-off until 24 hours after the end, and correctable in that time. Left unrecorded, everyone expected counts as having come.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                    bookingId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RecordArrived"];
+                };
+            };
+            responses: {
+                /** @description The booking */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBookingDetail"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description BOOKING_NOT_FOUND, or GAME_NOT_FOUND: no open game with players. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description ARRIVED_WINDOW_CLOSED */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description MORE_THAN_JOINED (with `joined`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff/venues/{venueId}/customers": {
         parameters: {
             query?: never;
@@ -11156,6 +11956,145 @@ export interface paths {
                     };
                 };
                 /** @description CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`). */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/staff/venues/{venueId}/booking-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff holds, regulars and Fill a slot settings */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingSettings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT: no settings yet. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change staff holds, regulars and Fill a slot settings
+         * @description Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    venueId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateBookingSettings"];
+                };
+            };
+            responses: {
+                /** @description The settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BookingSettings"];
+                    };
+                };
+                /** @description UNAUTHENTICATED or TOKEN_EXPIRED */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_NOT_FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["Problem"];
+                    };
+                };
+                /** @description VENUE_STATUS_CONFLICT */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -16671,6 +17610,21 @@ export interface components {
                 tiers: components["schemas"]["CancellationTier"][];
             };
             note: string | null;
+            /** @description Its open game, if listed. */
+            listing: {
+                /** Format: uuid */
+                id: string;
+                status: components["schemas"]["ListingStatus"];
+                neededPlayers: number;
+                playerCount: number;
+                note: string | null;
+                /** @description Each player pays the booker this, in minor units. */
+                sharePrice: number;
+                /** @description Each player pays the venue this, in minor units. */
+                joinFee: number;
+                /** @description Joined players, first to join first. */
+                players: components["schemas"]["ListingPlayer"][];
+            } | null;
             /** @description The venue moved this booking and the player can still answer: accept, reject for a full refund, or move it back. Null otherwise. */
             move: {
                 /** @enum {string} */
@@ -16709,6 +17663,25 @@ export interface components {
          * @enum {string}
          */
         BookingStatus: "PENDING" | "HELD" | "UNCONFIRMED" | "CONFIRMED" | "CANCELLED" | "EXPIRED" | "RELEASED" | "RESCHEDULED" | "COMPLETED" | "NO_SHOW";
+        /**
+         * @description `WAITING`: asked for at checkout, opens once the booking is confirmed. `CLOSED`: turned off by the booker. `CANCELLED`: the booking was cancelled. Full and started are worked out, not stored.
+         * @enum {string}
+         */
+        ListingStatus: "WAITING" | "OPEN" | "CLOSED" | "CANCELLED";
+        ListingPlayer: {
+            /** Format: uuid */
+            customerId: string;
+            firstName: string;
+            phone: string | null;
+            /** Format: date-time */
+            joinedAt: string;
+            reliability: {
+                /** @description Open games they joined that were played. */
+                games: number;
+                showedUp: number;
+            };
+            noShowReported: boolean;
+        };
         CreateBooking: {
             /** Format: uuid */
             groundId: string;
@@ -16729,6 +17702,13 @@ export interface components {
             amenities: string[];
             /** @description For the venue. */
             note?: string;
+            /** @description Ask for players: the open game starts once the booking is confirmed. */
+            listing?: {
+                /** @description Players wanted, besides the booker; at most the ground's players less one. */
+                neededPlayers: number;
+                /** @description Shown to everyone, e.g. the level. */
+                note?: string;
+            };
         };
         BookingSummary: {
             /** Format: uuid */
@@ -16788,6 +17768,11 @@ export interface components {
                 sport: components["schemas"]["GroundSport"];
                 size: components["schemas"]["GroundSize"];
             };
+            /**
+             * Format: uuid
+             * @description An open game anyone can join from the link: `GET /v1/games/{id}`.
+             */
+            gameId: string | null;
             /** @description `RESCHEDULED`: the code of the booking that replaced it, to follow the link there. */
             movedTo: string | null;
         };
@@ -17550,6 +18535,10 @@ export interface components {
             expiresAt: string | null;
             /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
             hold: boolean;
+            /** @description An open game: how many players to expect besides the booker. */
+            openGame: {
+                players: number;
+            } | null;
         };
         /**
          * @description `APP`: the player booked in the app. `STAFF`: entered by the venue's staff.
@@ -17672,7 +18661,20 @@ export interface components {
             }[];
             /** @description A staff hold: `HELD` slots kept for someone deciding, with no payment due. */
             hold: boolean;
+            game: components["schemas"]["StaffGame"];
         };
+        StaffGame: {
+            /** @description Joined players, final at kick-off. */
+            expectedPlayers: number;
+            players: {
+                firstName: string;
+            }[];
+            joinFee: number;
+            /** @description How many came, as staff recorded it; null means everyone expected. */
+            arrivedCount: number | null;
+            /** Format: date-time */
+            arrivedAt: string | null;
+        } | null;
         BookingHistoryEvent: {
             /** Format: uuid */
             id: string;
@@ -17956,6 +18958,136 @@ export interface components {
              */
             endsOn?: string | null;
         };
+        SlotCandidates: {
+            slot: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                groundId: string;
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+                /**
+                 * @description It may have been taken since the list was asked for.
+                 * @enum {string}
+                 */
+                status: "AVAILABLE" | "HELD" | "BOOKED" | "BLOCKED";
+            };
+            /** @description Best first: by group, then how well the slot fits them (weekday, hour, ground, sport), fewer no-shows, and who played last. Anyone already booked at that time is left out. */
+            data: components["schemas"]["SlotCandidate"][];
+        };
+        SlotCandidate: {
+            customer: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                phone: string | null;
+                app: boolean;
+            };
+            group: components["schemas"]["CandidateGroup"];
+            /** @description Has an active weekly time here. */
+            standing: boolean;
+            gamesPlayed: number;
+            noShows: number;
+            /** Format: date-time */
+            lastPlayedAt: string | null;
+            /** @description The weekday and hour they've played most, in the venue's time. */
+            usual: {
+                /** @description 0–6 from Sunday, in the venue's time. */
+                dayOfWeek: number;
+                /** @description The first hour, in the venue's time. */
+                hour: number;
+            } | null;
+            /** @description Active regulars: another free slot in the next 7 days near their usual time, to offer as well. */
+            suggestedSlot: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                groundId: string;
+                /** Format: date-time */
+                startsAt: string;
+                /** Format: date-time */
+                endsAt: string;
+            } | null;
+        };
+        /**
+         * @description In priority order. A regular has a standing weekly time here, or played `regularBookings` games in the last `regularPeriod` weeks; lapsed when they haven't played for `lapsedAfter` weeks.
+         * @enum {string}
+         */
+        CandidateGroup: "LAPSED_REGULAR" | "ACTIVE_REGULAR" | "OTHER";
+        GamePage: {
+            data: components["schemas"]["Game"][];
+            nextCursor: string | null;
+        };
+        Game: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["ListingStatus"];
+            /** @description Open, not full and not started. */
+            joinable: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** @example Africa/Cairo */
+            timezone: string;
+            /** @example EGP */
+            currency: string;
+            venue: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: string | null;
+                area: string | null;
+            };
+            ground: {
+                /** Format: uuid */
+                id: string;
+                name: string | null;
+                sport: components["schemas"]["GroundSport"];
+                size: components["schemas"]["GroundSize"];
+            };
+            /** @description From the point searched, if any. */
+            distanceKm: number | null;
+            neededPlayers: number;
+            playerCount: number;
+            spotsLeft: number;
+            note: string | null;
+            booker: {
+                firstName: string;
+            };
+            sharePrice: number;
+            joinFee: number;
+            /** @description Null for guests. */
+            me: {
+                booker: boolean;
+                /** @enum {string|null} */
+                status: "JOINED" | "LEFT" | "REMOVED" | null;
+            } | null;
+            /** @description Joined players' first names, once you've joined (or for the booker). */
+            players: string[] | null;
+            /** @description Once you've joined, until 24 hours after kick-off. */
+            bookerPhone: string | null;
+        };
+        GameList: {
+            data: components["schemas"]["Game"][];
+        };
+        ListingRequest: {
+            /** @description Players wanted, besides the booker; at most the ground's players less one. */
+            neededPlayers: number;
+            /** @description Shown to everyone, e.g. the level. */
+            note?: string;
+        };
+        UpdateListing: {
+            /** @description Raise up to the cap, or lower down to the players already joined. */
+            neededPlayers?: number;
+            note?: string | null;
+        };
+        RecordArrived: {
+            /** @description Joined players who came. */
+            count: number;
+        };
         VenueCustomerPage: {
             data: components["schemas"]["VenueCustomer"][];
             nextCursor: string | null;
@@ -17993,6 +19125,35 @@ export interface components {
             phone?: string | null;
             /** @description Staff's own note about the customer; never shown to them. Empty clears it. */
             note?: string;
+        };
+        BookingSettings: {
+            /** @description How long a staff hold lasts. */
+            staffHoldMinutes: number;
+            /** @description Weeks of regulars' reservations kept ahead. */
+            regularHorizon: number;
+            /** @description Hours before kick-off a regular's week must be confirmed. */
+            confirmationWindow: number;
+            /** @description Weeks without a game before a regular counts as lapsed. */
+            lapsedAfter: number;
+            /** @description Games within `regularPeriod` weeks that make someone a regular. */
+            regularBookings: number;
+            /** @description Weeks. */
+            regularPeriod: number;
+        };
+        /** @description Only what's sent changes. */
+        UpdateBookingSettings: {
+            /** @description How long a staff hold lasts. */
+            staffHoldMinutes?: number;
+            /** @description Weeks of regulars' reservations kept ahead. */
+            regularHorizon?: number;
+            /** @description Hours before kick-off a regular's week must be confirmed. */
+            confirmationWindow?: number;
+            /** @description Weeks without a game before a regular counts as lapsed. */
+            lapsedAfter?: number;
+            /** @description Games within `regularPeriod` weeks that make someone a regular. */
+            regularBookings?: number;
+            /** @description Weeks. */
+            regularPeriod?: number;
         };
         SystemStatus: {
             /** Format: date-time */

@@ -2885,6 +2885,59 @@
               "null"
             ]
           },
+          "listing": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "$ref": "#/components/schemas/ListingStatus"
+              },
+              "neededPlayers": {
+                "type": "integer"
+              },
+              "playerCount": {
+                "type": "integer"
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sharePrice": {
+                "type": "integer",
+                "description": "Each player pays the booker this, in minor units."
+              },
+              "joinFee": {
+                "type": "integer",
+                "description": "Each player pays the venue this, in minor units."
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ListingPlayer"
+                },
+                "description": "Joined players, first to join first."
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "neededPlayers",
+              "playerCount",
+              "note",
+              "sharePrice",
+              "joinFee",
+              "players"
+            ],
+            "description": "Its open game, if listed."
+          },
           "move": {
             "type": [
               "object",
@@ -2998,6 +3051,7 @@
           "charges",
           "cancellation",
           "note",
+          "listing",
           "move",
           "createdAt"
         ]
@@ -3017,6 +3071,65 @@
           "NO_SHOW"
         ],
         "description": "`PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it."
+      },
+      "ListingStatus": {
+        "type": "string",
+        "enum": [
+          "WAITING",
+          "OPEN",
+          "CLOSED",
+          "CANCELLED"
+        ],
+        "description": "`WAITING`: asked for at checkout, opens once the booking is confirmed. `CLOSED`: turned off by the booker. `CANCELLED`: the booking was cancelled. Full and started are worked out, not stored."
+      },
+      "ListingPlayer": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reliability": {
+            "type": "object",
+            "properties": {
+              "games": {
+                "type": "integer",
+                "description": "Open games they joined that were played."
+              },
+              "showedUp": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "games",
+              "showedUp"
+            ]
+          },
+          "noShowReported": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "customerId",
+          "firstName",
+          "phone",
+          "joinedAt",
+          "reliability",
+          "noShowReported"
+        ]
       },
       "CreateBooking": {
         "type": "object",
@@ -3049,6 +3162,26 @@
             "type": "string",
             "maxLength": 500,
             "description": "For the venue."
+          },
+          "listing": {
+            "type": "object",
+            "properties": {
+              "neededPlayers": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 21,
+                "description": "Players wanted, besides the booker; at most the ground's players less one."
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "Shown to everyone, e.g. the level."
+              }
+            },
+            "required": [
+              "neededPlayers"
+            ],
+            "description": "Ask for players: the open game starts once the booking is confirmed."
           }
         },
         "required": [
@@ -3259,6 +3392,14 @@
               "size"
             ]
           },
+          "gameId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An open game anyone can join from the link: `GET /v1/games/{id}`."
+          },
           "movedTo": {
             "type": [
               "string",
@@ -3275,6 +3416,7 @@
           "timezone",
           "venue",
           "ground",
+          "gameId",
           "movedTo"
         ]
       },
@@ -5565,6 +5707,21 @@
           "hold": {
             "type": "boolean",
             "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
+          },
+          "openGame": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "players": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "players"
+            ],
+            "description": "An open game: how many players to expect besides the booker."
           }
         },
         "required": [
@@ -5582,7 +5739,8 @@
           "total",
           "createdAt",
           "expiresAt",
-          "hold"
+          "hold",
+          "openGame"
         ]
       },
       "BookingSource": {
@@ -5986,6 +6144,9 @@
           "hold": {
             "type": "boolean",
             "description": "A staff hold: `HELD` slots kept for someone deciding, with no payment due."
+          },
+          "game": {
+            "$ref": "#/components/schemas/StaffGame"
           }
         },
         "required": [
@@ -6016,7 +6177,58 @@
           "cancelled",
           "movedFrom",
           "movedTo",
-          "hold"
+          "hold",
+          "game"
+        ]
+      },
+      "StaffGame": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "expectedPlayers": {
+            "type": "integer",
+            "description": "Joined players, final at kick-off."
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "firstName"
+              ]
+            }
+          },
+          "joinFee": {
+            "type": "integer"
+          },
+          "arrivedCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "How many came, as staff recorded it; null means everyone expected."
+          },
+          "arrivedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "expectedPlayers",
+          "players",
+          "joinFee",
+          "arrivedCount",
+          "arrivedAt"
         ]
       },
       "BookingHistoryEvent": {
@@ -6805,6 +7017,468 @@
         },
         "description": "A new time or ground releases its unconfirmed weeks and reserves the new time; confirmed weeks stay."
       },
+      "SlotCandidates": {
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "groundId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "startsAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endsAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "AVAILABLE",
+                  "HELD",
+                  "BOOKED",
+                  "BLOCKED"
+                ],
+                "description": "It may have been taken since the list was asked for."
+              }
+            },
+            "required": [
+              "id",
+              "groundId",
+              "startsAt",
+              "endsAt",
+              "status"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlotCandidate"
+            },
+            "description": "Best first: by group, then how well the slot fits them (weekday, hour, ground, sport), fewer no-shows, and who played last. Anyone already booked at that time is left out."
+          }
+        },
+        "required": [
+          "slot",
+          "data"
+        ]
+      },
+      "SlotCandidate": {
+        "type": "object",
+        "properties": {
+          "customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "app": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "phone",
+              "app"
+            ]
+          },
+          "group": {
+            "$ref": "#/components/schemas/CandidateGroup"
+          },
+          "standing": {
+            "type": "boolean",
+            "description": "Has an active weekly time here."
+          },
+          "gamesPlayed": {
+            "type": "integer"
+          },
+          "noShows": {
+            "type": "integer"
+          },
+          "lastPlayedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "usual": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "dayOfWeek": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6,
+                "description": "0–6 from Sunday, in the venue's time."
+              },
+              "hour": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 23,
+                "description": "The first hour, in the venue's time."
+              }
+            },
+            "required": [
+              "dayOfWeek",
+              "hour"
+            ],
+            "description": "The weekday and hour they've played most, in the venue's time."
+          },
+          "suggestedSlot": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "groundId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "startsAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endsAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "groundId",
+              "startsAt",
+              "endsAt"
+            ],
+            "description": "Active regulars: another free slot in the next 7 days near their usual time, to offer as well."
+          }
+        },
+        "required": [
+          "customer",
+          "group",
+          "standing",
+          "gamesPlayed",
+          "noShows",
+          "lastPlayedAt",
+          "usual",
+          "suggestedSlot"
+        ]
+      },
+      "CandidateGroup": {
+        "type": "string",
+        "enum": [
+          "LAPSED_REGULAR",
+          "ACTIVE_REGULAR",
+          "OTHER"
+        ],
+        "description": "In priority order. A regular has a standing weekly time here, or played `regularBookings` games in the last `regularPeriod` weeks; lapsed when they haven't played for `lapsedAfter` weeks."
+      },
+      "GamePage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Game"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "Game": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ListingStatus"
+          },
+          "joinable": {
+            "type": "boolean",
+            "description": "Open, not full and not started."
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Africa/Cairo"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EGP"
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "area": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "name",
+              "area"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "distanceKm": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "From the point searched, if any."
+          },
+          "neededPlayers": {
+            "type": "integer"
+          },
+          "playerCount": {
+            "type": "integer"
+          },
+          "spotsLeft": {
+            "type": "integer"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "booker": {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "firstName"
+            ]
+          },
+          "sharePrice": {
+            "type": "integer"
+          },
+          "joinFee": {
+            "type": "integer"
+          },
+          "me": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "booker": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "JOINED",
+                  "LEFT",
+                  "REMOVED",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "booker",
+              "status"
+            ],
+            "description": "Null for guests."
+          },
+          "players": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Joined players' first names, once you've joined (or for the booker)."
+          },
+          "bookerPhone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Once you've joined, until 24 hours after kick-off."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "joinable",
+          "startsAt",
+          "endsAt",
+          "timezone",
+          "currency",
+          "venue",
+          "ground",
+          "distanceKm",
+          "neededPlayers",
+          "playerCount",
+          "spotsLeft",
+          "note",
+          "booker",
+          "sharePrice",
+          "joinFee",
+          "me",
+          "players",
+          "bookerPhone"
+        ]
+      },
+      "GameList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Game"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "ListingRequest": {
+        "type": "object",
+        "properties": {
+          "neededPlayers": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 21,
+            "description": "Players wanted, besides the booker; at most the ground's players less one."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Shown to everyone, e.g. the level."
+          }
+        },
+        "required": [
+          "neededPlayers"
+        ]
+      },
+      "UpdateListing": {
+        "type": "object",
+        "properties": {
+          "neededPlayers": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 21,
+            "description": "Raise up to the cap, or lower down to the players already joined."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          }
+        }
+      },
+      "RecordArrived": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21,
+            "description": "Joined players who came."
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
       "VenueCustomerPage": {
         "type": "object",
         "properties": {
@@ -6932,6 +7606,97 @@
             "description": "Staff's own note about the customer; never shown to them. Empty clears it."
           }
         }
+      },
+      "BookingSettings": {
+        "type": "object",
+        "properties": {
+          "staffHoldMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "description": "How long a staff hold lasts."
+          },
+          "regularHorizon": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks of regulars' reservations kept ahead."
+          },
+          "confirmationWindow": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168,
+            "description": "Hours before kick-off a regular's week must be confirmed."
+          },
+          "lapsedAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks without a game before a regular counts as lapsed."
+          },
+          "regularBookings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Games within `regularPeriod` weeks that make someone a regular."
+          },
+          "regularPeriod": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26,
+            "description": "Weeks."
+          }
+        },
+        "required": [
+          "staffHoldMinutes",
+          "regularHorizon",
+          "confirmationWindow",
+          "lapsedAfter",
+          "regularBookings",
+          "regularPeriod"
+        ]
+      },
+      "UpdateBookingSettings": {
+        "type": "object",
+        "properties": {
+          "staffHoldMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60,
+            "description": "How long a staff hold lasts."
+          },
+          "regularHorizon": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks of regulars' reservations kept ahead."
+          },
+          "confirmationWindow": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168,
+            "description": "Hours before kick-off a regular's week must be confirmed."
+          },
+          "lapsedAfter": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Weeks without a game before a regular counts as lapsed."
+          },
+          "regularBookings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Games within `regularPeriod` weeks that make someone a regular."
+          },
+          "regularPeriod": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 26,
+            "description": "Weeks."
+          }
+        },
+        "description": "Only what's sent changes."
       },
       "SystemStatus": {
         "type": "object",
@@ -21933,6 +22698,977 @@
         }
       }
     },
+    "/v1/staff/venues/{venueId}/slots/{slotId}/candidates": {
+      "get": {
+        "tags": [
+          "Fill a slot"
+        ],
+        "summary": "Who to contact about an empty slot",
+        "description": "Needs `customers: view`. Lapsed regulars first, then active regulars (with another free slot near their usual time to offer), then everyone else; each group ranked by how well the slot fits them, fewer no-shows, then who played last.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "slotId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The candidates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotCandidates"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND, or SLOT_NOT_FOUND: no such slot at this venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/games": {
+      "get": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Games needing players",
+        "description": "Open games that aren't full or started, soonest first, then nearest to `latitude`/`longitude`. Public; signed in, each game carries `me`.",
+        "security": [
+          {
+            "customerBearer": []
+          },
+          {}
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "latitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "longitude",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25,
+              "description": "Kilometres."
+            },
+            "required": false,
+            "description": "Kilometres.",
+            "name": "radius",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A location id; its sub-areas included."
+            },
+            "required": false,
+            "description": "A location id; its sub-areas included.",
+            "name": "area",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/GroundSport"
+            },
+            "required": false,
+            "name": "sport",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/GroundSize"
+            },
+            "required": false,
+            "description": "`STANDARD` for sports without size variants.",
+            "name": "size",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "A calendar day in the venue's timezone.",
+              "example": "2026-12-03"
+            },
+            "required": false,
+            "description": "A calendar day in the venue's timezone.",
+            "name": "date",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_CURSOR",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/games/mine": {
+      "get": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Games I've joined",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "past"
+              ],
+              "default": "upcoming"
+            },
+            "required": false,
+            "name": "when",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/games/{gameId}": {
+      "get": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "One game",
+        "description": "Names of the other players and the booker's number only once you've joined. Public, for the share link.",
+        "security": [
+          {
+            "customerBearer": []
+          },
+          {}
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "gameId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GAME_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/games/{gameId}/join": {
+      "post": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Join a game",
+        "description": "You owe the booker `sharePrice` and the venue `joinFee`, in person. Hagz doesn't guarantee the players will show up or that the game will go ahead.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "gameId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "REMOVED_FROM_GAME: the booker removed you.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GAME_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "GAME_NOT_OPEN, GAME_FULL, GAME_STARTED, OWN_GAME, ALREADY_JOINED, or GAME_CLASH: you have a game or a booking at this time.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/games/{gameId}/leave": {
+      "post": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Leave a game",
+        "description": "Until kick-off. Nothing is owed.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "gameId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GAME_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOT_JOINED or GAME_STARTED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/listing": {
+      "post": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Look for players",
+        "description": "A confirmed booking you made in the app, before it starts. A listing you turned off opens again.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Your booking, with its listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "BOOKING_NOT_LISTABLE or ALREADY_LISTED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "TOO_MANY_PLAYERS (with `maximum`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Change how many players you need, or the note",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Your booking, with its listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "GAME_NOT_OPEN, GAME_STARTED, or BELOW_JOINED (with `joined`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "TOO_MANY_PLAYERS (with `maximum`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Stop looking for players",
+        "description": "Only while nobody has joined; remove them first.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your booking, with its listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "GAME_NOT_OPEN or GAME_HAS_PLAYERS",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/listing/players/{customerId}": {
+      "delete": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Remove a player from your game",
+        "description": "Until kick-off. They can't join this game again.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your booking, with its listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOT_JOINED or GAME_STARTED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{bookingId}/listing/players/{customerId}/no-show": {
+      "post": {
+        "tags": [
+          "Open games"
+        ],
+        "summary": "Report a player who didn't come",
+        "description": "Within 48 hours of a game that was played. Counts in their reliability.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "customerId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your booking, with its listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND: none of yours with that id, or GAME_NOT_FOUND: it isn't listed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOT_JOINED or REPORT_WINDOW_CLOSED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/bookings/{bookingId}/arrived": {
+      "post": {
+        "tags": [
+          "Venue bookings"
+        ],
+        "summary": "Record how many of an open game's players came",
+        "description": "Needs `bookings: manage`. From kick-off until 24 hours after the end, and correctable in that time. Left unrecorded, everyone expected counts as having come.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "bookingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordArrived"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffBookingDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BOOKING_NOT_FOUND, or GAME_NOT_FOUND: no open game with players.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ARRIVED_WINDOW_CLOSED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "MORE_THAN_JOINED (with `joined`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/staff/venues/{venueId}/customers": {
       "get": {
         "tags": [
@@ -22305,6 +24041,167 @@
           },
           "409": {
             "description": "CUSTOMER_LINKED: an app player's name and number can't be edited. CUSTOMER_EXISTS (with `customerId`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/venues/{venueId}/booking-settings": {
+      "get": {
+        "tags": [
+          "Venue settings"
+        ],
+        "summary": "Staff holds, regulars and Fill a slot settings",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT: no settings yet.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Venue settings"
+        ],
+        "summary": "Change staff holds, regulars and Fill a slot settings",
+        "description": "Needs `venue: manage`. Only what's sent changes. A new horizon or confirmation window applies to weeks reserved from now on.",
+        "security": [
+          {
+            "staffBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "venueId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PERMISSION_DENIED (with `area` and `needed`), or ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "VENUE_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VENUE_STATUS_CONFLICT",
             "content": {
               "application/problem+json": {
                 "schema": {
