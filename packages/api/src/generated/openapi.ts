@@ -5022,7 +5022,7 @@ export interface paths {
         };
         /**
          * A booking's share link
-         * @description What anyone with the link (/b/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.
+         * @description What anyone with the link (/booking/{code}) sees: the venue, ground and time. No money and nothing about the customer. Names follow `Accept-Language`.
          */
         get: {
             parameters: {
@@ -17783,7 +17783,7 @@ export interface components {
         Booking: {
             /** Format: uuid */
             id: string;
-            /** @description For the share link, /b/{code}. */
+            /** @description For the share link, /booking/{code}. */
             code: string;
             status: components["schemas"]["BookingStatus"];
             /** Format: date-time */
