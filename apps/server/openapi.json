@@ -2580,6 +2580,385 @@
           "savedAt"
         ]
       },
+      "BookingQuote": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217; amounts are in its minor units.",
+            "example": "EGP"
+          },
+          "total": {
+            "type": "integer",
+            "description": "VAT included."
+          },
+          "tax": {
+            "type": "integer",
+            "description": "The VAT inside `total`; 0 when the venue charges none."
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "deposit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`DEPOSIT`: the share paid online."
+          },
+          "startsAs": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "HELD",
+              "CONFIRMED"
+            ],
+            "description": "What booking now would start as: waiting for approval, waiting for payment, or confirmed."
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingCharge"
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "total",
+          "tax",
+          "paymentMode",
+          "deposit",
+          "startsAs",
+          "charges"
+        ]
+      },
+      "BookingCharge": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/BookingChargeType"
+          },
+          "startsAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "`SLOT`: the hour it charges."
+          },
+          "tier": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PriceTier"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "amenity": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pricing": {
+                "$ref": "#/components/schemas/AmenityPricing"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "pricing"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Minor units, VAT included."
+          },
+          "taxAmount": {
+            "type": "integer",
+            "description": "The VAT inside `amount`."
+          }
+        },
+        "required": [
+          "type",
+          "startsAt",
+          "tier",
+          "amenity",
+          "amount",
+          "taxAmount"
+        ]
+      },
+      "BookingChargeType": {
+        "type": "string",
+        "enum": [
+          "SLOT",
+          "AMENITY",
+          "DISCOUNT",
+          "REWARD"
+        ]
+      },
+      "BookingRequest": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first slot's start."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last slot's end."
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 20,
+            "default": [],
+            "description": "Priced amenities (option ids) added to the booking."
+          }
+        },
+        "required": [
+          "groundId",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "For the share link, /b/{code}."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "`PENDING` and `HELD`: when it expires unless approved or paid."
+          },
+          "venue": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "name"
+            ]
+          },
+          "ground": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sport": {
+                "$ref": "#/components/schemas/GroundSport"
+              },
+              "size": {
+                "$ref": "#/components/schemas/GroundSize"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "sport",
+              "size"
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217; amounts are in its minor units.",
+            "example": "EGP"
+          },
+          "total": {
+            "type": "integer",
+            "description": "VAT included."
+          },
+          "tax": {
+            "type": "integer",
+            "description": "The VAT inside `total`; 0 when the venue charges none."
+          },
+          "paymentMode": {
+            "$ref": "#/components/schemas/PaymentMode"
+          },
+          "deposit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`DEPOSIT`: the share paid online."
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingCharge"
+            }
+          },
+          "cancellation": {
+            "type": "object",
+            "properties": {
+              "policy": {
+                "$ref": "#/components/schemas/CancellationPolicy"
+              },
+              "tiers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CancellationTier"
+                }
+              }
+            },
+            "required": [
+              "policy",
+              "tiers"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "startsAt",
+          "endsAt",
+          "expiresAt",
+          "venue",
+          "ground",
+          "currency",
+          "total",
+          "tax",
+          "paymentMode",
+          "deposit",
+          "charges",
+          "cancellation",
+          "note",
+          "createdAt"
+        ]
+      },
+      "BookingStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "HELD",
+          "UNCONFIRMED",
+          "CONFIRMED",
+          "CANCELLED",
+          "EXPIRED",
+          "RELEASED",
+          "RESCHEDULED",
+          "COMPLETED",
+          "NO_SHOW"
+        ],
+        "description": "`PENDING`: waiting for the venue to approve, until `expiresAt`. `HELD`: waiting for payment, until `expiresAt`. `UNCONFIRMED`: a regular's weekly reservation waiting to be confirmed. `EXPIRED`: not approved or paid in time; its slots were released. `RELEASED`: a regular's reservation given up. `RESCHEDULED`: moved by the venue; a new booking replaced it."
+      },
+      "CreateBooking": {
+        "type": "object",
+        "properties": {
+          "groundId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first slot's start."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last slot's end."
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 20,
+            "default": [],
+            "description": "Priced amenities (option ids) added to the booking."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "For the venue."
+          }
+        },
+        "required": [
+          "groundId",
+          "startsAt",
+          "endsAt"
+        ]
+      },
       "StaffVenue": {
         "type": "object",
         "properties": {
@@ -11646,6 +12025,200 @@
           },
           "401": {
             "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/quote": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Price a booking before making it",
+        "description": "For the review step: the charges, VAT, deposit and what the booking would start as. Open to guests. Nothing is held, so the time can still be taken before booking. Names follow `Accept-Language`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The price",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingQuote"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GROUND_NOT_FOUND: no ground with that id at a live venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOOKING_TIME (with the limit it broke: `minimumNotice`, `horizonDays`, or `minimumSlots` and `maximumSlots`), or AMENITY_NOT_AVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable; retry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Book a ground",
+        "description": "Books back-to-back slots on one ground. Starts `CONFIRMED`, `PENDING` (the venue approves, until `expiresAt`) or `HELD` (waiting for payment, until `expiresAt`). Retrying with the same `Idempotency-Key` returns the same booking with `Idempotent-Replayed: true`.",
+        "security": [
+          {
+            "customerBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "One UUID per user action, reused on every retry of it.",
+              "example": "0192f0c4-8a7e-7b3e-9a51-2f6c1d0e4b7a"
+            },
+            "required": true,
+            "description": "One UUID per user action, reused on every retry of it.",
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBooking"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booked",
+            "headers": {
+              "Idempotent-Replayed": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ],
+                  "description": "Set when this answers a retry with the booking already made."
+                },
+                "required": false,
+                "description": "Set when this answers a retry with the booking already made."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED or TOKEN_EXPIRED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_SUSPENDED",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GROUND_NOT_FOUND: no ground with that id at a live venue.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SLOT_UNAVAILABLE: part of the time is taken or not open. VENUE_PAUSED or GROUND_UNAVAILABLE: not taking bookings for now.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INVALID_BOOKING_TIME (with the limit it broke: `minimumNotice`, `horizonDays`, or `minimumSlots` and `maximumSlots`), or AMENITY_NOT_AVAILABLE. IDEMPOTENCY_KEY_REUSED: the key was used for a different booking.",
             "content": {
               "application/problem+json": {
                 "schema": {
