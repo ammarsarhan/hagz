@@ -6,28 +6,25 @@ import {
   type GamesQuery,
   type ListingRequest,
   type MyGamesQuery,
-  type RecordArrived,
   type StaffGame,
   type UpdateListing,
 } from "@hagz/contracts";
 import { Prisma } from "@/generated/prisma/client";
 import type { Language } from "@/generated/prisma/enums";
-import { nameIn, placeOf, type VenueAccess } from "@/modules/venues";
+import { nameIn, placeOf } from "@/modules/venues";
 import { systemClock, type Clock } from "@/platform/clock/clock";
 import { prisma } from "@/platform/db/prisma";
 import { transaction, type Tx } from "@/platform/db/transaction";
 import { AppError, type ErrorStatus } from "@/platform/errors/app-error";
-import { BOOKING_EVENTS } from "../domain/events";
+import { checkInWindow, feePlayers } from "../domain/check-in";
 import {
-  ARRIVED_WINDOW_HOURS,
   firstName,
   joinFeeOf,
   maxNeeded,
-  NO_SHOW_REPORT_HOURS,
   PHONE_HOURS_AFTER_START,
   shareOf,
 } from "../domain/listings";
-import { lockBooking, venueBookingNotFound } from "./booking-rows";
+import { lockBooking } from "./booking-rows";
 import { bookingNotFound } from "./my-bookings";
 
 // Open games (PR 4.7, docs/listings.md). A player lists their confirmed app booking as needing
@@ -37,6 +34,9 @@ import { bookingNotFound } from "./my-bookings";
 // cancelled. Joined players don't become the venue's customers (user, 2026-11-22).
 
 const HOUR_MS = 60 * 60_000;
+// A player who leaves or is removed (possible in the 15 minutes before kick-off) is no longer
+// checked in.
+const notCheckedIn = { checkedInAt: null, checkedInById: null, checkedInManually: false };
 
 const problem = (code: string, status: ErrorStatus, detail: string) =>
   new AppError({ code, status, detail });
@@ -75,26 +75,6 @@ const clash = () =>
   problem("GAME_CLASH", 409, "You already have a game or a booking at this time.");
 const notJoined = () => problem("NOT_JOINED", 409, "You haven't joined this game.");
 const started = () => problem("GAME_STARTED", 409, "This game has already started.");
-const reportClosed = () =>
-  problem(
-    "REPORT_WINDOW_CLOSED",
-    409,
-    "No-shows can be reported for 48 hours after a game that was played.",
-  );
-const arrivedClosed = () =>
-  problem(
-    "ARRIVED_WINDOW_CLOSED",
-    409,
-    "How many came can be recorded from kick-off until 24 hours after the end.",
-  );
-const tooManyArrived = (joined: number) =>
-  new AppError({
-    code: "MORE_THAN_JOINED",
-    status: 422,
-    detail: "More players can't have come than joined.",
-    extensions: { joined },
-  });
-
 // ---- Inside other changes' transactions -------------------------------------------------------
 
 interface Listable {
@@ -307,37 +287,13 @@ export const removePlayer = async (
     if (listing.booking.startsAt <= now) throw started();
     const { count } = await tx.listingPlayer.updateMany({
       where: { listingId: listing.id, customerId: playerId, status: "JOINED" },
-      data: { status: "REMOVED", leftAt: now },
+      data: { status: "REMOVED", leftAt: now, ...notCheckedIn },
     });
     if (count === 0) throw notJoined();
     await tx.bookingListing.update({
       where: { id: listing.id },
       data: { playerCount: { decrement: 1 } },
     });
-  });
-};
-
-export const reportNoShow = async (
-  customerId: string,
-  bookingId: string,
-  playerId: string,
-  clock: Clock = systemClock,
-): Promise<void> => {
-  const now = clock.now();
-  await transaction(async (tx) => {
-    const listing = await bookersListing(tx, customerId, bookingId);
-    const { booking } = listing;
-    if (
-      booking.status !== "COMPLETED" ||
-      now.getTime() > booking.endsAt.getTime() + NO_SHOW_REPORT_HOURS * HOUR_MS
-    ) {
-      throw reportClosed();
-    }
-    const { count } = await tx.listingPlayer.updateMany({
-      where: { listingId: listing.id, customerId: playerId, status: "JOINED" },
-      data: { noShowReportedAt: now },
-    });
-    if (count === 0) throw notJoined();
   });
 };
 
@@ -386,7 +342,7 @@ export const joinGame = async (
     await tx.listingPlayer.upsert({
       where: { listingId_customerId: { listingId, customerId } },
       create: { listingId, customerId, joinedAt: now },
-      update: { status: "JOINED", joinedAt: now, leftAt: null, noShowReportedAt: null },
+      update: { status: "JOINED", joinedAt: now, leftAt: null },
     });
     await tx.bookingListing.update({
       where: { id: listingId },
@@ -407,7 +363,7 @@ export const leaveGame = async (
     if (listing.booking.startsAt <= now) throw started();
     const { count } = await tx.listingPlayer.updateMany({
       where: { listingId, customerId, status: "JOINED" },
-      data: { status: "LEFT", leftAt: now },
+      data: { status: "LEFT", leftAt: now, ...notCheckedIn },
     });
     if (count === 0) throw notJoined();
     await tx.bookingListing.update({
@@ -460,7 +416,11 @@ type GameRow = Prisma.BookingListingGetPayload<{ select: typeof gameSelect }>;
 
 const presentGame = (
   row: GameRow,
-  viewer: { customerId: string; status: "JOINED" | "LEFT" | "REMOVED" | null } | null,
+  viewer: {
+    customerId: string;
+    status: "JOINED" | "LEFT" | "REMOVED" | null;
+    checkedInAt: Date | null;
+  } | null,
   language: Language,
   now: Date,
   distanceKm: number | null,
@@ -502,7 +462,20 @@ const presentGame = (
     booker: { firstName: firstName(account?.name ?? booking.customer.name) },
     sharePrice: row.sharePrice,
     joinFee: row.joinFee,
-    me: viewer ? { booker: isBooker, status: viewer.status } : null,
+    me: viewer
+      ? {
+          booker: isBooker,
+          status: viewer.status,
+          checkIn:
+            joined && ["CONFIRMED", "COMPLETED", "NO_SHOW"].includes(booking.status)
+              ? {
+                  opensAt: checkInWindow(booking.startsAt).opensAt.toISOString(),
+                  closesAt: checkInWindow(booking.startsAt).closesAt.toISOString(),
+                  checkedInAt: viewer.checkedInAt?.toISOString() ?? null,
+                }
+              : null,
+        }
+      : null,
     players:
       joined || isBooker ? row.players.map((player) => firstName(player.customer.name)) : null,
     bookerPhone: joined && now.getTime() < phoneUntil ? (account?.phone ?? null) : null,
@@ -510,13 +483,14 @@ const presentGame = (
 };
 
 const viewerStatus = async (customerId: string | null, listingIds: readonly string[]) => {
-  if (!customerId || listingIds.length === 0)
-    return new Map<string, "JOINED" | "LEFT" | "REMOVED">();
+  if (!customerId || listingIds.length === 0) {
+    return new Map<string, { status: "JOINED" | "LEFT" | "REMOVED"; checkedInAt: Date | null }>();
+  }
   const rows = await prisma.listingPlayer.findMany({
     where: { customerId, listingId: { in: [...listingIds] } },
-    select: { listingId: true, status: true },
+    select: { listingId: true, status: true, checkedInAt: true },
   });
-  return new Map(rows.map((row) => [row.listingId, row.status]));
+  return new Map(rows.map((row) => [row.listingId, row]));
 };
 
 const gamesById = async (
@@ -535,7 +509,10 @@ const gamesById = async (
   return ids.flatMap((id) => {
     const row = byId.get(id);
     if (!row) return [];
-    const viewer = customerId ? { customerId, status: statuses.get(id) ?? null } : null;
+    const mine = statuses.get(id);
+    const viewer = customerId
+      ? { customerId, status: mine?.status ?? null, checkedInAt: mine?.checkedInAt ?? null }
+      : null;
     return [presentGame(row, viewer, language, now, distances.get(id) ?? null)];
   });
 };
@@ -697,7 +674,7 @@ export const bookerListing = async (bookingId: string): Promise<BookerListing | 
         select: {
           customerId: true,
           joinedAt: true,
-          noShowReportedAt: true,
+          checkedInAt: true,
           customer: { select: { name: true, phone: true } },
         },
       },
@@ -706,13 +683,18 @@ export const bookerListing = async (bookingId: string): Promise<BookerListing | 
   if (!listing) return null;
   const ids = listing.players.map((player) => player.customerId);
   const records = ids.length
-    ? await prisma.$queryRaw<{ customerId: string; games: number; reported: number }[]>`
+    ? await prisma.$queryRaw<{ customerId: string; games: number; showedUp: number }[]>`
         SELECT p."customerId", count(*)::int AS games,
-               count(*) FILTER (WHERE p."noShowReportedAt" IS NOT NULL)::int AS reported
+               count(*) FILTER (WHERE p."checkedInAt" IS NOT NULL)::int AS "showedUp"
         FROM "ListingPlayer" p
         JOIN "BookingListing" l ON l.id = p."listingId"
         JOIN "Booking" b ON b.id = l."bookingId"
-        WHERE p."customerId" = ANY(${ids}::uuid[]) AND p.status = 'JOINED' AND b.status = 'COMPLETED'
+        WHERE p."customerId" = ANY(${ids}::uuid[]) AND p.status = 'JOINED'
+          AND b.status IN ('COMPLETED', 'NO_SHOW')
+          AND EXISTS (
+            SELECT 1 FROM "ListingPlayer" o
+            WHERE o."listingId" = l.id AND o.status = 'JOINED' AND o."checkedInAt" IS NOT NULL
+          )
         GROUP BY p."customerId"`
     : [];
   const record = new Map(records.map((row) => [row.customerId, row]));
@@ -724,17 +706,17 @@ export const bookerListing = async (bookingId: string): Promise<BookerListing | 
     note: listing.note,
     sharePrice: listing.sharePrice,
     joinFee: listing.joinFee,
-    players: listing.players.map((player) => {
-      const games = record.get(player.customerId)?.games ?? 0;
-      return {
-        customerId: player.customerId,
-        firstName: firstName(player.customer.name),
-        phone: player.customer.phone,
-        joinedAt: player.joinedAt.toISOString(),
-        reliability: { games, showedUp: games - (record.get(player.customerId)?.reported ?? 0) },
-        noShowReported: player.noShowReportedAt !== null,
-      };
-    }),
+    players: listing.players.map((player) => ({
+      customerId: player.customerId,
+      firstName: firstName(player.customer.name),
+      phone: player.customer.phone,
+      joinedAt: player.joinedAt.toISOString(),
+      reliability: {
+        games: record.get(player.customerId)?.games ?? 0,
+        showedUp: record.get(player.customerId)?.showedUp ?? 0,
+      },
+      checkedInAt: player.checkedInAt?.toISOString() ?? null,
+    })),
   };
 };
 
@@ -749,76 +731,30 @@ export const sharedGameId = async (bookingId: string): Promise<string | null> =>
 
 // ---- The venue -------------------------------------------------------------------------------
 
+// The open game on a staff booking. The joining fee is due for the players checked in; when the
+// venue checked in none of them it's unknown, and every joined player counts (user, 2026-11-22).
 export const staffGame = async (bookingId: string): Promise<StaffGame | null> => {
   const listing = await prisma.bookingListing.findFirst({
     where: { bookingId, status: "OPEN", playerCount: { gt: 0 } },
     select: {
       playerCount: true,
       joinFee: true,
-      arrivedCount: true,
-      arrivedAt: true,
       players: {
         where: { status: "JOINED" },
         orderBy: { joinedAt: "asc" },
-        select: { customer: { select: { name: true } } },
+        select: { customerId: true, checkedInAt: true, customer: { select: { name: true } } },
       },
     },
   });
   if (!listing) return null;
+  const checkedIn = listing.players.filter((player) => player.checkedInAt !== null).length;
   return {
     expectedPlayers: listing.playerCount,
-    players: listing.players.map((player) => ({ firstName: firstName(player.customer.name) })),
+    players: listing.players.map((player) => ({
+      customerId: player.customerId,
+      firstName: firstName(player.customer.name),
+    })),
     joinFee: listing.joinFee,
-    arrivedCount: listing.arrivedCount,
-    arrivedAt: listing.arrivedAt?.toISOString() ?? null,
+    feePlayers: feePlayers(listing.playerCount, checkedIn),
   };
-};
-
-// Staff record how many joined players came, from kick-off until 24 hours after the end; it can be
-// corrected in that time. Fewer than expected (joined less the booker's no-show reports) is noted
-// on the booking, for the venue's under-recording rate.
-export const recordArrived = async (
-  actor: VenueAccess,
-  bookingId: string,
-  { count }: RecordArrived,
-  clock: Clock = systemClock,
-): Promise<void> => {
-  const now = clock.now();
-  await transaction(async (tx) => {
-    const booking = await lockBooking(tx, bookingId, actor.venueId, {
-      id: true,
-      status: true,
-      startsAt: true,
-      endsAt: true,
-      listing: { select: { id: true, playerCount: true } },
-    });
-    if (!booking) throw venueBookingNotFound();
-    if (!booking.listing || booking.listing.playerCount === 0) throw gameNotFound();
-    if (
-      booking.startsAt > now ||
-      now.getTime() > booking.endsAt.getTime() + ARRIVED_WINDOW_HOURS * HOUR_MS ||
-      (booking.status !== "CONFIRMED" && booking.status !== "COMPLETED")
-    ) {
-      throw arrivedClosed();
-    }
-    const listing = await lockListing(tx, booking.listing.id);
-    if (!listing) throw gameNotFound();
-    if (count > listing.playerCount) throw tooManyArrived(listing.playerCount);
-    await tx.bookingListing.update({
-      where: { id: listing.id },
-      data: { arrivedCount: count, arrivedAt: now, arrivedById: actor.staffId },
-    });
-    const reported = await tx.listingPlayer.count({
-      where: { listingId: listing.id, status: "JOINED", noShowReportedAt: { not: null } },
-    });
-    const expected = listing.playerCount - reported;
-    await tx.bookingEvent.create({
-      data: {
-        bookingId: booking.id,
-        type: count < expected ? BOOKING_EVENTS.GAME_SHORTFALL : BOOKING_EVENTS.ARRIVED_RECORDED,
-        staffId: actor.staffId,
-        data: { expected, arrived: count },
-      },
-    });
-  });
 };
