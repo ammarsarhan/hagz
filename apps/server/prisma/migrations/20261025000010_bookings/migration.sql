@@ -149,7 +149,7 @@ CREATE INDEX "BookingEvent_bookingId_createdAt_idx" ON "BookingEvent"("bookingId
 CREATE UNIQUE INDEX "Booking_venueId_idempotencyKey_key" ON "Booking"("venueId", "idempotencyKey");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Booking_regularId_startsAt_key" ON "Booking"("regularId", "startsAt");
+CREATE UNIQUE INDEX "Booking_regularId_startsAt_key" ON "Booking"("regularId", "startsAt") WHERE (status IN ('PENDING', 'HELD', 'UNCONFIRMED', 'CONFIRMED', 'COMPLETED', 'NO_SHOW'));
 
 -- CreateIndex
 CREATE INDEX "Rescheduling_fromBookingId_idx" ON "Rescheduling"("fromBookingId");

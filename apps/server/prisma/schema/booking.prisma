@@ -51,7 +51,9 @@ model Booking {
   @@unique([id, venueId]) // GroundSlot relation target.
   @@unique([id, customerId]) // Loyalty and review relation target.
   @@unique([venueId, idempotencyKey]) // Not customerId: a retry may create a new VenueCustomer.
-  @@unique([regularId, startsAt]) // One reservation per regular per week.
+  // One live reservation per regular per week. Released ones are kept, so pausing and resuming can
+  // reserve the week again.
+  @@unique([regularId, startsAt], map: "Booking_regularId_startsAt_key", where: raw("(status = ANY (ARRAY['PENDING'::\"BookingStatus\", 'HELD'::\"BookingStatus\", 'UNCONFIRMED'::\"BookingStatus\", 'CONFIRMED'::\"BookingStatus\", 'COMPLETED'::\"BookingStatus\", 'NO_SHOW'::\"BookingStatus\"]))"))
   @@index([venueId, startsAt])
   @@index([groundId, startsAt])
   @@index([customerId, startsAt])
